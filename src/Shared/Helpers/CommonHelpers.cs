@@ -173,4 +173,9 @@ internal static class CommonHelpers
                 obj.Item1 is { } item1 ? left.GetHashCode(item1) : 0,
                 obj.Item2 is { } item2 ? right.GetHashCode(item2) : 0);
     }
+
+    public static IReadOnlyList<T> AsReadOnlyList<T>(this IEnumerable<T>? enumerable)
+    {
+        return enumerable is null or ICollection<T> { Count: 0 } ? Array.Empty<T>() : [.. enumerable];
+    }
 }

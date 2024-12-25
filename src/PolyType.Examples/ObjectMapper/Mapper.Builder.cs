@@ -33,13 +33,11 @@ public static partial class Mapper
                 case TypeShapeKind.Object:
                     var sourceObjectShape = (IObjectTypeShape<TSource>)sourceShape;
                     var targetObjectShape = (IObjectTypeShape<TTarget>)targetShape;
-
-                    IConstructorShape? ctor = targetObjectShape.GetConstructor();
-
-                    if (ctor is null)
+                    
+                    if (targetObjectShape.Constructor is null)
                     {
                         // If TTarget is not constructible, only map if TSource is a subtype of TTarget and has no properties.
-                        if (typeof(TTarget).IsAssignableFrom(typeof(TSource)) && !targetObjectShape.HasProperties)
+                        if (typeof(TTarget).IsAssignableFrom(typeof(TSource)) && targetObjectShape.Properties is [])
                         {
                             return new Mapper<TSource, TSource>(source => source);
 
@@ -48,13 +46,13 @@ public static partial class Mapper
                         ThrowCannotMapTypes(typeof(TSource), typeof(TTarget));
                     }
 
-                    IPropertyShape[] sourceGetters = sourceObjectShape.GetProperties()
+                    IPropertyShape[] sourceGetters = sourceObjectShape.Properties
                         .Where(prop => prop.HasGetter)
                         .ToArray();
 
                     // Bring TSource into scope for the target ctor using a new generic visitor.
                     var visitor = new TypeScopedVisitor<TSource>(this);
-                    return (Mapper<TSource, TTarget>?)ctor.Accept(visitor, state: sourceGetters);
+                    return (Mapper<TSource, TTarget>?)targetObjectShape.Constructor.Accept(visitor, state: sourceGetters);
 
                 case TypeShapeKind.Enum:
                     return new Mapper<TSource, TTarget>(source => (TTarget)(object)source!);
@@ -99,10 +97,10 @@ public static partial class Mapper
             public override object? VisitConstructor<TTarget, TArgumentState>(IConstructorShape<TTarget, TArgumentState> targetCtor, object? state)
             {
                 var sourceGetters = (IPropertyShape[])state!;
-                if (targetCtor.ParameterCount == 0)
+                if (targetCtor.Parameters is [])
                 {
                     Func<TTarget> defaultCtor = targetCtor.GetDefaultConstructor();
-                    PropertyMapper<TSource, TTarget>[] propertyMappers = targetCtor.DeclaringType.GetProperties()
+                    PropertyMapper<TSource, TTarget>[] propertyMappers = targetCtor.DeclaringType.Properties
                         .Where(prop => prop.HasSetter)
                         .Select(setter =>
                             sourceGetters.FirstOrDefault(getter => getter.Name == setter.Name) is { } getter
@@ -131,7 +129,7 @@ public static partial class Mapper
                 {
                     Func<TArgumentState> argumentStateCtor = targetCtor.GetArgumentStateConstructor();
                     Constructor<TArgumentState, TTarget> ctor = targetCtor.GetParameterizedConstructor();
-                    PropertyMapper<TSource, TArgumentState>[] propertyMappers = targetCtor.GetParameters()
+                    PropertyMapper<TSource, TArgumentState>[] propertyMappers = targetCtor.Parameters
                         .Select(targetParam =>
                         {
                             // Use case-insensitive comparison for constructor parameters, but case-sensitive for members.

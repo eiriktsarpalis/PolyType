@@ -11,12 +11,7 @@ public enum ConstructorParameterKind
     ConstructorParameter,
 
     /// <summary>
-    /// Represents a property initializer.
+    /// Represents a member initializer.
     /// </summary>
-    PropertyInitializer,
-
-    /// <summary>
-    /// Represents a field initializer.
-    /// </summary>
-    FieldInitializer,
+    MemberInitializer,
 }

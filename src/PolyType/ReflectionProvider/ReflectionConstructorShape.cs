@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using PolyType.Abstractions;
 
@@ -11,15 +10,17 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
     IConstructorShape<TDeclaringType, TArgumentState>
 {
     public IObjectTypeShape<TDeclaringType> DeclaringType => (IObjectTypeShape<TDeclaringType>)provider.GetShape<TDeclaringType>();
-    public int ParameterCount => ctorInfo.Parameters.Length;
     public ICustomAttributeProvider? AttributeProvider => ctorInfo.AttributeProvider;
     public bool IsPublic => ctorInfo.IsPublic;
     IObjectTypeShape IConstructorShape.DeclaringType => DeclaringType;
     object? IConstructorShape.Accept(ITypeShapeVisitor visitor, object? state) => visitor.VisitConstructor(this, state);
 
+    public IReadOnlyList<IConstructorParameterShape> Parameters => _parameters ??= GetParameters().AsReadOnlyList();
+    private IReadOnlyList<IConstructorParameterShape>? _parameters;
+
     public Func<TArgumentState> GetArgumentStateConstructor()
     {
-        if (ParameterCount == 0)
+        if (Parameters is [])
         {
             throw new InvalidOperationException("The current constructor shape is not parameterized.");
         }
@@ -29,7 +30,7 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
 
     public Constructor<TArgumentState, TDeclaringType> GetParameterizedConstructor()
     {
-        if (ParameterCount == 0)
+        if (Parameters is [])
         {
             throw new InvalidOperationException("The current constructor shape is not parameterized.");
         }
@@ -39,7 +40,7 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
 
     public Func<TDeclaringType> GetDefaultConstructor()
     {
-        if (ParameterCount > 0)
+        if (Parameters is not [])
         {
             throw new InvalidOperationException("The current constructor shape is not parameterless.");
         }
@@ -47,7 +48,7 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
         return provider.MemberAccessor.CreateDefaultConstructor<TDeclaringType>(ctorInfo);
     }
 
-    public IEnumerable<IConstructorParameterShape> GetParameters()
+    private IEnumerable<IConstructorParameterShape> GetParameters()
     {
         for (int i = 0; i < ctorInfo.Parameters.Length; i++)
         {

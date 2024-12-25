@@ -33,12 +33,11 @@ public static partial class JsonSerializerTS
                 return new JsonPolymorphicObjectConverter(generationContext.ParentCache!);
             }
 
-            JsonPropertyConverter<T>[] properties = type.GetProperties()
+            JsonPropertyConverter<T>[] properties = type.Properties
                 .Select(prop => (JsonPropertyConverter<T>)prop.Accept(this)!)
                 .ToArray();
 
-            IConstructorShape? ctor = type.GetConstructor();
-            return ctor != null
+            return type.Constructor is { } ctor
                 ? (JsonObjectConverter<T>)ctor.Accept(this, state: properties)!
                 : new JsonObjectConverter<T>(properties);
         }
@@ -53,13 +52,12 @@ public static partial class JsonSerializerTS
         {
             var properties = (JsonPropertyConverter<TDeclaringType>[])state!;
 
-            if (constructor.ParameterCount == 0)
+            if (constructor.Parameters is [])
             {
                 return new JsonObjectConverterWithDefaultCtor<TDeclaringType>(constructor.GetDefaultConstructor(), properties);
             }
 
-            JsonPropertyConverter<TArgumentState>[] constructorParams = constructor
-                .GetParameters()
+            JsonPropertyConverter<TArgumentState>[] constructorParams = constructor.Parameters
                 .Select(param => (JsonPropertyConverter<TArgumentState>)param.Accept(this)!)
                 .ToArray();
 

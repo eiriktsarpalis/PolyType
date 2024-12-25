@@ -30,21 +30,20 @@ public static partial class Cloner
                 return CreatePolymorphicCloner(generationContext.ParentCache!);
             }
             
-            if (!typeShape.HasProperties && !typeShape.HasConstructor)
+            if (typeShape is { Properties: [], Constructor: null })
             {
                 return new Func<T?, T?>(t => t);
             }
-
-            IConstructorShape? ctor = typeShape.GetConstructor();
-            return ctor != null ? ctor.Accept(this) : throw TypeNotCloneable<T>();
+            
+            return typeShape.Constructor is { } ctor ? ctor.Accept(this) : throw TypeNotCloneable<T>();
         }
         
         public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructorShape, object? _)
         {
-            if (constructorShape.ParameterCount == 0)
+            if (constructorShape.Parameters is [])
             {
                 var defaultCtor = constructorShape.GetDefaultConstructor();
-                var propertyCloners = constructorShape.DeclaringType.GetProperties()
+                var propertyCloners = constructorShape.DeclaringType.Properties
                     .Where(prop => prop.HasGetter && prop.HasSetter)
                     .Select(prop => (PropertyCloner<TDeclaringType, TDeclaringType>)prop.Accept(this)!)
                     .ToArray();
@@ -69,11 +68,11 @@ public static partial class Cloner
             var scopedBuilder = new ArgumentStateScopedBuilder<TArgumentState>(this);
             var argumentStateCtor = constructorShape.GetArgumentStateConstructor();
             var ctor = constructorShape.GetParameterizedConstructor();
-            var propertyGetters = constructorShape.DeclaringType.GetProperties()
+            var propertyGetters = constructorShape.DeclaringType.Properties
                 .Where(prop => prop.HasGetter)
                 .ToArray();
 
-            PropertyCloner<TDeclaringType, TArgumentState>[] parameterMappers = constructorShape.GetParameters()
+            PropertyCloner<TDeclaringType, TArgumentState>[] parameterMappers = constructorShape.Parameters
                 .Select(param =>
                 {
                     // Use case-insensitive comparison for constructor parameters, but case-sensitive for members.

@@ -124,10 +124,10 @@ public static class JsonSchemaGenerator
                 case IObjectTypeShape objectShape:
                     schema = new();
 
-                    if (objectShape.HasProperties)
+                    if (objectShape.Properties is not [])
                     {
-                        IConstructorShape? ctor = objectShape.GetConstructor();
-                        Dictionary<string, IConstructorParameterShape>? ctorParams = ctor?.GetParameters()
+                        IConstructorShape? ctor = objectShape.Constructor;
+                        Dictionary<string, IConstructorParameterShape>? ctorParams = ctor?.Parameters
                             .Where(p => p.Kind is ConstructorParameterKind.ConstructorParameter || p.IsRequired)
                             .ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
 
@@ -135,7 +135,7 @@ public static class JsonSchemaGenerator
                         JsonArray? required = null;
 
                         Push("properties");
-                        foreach (IPropertyShape prop in objectShape.GetProperties())
+                        foreach (IPropertyShape prop in objectShape.Properties)
                         {
                             IConstructorParameterShape? associatedParameter = null;
                             ctorParams?.TryGetValue(prop.Name, out associatedParameter);

@@ -28,8 +28,7 @@ public static partial class PrettyPrinter
         public override object? VisitObject<T>(IObjectTypeShape<T> type, object? state)
         {
             string typeName = FormatTypeName(typeof(T));
-            PrettyPrinter<T>[] propertyPrinters = type
-                .GetProperties()
+            PrettyPrinter<T>[] propertyPrinters = type.Properties
                 .Where(prop => prop.HasGetter)
                 .Select(prop => (PrettyPrinter<T>?)prop.Accept(this)!)
                 .Where(prop => prop != null)

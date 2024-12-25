@@ -77,16 +77,12 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             return;
         }
 
-        int propCount = 0;
         var visitor = new PropertyTestVisitor();
-        foreach (IPropertyShape property in objectShape.GetProperties())
+        foreach (IPropertyShape property in objectShape.Properties)
         {
             Assert.Equal(typeof(T), property.DeclaringType.Type);
             property.Accept(visitor, state: testCase.Value);
-            propCount++;
         }
-
-        Assert.Equal(propCount > 0, objectShape.HasProperties);
     }
 
     private sealed class PropertyTestVisitor : TypeShapeVisitor
@@ -132,15 +128,10 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         }
         
         var visitor = new ConstructorTestVisitor();
-        if (objectShape.GetConstructor() is IConstructorShape ctor)
+        if (objectShape.Constructor is { } ctor)
         {
-            Assert.True(objectShape.HasConstructor);
             Assert.Equal(typeof(T), ctor.DeclaringType.Type);
             ctor.Accept(visitor, typeof(T));
-        }
-        else
-        {
-            Assert.False(objectShape.HasConstructor);
         }
     }
 
@@ -151,11 +142,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             var expectedType = (Type)state!;
             Assert.Equal(typeof(TDeclaringType), expectedType);
 
-            int parameterCount = constructor.ParameterCount;
-            IConstructorParameterShape[] parameters = constructor.GetParameters().ToArray();
-            Assert.Equal(parameterCount, parameters.Length);
-
-            if (parameterCount == 0)
+            if (constructor.Parameters.Count == 0)
             {
                 Assert.Throws<InvalidOperationException>(() => constructor.GetArgumentStateConstructor());
                 Assert.Throws<InvalidOperationException>(() => constructor.GetParameterizedConstructor());
@@ -170,7 +157,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                 
                 int i = 0;
                 TArgumentState argumentState = constructor.GetArgumentStateConstructor().Invoke();
-                foreach (IConstructorParameterShape parameter in parameters)
+                foreach (IConstructorParameterShape parameter in constructor.Parameters)
                 {
                     Assert.Equal(i++, parameter.Position);
                     argumentState = (TArgumentState)parameter.Accept(this, argumentState)!;
@@ -465,7 +452,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             return;
         }
 
-        foreach (IPropertyShape property in objectShape.GetProperties())
+        foreach (IPropertyShape property in objectShape.Properties)
         {
             MemberInfo attributeProvider = Assert.IsAssignableFrom<MemberInfo>(property.AttributeProvider);
             PropertyShapeAttribute? attr = attributeProvider.GetCustomAttribute<PropertyShapeAttribute>();
@@ -495,18 +482,18 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             }
         }
 
-        if (objectShape.GetConstructor() is { AttributeProvider: not null } constructor)
+        if (objectShape.Constructor is { AttributeProvider: not null } constructor)
         {
             MethodBase ctorInfo = Assert.IsAssignableFrom<MethodBase>(constructor.AttributeProvider);
             Assert.True(ctorInfo is MethodInfo { IsStatic: true } or ConstructorInfo);
             Assert.True(typeof(T).IsAssignableFrom(ctorInfo is MethodInfo m ? m.ReturnType : ctorInfo.DeclaringType));
             ParameterInfo[] parameters = ctorInfo.GetParameters();
-            Assert.True(parameters.Length <= constructor.ParameterCount);
+            Assert.True(parameters.Length <= constructor.Parameters.Count);
             Assert.Equal(ctorInfo.IsPublic, constructor.IsPublic);
             bool hasSetsRequiredMembersAttribute = ctorInfo.SetsRequiredMembers();
 
             int i = 0;
-            foreach (IConstructorParameterShape ctorParam in constructor.GetParameters())
+            foreach (IConstructorParameterShape ctorParam in constructor.Parameters)
             {
                 if (i < parameters.Length)
                 {
@@ -552,7 +539,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                     Assert.False(ctorParam.HasDefaultValue);
                     Assert.Null(ctorParam.DefaultValue);
                     Assert.Equal(!hasSetsRequiredMembersAttribute && memberInfo.IsRequired(), ctorParam.IsRequired);
-                    Assert.Equal(memberInfo is FieldInfo ? ConstructorParameterKind.FieldInitializer : ConstructorParameterKind.PropertyInitializer, ctorParam.Kind);
+                    Assert.Equal(ConstructorParameterKind.MemberInitializer, ctorParam.Kind);
 
                     if (memberInfo is PropertyInfo p)
                     {
@@ -591,7 +578,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
 
         NullabilityInfoContext? nullabilityCtx = providerUnderTest.ResolvesNullableAnnotations ? new() : null;
 
-        foreach (IPropertyShape property in objectShape.GetProperties())
+        foreach (IPropertyShape property in objectShape.Properties)
         {
             MemberInfo memberInfo = Assert.IsAssignableFrom<MemberInfo>(property.AttributeProvider);
 
@@ -600,13 +587,13 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             Assert.Equal(property.HasSetter && isSetterNonNullable, property.IsSetterNonNullable);
         }
 
-        if (objectShape.GetConstructor() is { AttributeProvider: not null } constructor)
+        if (objectShape.Constructor is { AttributeProvider: not null } constructor)
         {
             MethodBase ctorInfo = Assert.IsAssignableFrom<MethodBase>(constructor.AttributeProvider);
             ParameterInfo[] parameters = ctorInfo.GetParameters();
-            Assert.True(parameters.Length <= constructor.ParameterCount);
+            Assert.True(parameters.Length <= constructor.Parameters.Count);
 
-            foreach (IConstructorParameterShape ctorParam in constructor.GetParameters())
+            foreach (IConstructorParameterShape ctorParam in constructor.Parameters)
             {
                 if (ctorParam.AttributeProvider is ParameterInfo pInfo)
                 {

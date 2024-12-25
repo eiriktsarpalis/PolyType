@@ -35,11 +35,10 @@ public partial class RandomGenerator
             {
                 return CreateObjectGenerator();
             }
-            
-            IConstructorShape? constructor = type.GetConstructor();
-            return constructor is null
-                ? throw new NotSupportedException($"Type '{typeof(T)}' does not support random generation.")
-                : constructor.Accept(this);
+
+            return type.Constructor is { } constructor
+                ? constructor.Accept(this)
+                : throw new NotSupportedException($"Type '{typeof(T)}' does not support random generation.");
         }
 
         public object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> property, object? state)
@@ -51,10 +50,10 @@ public partial class RandomGenerator
 
         public object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructor, object? state)
         {
-            if (constructor.ParameterCount == 0)
+            if (constructor.Parameters is [])
             {
                 Func<TDeclaringType> defaultCtor = constructor.GetDefaultConstructor();
-                RandomPropertySetter<TDeclaringType>[] propertySetters = constructor.DeclaringType.GetProperties()
+                RandomPropertySetter<TDeclaringType>[] propertySetters = constructor.DeclaringType.Properties
                     .Where(prop => prop.HasSetter)
                     .Select(prop => (RandomPropertySetter<TDeclaringType>)prop.Accept(this)!)
                     .ToArray();
@@ -81,7 +80,7 @@ public partial class RandomGenerator
             {
                 Func<TArgumentState> argumentStateCtor = constructor.GetArgumentStateConstructor();
                 Constructor<TArgumentState, TDeclaringType> ctor = constructor.GetParameterizedConstructor();
-                RandomPropertySetter<TArgumentState>[] parameterSetters = constructor.GetParameters()
+                RandomPropertySetter<TArgumentState>[] parameterSetters = constructor.Parameters
                     .Select(param => (RandomPropertySetter<TArgumentState>)param.Accept(this)!)
                     .ToArray();
 

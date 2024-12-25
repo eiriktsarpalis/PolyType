@@ -23,13 +23,12 @@ public static partial class XmlSerializer
 
         public object? VisitObject<T>(IObjectTypeShape<T> type, object? state)
         {
-            XmlPropertyConverter<T>[] properties = type.GetProperties()
+            XmlPropertyConverter<T>[] properties = type.Properties
                 .Select(prop => (XmlPropertyConverter<T>)prop.Accept(this)!)
                 .ToArray();
 
             // Prefer the default constructor if available.
-            IConstructorShape? ctor = type.GetConstructor();
-            return ctor != null
+            return type.Constructor is { } ctor
                 ? (XmlObjectConverter<T>)ctor.Accept(this, state: properties)!
                 : new XmlObjectConverter<T>(properties);
         }
@@ -44,12 +43,12 @@ public static partial class XmlSerializer
         {
             var properties = (XmlPropertyConverter<TDeclaringType>[])state!;
 
-            if (constructor.ParameterCount == 0)
+            if (constructor.Parameters is [])
             {
                 return new XmlObjectConverterWithDefaultCtor<TDeclaringType>(constructor.GetDefaultConstructor(), properties);
             }
 
-            XmlPropertyConverter<TArgumentState>[] constructorParams = constructor.GetParameters()
+            XmlPropertyConverter<TArgumentState>[] constructorParams = constructor.Parameters
                 .Select(param => (XmlPropertyConverter<TArgumentState>)param.Accept(this)!)
                 .ToArray();
 

@@ -9,11 +9,6 @@ namespace PolyType.ReflectionProvider;
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 internal sealed class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider provider, bool disableMemberResolution) : ReflectionTypeShape<T>(provider), IObjectTypeShape<T>
 {
-    private static readonly EqualityComparer<(Type Type, string Name)> s_ctorParameterEqualityComparer =
-        CommonHelpers.CreateTupleComparer(
-            EqualityComparer<Type>.Default,
-            CommonHelpers.CamelCaseInvariantComparer.Instance);
-
     public override TypeShapeKind Kind => TypeShapeKind.Object;
     public override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);
 
@@ -26,13 +21,27 @@ internal sealed class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider p
     public bool IsSimpleType => _isSimpleType ??= DetermineIsSimpleType(typeof(T));
     private bool? _isSimpleType;
 
-    public bool HasProperties => _hasProperties ??= GetProperties().Any();
-    private bool? _hasProperties;
+    public IReadOnlyList<IPropertyShape> Properties => _properties ??= GetProperties().AsReadOnlyList();
+    private IReadOnlyList<IPropertyShape>? _properties;
 
-    public bool HasConstructor => _hasConstructor ??= GetConstructor() is not null;
-    private bool? _hasConstructor;
+    public IConstructorShape? Constructor
+    {
+        get
+        {
+            if (!_isConstructorResolved)
+            {
+                _constructor = GetConstructor();
+                Volatile.Write(ref _isConstructorResolved, true);
+            }
 
-    public IConstructorShape? GetConstructor()
+            return _constructor;
+        }
+    }
+
+    private IConstructorShape? _constructor;
+    private bool _isConstructorResolved;
+
+    private IConstructorShape? GetConstructor()
     {
         if (typeof(T).IsAbstract || IsSimpleType)
         {
@@ -91,7 +100,7 @@ internal sealed class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider p
                     .Where(m => m.MemberInfo is PropertyInfo { CanWrite: false } or FieldInfo { IsInitOnly: true })
                     .Select(m => (m.MemberInfo.GetMemberType(), m.MemberInfo.Name)),
 
-                comparer: s_ctorParameterEqualityComparer);
+                comparer: ReflectionTypeShapeProvider.CtorParameterEqualityComparer);
 
             (constructorInfo, parameters, _) = ctorCandidates
                 .OrderByDescending(ctor =>
@@ -210,7 +219,7 @@ internal sealed class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider p
         }
     }
 
-    public IEnumerable<IPropertyShape> GetProperties()
+    private IEnumerable<IPropertyShape> GetProperties()
     {
         if (IsSimpleType)
         {

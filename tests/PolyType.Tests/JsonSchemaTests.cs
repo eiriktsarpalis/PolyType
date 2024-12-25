@@ -60,7 +60,7 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
                 break;
 
             case IObjectTypeShape objectShape:
-                if (objectShape.HasProperties)
+                if (objectShape.Properties is not [])
                 {
                     AssertType("object");
                     Assert.Contains("properties", schema);

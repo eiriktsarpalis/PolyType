@@ -351,4 +351,9 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
     {
         return ReflectionHelpers.IsNullabilityInfoContextSupported ? new() : null;
     }
+
+    internal static readonly EqualityComparer<(Type Type, string Name)> CtorParameterEqualityComparer =
+        CommonHelpers.CreateTupleComparer(
+            EqualityComparer<Type>.Default,
+            CommonHelpers.CamelCaseInvariantComparer.Instance);
 }

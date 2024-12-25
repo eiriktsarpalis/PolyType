@@ -347,7 +347,7 @@ internal sealed partial class SourceFormatter
                 {
                     ParameterKind.ConstructorParameter => "ConstructorParameter",
                     ParameterKind.RequiredMember or
-                    ParameterKind.OptionalMember => parameter.IsField ? "FieldInitializer" : "PropertyInitializer",
+                    ParameterKind.OptionalMember => "MemberInitializer",
                     _ => throw new InvalidOperationException($"Unsupported parameter kind: {parameter.Kind}"),
                 };
 
