@@ -13,8 +13,7 @@ public static partial class Validator
 
         public override object? VisitObject<T>(IObjectTypeShape<T> type, object? state)
         {
-            (string, Validator<T>)[] propertyValidators = type
-                .GetProperties()
+            (string, Validator<T>)[] propertyValidators = type.Properties
                 .Where(prop => prop.HasGetter)
                 .Select(prop => (prop.Name, Validator: (Validator<T>?)prop.Accept(this)))
                 .Where(prop => prop.Validator != null)

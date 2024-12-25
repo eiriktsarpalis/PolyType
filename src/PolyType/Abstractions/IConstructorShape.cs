@@ -13,15 +13,6 @@ public interface IConstructorShape
     IObjectTypeShape DeclaringType { get; }
 
     /// <summary>
-    /// Gets the total number of parameters required by the constructor.
-    /// </summary>
-    /// <remarks>
-    /// This number includes both constructor parameters and
-    /// any available property or field initializers.
-    /// </remarks>
-    int ParameterCount { get; }
-
-    /// <summary>
     /// Gets a value indicating whether the constructor is declared public.
     /// </summary>
     bool IsPublic { get; }
@@ -32,10 +23,13 @@ public interface IConstructorShape
     ICustomAttributeProvider? AttributeProvider { get; }
 
     /// <summary>
-    /// Creates an enumeration of strongly-typed models for the constructor's parameters.
+    /// Gets the shapes of the parameters accepted by the constructor.
     /// </summary>
-    /// <returns>An enumeration of <see cref="IConstructorParameterShape"/> models.</returns>
-    IEnumerable<IConstructorParameterShape> GetParameters();
+    /// <remarks>
+    /// Includes all formal parameters of the underlying constructor,
+    /// as well as any member that can be specified in a member initializer expression.
+    /// </remarks>
+    IReadOnlyList<IConstructorParameterShape> Parameters { get; }
 
     /// <summary>
     /// Accepts an <see cref="ITypeShapeVisitor"/> for strongly-typed traversal.
@@ -61,21 +55,21 @@ public interface IConstructorShape<TDeclaringType, TArgumentState> : IConstructo
     /// <summary>
     /// Creates a delegate wrapping a parameterless constructor, if applicable.
     /// </summary>
-    /// <exception cref="InvalidOperationException">The <see cref="IConstructorShape.ParameterCount"/> of the constructor is not zero.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="IConstructorShape.Parameters"/> property of the constructor is empty.</exception>
     /// <returns>A parameterless delegate creating a default instance of <typeparamref name="TArgumentState"/>.</returns>
     Func<TDeclaringType> GetDefaultConstructor();
 
     /// <summary>
     /// Creates a constructor delegate for creating a default argument state instance.
     /// </summary>
-    /// <exception cref="InvalidOperationException">The <see cref="IConstructorShape.ParameterCount"/> of the constructor is zero.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="IConstructorShape.Parameters"/> property of the constructor is not empty.</exception>
     /// <returns>A delegate for constructing new <typeparamref name="TArgumentState"/> instances.</returns>
     Func<TArgumentState> GetArgumentStateConstructor();
 
     /// <summary>
     /// Creates a constructor delegate parameterized on an argument state object.
     /// </summary>
-    /// <exception cref="InvalidOperationException">The <see cref="IConstructorShape.ParameterCount"/> of the constructor is zero.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="IConstructorShape.Parameters"/> property of the constructor is not empty.</exception>
     /// <returns>A parameterized delegate returning an instance of <typeparamref name="TDeclaringType"/>.</returns>
     Constructor<TArgumentState, TDeclaringType> GetParameterizedConstructor();
 }

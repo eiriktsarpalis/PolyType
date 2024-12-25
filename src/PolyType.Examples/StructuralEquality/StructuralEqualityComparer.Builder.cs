@@ -32,7 +32,7 @@ public static partial class StructuralEqualityComparer
 
             return new ObjectEqualityComparer<T>
             {
-                PropertyComparers = type.GetProperties()
+                PropertyComparers = type.Properties
                     .Where(prop => prop.HasGetter)
                     .Select(prop => (EqualityComparer<T>)prop.Accept(this)!)
                     .ToArray(),

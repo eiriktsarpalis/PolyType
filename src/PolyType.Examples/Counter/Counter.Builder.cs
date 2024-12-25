@@ -12,7 +12,7 @@ public static partial class Counter
 
         public override object? VisitObject<T>(IObjectTypeShape<T> type, object? state)
         {
-            Func<T, long>[] propertyCounters = type.GetProperties()
+            Func<T, long>[] propertyCounters = type.Properties
                 .Where(prop => prop.HasGetter)
                 .Select(prop => (Func<T, long>)prop.Accept(this)!)
                 .ToArray();

@@ -29,19 +29,17 @@ public static partial class ConfigurationBinderTS
         
         public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
         {
-            IConstructorShape? ctorShape = objectShape.GetConstructor();
-            return ctorShape != null
+            return objectShape.Constructor is { } ctorShape
                 ? ctorShape.Accept(this) 
                 : throw new NotSupportedException(typeof(T).ToString());
         }
 
         public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructorShape, object? state = null)
         {
-            if (constructorShape.ParameterCount == 0)
+            if (constructorShape.Parameters is [])
             {
                 Func<TDeclaringType> defaultCtor = constructorShape.GetDefaultConstructor();
-                (string Name, PropertyBinder<TDeclaringType> Binder)[] propertyBinders = constructorShape.DeclaringType
-                    .GetProperties()
+                (string Name, PropertyBinder<TDeclaringType> Binder)[] propertyBinders = constructorShape.DeclaringType.Properties
                     .Where(prop => prop.HasSetter)
                     .Select(prop => (prop.Name, (PropertyBinder<TDeclaringType>)prop.Accept(this)!))
                     .ToArray();
@@ -69,8 +67,7 @@ public static partial class ConfigurationBinderTS
             {
                 Func<TArgumentState> argStateCtor = constructorShape.GetArgumentStateConstructor();
                 Constructor<TArgumentState, TDeclaringType> paramCtor = constructorShape.GetParameterizedConstructor();
-                (string Name, bool IsRequired, PropertyBinder<TArgumentState> Binder)[] paramBinders = constructorShape
-                    .GetParameters()
+                (string Name, bool IsRequired, PropertyBinder<TArgumentState> Binder)[] paramBinders = constructorShape.Parameters
                     .Select(param => (param.Name, param.IsRequired, (PropertyBinder<TArgumentState>)param.Accept(this)!))
                     .ToArray();
 

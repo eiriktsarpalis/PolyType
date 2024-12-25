@@ -25,13 +25,11 @@ public static partial class CborSerializer
 
         public object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state)
         {
-            CborPropertyConverter<T>[] properties = objectShape
-                .GetProperties()
+            CborPropertyConverter<T>[] properties = objectShape.Properties
                 .Select(prop => (CborPropertyConverter<T>)prop.Accept(this)!)
                 .ToArray();
             
-            IConstructorShape? ctor = objectShape.GetConstructor();
-            return ctor != null
+            return objectShape.Constructor is { } ctor
                 ? (CborObjectConverter<T>)ctor.Accept(this, state: properties)!
                 : new CborObjectConverter<T>(properties);
         }
@@ -46,13 +44,12 @@ public static partial class CborSerializer
         {
             var properties = (CborPropertyConverter<TDeclaringType>[])state!;
 
-            if (constructor.ParameterCount == 0)
+            if (constructor.Parameters is [])
             {
                 return new CborObjectConverterWithDefaultCtor<TDeclaringType>(constructor.GetDefaultConstructor(), properties);
             }
 
-            CborPropertyConverter<TArgumentState>[] constructorParams = constructor
-                .GetParameters()
+            CborPropertyConverter<TArgumentState>[] constructorParams = constructor.Parameters
                 .Select(param => (CborPropertyConverter<TArgumentState>)param.Accept(this)!)
                 .ToArray();
 

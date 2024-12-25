@@ -1,7 +1,4 @@
-﻿using System.Reflection;
-using System.Runtime.CompilerServices;
-
-namespace PolyType.ReflectionProvider;
+﻿namespace PolyType.ReflectionProvider;
 
 /// <summary>
 /// Exposes configuration options for the reflection-based type shape provider.

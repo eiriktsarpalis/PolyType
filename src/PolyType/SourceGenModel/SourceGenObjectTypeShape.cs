@@ -34,12 +34,23 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
     /// <inheritdoc/>
     public override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);
 
-    bool IObjectTypeShape.HasProperties => CreatePropertiesFunc is not null;
-    bool IObjectTypeShape.HasConstructor => CreateConstructorFunc is not null;
+    IReadOnlyList<IPropertyShape> IObjectTypeShape.Properties => _properties ??= (CreatePropertiesFunc?.Invoke()).AsReadOnlyList();
+    private IReadOnlyList<IPropertyShape>? _properties;
 
-    IEnumerable<IPropertyShape> IObjectTypeShape.GetProperties() =>
-        CreatePropertiesFunc?.Invoke() ?? [];
+    IConstructorShape? IObjectTypeShape.Constructor
+    {
+        get
+        {
+            if (!_isConstructorResolved)
+            {
+                _constructor = CreateConstructorFunc?.Invoke();
+                Volatile.Write(ref _isConstructorResolved, true);
+            }
 
-    IConstructorShape? IObjectTypeShape.GetConstructor() =>
-        CreateConstructorFunc?.Invoke();
+            return _constructor;
+        }
+    }
+
+    private bool _isConstructorResolved;
+    private IConstructorShape? _constructor;
 }

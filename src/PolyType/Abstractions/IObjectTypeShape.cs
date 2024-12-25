@@ -16,26 +16,16 @@ public interface IObjectTypeShape : ITypeShape
     bool IsTupleType { get; }
 
     /// <summary>
-    /// Gets a value indicating whether the current type defines any property shapes.
-    /// </summary>
-    bool HasProperties { get; }
-
-    /// <summary>
-    /// Gets a value indicating whether the current type includes a constructor shape.
-    /// </summary>
-    bool HasConstructor { get; }
-
-    /// <summary>
     /// Gets all available property/field shapes for the given type.
     /// </summary>
     /// <returns>An enumeration of all available property/field shapes.</returns>
-    IEnumerable<IPropertyShape> GetProperties();
+    IReadOnlyList<IPropertyShape> Properties { get; }
 
     /// <summary>
     /// Gets the constructor shape for the given type, if available.
     /// </summary>
-    /// <returns>A <see cref="IConstructorShape"/> representation of the constructor.</returns>
-    IConstructorShape? GetConstructor();
+    /// <returns>An <see cref="IConstructorShape"/> representation of the constructor.</returns>
+    IConstructorShape? Constructor { get; }
 }
 
 /// <summary>
