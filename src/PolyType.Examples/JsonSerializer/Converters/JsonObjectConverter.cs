@@ -35,7 +35,7 @@ internal class JsonObjectConverter<T>(JsonPropertyConverter<T>[] properties) : J
 
 internal sealed class JsonObjectConverterWithDefaultCtor<T>(Func<T> defaultConstructor, JsonPropertyConverter<T>[] properties) : JsonObjectConverter<T>(properties)
 {
-    private readonly JsonPropertyDictionary<T> _propertiesToRead = properties.Where(prop => prop.HasSetter).ToJsonPropertyDictionary(isCaseSensitive: true);
+    private readonly JsonPropertyDictionary<T> _propertiesToRead = new(properties.Where(prop => prop.HasSetter));
 
     public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
@@ -79,9 +79,7 @@ internal sealed class JsonObjectConverterWithParameterizedCtor<TDeclaringType, T
     JsonPropertyConverter<TArgumentState>[] constructorParameters,
     JsonPropertyConverter<TDeclaringType>[] properties) : JsonObjectConverter<TDeclaringType>(properties)
 {
-    // Use case-insensitive matching for constructor parameters but case-sensitive matching for property setters.
-    private readonly JsonPropertyDictionary<TArgumentState> _constructorParameters = constructorParameters.Where(p => p.IsConstructorParameter).ToJsonPropertyDictionary(isCaseSensitive: false);
-    private readonly JsonPropertyDictionary<TArgumentState> _propertySetters = constructorParameters.Where(p => !p.IsConstructorParameter).ToJsonPropertyDictionary(isCaseSensitive: true);
+    private readonly JsonPropertyDictionary<TArgumentState> _constructorParameters = new(constructorParameters);
 
     public sealed override TDeclaringType? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
@@ -94,14 +92,13 @@ internal sealed class JsonObjectConverterWithParameterizedCtor<TDeclaringType, T
         reader.EnsureRead();
 
         JsonPropertyDictionary<TArgumentState> ctorParams = _constructorParameters;
-        JsonPropertyDictionary<TArgumentState> propertySetters = _propertySetters;
         TArgumentState argumentState = createArgumentState();
 
         while (reader.TokenType != JsonTokenType.EndObject)
         {
             Debug.Assert(reader.TokenType is JsonTokenType.PropertyName);
 
-            JsonPropertyConverter<TArgumentState>? jsonProperty = ctorParams.LookupProperty(ref reader) ?? propertySetters.LookupProperty(ref reader);
+            JsonPropertyConverter<TArgumentState>? jsonProperty = ctorParams.LookupProperty(ref reader);
             reader.EnsureRead();
 
             if (jsonProperty != null)

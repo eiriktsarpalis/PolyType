@@ -313,14 +313,24 @@ public sealed partial class Parser
         {
             foreach (PropertyDataModel property in objectModel.Properties)
             {
+                // Match property names to parameters up to Pascal/camel case conversion.
                 if (SymbolEqualityComparer.Default.Equals(property.PropertyType, parameter.Parameter.Type) &&
-                    // Match property names to parameters up to Pascal/camel case conversion.
-                    CommonHelpers.CamelCaseInvariantComparer.Instance.Equals(parameter.Parameter.Name, property.Name) &&
-                    property.PropertySymbol.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData attributeData &&
-                    attributeData.TryGetNamedArgument("Name", out string? result) && result != null)
+                    CommonHelpers.CamelCaseInvariantComparer.Instance.Equals(parameter.Parameter.Name, property.Name))
                 {
-                    // We have a matching property with a name override, use it in the parameter as well.
-                    name = result;
+                    // We have a matching property, use its name in the parameter.
+                    if (property.PropertySymbol.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData attributeData &&
+                        attributeData.TryGetNamedArgument("Name", out string? result) && result != null)
+                    {
+                        // Resolve the [PropertyShape] attribute name override.
+                        name = result;
+                    }
+                    else
+                    {
+                        // Use the name of the matching property.
+                        name = property.Name;
+                    }
+
+                    break;
                 }
             }
         }

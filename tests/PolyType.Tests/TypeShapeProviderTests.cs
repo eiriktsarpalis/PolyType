@@ -512,7 +512,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
 
                     Assert.Equal(actualParameter.Position, ctorParam.Position);
                     Assert.Equal(actualParameter.GetEffectiveParameterType(), ctorParam.ParameterType.Type);
-                    Assert.Equal(expectedName, ctorParam.Name);
+                    Assert.Equal(expectedName, ctorParam.Name, CommonHelpers.CamelCaseInvariantComparer.Instance);
 
                     bool hasDefaultValue = actualParameter.TryGetDefaultValueNormalized(out object? defaultValue);
                     Assert.Equal(hasDefaultValue, ctorParam.HasDefaultValue);

@@ -284,7 +284,7 @@ internal static partial class RoslynHelpers
     public static bool HasAttribute(this ISymbol symbol, INamedTypeSymbol? attributeType)
         => attributeType != null && symbol.GetAttributes().Any(ad => SymbolEqualityComparer.Default.Equals(ad.AttributeClass, attributeType));
 
-    public static bool TryGetNamedArgument<T>(this AttributeData attributeData, string name, [NotNullWhen(true)] out T? result)
+    public static bool TryGetNamedArgument<T>(this AttributeData attributeData, string name, [MaybeNullWhen(false)] out T? result)
     {
         foreach (KeyValuePair<string, TypedConstant> namedArg in attributeData.NamedArguments)
         {
