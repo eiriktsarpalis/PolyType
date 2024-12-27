@@ -1,15 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Net.Http.Headers;
-using System.Numerics;
+﻿using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace PolyType.Examples.Utilities;
 
@@ -136,8 +129,8 @@ internal static class Helpers
         return RuntimeHelpers.IsReferenceOrContainsReferences<T>();
 #else
         HashSet<Type>? visited = null;
-        return IsReferenceOrContainsReferences(typeof(T));
-        bool IsReferenceOrContainsReferences(Type type)
+        return IsReferenceOrContainsReferencesCore(typeof(T));
+        bool IsReferenceOrContainsReferencesCore(Type type)
         {
             if (!type.IsValueType)
             {
@@ -151,7 +144,7 @@ internal static class Helpers
 
             foreach (FieldInfo field in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             {
-                if (IsReferenceOrContainsReferences(field.FieldType))
+                if (IsReferenceOrContainsReferencesCore(field.FieldType))
                 {
                     return true;
                 }

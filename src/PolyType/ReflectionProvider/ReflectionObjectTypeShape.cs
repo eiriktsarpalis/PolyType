@@ -120,23 +120,22 @@ internal sealed class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider p
         {
             Debug.Assert(!parameter.IsOut, "must have been filtered earlier");
 
+            if (string.IsNullOrEmpty(parameter.Name))
+            {
+                throw new NotSupportedException($"The constructor for type '{parameter.Member.DeclaringType}' has had its parameter names trimmed.");
+            }
+
             Type parameterType = parameter.GetEffectiveParameterType();
             bool isNonNullable = parameter.IsNonNullableAnnotation(nullabilityCtx);
             PropertyShapeInfo? matchingMember = allMembers.FirstOrDefault(member =>
                 member.MemberInfo.GetMemberType() == parameterType &&
                 CommonHelpers.CamelCaseInvariantComparer.Instance.Equals(parameter.Name, member.MemberInfo.Name));
 
-            ParameterShapeAttribute? parameterAttr = parameter.GetCustomAttribute<ParameterShapeAttribute>();
-            string? logicalName = parameterAttr?.Name;
-            if (logicalName is null)
+            string? logicalName = parameter.GetCustomAttribute<ParameterShapeAttribute>()?.Name;
+            if (logicalName is null && matchingMember is not null)
             {
-                if (string.IsNullOrEmpty(parameter.Name))
-                {
-                    throw new NotSupportedException($"The constructor for type '{parameter.Member.DeclaringType}' has had its parameter names trimmed.");
-                }
-
-                // If no custom name is specified, attempt to use the custom name from a matching property.
-                logicalName = matchingMember?.LogicalName;
+                // If no custom name is specified, adopt the name from the matching property.
+                logicalName = matchingMember.LogicalName ?? matchingMember.MemberInfo.Name;
             }
 
             parameterShapeInfos[i++] = new(parameter, isNonNullable, matchingMember?.MemberInfo, logicalName);

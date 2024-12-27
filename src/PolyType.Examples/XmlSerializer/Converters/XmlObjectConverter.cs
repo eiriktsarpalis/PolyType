@@ -81,13 +81,7 @@ internal sealed class XmlObjectConverterWithParameterizedCtor<TDeclaringType, TA
     XmlPropertyConverter<TArgumentState>[] constructorParameters,
     XmlPropertyConverter<TDeclaringType>[] properties) : XmlObjectConverter<TDeclaringType>(properties)
 {
-    // Use case-insensitive matching for constructor parameters but case-sensitive matching for property setters.
     private readonly Dictionary<string, XmlPropertyConverter<TArgumentState>> _constructorParameters = constructorParameters
-        .Where(p => p.IsConstructorParameter)
-        .ToDictionary(param => param.Name, StringComparer.OrdinalIgnoreCase);
-
-    private readonly Dictionary<string, XmlPropertyConverter<TArgumentState>> _propertiesToRead = constructorParameters
-        .Where(p => !p.IsConstructorParameter)
         .ToDictionary(param => param.Name, StringComparer.Ordinal);
 
     public override TDeclaringType? Read(XmlReader reader)
@@ -104,7 +98,6 @@ internal sealed class XmlObjectConverterWithParameterizedCtor<TDeclaringType, TA
         if (!isEmptyElement)
         {
             Dictionary<string, XmlPropertyConverter<TArgumentState>> ctorParams = _constructorParameters;
-            Dictionary<string, XmlPropertyConverter<TArgumentState>> propertiesToRead = _propertiesToRead;
 
             while (reader.NodeType != XmlNodeType.EndElement)
             {
@@ -114,8 +107,7 @@ internal sealed class XmlObjectConverterWithParameterizedCtor<TDeclaringType, TA
                 }
 
                 string key = reader.Name;
-                if (!ctorParams.TryGetValue(key, out XmlPropertyConverter<TArgumentState>? propertyConverter) &&
-                    !propertiesToRead.TryGetValue(key, out propertyConverter))
+                if (!ctorParams.TryGetValue(key, out XmlPropertyConverter<TArgumentState>? propertyConverter))
                 {
                     reader.Skip();
                     continue;

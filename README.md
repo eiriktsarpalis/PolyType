@@ -81,22 +81,22 @@ Here's a [benchmark](https://github.com/eiriktsarpalis/PolyType/blob/main/tests/
 
 #### Serialization
 
-| Method                          | Mean     | Ratio | Allocated | Alloc Ratio |
-|-------------------------------- |---------:|------:|----------:|------------:|
-| Serialize_StjReflection         | 491.9 ns |  1.00 |     312 B |        1.00 |
-| Serialize_StjSourceGen          | 467.0 ns |  0.95 |     312 B |        1.00 |
-| Serialize_StjSourceGen_FastPath | 227.2 ns |  0.46 |         - |        0.00 |
-| Serialize_PolyTypeReflection    | 277.9 ns |  0.57 |         - |        0.00 |
-| Serialize_PolyTypeSourceGen     | 273.6 ns |  0.56 |         - |        0.00 |
+| Method                          | Mean      | Ratio | Allocated | Alloc Ratio |
+|-------------------------------- |----------:|------:|----------:|------------:|
+| Serialize_StjReflection         | 150.43 ns |  1.00 |     312 B |        1.00 |
+| Serialize_StjSourceGen          | 151.31 ns |  1.01 |     312 B |        1.00 |
+| Serialize_StjSourceGen_FastPath |  96.79 ns |  0.64 |         - |        0.00 |
+| Serialize_PolyTypeReflection    | 113.19 ns |  0.75 |         - |        0.00 |
+| Serialize_PolyTypeSourceGen     | 112.92 ns |  0.75 |         - |        0.00 |
 
 #### Deserialization
 
-| Method                          | Mean       | Ratio | Allocated | Alloc Ratio |
-|-------------------------------- |-----------:|------:|----------:|------------:|
-| Deserialize_StjReflection       | 1,593.0 ns |  1.00 |    1024 B |        1.00 |
-| Deserialize_StjSourceGen        | 1,530.3 ns |  0.96 |    1000 B |        0.98 |
-| Deserialize_PolyTypeReflection  |   773.1 ns |  0.49 |     440 B |        0.43 |
-| Deserialize_PolyTypeSourceGen   |   746.7 ns |  0.47 |     440 B |        0.43 |
+| Method                         | Mean     | Ratio | Allocated | Alloc Ratio |
+|------------------------------- |---------:|------:|----------:|------------:|
+| Deserialize_StjReflection      | 534.0 ns |  1.00 |    1016 B |        1.00 |
+| Deserialize_StjSourceGen       | 534.6 ns |  1.00 |     992 B |        0.98 |
+| Deserialize_PolyTypeReflection | 273.1 ns |  0.51 |     440 B |        0.43 |
+| Deserialize_PolyTypeSourceGen  | 266.3 ns |  0.50 |     440 B |        0.43 |
 
 Even though both serializers target the same underlying reader and writer types, the PolyType implementation is ~75% faster for serialization and ~100% faster for deserialization, when compared with System.Text.Json's metadata serializer. As expected, fast-path serialization is still fastest since its implementation is fully inlined.
 

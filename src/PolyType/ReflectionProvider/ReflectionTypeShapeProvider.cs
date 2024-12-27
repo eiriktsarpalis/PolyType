@@ -315,7 +315,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         {
             // Treat non-nested tuples as regular types.
             ConstructorInfo ctorInfo = tupleType.GetConstructors()[0];
-            MethodParameterShapeInfo[] parameters = ctorInfo.GetParameters().Select(p => new MethodParameterShapeInfo(p, isNonNullable: false)).ToArray();
+            MethodParameterShapeInfo[] parameters = ctorInfo.GetParameters().Select((p, i) => new MethodParameterShapeInfo(p, isNonNullable: false, logicalName: $"Item{i + 1}")).ToArray();
             return new MethodConstructorShapeInfo(tupleType, ctorInfo, parameters);
         }
 

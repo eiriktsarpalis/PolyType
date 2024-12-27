@@ -69,13 +69,7 @@ internal sealed class CborObjectConverterWithParameterizedCtor<TDeclaringType, T
     CborPropertyConverter<TArgumentState>[] constructorParameters,
     CborPropertyConverter<TDeclaringType>[] properties) : CborObjectConverter<TDeclaringType>(properties)
 {
-    // Use case-insensitive matching for constructor parameters but case-sensitive matching for property setters.
     private readonly Dictionary<string, CborPropertyConverter<TArgumentState>> _constructorParameters = constructorParameters
-        .Where(prop => prop.IsConstructorParameter)
-        .ToDictionary(prop => prop.Name, StringComparer.OrdinalIgnoreCase);
-
-    private readonly Dictionary<string, CborPropertyConverter<TArgumentState>> _propertySetters = constructorParameters
-        .Where(prop => !prop.IsConstructorParameter)
         .ToDictionary(prop => prop.Name, StringComparer.Ordinal);
 
     public override TDeclaringType? Read(CborReader reader)
@@ -89,13 +83,11 @@ internal sealed class CborObjectConverterWithParameterizedCtor<TDeclaringType, T
         reader.ReadStartMap();
         TArgumentState argumentState = createArgumentState();
         Dictionary<string, CborPropertyConverter<TArgumentState>> ctorParams = _constructorParameters;
-        Dictionary<string, CborPropertyConverter<TArgumentState>> propertySetters = _propertySetters;
 
         while (reader.PeekState() != CborReaderState.EndMap)
         {
             string key = reader.ReadTextString();
-            if (!ctorParams.TryGetValue(key, out CborPropertyConverter<TArgumentState>? propertyConverter) &&
-                !propertySetters.TryGetValue(key, out propertyConverter))
+            if (!ctorParams.TryGetValue(key, out CborPropertyConverter<TArgumentState>? propertyConverter))
             {
                 reader.SkipValue();
                 continue;
