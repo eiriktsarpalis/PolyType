@@ -81,7 +81,7 @@ public sealed partial class Parser
         title: "Type contains invalid marshaller configuration.",
         messageFormat: 
             "The type '{0}' contains invalid marshaller configuration. " +
-            "A valid marshaller must be a public type with a default constructor and exactly one IMarshaller<,> implementation for the current type.",
+            "A valid marshaller must be an internal or public type with a default constructor and exactly one IMarshaller<,> implementation for the current type.",
 
         category: "PolyType.SourceGenerator",
         defaultSeverity: DiagnosticSeverity.Error,
