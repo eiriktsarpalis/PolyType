@@ -40,6 +40,10 @@ internal sealed partial class SourceFormatter
             case NullableShapeModel nullableShapeModel:
                 FormatNullableTypeShapeFactory(writer, generatedFactoryMethodName, nullableShapeModel);
                 break;
+            
+            case SurrogateShapeModel surrogateShapeModel:
+                FormatSurrogateTypeShapeFactory(writer, generatedFactoryMethodName, surrogateShapeModel);
+                break;
 
             case EnumerableShapeModel enumerableShapeModel:
                 FormatEnumerableTypeShapeFactory(writer, generatedFactoryMethodName, enumerableShapeModel);

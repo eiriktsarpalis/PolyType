@@ -24,7 +24,7 @@ public sealed class GenerateShapeAttribute : Attribute;
 /// The source generator will include a static property in the annotated class pointing
 /// to the <see cref="ITypeShapeProvider"/> that was generated for the entire project.
 ///
-/// For projects targeting .NET 8 or later, this will additionally augments the class
+/// For projects targeting .NET 8 or later, this additionally augments the class
 /// with an implementation of IShapeable for <typeparamref name="T"/>.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]

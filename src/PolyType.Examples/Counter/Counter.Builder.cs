@@ -55,6 +55,13 @@ public static partial class Counter
             return new Func<T?, long>(t => t.HasValue ? elementTypeCounter(t.Value) : 0);
         }
 
+        public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
+        {
+            var surrogateCounter = (Func<TSurrogate?, long>)surrogateShape.SurrogateType.Accept(this)!;
+            var marshaller = surrogateShape.Marshaller;
+            return new Func<T?, long>(t => surrogateCounter(marshaller.ToSurrogate(t)));
+        }
+
         public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state)
         {
             Func<TEnumerable, IEnumerable<TElement>> enumerableGetter = enumerableShape.GetGetEnumerable();

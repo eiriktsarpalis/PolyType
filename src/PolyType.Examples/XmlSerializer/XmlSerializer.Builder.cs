@@ -137,6 +137,12 @@ public static partial class XmlSerializer
             return new XmlEnumConverter<TEnum>();
         }
 
+        public object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state)
+        {
+            XmlConverter<TSurrogate> surrogateConverter = GetOrAddConverter(surrogateShape.SurrogateType);
+            return new XmlSurrogateConverter<T, TSurrogate>(surrogateShape.Marshaller, surrogateConverter);
+        }
+
         private static readonly Dictionary<Type, XmlConverter> s_defaultConverters = new XmlConverter[]
         {
             new BoolConverter(),

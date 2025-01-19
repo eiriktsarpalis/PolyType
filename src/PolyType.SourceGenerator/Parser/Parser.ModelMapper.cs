@@ -1,5 +1,4 @@
 ﻿using Microsoft.CodeAnalysis;
-using PolyType.Abstractions;
 using PolyType.Roslyn;
 using PolyType.SourceGenerator.Helpers;
 using PolyType.SourceGenerator.Model;
@@ -25,6 +24,14 @@ public sealed partial class Parser
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
                 ElementType = CreateTypeId(nullableModel.ElementType),
+            },
+            
+            SurrogateTypeDataModel surrogateModel => new SurrogateShapeModel
+            {
+                Type = typeId,
+                SourceIdentifier = sourceIdentifier,
+                SurrogateType = CreateTypeId(surrogateModel.SurrogateType),
+                MarshallerType = CreateTypeId(surrogateModel.MarshallerType),
             },
 
             EnumerableDataModel enumerableModel => new EnumerableShapeModel
@@ -157,14 +164,77 @@ public sealed partial class Parser
     protected override TypeDataModelGenerationStatus MapType(ITypeSymbol type, TypeDataKind? requestedKind, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model)
     {
         Debug.Assert(requestedKind is null);
-        ParseTypeShapeAttribute(type, out TypeShapeKind? requestedTypeShapeKind, out Location? location);
+        ParseTypeShapeAttribute(type, out TypeShapeKind? requestedTypeShapeKind, out ITypeSymbol? marshaller, out Location? location);
+
+        if (marshaller is not null || requestedTypeShapeKind is TypeShapeKind.Surrogate)
+        {
+            return MapSurrogateType(type, marshaller, ref ctx, out model);
+        }
+        
         requestedKind = MapTypeShapeKindToDataKind(requestedTypeShapeKind);
-
         TypeDataModelGenerationStatus status = base.MapType(type, requestedKind, ref ctx, out model);
-
+        
         if (requestedKind is not null && model is { Kind: TypeDataKind actualKind } && requestedKind != actualKind)
         {
             ReportDiagnostic(InvalidTypeShapeKind, location, requestedKind.Value, type.ToDisplayString());
+        }
+
+        return status;
+    }
+
+    private TypeDataModelGenerationStatus MapSurrogateType(ITypeSymbol type, ITypeSymbol? marshaller, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model)
+    {
+        model = null;
+
+        if (marshaller is not INamedTypeSymbol namedMarshaller)
+        {
+            ReportDiagnostic(InvalidMarshaller, type.Locations.FirstOrDefault(), type.ToDisplayString());
+            return TypeDataModelGenerationStatus.UnsupportedType;
+        }
+
+        IMethodSymbol? defaultCtor = marshaller.GetMembers()
+            .OfType<IMethodSymbol>()
+            .FirstOrDefault(method => method is { MethodKind: MethodKind.Constructor, IsStatic: false, Parameters: [] });
+
+        if (defaultCtor is null || !IsAccessibleSymbol(defaultCtor))
+        {
+            ReportDiagnostic(InvalidMarshaller, type.Locations.FirstOrDefault(), type.ToDisplayString());
+            return TypeDataModelGenerationStatus.UnsupportedType;
+        }
+
+        // Check that the surrogate marshaller implements exactly one IMarshaller<,> for the source type.
+        ITypeSymbol? surrogateType = null;
+        foreach (INamedTypeSymbol interfaceType in namedMarshaller.AllInterfaces)
+        {
+            if (interfaceType.IsGenericType &&
+                SymbolEqualityComparer.Default.Equals(interfaceType.OriginalDefinition, _knownSymbols.MarshallerType))
+            {
+                var typeArgs = interfaceType.TypeArguments;
+                if (SymbolEqualityComparer.Default.Equals(typeArgs[0], type))
+                {
+                    if (surrogateType is not null)
+                    {
+                        // We have conflicting implementations.
+                        ReportDiagnostic(InvalidMarshaller, type.Locations.FirstOrDefault(), type.ToDisplayString());
+                        return TypeDataModelGenerationStatus.UnsupportedType;
+                    }
+
+                    surrogateType = typeArgs[1];
+                }
+            }
+        }
+
+        if (surrogateType is null)
+        {
+            ReportDiagnostic(InvalidMarshaller, type.Locations.FirstOrDefault(), type.ToDisplayString());
+            return TypeDataModelGenerationStatus.UnsupportedType;
+        }
+
+        // Generate the shape for the surrogate type.
+        TypeDataModelGenerationStatus status = IncludeNestedType(surrogateType, ref ctx);
+        if (status is TypeDataModelGenerationStatus.Success)
+        {
+            model = new SurrogateTypeDataModel { Type = type, SurrogateType = surrogateType, MarshallerType = marshaller };
         }
 
         return status;
@@ -418,9 +488,14 @@ public sealed partial class Parser
         }
     }
 
-    private void ParseTypeShapeAttribute(ITypeSymbol typeSymbol, out TypeShapeKind? kind, out Location? location)
+    private void ParseTypeShapeAttribute(
+        ITypeSymbol typeSymbol,
+        out TypeShapeKind? kind,
+        out ITypeSymbol? marshaller,
+        out Location? location)
     {
         kind = null;
+        marshaller = null;
         location = null;
 
         if (typeSymbol.GetAttribute(_knownSymbols.TypeShapeAttribute) is AttributeData propertyAttr)
@@ -433,6 +508,9 @@ public sealed partial class Parser
                     case "Kind":
                         kind = (TypeShapeKind)namedArgument.Value.Value!;
                         break;
+                    case "Marshaller":
+                        marshaller = namedArgument.Value.Value as ITypeSymbol;
+                        break;
                 }
             }
         }
@@ -440,6 +518,7 @@ public sealed partial class Parser
 
     private static TypeDataKind? MapTypeShapeKindToDataKind(TypeShapeKind? kind)
     {
+        Debug.Assert(kind is not TypeShapeKind.Surrogate);
         return kind switch
         {
             null => null,

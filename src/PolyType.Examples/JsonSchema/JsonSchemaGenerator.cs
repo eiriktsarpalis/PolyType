@@ -86,6 +86,9 @@ public static class JsonSchemaGenerator
                 case INullableTypeShape nullableShape:
                     schema = GenerateSchema(nullableShape.ElementType, cacheLocation: false);
                     break;
+                
+                case ISurrogateTypeShape surrogateShape:
+                    return GenerateSchema(surrogateShape.SurrogateType, cacheLocation: false);
 
                 case IEnumerableTypeShape enumerableShape:
                     for (int i = 0; i < enumerableShape.Rank; i++)

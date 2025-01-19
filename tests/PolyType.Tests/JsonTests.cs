@@ -319,6 +319,20 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         string json = converter.Serialize(value);
         Assert.Equal(ExpectedJson, json);
     }
+    
+    [Fact]
+    public void Roundtrip_ClassWithMarshaller()
+    {
+        const string ExpectedJson = "\"the actual value\"";
+        var converter = JsonSerializerTS.CreateConverter<TypeWithStringSurrogate>(providerUnderTest.Provider);
+
+        TypeWithStringSurrogate value = new("the actual value");
+        string json = converter.Serialize(value);
+        Assert.Equal(ExpectedJson, json);
+        
+        TypeWithStringSurrogate? deserializedValue = converter.Deserialize(json);
+        Assert.Equal(value, deserializedValue);
+    }
 
     [Fact]
     public void ClassWithInitOnlyProperties_MissingPayloadPreservesDefaultValues()
@@ -359,6 +373,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         value.IsLongTuple ||
         value.HasRefConstructorParameters ||
         value.CustomKind is not null ||
+        value.UsesMarshaller ||
         value.Value is DerivedClassWithVirtualProperties; // https://github.com/dotnet/runtime/issues/96996
 }
 

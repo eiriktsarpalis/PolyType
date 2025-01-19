@@ -22,6 +22,9 @@ public sealed class PolyTypeKnownSymbols(Compilation compilation) : KnownSymbols
 
     public INamedTypeSymbol? ParameterShapeAttribute => GetOrResolveType("PolyType.ParameterShapeAttribute", ref _ParameterShapeAttribute);
     private Option<INamedTypeSymbol?> _ParameterShapeAttribute;
+    
+    public INamedTypeSymbol? MarshallerType => GetOrResolveType("PolyType.IMarshaller`2", ref _Marshaller);
+    private Option<INamedTypeSymbol?> _Marshaller;
 
     public TargetFramework TargetFramework => _targetFramework ??= ResolveTargetFramework();
     private TargetFramework? _targetFramework;

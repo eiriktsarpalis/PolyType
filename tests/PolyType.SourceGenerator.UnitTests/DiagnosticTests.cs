@@ -271,7 +271,7 @@ public static class DiagnosticTests
             partial class Default
             {
             }
-            """, parseOptions: parseOptions);
+            """, parseOptions: parseOptions, nullableContextOptions: NullableContextOptions.Disable);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
 
@@ -307,7 +307,6 @@ public static class DiagnosticTests
     {
         Compilation compilation = CompilationHelpers.CreateCompilation($"""
             using PolyType;
-            using PolyType.Abstractions;
 
             [TypeShape(Kind = TypeShapeKind.{kind})]
             class MyPoco;
@@ -322,8 +321,8 @@ public static class DiagnosticTests
 
         Assert.Equal("TS0009", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
-        Assert.Equal((3, 1), diagnostic.Location.GetStartPosition());
-        Assert.Equal(3, diagnostic.Location.GetEndPosition().startLine);
+        Assert.Equal((2, 1), diagnostic.Location.GetStartPosition());
+        Assert.Equal(2, diagnostic.Location.GetEndPosition().startLine);
     }
 
     [Theory]
@@ -333,7 +332,6 @@ public static class DiagnosticTests
     {
         Compilation compilation = CompilationHelpers.CreateCompilation($"""
             using PolyType;
-            using PolyType.Abstractions;
             using System.Collections.Generic;
 
             [TypeShape(Kind = TypeShapeKind.{kind})]
@@ -349,8 +347,8 @@ public static class DiagnosticTests
 
         Assert.Equal("TS0009", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
-        Assert.Equal((4, 1), diagnostic.Location.GetStartPosition());
-        Assert.Equal(4, diagnostic.Location.GetEndPosition().startLine);
+        Assert.Equal((3, 1), diagnostic.Location.GetStartPosition());
+        Assert.Equal(3, diagnostic.Location.GetEndPosition().startLine);
     }
 
     [Theory]
@@ -361,7 +359,6 @@ public static class DiagnosticTests
     {
         Compilation compilation = CompilationHelpers.CreateCompilation($"""
             using PolyType;
-            using PolyType.Abstractions;
             using System.Collections.Generic;
 
             [TypeShape(Kind = TypeShapeKind.{kind})]
@@ -377,8 +374,8 @@ public static class DiagnosticTests
 
         Assert.Equal("TS0009", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
-        Assert.Equal((4, 1), diagnostic.Location.GetStartPosition());
-        Assert.Equal(4, diagnostic.Location.GetEndPosition().startLine);
+        Assert.Equal((3, 1), diagnostic.Location.GetStartPosition());
+        Assert.Equal(3, diagnostic.Location.GetEndPosition().startLine);
     }
 
     [Theory]
@@ -388,7 +385,6 @@ public static class DiagnosticTests
     {
         Compilation compilation = CompilationHelpers.CreateCompilation($"""
             using PolyType;
-            using PolyType.Abstractions;
 
             [TypeShape(Kind = TypeShapeKind.{kind})]
             class MyPoco;
@@ -411,7 +407,6 @@ public static class DiagnosticTests
     {
         Compilation compilation = CompilationHelpers.CreateCompilation($"""
             using PolyType;
-            using PolyType.Abstractions;
             using System.Collections.Generic;
 
             [TypeShape(Kind = TypeShapeKind.{kind})]
@@ -434,7 +429,6 @@ public static class DiagnosticTests
     {
         Compilation compilation = CompilationHelpers.CreateCompilation($"""
             using PolyType;
-            using PolyType.Abstractions;
             using System.Collections.Generic;
 
             [TypeShape(Kind = TypeShapeKind.{kind})]
@@ -446,6 +440,112 @@ public static class DiagnosticTests
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
 
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Theory]
+    [InlineData("""
+        using PolyType;
+
+        [GenerateShape, TypeShape(Marshaller = typeof(int))]
+        partial class MyPoco;
+        """)]
+    [InlineData("""
+        using PolyType;
+
+        [GenerateShape, TypeShape(Kind = TypeShapeKind.Surrogate)]
+        partial class MyPoco;
+        """)]
+    [InlineData("""
+        using PolyType;
+        
+        [GenerateShape, TypeShape(Marshaller = typeof(Marshaller))]
+        partial class MyPoco
+        {
+            private class Marshaller : IMarshaller<MyPoco, object>
+            {
+                public object? ToSurrogate(MyPoco? source) => source;
+                public MyPoco? FromSurrogate(object? value) => (MyPoco?)value;
+            }
+        }
+        """)]
+     [InlineData("""
+         using PolyType;
+
+         [GenerateShape, TypeShape(Marshaller = typeof(Marshaller))]
+         public partial class MyPoco
+         {
+             public class Marshaller : IMarshaller<MyPoco, object>
+             {
+                 private Marshaller() { }
+                 public object? ToSurrogate(MyPoco? source) => source;
+                 public MyPoco? FromSurrogate(object? value) => (MyPoco?)value;
+             }
+         }
+         """)]
+    [InlineData("""
+        using PolyType;
+
+        [GenerateShape, TypeShape(Marshaller = typeof(Marshaller))]
+        public partial class MyPoco
+        {
+            public class Marshaller : IMarshaller<int, object>
+            {
+                public object? ToSurrogate(int source) => null;
+                public int FromSurrogate(object? value) => 0;
+            }
+        }
+        """)]
+    [InlineData("""
+        using PolyType;
+
+        [GenerateShape, TypeShape(Marshaller = typeof(Marshaller))]
+        public partial class MyPoco
+        {
+            public class Marshaller : 
+                IMarshaller<MyPoco, object>,
+                IMarshaller<MyPoco, int>
+            {
+                public object? ToSurrogate(MyPoco? source) => null;
+                public MyPoco? FromSurrogate(object? value) => null;
+                int IMarshaller<MyPoco, int>.ToSurrogate(MyPoco? source) => 0;
+                MyPoco? IMarshaller<MyPoco, int>.FromSurrogate(int value) => null;
+            }
+        }
+        """)]
+    public static void InvalidMarshaller_ErrorDiagnostic(string source)
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation(source);
+        Assert.Empty(compilation.GetDiagnostics());
+
+        PolyTypeSourceGeneratorResult result =
+            CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic? diagnostic = result.Diagnostics.SingleOrDefault(d => d.Id == "TS0010");
+        Assert.NotNull(diagnostic);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+    }
+
+    [Fact]
+    public static void ValidMarshaller_NoDiagnostic()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+            
+            [GenerateShape, TypeShape(Marshaller = typeof(Marshaller))]
+            public partial class MyPoco
+            {
+                public class Marshaller : IMarshaller<MyPoco, object>
+                {
+                    public object? ToSurrogate(MyPoco? source) => source;
+                    public MyPoco? FromSurrogate(object? value) => (MyPoco?)value;
+                }
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result =
+            CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        
         Assert.Empty(result.Diagnostics);
     }
 }

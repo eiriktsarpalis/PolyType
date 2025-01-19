@@ -254,6 +254,13 @@ public static partial class ConfigurationBinderTS
             }
         }
 
+        public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
+        {
+            Func<IConfiguration, TSurrogate?> surrogateBinder = GetOrAddBinder(surrogateShape.SurrogateType);
+            var marshaller = surrogateShape.Marshaller;
+            return new Func<IConfiguration, T?>(configuration => marshaller.FromSurrogate(surrogateBinder(configuration)));
+        }
+
         public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state = null)
         {
             Func<IConfiguration, T> elementBinder = GetOrAddBinder(nullableShape.ElementType);

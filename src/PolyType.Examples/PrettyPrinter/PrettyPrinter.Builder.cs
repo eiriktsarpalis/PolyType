@@ -196,6 +196,13 @@ public static partial class PrettyPrinter
             });
         }
 
+        public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
+        {
+            PrettyPrinter<TSurrogate> surrogatePrinter = GetOrAddPrettyPrinter(surrogateShape.SurrogateType);
+            var marshaller = surrogateShape.Marshaller;
+            return new PrettyPrinter<T>((sb, indentation, t) => surrogatePrinter(sb, indentation, marshaller.ToSurrogate(t)));
+        }
+
         private static void WriteLine(StringBuilder builder, int indentation)
         {
             builder.AppendLine();

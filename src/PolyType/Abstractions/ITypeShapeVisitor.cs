@@ -86,4 +86,14 @@ public interface ITypeShapeVisitor
     /// <returns>The result produced by the visitor.</returns>
     object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
         where TKey : notnull;
+
+    /// <summary>
+    /// Visits an <see cref="ISurrogateTypeShape{T, TSurrogate}"/> instance representing a type employing a surrogate type.
+    /// </summary>
+    /// <typeparam name="T">The type represented by the shape instance.</typeparam>
+    /// <typeparam name="TSurrogate">The surrogate type used by the shape.</typeparam>
+    /// <param name="surrogateShape">The surrogate shape to visit.</param>
+    /// <param name="state">Defines user-provided state.</param>
+    /// <returns>The result produced by the visitor.</returns>
+    object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null);
 }

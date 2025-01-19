@@ -141,6 +141,12 @@ public static partial class CborSerializer
             return new CborEnumConverter<TEnum>();
         }
 
+        public object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state)
+        {
+            CborConverter<TSurrogate> surrogateConverter = GetOrAddConverter(surrogateShape.SurrogateType);
+            return new CborSurrogateConverter<T, TSurrogate>(surrogateShape.Marshaller, surrogateConverter);
+        }
+
         private static readonly Dictionary<Type, CborConverter> s_builtInConverters = new CborConverter[]
         {
             new BoolConverter(),

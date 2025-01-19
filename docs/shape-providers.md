@@ -78,6 +78,63 @@ ITypeShapeProvider provider = new ReflectionTypeShapeProvider(useReflectionEmit:
 
 PolyType exposes a number of attributes that tweak aspects of the generated shape. These attributes are recognized both by the source generator and the reflection provider.
 
+### TypeShapeAttribute
+
+The `TypeShape` attribute can be applied on type declarations to customize their generated shapes. It is independent of the `GenerateShape` attribute since it doesn't trigger the source generator and is recognized by the reflection-based provider.
+
+The `Kind` property can be used to override the default shape kind for a particular type:
+
+```C#
+[TypeShape(Kind = TypeShapeKind.Object)]
+class MyList : List<int>
+{
+    public int Value { get; set; }
+}
+```
+
+The above will instruct the providers to generate an object shape as opposed to an enumerable shape that is the default. It can also be used to completely disable any nested member resolution for a given type:
+
+```C#
+[TypeShape(Kind = TypeShapeKind.None)]
+record MyPoco(int Value);
+```
+
+#### Surrogate types
+
+The `TypeShape` attribute can also be used to specify marshallers to surrogate types:
+
+```C#
+[TypeShape(Marshaller = typeof(EnvelopeMarshaller))]
+record Envelope(string Value);
+
+class EnvelopeMarshaller : IMarshaller<Envelope, string>
+{
+    public string? ToSurrogate(Envelope? envelope) => envelope?.Value;
+    public Envelope FromSurrogate(string? surrogateString) => new(surrogateString ?? "");
+}
+```
+
+The above configures `Envelope` to admit a string-based shape using the specified surrogate representation. In other words, it assumes a string schema instead of that of an object. Surrogates are used as a more versatile alternative compared to format-specific converters.
+
+In the following example, we marshal the internal state of an object to a surrogate struct:
+
+```C#
+[TypeShape(Marshaller = typeof(Marshaller))]
+public class PocoWithInternalState(int value1, string value2)
+{
+    private readonly _value1 = value1;
+    private readonly _value2 = value2;
+
+    public record struct Surrogate(int Value1, string Value2);
+
+    public sealed class Marshaller : IMarshaller<PocoWithInternalState, Surrogate>
+    {
+        public Surrogate ToSurrogate(PocoWithInternalState? poco) => poco is null ? default : new(poco._value1, poco._value2);
+        public PocoWithInternalState FromSurrogate(Surrogate surrogate) => new(poco._value1, poco._value2 ?? "");
+    }
+}
+```
+
 ### PropertyShapeAttribute
 
 Configures aspects of a generated property shape, for example:

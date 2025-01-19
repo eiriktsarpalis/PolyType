@@ -24,8 +24,8 @@ public static class CompilationTests
 
                 public bool Bool { get; }
                 public string String { get; }
-                public List<int> List { get; set; }
-                public Dictionary<string, int> Dict { get; set; }
+                public List<int>? List { get; set; }
+                public Dictionary<string, int>? Dict { get; set; }
 
             #if NET8_0_OR_GREATER
                 public static PolyType.Abstractions.ITypeShape<MyPoco> Test()
@@ -419,7 +419,6 @@ public static class CompilationTests
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
-            using PolyType.Abstractions;
 
             [GenerateShape, TypeShape(Kind = TypeShapeKind.None)]
             public partial record ObjectAsNone(string Name, int Age);

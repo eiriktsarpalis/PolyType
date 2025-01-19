@@ -39,6 +39,11 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
                 nullableElementSchema.Remove("type");
                 Assert.True(JsonNode.DeepEquals(nullableElementSchema, schema));
                 break;
+            
+            case ISurrogateTypeShape surrogateShape:
+                JsonObject surrogateSchema = JsonSchemaGenerator.Generate(surrogateShape.SurrogateType);
+                Assert.True(JsonNode.DeepEquals(surrogateSchema, schema));
+                break;
 
             case IEnumerableTypeShape enumerableShape:
                 if (enumerableShape.Type == typeof(byte[]))

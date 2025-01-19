@@ -75,4 +75,15 @@ public sealed partial class Parser
         category: "PolyType.SourceGenerator",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+    
+    private static DiagnosticDescriptor InvalidMarshaller { get; } = new DiagnosticDescriptor(
+        id: "TS0010",
+        title: "Type contains invalid marshaller configuration.",
+        messageFormat: 
+            "The type '{0}' contains invalid marshaller configuration. " +
+            "A valid marshaller must be a public type with a default constructor and exactly one IMarshaller<,> implementation for the current type.",
+
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
 }
