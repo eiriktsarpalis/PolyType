@@ -45,7 +45,8 @@ public static class CompilationHelpers
         MetadataReference[]? additionalReferences = null,
         string assemblyName = "TestAssembly",
         CSharpParseOptions? parseOptions = null,
-        OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
+        OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary,
+        NullableContextOptions nullableContextOptions = NullableContextOptions.Enable)
     {
         parseOptions ??= s_defaultParseOptions;
         additionalReferences ??= [];
@@ -81,12 +82,12 @@ public static class CompilationHelpers
             MetadataReference.CreateFromFile(typeof(PolyType.Abstractions.ITypeShape).Assembly.Location),
             .. additionalReferences,
         ];
-
+        
         return CSharpCompilation.Create(
             assemblyName,
             syntaxTrees: syntaxTrees,
             references: references,
-            options: new CSharpCompilationOptions(outputKind)
+            options: new CSharpCompilationOptions(outputKind, nullableContextOptions: nullableContextOptions)
         );
     }
 

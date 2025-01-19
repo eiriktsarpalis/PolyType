@@ -92,7 +92,7 @@ public partial class TypeDataModelGenerator
     {
         if (location is not null && !KnownSymbols.Compilation.ContainsLocation(location))
         {
-            // If the location is outside of the current compilation,
+            // If the location is outside the current compilation,
             // fall back to the default location for the generator.
             location = DefaultLocation;
         }
@@ -260,7 +260,7 @@ public partial class TypeDataModelGenerator
             return status;
         }
 
-    None:
+        None:
         // A supported type of unrecognized kind, do not include any metadata.
         model = new TypeDataModel { Type = type };
         return TypeDataModelGenerationStatus.Success;

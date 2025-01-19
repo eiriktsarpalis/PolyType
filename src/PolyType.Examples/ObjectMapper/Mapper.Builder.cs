@@ -78,6 +78,13 @@ public static partial class Mapper
             return targetNullable.Accept(visitor, state: nullableShape);
         }
 
+        public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
+        {
+            var targetShape = (ISurrogateTypeShape)state!;
+            var visitor = new SurrogateScopedVisitor<T, TSurrogate>(this);
+            return targetShape.Accept(visitor, state: surrogateShape);
+        }
+
         public override object? VisitEnumerable<TSource, TSourceElement>(IEnumerableTypeShape<TSource, TSourceElement> enumerableShape, object? state)
         {
             var targetEnumerable = (IEnumerableTypeShape)state!;
@@ -212,6 +219,18 @@ public static partial class Mapper
                 var sourceNullable = (INullableTypeShape<TSourceElement>)state!;
                 var elementMapper = baseVisitor.GetOrAddMapper(sourceNullable.ElementType, nullableShape.ElementType);
                 return new Mapper<TSourceElement?, TTargetElement?>(source => source is null ? null : elementMapper(source.Value));
+            }
+        }
+
+        private sealed class SurrogateScopedVisitor<T1, TSurrogate1>(Builder baseVisitor) : TypeShapeVisitor
+        {
+            public override object? VisitSurrogate<T2, TSurrogate2>(ISurrogateTypeShape<T2, TSurrogate2> targetShape, object? state = null)
+            {
+                var sourceShape = (ISurrogateTypeShape<T1, TSurrogate1>)state!;
+                var surrogateMapper = baseVisitor.GetOrAddMapper(sourceShape.SurrogateType, targetShape.SurrogateType);
+                var leftMarshaller = sourceShape.Marshaller;
+                var rightMarshaller = targetShape.Marshaller;
+                return new Mapper<T1, T2>(source => rightMarshaller.FromSurrogate(surrogateMapper(leftMarshaller.ToSurrogate(source))));
             }
         }
 

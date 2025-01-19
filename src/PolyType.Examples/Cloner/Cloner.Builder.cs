@@ -269,6 +269,13 @@ public static partial class Cloner
             return new Func<T?, T?>(t => t.HasValue ? elementCloner(t.Value) : null);
         }
 
+        public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? _)
+        {
+            var marshaller = surrogateShape.Marshaller;
+            var surrogateCloner = GetOrAddCloner(surrogateShape.SurrogateType);
+            return new Func<T?, T?>(t => marshaller.FromSurrogate(surrogateCloner(marshaller.ToSurrogate(t))));
+        }
+
         private static IEnumerable<KeyValuePair<Type, object>> GetBuiltInCloners()
         {
             yield return Create<string>(str => str);

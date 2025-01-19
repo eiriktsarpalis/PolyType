@@ -1,7 +1,11 @@
-﻿namespace PolyType.Abstractions;
+﻿#if IS_MAIN_POLYTYPE_PROJECT
+using PolyType.Abstractions;
+#endif
+
+namespace PolyType;
 
 /// <summary>
-/// Defines kinds of an <see cref="ITypeShape"/> instance.
+/// Defines kinds of an <see cref="ITypeShape{T}"/> instance.
 /// </summary>
 #if IS_MAIN_POLYTYPE_PROJECT
 public
@@ -39,4 +43,9 @@ enum TypeShapeKind
     /// Shape represents a dictionary type using <see cref="IDictionaryTypeShape"/>.
     /// </summary>
     Dictionary = 5,
+
+    /// <summary>
+    /// Shape that maps to a surrogate type using <see cref="ISurrogateTypeShape"/>.
+    /// </summary>
+    Surrogate = 6,
 }

@@ -156,6 +156,16 @@ public static partial class Validator
             return null; // Nothing to validate for enums.
         }
 
+        public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
+        {
+            var surrogateValidator = GetOrAddValidator(surrogateShape.SurrogateType);
+            var marshaller = surrogateShape.Marshaller;
+
+            return surrogateValidator is null ? null : 
+                new Validator<T>((T? value, List<string> path, ref List<string>? errors) => 
+                    surrogateValidator(marshaller.ToSurrogate(value), path, ref errors));
+        }
+
         /// <summary>
         /// Creates a trivial validator that always succeeds.
         /// </summary>

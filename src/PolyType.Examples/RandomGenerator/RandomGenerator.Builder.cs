@@ -316,6 +316,13 @@ public partial class RandomGenerator
             });
         }
 
+        public object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state)
+        {
+            IMarshaller<T, TSurrogate> marshaller = surrogateShape.Marshaller;
+            RandomGenerator<TSurrogate> surrogateGenerator = GetOrAddGenerator(surrogateShape.SurrogateType);
+            return new RandomGenerator<T>((Random random, int size) => marshaller.FromSurrogate(surrogateGenerator(random, size))!);
+        }
+
         private static IEnumerable<KeyValuePair<Type, (object Generator, RandomGenerator<object?> BoxingGenerator)>> CreateDefaultGenerators()
         {
             yield return Create((random, _) => NextBoolean(random));

@@ -21,8 +21,8 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         
         Assert.Equal(typeof(T), shape.Type);
         Assert.Equal(typeof(T), shape.AttributeProvider);
-        Assert.Equal(typeof(T).IsRecordType(), shape is IObjectTypeShape { IsRecordType: true});
-        Assert.Equal(typeof(T).IsTupleType(), shape is IObjectTypeShape { IsTupleType: true });
+        Assert.Equal(typeof(T).IsRecordType() && !testCase.UsesMarshaller, shape is IObjectTypeShape { IsRecordType: true});
+        Assert.Equal(typeof(T).IsTupleType() && !testCase.UsesMarshaller, shape is IObjectTypeShape { IsTupleType: true });
         
         Assert.NotNull(shape.Provider);
         Assert.Same(shape, shape.Provider.GetShape(shape.Type));
@@ -39,6 +39,11 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             if (testCase.CustomKind is { } kind and not TypeShapeKind.None)
             {
                 return kind;
+            }
+
+            if (testCase.UsesMarshaller)
+            {
+                return TypeShapeKind.Surrogate;
             }
 
             if (typeof(T).IsEnum)
@@ -244,6 +249,37 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             var type = (Type)state!;
             Assert.Equal(typeof(T?), type);
             Assert.Equal(typeof(T), nullableShape.ElementType.Type);
+            return null;
+        }
+    }
+    
+    [Theory]
+    [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
+    public void GetSurrogateType<T>(TestCase<T> testCase)
+    {
+        ITypeShape<T> shape = providerUnderTest.ResolveShape(testCase);
+
+        if (shape.Kind is TypeShapeKind.Surrogate)
+        {
+            ISurrogateTypeShape surrogateShape = Assert.IsAssignableFrom<ISurrogateTypeShape>(shape);
+            var visitor = new SurrogateTestVisitor();
+            surrogateShape.Accept(visitor);
+        }
+        else
+        {
+            Assert.False(shape is ISurrogateTypeShape);
+        }
+    }
+
+    private sealed class SurrogateTestVisitor : TypeShapeVisitor
+    {
+        public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
+        {
+            Type? marshaller = typeof(T).GetCustomAttribute<TypeShapeAttribute>()?.Marshaller;
+            Assert.Equal(typeof(T), surrogateShape.Type);
+            Assert.Equal(typeof(TSurrogate), surrogateShape.SurrogateType.Type);
+            Assert.NotNull(marshaller);
+            Assert.IsType(marshaller, surrogateShape.Marshaller);
             return null;
         }
     }
@@ -663,6 +699,7 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
     [InlineData(typeof(EnumerableWithDictionaryKind))]
     [InlineData(typeof(EnumerableWithEnumKind))]
     [InlineData(typeof(DictionaryWithNullableKind))]
+    [InlineData(typeof(ClassWithSurrogateKind))]
     public void TypesWithInvalidTypeShapeKindAnnotations_ThrowsNotSupportedException(Type type)
     {
         NotSupportedException ex = Assert.Throws<NotSupportedException>(() => Provider.GetShape(type));
@@ -689,6 +726,45 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
 
     [TypeShape(Kind = TypeShapeKind.Nullable)]
     private class DictionaryWithNullableKind : Dictionary<int, int>;
+
+    [TypeShape(Kind = TypeShapeKind.Surrogate)]
+    private class ClassWithSurrogateKind;
+
+    [Theory]
+    [InlineData(typeof(ClassWithInvalidMarshaller))]
+    [InlineData(typeof(ClassWithMismatchingMarshaller))]
+    [InlineData(typeof(ClassWithConflictingMarshallers))]
+    public void ClassWithInvalidMarshallers_ThrowsInvalidOperationException(Type type)
+    {
+        var ex = Assert.Throws<InvalidOperationException>(() => Provider.GetShape(type));
+        Assert.Contains("surrogate", ex.Message);
+    }
+
+    [TypeShape(Marshaller = typeof(int))]
+    private class ClassWithInvalidMarshaller;
+    
+    [TypeShape(Marshaller = typeof(Marshaller))]
+    private class ClassWithMismatchingMarshaller
+    {
+        class Marshaller : IMarshaller<int, ClassWithMismatchingMarshaller>
+        {
+            public ClassWithMismatchingMarshaller? ToSurrogate(int value) => throw new NotImplementedException();
+            public int FromSurrogate(ClassWithMismatchingMarshaller? surrogate) => throw new NotImplementedException();
+        }
+    }
+
+    [TypeShape(Marshaller = typeof(Marshaller))]
+    private class ClassWithConflictingMarshallers
+    {
+        class Marshaller : IMarshaller<ClassWithConflictingMarshallers, int>,
+              IMarshaller<ClassWithConflictingMarshallers, string>
+        {
+            public int ToSurrogate(ClassWithConflictingMarshallers? value) => throw new NotImplementedException();
+            public ClassWithConflictingMarshallers? FromSurrogate(string? surrogate) => throw new NotImplementedException();
+            public ClassWithConflictingMarshallers? FromSurrogate(int surrogate) => throw new NotImplementedException();
+            string? IMarshaller<ClassWithConflictingMarshallers, string>.ToSurrogate(ClassWithConflictingMarshallers? value) => throw new NotImplementedException();
+        }
+    }
 }
 
 public sealed class TypeShapeProviderTests_SourceGen() : TypeShapeProviderTests(SourceGenProviderUnderTest.Default)

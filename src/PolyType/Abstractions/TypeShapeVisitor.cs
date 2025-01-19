@@ -95,6 +95,17 @@ public abstract class TypeShapeVisitor : ITypeShapeVisitor
         where TKey : notnull
         => ThrowNotImplemented(nameof(VisitDictionary));
 
+    /// <summary>
+    /// Visits an <see cref="ISurrogateTypeShape{T, TSurrogate}"/> instance representing a type employing a surrogate type.
+    /// </summary>
+    /// <typeparam name="T">The type represented by the shape instance.</typeparam>
+    /// <typeparam name="TSurrogate">The surrogate type used by the shape.</typeparam>
+    /// <param name="surrogateShape">The surrogate shape to visit.</param>
+    /// <param name="state">Defines user-provided state.</param>
+    /// <returns>The result produced by the visitor.</returns>
+    public virtual object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
+        => ThrowNotImplemented(nameof(VisitSurrogate));
+
     private object? ThrowNotImplemented(string methodName)
         => throw new NotImplementedException($"The visitor method {GetType().Name}.{methodName} has not been implemented.");
 }

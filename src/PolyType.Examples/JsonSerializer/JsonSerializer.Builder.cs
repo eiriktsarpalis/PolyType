@@ -153,6 +153,12 @@ public static partial class JsonSerializerTS
             return converter.CreateConverter(typeof(TEnum), s_options);
         }
 
+        public object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state)
+        {
+            JsonConverter<TSurrogate> surrogateConverter = GetOrAddConverter(surrogateShape.SurrogateType);
+            return new JsonSurrogateConverter<T, TSurrogate>(surrogateShape.Marshaller, surrogateConverter);
+        }
+
         private static readonly Dictionary<Type, JsonConverter> s_defaultConverters = new JsonConverter[]
         {
             JsonMetadataServices.BooleanConverter,

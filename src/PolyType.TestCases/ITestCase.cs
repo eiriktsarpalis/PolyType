@@ -66,6 +66,11 @@ public interface ITestCase
     /// Gets a value indicating whether the type is an abstract class or an interface.
     /// </summary>
     public bool IsAbstract { get; }
+    
+    /// <summary>
+    /// Gets a value indicating whether the type is defined with a surrogate marshaller.
+    /// </summary>
+    public bool UsesMarshaller { get; } 
 
     /// <summary>
     /// Gets the value specified in <see cref="TypeShapeAttribute.Kind"/>.

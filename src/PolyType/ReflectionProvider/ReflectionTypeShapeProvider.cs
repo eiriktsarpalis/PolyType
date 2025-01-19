@@ -100,13 +100,14 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             throw new ArgumentException("Type cannot be a generic parameter", nameof(type));
         }
 
-        return DetermineTypeKind(type) switch
+        return DetermineTypeKind(type, out TypeShapeAttribute? typeShapeAttribute) switch
         {
           TypeShapeKind.Enumerable => CreateEnumerableShape(type),
           TypeShapeKind.Dictionary => CreateDictionaryShape(type),
           TypeShapeKind.Enum => CreateEnumShape(type),
           TypeShapeKind.Nullable => CreateNullableShape(type),
           TypeShapeKind.Object => CreateObjectShape(type, disableMemberResolution: false),
+          TypeShapeKind.Surrogate => CreateSurrogateShape(type, typeShapeAttribute),
           TypeShapeKind.None or _ => CreateObjectShape(type, disableMemberResolution: true),
         };
     }
@@ -115,6 +116,40 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
     {
         Type objectShapeTy = typeof(ReflectionObjectTypeShape<>).MakeGenericType(type);
         return (ITypeShape)Activator.CreateInstance(objectShapeTy, this, disableMemberResolution)!;
+    }
+
+    private ITypeShape CreateSurrogateShape(Type type, TypeShapeAttribute? typeShapeAttribute)
+    {
+        Type? marshallerType = typeShapeAttribute?.Marshaller;
+        DebugExt.Assert(marshallerType != null);
+
+        // First check that the marshaller implements exactly one IMarshaller<,> for the source type.
+        Type? matchingSurrogate = null;
+        foreach (Type interfaceType in marshallerType.GetAllInterfaces())
+        {
+            if (interfaceType.IsGenericType && interfaceType.GetGenericTypeDefinition() == typeof(IMarshaller<,>))
+            {
+                Type[] genericArgs = interfaceType.GetGenericArguments();
+                if (genericArgs[0] == type)
+                {
+                    if (matchingSurrogate != null)
+                    {
+                        throw new InvalidOperationException($"The type '{marshallerType}' defines conflicting surrogate marshallers from type '{type}'.");
+                    }
+
+                    matchingSurrogate = genericArgs[1];
+                }
+            }
+        }
+
+        if (matchingSurrogate is null)
+        {
+            throw new InvalidOperationException($"The type '{marshallerType}' does not define any surrogate marshallers from type '{type}'.");
+        }
+
+        object bijection = Activator.CreateInstance(marshallerType)!;
+        Type surrogateTypeShapeTy = typeof(ReflectionSurrogateTypeShape<,>).MakeGenericType(type, matchingSurrogate);
+        return (ITypeShape)Activator.CreateInstance(surrogateTypeShapeTy, bijection, this)!;
     }
 
     private IEnumerableTypeShape CreateEnumerableShape(Type type)
@@ -213,11 +248,12 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         return (INullableTypeShape)Activator.CreateInstance(nullableTypeTy, this)!;
     }
 
-    private static TypeShapeKind DetermineTypeKind(Type type)
+    private static TypeShapeKind DetermineTypeKind(Type type, out TypeShapeAttribute? typeShapeAttribute)
     {
-        TypeShapeKind builtInKind = DetermineBuiltInTypeKind(type);
+        typeShapeAttribute = type.GetCustomAttribute<TypeShapeAttribute>();
+        TypeShapeKind builtInKind = DetermineBuiltInTypeKind(type, typeShapeAttribute);
 
-        if (type.GetCustomAttribute<TypeShapeAttribute>()?.GetRequestedKind() is TypeShapeKind requestedKind)
+        if (typeShapeAttribute?.GetRequestedKind() is TypeShapeKind requestedKind)
         {
             Debug.Assert(
                 builtInKind is TypeShapeKind.Dictionary or TypeShapeKind.Enumerable or TypeShapeKind.Object,
@@ -225,7 +261,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
             bool isCustomKindSupported = requestedKind switch
             {
-                TypeShapeKind.Enum or TypeShapeKind.Nullable => false,
+                TypeShapeKind.Enum or TypeShapeKind.Nullable or TypeShapeKind.Surrogate => false,
                 TypeShapeKind.Dictionary => builtInKind is TypeShapeKind.Dictionary,
                 TypeShapeKind.Enumerable => builtInKind is TypeShapeKind.Dictionary or TypeShapeKind.Enumerable,
                 TypeShapeKind.Object or TypeShapeKind.None or _ => true,
@@ -242,8 +278,13 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         return builtInKind;
     }
 
-    private static TypeShapeKind DetermineBuiltInTypeKind(Type type)
+    private static TypeShapeKind DetermineBuiltInTypeKind(Type type, TypeShapeAttribute? typeShapeAttribute)
     {
+        if (typeShapeAttribute?.Marshaller is not null)
+        {
+            return TypeShapeKind.Surrogate;
+        }
+
         if (type.IsEnum)
         {
             return TypeShapeKind.Enum;
