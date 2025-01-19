@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace PolyType;
 
 /// <summary>
@@ -17,6 +19,7 @@ public interface IMarshaller<T, TSurrogate>
     /// </summary>
     /// <param name="value">The input of type <typeparamref name="T"/>.</param>
     /// <returns>A value of type <typeparamref name="TSurrogate"/> corresponding to <paramref name="value"/>.</returns>
+    [return: NotNullIfNotNull(nameof(value))]
     TSurrogate? ToSurrogate(T? value);
 
     /// <summary>
@@ -24,5 +27,6 @@ public interface IMarshaller<T, TSurrogate>
     /// </summary>
     /// <param name="surrogate">The input of type <typeparamref name="TSurrogate"/>.</param>
     /// <returns>A value of type <typeparamref name="T"/> corresponding to <paramref name="surrogate"/>.</returns>
+    [return: NotNullIfNotNull(nameof(surrogate))]
     T? FromSurrogate(TSurrogate? surrogate);
 }
