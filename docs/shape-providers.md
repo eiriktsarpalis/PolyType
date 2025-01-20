@@ -110,7 +110,7 @@ record Envelope(string Value);
 class EnvelopeMarshaller : IMarshaller<Envelope, string>
 {
     public string? ToSurrogate(Envelope? envelope) => envelope?.Value;
-    public Envelope FromSurrogate(string? surrogateString) => new(surrogateString ?? "");
+    public Envelope? FromSurrogate(string? surrogateString) => surrogateString is null ? null : new(surrogateString);
 }
 ```
 
@@ -122,15 +122,15 @@ In the following example, we marshal the internal state of an object to a surrog
 [TypeShape(Marshaller = typeof(Marshaller))]
 public class PocoWithInternalState(int value1, string value2)
 {
-    private readonly _value1 = value1;
-    private readonly _value2 = value2;
+    private readonly int _value1 = value1;
+    private readonly string _value2 = value2;
 
     public record struct Surrogate(int Value1, string Value2);
 
     public sealed class Marshaller : IMarshaller<PocoWithInternalState, Surrogate>
     {
         public Surrogate ToSurrogate(PocoWithInternalState? poco) => poco is null ? default : new(poco._value1, poco._value2);
-        public PocoWithInternalState FromSurrogate(Surrogate surrogate) => new(poco._value1, poco._value2 ?? "");
+        public PocoWithInternalState FromSurrogate(Surrogate surrogate) => new(surrogate._value1, surrogate._value2 ?? "");
     }
 }
 ```
