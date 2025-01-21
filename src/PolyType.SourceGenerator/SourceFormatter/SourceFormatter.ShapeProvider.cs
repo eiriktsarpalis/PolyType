@@ -13,6 +13,7 @@ internal sealed partial class SourceFormatter
 
         writer.WriteLine("""/// <summary>The source generated <see cref="global::PolyType.SourceGenModel.SourceGenTypeShapeProvider"/> implementation for the current assembly.</summary>""");
         writer.WriteLine($"""[global::System.CodeDom.Compiler.GeneratedCodeAttribute({FormatStringLiteral(PolyTypeGenerator.SourceGeneratorName)}, {FormatStringLiteral(PolyTypeGenerator.SourceGeneratorVersion)})]""");
+        writer.WriteLine("[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute]");
         writer.WriteLine($"{provider.ProviderDeclaration.TypeDeclarationHeader} : global::PolyType.SourceGenModel.SourceGenTypeShapeProvider");
         writer.WriteLine('{');
         writer.Indentation++;
@@ -93,7 +94,7 @@ internal sealed partial class SourceFormatter
     {
         var writer = new SourceWriter();
         StartFormatSourceFile(writer, typeDeclaration);
-
+        writer.WriteLine("[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute]");
         writer.WriteLine($$"""
             {{typeDeclaration.TypeDeclarationHeader}}
             {
