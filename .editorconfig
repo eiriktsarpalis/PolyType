@@ -9,6 +9,8 @@ indent_style = space
 
 [*.cs]
 
+dotnet_sort_system_directives_first = false
+
 # CA1000: Do not declare static members on generic types
 dotnet_diagnostic.CA1000.severity = none
 
