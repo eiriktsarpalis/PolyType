@@ -99,7 +99,7 @@ internal sealed partial class SourceFormatter
             {
                 string suffix = typeArgIndex + 1 < generatedType.TypeArguments.Length ? " &&" : ")";
                 writer.WriteLine($$"""
-                        genericTypeArguments[{{typeArgIndex}}] == typeof({{generatedType.TypeArguments.Span[typeArgIndex].FullyQualifiedName}}){{suffix}}
+                        genericTypeArguments[{{typeArgIndex}}] == typeof({{generatedType.TypeArguments[typeArgIndex].FullyQualifiedName}}){{suffix}}
                     """);
             }
 

@@ -11,11 +11,11 @@ public sealed partial class Parser
     private TypeShapeModel MapModel(TypeDataModel model, TypeId typeId, string sourceIdentifier)
     {
         TypeId unboundGenericType = default;
-        ReadOnlyMemory<TypeId> typeArguments = default;
+        ImmutableEquatableArray<TypeId> typeArguments = ImmutableEquatableArray<TypeId>.Empty;
         if (model.Type is INamedTypeSymbol { IsGenericType: true } namedType)
         {
             unboundGenericType = CreateTypeId(namedType.ConstructUnboundGenericType());
-            typeArguments = namedType.TypeArguments.Select(CreateTypeId).ToArray();
+            typeArguments = namedType.TypeArguments.Select(CreateTypeId).ToImmutableEquatableArray();
         }
 
         return model switch
