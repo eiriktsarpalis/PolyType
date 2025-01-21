@@ -208,7 +208,7 @@ public static class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
-    
+
     [Fact]
     public static void EnumGeneration_NoErrors()
     {
@@ -220,6 +220,28 @@ public static class CompilationTests
 
            [GenerateShape<MyEnum>]
            partial class Witness { }
+           """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void MyRemainingTest()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+           using PolyType;
+
+           public class GenericContainer<T>
+           {
+               public class Inner
+               {
+                   public T? Value { get; set; }
+               }
+            }
+
+           [GenerateShape<GenericContainer<string>.Inner>]
+           partial class Witness;
            """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -427,7 +449,7 @@ public static class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
-    
+
     [Fact]
     public static void TupleTypes_NoErrors()
     {
@@ -443,7 +465,7 @@ public static class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
-    
+
     [Fact]
     public static void NullableTypes_NoErrors()
     {
@@ -459,7 +481,7 @@ public static class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
-    
+
     [Fact]
     public static void EnumerableTypes_NoErrors()
     {
@@ -487,7 +509,7 @@ public static class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
-    
+
     [Fact]
     public static void DictionaryTypes_NoErrors()
     {
@@ -577,11 +599,11 @@ public static class CompilationTests
                 int x0 = 0, int x1 = 1, int x2 = 2, int x3 = 3, int x4 = 4, int x5 = 5, int x6 = 5,
                 int x7 = 7, int x8 = 8, string x9 = "str", LargeClassRecord? nested = null);                                                                                                                      
             """);
-        
+
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
-    
+
     [Fact]
     public static void NullabilityAttributes_NoErrors()
     {
@@ -645,7 +667,7 @@ public static class CompilationTests
                 public string? DisallowNullField = "str";
             }                                                                                                         
             """);
-        
+
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }

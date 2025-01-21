@@ -18,12 +18,12 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
     public void TypeShapeReportsExpectedInfo<T>(TestCase<T> testCase)
     {
         ITypeShape<T> shape = providerUnderTest.ResolveShape(testCase);
-        
+
         Assert.Equal(typeof(T), shape.Type);
         Assert.Equal(typeof(T), shape.AttributeProvider);
-        Assert.Equal(typeof(T).IsRecordType() && !testCase.UsesMarshaller, shape is IObjectTypeShape { IsRecordType: true});
+        Assert.Equal(typeof(T).IsRecordType() && !testCase.UsesMarshaller, shape is IObjectTypeShape { IsRecordType: true });
         Assert.Equal(typeof(T).IsTupleType() && !testCase.UsesMarshaller, shape is IObjectTypeShape { IsTupleType: true });
-        
+
         Assert.NotNull(shape.Provider);
         Assert.Same(shape, shape.Provider.GetShape(shape.Type));
         if (providerUnderTest.Provider != null)
@@ -33,6 +33,18 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
 
         TypeShapeKind expectedKind = GetExpectedTypeKind(testCase);
         Assert.Equal(expectedKind, shape.Kind);
+
+        if (shape.Type.IsGenericType)
+        {
+            ITypeShape? shapeFromGenericOverload = shape.Provider.GetShape(
+                shape.Type.GetGenericTypeDefinition(),
+                shape.Type.GenericTypeArguments);
+            Assert.Same(shape, shapeFromGenericOverload);
+        }
+        else
+        {
+            Assert.Throws<ArgumentException>(() => shape.Provider.GetShape(shape.Type, default));
+        }
 
         static TypeShapeKind GetExpectedTypeKind(TestCase<T> testCase)
         {
@@ -131,7 +143,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         {
             return;
         }
-        
+
         var visitor = new ConstructorTestVisitor();
         if (objectShape.Constructor is { } ctor)
         {
@@ -151,7 +163,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             {
                 Assert.Throws<InvalidOperationException>(() => constructor.GetArgumentStateConstructor());
                 Assert.Throws<InvalidOperationException>(() => constructor.GetParameterizedConstructor());
-                
+
                 var defaultCtor = constructor.GetDefaultConstructor();
                 TDeclaringType defaultValue = defaultCtor();
                 Assert.NotNull(defaultValue);
@@ -159,7 +171,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             else
             {
                 Assert.Throws<InvalidOperationException>(() => constructor.GetDefaultConstructor());
-                
+
                 int i = 0;
                 TArgumentState argumentState = constructor.GetArgumentStateConstructor().Invoke();
                 foreach (IConstructorParameterShape parameter in constructor.Parameters)
@@ -177,7 +189,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                     Assert.NotNull(value);
                 }
             }
-            
+
             return null;
         }
 
@@ -252,7 +264,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             return null;
         }
     }
-    
+
     [Theory]
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
     public void GetSurrogateType<T>(TestCase<T> testCase)
@@ -742,7 +754,7 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
 
     [TypeShape(Marshaller = typeof(int))]
     private class ClassWithInvalidMarshaller;
-    
+
     [TypeShape(Marshaller = typeof(Marshaller))]
     private class ClassWithMismatchingMarshaller
     {

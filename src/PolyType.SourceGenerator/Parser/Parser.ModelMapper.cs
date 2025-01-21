@@ -10,6 +10,14 @@ public sealed partial class Parser
 {
     private TypeShapeModel MapModel(TypeDataModel model, TypeId typeId, string sourceIdentifier)
     {
+        TypeId unboundGenericType = default;
+        ReadOnlyMemory<TypeId> typeArguments = default;
+        if (model.Type is INamedTypeSymbol { IsGenericType: true } namedType)
+        {
+            unboundGenericType = CreateTypeId(namedType.ConstructUnboundGenericType());
+            typeArguments = namedType.TypeArguments.Select(CreateTypeId).ToArray();
+        }
+
         return model switch
         {
             EnumDataModel enumModel => new EnumShapeModel
@@ -24,14 +32,18 @@ public sealed partial class Parser
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
                 ElementType = CreateTypeId(nullableModel.ElementType),
+                UnboundGenericType = unboundGenericType,
+                TypeArguments = typeArguments,
             },
-            
+
             SurrogateTypeDataModel surrogateModel => new SurrogateShapeModel
             {
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
                 SurrogateType = CreateTypeId(surrogateModel.SurrogateType),
                 MarshallerType = CreateTypeId(surrogateModel.MarshallerType),
+                UnboundGenericType = unboundGenericType,
+                TypeArguments = typeArguments,
             },
 
             EnumerableDataModel enumerableModel => new EnumerableShapeModel
@@ -46,31 +58,34 @@ public sealed partial class Parser
 
                     CollectionModelConstructionStrategy.Mutable => CollectionConstructionStrategy.Mutable,
                     CollectionModelConstructionStrategy.Span => CollectionConstructionStrategy.Span,
-                    CollectionModelConstructionStrategy.List => 
-                        IsFactoryAcceptingIEnumerable(enumerableModel.FactoryMethod) 
-                        ? CollectionConstructionStrategy.Enumerable 
+                    CollectionModelConstructionStrategy.List =>
+                        IsFactoryAcceptingIEnumerable(enumerableModel.FactoryMethod)
+                        ? CollectionConstructionStrategy.Enumerable
                         : CollectionConstructionStrategy.Span,
 
                     _ => CollectionConstructionStrategy.None,
                 },
 
                 AddElementMethod = enumerableModel.AddElementMethod?.Name,
-                ImplementationTypeFQN = 
+                ImplementationTypeFQN =
                     enumerableModel.ConstructionStrategy is CollectionModelConstructionStrategy.Mutable &&
-                    enumerableModel.FactoryMethod is { IsStatic: false, ContainingType: INamedTypeSymbol implType } && 
+                    enumerableModel.FactoryMethod is { IsStatic: false, ContainingType: INamedTypeSymbol implType } &&
                     !SymbolEqualityComparer.Default.Equals(implType, enumerableModel.Type)
 
                     ? implType.GetFullyQualifiedName()
                     : null,
 
                 StaticFactoryMethod = enumerableModel.FactoryMethod is { IsStatic: true } m ? m.GetFullyQualifiedName() : null,
-                CtorRequiresListConversion = 
+                CtorRequiresListConversion =
                     enumerableModel.ConstructionStrategy is CollectionModelConstructionStrategy.List &&
                     !IsFactoryAcceptingIEnumerable(enumerableModel.FactoryMethod),
 
                 Kind = enumerableModel.EnumerableKind,
                 Rank = enumerableModel.Rank,
                 ElementTypeContainsNullableAnnotations = enumerableModel.ElementType.ContainsNullabilityAnnotations(),
+
+                UnboundGenericType = unboundGenericType,
+                TypeArguments = typeArguments,
             },
 
             DictionaryDataModel dictionaryModel => new DictionaryShapeModel
@@ -106,9 +121,12 @@ public sealed partial class Parser
                 CtorRequiresDictionaryConversion =
                     dictionaryModel.ConstructionStrategy is CollectionModelConstructionStrategy.Dictionary &&
                     !IsFactoryAcceptingIEnumerable(dictionaryModel.FactoryMethod),
-                KeyValueTypesContainNullableAnnotations = 
+                KeyValueTypesContainNullableAnnotations =
                     dictionaryModel.KeyType.ContainsNullabilityAnnotations() ||
                     dictionaryModel.ValueType.ContainsNullabilityAnnotations(),
+
+                UnboundGenericType = unboundGenericType,
+                TypeArguments = typeArguments,
             },
 
             ObjectDataModel objectModel => new ObjectShapeModel
@@ -127,6 +145,9 @@ public sealed partial class Parser
                 IsValueTupleType = false,
                 IsTupleType = false,
                 IsRecordType = model.Type.IsRecord,
+
+                UnboundGenericType = unboundGenericType,
+                TypeArguments = typeArguments,
             },
 
             TupleDataModel tupleModel => new ObjectShapeModel
@@ -141,10 +162,12 @@ public sealed partial class Parser
                 IsValueTupleType = tupleModel.IsValueTuple,
                 IsTupleType = true,
                 IsRecordType = false,
+                UnboundGenericType = unboundGenericType,
+                TypeArguments = typeArguments,
             },
 
             _ => new ObjectShapeModel
-            { 
+            {
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
                 Constructor = null,
@@ -152,6 +175,8 @@ public sealed partial class Parser
                 IsValueTupleType = false,
                 IsTupleType = false,
                 IsRecordType = false,
+                UnboundGenericType = unboundGenericType,
+                TypeArguments = typeArguments,
             }
         };
 
@@ -170,10 +195,10 @@ public sealed partial class Parser
         {
             return MapSurrogateType(type, marshaller, ref ctx, out model);
         }
-        
+
         requestedKind = MapTypeShapeKindToDataKind(requestedTypeShapeKind);
         TypeDataModelGenerationStatus status = base.MapType(type, requestedKind, ref ctx, out model);
-        
+
         if (requestedKind is not null && model is { Kind: TypeDataKind actualKind } && requestedKind != actualKind)
         {
             ReportDiagnostic(InvalidTypeShapeKind, location, requestedKind.Value, type.ToDisplayString());
@@ -246,7 +271,7 @@ public sealed partial class Parser
 
         bool emitGetter = property.IncludeGetter;
         bool emitSetter = property.IncludeSetter && !property.IsInitOnly;
-        
+
         return new PropertyShapeModel
         {
             Name = isClassTupleType ? $"Item{tupleElementIndex + 1}" : propertyName ?? property.Name,
@@ -283,7 +308,7 @@ public sealed partial class Parser
         int position = constructor.Parameters.Length;
         List<ConstructorParameterShapeModel>? requiredMembers = null;
         List<ConstructorParameterShapeModel>? optionalMembers = null;
-        
+
         bool isAccessibleConstructor = IsAccessibleSymbol(constructor.Constructor);
         bool isParameterizedConstructor = position > 0 || constructor.MemberInitializers.Any(p => p.IsRequired || p.IsInitOnly);
         IEnumerable<PropertyDataModel> memberInitializers = isParameterizedConstructor
@@ -358,7 +383,7 @@ public sealed partial class Parser
 
             StaticFactoryName = constructor.Constructor.IsStatic ? constructor.Constructor.GetFullyQualifiedName() : null,
             IsPublic = constructor.Constructor.DeclaredAccessibility is Accessibility.Public,
-            CanUseUnsafeAccessors = _knownSymbols.TargetFramework switch 
+            CanUseUnsafeAccessors = _knownSymbols.TargetFramework switch
             {
                 // .NET 8 or later supports unsafe accessors for properties of non-generic types.
                 var tfm when tfm >= TargetFramework.Net80 => !constructor.DeclaringType.IsGenericType,
@@ -459,7 +484,7 @@ public sealed partial class Parser
                 IsAccessible = true,
                 CanUseUnsafeAccessors = false,
                 IsPublic = true,
-            };   
+            };
         }
 
         static ConstructorParameterShapeModel MapTupleConstructorParameter(TypeId typeId, PropertyDataModel tupleElement, int position)

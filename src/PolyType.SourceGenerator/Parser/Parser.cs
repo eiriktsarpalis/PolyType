@@ -19,7 +19,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         CommonHelpers.CreateTupleComparer<ITypeSymbol, string>(
             SymbolEqualityComparer.Default,
             CommonHelpers.CamelCaseInvariantComparer.Instance);
-    
+
     private readonly PolyTypeKnownSymbols _knownSymbols;
 
     // We want to flatten System.Tuple types for consistency with
@@ -100,9 +100,9 @@ public sealed partial class Parser : TypeDataModelGenerator
         HashSet<(ITypeSymbol, string)> readOnlyProperties = new(
             properties
                 .Where(p => !p.IncludeSetter)
-                .Select(p => (p.PropertyType, p.Name)), 
+                .Select(p => (p.PropertyType, p.Name)),
             s_ctorParamComparer);
-            
+
         return constructors
             .OrderByDescending(ctor =>
             {
@@ -113,7 +113,7 @@ public sealed partial class Parser : TypeDataModelGenerator
             .Take(1);
     }
 
-    private Parser(ISymbol generationScope, PolyTypeKnownSymbols knownSymbols, CancellationToken cancellationToken) 
+    private Parser(ISymbol generationScope, PolyTypeKnownSymbols knownSymbols, CancellationToken cancellationToken)
         : base(generationScope, knownSymbols, cancellationToken)
     {
         _knownSymbols = knownSymbols;
@@ -335,6 +335,16 @@ public sealed partial class Parser : TypeDataModelGenerator
 
     private static TypeId CreateTypeId(ITypeSymbol type)
     {
+        if (type is INamedTypeSymbol { IsUnboundGenericType: true, OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullableType)
+        {
+            return new TypeId
+            {
+                FullyQualifiedName = "System.Nullable<>",
+                IsValueType = true,
+                SpecialType = SpecialType.System_Nullable_T,
+            };
+        }
+
         return new TypeId
         {
             FullyQualifiedName = type.GetFullyQualifiedName(),

@@ -31,7 +31,8 @@ internal sealed partial class SourceFormatter
             """);
 
         writer.WriteLine();
-        FormatGetShapeProviderMethod(provider, writer);
+        FormatGetShapeMethod(provider, writer);
+        FormatGetShapeUnboundGenericMethod(provider, writer);
 
         writer.Indentation--;
         writer.WriteLine('}');
@@ -40,7 +41,7 @@ internal sealed partial class SourceFormatter
         return writer.ToSourceText();
     }
 
-    private static void FormatGetShapeProviderMethod(TypeShapeProviderModel provider, SourceWriter writer)
+    private static void FormatGetShapeMethod(TypeShapeProviderModel provider, SourceWriter writer)
     {
         writer.WriteLine("""
             /// <inheritdoc/>
@@ -56,6 +57,56 @@ internal sealed partial class SourceFormatter
                 if (type == typeof({{generatedType.Type.FullyQualifiedName}}))
                 {
                     return {{generatedType.SourceIdentifier}};
+                }
+
+                """);
+        }
+
+        writer.WriteLine("return null;");
+        writer.Indentation--;
+        writer.WriteLine('}');
+    }
+
+    private static void FormatGetShapeUnboundGenericMethod(TypeShapeProviderModel provider, SourceWriter writer)
+    {
+        writer.WriteLine("""
+            /// <inheritdoc/>
+            public override global::PolyType.Abstractions.ITypeShape? GetShape(global::System.Type unboundGenericType, global::System.ReadOnlySpan<global::System.Type> genericTypeArguments)
+            {
+            """);
+
+        writer.Indentation++;
+
+        writer.WriteLine("""
+            if (unboundGenericType is null) throw new global::System.ArgumentNullException(nameof(unboundGenericType));
+            if (!unboundGenericType.IsGenericType) throw new global::System.ArgumentException("Open generic type required.", nameof(unboundGenericType));
+            """);
+
+        foreach (TypeShapeModel generatedType in provider.ProvidedTypes.Values)
+        {
+            if (generatedType.TypeArguments.Length == 0)
+            {
+                continue;
+            }
+
+            writer.WriteLine($$"""
+                if (unboundGenericType == typeof({{generatedType.UnboundGenericType.FullyQualifiedName}}) && genericTypeArguments.Length == {{generatedType.TypeArguments.Length}})
+                {
+                    if (
+                """);
+
+            for (int typeArgIndex = 0; typeArgIndex < generatedType.TypeArguments.Length; typeArgIndex++)
+            {
+                string suffix = typeArgIndex + 1 < generatedType.TypeArguments.Length ? " &&" : ")";
+                writer.WriteLine($$"""
+                        genericTypeArguments[{{typeArgIndex}}] == typeof({{generatedType.TypeArguments.Span[typeArgIndex].FullyQualifiedName}}){{suffix}}
+                    """);
+            }
+
+            writer.WriteLine($$"""
+                    {
+                        return {{generatedType.SourceIdentifier}};
+                    }
                 }
 
                 """);
