@@ -129,25 +129,17 @@ internal static partial class RoslynHelpers
         type is INamedTypeSymbol { IsGenericType: true, IsDefinition: true };
 
     // Gets all type arguments, including the ones specified by containing types in order of nesting.
-    public static ITypeSymbol[] GetRecursiveTypeArguments(this ITypeSymbol type)
+    public static ITypeSymbol[] GetRecursiveTypeArguments(this INamedTypeSymbol type)
     {
-        if (type is not INamedTypeSymbol { IsGenericType: true } namedType)
-        {
-            return [];
-        }
-
         List<ITypeSymbol> typeArguments = [];
-        GetAllTypeArgumentsCore(namedType);
+        GetAllTypeArgumentsCore(type);
         return typeArguments.ToArray();
 
         void GetAllTypeArgumentsCore(INamedTypeSymbol type)
         {
-            if (!type.IsGenericType)
-            {
-                return;
-            }
-            
-            if (type.ContainingType is { } containingType)
+            Debug.Assert(type.IsGenericType);
+
+            if (type.ContainingType is { IsGenericType: true } containingType)
             {
                 GetAllTypeArgumentsCore(containingType);
             }

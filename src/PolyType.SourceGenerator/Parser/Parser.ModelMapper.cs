@@ -195,7 +195,7 @@ public sealed partial class Parser
         {
             // If the marshaller type is an unbound generic,
             // apply type arguments from the declaring type.
-            ITypeSymbol[] typeArgs = type.GetRecursiveTypeArguments();
+            ITypeSymbol[] typeArgs = ((INamedTypeSymbol)type).GetRecursiveTypeArguments();
             INamedTypeSymbol? specializedMarshaller = namedMarshaller.OriginalDefinition.ConstructRecursive(typeArgs);
             if (specializedMarshaller is null)
             {
