@@ -123,6 +123,12 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         Type? marshallerType = typeShapeAttribute?.Marshaller;
         DebugExt.Assert(marshallerType != null);
 
+        if (marshallerType.IsGenericTypeDefinition)
+        {
+            // Generic marshallers are applied the type parameters from the declaring type.
+            marshallerType = marshallerType.MakeGenericType(type.GetGenericArguments());
+        }
+
         // First check that the marshaller implements exactly one IMarshaller<,> for the source type.
         Type? matchingSurrogate = null;
         foreach (Type interfaceType in marshallerType.GetAllInterfaces())

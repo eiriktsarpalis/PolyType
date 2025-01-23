@@ -125,9 +125,74 @@ internal static partial class RoslynHelpers
         return $"{methodSymbol.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}.{methodSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}";
     }
 
-    public static bool IsGenericTypeDefinition(this ITypeSymbol type)
-        => type is INamedTypeSymbol { IsGenericType: true } namedType && 
-           SymbolEqualityComparer.Default.Equals(namedType.OriginalDefinition, type);
+    public static bool IsGenericTypeDefinition(this ITypeSymbol type) =>
+        type is INamedTypeSymbol { IsGenericType: true, IsDefinition: true };
+
+    // Gets all type arguments, including the ones specified by containing types in order of nesting.
+    public static ITypeSymbol[] GetRecursiveTypeArguments(this ITypeSymbol type)
+    {
+        if (type is not INamedTypeSymbol { IsGenericType: true } namedType)
+        {
+            return [];
+        }
+
+        List<ITypeSymbol> typeArguments = [];
+        GetAllTypeArgumentsCore(namedType);
+        return typeArguments.ToArray();
+
+        void GetAllTypeArgumentsCore(INamedTypeSymbol type)
+        {
+            if (!type.IsGenericType)
+            {
+                return;
+            }
+            
+            if (type.ContainingType is { } containingType)
+            {
+                GetAllTypeArgumentsCore(containingType);
+            }
+            
+            typeArguments.AddRange(type.TypeArguments);
+        }
+    }
+
+    // Applies the type arguments to the type, working recursively on container types that may also be generic.
+    // Returns null if there is a mismatch between the number of parameters and the combined arity of the generic type.
+    public static INamedTypeSymbol? ConstructRecursive(this INamedTypeSymbol typeDefinition, ReadOnlySpan<ITypeSymbol> typeArguments)
+    {
+        INamedTypeSymbol? result = ConstructRecursiveCore(typeDefinition, ref typeArguments);
+        return typeArguments.IsEmpty ? result : null;
+
+        static INamedTypeSymbol? ConstructRecursiveCore(INamedTypeSymbol typeDefinition, ref ReadOnlySpan<ITypeSymbol> remainingTypeArgs)
+        {
+            Debug.Assert(typeDefinition.IsGenericTypeDefinition());
+            
+            if (typeDefinition.ContainingType?.IsGenericTypeDefinition() is true)
+            {
+                INamedTypeSymbol? specializedContainingType = ConstructRecursiveCore(typeDefinition.ContainingType, ref remainingTypeArgs);
+                if (specializedContainingType is null)
+                {
+                    return null;
+                }
+                
+                typeDefinition = specializedContainingType.GetTypeMembers().First(t => t.Name == typeDefinition.Name && t.Arity == typeDefinition.Arity);
+            }
+
+            if (remainingTypeArgs.Length < typeDefinition.Arity)
+            {
+                return null;
+            }
+            
+            if (typeDefinition.Arity is 0)
+            {
+                return typeDefinition;
+            }
+
+            ITypeSymbol[] args = remainingTypeArgs[.. typeDefinition.Arity].ToArray();
+            remainingTypeArgs = remainingTypeArgs[typeDefinition.Arity ..];
+            return typeDefinition.Construct(args);
+        }
+    }
 
     public static IPropertySymbol GetBaseProperty(this IPropertySymbol property)
     {

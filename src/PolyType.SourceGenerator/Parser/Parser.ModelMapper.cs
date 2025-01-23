@@ -188,18 +188,30 @@ public sealed partial class Parser
 
         if (marshaller is not INamedTypeSymbol namedMarshaller)
         {
-            ReportDiagnostic(InvalidMarshaller, type.Locations.FirstOrDefault(), type.ToDisplayString());
-            return TypeDataModelGenerationStatus.UnsupportedType;
+            return ReportInvalidMarshallerAndExit();
         }
 
-        IMethodSymbol? defaultCtor = marshaller.GetMembers()
+        if (namedMarshaller.IsUnboundGenericType)
+        {
+            // If the marshaller type is an unbound generic,
+            // apply type arguments from the declaring type.
+            ITypeSymbol[] typeArgs = type.GetRecursiveTypeArguments();
+            INamedTypeSymbol? specializedMarshaller = namedMarshaller.OriginalDefinition.ConstructRecursive(typeArgs);
+            if (specializedMarshaller is null)
+            {
+                return ReportInvalidMarshallerAndExit();
+            }
+
+            namedMarshaller = specializedMarshaller;
+        }
+
+        IMethodSymbol? defaultCtor = namedMarshaller.GetMembers()
             .OfType<IMethodSymbol>()
             .FirstOrDefault(method => method is { MethodKind: MethodKind.Constructor, IsStatic: false, Parameters: [] });
 
         if (defaultCtor is null || !IsAccessibleSymbol(defaultCtor))
         {
-            ReportDiagnostic(InvalidMarshaller, type.Locations.FirstOrDefault(), type.ToDisplayString());
-            return TypeDataModelGenerationStatus.UnsupportedType;
+            return ReportInvalidMarshallerAndExit();
         }
 
         // Check that the surrogate marshaller implements exactly one IMarshaller<,> for the source type.
@@ -215,8 +227,7 @@ public sealed partial class Parser
                     if (surrogateType is not null)
                     {
                         // We have conflicting implementations.
-                        ReportDiagnostic(InvalidMarshaller, type.Locations.FirstOrDefault(), type.ToDisplayString());
-                        return TypeDataModelGenerationStatus.UnsupportedType;
+                        return ReportInvalidMarshallerAndExit();
                     }
 
                     surrogateType = typeArgs[1];
@@ -226,18 +237,23 @@ public sealed partial class Parser
 
         if (surrogateType is null)
         {
-            ReportDiagnostic(InvalidMarshaller, type.Locations.FirstOrDefault(), type.ToDisplayString());
-            return TypeDataModelGenerationStatus.UnsupportedType;
+            return ReportInvalidMarshallerAndExit();
         }
 
         // Generate the shape for the surrogate type.
         TypeDataModelGenerationStatus status = IncludeNestedType(surrogateType, ref ctx);
         if (status is TypeDataModelGenerationStatus.Success)
         {
-            model = new SurrogateTypeDataModel { Type = type, SurrogateType = surrogateType, MarshallerType = marshaller };
+            model = new SurrogateTypeDataModel { Type = type, SurrogateType = surrogateType, MarshallerType = namedMarshaller };
         }
 
         return status;
+
+        TypeDataModelGenerationStatus ReportInvalidMarshallerAndExit()
+        {
+            ReportDiagnostic(InvalidMarshaller, type.Locations.FirstOrDefault(), type.ToDisplayString());
+            return TypeDataModelGenerationStatus.UnsupportedType;
+        }
     }
 
     private PropertyShapeModel MapProperty(ITypeSymbol parentType, TypeId parentTypeId, PropertyDataModel property, bool isClassTupleType = false, int tupleElementIndex = -1)

@@ -139,12 +139,11 @@ internal static class RoslynHelpers
     }
 #endif
 
-    public static string GetFullyQualifiedName(this ITypeSymbol typeSymbol)
-        => typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+    public static string GetFullyQualifiedName(this ITypeSymbol typeSymbol) =>
+        typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
-    public static bool IsGenericTypeDefinition(this ITypeSymbol typeSymbol)
-        => typeSymbol is INamedTypeSymbol { IsGenericType: true } namedTy && 
-           SymbolEqualityComparer.Default.Equals(namedTy.OriginalDefinition, typeSymbol);
+    public static bool IsGenericTypeDefinition(this ITypeSymbol typeSymbol) =>
+        typeSymbol is INamedTypeSymbol { IsGenericType: true, IsDefinition: true };
 
     public static bool ContainsGenericParameters(this ITypeSymbol typeSymbol)
     {

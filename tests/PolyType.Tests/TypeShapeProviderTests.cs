@@ -275,11 +275,16 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
     {
         public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
         {
-            Type? marshaller = typeof(T).GetCustomAttribute<TypeShapeAttribute>()?.Marshaller;
+            Type? marshallerType = typeof(T).GetCustomAttribute<TypeShapeAttribute>()?.Marshaller;
+            Assert.NotNull(marshallerType);
+            if (marshallerType.IsGenericTypeDefinition)
+            {
+                marshallerType = marshallerType.MakeGenericType(typeof(T).GetGenericArguments());
+            }
+            
             Assert.Equal(typeof(T), surrogateShape.Type);
             Assert.Equal(typeof(TSurrogate), surrogateShape.SurrogateType.Type);
-            Assert.NotNull(marshaller);
-            Assert.IsType(marshaller, surrogateShape.Marshaller);
+            Assert.IsType(marshallerType, surrogateShape.Marshaller);
             return null;
         }
     }
