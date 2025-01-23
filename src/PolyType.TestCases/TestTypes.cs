@@ -535,6 +535,7 @@ public static class TestTypes
         yield return TestCase.Create(new TypeWithStringSurrogate("string"));
         yield return TestCase.Create(new TypeWithRecordSurrogate(42, "string"));
         yield return TestCase.Create(EnumWithRecordSurrogate.A, p);
+        yield return TestCase.Create(new TypeWithGenericMarshaller<string>("str"), p);
 
         // F# types
         yield return TestCase.Create(new FSharpRecord(42, "str", true), p);
@@ -2014,6 +2015,15 @@ public sealed class EnumMarshaller : IMarshaller<EnumWithRecordSurrogate, EnumSu
     public EnumWithRecordSurrogate FromSurrogate(EnumSurrogate? surrogate) => (EnumWithRecordSurrogate)(surrogate?.Value ?? 0);
 }
 
+[TypeShape(Marshaller = typeof(GenericMarshaller<>))]
+public record TypeWithGenericMarshaller<T>(T Value);
+
+public sealed class GenericMarshaller<T> : IMarshaller<TypeWithGenericMarshaller<T>, T>
+{
+    public T? ToSurrogate(TypeWithGenericMarshaller<T>? value) => value is null ? default : value.Value;
+    public TypeWithGenericMarshaller<T>? FromSurrogate(T? surrogate) => EqualityComparer<T>.Default.Equals(surrogate!, default!) ? null : new(surrogate!);
+}
+
 [GenerateShape, TypeShape(Kind = TypeShapeKind.Object)]
 public partial class EnumerableAsObject : IEnumerable<int>
 {
@@ -2223,6 +2233,8 @@ public partial class ObjectAsNone
 [GenerateShape<GenericStructWithPrivateIncludedMembers<int>>]
 [GenerateShape<GenericStructWithPrivateIncludedMembers<string>>]
 [GenerateShape<EnumWithRecordSurrogate>]
+[GenerateShape<TypeWithGenericMarshaller<int>>]
+[GenerateShape<TypeWithGenericMarshaller<string>>]
 [GenerateShape<FSharpRecord>]
 [GenerateShape<FSharpStructRecord>]
 [GenerateShape<GenericFSharpRecord<string>>]

@@ -548,4 +548,67 @@ public static class DiagnosticTests
         
         Assert.Empty(result.Diagnostics);
     }
+    
+    [Theory]
+    [InlineData("""
+        using PolyType;
+
+        [TypeShape(Marshaller = typeof(Marshaller<>))]
+        public record MyPoco<T>(T Value);
+
+        public class Marshaller<T> : IMarshaller<MyPoco<T>, T>
+        {
+            public T? ToSurrogate(MyPoco<T>? source) => source is null ? default : source.Value;
+            public MyPoco<T>? FromSurrogate(T? value) => value is null ? null : new(value);
+        }
+
+        [GenerateShape<MyPoco<int>>]
+        public partial class Witness;
+        """)]
+    [InlineData("""
+        using PolyType;
+        
+        [TypeShape(Marshaller = typeof(MyPoco<>.Marshaller))]
+        public record MyPoco<T>(T Value)
+        {
+            public class Marshaller : IMarshaller<MyPoco<T>, T>
+            {
+                public T? ToSurrogate(MyPoco<T>? source) => source is null ? default : source.Value;
+                public MyPoco<T>? FromSurrogate(T? value) => value is null ? null : new(value);
+            }
+        }
+        
+        [GenerateShape<MyPoco<int>>]
+        public partial class Witness;
+        """)]
+    [InlineData("""
+        using PolyType;
+
+        [TypeShape(Marshaller = typeof(Container<>.Container2.Marshaller<>))]
+        public record MyPoco<T1, T2>(T1 Value1, T2 Value2);
+        
+        public static class Container<T1>
+        {
+            public class Container2
+            {
+                public class Marshaller<T2> : IMarshaller<MyPoco<T1, T2>, (T1, T2)>
+                {
+                    public (T1, T2) ToSurrogate(MyPoco<T1, T2>? source) => source is null ? default : (source.Value1, source.Value2);
+                    public MyPoco<T1, T2>? FromSurrogate((T1, T2) pair) => new(pair.Item1, pair.Item2);
+                }
+            }
+        }
+
+        [GenerateShape<MyPoco<int, string>>]
+        public partial class Witness;
+        """)]
+    public static void ValidGenericMarshaller_NoDiagnostic(string source)
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation(source);
+
+        PolyTypeSourceGeneratorResult result =
+            CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        
+        Assert.Empty(result.Diagnostics);
+    }
 }

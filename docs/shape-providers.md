@@ -135,6 +135,35 @@ public class PocoWithInternalState(int value1, string value2)
 }
 ```
 
+It's possible to define marshallers for generic types, provided that the type parameters of the marshaller match the type parameters of declaring type:
+
+```C#
+[TypeShape(Marshaller = typeof(Marshaller<>))]
+public record MyPoco<T>(T Value);
+
+public class Marshaller<T> : IMarshaller<MyPoco<T>, T>
+{
+    public T? ToSurrogate(MyPoco<T>? value) => value is null ? default : value.Value;
+    public MyPoco<T>? FromSurrogate(T? value) => value is null ? null : new(value);
+}
+
+[GenerateShape<MyPoco<string>>]
+public partial class Witness;
+```
+
+The above will configure `MyPoco<string>` with a marshaller of type `Marshaller<string>`. Nested generic marshallers are also supported:
+
+```C#
+[TypeShape(Marshaller = typeof(MyPoco<>.Marshaller))]
+public record MyPoco<T>(T Value)
+{
+    public class Marshaller : IMarshaller<MyPoco<T>, T>
+    {
+        /* Implementation goes here */
+    }
+}
+```
+
 ### PropertyShapeAttribute
 
 Configures aspects of a generated property shape, for example:
