@@ -91,6 +91,19 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         return _cache.GetOrAdd(type, _typeShapeFactory);
     }
 
+    /// <inheritdoc />
+    public ITypeShape GetShape(Type unboundGenericType, ReadOnlySpan<Type> genericTypeArguments)
+    {
+        Throw.IfNull(unboundGenericType);
+        if (!unboundGenericType.IsGenericTypeDefinition)
+        {
+            throw new ArgumentException("The type must be an open generic type.", nameof(unboundGenericType));
+        }
+
+        Type closedGenericType = unboundGenericType.MakeGenericType(genericTypeArguments.ToArray());
+        return GetShape(closedGenericType);
+    }
+
     private ITypeShape CreateTypeShape(Type type)
     {
         DebugExt.Assert(type != null);
@@ -102,13 +115,13 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
         return DetermineTypeKind(type, out TypeShapeAttribute? typeShapeAttribute) switch
         {
-          TypeShapeKind.Enumerable => CreateEnumerableShape(type),
-          TypeShapeKind.Dictionary => CreateDictionaryShape(type),
-          TypeShapeKind.Enum => CreateEnumShape(type),
-          TypeShapeKind.Nullable => CreateNullableShape(type),
-          TypeShapeKind.Object => CreateObjectShape(type, disableMemberResolution: false),
-          TypeShapeKind.Surrogate => CreateSurrogateShape(type, typeShapeAttribute),
-          TypeShapeKind.None or _ => CreateObjectShape(type, disableMemberResolution: true),
+            TypeShapeKind.Enumerable => CreateEnumerableShape(type),
+            TypeShapeKind.Dictionary => CreateDictionaryShape(type),
+            TypeShapeKind.Enum => CreateEnumShape(type),
+            TypeShapeKind.Nullable => CreateNullableShape(type),
+            TypeShapeKind.Object => CreateObjectShape(type, disableMemberResolution: false),
+            TypeShapeKind.Surrogate => CreateSurrogateShape(type, typeShapeAttribute),
+            TypeShapeKind.None or _ => CreateObjectShape(type, disableMemberResolution: true),
         };
     }
 
