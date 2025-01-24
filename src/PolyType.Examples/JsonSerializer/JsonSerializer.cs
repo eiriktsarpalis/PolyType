@@ -14,7 +14,7 @@ namespace PolyType.Examples.JsonSerializer;
 /// </summary>
 public static partial class JsonSerializerTS
 {
-    private static readonly JsonSerializerOptions s_options = new();
+    internal static readonly JsonSerializerOptions s_options = new();
     private static readonly MultiProviderTypeCache s_converterCaches = new() 
     {
         ValueBuilderFactory = ctx => new Builder(ctx),

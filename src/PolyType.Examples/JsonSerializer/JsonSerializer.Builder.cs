@@ -155,6 +155,11 @@ public static partial class JsonSerializerTS
 
         public object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state)
         {
+            if (surrogateShape.Marshaller is JsonMarshaller<T> jsonMarshaller)
+            {
+                return jsonMarshaller;
+            }
+
             JsonConverter<TSurrogate> surrogateConverter = GetOrAddConverter(surrogateShape.SurrogateType);
             return new JsonSurrogateConverter<T, TSurrogate>(surrogateShape.Marshaller, surrogateConverter);
         }

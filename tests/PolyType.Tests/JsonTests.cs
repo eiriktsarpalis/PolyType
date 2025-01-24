@@ -1,8 +1,8 @@
-﻿using System.Collections;
+﻿using PolyType.Examples.JsonSerializer;
+using PolyType.Examples.JsonSerializer.Converters;
+using System.Collections;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using PolyType.Examples.JsonSerializer;
-using PolyType.Examples.JsonSerializer.Converters;
 using Xunit;
 
 namespace PolyType.Tests;
@@ -350,6 +350,43 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
     { 
         public T? Value { get; set; }
     }
+
+    [Fact]
+    public void DictionaryWithJsonMarshaller_HasExpectedSerialization()
+    {
+        DictionaryWithJsonMarshaller<string, int> dict = new()
+        {
+            ["key1"] = 1,
+            ["key2"] = 2,
+            ["key3"] = 3,
+        };
+
+        var converter = JsonSerializerTS.CreateConverter<DictionaryWithJsonMarshaller<string, int>>(Witness2.ShapeProvider);
+        string json = converter.Serialize(dict);
+        Assert.Equal("3", json);
+
+        DictionaryWithJsonMarshaller<string, int>? deserializedValue = converter.Deserialize(json);
+        Assert.NotNull(deserializedValue);
+        Assert.Empty(deserializedValue);
+    }
+
+    [TypeShape(Marshaller = typeof(DictionaryWithJsonMarshaller<,>.JsonMarshaller))]
+    public class DictionaryWithJsonMarshaller<TKey, TValue> : Dictionary<TKey, TValue>
+        where TKey : notnull
+    {
+        public sealed class JsonMarshaller : JsonMarshaller<DictionaryWithJsonMarshaller<TKey, TValue>>
+        {
+            public override DictionaryWithJsonMarshaller<TKey, TValue>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+                new();
+
+            public override void Write(Utf8JsonWriter writer, DictionaryWithJsonMarshaller<TKey, TValue> value, JsonSerializerOptions options) =>
+                writer.WriteNumberValue(value.Count);
+        }
+    }
+
+    [GenerateShape<DictionaryWithJsonMarshaller<string, int>>]
+    [GenerateShape<DictionaryWithJsonMarshaller<bool, byte>>]
+    partial class Witness2;
 
     protected static string ToJsonBaseline<T>(T? value) => System.Text.Json.JsonSerializer.Serialize(value, s_baselineOptions);
     private static readonly JsonSerializerOptions s_baselineOptions = new()
