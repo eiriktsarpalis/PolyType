@@ -536,6 +536,7 @@ public static class TestTypes
         yield return TestCase.Create(new TypeWithRecordSurrogate(42, "string"));
         yield return TestCase.Create(EnumWithRecordSurrogate.A, p);
         yield return TestCase.Create(new TypeWithGenericMarshaller<string>("str"), p);
+        yield return TestCase.Create(new GenericDictionaryWithMarshaller<string, int>() { ["key"] = 42 }, p);
 
         // F# types
         yield return TestCase.Create(new FSharpRecord(42, "str", true), p);
@@ -2024,6 +2025,33 @@ public sealed class GenericMarshaller<T> : IMarshaller<TypeWithGenericMarshaller
     public TypeWithGenericMarshaller<T>? FromSurrogate(T? surrogate) => EqualityComparer<T>.Default.Equals(surrogate!, default!) ? null : new(surrogate!);
 }
 
+[TypeShape(Marshaller = typeof(GenericDictionaryWithMarshaller<,>.Marshaller))]
+public class GenericDictionaryWithMarshaller<TKey, TValue> : Dictionary<TKey, TValue>
+    where TKey : notnull
+{
+    public sealed class Marshaller : IMarshaller<GenericDictionaryWithMarshaller<TKey, TValue>, KeyValuePair<TKey, TValue>[]>
+    {
+        public KeyValuePair<TKey, TValue>[]? ToSurrogate(GenericDictionaryWithMarshaller<TKey, TValue>? value) =>
+            value?.ToArray();
+
+        public GenericDictionaryWithMarshaller<TKey, TValue>? FromSurrogate(KeyValuePair<TKey, TValue>[]? surrogate)
+        {
+            if (surrogate is null)
+            {
+                return null;
+            }
+
+            GenericDictionaryWithMarshaller<TKey, TValue> result = new();
+            foreach (var pair in surrogate)
+            {
+                result[pair.Key] = pair.Value;
+            }
+
+            return result;
+        }
+    }
+}
+
 [GenerateShape, TypeShape(Kind = TypeShapeKind.Object)]
 public partial class EnumerableAsObject : IEnumerable<int>
 {
@@ -2235,6 +2263,7 @@ public partial class ObjectAsNone
 [GenerateShape<EnumWithRecordSurrogate>]
 [GenerateShape<TypeWithGenericMarshaller<int>>]
 [GenerateShape<TypeWithGenericMarshaller<string>>]
+[GenerateShape<GenericDictionaryWithMarshaller<string, int>>]
 [GenerateShape<FSharpRecord>]
 [GenerateShape<FSharpStructRecord>]
 [GenerateShape<GenericFSharpRecord<string>>]
