@@ -43,4 +43,31 @@ public static class TypeShapeProvider
     /// <exception cref="NotSupportedException"><paramref name="shapeProvider"/> does not support <paramref name="type"/>.</exception>
     public static ITypeShape Resolve(this ITypeShapeProvider shapeProvider, Type type)
         => shapeProvider.GetShape(type) ?? throw new NotSupportedException($"The shape provider '{shapeProvider.GetType()}' does not support type '{type}'.");
+
+    /// <summary>
+    /// Creates a new <see cref="ITypeShapeProvider"/> that returns the first shape found
+    /// from iterating over a given list of providers.
+    /// </summary>
+    /// <param name="providers">The sequence of providers to solicit for type shapes.</param>
+    /// <returns>The aggregating <see cref="ITypeShapeProvider"/>.</returns>
+    public static ITypeShapeProvider Combine(params ReadOnlySpan<ITypeShapeProvider> providers)
+    {
+        return new AggregatingTypeShapeProvider(providers.ToArray());
+    }
+
+    private sealed class AggregatingTypeShapeProvider(ITypeShapeProvider[] providers) : ITypeShapeProvider
+    {
+        public ITypeShape? GetShape(Type type)
+        {
+            foreach (ITypeShapeProvider provider in providers)
+            {
+                if (provider.GetShape(type) is ITypeShape shape)
+                {
+                    return shape;
+                }
+            }
+
+            return null;
+        }
+    }
 }
