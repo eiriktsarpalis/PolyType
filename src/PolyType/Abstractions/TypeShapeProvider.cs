@@ -50,9 +50,9 @@ public static class TypeShapeProvider
     /// </summary>
     /// <param name="providers">The sequence of providers to solicit for type shapes.</param>
     /// <returns>The aggregating <see cref="ITypeShapeProvider"/>.</returns>
-    public static ITypeShapeProvider Combine(params ReadOnlySpan<ITypeShapeProvider> providers)
+    public static ITypeShapeProvider Combine(params ITypeShapeProvider[] providers)
     {
-        return new AggregatingTypeShapeProvider(providers.ToArray());
+        return new AggregatingTypeShapeProvider(providers);
     }
 
     private sealed class AggregatingTypeShapeProvider(ITypeShapeProvider[] providers) : ITypeShapeProvider
