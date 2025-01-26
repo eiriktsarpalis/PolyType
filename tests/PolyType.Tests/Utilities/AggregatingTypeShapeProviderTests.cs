@@ -1,27 +1,40 @@
-﻿using System.Reflection;
+﻿using PolyType.Utilities;
+using System.Reflection;
 
-namespace PolyType.Tests;
+namespace PolyType.Tests.Utilities;
 
-public class TypeShapeProviderStaticTests
+public class AggregatingTypeShapeProviderTests
 {
     [Fact]
-    public void Combine_EmptyList()
+    public void Ctor_Null()
     {
-        ITypeShapeProvider aggregate = TypeShapeProvider.Combine();
+        Assert.Throws<ArgumentNullException>(() => new AggregatingTypeShapeProvider(null!));
+    }
+
+    [Fact]
+    public void Ctor_NullElement()
+    {
+        Assert.Throws<ArgumentException>(() => new AggregatingTypeShapeProvider([null!]));
+    }
+
+    [Fact]
+    public void EmptyList()
+    {
+        ITypeShapeProvider aggregate = new AggregatingTypeShapeProvider();
         Assert.NotNull(aggregate);
         Assert.Null(aggregate.GetShape(typeof(int)));
     }
 
     [Fact]
-    public void Combine_One_Null()
+    public void One_NullShape()
     {
-        ITypeShapeProvider aggregate = TypeShapeProvider.Combine(new MockTypeShapeProvider());
+        ITypeShapeProvider aggregate = new AggregatingTypeShapeProvider(new MockTypeShapeProvider());
         Assert.Null(aggregate.GetShape(typeof(int)));
     }
 
 
     [Fact]
-    public void Combine_One_NonNull()
+    public void One_NonNullShape()
     {
         MockTypeShapeProvider first = new()
         {
@@ -30,12 +43,12 @@ public class TypeShapeProviderStaticTests
                 [typeof(int)] = new MockTypeShape<int>(),
             },
         };
-        ITypeShapeProvider aggregate = TypeShapeProvider.Combine(first);
+        ITypeShapeProvider aggregate = new AggregatingTypeShapeProvider(first);
         Assert.Same(first.Shapes[typeof(int)], aggregate.GetShape(typeof(int)));
     }
 
     [Fact]
-    public void Combine_Many()
+    public void ManyProviders()
     {
         MockTypeShapeProvider first = new()
         {
@@ -51,7 +64,7 @@ public class TypeShapeProviderStaticTests
                 [typeof(string)] = new MockTypeShape<int>(),
             },
         };
-        ITypeShapeProvider aggregate = TypeShapeProvider.Combine(first, second);
+        ITypeShapeProvider aggregate = new AggregatingTypeShapeProvider(first, second);
         Assert.Same(first.Shapes[typeof(int)], aggregate.GetShape(typeof(int)));
         Assert.Same(second.Shapes[typeof(string)], aggregate.GetShape(typeof(string)));
         Assert.Null(aggregate.GetShape(typeof(bool)));
@@ -74,7 +87,7 @@ public class TypeShapeProviderStaticTests
                 [typeof(int)] = new MockTypeShape<int>(),
             },
         };
-        ITypeShapeProvider aggregate = TypeShapeProvider.Combine(first);
+        ITypeShapeProvider aggregate = new AggregatingTypeShapeProvider(first);
         Assert.Same(first.Shapes[typeof(int)], aggregate.GetShape(typeof(int)));
 
         // Remove the shape, and verify that the aggregator no longer returns it.
@@ -106,7 +119,7 @@ public class TypeShapeProviderStaticTests
                 [typeof(string)] = new MockTypeShape<string>(),
             },
         };
-        ITypeShapeProvider aggregate = TypeShapeProvider.Combine(first, second);
+        ITypeShapeProvider aggregate = new AggregatingTypeShapeProvider(first, second);
         Assert.NotNull(aggregate.GetShape(typeof(string)));
 
         // Add a new string shape to the first provider.
@@ -120,7 +133,7 @@ public class TypeShapeProviderStaticTests
     {
         internal Dictionary<Type, ITypeShape> Shapes { get; } = new();
 
-        public ITypeShape? GetShape(Type type) => this.Shapes.TryGetValue(type, out ITypeShape? shape) ? shape : null;
+        public ITypeShape? GetShape(Type type) => Shapes.TryGetValue(type, out ITypeShape? shape) ? shape : null;
     }
 
     private class MockTypeShape<T> : ITypeShape<T>
