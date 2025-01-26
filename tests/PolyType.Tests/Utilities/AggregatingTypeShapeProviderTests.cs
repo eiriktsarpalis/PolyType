@@ -70,6 +70,26 @@ public class AggregatingTypeShapeProviderTests
         Assert.Null(aggregate.GetShape(typeof(bool)));
     }
 
+    [Fact]
+    public void DefensiveCopy()
+    {
+        ITypeShapeProvider[] providers = new ITypeShapeProvider[]
+        {
+            new MockTypeShapeProvider(),
+        };
+        AggregatingTypeShapeProvider aggregate = new(providers);
+        providers[0] = new MockTypeShapeProvider
+        {
+            Shapes =
+            {
+                [typeof(int)] = new MockTypeShape<int>(),
+            },
+        };
+
+        // Verify that the new provider is not used.
+        Assert.Null(aggregate.GetShape(typeof(int)));
+    }
+
     /// <summary>
     /// Validates that the aggregating provider does not cache results.
     /// </summary>

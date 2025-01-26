@@ -6,6 +6,16 @@ namespace PolyType.Utilities;
 /// An <see cref="ITypeShapeProvider"/> that returns the first shape found
 /// from iterating over a given list of providers.
 /// </summary>
+/// <remarks>
+/// <para>
+/// This aggregator implements the chain of responsibility pattern.
+/// </para>
+/// <para>
+/// Whether this aggregator caches the results of the providers is undefined,
+/// and should be non-observable assuming the providers themselves do not
+/// change their return values over time.
+/// </para>
+/// </remarks>
 public sealed class AggregatingTypeShapeProvider : ITypeShapeProvider
 {
     private readonly ITypeShapeProvider[] _providers;
@@ -29,7 +39,7 @@ public sealed class AggregatingTypeShapeProvider : ITypeShapeProvider
             }
         }
 
-        _providers = providers;
+        _providers = providers.ToArray();
     }
 
     /// <summary>
