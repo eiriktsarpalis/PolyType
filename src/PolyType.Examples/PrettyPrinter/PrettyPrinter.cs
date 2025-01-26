@@ -4,8 +4,8 @@ using System.Text;
 
 namespace PolyType.Examples.PrettyPrinter;
 
-/// <summary>A delegate that formats a pretty-printed value to a string builder.</summary>
-public delegate void PrettyPrinter<T>(StringBuilder builder, int indentation, T? value);
+/// <summary>A delegate that formats a pretty-printed value to a <see cref="TextWriter"/>.</summary>
+public delegate void PrettyPrinter<T>(TextWriter builder, int indentation, T? value);
 
 /// <summary>Provides a pretty printer for .NET types built on top of PolyType.</summary>
 public static partial class PrettyPrinter
@@ -43,7 +43,7 @@ public static partial class PrettyPrinter
     /// <returns>A string containing a pretty-printed rendering of the value.</returns>
     public static string Print<T>(this PrettyPrinter<T> prettyPrinter, T? value)
     {
-        var sb = new StringBuilder();
+        var sb = new StringWriter();
         prettyPrinter(sb, 0, value);
         return sb.ToString();
     }
