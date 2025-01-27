@@ -167,3 +167,6 @@ dotnet_diagnostic.IDE0021.severity = none
 
 # IDE0032: Use auto property
 dotnet_diagnostic.IDE0032.severity = none
+
+# CA1510: Use ArgumentNullException.ThrowIfNull
+dotnet_diagnostic.CA1510.severity = none # incompatible with multitargeting projects.
