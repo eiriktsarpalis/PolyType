@@ -38,31 +38,33 @@ public static partial class PrettyPrinter
             {
                 if (value is null)
                 {
-                    sb.Append("null");
+                    sb.Write("null");
                     return;
                 }
 
-                sb.Append("new ");
-                sb.Append(typeName);
+                sb.Write("new ");
+                sb.Write(typeName);
 
                 if (propertyPrinters.Length == 0)
                 {
-                    sb.Append("()");
+                    sb.Write("()");
                     return;
                 }
 
                 WriteLine(sb, indentation);
-                sb.Append('{');
+                sb.Write('{');
                 for (int i = 0; i < propertyPrinters.Length; i++)
                 {
                     WriteLine(sb, indentation + 1);
                     propertyPrinters[i](sb, indentation + 1, value);
-                    sb.Append(',');
+                    if (i < propertyPrinters.Length - 1)
+                    {
+                        sb.Write(',');
+                    }
                 }
 
-                sb.Length--;
                 WriteLine(sb, indentation);
-                sb.Append('}');
+                sb.Write('}');
             });
         }
 
@@ -73,7 +75,8 @@ public static partial class PrettyPrinter
             return new PrettyPrinter<TDeclaringType>((sb, indentation, obj) =>
             {
                 DebugExt.Assert(obj != null);
-                sb.Append(property.Name).Append(" = ");
+                sb.Write(property.Name);
+                sb.Write(" = ");
                 propertyTypePrinter(sb, indentation, getter(ref obj));
             });
         }
@@ -88,46 +91,44 @@ public static partial class PrettyPrinter
             {
                 if (value is null)
                 {
-                    sb.Append("null");
+                    sb.Write("null");
                     return;
                 }
 
-                sb.Append('[');
+                sb.Write('[');
 
                 bool containsElements = false;
                 if (valuesArePrimitives)
                 {
                     foreach (TElement element in enumerableGetter(value))
                     {
-                        elementPrinter(sb, indentation, element);
-                        sb.Append(", ");
-                        containsElements = true;
-                    }
+                        if (containsElements)
+                        {
+                            sb.Write(", ");
+                        }
 
-                    if (containsElements)
-                    {
-                        sb.Length -= 2;
+                        elementPrinter(sb, indentation, element);
+                        containsElements = true;
                     }
                 }
                 else
                 {
                     foreach (TElement element in enumerableGetter(value))
                     {
+                        if (containsElements)
+                        {
+                            sb.Write(',');
+                        }
+
                         WriteLine(sb, indentation + 1);
                         elementPrinter(sb, indentation + 1, element);
-                        sb.Append(',');
                         containsElements = true;
-                    }
-
-                    if (containsElements)
-                    {
-                        sb.Length--;
                     }
 
                     WriteLine(sb, indentation);
                 }
 
-                sb.Append(']');
+                sb.Write(']');
             });
         }
 
@@ -142,42 +143,52 @@ public static partial class PrettyPrinter
             {
                 if (value is null)
                 {
-                    sb.Append("null");
+                    sb.Write("null");
                     return;
                 }
 
-                sb.Append("new ");
-                sb.Append(typeName);
+                sb.Write("new ");
+                sb.Write(typeName);
 
                 IReadOnlyDictionary<TKey, TValue> dictionary = dictionaryGetter(value);
 
                 if (dictionary.Count == 0)
                 {
-                    sb.Append("()");
+                    sb.Write("()");
                     return;
                 }
 
                 WriteLine(sb, indentation);
-                sb.Append('{');
+                sb.Write('{');
+                bool first = true;
                 foreach (KeyValuePair<TKey, TValue> kvp in dictionaryGetter(value))
                 {
+                    if (!first)
+                    {
+                        sb.Write(',');
+                    }
+
                     WriteLine(sb, indentation + 1);
-                    sb.Append('[');
+                    sb.Write('[');
                     keyPrinter(sb, indentation + 1, kvp.Key); // TODO non-primitive key indentation
-                    sb.Append("] = ");
+                    sb.Write("] = ");
                     valuePrinter(sb, indentation + 1, kvp.Value);
-                    sb.Append(',');
+                    first = false;
                 }
 
-                sb.Length -= 1;
                 WriteLine(sb, indentation);
-                sb.Append('}');
+                sb.Write('}');
             });
         }
 
         public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state)
         {
-            return new PrettyPrinter<TEnum>((sb, _, e) => sb.Append(typeof(TEnum).Name).Append('.').Append(e));
+            return new PrettyPrinter<TEnum>((sb, _, e) =>
+            {
+                sb.Write(typeof(TEnum).Name);
+                sb.Write('.');
+                sb.Write(e);
+            });
         }
 
         public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state) where T : struct
@@ -187,7 +198,7 @@ public static partial class PrettyPrinter
             {
                 if (value is null)
                 {
-                    sb.Append("null");
+                    sb.Write("null");
                 }
                 else
                 {
@@ -203,17 +214,25 @@ public static partial class PrettyPrinter
             return new PrettyPrinter<T>((sb, indentation, t) => surrogatePrinter(sb, indentation, marshaller.ToSurrogate(t)));
         }
 
-        private static void WriteLine(StringBuilder builder, int indentation)
+        private static void WriteLine(TextWriter builder, int indentation)
         {
-            builder.AppendLine();
-            builder.Append(' ', 2 * indentation);
+            builder.WriteLine();
+            builder.Write(new string(' ', 2 * indentation));
         }
 
-        private static void WriteStringLiteral(StringBuilder builder, string value)
-            => builder.Append('\"').Append(value).Append('\"');
+        private static void WriteStringLiteral(TextWriter builder, string value)
+        {
+            builder.Write('\"');
+            builder.Write(value);
+            builder.Write('\"');
+        }
 
-        private static void WriteStringLiteral(StringBuilder builder, object value)
-            => builder.Append('\"').Append(value).Append('\"');
+        private static void WriteStringLiteral(TextWriter builder, object value)
+        {
+            builder.Write('\"');
+            builder.Write(value);
+            builder.Write('\"');
+        }
 
         private static string FormatTypeName(Type type)
         {
@@ -229,29 +248,34 @@ public static partial class PrettyPrinter
 
         private static IEnumerable<KeyValuePair<Type, object>> CreateDefaultPrinters()
         {
-            yield return Create<bool>((builder, _, b) => builder.Append(b ? "true" : "false"));
+            yield return Create<bool>((builder, _, b) => builder.Write(b ? "true" : "false"));
 
-            yield return Create<byte>((builder, _, i) => builder.Append(i));
-            yield return Create<ushort>((builder, _, i) => builder.Append(i));
-            yield return Create<uint>((builder, _, i) => builder.Append(i));
-            yield return Create<ulong>((builder, _, i) => builder.Append(i));
+            yield return Create<byte>((builder, _, i) => builder.Write(i));
+            yield return Create<ushort>((builder, _, i) => builder.Write(i));
+            yield return Create<uint>((builder, _, i) => builder.Write(i));
+            yield return Create<ulong>((builder, _, i) => builder.Write(i));
 
-            yield return Create<sbyte>((builder, _, i) => builder.Append(i));
-            yield return Create<short>((builder, _, i) => builder.Append(i));
-            yield return Create<int>((builder, _, i) => builder.Append(i));
-            yield return Create<long>((builder, _, i) => builder.Append(i));
+            yield return Create<sbyte>((builder, _, i) => builder.Write(i));
+            yield return Create<short>((builder, _, i) => builder.Write(i));
+            yield return Create<int>((builder, _, i) => builder.Write(i));
+            yield return Create<long>((builder, _, i) => builder.Write(i));
 
-            yield return Create<float>((builder, _, i) => builder.Append(i));
-            yield return Create<double>((builder, _, i) => builder.Append(i));
-            yield return Create<decimal>((builder, _, i) => builder.Append(i));
-            yield return Create<BigInteger>((builder, _, i) => builder.Append(i));
+            yield return Create<float>((builder, _, i) => builder.Write(i));
+            yield return Create<double>((builder, _, i) => builder.Write(i));
+            yield return Create<decimal>((builder, _, i) => builder.Write(i));
+            yield return Create<BigInteger>((builder, _, i) => builder.Write(i));
 
-            yield return Create<char>((builder, _, c) => builder.Append('\'').Append(c).Append('\''));
+            yield return Create<char>((builder, _, c) =>
+            {
+                builder.Write('\'');
+                builder.Write(c);
+                builder.Write('\'');
+            });
             yield return Create<string>((builder, _, s) =>
             {
                 if (s is null)
                 {
-                    builder.Append("null");
+                    builder.Write("null");
                 }
                 else
                 {
