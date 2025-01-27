@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using PolyType.Utilities;
 
 namespace PolyType.Tests.Utilities;
@@ -162,6 +163,7 @@ public class AggregatingTypeShapeProviderTests
         public ITypeShape? GetShape(Type type) => Shapes.TryGetValue(type, out ITypeShape? shape) ? shape : null;
     }
 
+    [ExcludeFromCodeCoverage]
     private class MockTypeShape<T> : ITypeShape<T>
     {
         public Type Type => throw new NotImplementedException();
