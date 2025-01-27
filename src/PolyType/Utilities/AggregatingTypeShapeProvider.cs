@@ -1,4 +1,5 @@
-﻿using PolyType.Abstractions;
+﻿using System.Collections.ObjectModel;
+using PolyType.Abstractions;
 
 namespace PolyType.Utilities;
 
@@ -18,7 +19,7 @@ namespace PolyType.Utilities;
 /// </remarks>
 public sealed class AggregatingTypeShapeProvider : ITypeShapeProvider
 {
-    private readonly ITypeShapeProvider[] _providers;
+    private readonly ReadOnlyCollection<ITypeShapeProvider> _providers;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AggregatingTypeShapeProvider"/> class.
@@ -39,7 +40,7 @@ public sealed class AggregatingTypeShapeProvider : ITypeShapeProvider
             }
         }
 
-        _providers = providers.ToArray();
+        _providers = new([.. providers]);
     }
 
     /// <summary>
