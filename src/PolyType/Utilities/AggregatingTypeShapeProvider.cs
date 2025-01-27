@@ -19,7 +19,7 @@ namespace PolyType.Utilities;
 /// </remarks>
 public sealed class AggregatingTypeShapeProvider : ITypeShapeProvider
 {
-    private readonly ReadOnlyCollection<ITypeShapeProvider> _providers;
+    private readonly IReadOnlyList<ITypeShapeProvider> _providers;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AggregatingTypeShapeProvider"/> class.
@@ -40,7 +40,7 @@ public sealed class AggregatingTypeShapeProvider : ITypeShapeProvider
             }
         }
 
-        _providers = new([.. providers]);
+        _providers = [.. providers];
     }
 
     /// <summary>
@@ -51,9 +51,9 @@ public sealed class AggregatingTypeShapeProvider : ITypeShapeProvider
     /// <inheritdoc/>
     public ITypeShape? GetShape(Type type)
     {
-        foreach (ITypeShapeProvider provider in _providers)
+        for (int i = 0; i < _providers.Count; i++)
         {
-            if (provider.GetShape(type) is ITypeShape shape)
+            if (_providers[i].GetShape(type) is ITypeShape shape)
             {
                 return shape;
             }
