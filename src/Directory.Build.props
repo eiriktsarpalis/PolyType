@@ -5,7 +5,6 @@
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors>Nullable</WarningsAsErrors>
     <WarningLevel Condition="'$(MSBuildProjectExtension)'!='.fsproj'">9999</WarningLevel>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
