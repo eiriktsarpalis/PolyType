@@ -30,7 +30,7 @@ public sealed class ServiceCollection
     /// </remarks>
     public void Add<TService>(ServiceLifetime lifetime = DefaultLifetime) where TService : notnull
     {
-        _serviceDescriptors.Add(typeof(TService), new TypeServiceDescriptor(typeof(TService), null, lifetime));
+        _serviceDescriptors.Add(typeof(TService), new TypeServiceDescriptor(typeof(TService), typeof(TService), lifetime));
     }
 
     /// <summary>

@@ -7,4 +7,4 @@ namespace PolyType.Examples.DependencyInjection;
 /// </summary>
 internal abstract record ServiceDescriptor(Type Type, ServiceLifetime Lifetime);
 internal sealed record FactoryServiceDescriptor(ServiceFactory Factory) : ServiceDescriptor(Factory.Type, Factory.Lifetime);
-internal sealed record TypeServiceDescriptor(Type Type, Type? ImplementationType, ServiceLifetime Lifetime) : ServiceDescriptor(Type, Lifetime);
+internal sealed record TypeServiceDescriptor(Type Type, Type ImplementationType, ServiceLifetime Lifetime) : ServiceDescriptor(Type, Lifetime);

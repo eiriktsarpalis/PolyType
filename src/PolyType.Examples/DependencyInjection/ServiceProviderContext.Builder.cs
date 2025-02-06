@@ -18,10 +18,10 @@ public sealed partial class ServiceProviderContext
             if (serviceProviderCtx._typeServiceDescriptors?.TryGetValue(typeof(T), out TypeServiceDescriptor? descriptor) is true)
             {
                 state = descriptor.Lifetime;
-                if (descriptor.ImplementationType is Type implType && implType != typeof(T))
+                if (descriptor.ImplementationType != typeof(T))
                 {
-                    Debug.Assert(typeof(T).IsAssignableFrom(implType));
-                    ITypeShape implShape = typeShape.Provider.Resolve(implType);
+                    Debug.Assert(typeof(T).IsAssignableFrom(descriptor.ImplementationType));
+                    ITypeShape implShape = typeShape.Provider.Resolve(descriptor.ImplementationType);
                     var otherFactory = (ServiceFactory)implShape.Invoke(this, state)!;
                     return otherFactory.Cast<T>(descriptor.Lifetime);
                 }
