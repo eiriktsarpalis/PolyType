@@ -221,9 +221,26 @@ public static class CacheTests
     }
 
     [Fact]
-    public static void TypeCache_NullProvider_ThrowsArgumentException()
+    public static void TypeCache_NullProvider_IsSupported()
     {
-        Assert.Throws<ArgumentNullException>("provider", () => new TypeCache(provider: null!));
+        var cache = new TypeCache(provider: null);
+        Assert.Null(cache.Provider);
+
+        Assert.Throws<InvalidOperationException>(() => cache.GetOrAdd(typeof(int)));
+
+        object value = new();
+        Assert.True(cache.TryAdd(typeof(int), value));
+
+        Assert.Same(value, cache[typeof(int)]);
+        Assert.Same(value, cache.GetOrAdd(typeof(int)));
+        Assert.False(cache.TryAdd(typeof(int), value));
+
+        value = new();
+        cache[typeof(int)] = value;
+
+        Assert.Same(value, cache[typeof(int)]);
+        Assert.Same(value, cache.GetOrAdd(typeof(int)));
+        Assert.False(cache.TryAdd(typeof(int), value));
     }
 
     [Fact]

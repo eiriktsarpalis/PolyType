@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 
 namespace PolyType.Utilities;
@@ -21,9 +22,8 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     /// Initializes a new instance of the <see cref="TypeCache"/> class.
     /// </summary>
     /// <param name="provider">The shape provider associated with the current cache.</param>
-    public TypeCache(ITypeShapeProvider provider)
+    public TypeCache(ITypeShapeProvider? provider = null)
     {
-        Throw.IfNull(provider);
         Provider = provider;
     }
 
@@ -39,7 +39,7 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     /// <summary>
     /// Gets the <see cref="ITypeShapeProvider"/> associated with the current cache.
     /// </summary>
-    public ITypeShapeProvider Provider { get; }
+    public ITypeShapeProvider? Provider { get; }
 
     /// <summary>
     /// Gets a factory method governing the creation of values when invoking the <see cref="GetOrAdd(ITypeShape)" /> method.
@@ -80,11 +80,29 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     public bool ContainsKey(Type type) => _cache.ContainsKey(type);
 
     /// <summary>
-    /// Gets the value associated with the specified type.
+    /// Gets or sets the value associated with the specified type.
     /// </summary>
     /// <param name="type">The type to look up.</param>
     /// <returns>The value associated with the specified key.</returns>
-    public object? this[Type type] => _cache[type].GetValueOrException();
+    public object? this[Type type]
+    {
+        get => _cache[type].GetValueOrException();
+        set
+        {
+            lock (LockObject)
+            {
+                _cache[type] = new Entry(value);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Attempts to add the value associated with the specified type to the cache.
+    /// </summary>
+    /// <param name="type">The type associated with the value.</param>
+    /// <param name="value">The value to attempt to add.</param>
+    /// <returns><see langword="true"/> if the value was added successfully, <see langword="false"/> otherwise.</returns>
+    public bool TryAdd(Type type, object? value) => TryAdd(type, new Entry(value));
 
     /// <summary>
     /// Attempts to get the value associated with the specified type.
@@ -116,6 +134,13 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
         if (_cache.TryGetValue(type, out Entry entry))
         {
             return entry.GetValueOrThrowException();
+        }
+
+        if (Provider is null)
+        {
+            Throw();
+            [DoesNotReturn]
+            static void Throw() => throw new InvalidOperationException("The current cache does not specify a Provider property.");
         }
 
         return AddValue(Provider.Resolve(type));
@@ -150,11 +175,11 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
             object? value;
             try
             {
-                value = typeShape.Invoke(context, null);
+                value = typeShape.Invoke(context);
             }
             catch (Exception ex) when (CacheExceptions)
             {
-                Add(typeShape.Type, ExceptionDispatchInfo.Capture(ex));
+                TryAdd(typeShape.Type, new Entry(ExceptionDispatchInfo.Capture(ex)));
                 throw;
             }
 
@@ -171,24 +196,24 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     }
 
     internal object LockObject => _cache;
-    internal void Add(Type type, object? value)
+    internal void AddUnsynchronized(Type type, object? value)
     {
         Debug.Assert(Monitor.IsEntered(LockObject), "Must be called within a lock.");
         bool result = _cache.TryAdd(type, new Entry(value));
         Debug.Assert(result || ReferenceEquals(_cache[type].Value, value), "should only be pre-populated with the same value.");
     }
 
-    internal void Add(Type type, ExceptionDispatchInfo exceptionDispatchInfo)
+    private bool TryAdd(Type type, Entry entry)
     {
         lock (LockObject)
         {
-            _cache.TryAdd(type, new Entry(exceptionDispatchInfo));
+            return _cache.TryAdd(type, entry);
         }
     }
 
     internal void ValidateProvider(ITypeShapeProvider provider)
     {
-        if (!ReferenceEquals(Provider, provider))
+        if (Provider is not null && !ReferenceEquals(Provider, provider))
         {
             throw new ArgumentException("The specified shape provider is not valid for this cache,", nameof(provider));
         }
