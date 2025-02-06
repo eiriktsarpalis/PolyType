@@ -6,6 +6,7 @@ Includes a set of reference library implementations built on top of the PolyType
 * A serializer built on top of System.Xml,
 * A serializer built on top of System.Formats.Cbor,
 * A `ConfigurationBinder` like implementation,
+* A dependency injection implementation,
 * A simple pretty-printer for .NET values,
 * A generic random value generator based on `System.Random`,
 * A JSON schema generator for .NET types,

@@ -79,7 +79,7 @@ public sealed class TypeGenerationContext : IReadOnlyDictionary<Type, object?>, 
             throw new InvalidOperationException($"Calling this method requires specifying a {ValueBuilder} property.");
         }
 
-        if (TryGetValue<TKey>(typeShape, out object? value))
+        if (TryGetValue(typeShape, out object? value))
         {
             return value;
         }
@@ -254,7 +254,7 @@ public sealed class TypeGenerationContext : IReadOnlyDictionary<Type, object?>, 
             // Validation complete; commit the results to the parent cache.
             foreach (KeyValuePair<Type, Entry> entry in _entries)
             {
-                ParentCache.Add(entry.Key, entry.Value.Value);
+                ParentCache.AddUnsynchronized(entry.Key, entry.Value.Value);
             }
 
             return true;

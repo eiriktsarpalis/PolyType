@@ -1,0 +1,151 @@
+﻿using PolyType.Abstractions;
+using PolyType.Utilities;
+using System.Diagnostics;
+
+namespace PolyType.Examples.DependencyInjection;
+
+public sealed partial class ServiceProviderContext
+{
+    private sealed class Builder(ServiceProviderContext serviceProviderCtx, TypeGenerationContext genCtx) : ITypeShapeVisitor, ITypeShapeFunc
+    {
+        private delegate void ConstructorParameterMapper<TService>(ServiceProvider serviceProvider, ref TService service);
+
+        private ServiceFactory<TService>? GetOrAddFactory<TService>(ITypeShape<TService> shape) =>
+            (ServiceFactory<TService>?)genCtx.GetOrAdd(shape);
+
+        public object? Invoke<T>(ITypeShape<T> typeShape, object? state = null)
+        {
+            if (serviceProviderCtx._typeServiceDescriptors?.TryGetValue(typeof(T), out TypeServiceDescriptor? descriptor) is true)
+            {
+                state = descriptor.Lifetime;
+                if (descriptor.ImplementationType is Type implType && implType != typeof(T))
+                {
+                    Debug.Assert(typeof(T).IsAssignableFrom(implType));
+                    ITypeShape implShape = typeShape.Provider.Resolve(implType);
+                    var otherFactory = (ServiceFactory)implShape.Invoke(this, state)!;
+                    return otherFactory.Cast<T>(descriptor.Lifetime);
+                }
+            }
+
+            return typeShape.Accept(this, state);
+        }
+
+        public object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
+        {
+            // Only objects with constructors are supported.
+            return objectShape.Constructor?.Accept(this, state);
+        }
+
+        public object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructorShape, object? state = null)
+        {
+            if (constructorShape.Parameters is [])
+            {
+                var defaultCtor = constructorShape.GetDefaultConstructor();
+                return ServiceFactory.FromFunc(_ => defaultCtor(), ResolveLifetime(state));
+            }
+
+            var argumentStateCtor = constructorShape.GetArgumentStateConstructor();
+            var parameterizedCtor = constructorShape.GetParameterizedConstructor();
+
+            ServiceLifetime lifetime = ResolveLifetime(state); // The lifetime of the service is the maximum lifetime of its dependencies.
+            ConstructorParameterMapper<TArgumentState>[] parameterMappers = constructorShape.Parameters
+                .Select(p =>
+                {
+                    var result = ((ConstructorParameterMapper<TArgumentState>? Mapper, ServiceLifetime Lifetime))p.Accept(this)!;
+                    lifetime = CombineLifetimes(lifetime, result.Lifetime);
+                    return result.Mapper;
+                })
+                .Where(mapper => mapper is not null)
+                .ToArray()!;
+
+            return ServiceFactory.FromFunc(provider =>
+            {
+                TArgumentState argumentState = argumentStateCtor();
+                foreach (var mapper in parameterMappers)
+                {
+                    mapper(provider, ref argumentState);
+                }
+                return parameterizedCtor(ref argumentState);
+            }, lifetime);
+        }
+
+        public object? VisitConstructorParameter<TArgumentState, TParameterType>(IConstructorParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
+        {
+            var parameterTypeFactory = GetOrAddFactory(parameterShape.ParameterType);
+            if (parameterTypeFactory is null)
+            {
+                if (parameterShape.IsRequired && parameterShape.IsNonNullable)
+                {
+                    throw new InvalidOperationException($"No instance for the required service '{parameterShape.ParameterType.Type}' has been registered.");
+                }
+
+                return ((ConstructorParameterMapper<TArgumentState>?)null, ServiceLifetime.Singleton);
+            }
+
+            var factory = parameterTypeFactory.Factory;
+            var setter = parameterShape.GetSetter();
+            ConstructorParameterMapper<TArgumentState> mapper = (ServiceProvider provider, ref TArgumentState state) => setter(ref state, factory(provider));
+            return (mapper, parameterTypeFactory.Lifetime);
+        }
+
+        public object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
+            where TKey : notnull
+        {
+            if (dictionaryShape.ConstructionStrategy is CollectionConstructionStrategy.Mutable)
+            {
+                Func<TDictionary> defaultCtor = dictionaryShape.GetDefaultConstructor();
+                return ServiceFactory.FromFunc(_ => defaultCtor(), ResolveLifetime(state));
+            }
+
+            return null;
+        }
+
+        public object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state = null)
+        {
+            if (enumerableShape.ConstructionStrategy is CollectionConstructionStrategy.Mutable)
+            {
+                Func<TEnumerable> defaultCtor = enumerableShape.GetDefaultConstructor();
+                return ServiceFactory.FromFunc(_ => defaultCtor(), ResolveLifetime(state));
+            }
+
+            return null;
+        }
+
+        public object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state = null) where T : struct
+        {
+            if (GetOrAddFactory(nullableShape.ElementType) is { } elementFactory)
+            {
+                var lifetime = CombineLifetimes(ResolveLifetime(state), elementFactory.Lifetime);
+                return ServiceFactory.FromFunc<T?>(provider => elementFactory.Factory(provider), ResolveLifetime(state));
+            }
+
+            return null;
+        }
+
+        public object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
+        {
+            if (GetOrAddFactory(surrogateShape.SurrogateType) is { } surrogateFactory)
+            {
+                var marshaller = surrogateShape.Marshaller;
+                var lifetime = CombineLifetimes(ResolveLifetime(state), surrogateFactory.Lifetime);
+                return ServiceFactory.FromFunc(provider => marshaller.FromSurrogate(surrogateFactory.Factory(provider)), lifetime);
+            }
+
+            return null;
+        }
+
+        public object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null) where TEnum : struct, Enum => null;
+        public object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> propertyShape, object? state = null) => null;
+        private ServiceLifetime ResolveLifetime(object? state) => state is ServiceLifetime lifetime ? lifetime : serviceProviderCtx.DefaultLifetime;
+        private static ServiceLifetime CombineLifetimes(ServiceLifetime serviceLifetime1, ServiceLifetime serviceLifetime2) =>
+            (ServiceLifetime)Math.Max((int)serviceLifetime1, (int)serviceLifetime2);
+    }
+
+    private sealed class DelayedServiceFactoryFactory : IDelayedValueFactory
+    {
+        public static DelayedServiceFactoryFactory Instance { get; } = new();
+        public DelayedValue Create<T>(ITypeShape<T> typeShape) =>
+            new DelayedValue<ServiceFactory<T>>(self => 
+                new(provider => throw new InvalidOperationException($"The dependency graph for type '{typeof(T)}' is cyclic."), ServiceLifetime.Singleton));
+    }
+}
