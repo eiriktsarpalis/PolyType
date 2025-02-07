@@ -20,9 +20,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: |
-            9.0.x
-            6.0.x
+        dotnet-version: 9.0.x
     - name: Build & Test
       run: make
 
@@ -36,9 +34,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: |
-            9.0.x
-            6.0.x
+        dotnet-version: 9.0.x
     - name: Build & Test
       run: make
     - name: Upload to Codecov
@@ -57,8 +53,6 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: |
-            9.0.x
-            6.0.x
+        dotnet-version: 9.0.x
     - name: Build & Test
       run: make
