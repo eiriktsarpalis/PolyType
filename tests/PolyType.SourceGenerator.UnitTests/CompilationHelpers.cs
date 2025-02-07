@@ -54,7 +54,7 @@ public static class CompilationHelpers
         SyntaxTree[] syntaxTrees = 
         [ 
             CSharpSyntaxTree.ParseText(source, parseOptions),
-#if !NET || NET6_0
+#if !NET
             CSharpSyntaxTree.ParseText(PolyfillAttributes, parseOptions),
 #endif
         ];
@@ -73,11 +73,6 @@ public static class CompilationHelpers
             MetadataReference.CreateFromFile(typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.Runtime.CompilerServices.Unsafe).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.Collections.Immutable.ImmutableArray).Assembly.Location),
-#endif
-#if NET6_0
-            // net6.0 is consuming the ns2.0 build of PolyType
-            MetadataReference.CreateFromFile(GetAssemblyFromSharedFrameworkDirectory("netstandard.dll")),
-            MetadataReference.CreateFromFile(GetAssemblyFromSharedFrameworkDirectory("System.Memory.dll")),
 #endif
             MetadataReference.CreateFromFile(typeof(PolyType.Abstractions.ITypeShape).Assembly.Location),
             .. additionalReferences,
@@ -247,7 +242,7 @@ public static class CompilationHelpers
         return (lineSpan.EndLinePosition.Line, lineSpan.EndLinePosition.Character);
     }
 
-#if !NET || NET6_0
+#if !NET
     private const string PolyfillAttributes = """
         namespace System.Runtime.CompilerServices
         {
