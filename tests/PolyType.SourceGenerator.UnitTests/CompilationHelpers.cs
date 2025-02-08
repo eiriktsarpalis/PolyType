@@ -83,12 +83,6 @@ public static class CompilationHelpers
             syntaxTrees: syntaxTrees,
             references: references,
             options: new CSharpCompilationOptions(outputKind, nullableContextOptions: nullableContextOptions)
-#if !NET
-                .WithSpecificDiagnosticOptions(new Dictionary<string, ReportDiagnostic>
-                {
-                    ["CS1702"] = ReportDiagnostic.Suppress, // Suppress binding redirect warnings
-                })
-#endif
         );
     }
 
