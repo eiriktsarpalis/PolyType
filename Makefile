@@ -4,7 +4,7 @@ DOCS_PATH := $(SOURCE_DIRECTORY)docs
 CONFIGURATION ?= Release
 NUGET_SOURCE ?= "https://api.nuget.org/v3/index.json"
 NUGET_API_KEY ?= ""
-ADDITIONAL_ARGS ?= -p:ContinuousIntegrationBuild=true
+ADDITIONAL_ARGS ?= -p:ContinuousIntegrationBuild=true -warnAsError -warnNotAsError:NU1901,NU1902,NU1903,NU1904
 CODECOV_ARGS ?= --collect "Code Coverage;Format=cobertura" --results-directory $(ARTIFACT_PATH)
 DOCKER_IMAGE_NAME ?= "polytype-docker-build"
 DOCKER_CMD ?= make CONFIGURATION=$(CONFIGURATION)
