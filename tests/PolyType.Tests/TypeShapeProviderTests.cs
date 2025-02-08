@@ -24,12 +24,8 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         Assert.Equal(typeof(T).IsRecordType() && !testCase.UsesMarshaller, shape is IObjectTypeShape { IsRecordType: true});
         Assert.Equal(typeof(T).IsTupleType() && !testCase.UsesMarshaller, shape is IObjectTypeShape { IsTupleType: true });
         
-        Assert.NotNull(shape.Provider);
+        Assert.Same(providerUnderTest.Provider, shape.Provider);
         Assert.Same(shape, shape.Provider.GetShape(shape.Type));
-        if (providerUnderTest.Provider != null)
-        {
-            Assert.Same(providerUnderTest.Provider, shape.Provider);
-        }
 
         TypeShapeKind expectedKind = GetExpectedTypeKind(testCase);
         Assert.Equal(expectedKind, shape.Kind);

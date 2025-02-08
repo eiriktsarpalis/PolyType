@@ -22,7 +22,7 @@ internal sealed partial class SourceFormatter
 
         writer.WriteLine("/// <summary>Gets a generated shape for the specified type.</summary>");
         writer.WriteLine("#nullable disable annotations // Use nullable-oblivious property type", disableIndentation: true);
-        writer.WriteLine($"public {generatedPropertyType} {type.SourceIdentifier} => {generatedFieldName} ??= {generatedFactoryMethodName}();");
+        writer.WriteLine($"public {generatedPropertyType} {type.SourceIdentifier} => {generatedFieldName} ?? {InitializeMethodName}(ref {generatedFieldName}, {generatedFactoryMethodName}());");
         writer.WriteLine("#nullable enable annotations // Use nullable-oblivious property type", disableIndentation: true);
         writer.WriteLine($"private {generatedPropertyType}? {generatedFieldName};");
         writer.WriteLine();

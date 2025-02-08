@@ -11,6 +11,7 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
     public static string[] ReservedIdentifiers { get; } = [ProviderSingletonProperty,GetShapeMethodName];
 
     private const string InstanceBindingFlagsConstMember = "__BindingFlags_Instance_All";
+    private const string InitializeMethodName = "__Init_Singleton";
     private const string ProviderSingletonProperty = "Default";
     private const string GetShapeMethodName = "GetShape";
 

@@ -29,9 +29,13 @@ internal sealed partial class SourceFormatter
 
             /// <summary>Initializes a new instance of the <see cref="{{provider.ProviderDeclaration.Name}}"/> class.</summary>
             private {{provider.ProviderDeclaration.Name}}() { }
+
+            /// <summary>Initializes the field ensuring the same instance is always returned.</summary>
+            private T {{InitializeMethodName}}<T>(ref T? field, T value) where T : class =>
+                global::System.Threading.Interlocked.CompareExchange(ref field, value, null) ?? value;
+
             """);
 
-        writer.WriteLine();
         FormatGetShapeProviderMethod(provider, writer);
 
         writer.Indentation--;
