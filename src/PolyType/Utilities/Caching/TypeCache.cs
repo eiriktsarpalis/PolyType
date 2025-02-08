@@ -51,7 +51,7 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     /// including handling potentially cyclic type graphs.
     ///
     /// Because the generation context implements <see cref="ITypeShapeFunc"/>, this factory can effectively be seen as
-    /// a <see cref="Func{ITypeShapeFunc, ITypeShapeFunc}"/> where the resultant function is being passed a reference to
+    /// a Func&lt;<see cref="ITypeShapeFunc"/>, <see cref="ITypeShapeFunc"/>&gt; where the resultant function is being passed a reference to
     /// itself for the purpose of handling recursive calls. This makes it a specialized form of the Y-combinator.
     /// </remarks>
     public Func<TypeGenerationContext, ITypeShapeFunc>? ValueBuilderFactory { get; init; }
