@@ -5,9 +5,10 @@ namespace PolyType.Examples.Counter;
 
 public static partial class Counter
 {
-    private sealed class Builder(TypeGenerationContext generationContext) : TypeShapeVisitor, ITypeShapeFunc
+    private sealed class Builder(ITypeShapeFunc self) : TypeShapeVisitor, ITypeShapeFunc
     {
-        public Func<T?, long> GetOrAddCounter<T>(ITypeShape<T> typeShape) => (Func<T?, long>)generationContext.GetOrAdd(typeShape)!;
+        /// <summary>Recursively looks up or creates a counter for the specified shape.</summary>
+        public Func<T?, long> GetOrAddCounter<T>(ITypeShape<T> typeShape) => (Func<T?, long>)self.Invoke(typeShape)!;
         object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> shape, object? _) => shape.Accept(this);
 
         public override object? VisitObject<T>(IObjectTypeShape<T> type, object? state)

@@ -9,11 +9,13 @@ namespace PolyType.Examples.PrettyPrinter;
 
 public static partial class PrettyPrinter
 {
-    private sealed class Builder(TypeGenerationContext generationContext) : TypeShapeVisitor, ITypeShapeFunc
+    private sealed class Builder(ITypeShapeFunc self) : TypeShapeVisitor, ITypeShapeFunc
     {
         private static readonly Dictionary<Type, object> s_defaultPrinters = CreateDefaultPrinters().ToDictionary();
+
+        /// <summary>Recursively looks up or creates a printer for the specified shape.</summary>
         public PrettyPrinter<T> GetOrAddPrettyPrinter<T>(ITypeShape<T> typeShape) =>
-            (PrettyPrinter<T>)generationContext.GetOrAdd(typeShape)!;
+            (PrettyPrinter<T>)self.Invoke(typeShape)!;
 
         object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? _)
         {

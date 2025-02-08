@@ -44,6 +44,16 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     /// <summary>
     /// Gets a factory method governing the creation of values when invoking the <see cref="GetOrAdd(ITypeShape)" /> method.
     /// </summary>
+    /// <remarks>
+    /// This factory takes a newly created <see cref="TypeGenerationContext"/> to construct an <see cref="ITypeShapeFunc"/>
+    /// that is responsible for generating the value associated with a given type shape. The generation context wraps the
+    /// created <see cref="ITypeShapeFunc"/> and can be used to recursively look up and cache values for nested types,
+    /// including handling potentially cyclic type graphs.
+    ///
+    /// Because the generation context implements <see cref="ITypeShapeFunc"/>, this factory can effectively be seen as
+    /// a <see cref="Func{ITypeShapeFunc, ITypeShapeFunc}"/> where the resultant function is being passed a reference to
+    /// itself for the purpose of handling recursive calls. This makes it a specialized form of the Y-combinator.
+    /// </remarks>
     public Func<TypeGenerationContext, ITypeShapeFunc>? ValueBuilderFactory { get; init; }
 
     /// <summary>

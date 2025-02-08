@@ -9,13 +9,14 @@ namespace PolyType.Examples.ConfigurationBinder;
 
 public static partial class ConfigurationBinderTS
 {
-    private sealed class Builder(TypeGenerationContext generationContext) : TypeShapeVisitor, ITypeShapeFunc
+    private sealed class Builder(ITypeShapeFunc self) : TypeShapeVisitor, ITypeShapeFunc
     {
         private delegate void PropertyBinder<T>(ref T obj, IConfigurationSection section);
         private static readonly Dictionary<Type, object> s_builtInParsers = GetBuiltInParsers().ToDictionary();
 
+        /// <summary>Recursively looks up or creates a binder for the specified shape.</summary>
         public Func<IConfiguration, T?> GetOrAddBinder<T>(ITypeShape<T> shape) =>
-            (Func<IConfiguration, T?>)generationContext.GetOrAdd(shape)!;
+            (Func<IConfiguration, T?>)self.Invoke(shape)!;
 
         object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state)
         {

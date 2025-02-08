@@ -6,9 +6,11 @@ namespace PolyType.Examples.Validation;
 
 public static partial class Validator
 {
-    private sealed class Builder(TypeGenerationContext generationContext) : TypeShapeVisitor, ITypeShapeFunc
+    private sealed class Builder(ITypeShapeFunc self) : TypeShapeVisitor, ITypeShapeFunc
     {
-        public Validator<T>? GetOrAddValidator<T>(ITypeShape<T> shape) => (Validator<T>?)generationContext.GetOrAdd(shape);
+        public Validator<T>? GetOrAddValidator<T>(ITypeShape<T> shape) => (Validator<T>?)self.Invoke(shape);
+
+        /// <summary>Recursively looks up or creates a validator for the specified shape.</summary>
         object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state) => typeShape.Accept(this);
 
         public override object? VisitObject<T>(IObjectTypeShape<T> type, object? state)

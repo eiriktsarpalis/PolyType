@@ -13,11 +13,12 @@ public partial class RandomGenerator
 {
     private delegate void RandomPropertySetter<T>(ref T value, Random random, int size);
 
-    private sealed class Builder(TypeGenerationContext generationContext) : ITypeShapeVisitor, ITypeShapeFunc
+    private sealed class Builder(ITypeShapeFunc self) : ITypeShapeVisitor, ITypeShapeFunc
     {
         private static readonly Dictionary<Type, (object Generator, RandomGenerator<object?> BoxingGenerator)> s_defaultGenerators = CreateDefaultGenerators().ToDictionary();
 
-        public RandomGenerator<T> GetOrAddGenerator<T>(ITypeShape<T> type) => (RandomGenerator<T>)generationContext.GetOrAdd(type)!;
+        /// <summary>Recursively looks up or creates a generator for the specified shape.</summary>
+        public RandomGenerator<T> GetOrAddGenerator<T>(ITypeShape<T> type) => (RandomGenerator<T>)self.Invoke(type)!;
 
         object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? _)
         {

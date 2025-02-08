@@ -6,10 +6,11 @@ namespace PolyType.Examples.XmlSerializer;
 
 public static partial class XmlSerializer
 {
-    private sealed class Builder(TypeGenerationContext generationContext) : ITypeShapeVisitor, ITypeShapeFunc
+    private sealed class Builder(ITypeShapeFunc self) : ITypeShapeVisitor, ITypeShapeFunc
     {
+        /// <summary>Recursively looks up or creates a converter for the specified shape.</summary>
         public XmlConverter<T> GetOrAddConverter<T>(ITypeShape<T> shape) =>
-            (XmlConverter<T>)generationContext.GetOrAdd(shape, this)!;
+            (XmlConverter<T>)self.Invoke(shape, this)!;
 
         object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state)
         {

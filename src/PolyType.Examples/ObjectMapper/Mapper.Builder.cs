@@ -10,12 +10,13 @@ public static partial class Mapper
 {
     private delegate void PropertyMapper<TSource, TTarget>(ref TSource source, ref TTarget target);
 
-    private sealed class Builder(TypeGenerationContext generationContext) : MapperTypeShapeVisitor, ITypeShapeFunc
+    private sealed class Builder(ITypeShapeFunc self) : MapperTypeShapeVisitor, ITypeShapeFunc
     {
+        /// <summary>Recursively looks up or creates a mapper for the specified shapes.</summary>
         public Mapper<TSource, TTarget> GetOrAddMapper<TSource, TTarget>(ITypeShape<TSource> fromShape, ITypeShape<TTarget> toShape)
         {
             ITypeShape<Mapper<TSource, TTarget>> mapperShape = new MapperShape<TSource, TTarget>(fromShape, toShape);
-            return (Mapper<TSource, TTarget>)generationContext.GetOrAdd(mapperShape)!;
+            return (Mapper<TSource, TTarget>)self.Invoke(mapperShape)!;
         }
 
         object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state) => typeShape.Accept(this, state);

@@ -6,10 +6,11 @@ namespace PolyType.Examples.CborSerializer;
 
 public static partial class CborSerializer
 {
-    private sealed class Builder(TypeGenerationContext generationContext) : ITypeShapeVisitor, ITypeShapeFunc
+    private sealed class Builder(ITypeShapeFunc self) : ITypeShapeVisitor, ITypeShapeFunc
     {
+        /// <summary>Recursively looks up or creates a converter for the specified shape.</summary>
         public CborConverter<T> GetOrAddConverter<T>(ITypeShape<T> typeShape) =>
-            (CborConverter<T>)generationContext.GetOrAdd(typeShape, this)!;
+            (CborConverter<T>)self.Invoke(typeShape, this)!;
 
         object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? shape)
         {

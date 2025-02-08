@@ -6,12 +6,13 @@ namespace PolyType.Examples.DependencyInjection;
 
 public sealed partial class ServiceProviderContext
 {
-    private sealed class Builder(ServiceProviderContext serviceProviderCtx, TypeGenerationContext genCtx) : ITypeShapeVisitor, ITypeShapeFunc
+    private sealed class Builder(ServiceProviderContext serviceProviderCtx, ITypeShapeFunc self) : ITypeShapeVisitor, ITypeShapeFunc
     {
         private delegate void ConstructorParameterMapper<TService>(ServiceProvider serviceProvider, ref TService service);
 
+        /// <summary>Recursively looks up or creates a factory for the specified shape.</summary>
         private ServiceFactory<TService>? GetOrAddFactory<TService>(ITypeShape<TService> shape) =>
-            (ServiceFactory<TService>?)genCtx.GetOrAdd(shape);
+            (ServiceFactory<TService>?)self.Invoke(shape);
 
         public object? Invoke<T>(ITypeShape<T> typeShape, object? state = null)
         {
