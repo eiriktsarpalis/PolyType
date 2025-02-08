@@ -16,6 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Use a version of Roslyn that is compatible with VS 2019 -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" VersionOverride="3.11.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" />
   </ItemGroup>
 </Project>
