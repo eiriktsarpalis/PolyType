@@ -516,7 +516,7 @@ public static class DiagnosticTests
     public static void InvalidMarshaller_ErrorDiagnostic(string source)
     {
         Compilation compilation = CompilationHelpers.CreateCompilation(source);
-        Assert.Empty(compilation.GetDiagnostics());
+        Assert.Empty(compilation.GetDiagnostics(TestContext.Current.CancellationToken));
 
         PolyTypeSourceGeneratorResult result =
             CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
