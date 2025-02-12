@@ -5,9 +5,11 @@ name: .NET
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - "main"
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - "main"
 
 jobs:
   Linux:
@@ -42,6 +44,9 @@ jobs:
       with:
         files: artifacts/*/*.cobertura.xml
         token: ${{ secrets.CODECOV_TOKEN }}
+    - name: Publish to Feedz.io
+      if: github.ref == 'refs/heads/main'
+      run: make push NUGET_SOURCE=https://f.feedz.io/eiriktsarpalis/polytype/nuget/index.json NUGET_API_KEY=${{ secrets.FEEDZ_IO_KEY }}
 
   MacOS:
     runs-on: macos-latest
