@@ -170,3 +170,6 @@ dotnet_diagnostic.IDE0032.severity = none
 
 # CA1510: Use ArgumentNullException.ThrowIfNull
 dotnet_diagnostic.CA1510.severity = none # incompatible with multitargeting projects.
+
+# SA1134: Attributes should not share line
+dotnet_diagnostic.SA1134.severity = none

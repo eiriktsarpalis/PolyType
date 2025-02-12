@@ -96,6 +96,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             if (property.HasGetter)
             {
                 var getter = property.GetGetter();
+                Assert.Same(getter, property.GetGetter());
                 propertyType = getter(ref obj);
             }
             else
@@ -106,6 +107,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             if (property.HasSetter)
             {
                 var setter = property.GetSetter();
+                Assert.Same(setter, property.GetSetter());
                 setter(ref obj, propertyType);
             }
             else
@@ -149,6 +151,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                 Assert.Throws<InvalidOperationException>(() => constructor.GetParameterizedConstructor());
                 
                 var defaultCtor = constructor.GetDefaultConstructor();
+                Assert.Same(defaultCtor, constructor.GetDefaultConstructor());
                 TDeclaringType defaultValue = defaultCtor();
                 Assert.NotNull(defaultValue);
             }
@@ -157,7 +160,11 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                 Assert.Throws<InvalidOperationException>(() => constructor.GetDefaultConstructor());
                 
                 int i = 0;
-                TArgumentState argumentState = constructor.GetArgumentStateConstructor().Invoke();
+                var argumentStateCtor = constructor.GetArgumentStateConstructor();
+                Assert.NotNull(argumentStateCtor);
+                Assert.Same(argumentStateCtor, constructor.GetArgumentStateConstructor());
+
+                TArgumentState argumentState = argumentStateCtor();
                 foreach (IConstructorParameterShape parameter in constructor.Parameters)
                 {
                     Assert.Equal(i++, parameter.Position);
@@ -166,6 +173,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
 
                 var parameterizedCtor = constructor.GetParameterizedConstructor();
                 Assert.NotNull(parameterizedCtor);
+                Assert.Same(parameterizedCtor, constructor.GetParameterizedConstructor());
 
                 if (typeof(TDeclaringType).Assembly == Assembly.GetExecutingAssembly())
                 {
@@ -181,6 +189,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         {
             var argState = (TArgumentState)state!;
             var setter = parameter.GetSetter();
+            Assert.Same(setter, parameter.GetSetter());
 
             TParameter? value = parameter.HasDefaultValue ? parameter.DefaultValue : default;
             setter(ref argState, value!);
@@ -315,13 +324,15 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state)
         {
             TDictionary dictionary;
-            RandomGenerator<TKey> keyGenerator = RandomGenerator.Create((ITypeShape<TKey>)dictionaryShape.KeyType);
+            RandomGenerator<TKey> keyGenerator = RandomGenerator.Create(dictionaryShape.KeyType);
             var getter = dictionaryShape.GetGetDictionary();
 
             if (dictionaryShape.ConstructionStrategy is CollectionConstructionStrategy.Mutable)
             {
                 var defaultCtor = dictionaryShape.GetDefaultConstructor();
                 var adder = dictionaryShape.GetAddKeyValuePair();
+                Assert.Same(defaultCtor, dictionaryShape.GetDefaultConstructor());
+                Assert.Same(adder, dictionaryShape.GetAddKeyValuePair());
 
                 dictionary = defaultCtor();
                 Assert.Empty(getter(dictionary));
@@ -339,6 +350,8 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             if (dictionaryShape.ConstructionStrategy is CollectionConstructionStrategy.Enumerable)
             {
                 var enumerableCtor = dictionaryShape.GetEnumerableConstructor();
+                Assert.Same(enumerableCtor, dictionaryShape.GetEnumerableConstructor());
+
                 var values = keyGenerator.GenerateValues(seed: 42)
                     .Select(k => new KeyValuePair<TKey, TValue>(k, default!))
                     .Take(10);
@@ -354,6 +367,8 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             if (dictionaryShape.ConstructionStrategy is CollectionConstructionStrategy.Span)
             {
                 var spanCtor = dictionaryShape.GetSpanConstructor();
+                Assert.Same(spanCtor, dictionaryShape.GetSpanConstructor());
+
                 var values = keyGenerator.GenerateValues(seed: 42)
                     .Select(k => new KeyValuePair<TKey, TValue>(k, default!))
                     .Take(10)
@@ -428,6 +443,8 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             {
                 var defaultCtor = enumerableShape.GetDefaultConstructor();
                 var adder = enumerableShape.GetAddElement();
+                Assert.Same(defaultCtor, enumerableShape.GetDefaultConstructor());
+                Assert.Same(adder, enumerableShape.GetAddElement());
 
                 enumerable = defaultCtor();
                 Assert.Empty(getter(enumerable));
@@ -445,8 +462,9 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             if (enumerableShape.ConstructionStrategy is CollectionConstructionStrategy.Enumerable)
             {
                 var enumerableCtor = enumerableShape.GetEnumerableConstructor();
-                var values = elementGenerator.GenerateValues(seed: 42).Take(10);
+                Assert.Same(enumerableCtor, enumerableShape.GetEnumerableConstructor());
 
+                var values = elementGenerator.GenerateValues(seed: 42).Take(10);
                 enumerable = enumerableCtor(values);
                 Assert.Equal(10, getter(enumerable).Count());
             }
@@ -458,8 +476,9 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             if (enumerableShape.ConstructionStrategy is CollectionConstructionStrategy.Span)
             {
                 var spanCtor = enumerableShape.GetSpanConstructor();
-                var values = elementGenerator.GenerateValues(seed: 42).Take(10).ToArray();
+                Assert.Same(spanCtor, enumerableShape.GetSpanConstructor());
 
+                var values = elementGenerator.GenerateValues(seed: 42).Take(10).ToArray();
                 enumerable = spanCtor(values);
                 Assert.Equal(10, getter(enumerable).Count());
             }

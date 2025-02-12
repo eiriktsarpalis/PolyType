@@ -10,6 +10,9 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
     private readonly MemberInfo _memberInfo;
     private readonly MemberInfo[]? _parentMembers; // stack of parent members reserved for nested tuple representations
 
+    private Getter<TDeclaringType, TPropertyType>? _getter;
+    private Setter<TDeclaringType, TPropertyType>? _setter;
+
     public ReflectionPropertyShape(ReflectionTypeShapeProvider provider, PropertyShapeInfo shapeInfo)
     {
         Debug.Assert(shapeInfo.MemberInfo.DeclaringType!.IsAssignableFrom(typeof(TDeclaringType)) || shapeInfo.ParentMembers is not null);
@@ -66,20 +69,22 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
     {
         if (!HasGetter)
         {
-            throw new InvalidOperationException("The current property shape does not define a getter.");
+            Throw();
+            static void Throw() => throw new InvalidOperationException("The current property shape does not define a getter.");
         }
 
-        return _provider.MemberAccessor.CreateGetter<TDeclaringType, TPropertyType>(_memberInfo, _parentMembers);
+        return _getter ??= _provider.MemberAccessor.CreateGetter<TDeclaringType, TPropertyType>(_memberInfo, _parentMembers);
     }
 
     public Setter<TDeclaringType, TPropertyType> GetSetter()
     {
         if (!HasSetter)
         {
-            throw new InvalidOperationException("The current property shape does not define a setter.");
+            Throw();
+            static void Throw() => throw new InvalidOperationException("The current property shape does not define a setter.");
         }
 
-        return _provider.MemberAccessor.CreateSetter<TDeclaringType, TPropertyType>(_memberInfo, _parentMembers);
+        return _setter ??= _provider.MemberAccessor.CreateSetter<TDeclaringType, TPropertyType>(_memberInfo, _parentMembers);
     }
 }
 

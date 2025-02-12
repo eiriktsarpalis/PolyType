@@ -20,6 +20,11 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     private ConstructorInfo? _dictionaryCtor;
     private bool _isFSharpMap;
 
+    private Setter<TDictionary, KeyValuePair<TKey, TValue>>? _addDelegate;
+    private Func<TDictionary>? _defaultCtorDelegate;
+    private Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>? _enumerableCtorDelegate;
+    private SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary>? _spanCtorDelegate;
+
     public sealed override TypeShapeKind Kind => TypeShapeKind.Dictionary;
     public sealed override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitDictionary(this, state);
 
@@ -35,65 +40,80 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
         {
-            throw new InvalidOperationException("The current dictionary shape does not support mutation.");
+            Throw();
+            static void Throw() => throw new InvalidOperationException("The current dictionary shape does not support mutation.");
         }
 
         DebugExt.Assert(_addMethod != null);
-        return Provider.MemberAccessor.CreateDictionaryAddDelegate<TDictionary, TKey, TValue>(_addMethod);
+        return _addDelegate ??= Provider.MemberAccessor.CreateDictionaryAddDelegate<TDictionary, TKey, TValue>(_addMethod);
     }
 
     public Func<TDictionary> GetDefaultConstructor()
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
         {
-            throw new InvalidOperationException("The current dictionary shape does not support mutation.");
+            Throw();
+            static void Throw() => throw new InvalidOperationException("The current dictionary shape does not support mutation.");
         }
 
-        Debug.Assert(_defaultCtor != null);
-        return Provider.MemberAccessor.CreateDefaultConstructor<TDictionary>(new MethodConstructorShapeInfo(typeof(TDictionary), _defaultCtor, parameters: []));
+        return _defaultCtorDelegate ??= CreateDefaultCtor();
+        Func<TDictionary> CreateDefaultCtor()
+        {
+            DebugExt.Assert(_defaultCtor != null);
+            return Provider.MemberAccessor.CreateDefaultConstructor<TDictionary>(new MethodConstructorShapeInfo(typeof(TDictionary), _defaultCtor, parameters: []));
+        }
     }
 
     public Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> GetEnumerableConstructor()
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Enumerable)
         {
-            throw new InvalidOperationException("The current dictionary shape does not support enumerable constructors.");
+            Throw();
+            static void Throw() => throw new InvalidOperationException("The current dictionary shape does not support enumerable constructors.");
         }
 
-        DebugExt.Assert(_enumerableCtor != null);
-
-        if (_isFSharpMap)
+        return _enumerableCtorDelegate ??= CreateEnumerableCtor();
+        Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> CreateEnumerableCtor()
         {
-            var mapOfSeqDelegate = ((MethodInfo)_enumerableCtor).CreateDelegate<Func<IEnumerable<Tuple<TKey, TValue>>, TDictionary>>();
-            return kvps => mapOfSeqDelegate(kvps.Select(kvp => new Tuple<TKey, TValue>(kvp.Key, kvp.Value)));
+            DebugExt.Assert(_enumerableCtor != null);
+            if (_isFSharpMap)
+            {
+                var mapOfSeqDelegate = ((MethodInfo)_enumerableCtor).CreateDelegate<Func<IEnumerable<Tuple<TKey, TValue>>, TDictionary>>();
+                return kvps => mapOfSeqDelegate(kvps.Select(kvp => new Tuple<TKey, TValue>(kvp.Key, kvp.Value)));
+            }
+
+            return _enumerableCtor switch
+            {
+                ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateFuncDelegate<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>(ctorInfo),
+                _ => ((MethodInfo)_enumerableCtor).CreateDelegate<Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>>(),
+            };
         }
-
-        return _enumerableCtor switch
-        {
-            ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateFuncDelegate<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>(ctorInfo),
-            _ => ((MethodInfo)_enumerableCtor).CreateDelegate<Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>>(),
-        };
     }
 
     public SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> GetSpanConstructor()
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Span)
         {
-            throw new InvalidOperationException("The current enumerable shape does not support span constructors.");
+            Throw();
+            static void Throw() => throw new InvalidOperationException("The current enumerable shape does not support span constructors.");
         }
 
-        if (_dictionaryCtor is ConstructorInfo dictionaryCtor)
+        return _spanCtorDelegate ??= CreateSpanConstructor();
+        SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> CreateSpanConstructor()
         {
-            var dictionaryCtorDelegate = Provider.MemberAccessor.CreateFuncDelegate<Dictionary<TKey, TValue>, TDictionary>(dictionaryCtor);
-            return span => dictionaryCtorDelegate(CollectionHelpers.CreateDictionary(span));
-        }
+            if (_dictionaryCtor is ConstructorInfo dictionaryCtor)
+            {
+                var dictionaryCtorDelegate = Provider.MemberAccessor.CreateFuncDelegate<Dictionary<TKey, TValue>, TDictionary>(dictionaryCtor);
+                return span => dictionaryCtorDelegate(CollectionHelpers.CreateDictionary(span));
+            }
 
-        DebugExt.Assert(_spanCtor != null);
-        return _spanCtor switch
-        {
-            ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateSpanConstructorDelegate<KeyValuePair<TKey, TValue>, TDictionary>(ctorInfo),
-            _ => ((MethodInfo)_spanCtor).CreateDelegate<SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary>>(),
-        };
+            DebugExt.Assert(_spanCtor != null);
+            return _spanCtor switch
+            {
+                ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateSpanConstructorDelegate<KeyValuePair<TKey, TValue>, TDictionary>(ctorInfo),
+                _ => ((MethodInfo)_spanCtor).CreateDelegate<SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary>>(),
+            };
+        }
     }
 
     private CollectionConstructionStrategy DetermineConstructionStrategy()

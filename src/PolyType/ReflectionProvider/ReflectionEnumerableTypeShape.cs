@@ -19,6 +19,11 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
     private MethodBase? _spanCtor;
     private ConstructorInfo? _listCtor;
 
+    private Setter<TEnumerable, TElement>? _addDelegate;
+    private Func<TEnumerable>? _defaultCtorDelegate;
+    private Func<IEnumerable<TElement>, TEnumerable>? _enumerableCtorDelegate;
+    private SpanConstructor<TElement, TEnumerable>? _spanCtorDelegate;
+
     public virtual CollectionConstructionStrategy ConstructionStrategy => _constructionStrategy ??= DetermineConstructionStrategy();
     public virtual int Rank => 1;
     public abstract Func<TEnumerable, IEnumerable<TElement>> GetGetEnumerable();
@@ -32,58 +37,74 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
         {
-            throw new InvalidOperationException("The current enumerable shape does not support mutation.");
+            Throw();
+            static void Throw() => throw new InvalidOperationException("The current enumerable shape does not support mutation.");
         }
 
         DebugExt.Assert(_addMethod != null);
-        return Provider.MemberAccessor.CreateEnumerableAddDelegate<TEnumerable, TElement>(_addMethod);
+        return _addDelegate ??= Provider.MemberAccessor.CreateEnumerableAddDelegate<TEnumerable, TElement>(_addMethod);
     }
 
     public virtual Func<TEnumerable> GetDefaultConstructor()
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
         {
-            throw new InvalidOperationException("The current enumerable shape does not support default constructors.");
+            Throw();
+            static void Throw() => throw new InvalidOperationException("The current enumerable shape does not support default constructors.");
         }
 
-        Debug.Assert(_defaultCtor != null);
-        return Provider.MemberAccessor.CreateDefaultConstructor<TEnumerable>(new MethodConstructorShapeInfo(typeof(TEnumerable), _defaultCtor, parameters: []));
+        return _defaultCtorDelegate ??= CreateDefaultConstructor();
+        Func<TEnumerable> CreateDefaultConstructor()
+        {
+            Debug.Assert(_defaultCtor != null);
+            return Provider.MemberAccessor.CreateDefaultConstructor<TEnumerable>(new MethodConstructorShapeInfo(typeof(TEnumerable), _defaultCtor, parameters: []));
+        }
     }
 
     public virtual Func<IEnumerable<TElement>, TEnumerable> GetEnumerableConstructor()
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Enumerable)
         {
-            throw new InvalidOperationException("The current enumerable shape does not support enumerable constructors.");
+            Throw();
+            static void Throw() => throw new InvalidOperationException("The current enumerable shape does not support enumerable constructors.");
         }
 
-        DebugExt.Assert(_enumerableCtor != null);
-        return _enumerableCtor switch
+        return _enumerableCtorDelegate ??= CreateEnumerableConstructor();
+        Func<IEnumerable<TElement>, TEnumerable> CreateEnumerableConstructor()
         {
-            ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateFuncDelegate<IEnumerable<TElement>, TEnumerable>(ctorInfo),
-            _ => ((MethodInfo)_enumerableCtor).CreateDelegate<Func<IEnumerable<TElement>, TEnumerable>>(),
-        };
+            DebugExt.Assert(_enumerableCtor != null);
+            return _enumerableCtor switch
+            {
+                ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateFuncDelegate<IEnumerable<TElement>, TEnumerable>(ctorInfo),
+                _ => ((MethodInfo)_enumerableCtor).CreateDelegate<Func<IEnumerable<TElement>, TEnumerable>>(),
+            };
+        }
     }
 
     public virtual SpanConstructor<TElement, TEnumerable> GetSpanConstructor()
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Span)
         {
-            throw new InvalidOperationException("The current enumerable shape does not support span constructors.");
+            Throw();
+            static void Throw() => throw new InvalidOperationException("The current enumerable shape does not support span constructors.");
         }
 
-        if (_listCtor is ConstructorInfo listCtor)
+        return _spanCtorDelegate ??= CreateSpanConstructor();
+        SpanConstructor<TElement, TEnumerable> CreateSpanConstructor()
         {
-            var listCtorDelegate = Provider.MemberAccessor.CreateFuncDelegate<List<TElement>, TEnumerable>(listCtor);
-            return span => listCtorDelegate(CollectionHelpers.CreateList(span));
-        }
+            if (_listCtor is ConstructorInfo listCtor)
+            {
+                var listCtorDelegate = Provider.MemberAccessor.CreateFuncDelegate<List<TElement>, TEnumerable>(listCtor);
+                return span => listCtorDelegate(CollectionHelpers.CreateList(span));
+            }
 
-        DebugExt.Assert(_spanCtor != null);
-        return _spanCtor switch
-        {
-            ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateSpanConstructorDelegate<TElement, TEnumerable>(ctorInfo),
-            _ => ((MethodInfo)_spanCtor).CreateDelegate<SpanConstructor<TElement, TEnumerable>>(),
-        };
+            DebugExt.Assert(_spanCtor != null);
+            return _spanCtor switch
+            {
+                ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateSpanConstructorDelegate<TElement, TEnumerable>(ctorInfo),
+                _ => ((MethodInfo)_spanCtor).CreateDelegate<SpanConstructor<TElement, TEnumerable>>(),
+            };
+        }
     }
 
     private CollectionConstructionStrategy DetermineConstructionStrategy()

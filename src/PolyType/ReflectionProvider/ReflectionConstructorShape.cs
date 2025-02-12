@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using PolyType.Abstractions;
 
@@ -9,6 +10,11 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
     IConstructorShapeInfo ctorInfo) :
     IConstructorShape<TDeclaringType, TArgumentState>
 {
+    private IReadOnlyList<IConstructorParameterShape>? _parameters;
+    private Func<TArgumentState>? _argumentStateConstructor;
+    private Constructor<TArgumentState, TDeclaringType>? _parameterizedConstructor;
+    private Func<TDeclaringType>? _defaultConstructor;
+
     public IObjectTypeShape<TDeclaringType> DeclaringType => (IObjectTypeShape<TDeclaringType>)provider.GetShape<TDeclaringType>();
     public ICustomAttributeProvider? AttributeProvider => ctorInfo.AttributeProvider;
     public bool IsPublic => ctorInfo.IsPublic;
@@ -16,36 +22,38 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
     object? IConstructorShape.Accept(ITypeShapeVisitor visitor, object? state) => visitor.VisitConstructor(this, state);
 
     public IReadOnlyList<IConstructorParameterShape> Parameters => _parameters ??= GetParameters().AsReadOnlyList();
-    private IReadOnlyList<IConstructorParameterShape>? _parameters;
 
     public Func<TArgumentState> GetArgumentStateConstructor()
     {
         if (Parameters is [])
         {
-            throw new InvalidOperationException("The current constructor shape is not parameterized.");
+            Throw();
+            static void Throw() => throw new InvalidOperationException("The current constructor shape is not parameterized.");
         }
 
-        return provider.MemberAccessor.CreateConstructorArgumentStateCtor<TArgumentState>(ctorInfo);
+        return _argumentStateConstructor ??= provider.MemberAccessor.CreateConstructorArgumentStateCtor<TArgumentState>(ctorInfo);
     }
 
     public Constructor<TArgumentState, TDeclaringType> GetParameterizedConstructor()
     {
         if (Parameters is [])
         {
-            throw new InvalidOperationException("The current constructor shape is not parameterized.");
+            Throw();
+            static void Throw() => throw new InvalidOperationException("The current constructor shape is not parameterized.");
         }
 
-        return provider.MemberAccessor.CreateParameterizedConstructor<TArgumentState, TDeclaringType>(ctorInfo);
+        return _parameterizedConstructor ??= provider.MemberAccessor.CreateParameterizedConstructor<TArgumentState, TDeclaringType>(ctorInfo);
     }
 
     public Func<TDeclaringType> GetDefaultConstructor()
     {
         if (Parameters is not [])
         {
-            throw new InvalidOperationException("The current constructor shape is not parameterless.");
+            Throw();
+            static void Throw() => throw new InvalidOperationException("The current constructor shape is not parameterless.");
         }
 
-        return provider.MemberAccessor.CreateDefaultConstructor<TDeclaringType>(ctorInfo);
+        return _defaultConstructor ??= provider.MemberAccessor.CreateDefaultConstructor<TDeclaringType>(ctorInfo);
     }
 
     private IEnumerable<IConstructorParameterShape> GetParameters()
