@@ -130,3 +130,14 @@ The repo consists of the following projects:
   * An object validator in the style of System.ComponentModel.DataAnnotations.
   * A simple .NET object mapper.
 * The [`applications`](https://github.com/eiriktsarpalis/PolyType/tree/main/applications) folder contains sample Native AOT console applications.
+
+## CI Packages
+
+CI builds of NuGet packages are available on [feedz.io](https://feedz.io/). To use the feed, add the following package source to your `NuGet.config`:
+
+```xml
+<configuration>
+  <packageSources>
+    <add key="feedz.io" value="https://f.feedz.io/eiriktsarpalis/PolyType/nuget/index.json" />
+  </packageSources>
+```
