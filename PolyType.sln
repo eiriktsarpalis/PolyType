@@ -35,6 +35,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{
 	ProjectSection(SolutionItems) = preProject
 		.github\workflows\build.yml = .github\workflows\build.yml
 		.github\workflows\markdown-link-check.yml = .github\workflows\markdown-link-check.yml
+		.github\workflows\release.yml = .github\workflows\release.yml
 		.github\workflows\update-docs.yml = .github\workflows\update-docs.yml
 	EndProjectSection
 EndProject

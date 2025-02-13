@@ -1,0 +1,27 @@
+name: Publish to NuGet
+
+on:
+  release:
+    types: ["published"]
+
+jobs:
+  Ubuntu:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+    - name: Build & Test
+      run: make pack
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: artifacts/
+    - name: Publish packages to NuGet
+      run: make push NUGET_SOURCE=https://api.nuget.org/v3/index.json NUGET_API_KEY=${{ secrets.NUGET_API_KEY }}

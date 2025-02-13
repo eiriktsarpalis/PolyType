@@ -7,7 +7,7 @@ NUGET_API_KEY ?= ""
 ADDITIONAL_ARGS ?= -p:ContinuousIntegrationBuild=true -warnAsError -warnNotAsError:NU1901,NU1902,NU1903,NU1904
 CODECOV_ARGS ?= --collect "Code Coverage;Format=cobertura" --results-directory $(ARTIFACT_PATH)
 DOCKER_IMAGE_NAME ?= "polytype-docker-build"
-DOCKER_CMD ?= make CONFIGURATION=$(CONFIGURATION)
+DOCKER_CMD ?= make pack
 VERSION_FILE = $(SOURCE_DIRECTORY)version.json
 VERSION ?= ""
 
@@ -24,6 +24,9 @@ test: build
 pack: test
 	dotnet pack -c $(CONFIGURATION) $(ADDITIONAL_ARGS)
 
+push:
+	dotnet nuget push $(ARTIFACT_PATH)/*.nupkg -s $(NUGET_SOURCE) -k $(NUGET_API_KEY)
+
 restore-tools:
 	dotnet tool restore
 
@@ -37,11 +40,6 @@ release: restore-tools
 	git commit -m "Bump version to $(VERSION)"
 	dotnet nbgv tag
 
-push:
-	for nupkg in `ls $(ARTIFACT_PATH)/*.nupkg`; do \
-		dotnet nuget push $$nupkg -s $(NUGET_SOURCE) -k $(NUGET_API_KEY); \
-	done
-
 docker-build: clean
 	docker build -t $(DOCKER_IMAGE_NAME) . && \
 	docker run --rm -t \
@@ -51,4 +49,4 @@ docker-build: clean
 
 	docker rmi -f $(DOCKER_IMAGE_NAME)
 
-.DEFAULT_GOAL := pack
+.DEFAULT_GOAL := test

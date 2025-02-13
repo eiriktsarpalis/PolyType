@@ -5,8 +5,6 @@ on:
     branches: ["main"]
   pull_request:
     branches: ["main"]
-  release:
-    types: ["published"]
 
 jobs:
   Windows:
@@ -21,7 +19,7 @@ jobs:
       with:
         dotnet-version: 9.0.x
     - name: Build & Test
-      run: make
+      run: make pack
     - name: Report Test Results
       uses: dorny/test-reporter@v1
       if: success() || failure()
@@ -40,12 +38,12 @@ jobs:
       with:
         files: artifacts/*/*.cobertura.xml
         token: ${{ secrets.CODECOV_TOKEN }}
-    - name: Publish packages to Feedz.io
+    - name: Publish CI packages to GitHub
+      if: github.event_name == 'push'
+      run: make push NUGET_SOURCE=https://nuget.pkg.github.com/eiriktsarpalis/index.json NUGET_API_KEY=${{ secrets.GITHUB_TOKEN }}
+    - name: Publish CI packages to Feedz.io
       if: github.event_name == 'push'
       run: make push NUGET_SOURCE=https://f.feedz.io/eiriktsarpalis/polytype/nuget/index.json NUGET_API_KEY=${{ secrets.FEEDZ_IO_KEY }}
-    - name: Publish packages to NuGet
-      if: github.event_name == 'release'
-      run: make push NUGET_SOURCE=https://api.nuget.org/v3/index.json NUGET_API_KEY=${{ secrets.NUGET_API_KEY }}
 
   Linux:
     runs-on: ubuntu-latest
