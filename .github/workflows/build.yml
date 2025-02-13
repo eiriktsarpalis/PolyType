@@ -2,27 +2,13 @@ name: Build & Test
 
 on:
   push:
-    branches:
-      - "main"
+    branches: ["main"]
   pull_request:
-    branches:
-      - "main"
+    branches: ["main"]
+  release:
+    types: ["published"]
 
 jobs:
-  Linux:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 9.0.x
-    - name: Build & Test
-      run: make
-
   Windows:
     runs-on: windows-latest
 
@@ -36,20 +22,37 @@ jobs:
         dotnet-version: 9.0.x
     - name: Build & Test
       run: make
+    - name: Upload artifacts
+      if: github.ref == 'refs/heads/main'
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: artifacts/
     - name: Upload to Codecov
       uses: codecov/codecov-action@v5
       with:
         files: artifacts/*/*.cobertura.xml
         token: ${{ secrets.CODECOV_TOKEN }}
-    - name: Upload packages
-      if: github.ref == 'refs/heads/main'
-      uses: actions/upload-artifact@v4
-      with:
-        name: nuget-packages
-        path: artifacts/**/*.nupkg
     - name: Publish packages to Feedz.io
-      if: github.ref == 'refs/heads/main'
+      if: github.event_name == 'push'
       run: make push NUGET_SOURCE=https://f.feedz.io/eiriktsarpalis/polytype/nuget/index.json NUGET_API_KEY=${{ secrets.FEEDZ_IO_KEY }}
+    - name: Publish packages to NuGet
+      if: github.event_name == 'release'
+      run: make push NUGET_SOURCE=https://api.nuget.org/v3/index.json NUGET_API_KEY=${{ secrets.NUGET_API_KEY }}
+
+  Linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+    - name: Build & Test
+      run: make
 
   MacOS:
     runs-on: macos-latest

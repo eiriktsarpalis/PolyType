@@ -30,7 +30,7 @@ restore-tools:
 generate-docs: restore-tools
 	dotnet docfx $(DOCS_PATH)/docfx.json
 
-bump-version: restore-tools
+release: restore-tools
 	test -n "$(VERSION)" || (echo "must specify VERSION" && exit 1)
 	git diff --quiet && git diff --cached --quiet || (echo "repo contains uncommitted changes" && exit 1)
 	dotnet nbgv set-version $(VERSION)
