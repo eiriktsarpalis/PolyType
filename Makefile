@@ -19,7 +19,7 @@ build: clean
 	dotnet build -c $(CONFIGURATION) $(ADDITIONAL_ARGS)
 
 test: build
-	dotnet test -c $(CONFIGURATION) $(ADDITIONAL_ARGS) $(CODECOV_ARGS)
+	dotnet test --no-build -c $(CONFIGURATION) $(ADDITIONAL_ARGS) $(CODECOV_ARGS)
 
 pack: test
 	dotnet pack -c $(CONFIGURATION) $(ADDITIONAL_ARGS)
