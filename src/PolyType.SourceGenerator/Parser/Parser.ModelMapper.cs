@@ -11,7 +11,7 @@ public sealed partial class Parser
     private TypeShapeModel MapModel(TypeDataModel model, TypeId typeId, string sourceIdentifier)
     {
         TypeShapeModel incrementalModel = MapModelCore(model, typeId, sourceIdentifier);
-        return model.DerivedTypes is [] ? incrementalModel : MapUnionModel(model, incrementalModel, sourceIdentifier);
+        return model.DerivedTypes is [] ? incrementalModel : MapUnionModel(model, incrementalModel);
     }
 
     private TypeShapeModel MapModelCore(TypeDataModel model, TypeId typeId, string sourceIdentifier, bool isFSharpUnionCase = false)
@@ -203,7 +203,7 @@ public sealed partial class Parser
         }
     }
 
-    private static UnionShapeModel MapUnionModel(TypeDataModel model, TypeShapeModel underlyingIncrementalModel, string sourceIdentifier)
+    private static UnionShapeModel MapUnionModel(TypeDataModel model, TypeShapeModel underlyingIncrementalModel)
     {
         Debug.Assert(model.DerivedTypes.Length > 0);
 
