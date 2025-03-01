@@ -4,7 +4,7 @@ namespace PolyType.Roslyn;
 
 public partial class TypeDataModelGenerator
 {
-    private bool TryMapNullable(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
+    private bool TryMapOptional(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
     {
         model = null;
         status = default;
@@ -21,7 +21,7 @@ public partial class TypeDataModelGenerator
             return true;
         }
 
-        model = new NullableDataModel
+        model = new OptionalDataModel
         {
             Type = type,
             ElementType = elementType,

@@ -4,7 +4,7 @@ using PolyType.Utilities;
 namespace PolyType.Examples.RandomGenerator;
 
 /// <summary>A delegate that generates an instance from a <see cref="Random"/> seed.</summary>
-public delegate T RandomGenerator<T>(Random random, int size);
+public delegate T RandomGenerator<out T>(Random random, int size);
 
 /// <summary>Provides a random generator for .NET types built on top of PolyType.</summary>
 public static partial class RandomGenerator

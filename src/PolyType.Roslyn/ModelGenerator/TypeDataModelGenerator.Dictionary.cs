@@ -134,6 +134,7 @@ public partial class TypeDataModelGenerator
             KeyType = keyType,
             ValueType = valueType,
             DictionaryKind = kind,
+            DerivedTypes = IncludeDerivedTypes(type, ref ctx),
             ConstructionStrategy = constructionStrategy,
             FactoryMethod = factoryMethod,
         };

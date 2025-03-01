@@ -8,7 +8,15 @@ internal class CborObjectConverter<T>(CborPropertyConverter<T>[] properties) : C
     private readonly CborPropertyConverter<T>[] _propertiesToWrite = properties.Where(prop => prop.HasGetter).ToArray();
 
     public override T? Read(CborReader reader)
-        => throw new NotSupportedException($"Deserialization for type {typeof(T)} is not supported.");
+    {
+        if (default(T) is null && reader.PeekState() is CborReaderState.Null)
+        {
+            reader.ReadNull();
+            return default;
+        }
+
+        throw new NotSupportedException($"Deserialization for type {typeof(T)} is not supported.");
+    }
 
     public sealed override void Write(CborWriter writer, T? value)
     {

@@ -1,8 +1,9 @@
-﻿using System.Collections;
+﻿using PolyType.Abstractions;
+using System.Collections;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using PolyType.Abstractions;
 
 namespace PolyType.ReflectionProvider.MemberAccessors;
 
@@ -154,7 +155,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         Debug.Assert(ctorInfo.Parameters is []);
         Debug.Assert(ctorInfo is MethodConstructorShapeInfo);
         return ((MethodConstructorShapeInfo)ctorInfo).ConstructorMethod is { } cI
-            ? () => (TDeclaringType)cI.Invoke(null)
+            ? () => (TDeclaringType)cI.Invoke(null)!
             : static () => default(TDeclaringType)!;
     }
 
@@ -297,7 +298,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                     return (Constructor<TArgumentState, TDeclaringType>)(object)new Constructor<(object?[], object?[], BitArray), TDeclaringType>(
                         (ref (object?[] ctorArgs, object?[] memberArgs, BitArray memberFlags) state) =>
                         {
-                            object obj = cI.Invoke(state.ctorArgs);
+                            object obj = cI.Invoke(state.ctorArgs)!;
                             PopulateMemberInitializers(obj, memberInitializers, state.memberArgs, state.memberFlags);
                             return (TDeclaringType)obj!;
                         });
@@ -342,12 +343,12 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                     DebugExt.Assert(typeof(TArgumentState) == pI.Type);
                     DebugExt.Assert(methodCtor.ConstructorMethod != null);
                     MethodBase ctor = methodCtor.ConstructorMethod;
-                    return (ref TArgumentState state) => (TDeclaringType)ctor.Invoke([state]);
+                    return (ref TArgumentState state) => (TDeclaringType)ctor.Invoke([state])!;
                 }
 
                 Debug.Assert(typeof(TArgumentState) == typeof(object?[]));
                 return methodCtor.ConstructorMethod is { } cI
-                    ? (Constructor<TArgumentState, TDeclaringType>)(object)new Constructor<object?[], TDeclaringType>((ref object?[] state) => (TDeclaringType)cI.Invoke(state))
+                    ? (Constructor<TArgumentState, TDeclaringType>)(object)new Constructor<object?[], TDeclaringType>((ref object?[] state) => (TDeclaringType)cI.Invoke(state)!)
                     : static (ref TArgumentState _) => default!;
             }
         }
@@ -363,6 +364,88 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
     {
         Debug.Fail("Should not be called if not using Reflection.Emit");
         throw new NotSupportedException();
+    }
+
+    public Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeShapeAttribute[] derivedTypeAttributes)
+    {
+        Debug.Assert(!typeof(TUnion).IsValueType);
+        Debug.Assert(derivedTypeAttributes.Length > 0);
+
+        ConcurrentDictionary<Type, int> cache = new();
+        int defaultIndex = -1;
+        for (int i = 0; i < derivedTypeAttributes.Length; i++)
+        {
+            DerivedTypeShapeAttribute attribute = derivedTypeAttributes[i];
+            cache.TryAdd(attribute.Type, i);
+            if (attribute.Type == typeof(TUnion))
+            {
+                defaultIndex = i;
+            }
+        }
+
+        // Add the base type as a sentinel value if it hasn't been added by the attributes yet.
+        cache.TryAdd(typeof(TUnion), -1);
+
+        return (ref TUnion union) =>
+        {
+            if (union is null)
+            {
+                return defaultIndex;
+            }
+
+            Type unionType = union.GetType();
+            if (cache.TryGetValue(unionType, out int index))
+            {
+                return index;
+            }
+
+            return ComputeIndexForType(unionType);
+        };
+
+        int ComputeIndexForType(Type type)
+        {
+            int foundIndex = defaultIndex;
+            foreach (Type parentType in CommonHelpers.TraverseGraphWithTopologicalSort(type, GetParentTypes))
+            {
+                if (cache.TryGetValue(parentType, out int i))
+                {
+                    foundIndex = i;
+                    break;
+                }
+            }
+
+            cache[type] = foundIndex; // Cache for future use.
+            return foundIndex;
+
+            static List<Type> GetParentTypes(Type type)
+            {
+                Debug.Assert(typeof(TUnion).IsAssignableFrom(type));
+                List<Type> parentTypes = [];
+
+                if (type == typeof(TUnion))
+                {
+                    return parentTypes;
+                }
+
+                if (typeof(TUnion).IsAssignableFrom(type.BaseType))
+                {
+                    parentTypes.Add(type.BaseType);
+                }
+
+                if (typeof(TUnion).IsInterface)
+                {
+                    foreach (Type interfaceType in type.GetInterfaces())
+                    {
+                        if (typeof(TUnion).IsAssignableFrom(interfaceType))
+                        {
+                            parentTypes.Add(interfaceType);
+                        }
+                    }
+                }
+
+                return parentTypes;
+            }
+        }
     }
 
     private static Func<object?[]> CreateConstructorArgumentArrayFunc(IConstructorShapeInfo ctorInfo)

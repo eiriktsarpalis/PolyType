@@ -11,12 +11,13 @@ public abstract class RandomGeneratorTests(ProviderUnderTest providerUnderTest)
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
     public void ProducesDeterministicRandomValues<T>(TestCase<T> testCase)
     {
+        (RandomGenerator<T> generator, IEqualityComparer<T> comparer) = GetGeneratorAndEqualityComparer(testCase);
+
         if (!providerUnderTest.HasConstructor(testCase))
         {
-            return; // Random value generation not supported
+            Assert.Throws<NotSupportedException>(() => generator.GenerateValue(10));
+            return;
         }
-
-        (RandomGenerator<T> generator, IEqualityComparer<T> comparer) = GetGeneratorAndEqualityComparer<T>(testCase);
 
         const int Seed = 42;
         IEnumerable<T> firstRandomSequence = generator.GenerateValues(Seed).Take(10);

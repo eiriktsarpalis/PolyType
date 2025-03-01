@@ -28,6 +28,11 @@ public interface ITestCase
     public bool IsStack { get; init; }
 
     /// <summary>
+    /// Gets a value indicating whether the underlying shape is a union type.
+    /// </summary>
+    public bool IsUnion { get; init; }
+
+    /// <summary>
     /// Gets a value indicating whether the type has constructor parameters that are passed by reference.
     /// </summary>
     public bool HasRefConstructorParameters { get; init; }

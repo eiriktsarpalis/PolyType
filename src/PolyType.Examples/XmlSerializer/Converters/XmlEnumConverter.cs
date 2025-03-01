@@ -12,6 +12,6 @@ internal sealed class XmlEnumConverter<TEnum> : XmlConverter<TEnum>
         => (TEnum)Enum.Parse(typeof(TEnum), reader.ReadElementContentAsString());
 #endif
 
-    public override void Write(XmlWriter writer, string localName, TEnum value)
-        => writer.WriteElementString(localName, value.ToString());
+    public override void Write(XmlWriter writer, TEnum value)
+        => writer.WriteValue(value.ToString());
 }

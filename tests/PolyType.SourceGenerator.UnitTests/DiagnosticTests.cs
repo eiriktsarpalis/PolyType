@@ -300,7 +300,7 @@ public static class DiagnosticTests
 
     [Theory]
     [InlineData(TypeShapeKind.Enum)]
-    [InlineData(TypeShapeKind.Nullable)]
+    [InlineData(TypeShapeKind.Optional)]
     [InlineData(TypeShapeKind.Dictionary)]
     [InlineData(TypeShapeKind.Enumerable)]
     public static void TypeShapeAttribute_ClassWithInvalidKind_ProducesDiagnostic(TypeShapeKind kind)
@@ -327,7 +327,7 @@ public static class DiagnosticTests
 
     [Theory]
     [InlineData(TypeShapeKind.Enum)]
-    [InlineData(TypeShapeKind.Nullable)]
+    [InlineData(TypeShapeKind.Optional)]
     public static void TypeShapeAttribute_DictionaryWithInvalidKind_ProducesDiagnostic(TypeShapeKind kind)
     {
         Compilation compilation = CompilationHelpers.CreateCompilation($"""
@@ -353,7 +353,7 @@ public static class DiagnosticTests
 
     [Theory]
     [InlineData(TypeShapeKind.Enum)]
-    [InlineData(TypeShapeKind.Nullable)]
+    [InlineData(TypeShapeKind.Optional)]
     [InlineData(TypeShapeKind.Dictionary)]
     public static void TypeShapeAttribute_EnumerableWithInvalidKind_ProducesDiagnostic(TypeShapeKind kind)
     {
@@ -610,5 +610,103 @@ public static class DiagnosticTests
             CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
         
         Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void PolymorphicClassWithDerivedType_NotASubtype_ErrorDiagnostic()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [GenerateShape]
+            [DerivedTypeShape(typeof(object))]
+            partial class PolymorphicClassWithInvalidDerivedType_NotASubtype;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("TS0011", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("'object'", diagnostic.GetMessage());
+        Assert.Equal((3, 1), diagnostic.Location.GetStartPosition());
+        Assert.Equal((3, 33), diagnostic.Location.GetEndPosition());
+    }
+
+    [Fact]
+    public static void PolymorphicClassWithConflictingDerivedTypes_ErrorDiagnostic()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [GenerateShape]
+            [DerivedTypeShape(typeof(Derived), Name = "case1", Tag = 1)]
+            [DerivedTypeShape(typeof(Derived), Name = "case2", Tag = 2)]
+            public partial class PolymorphicClassWithInvalidDerivedType_ConflictingTypes
+            {
+                public class Derived : PolymorphicClassWithInvalidDerivedType_ConflictingTypes;
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("TS0012", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("type 'PolymorphicClassWithInvalidDerivedType_ConflictingTypes.Derived'", diagnostic.GetMessage());
+        Assert.Equal((4, 1), diagnostic.Location.GetStartPosition());
+        Assert.Equal((4, 59), diagnostic.Location.GetEndPosition());
+    }
+
+    [Fact]
+    public static void PolymorphicClassWithConflictingDerivedTypeNames_ErrorDiagnostic()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [GenerateShape]
+            [DerivedTypeShape(typeof(Derived1), Name = "case1", Tag = 1)]
+            [DerivedTypeShape(typeof(Derived2), Name = "case1", Tag = 2)]
+            public partial class PolymorphicClassWithInvalidDerivedType_ConflictingNames
+            {
+                public class Derived1 : PolymorphicClassWithInvalidDerivedType_ConflictingNames;
+                public class Derived2 : PolymorphicClassWithInvalidDerivedType_ConflictingNames;
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("TS0012", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("name 'case1'", diagnostic.GetMessage());
+        Assert.Equal((4, 1), diagnostic.Location.GetStartPosition());
+        Assert.Equal((4, 60), diagnostic.Location.GetEndPosition());
+    }
+
+    [Fact]
+    public static void PolymorphicClassWithConflictingDerivedTypeTags_ErrorDiagnostic()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [GenerateShape]
+            [DerivedTypeShape(typeof(Derived1), Name = "case1", Tag = 42)]
+            [DerivedTypeShape(typeof(Derived2), Name = "case2", Tag = 42)]
+            public partial class PolymorphicClassWithInvalidDerivedType_ConflictingTags
+            {
+                public class Derived1 : PolymorphicClassWithInvalidDerivedType_ConflictingTags;
+                public class Derived2 : PolymorphicClassWithInvalidDerivedType_ConflictingTags;
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("TS0012", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("tag '42'", diagnostic.GetMessage());
+        Assert.Equal((4, 1), diagnostic.Location.GetStartPosition());
+        Assert.Equal((4, 61), diagnostic.Location.GetEndPosition());
     }
 }

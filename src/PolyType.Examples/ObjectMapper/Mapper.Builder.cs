@@ -72,11 +72,11 @@ public static partial class Mapper
                 : ((IConstructorParameterShape)state).Accept(visitor, state: sourceGetter);
         }
 
-        public override object? VisitNullable<TSource>(INullableTypeShape<TSource> nullableShape, object? state)
+        public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
         {
-            var targetNullable = (INullableTypeShape)state!;
-            var visitor = new NullableScopedVisitor<TSource>(this);
-            return targetNullable.Accept(visitor, state: nullableShape);
+            var targetNullable = (IOptionalTypeShape)state!;
+            var visitor = new NullableScopedVisitor<TOptional, TElement>(this);
+            return targetNullable.Accept(visitor, state: optionalShape);
         }
 
         public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
@@ -211,15 +211,16 @@ public static partial class Mapper
             }
         }
 
-        private sealed class NullableScopedVisitor<TSourceElement>(Builder baseVisitor) : TypeShapeVisitor
-            where TSourceElement : struct
+        private sealed class NullableScopedVisitor<TOptional, TElement>(Builder baseVisitor) : TypeShapeVisitor
         {
-            public override object? VisitNullable<TTargetElement>(INullableTypeShape<TTargetElement> nullableShape, object? state)
-                where TTargetElement : struct
+            public override object? VisitOptional<TOptional2, TElement2>(IOptionalTypeShape<TOptional2, TElement2> optionalShape, object? state)
             {
-                var sourceNullable = (INullableTypeShape<TSourceElement>)state!;
-                var elementMapper = baseVisitor.GetOrAddMapper(sourceNullable.ElementType, nullableShape.ElementType);
-                return new Mapper<TSourceElement?, TTargetElement?>(source => source is null ? null : elementMapper(source.Value));
+                var sourceNullable = (IOptionalTypeShape<TOptional, TElement>)state!;
+                var elementMapper = baseVisitor.GetOrAddMapper(sourceNullable.ElementType, optionalShape.ElementType);
+                var deconstructor = sourceNullable.GetDeconstructor();
+                var createNone = optionalShape.GetNoneConstructor();
+                var createSome = optionalShape.GetSomeConstructor();
+                return new Mapper<TOptional, TOptional2>(source => deconstructor(source, out TElement? element) ? createSome(elementMapper(element)!) : createNone());
             }
         }
 

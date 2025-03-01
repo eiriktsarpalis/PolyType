@@ -53,11 +53,12 @@ public static partial class StructuralEqualityComparer
             return EqualityComparer<TEnum>.Default;
         }
 
-        public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state)
+        public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
         {
-            return new NullableEqualityComparer<T>
+            return new OptionalEqualityComparer<TOptional, TElement>
             {
-                ElementComparer = GetOrAddEqualityComparer(nullableShape.ElementType),
+                ElementComparer = GetOrAddEqualityComparer(optionalShape.ElementType),
+                Deconstructor = optionalShape.GetDeconstructor(),
             };
         }
 
@@ -97,6 +98,23 @@ public static partial class StructuralEqualityComparer
                 ElementComparer = GetOrAddEqualityComparer(enumerableShape.ElementType),
                 GetEnumerable = enumerableShape.GetGetEnumerable()
             };
+        }
+
+        public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
+        {
+            var getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
+            var baseCaseComparer = (EqualityComparer<TUnion>)unionShape.BaseType.Accept(this)!;
+            var unionCaseComparers = unionShape.UnionCases
+                .Select(unionCase => (EqualityComparer<TUnion>)unionCase.Accept(this)!)
+                .ToArray();
+
+            return new UnionEqualityComparer<TUnion>(getUnionCaseIndex, baseCaseComparer, unionCaseComparers);
+        }
+
+        public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
+        {
+            var underlyingComparer = (EqualityComparer<TUnionCase>)unionCaseShape.Type.Accept(this)!;
+            return new UnionCaseEqualityComparer<TUnionCase, TUnion>(underlyingComparer);
         }
     }
 }

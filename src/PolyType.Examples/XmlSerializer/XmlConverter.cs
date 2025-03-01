@@ -5,31 +5,26 @@ namespace PolyType.Examples.XmlSerializer;
 /// <summary>
 /// Defines a strongly typed XML to .NET converter.
 /// </summary>
-public abstract class XmlConverter
+public abstract class XmlConverter<T> : IXmlConverter
 {
-    internal XmlConverter() { }
-
-    /// <summary>
-    /// The type being targeted by the current converter.
-    /// </summary>
-    public abstract Type Type { get; }
-}
-
-/// <summary>
-/// Defines a strongly typed XML to .NET converter.
-/// </summary>
-public abstract class XmlConverter<T> : XmlConverter
-{
-    /// <inheritdoc/>
-    public sealed override Type Type => typeof(T);
-
     /// <summary>
     /// Writes a value of type <typeparamref name="T"/> to the provided <see cref="XmlWriter"/>.
     /// </summary>
-    public abstract void Write(XmlWriter writer, string localName, T? value);
+    public abstract void Write(XmlWriter writer, T value);
 
     /// <summary>
     /// Reads a value of type <typeparamref name="T"/> from the provided <see cref="XmlReader"/>.
     /// </summary>
     public abstract T? Read(XmlReader reader);
+
+    Type IXmlConverter.Type => typeof(T);
+    void IXmlConverter.Write(XmlWriter writer, object value) => Write(writer, (T)value);
+    object? IXmlConverter.Read(XmlReader reader) => Read(reader);
+}
+
+internal interface IXmlConverter
+{
+    Type Type { get; }
+    void Write(XmlWriter writer, object value);
+    object? Read(XmlReader reader);
 }

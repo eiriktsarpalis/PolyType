@@ -116,17 +116,19 @@ internal static partial class RoslynHelpers
             typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
             memberOptions: SymbolDisplayMemberOptions.IncludeContainingType);
 
-    public static string GetFullyQualifiedName(this ITypeSymbol typeSymbol)
-        => typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-
-    public static string GetFullyQualifiedName(this IMethodSymbol methodSymbol)
+    public static string GetFullyQualifiedName(this ISymbol symbol)
     {
-        Debug.Assert(methodSymbol.IsStatic && methodSymbol.MethodKind is not MethodKind.Constructor);
-        return $"{methodSymbol.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}.{methodSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}";
+        Debug.Assert(symbol is ITypeSymbol or ({ IsStatic: true } and (IMethodSymbol or IPropertySymbol or IFieldSymbol)));
+        return symbol is ITypeSymbol typeSymbol
+            ? typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+            : $"{symbol.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}.{symbol.Name}";
     }
 
     public static bool IsGenericTypeDefinition(this ITypeSymbol type) =>
         type is INamedTypeSymbol { IsGenericType: true, IsDefinition: true };
+
+    public static IEnumerable<TMember> GetMembers<TMember>(this ITypeSymbol type, string name) where TMember : ISymbol
+        => type.GetMembers(name).OfType<TMember>();
 
     // Gets all type arguments, including the ones specified by containing types in order of nesting.
     public static ITypeSymbol[] GetRecursiveTypeArguments(this INamedTypeSymbol type)
@@ -290,6 +292,34 @@ internal static partial class RoslynHelpers
                 }
             }
         }
+    }
+
+    public static bool IsAssignableFrom([NotNullWhen(true)] this ITypeSymbol? baseType, [NotNullWhen(true)] ITypeSymbol? type)
+    {
+        if (baseType is null || type is null)
+        {
+            return false;
+        }
+
+        SymbolEqualityComparer comparer = SymbolEqualityComparer.Default;
+
+        for (ITypeSymbol? current = type; current != null; current = current.BaseType)
+        {
+            if (comparer.Equals(current, baseType))
+            {
+                return true;
+            }
+        }
+
+        foreach (INamedTypeSymbol @interface in type.AllInterfaces)
+        {
+            if (comparer.Equals(@interface, baseType))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static bool IsCSharpKeyword(string name) =>

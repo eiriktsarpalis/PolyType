@@ -1,6 +1,6 @@
-﻿using System.Xml;
-using PolyType.Abstractions;
+﻿using PolyType.Abstractions;
 using PolyType.Examples.Utilities;
+using System.Xml;
 
 namespace PolyType.Examples.XmlSerializer.Converters;
 
@@ -14,25 +14,21 @@ internal class XmlEnumerableConverter<TEnumerable, TElement>(
 
     public override TEnumerable? Read(XmlReader reader)
     {
+        if (default(TEnumerable) is null && reader.TryReadNullElement())
+        {
+            return default;
+        }
+
         throw new NotSupportedException($"Deserialization not supported for type {typeof(TEnumerable)}.");
     }
 
-    public override void Write(XmlWriter writer, string localName, TEnumerable? value)
+    public override void Write(XmlWriter writer, TEnumerable value)
     {
-        if (value is null)
-        {
-            writer.WriteNullElement(localName);
-            return;
-        }
-
         XmlConverter<TElement> converter = _elementConverter;
-
-        writer.WriteStartElement(localName);
         foreach (TElement element in _getEnumerable(value))
         {
-            _elementConverter.Write(writer, "element", element);
+            _elementConverter.WriteAsElement(writer, "element", element);
         }
-        writer.WriteEndElement();
     }
 }
 

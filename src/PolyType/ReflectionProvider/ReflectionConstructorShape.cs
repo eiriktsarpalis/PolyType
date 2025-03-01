@@ -7,6 +7,7 @@ namespace PolyType.ReflectionProvider;
 
 internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>(
     ReflectionTypeShapeProvider provider,
+    IObjectTypeShape<TDeclaringType> declaringType,
     IConstructorShapeInfo ctorInfo) :
     IConstructorShape<TDeclaringType, TArgumentState>
 {
@@ -15,7 +16,7 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
     private Constructor<TArgumentState, TDeclaringType>? _parameterizedConstructor;
     private Func<TDeclaringType>? _defaultConstructor;
 
-    public IObjectTypeShape<TDeclaringType> DeclaringType => (IObjectTypeShape<TDeclaringType>)provider.GetShape<TDeclaringType>();
+    public IObjectTypeShape<TDeclaringType> DeclaringType { get; } = declaringType;
     public ICustomAttributeProvider? AttributeProvider => ctorInfo.AttributeProvider;
     public bool IsPublic => ctorInfo.IsPublic;
     IObjectTypeShape IConstructorShape.DeclaringType => DeclaringType;

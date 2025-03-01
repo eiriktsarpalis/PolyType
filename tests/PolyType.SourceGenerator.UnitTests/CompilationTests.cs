@@ -649,4 +649,41 @@ public static class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
+
+    [Fact]
+    public static void PolymorphicClass_NoWarnings()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [GenerateShape]
+            [DerivedTypeShape(typeof(PolymorphicClass))]
+            [DerivedTypeShape(typeof(Derived))]
+            public partial record PolymorphicClass(int Int)
+            {
+                public record Derived(int Int, string String) : PolymorphicClass(Int);
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void FSharpUnion_NoWarnings()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using Microsoft.FSharp.Core;
+            using PolyType;
+
+            [GenerateShape<FSharpOption<int>>]
+            [GenerateShape<FSharpValueOption<int>>]
+            [GenerateShape<FSharpResult<string, int>>]
+            [GenerateShape<FSharpChoice<int, string, bool>>]
+            partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
 }

@@ -1,8 +1,7 @@
-using System.Collections;
-using PolyType.Abstractions;
+using Microsoft.FSharp.Reflection;
 using PolyType.ReflectionProvider;
 using PolyType.SourceGenModel;
-using Xunit;
+using System.Collections;
 
 namespace PolyType.Tests;
 
@@ -16,20 +15,26 @@ public abstract class ProviderUnderTest
     public ITypeShape<T> ResolveShape<T>(TestCase<T> testCase) =>
         (ITypeShape<T>)ResolveShape((ITestCase)testCase);
 
-    public bool HasConstructor(ITestCase testCase) =>
-        !(testCase.IsAbstract && !typeof(IEnumerable).IsAssignableFrom(testCase.Type)) &&
-        !testCase.IsMultiDimensionalArray &&
-        !testCase.HasOutConstructorParameters &&
-        testCase.CustomKind is not TypeShapeKind.None &&
-        (!testCase.UsesSpanConstructor || Kind is not ProviderKind.ReflectionNoEmit);
+    public bool HasConstructor(ITestCase testCase)
+    {
+        if (testCase.IsUnion)
+        {
+            return !testCase.IsAbstract || FSharpType.IsUnion(testCase.Type, null);
+        }
+
+        return !(testCase.IsAbstract && !typeof(IEnumerable).IsAssignableFrom(testCase.Type)) &&
+            !testCase.IsMultiDimensionalArray &&
+            !testCase.HasOutConstructorParameters &&
+            testCase.CustomKind is not TypeShapeKind.None &&
+            (!testCase.UsesSpanConstructor || Kind is not ProviderKind.ReflectionNoEmit);
+    }
 }
 
 public enum ProviderKind
 {
-    UnRecognized,
-    SourceGen,
-    ReflectionNoEmit,
-    ReflectionEmit
+    SourceGen = 1,
+    ReflectionNoEmit = 2,
+    ReflectionEmit = 3
 };
 
 public sealed class SourceGenProviderUnderTest(SourceGenTypeShapeProvider sourceGenProvider) : ProviderUnderTest

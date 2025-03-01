@@ -268,15 +268,10 @@ internal static class ReflectionHelpers
 #endif
     }
 
-    public static object Invoke(this MethodBase methodBase, params object?[]? args)
+    public static object? Invoke(this MethodBase methodBase, params object?[]? args)
     {
         DebugExt.Assert(methodBase is ConstructorInfo or MethodBase { IsStatic: true });
-        object? result = methodBase is ConstructorInfo ctor
-            ? ctor.Invoke(args)
-            : methodBase.Invoke(null, args);
-
-        DebugExt.Assert(result != null);
-        return result;
+        return methodBase is ConstructorInfo ctor ? ctor.Invoke(args) : methodBase.Invoke(null, args);
     }
 
     public static bool IsMemoryType(this Type type, [NotNullWhen(true)] out Type? elementType, out bool isReadOnlyMemory)

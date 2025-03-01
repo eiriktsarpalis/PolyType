@@ -5,21 +5,13 @@ using System.Reflection;
 
 namespace PolyType.ReflectionProvider;
 
-[RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
-[RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
-internal sealed class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider provider, bool disableMemberResolution) : ReflectionTypeShape<T>(provider), IObjectTypeShape<T>
+internal abstract class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider provider) : ReflectionTypeShape<T>(provider), IObjectTypeShape<T>
 {
-    public override TypeShapeKind Kind => TypeShapeKind.Object;
-    public override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);
+    public sealed override TypeShapeKind Kind => TypeShapeKind.Object;
+    public sealed override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);
 
-    public bool IsRecordType => _isRecord ??= typeof(T).IsRecordType();
-    private bool? _isRecord;
-
-    public bool IsTupleType => _isTuple ??= typeof(T).IsTupleType();
-    private bool? _isTuple;
-
-    public bool IsSimpleType => _isSimpleType ??= DetermineIsSimpleType(typeof(T));
-    private bool? _isSimpleType;
+    public virtual bool IsRecordType => false;
+    public virtual bool IsTupleType => false;
 
     public IReadOnlyList<IPropertyShape> Properties => _properties ??= GetProperties().AsReadOnlyList();
     private IReadOnlyList<IPropertyShape>? _properties;
@@ -41,7 +33,24 @@ internal sealed class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider p
     private IConstructorShape? _constructor;
     private bool _isConstructorResolved;
 
-    private IConstructorShape? GetConstructor()
+    protected abstract IEnumerable<IPropertyShape> GetProperties();
+    protected abstract IConstructorShape? GetConstructor();
+}
+
+[RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
+[RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
+internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider provider, bool disableMemberResolution) : ReflectionObjectTypeShape<T>(provider)
+{
+    public override bool IsRecordType => _isRecord ??= typeof(T).IsRecordType();
+    private bool? _isRecord;
+
+    public override bool IsTupleType => _isTuple ??= typeof(T).IsTupleType();
+    private bool? _isTuple;
+
+    public bool IsSimpleType => _isSimpleType ??= DetermineIsSimpleType(typeof(T));
+    private bool? _isSimpleType;
+
+    protected override IConstructorShape? GetConstructor()
     {
         if (typeof(T).IsAbstract || IsSimpleType)
         {
@@ -53,12 +62,12 @@ internal sealed class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider p
             if (typeof(T).IsValueType)
             {
                 IConstructorShapeInfo ctorInfo = CreateDefaultConstructor(memberInitializers: null);
-                return Provider.CreateConstructor(ctorInfo);
+                return Provider.CreateConstructor(this, ctorInfo);
             }
             else
             {
                 IConstructorShapeInfo ctorInfo = ReflectionTypeShapeProvider.CreateTupleConstructorShapeInfo(typeof(T));
-                return Provider.CreateConstructor(ctorInfo);
+                return Provider.CreateConstructor(this, ctorInfo);
             }
         }
 
@@ -66,7 +75,7 @@ internal sealed class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider p
         MemberInitializerShapeInfo[] settableMembers;
         NullabilityInfoContext? nullabilityCtx = ReflectionTypeShapeProvider.CreateNullabilityInfoContext();
 
-        (ConstructorInfo Ctor, ParameterInfo[] Parameters, bool HasShapeAttribute)[] ctorCandidates = [..GetCandidateConstructors()];
+        (ConstructorInfo Ctor, ParameterInfo[] Parameters, bool HasShapeAttribute)[] ctorCandidates = [.. GetCandidateConstructors()];
         if (ctorCandidates.Length == 0)
         {
             if (typeof(T).IsValueType)
@@ -76,7 +85,7 @@ internal sealed class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider p
                 settableMembers = GetSettableMembers(allMembers, ctorSetsRequiredMembers: false);
                 bool hasRequiredOrInitOnlyMembers = settableMembers.Any(m => m.IsRequired || m.IsInitOnly);
                 MethodConstructorShapeInfo defaultCtorInfo = CreateDefaultConstructor(hasRequiredOrInitOnlyMembers ? settableMembers : []);
-                return Provider.CreateConstructor(defaultCtorInfo);
+                return Provider.CreateConstructor(this, defaultCtorInfo);
             }
 
             return null;
@@ -163,7 +172,7 @@ internal sealed class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider p
         }
 
         var ctorShapeInfo = new MethodConstructorShapeInfo(typeof(T), constructorInfo, parameterShapeInfos, memberInitializers?.ToArray());
-        return Provider.CreateConstructor(ctorShapeInfo);
+        return Provider.CreateConstructor(this, ctorShapeInfo);
 
         static MethodConstructorShapeInfo CreateDefaultConstructor(MemberInitializerShapeInfo[]? memberInitializers)
             => new(typeof(T), constructorMethod: null, parameters: [], memberInitializers: memberInitializers);
@@ -218,7 +227,7 @@ internal sealed class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider p
         }
     }
 
-    private IEnumerable<IPropertyShape> GetProperties()
+    protected override IEnumerable<IPropertyShape> GetProperties()
     {
         if (IsSimpleType)
         {
@@ -230,7 +239,7 @@ internal sealed class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider p
             foreach (var field in ReflectionHelpers.EnumerateTupleMemberPaths(typeof(T)))
             {
                 PropertyShapeInfo propertyShapeInfo = new(typeof(T), field.Member, field.Member, field.ParentMembers, field.LogicalName);
-                yield return Provider.CreateProperty(propertyShapeInfo);
+                yield return Provider.CreateProperty(this, propertyShapeInfo);
             }
 
             yield break;
@@ -239,7 +248,7 @@ internal sealed class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider p
         NullabilityInfoContext? nullabilityCtx = ReflectionTypeShapeProvider.CreateNullabilityInfoContext();
         foreach (PropertyShapeInfo member in GetMembers(nullabilityCtx))
         {
-            yield return Provider.CreateProperty(member);
+            yield return Provider.CreateProperty(this, member);
         }
     }
 

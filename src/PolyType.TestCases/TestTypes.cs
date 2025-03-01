@@ -1,5 +1,5 @@
 ﻿using Microsoft.FSharp.Collections;
-using PolyType.Abstractions;
+using Microsoft.FSharp.Core;
 using PolyType.Tests.FSharp;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -538,6 +538,25 @@ public static class TestTypes
         yield return TestCase.Create(new TypeWithGenericMarshaller<string>("str"), p);
         yield return TestCase.Create(new GenericDictionaryWithMarshaller<string, int>() { ["key"] = 42 }, p);
 
+        // Union types
+        yield return TestCase.Create(new PolymorphicClass(42),
+            additionalValues: [
+                new PolymorphicClass.DerivedClass(42, "str"), 
+                new PolymorphicClass.DerivedEnumerable { 42 },
+                new PolymorphicClass.DerivedDictionary { ["key"] = 42 }],
+            isUnion: true);
+        yield return TestCase.Create<IPolymorphicInterface>(
+            new IPolymorphicInterface.Derived { X = 1 }, 
+            additionalValues: [
+                new IPolymorphicInterface.IDerived1.Impl { X = 1, Y = 2 },
+                new IPolymorphicInterface.IDerived2.Impl { X = 1, Z = 2 },
+                new IPolymorphicInterface.IDerived1.IDerivedDerived1.Impl2 { X = 1, Y = 2, Z = 3 },
+                new IPolymorphicInterface.IDerived2.IDerivedDerived2.Impl2 { X = 1, Y = 2, Z = 3 },
+                new IPolymorphicInterface.IDiamond.Impl2 { X = 1 }],
+            isUnion: true);
+
+        yield return TestCase.Create<Tree>(new Node(42, new Leaf(), new Leaf()), additionalValues: [new Leaf()], isUnion: true);
+
         // F# types
         yield return TestCase.Create(new FSharpRecord(42, "str", true), p);
         yield return TestCase.Create(new FSharpStructRecord(42, "str", true), p);
@@ -547,10 +566,24 @@ public static class TestTypes
         yield return TestCase.Create(new FSharpStruct("str", 42), p);
         yield return TestCase.Create(new GenericFSharpClass<string>("str"), p);
         yield return TestCase.Create(new GenericFSharpStruct<string>("str"), p);
+        yield return TestCase.Create(new FSharpOption<int>(42), additionalValues: [FSharpOption<int>.None], provider: p);
+        yield return TestCase.Create(FSharpOption<string>.Some("str"), additionalValues: [FSharpOption<string>.None], provider: p);
+        yield return TestCase.Create(FSharpValueOption<int>.Some(42), additionalValues: [FSharpValueOption<int>.None], provider: p);
+        yield return TestCase.Create(FSharpValueOption<string>.Some("str"), additionalValues: [FSharpValueOption<string>.None], provider: p);
         yield return TestCase.Create(ListModule.OfSeq([1, 2, 3]), p);
         yield return TestCase.Create(SetModule.OfSeq([1, 2, 3]), p);
         yield return TestCase.Create(MapModule.OfSeq<string, int>([new("key1", 1), new("key2", 2)]), p);
         yield return TestCase.Create(FSharpRecordWithCollections.Create(), p);
+        yield return TestCase.Create(FSharpUnion.NewA("str", 42), additionalValues: [FSharpUnion.B, FSharpUnion.NewC(42)], isUnion: true, provider: p);
+        yield return TestCase.Create(FSharpEnumUnion.A, additionalValues: [FSharpEnumUnion.B, FSharpEnumUnion.C], isUnion: true, provider: p);
+        yield return TestCase.Create(FSharpSingleCaseUnion.NewCase(42), isUnion: true, provider: p);
+        yield return TestCase.Create(GenericFSharpUnion<string>.NewA("str"), additionalValues: [GenericFSharpUnion<string>.B, GenericFSharpUnion<string>.NewC(42)], isUnion: true, provider: p);
+        yield return TestCase.Create(FSharpResult<string, int>.NewOk("ok"), additionalValues: [FSharpResult<string, int>.NewError(-1)], isUnion: true, provider: p);
+        yield return TestCase.Create(FSharpStructUnion.NewA("str", 42), additionalValues: [FSharpStructUnion.B, FSharpStructUnion.NewC(42)], isUnion: true, provider: p);
+        yield return TestCase.Create(FSharpEnumStructUnion.A, additionalValues: [FSharpEnumStructUnion.B, FSharpEnumStructUnion.C], isUnion: true, provider: p);
+        yield return TestCase.Create(FSharpSingleCaseStructUnion.NewCase(42), isUnion: true, provider: p);
+        yield return TestCase.Create(GenericFSharpStructUnion<string>.NewA("str"), additionalValues: [GenericFSharpStructUnion<string>.B, GenericFSharpStructUnion<string>.NewC(42)], isUnion: true, provider: p);
+        yield return TestCase.Create(FSharpExpr.True, additionalValues: [FSharpExpr.False, FSharpExpr.Y], isUnion: true, provider: p);
     }
 }
 
@@ -2078,6 +2111,141 @@ public partial class ObjectAsNone
     public required int Age { get; init; }
 }
 
+[GenerateShape]
+[DerivedTypeShape(typeof(PolymorphicClass))]
+[DerivedTypeShape(typeof(DerivedClass))]
+[DerivedTypeShape(typeof(DerivedEnumerable))]
+[DerivedTypeShape(typeof(DerivedDictionary))]
+[JsonDerivedType(typeof(PolymorphicClass), nameof(PolymorphicClass))]
+[JsonDerivedType(typeof(DerivedClass), nameof(DerivedClass))]
+[JsonDerivedType(typeof(DerivedEnumerable), nameof(DerivedEnumerable))]
+[JsonDerivedType(typeof(DerivedDictionary), nameof(DerivedDictionary))]
+public partial record PolymorphicClass(int Int)
+{
+    public record DerivedClass(int Int, string String) : PolymorphicClass(Int);
+
+    public record DerivedEnumerable() : PolymorphicClass(0), IList<int>
+    {
+        private readonly List<int> _list = [];
+        public void Add(int item) => _list.Add(item);
+        int ICollection<int>.Count => _list.Count;
+        bool ICollection<int>.IsReadOnly => false;
+        public IEnumerator<int> GetEnumerator() => _list.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => _list.GetEnumerator();
+        int IList<int>.this[int index] { get => _list[index]; set => _list[index] = value; }
+        void ICollection<int>.Clear() => _list.Clear();
+        bool ICollection<int>.Contains(int item) => _list.Contains(item);
+        void ICollection<int>.CopyTo(int[] array, int arrayIndex) => _list.CopyTo(array, arrayIndex);
+        int IList<int>.IndexOf(int item) => _list.IndexOf(item);
+        void IList<int>.Insert(int index, int item) => _list.Insert(index, item);
+        bool ICollection<int>.Remove(int item) => _list.Remove(item);
+        void IList<int>.RemoveAt(int index) => _list.RemoveAt(index);
+    }
+
+    public record DerivedDictionary() : PolymorphicClass(42), IDictionary<string, int>
+    {
+        private readonly Dictionary<string, int> _dict = new();
+        public int this[string key] { get => _dict[key]; set => _dict[key] = value; }
+        ICollection<string> IDictionary<string, int>.Keys => _dict.Keys;
+        ICollection<int> IDictionary<string, int>.Values => _dict.Values;
+        int ICollection<KeyValuePair<string, int>>.Count => _dict.Count;
+        bool ICollection<KeyValuePair<string, int>>.IsReadOnly => false;
+        void IDictionary<string, int>.Add(string key, int value) => _dict.Add(key, value);
+        void ICollection<KeyValuePair<string, int>>.Add(KeyValuePair<string, int> item) => _dict.Add(item.Key, item.Value);
+        void ICollection<KeyValuePair<string, int>>.Clear() => _dict.Clear();
+        bool ICollection<KeyValuePair<string, int>>.Contains(KeyValuePair<string, int> item) => _dict.ContainsKey(item.Key);
+        bool IDictionary<string, int>.ContainsKey(string key) => _dict.ContainsKey(key);
+        IEnumerator<KeyValuePair<string, int>> IEnumerable<KeyValuePair<string, int>>.GetEnumerator() => _dict.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => _dict.GetEnumerator();
+        bool IDictionary<string, int>.Remove(string key) => _dict.Remove(key);
+        bool ICollection<KeyValuePair<string, int>>.Remove(KeyValuePair<string, int> item) => _dict.Remove(item.Key);
+        bool IDictionary<string, int>.TryGetValue(string key, out int value) => _dict.TryGetValue(key, out value);
+        void ICollection<KeyValuePair<string, int>>.CopyTo(KeyValuePair<string, int>[] array, int arrayIndex) => 
+            ((ICollection<KeyValuePair<string, int>>)_dict).CopyTo(array, arrayIndex);
+    }
+}
+
+
+[GenerateShape]
+[DerivedTypeShape(typeof(IDerived1), Name = "derived1")]
+[DerivedTypeShape(typeof(IDerived2), Name = "derived2")]
+[DerivedTypeShape(typeof(IDerived1.IDerivedDerived1), Name = "derivedderived1")]
+[DerivedTypeShape(typeof(IDerived2.IDerivedDerived2), Name = "derivedderived2")]
+[DerivedTypeShape(typeof(IDiamond), Name = "diamond")]
+public partial interface IPolymorphicInterface
+{
+    int X { get; set; }
+
+    public class Derived : IPolymorphicInterface
+    {
+        public int X { get; set; }
+    }
+
+    public interface IDerived1 : IPolymorphicInterface
+    {
+        int Y { get; set; }
+
+        public class Impl : IDerived1
+        {
+            public int X { get; set; }
+            public int Y { get; set; }
+        }
+
+        public interface IDerivedDerived1 : IDerived1
+        {
+            int Z { get; set; }
+
+            public class Impl2 : IDerivedDerived1
+            {
+                public int X { get; set; }
+                public int Y { get; set; }
+                public int Z { get; set; }
+            }
+        }
+    }
+
+    public interface IDerived2 : IPolymorphicInterface
+    {
+        int Z { get; set; }
+
+        public class Impl : IDerived2
+        {
+            public int X { get; set; }
+            public int Z { get; set; }
+        }
+
+        public interface IDerivedDerived2 : IDerived2
+        {
+            int Y { get; set; }
+            public class Impl2 : IDerivedDerived2
+            {
+                public int X { get; set; }
+                public int Z { get; set; }
+                public int Y { get; set; }
+            }
+        }
+    }
+
+    public interface IDiamond : IDerived1, IDerived2
+    {
+        public class Impl2 : IDiamond
+        {
+            public int X { get; set; }
+            public int Y { get; set; }
+            public int Z { get; set; }
+        }
+    }
+}
+
+[GenerateShape]
+[DerivedTypeShape(typeof(Leaf), Name = "leaf", Tag = 10)]
+[DerivedTypeShape(typeof(Node), Name = "node", Tag = 1000)]
+[JsonDerivedType(typeof(Leaf), "leaf")]
+[JsonDerivedType(typeof(Node), "node")]
+public partial record Tree;
+public record Leaf : Tree;
+public record Node(int Value, Tree Left, Tree Right) : Tree;
+
 [GenerateShape<object>]
 [GenerateShape<bool>]
 [GenerateShape<char>]
@@ -2276,4 +2444,18 @@ public partial class ObjectAsNone
 [GenerateShape<FSharpMap<string, int>>]
 [GenerateShape<FSharpSet<int>>]
 [GenerateShape<FSharpRecordWithCollections>]
+[GenerateShape<FSharpOption<int>>]
+[GenerateShape<FSharpOption<string>>]
+[GenerateShape<FSharpValueOption<int>>]
+[GenerateShape<FSharpValueOption<string>>]
+[GenerateShape<FSharpUnion>]
+[GenerateShape<FSharpSingleCaseUnion>]
+[GenerateShape<FSharpEnumUnion>]
+[GenerateShape<GenericFSharpUnion<string>>]
+[GenerateShape<FSharpStructUnion>]
+[GenerateShape<FSharpSingleCaseStructUnion>]
+[GenerateShape<FSharpEnumStructUnion>]
+[GenerateShape<GenericFSharpStructUnion<string>>]
+[GenerateShape<FSharpResult<string, int>>]
+[GenerateShape<FSharpExpr>]
 public partial class Witness;

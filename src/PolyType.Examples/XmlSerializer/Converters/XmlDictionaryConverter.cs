@@ -1,6 +1,6 @@
-﻿using System.Xml;
-using PolyType.Abstractions;
+﻿using PolyType.Abstractions;
 using PolyType.Examples.Utilities;
+using System.Xml;
 
 namespace PolyType.Examples.XmlSerializer.Converters;
 
@@ -16,28 +16,27 @@ internal class XmlDictionaryConverter<TDictionary, TKey, TValue>(
     private readonly Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> _getEnumerable = getEnumerable;
 
     public override TDictionary? Read(XmlReader reader)
-        => throw new NotSupportedException($"Type {typeof(TDictionary)} does not support deserialization.");
-
-    public sealed override void Write(XmlWriter writer, string localName, TDictionary? value)
     {
-        if (value is null)
+        if (default(TDictionary) is null && reader.TryReadNullElement())
         {
-            writer.WriteNullElement(localName);
-            return;
+            return default;
         }
+        
+        throw new NotSupportedException($"Type {typeof(TDictionary)} does not support deserialization.");
+    }
 
+    public sealed override void Write(XmlWriter writer, TDictionary value)
+    {
         XmlConverter<TKey> keyConverter = _keyConverter;
         XmlConverter<TValue> valueConverter = _valueConverter;
 
-        writer.WriteStartElement(localName);
         foreach (KeyValuePair<TKey, TValue> entry in _getEnumerable(value))
         {
             writer.WriteStartElement("entry");
-            keyConverter.Write(writer, "key", entry.Key);
-            valueConverter.Write(writer, "value", entry.Value);
+            keyConverter.WriteAsElement(writer, "key", entry.Key);
+            valueConverter.WriteAsElement(writer, "value", entry.Value);
             writer.WriteEndElement();
         }
-        writer.WriteEndElement();
     }
 }
 

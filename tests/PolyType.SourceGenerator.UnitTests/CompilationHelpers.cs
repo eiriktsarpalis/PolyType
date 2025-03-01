@@ -62,14 +62,15 @@ public static class CompilationHelpers
         MetadataReference[] references = 
         [
             MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+            MetadataReference.CreateFromFile(GetAssemblyFromSharedFrameworkDirectory("netstandard.dll")),
             MetadataReference.CreateFromFile(typeof(System.Linq.Enumerable).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.Collections.Immutable.ImmutableArray).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(Microsoft.FSharp.Core.Unit).Assembly.Location),
 #if NET
             MetadataReference.CreateFromFile(typeof(LinkedList<>).Assembly.Location),
             MetadataReference.CreateFromFile(systemRuntimeAssembly.Location),
 #else
             MetadataReference.CreateFromFile(typeof(ReadOnlySpan<>).Assembly.Location),
-            MetadataReference.CreateFromFile(GetAssemblyFromSharedFrameworkDirectory("netstandard.dll")),
             MetadataReference.CreateFromFile(typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.Runtime.CompilerServices.Unsafe).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.Collections.Immutable.ImmutableArray).Assembly.Location),

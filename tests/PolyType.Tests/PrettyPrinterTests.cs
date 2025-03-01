@@ -86,6 +86,32 @@ public abstract class PrettyPrinterTests(ProviderUnderTest providerUnderTest)
               ["key"] = "value"
             }
             """];
+
+        yield return [TestCase.Create<PolymorphicClass>(new PolymorphicClass(42), p),
+            """
+            new PolymorphicClass
+            {
+              Int = 42
+            }
+            """];
+
+        yield return [TestCase.Create<PolymorphicClass>(new PolymorphicClass.DerivedClass(42, "str"), p),
+            """
+            new DerivedClass
+            {
+              String = "str",
+              Int = 42
+            }
+            """];
+
+        yield return [TestCase.Create<IPolymorphicInterface>(new IPolymorphicInterface.IDerived1.Impl { X = 1, Y = 2 }, p),
+            """
+            new IDerived1
+            {
+              Y = 2,
+              X = 1
+            }
+            """];
     }
 
     protected PrettyPrinter<T> GetPrettyPrinterUnderTest<T>(TestCase<T> testCase) =>

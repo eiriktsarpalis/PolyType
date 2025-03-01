@@ -1,12 +1,16 @@
-﻿using System.Diagnostics;
+﻿using PolyType.Abstractions;
+using PolyType.Examples.Utilities;
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using PolyType.Abstractions;
-using PolyType.Examples.Utilities;
 
 namespace PolyType.Examples.JsonSerializer.Converters;
 
-internal class JsonDictionaryConverter<TDictionary, TKey, TValue>(JsonConverter<TKey> keyConverter, JsonConverter<TValue> valueConverter, IDictionaryTypeShape<TDictionary, TKey, TValue> shape) : JsonConverter<TDictionary>
+internal class JsonDictionaryConverter<TDictionary, TKey, TValue>(
+    JsonConverter<TKey> keyConverter,
+    JsonConverter<TValue> valueConverter,
+    IDictionaryTypeShape<TDictionary, TKey, TValue> shape)
+    : JsonConverter<TDictionary>, IJsonObjectConverter<TDictionary>
     where TKey : notnull
 {
     private static readonly bool s_isDictionary = typeof(Dictionary<TKey, TValue>).IsAssignableFrom(typeof(TDictionary));
@@ -16,6 +20,11 @@ internal class JsonDictionaryConverter<TDictionary, TKey, TValue>(JsonConverter<
 
     public override TDictionary? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
+        if (default(TDictionary) is null && reader.TokenType is JsonTokenType.Null)
+        {
+            return default;
+        }
+
         throw new NotSupportedException($"Type {typeof(TDictionary)} does not support deserialization.");
     }
 
@@ -28,7 +37,14 @@ internal class JsonDictionaryConverter<TDictionary, TKey, TValue>(JsonConverter<
         }
         
         writer.WriteStartObject();
-        
+        WriteProperties(writer, value, options);
+        writer.WriteEndObject();
+    }
+
+    public void WriteProperties(Utf8JsonWriter writer, TDictionary value, JsonSerializerOptions options)
+    {
+        DebugExt.Assert(value is not null);
+
         if (s_isDictionary)
         {
             WriteEntriesAsDictionary(writer, (Dictionary<TKey, TValue>)(object)value, options);
@@ -37,8 +53,6 @@ internal class JsonDictionaryConverter<TDictionary, TKey, TValue>(JsonConverter<
         {
             WriteEntriesAsReadOnlyDictionary(writer, value, options);
         }
-
-        writer.WriteEndObject();
     }
 
     private void WriteEntriesAsDictionary(Utf8JsonWriter writer, Dictionary<TKey, TValue> value, JsonSerializerOptions options)
@@ -95,6 +109,14 @@ internal sealed class JsonMutableDictionaryConverter<TDictionary, TKey, TValue>(
         while (reader.TokenType != JsonTokenType.EndObject)
         {
             Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
+
+            if (reader.ValueSpan.SequenceEqual(JsonHelpers.DiscriminatorPropertyName))
+            {
+                reader.EnsureRead();
+                reader.Skip();
+                reader.EnsureRead();
+                continue;
+            }
 
             TKey key = keyConverter.ReadAsPropertyName(ref reader, typeof(TKey), options);
             reader.EnsureRead();

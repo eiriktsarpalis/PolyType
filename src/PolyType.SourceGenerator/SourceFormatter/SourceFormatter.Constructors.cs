@@ -148,13 +148,15 @@ internal sealed partial class SourceFormatter
                     _ => $$""" { {{FormatInitializerBody()}} }""",
                 };
 
+                string castPrefix = constructor.ResultRequiresCast ? $"({type.Type.FullyQualifiedName})" : "";
                 string constructorName = FormatConstructorName(type, constructor);
                 string constructorExpr = constructor.Parameters.Length switch
                 {
-                    0 when memberInitializerBlock is null => $"{constructorName}()",
-                    0 => $"{constructorName}{memberInitializerBlock}",
-                    1 when constructor.TotalArity == 1 => $"{constructorName}({FormatCtorParameterExpr(constructor.Parameters[0], isSingleParameter: true)})",
-                    _ => $"{constructorName}({FormatCtorArgumentsBody()}){memberInitializerBlock}",
+                    0 when constructor.StaticFactoryIsProperty => castPrefix + constructorName,
+                    0 when memberInitializerBlock is null => $"{castPrefix}{constructorName}()",
+                    0 => $"{castPrefix}{constructorName}{memberInitializerBlock}",
+                    1 when constructor.TotalArity == 1 => $"{castPrefix}{constructorName}({FormatCtorParameterExpr(constructor.Parameters[0], isSingleParameter: true)})",
+                    _ => $"{castPrefix}{constructorName}({FormatCtorArgumentsBody()}){memberInitializerBlock}",
                 };
 
                 // Initialize required members using regular assignments if the constructor is not accessible.
@@ -238,12 +240,16 @@ internal sealed partial class SourceFormatter
         }
 
         static string FormatDefaultCtor(ObjectShapeModel declaringType, ConstructorShapeModel constructor)
-            => constructor.TotalArity switch
+        {
+            string castPrefix = constructor.ResultRequiresCast ? $"({declaringType.Type.FullyQualifiedName})" : "";
+            return constructor.TotalArity switch
             {
                 0 when declaringType.IsValueTupleType => $"static () => default({declaringType.Type.FullyQualifiedName})",
-                0 => $"static () => {FormatConstructorName(declaringType, constructor)}()",
+                0 when constructor.StaticFactoryIsProperty => $"static () => {castPrefix}{FormatConstructorName(declaringType, constructor)}",
+                0 => $"static () => {castPrefix}{FormatConstructorName(declaringType, constructor)}()",
                 _ => "null",
             };
+        }
 
         static string FormatConstructorName(ObjectShapeModel declaringType, ConstructorShapeModel constructor)
         {

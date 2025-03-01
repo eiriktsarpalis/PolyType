@@ -136,19 +136,20 @@ public static partial class Validator
             });
         }
 
-        public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state) where T : struct
+        public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
         {
-            Validator<T>? elementValidator = GetOrAddValidator(nullableShape.ElementType);
+            Validator<TElement>? elementValidator = GetOrAddValidator(optionalShape.ElementType);
             if (elementValidator is null)
             {
                 return null; // Nothing to validate for this type.
             }
 
-            return new Validator<T?>((T? nullable, List<string> path, ref List<string>? errors) =>
+            var deconstructor = optionalShape.GetDeconstructor();
+            return new Validator<TOptional>((TOptional? optional, List<string> path, ref List<string>? errors) =>
             {
-                if (nullable.HasValue)
+                if (deconstructor(optional, out TElement? element))
                 {
-                    elementValidator(nullable.Value, path, ref errors);
+                    elementValidator(element, path, ref errors);
                 }
             });
         }
@@ -166,6 +167,48 @@ public static partial class Validator
             return surrogateValidator is null ? null : 
                 new Validator<T>((T? value, List<string> path, ref List<string>? errors) => 
                     surrogateValidator(marshaller.ToSurrogate(value), path, ref errors));
+        }
+
+        public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
+        {
+            var getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
+            var baseCaseValidator = (Validator<TUnion>?)unionShape.BaseType.Accept(this);
+            var unionCaseValidators = unionShape.UnionCases
+                .Select(caseShape => (Validator<TUnion>?)caseShape.Accept(this))
+                .ToArray();
+
+            if (baseCaseValidator is null && unionCaseValidators.All(v => v is null))
+            {
+                return null;
+            }
+
+            return new Validator<TUnion>((TUnion? value, List<string> path, ref List<string>? errors) =>
+            {
+                if (value is null)
+                {
+                    return;
+                }
+
+                int caseIndex = getUnionCaseIndex(ref value);
+                if (caseIndex < 0)
+                {
+                    baseCaseValidator?.Invoke(value, path, ref errors);
+                    return;
+                }
+
+                unionCaseValidators[caseIndex]?.Invoke(value, path, ref errors);
+            });
+        }
+
+        public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
+        {
+            var underlying = (Validator<TUnionCase>?)unionCaseShape.Type.Accept(this);
+            if (underlying is null)
+            {
+                return null;
+            }
+
+            return new Validator<TUnion>((TUnion? value, List<string> path, ref List<string>? errors) => underlying((TUnionCase?)value, path, ref errors));
         }
 
         /// <summary>

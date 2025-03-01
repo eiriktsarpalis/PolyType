@@ -16,16 +16,15 @@ public abstract class ConfigurationBinderTests(ProviderUnderTest providerUnderTe
     public void BoundResultEqualsOriginalValue<T>(TestCase<T> testCase)
     {
         ITypeShape<T> shape = providerUnderTest.ResolveShape(testCase);
-        if (!providerUnderTest.HasConstructor(testCase))
-        {
-            
-            Assert.Throws<NotSupportedException>(() => ConfigurationBinderTS.Create(shape));
-            return;
-        }
-
         Func<IConfiguration, T?> binder = ConfigurationBinderTS.Create(shape);
         IEqualityComparer<T> comparer = StructuralEqualityComparer.Create(shape);
         IConfiguration configuration = CreateConfiguration(testCase, shape);
+
+        if (testCase.Value is not null && !providerUnderTest.HasConstructor(testCase))
+        {
+            Assert.Throws<NotSupportedException>(() => binder(configuration));
+            return;
+        }
 
         T? result = binder(configuration);
 

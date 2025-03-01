@@ -6,12 +6,19 @@ using PolyType.Abstractions;
 
 namespace PolyType.Examples.JsonSerializer.Converters;
 
-internal class JsonObjectConverter<T>(JsonPropertyConverter<T>[] properties) : JsonConverter<T>
+internal class JsonObjectConverter<T>(JsonPropertyConverter<T>[] properties) : JsonConverter<T>, IJsonObjectConverter<T>
 {
     private readonly JsonPropertyConverter<T>[] _propertiesToWrite = properties.Where(prop => prop.HasGetter).ToArray();
 
     public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        => throw new NotSupportedException($"Deserialization for type {typeof(T)} is not supported.");
+    {
+        if (default(T) is null && reader.TokenType is JsonTokenType.Null)
+        {
+            return default;
+        }
+
+        throw new NotSupportedException($"Deserialization for type {typeof(T)} is not supported.");
+    }
 
     public sealed override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
     {
@@ -24,18 +31,23 @@ internal class JsonObjectConverter<T>(JsonPropertyConverter<T>[] properties) : J
         }
 
         writer.WriteStartObject();
+        WriteProperties(writer, value, options);
+        writer.WriteEndObject();
+    }
+
+    public void WriteProperties(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+    {
         foreach (JsonPropertyConverter<T> property in _propertiesToWrite)
         {
             writer.WritePropertyName(property.EncodedName);
             property.Write(writer, ref value, options);
         }
-        writer.WriteEndObject();
     }
 }
 
 internal sealed class JsonObjectConverterWithDefaultCtor<T>(Func<T> defaultConstructor, JsonPropertyConverter<T>[] properties) : JsonObjectConverter<T>(properties)
 {
-    private readonly JsonPropertyDictionary<T> _propertiesToRead = new(properties.Where(prop => prop.HasSetter));
+    private readonly JsonPropertyDictionary<JsonPropertyConverter<T>> _propertiesToRead = properties.Where(prop => prop.HasSetter).ToJsonPropertyDictionary(p => p.Name);
 
     public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
@@ -48,7 +60,7 @@ internal sealed class JsonObjectConverterWithDefaultCtor<T>(Func<T> defaultConst
         reader.EnsureRead();
 
         T result = defaultConstructor();
-        JsonPropertyDictionary<T> propertiesToRead = _propertiesToRead;
+        JsonPropertyDictionary<JsonPropertyConverter<T>> propertiesToRead = _propertiesToRead;
 
         while (reader.TokenType != JsonTokenType.EndObject)
         {
@@ -79,7 +91,7 @@ internal sealed class JsonObjectConverterWithParameterizedCtor<TDeclaringType, T
     JsonPropertyConverter<TArgumentState>[] constructorParameters,
     JsonPropertyConverter<TDeclaringType>[] properties) : JsonObjectConverter<TDeclaringType>(properties)
 {
-    private readonly JsonPropertyDictionary<TArgumentState> _constructorParameters = new(constructorParameters);
+    private readonly JsonPropertyDictionary<JsonPropertyConverter<TArgumentState>> _constructorParameters = constructorParameters.ToJsonPropertyDictionary(p => p.Name);
 
     public sealed override TDeclaringType? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
@@ -91,7 +103,7 @@ internal sealed class JsonObjectConverterWithParameterizedCtor<TDeclaringType, T
         reader.EnsureTokenType(JsonTokenType.StartObject);
         reader.EnsureRead();
 
-        JsonPropertyDictionary<TArgumentState> ctorParams = _constructorParameters;
+        JsonPropertyDictionary<JsonPropertyConverter<TArgumentState>> ctorParams = _constructorParameters;
         TArgumentState argumentState = createArgumentState();
 
         while (reader.TokenType != JsonTokenType.EndObject)
@@ -115,4 +127,9 @@ internal sealed class JsonObjectConverterWithParameterizedCtor<TDeclaringType, T
 
         return createObject(ref argumentState);
     }
+}
+
+internal interface IJsonObjectConverter<TUnion>
+{
+    void WriteProperties(Utf8JsonWriter writer, TUnion value, JsonSerializerOptions options);
 }

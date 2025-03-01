@@ -11,10 +11,7 @@ internal sealed class DelayedXmlConverterFactory : IDelayedValueFactory
 
     private sealed class DelayedXmlConverter<T>(DelayedValue<XmlConverter<T>> self) : XmlConverter<T>
     {
-        public override T? Read(XmlReader reader) =>
-            self.Result.Read(reader);
-
-        public override void Write(XmlWriter writer, string localName, T? value) =>
-            self.Result.Write(writer, localName, value);
+        public override T? Read(XmlReader reader) => self.Result.Read(reader);
+        public override void Write(XmlWriter writer, T value) => self.Result.Write(writer, value);
     }
 }

@@ -20,13 +20,14 @@ jobs:
         dotnet-version: 9.0.x
     - name: Build & Test
       run: make pack
-    - name: Report Test Results
-      uses: dorny/test-reporter@v1
-      if: success() || failure()
-      with:
-        name: Windows Tests
-        path: artifacts/**/*.trx
-        reporter: dotnet-trx
+    # Disable until 'Maximum call stack size exceeded' errors are resolved
+    # - name: Report Test Results
+    #   uses: dorny/test-reporter@v1
+    #   if: success() || failure()
+    #   with:
+    #     name: Windows Tests
+    #     path: artifacts/**/*.trx
+    #     reporter: dotnet-trx
     - name: Upload artifacts
       if: github.ref == 'refs/heads/main'
       uses: actions/upload-artifact@v4

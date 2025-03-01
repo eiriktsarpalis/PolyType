@@ -1,5 +1,5 @@
-﻿using System.Xml;
-using PolyType.Abstractions;
+﻿using PolyType.Abstractions;
+using System.Xml;
 
 namespace PolyType.Examples.XmlSerializer.Converters;
 
@@ -8,25 +8,21 @@ internal class XmlObjectConverter<T>(XmlPropertyConverter<T>[] properties) : Xml
     private readonly XmlPropertyConverter<T>[] _propertiesToWrite = properties.Where(prop => prop.HasGetter).ToArray();
 
     public override T? Read(XmlReader reader)
-        => throw new NotSupportedException($"Deserialization for type {typeof(T)} is not supported.");
-
-    public sealed override void Write(XmlWriter writer, string localName, T? value)
     {
-        if (value is null)
+        if (default(T) is null && reader.TryReadNullElement())
         {
-            writer.WriteNullElement(localName);
-            return;
+            return default;
         }
 
-        writer.WriteStartElement(localName);
-        if (value is not null)
+        throw new NotSupportedException($"Deserialization for type {typeof(T)} is not supported.");
+    }
+
+    public sealed override void Write(XmlWriter writer, T value)
+    {
+        foreach (XmlPropertyConverter<T> property in _propertiesToWrite)
         {
-            foreach (XmlPropertyConverter<T> property in _propertiesToWrite)
-            {
-                property.Write(writer, ref value);
-            }
+            property.Write(writer, ref value);
         }
-        writer.WriteEndElement();
     }
 }
 

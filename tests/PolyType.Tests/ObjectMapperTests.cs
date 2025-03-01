@@ -11,7 +11,7 @@ public abstract class ObjectMapperTests(ProviderUnderTest providerUnderTest)
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
     public void MapToTheSameType_ProducesEqualCopy<T>(TestCase<T> testCase)
     {
-        if (!providerUnderTest.HasConstructor(testCase))
+        if (!providerUnderTest.HasConstructor(testCase) || testCase.IsUnion)
         {
             return;
         }
@@ -74,7 +74,7 @@ public abstract class ObjectMapperTests(ProviderUnderTest providerUnderTest)
         Assert.Null(weatherForecast.UnmatchedProperty);
     }
 
-    private Mapper<TFrom, TTo> GetMapper<TFrom, TTo>()  => Mapper.Create<TFrom, TTo>(providerUnderTest.Provider);
+    private Mapper<TFrom, TTo> GetMapper<TFrom, TTo>() => Mapper.Create<TFrom, TTo>(providerUnderTest.Provider);
 #endif
 
     private (Mapper<T, T>, IEqualityComparer<T>, ITypeShape<T>) GetMapperAndEqualityComparer<T>(TestCase<T> testCase)

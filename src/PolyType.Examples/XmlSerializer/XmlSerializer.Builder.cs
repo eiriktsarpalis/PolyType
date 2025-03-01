@@ -6,15 +6,15 @@ namespace PolyType.Examples.XmlSerializer;
 
 public static partial class XmlSerializer
 {
-    private sealed class Builder(ITypeShapeFunc self) : ITypeShapeVisitor, ITypeShapeFunc
+    private sealed class Builder(TypeGenerationContext self) : ITypeShapeVisitor, ITypeShapeFunc
     {
         /// <summary>Recursively looks up or creates a converter for the specified shape.</summary>
         public XmlConverter<T> GetOrAddConverter<T>(ITypeShape<T> shape) =>
-            (XmlConverter<T>)self.Invoke(shape, this)!;
+            (XmlConverter<T>)self.GetOrAdd(shape)!;
 
         object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state)
         {
-            if (s_defaultConverters.TryGetValue(typeof(T), out XmlConverter? defaultConverter))
+            if (s_defaultConverters.TryGetValue(typeof(T), out IXmlConverter? defaultConverter))
             {
                 return (XmlConverter<T>)defaultConverter;
             }
@@ -24,6 +24,11 @@ public static partial class XmlSerializer
 
         public object? VisitObject<T>(IObjectTypeShape<T> type, object? state)
         {
+            if (typeof(T) == typeof(object))
+            {
+                return new ObjectConverter(self.ParentCache!);
+            }
+
             XmlPropertyConverter<T>[] properties = type.Properties
                 .Select(prop => (XmlPropertyConverter<T>)prop.Accept(this)!)
                 .ToArray();
@@ -127,10 +132,13 @@ public static partial class XmlSerializer
             };
         }
 
-        public object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state) where T : struct
+        public object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
         {
-            XmlConverter<T> elementConverter = GetOrAddConverter(nullableShape.ElementType);
-            return new XmlNullableConverter<T>(elementConverter);
+            return new XmlOptionalConverter<TOptional, TElement>(
+                elementConverter: GetOrAddConverter(optionalShape.ElementType),
+                deconstructor: optionalShape.GetDeconstructor(),
+                createNone: optionalShape.GetNoneConstructor(),
+                createSome: optionalShape.GetSomeConstructor());
         }
 
         public object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state) where TEnum : struct, Enum
@@ -144,7 +152,29 @@ public static partial class XmlSerializer
             return new XmlSurrogateConverter<T, TSurrogate>(surrogateShape.Marshaller, surrogateConverter);
         }
 
-        private static readonly Dictionary<Type, XmlConverter> s_defaultConverters = new XmlConverter[]
+        public object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state)
+        {
+            var getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
+            var baseCaseConverter = (XmlConverter<TUnion>)unionShape.BaseType.Accept(this)!;
+            var unionCaseConverter = unionShape.UnionCases
+                .Select(unionCase =>
+                {
+                    var caseConverter = (XmlConverter<TUnion>)unionCase.Accept(this)!;
+                    return new KeyValuePair<string, XmlConverter<TUnion>>(unionCase.Name, caseConverter);
+                })
+                .ToArray();
+
+            return new XmlUnionConverter<TUnion>(getUnionCaseIndex, baseCaseConverter, unionCaseConverter);
+        }
+
+        public object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state) where TUnionCase : TUnion
+        {
+            // NB: don't use the cached converter for TUnionCase, as it might equal TUnion.
+            var caseConverter = (XmlConverter<TUnionCase>)unionCaseShape.Type.Invoke(this)!;
+            return new XmlUnionCaseConverter<TUnionCase, TUnion>(caseConverter);
+        }
+
+        private static readonly Dictionary<Type, IXmlConverter> s_defaultConverters = new IXmlConverter[]
         {
             new BoolConverter(),
             new StringConverter(),
@@ -176,7 +206,6 @@ public static partial class XmlSerializer
             new TimeOnlyConverter(),
             new RuneConverter(),
 #endif
-            new ObjectConverter(),
         }.ToDictionary(conv => conv.Type);
     }
 }

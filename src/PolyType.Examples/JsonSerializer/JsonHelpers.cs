@@ -12,6 +12,8 @@ namespace PolyType.Examples.JsonSerializer;
 
 internal static class JsonHelpers
 {
+    public static ReadOnlySpan<byte> DiscriminatorPropertyName => "$type"u8;
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void EnsureRead(this ref Utf8JsonReader reader)
     {
@@ -28,6 +30,51 @@ internal static class JsonHelpers
         {
             ThrowJsonException($"Unexpected JSON token type {reader.TokenType}.");
         }
+    }
+
+    /// <summary>
+    /// When traversing an object, advances the reader to the property matching the provided name, if it exists.
+    /// </summary>
+    /// <returns></returns>
+    public static bool TryAdvanceToProperty(ref Utf8JsonReader reader, ReadOnlySpan<byte> expectedPropertyName)
+    {
+        const int MaxExpectedPropertyNameSize = 8;
+        Debug.Assert(expectedPropertyName.Length <= MaxExpectedPropertyNameSize);
+        Debug.Assert(!reader.HasValueSequence);
+        Debug.Assert(reader.TokenType is JsonTokenType.StartObject);
+
+        Span<byte> buffer = stackalloc byte[MaxExpectedPropertyNameSize * 6];
+
+        reader.EnsureRead();
+        while (reader.TokenType is not JsonTokenType.EndObject)
+        {
+            Debug.Assert(reader.TokenType is JsonTokenType.PropertyName);
+
+            if (reader.ValueSpan.Length <= MaxExpectedPropertyNameSize * 6)
+            {
+                scoped ReadOnlySpan<byte> propertyName;
+                if (!reader.ValueIsEscaped)
+                {
+                    propertyName = reader.ValueSpan;
+                }
+                else
+                {
+                    int bytesWritten = reader.CopyString(buffer);
+                    propertyName = buffer[..bytesWritten];
+                }
+
+                if (expectedPropertyName.SequenceEqual(propertyName))
+                {
+                    return true;
+                }
+            }
+
+            reader.EnsureRead();
+            reader.Skip();
+            reader.EnsureRead();
+        }
+
+        return false;
     }
 
     [DoesNotReturn]

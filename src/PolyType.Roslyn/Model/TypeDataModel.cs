@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using System.Collections.Immutable;
 
 namespace PolyType.Roslyn;
 
@@ -11,6 +12,11 @@ public class TypeDataModel
     /// The <see cref="ITypeSymbol"/> that this model represents.
     /// </summary>
     public required ITypeSymbol Type { get; init; }
+
+    /// <summary>
+    /// The list of known derived types for the given type in topological order from most to least derived.
+    /// </summary>
+    public ImmutableArray<DerivedTypeModel> DerivedTypes { get; init; } = ImmutableArray<DerivedTypeModel>.Empty;
 
     /// <summary>
     /// Determines the type of <see cref="TypeDataModel"/> being used.
