@@ -229,7 +229,7 @@ public interface IOptionalTypeShape<TOptional, TElement> : ITypeShape<TOptional>
 public delegate bool OptionDeconstructor<TOptional, TElement>(TOptional optional, out TElement value);
 ```
 
-In the case of `Nullable<T>`, the type `int?` with map to an optional shape with `TOptional` set to `int?` and `TElement` set to `int`. The relevant `ITypeShapeVisitor` method looks as follows:
+In the case of `Nullable<T>`, the type `int?` maps to an optional shape with `TOptional` set to `int?` and `TElement` set to `int`. The relevant `ITypeShapeVisitor` method looks as follows:
 
 ```C#
 public partial interface ITypeShapeVisitor
