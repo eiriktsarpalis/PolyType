@@ -1,6 +1,6 @@
-﻿using System.Diagnostics;
+﻿using PolyType.Abstractions;
+using System.Diagnostics;
 using System.Xml;
-using PolyType.Abstractions;
 
 namespace PolyType.Examples.XmlSerializer.Converters;
 
@@ -59,8 +59,7 @@ internal sealed class XmlPropertyConverter<TDeclaringType, TPropertyType> : XmlP
     public override void Write(XmlWriter writer, ref TDeclaringType declaringType)
     {
         DebugExt.Assert(_getter != null);
-
         TPropertyType value = _getter(ref declaringType);
-        _propertyConverter.Write(writer, Name, value);
+        _propertyConverter.WriteAsElement(writer, Name, value);
     }
 }

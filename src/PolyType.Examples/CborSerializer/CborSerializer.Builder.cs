@@ -1,6 +1,5 @@
 ﻿using PolyType.Abstractions;
 using PolyType.Examples.CborSerializer.Converters;
-using PolyType.Utilities;
 
 namespace PolyType.Examples.CborSerializer;
 
@@ -131,10 +130,13 @@ public static partial class CborSerializer
             };
         }
 
-        public object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state) where T : struct
+        public object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
         {
-            CborConverter<T> elementConverter = GetOrAddConverter(nullableShape.ElementType);
-            return new CborNullableConverter<T>(elementConverter);
+            return new CborOptionalConverter<TOptional, TElement>(
+                elementConverter: GetOrAddConverter(optionalShape.ElementType),
+                deconstructor: optionalShape.GetDeconstructor(),
+                createNone: optionalShape.GetNoneConstructor(),
+                createSome: optionalShape.GetSomeConstructor());
         }
 
         public object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state) where TEnum : struct, Enum
@@ -146,6 +148,28 @@ public static partial class CborSerializer
         {
             CborConverter<TSurrogate> surrogateConverter = GetOrAddConverter(surrogateShape.SurrogateType);
             return new CborSurrogateConverter<T, TSurrogate>(surrogateShape.Marshaller, surrogateConverter);
+        }
+
+        public object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state)
+        {
+            var getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
+            var baseTypeConverter = (CborConverter<TUnion>)unionShape.BaseType.Invoke(this)!;
+            var unionCases = unionShape.UnionCases
+                .Select(unionCase =>
+                {
+                    var caseConverter = (CborConverter<TUnion>)unionCase.Accept(this, null)!;
+                    return new KeyValuePair<int, CborConverter<TUnion>>(unionCase.Tag, caseConverter);
+                })
+                .ToArray();
+
+            return new CborUnionConverter<TUnion>(getUnionCaseIndex, baseTypeConverter, unionCases);
+        }
+
+        public object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state) where TUnionCase : TUnion
+        {
+            // NB: don't use the cached converter for TUnionCase, as it might equal TUnion.
+            var caseConverter = (CborConverter<TUnionCase>)unionCaseShape.Type.Invoke(this)!;
+            return new CborUnionCaseConverter<TUnionCase, TUnion>(caseConverter);
         }
 
         private static readonly Dictionary<Type, CborConverter> s_builtInConverters = new CborConverter[]

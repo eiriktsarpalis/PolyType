@@ -39,7 +39,7 @@ public partial class RandomGenerator
 
             return type.Constructor is { } constructor
                 ? constructor.Accept(this)
-                : throw new NotSupportedException($"Type '{typeof(T)}' does not support random generation.");
+                : CreateNotSupportedGenerator<T>();
         }
 
         public object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> property, object? state)
@@ -122,10 +122,12 @@ public partial class RandomGenerator
             return new RandomGenerator<TEnum>((Random random, int _) => values[random.Next(0, values.Length)]);
         }
 
-        public object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state) where T : struct
+        public object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
         {
-            RandomGenerator<T> elementGenerator = GetOrAddGenerator(nullableShape.ElementType);
-            return new RandomGenerator<T?>((Random random, int size) => NextBoolean(random) ? null : elementGenerator(random, size - 1));
+            RandomGenerator<TElement> elementGenerator = GetOrAddGenerator(optionalShape.ElementType);
+            var createNone = optionalShape.GetNoneConstructor();
+            var createSome = optionalShape.GetSomeConstructor();
+            return new RandomGenerator<TOptional>((Random random, int size) => NextBoolean(random) ? createNone() : createSome(elementGenerator(random, size - 1)));
         }
 
         public object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state)
@@ -136,7 +138,7 @@ public partial class RandomGenerator
             {
                 if (typeof(TEnumerable) != typeof(TElement[]))
                 {
-                    throw new NotImplementedException("Multi-dimensional array support.");
+                    return CreateNotSupportedGenerator<TEnumerable>();
                 }
 
                 return new RandomGenerator<TElement[]>((Random random, int size) =>
@@ -226,7 +228,7 @@ public partial class RandomGenerator
                     });
 
                 default:
-                    throw new NotSupportedException($"Type '{typeof(TEnumerable)}' does not support random generation.");
+                    return CreateNotSupportedGenerator<TEnumerable>();
             }
         }
 
@@ -303,7 +305,7 @@ public partial class RandomGenerator
                     });
 
                 default:
-                    throw new NotSupportedException($"Type '{typeof(TDictionary)}' does not support random generation.");
+                    return CreateNotSupportedGenerator<TDictionary>();
             }
         }
 
@@ -323,6 +325,57 @@ public partial class RandomGenerator
             RandomGenerator<TSurrogate> surrogateGenerator = GetOrAddGenerator(surrogateShape.SurrogateType);
             return new RandomGenerator<T>((Random random, int size) => marshaller.FromSurrogate(surrogateGenerator(random, size))!);
         }
+
+        public object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state)
+        {
+            bool foundBaseType = false;
+            List<RandomGenerator<TUnion>> unionCaseGenerators = [];
+            foreach (var unionCase in unionShape.UnionCases)
+            {
+                if (!IsConstructible(unionCase.Type))
+                {
+                    continue;
+                }
+
+                // Can rely on covariance for this cast to succeed.
+                unionCaseGenerators.Add((RandomGenerator<TUnion>)unionCase.Type.Accept(this)!);
+                foundBaseType |= unionCase.Type.Type == typeof(TUnion);
+            }
+
+            if (!foundBaseType && IsConstructible(unionShape.BaseType))
+            {
+                // If the base type is not in the list of derived cases, add it to the list.
+                unionCaseGenerators.Add((RandomGenerator<TUnion>)unionShape.BaseType.Accept(this)!);
+            }
+
+            if (unionCaseGenerators.Count == 0)
+            {
+                return CreateNotSupportedGenerator<TUnion>();
+            }
+
+            RandomGenerator<TUnion>[] unionCaseGeneratorArray = unionCaseGenerators.ToArray();
+            return new RandomGenerator<TUnion>((Random random, int size) =>
+            {
+                int caseIndex = random.Next(0, unionCaseGeneratorArray.Length);
+                var derivedGenerator = unionCaseGeneratorArray[caseIndex];
+                return derivedGenerator(random, size);
+            });
+
+            static bool IsConstructible(ITypeShape shape) =>
+                shape switch
+                {
+                    IObjectTypeShape objectShape => objectShape.Constructor is not null,
+                    IEnumerableTypeShape enumerableShape => enumerableShape.ConstructionStrategy is not CollectionConstructionStrategy.None,
+                    IDictionaryTypeShape dictionaryShape => dictionaryShape.ConstructionStrategy is not CollectionConstructionStrategy.None,
+                    _ => true,
+                };
+        }
+
+        public object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state) where TUnionCase : TUnion =>
+            throw new NotImplementedException();
+
+        private static RandomGenerator<T> CreateNotSupportedGenerator<T>() =>
+            (_,_) => throw new NotSupportedException($"Type '{typeof(T)}' does not support random generation.");
 
         private static IEnumerable<KeyValuePair<Type, (object Generator, RandomGenerator<object?> BoxingGenerator)>> CreateDefaultGenerators()
         {

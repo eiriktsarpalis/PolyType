@@ -35,7 +35,7 @@ public static partial class Cloner
                 return new Func<T?, T?>(t => t);
             }
             
-            return typeShape.Constructor is { } ctor ? ctor.Accept(this) : throw TypeNotCloneable<T>();
+            return typeShape.Constructor is { } ctor ? ctor.Accept(this) : CreateUnsupportedTypeCloner<T>();
         }
         
         public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructorShape, object? _)
@@ -191,7 +191,7 @@ public static partial class Cloner
                     });
                 
                 default:
-                    throw TypeNotCloneable<TEnumerable>();
+                    return CreateUnsupportedTypeCloner<TEnumerable>();
             }
         }
 
@@ -254,7 +254,7 @@ public static partial class Cloner
                     });
                 
                 default:
-                    throw TypeNotCloneable<TDictionary>();
+                    return CreateUnsupportedTypeCloner<TDictionary>();
             }
         }
 
@@ -263,10 +263,13 @@ public static partial class Cloner
             return new Func<TEnum, TEnum>(e => e);
         }
 
-        public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? _)
+        public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? _)
         {
-            var elementCloner = GetOrAddCloner(nullableShape.ElementType);
-            return new Func<T?, T?>(t => t.HasValue ? elementCloner(t.Value) : null);
+            var elementCloner = GetOrAddCloner(optionalShape.ElementType);
+            var deconstructor = optionalShape.GetDeconstructor();
+            var createNone = optionalShape.GetNoneConstructor();
+            var createSome = optionalShape.GetSomeConstructor();
+            return new Func<TOptional, TOptional>(t => deconstructor(t, out TElement? value) ? createSome(elementCloner(value)!) : createNone());
         }
 
         public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? _)
@@ -274,6 +277,33 @@ public static partial class Cloner
             var marshaller = surrogateShape.Marshaller;
             var surrogateCloner = GetOrAddCloner(surrogateShape.SurrogateType);
             return new Func<T?, T?>(t => marshaller.FromSurrogate(surrogateCloner(marshaller.ToSurrogate(t))));
+        }
+
+        public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
+        {
+            var getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
+            var baseCloner = (Func<TUnion?, TUnion?>)unionShape.BaseType.Invoke(this)!; // Don't cache the base shape as its type matches the union type.
+            var unionCaseCloners = unionShape.UnionCases
+                .Select(unionCase => (Func<TUnion?, TUnion?>)unionCase.Accept(this)!)
+                .ToArray();
+
+            return new Func<TUnion?, TUnion?>(t =>
+            {
+                if (t is null)
+                {
+                    return t;
+                }
+
+                int index = getUnionCaseIndex(ref t);
+                var cloner = index < 0 ? baseCloner : unionCaseCloners[index];
+                return cloner(t);
+            });
+        }
+
+        public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
+        {
+            var cloner = (Func<TUnionCase?, TUnionCase?>)unionCaseShape.Type.Invoke(this)!;
+            return new Func<TUnion?, TUnion?>(t => cloner((TUnionCase?)t));
         }
 
         private static IEnumerable<KeyValuePair<Type, object>> GetBuiltInCloners()
@@ -304,7 +334,8 @@ public static partial class Cloner
             };
         }
 
-        private static NotSupportedException TypeNotCloneable<T>() => new($"The type '{typeof(T)}' is not cloneable.");
+        private static Func<T?, T?> CreateUnsupportedTypeCloner<T>() =>
+            t => t is null ? t : throw new NotSupportedException($"The type '{typeof(T)}' is not cloneable.");
     }
 
     private sealed class DelayedClonerFactory : IDelayedValueFactory

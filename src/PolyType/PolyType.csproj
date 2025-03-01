@@ -16,6 +16,7 @@
     <Compile Include="..\Shared\Helpers\ReflectionHelpers.cs" Link="Shared\Helpers\%(Filename).cs" />
     <Compile Include="..\Shared\Helpers\CommonHelpers.cs" Link="Shared\Helpers\%(Filename).cs" />
     <Compile Include="..\Shared\Helpers\Throw.cs" Link="Shared\Helpers\%(Filename).cs" />
+    <Compile Include="..\Shared\Polyfills\FSharpSourceConstructFlags.cs" Link="Shared\Polyfills\%(Filename).cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">

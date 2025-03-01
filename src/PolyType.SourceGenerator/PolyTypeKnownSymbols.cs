@@ -22,9 +22,21 @@ public sealed class PolyTypeKnownSymbols(Compilation compilation) : KnownSymbols
 
     public INamedTypeSymbol? ParameterShapeAttribute => GetOrResolveType("PolyType.ParameterShapeAttribute", ref _ParameterShapeAttribute);
     private Option<INamedTypeSymbol?> _ParameterShapeAttribute;
-    
+
+    public INamedTypeSymbol? DerivedTypeShapeAttribute => GetOrResolveType("PolyType.DerivedTypeShapeAttribute", ref _DerivedTypeShapeAttribute);
+    private Option<INamedTypeSymbol?> _DerivedTypeShapeAttribute;
+
     public INamedTypeSymbol? MarshallerType => GetOrResolveType("PolyType.IMarshaller`2", ref _Marshaller);
     private Option<INamedTypeSymbol?> _Marshaller;
+
+    public INamedTypeSymbol? FSharpCompilationMappingAttribute => GetOrResolveType("Microsoft.FSharp.Core.CompilationMappingAttribute", ref _FSharpCompilationMappingAttribute);
+    private Option<INamedTypeSymbol?> _FSharpCompilationMappingAttribute;
+
+    public INamedTypeSymbol? FSharpOption => GetOrResolveType("Microsoft.FSharp.Core.FSharpOption`1", ref _FSharpOptionType);
+    private Option<INamedTypeSymbol?> _FSharpOptionType;
+
+    public INamedTypeSymbol? FSharpValueOption => GetOrResolveType("Microsoft.FSharp.Core.FSharpValueOption`1", ref _FSharpValueOptionType);
+    private Option<INamedTypeSymbol?> _FSharpValueOptionType;
 
     public TargetFramework TargetFramework => _targetFramework ??= ResolveTargetFramework();
     private TargetFramework? _targetFramework;

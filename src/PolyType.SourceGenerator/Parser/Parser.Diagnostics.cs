@@ -86,4 +86,20 @@ public sealed partial class Parser
         category: "PolyType.SourceGenerator",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+
+    private static DiagnosticDescriptor DerivedTypeNotAssignableToBase { get; } = new DiagnosticDescriptor(
+        id: "TS0011",
+        title: "Derived type is not a valid subtype.",
+        messageFormat: "The declared derived type '{0}' is not a valid subtype of '{1}'.",
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    private static DiagnosticDescriptor DerivedTypeDuplicateMetadata { get; } = new DiagnosticDescriptor(
+        id: "TS0012",
+        title: "Derived type contains conflicting metadata.",
+        messageFormat: "Polymorphic type '{0}' uses duplicate assignments for {1} '{2}'.",
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
 }

@@ -36,6 +36,31 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
         {
             context.CancellationToken.ThrowIfCancellationRequested();
             context.AddSource($"{provider.ProviderDeclaration.SourceFilenamePrefix}.{type.SourceIdentifier}.g.cs", FormatProvidedType(provider, type));
+            switch (type)
+            {
+                // For polymorphic types additionally generate source for any necessary derived types that are not part of the type graph.
+
+                case UnionShapeModel unionShapeModel:
+                    context.AddSource(
+                        $"{provider.ProviderDeclaration.SourceFilenamePrefix}.{unionShapeModel.UnderlyingModel.SourceIdentifier}.g.cs",
+                        FormatProvidedType(provider, unionShapeModel.UnderlyingModel));
+
+                    break;
+
+                case FSharpUnionShapeModel fSharpUnionShapeModel:
+                    context.AddSource(
+                        $"{provider.ProviderDeclaration.SourceFilenamePrefix}.{fSharpUnionShapeModel.UnderlyingModel.SourceIdentifier}.g.cs",
+                        FormatProvidedType(provider, fSharpUnionShapeModel.UnderlyingModel));
+
+                    foreach (FSharpUnionCaseShapeModel unionCaseModel in fSharpUnionShapeModel.UnionCases)
+                    {
+                        context.AddSource(
+                            $"{provider.ProviderDeclaration.SourceFilenamePrefix}.{unionCaseModel.TypeModel.SourceIdentifier}.g.cs",
+                            FormatProvidedType(provider, unionCaseModel.TypeModel));
+                    }
+
+                    break;
+            }
         }
 
         foreach (TypeDeclarationModel typeDeclaration in provider.AnnotatedTypes)

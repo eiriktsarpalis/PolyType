@@ -33,7 +33,7 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
                 }
                 break;
 
-            case INullableTypeShape nullableShape:
+            case IOptionalTypeShape nullableShape:
                 JsonObject nullableElementSchema = JsonSchemaGenerator.Generate(nullableShape.ElementType);
                 schema.Remove("type");
                 nullableElementSchema.Remove("type");
@@ -76,7 +76,11 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
                     Assert.DoesNotContain("required", schema);
                 }
                 break;
-            
+
+            case IUnionTypeShape unionCaseShape:
+                Assert.Contains("anyOf", schema);
+                break;
+
             default:
                 Assert.Empty(schema);
                 break;

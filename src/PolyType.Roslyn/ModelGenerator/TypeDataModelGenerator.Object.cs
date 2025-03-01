@@ -1,8 +1,8 @@
 ﻿using Microsoft.CodeAnalysis;
+using PolyType.Roslyn.Helpers;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection;
-using PolyType.Roslyn.Helpers;
 
 namespace PolyType.Roslyn;
 
@@ -86,12 +86,14 @@ public partial class TypeDataModelGenerator
 
         ImmutableArray<PropertyDataModel> properties = MapProperties(namedType, ref ctx);
         ImmutableArray<ConstructorDataModel> constructors = MapConstructors(namedType, properties, ref ctx);
+        ImmutableArray<DerivedTypeModel> derivedTypes = IncludeDerivedTypes(type, ref ctx);
 
         model = new ObjectDataModel
         {
             Type = type,
             Constructors = constructors,
             Properties = properties,
+            DerivedTypes = derivedTypes,
         };
 
         return true;

@@ -1,4 +1,6 @@
-﻿namespace PolyType.Abstractions;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace PolyType.Abstractions;
 
 /// <summary>
 /// Delegate representing a property/field getter.
@@ -35,3 +37,13 @@ public delegate TDeclaringType Constructor<TArgumentState, TDeclaringType>(ref T
 /// <param name="values">The span of values used to create the instance.</param>
 /// <returns>A newly constructed instance using the specified values.</returns>
 public delegate TDeclaringType SpanConstructor<T, TDeclaringType>(ReadOnlySpan<T> values);
+
+/// <summary>
+/// Delegate deconstructing an optional type.
+/// </summary>
+/// <typeparam name="TOptional">The optional type to deconstruct.</typeparam>
+/// <typeparam name="TElement">The value encapsulated by the option type.</typeparam>
+/// <param name="optional">The optional value to deconstruct.</param>
+/// <param name="value">The value potentially contained in <paramref name="optional"/>.</param>
+/// <returns><see langword="true"/> if the <paramref name="optional"/> contains a value, or <see langword="false"/> if it does not.</returns>
+public delegate bool OptionDeconstructor<TOptional, TElement>(TOptional? optional, [MaybeNullWhen(false)] out TElement value);

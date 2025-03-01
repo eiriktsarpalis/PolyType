@@ -21,8 +21,8 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         
         Assert.Equal(typeof(T), shape.Type);
         Assert.Equal(typeof(T), shape.AttributeProvider);
-        Assert.Equal(typeof(T).IsRecordType() && !testCase.UsesMarshaller, shape is IObjectTypeShape { IsRecordType: true});
-        Assert.Equal(typeof(T).IsTupleType() && !testCase.UsesMarshaller, shape is IObjectTypeShape { IsTupleType: true });
+        Assert.Equal(typeof(T).IsRecordType() && testCase is { UsesMarshaller: false, IsUnion: false }, shape is IObjectTypeShape { IsRecordType: true});
+        Assert.Equal(typeof(T).IsTupleType() && testCase is { UsesMarshaller: false, IsUnion: false }, shape is IObjectTypeShape { IsTupleType: true });
         
         Assert.Same(providerUnderTest.Provider, shape.Provider);
         Assert.Same(shape, shape.Provider.GetShape(shape.Type));
@@ -42,13 +42,19 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                 return TypeShapeKind.Surrogate;
             }
 
+            if (testCase.IsUnion)
+            {
+                return TypeShapeKind.Union;
+            }
+
             if (typeof(T).IsEnum)
             {
                 return TypeShapeKind.Enum;
             }
-            else if (typeof(T).IsValueType && default(T) is null)
+            else if (typeof(T).IsValueType && default(T) is null ||
+                typeof(T) is { IsGenericType: true, Name: "FSharpOption`1" or "FSharpValueOption`1", Namespace: "Microsoft.FSharp.Core" })
             {
-                return TypeShapeKind.Nullable;
+                return TypeShapeKind.Optional;
             }
 
             if (typeof(IEnumerable).IsAssignableFrom(typeof(T)) && typeof(T) != typeof(string))
@@ -230,30 +236,30 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
 
     [Theory]
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
-    public void GetNullableType<T>(TestCase<T> testCase)
+    public void GetOptionalType<T>(TestCase<T> testCase)
     {
         ITypeShape<T> shape = providerUnderTest.ResolveShape(testCase);
 
-        if (shape.Kind is TypeShapeKind.Nullable)
+        if (shape.Kind is TypeShapeKind.Optional)
         {
-            INullableTypeShape nullableTypeType = Assert.IsAssignableFrom<INullableTypeShape>(shape);
-            Assert.Equal(typeof(T).GetGenericArguments()[0], nullableTypeType.ElementType.Type);
-            var visitor = new NullableTestVisitor();
-            nullableTypeType.Accept(visitor, state: typeof(T));
+            IOptionalTypeShape optionalTypeType = Assert.IsAssignableFrom<IOptionalTypeShape>(shape);
+            Assert.Equal(typeof(T).GetGenericArguments()[0], optionalTypeType.ElementType.Type);
+            var visitor = new OptionalTestVisitor();
+            optionalTypeType.Accept(visitor, state: typeof(T));
         }
         else
         {
-            Assert.False(shape is INullableTypeShape);
+            Assert.False(shape is IOptionalTypeShape);
         }
     }
 
-    private sealed class NullableTestVisitor : TypeShapeVisitor
+    private sealed class OptionalTestVisitor : TypeShapeVisitor
     {
-        public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state) where T : struct
+        public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
         {
             var type = (Type)state!;
-            Assert.Equal(typeof(T?), type);
-            Assert.Equal(typeof(T), nullableShape.ElementType.Type);
+            Assert.Equal(typeof(TOptional), type);
+            Assert.Equal(typeof(TElement), optionalShape.ElementType.Type);
             return null;
         }
     }
@@ -291,6 +297,43 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             Assert.Equal(typeof(TSurrogate), surrogateShape.SurrogateType.Type);
             Assert.IsType(marshallerType, surrogateShape.Marshaller);
             return null;
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
+    public void GetUnionType<T>(TestCase<T> testCase)
+    {
+        ITypeShape<T> shape = providerUnderTest.ResolveShape(testCase);
+
+        if (shape.Kind is TypeShapeKind.Union)
+        {
+            IUnionTypeShape<T> unionShape = Assert.IsAssignableFrom<IUnionTypeShape<T>>(shape);
+            Assert.NotSame(shape, unionShape.BaseType);
+            Assert.NotEmpty(unionShape.UnionCases);
+            int i = 0;
+            foreach (IUnionCaseShape unionCase in unionShape.UnionCases)
+            {
+                Assert.True(typeof(T).IsAssignableFrom(unionCase.Type.Type));
+                Assert.NotNull(unionCase.Name);
+                Assert.Equal(i++, unionCase.Index);
+            }
+
+            Getter<T, int> unionCaseIndexGetter = unionShape.GetGetUnionCaseIndex();
+            Assert.NotNull(unionCaseIndexGetter);
+            if (testCase.Value is { } value)
+            {
+                int index = unionCaseIndexGetter(ref value);
+                if (index >= 0)
+                {
+                    var matchingCase = unionShape.UnionCases[index];
+                    Assert.True(matchingCase.Type.Type.IsAssignableFrom(value!.GetType()));
+                }
+            }
+        }
+        else
+        {
+            Assert.False(shape is IUnionTypeShape);
         }
     }
 
@@ -729,7 +772,7 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
     [TypeShape(Kind = TypeShapeKind.Enum)]
     private class ClassWithEnumKind;
 
-    [TypeShape(Kind = TypeShapeKind.Nullable)]
+    [TypeShape(Kind = TypeShapeKind.Optional)]
     private class ClassWithNullableKind;
 
     [TypeShape(Kind = TypeShapeKind.Dictionary)]
@@ -744,7 +787,7 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
     [TypeShape(Kind = TypeShapeKind.Enum)]
     private class EnumerableWithEnumKind : List<int>;
 
-    [TypeShape(Kind = TypeShapeKind.Nullable)]
+    [TypeShape(Kind = TypeShapeKind.Optional)]
     private class DictionaryWithNullableKind : Dictionary<int, int>;
 
     [TypeShape(Kind = TypeShapeKind.Surrogate)]
@@ -784,6 +827,43 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
             public ClassWithConflictingMarshallers? FromSurrogate(int surrogate) => throw new NotImplementedException();
             string? IMarshaller<ClassWithConflictingMarshallers, string>.ToSurrogate(ClassWithConflictingMarshallers? value) => throw new NotImplementedException();
         }
+    }
+
+    [Theory]
+    [InlineData(typeof(PolymorphicClassWithInvalidDerivedType_NotASubtype), nameof(Object))]
+    [InlineData(typeof(PolymorphicClassWithInvalidDerivedType_ConflictingTypes), nameof(PolymorphicClassWithInvalidDerivedType_ConflictingTypes.Derived))]
+    [InlineData(typeof(PolymorphicClassWithInvalidDerivedType_ConflictingNames), "case1")]
+    [InlineData(typeof(PolymorphicClassWithInvalidDerivedType_ConflictingTags), "42")]
+    public void PolymorphicClassWithInvalidDerivedType_ThrowsInvalidOperationException(Type type, string invalidValue)
+    {
+        var ex = Assert.Throws<InvalidOperationException>(() => Provider.GetShape(type));
+        Assert.Contains(invalidValue, ex.Message);
+    }
+
+    [DerivedTypeShape(typeof(object))]
+    private class PolymorphicClassWithInvalidDerivedType_NotASubtype;
+
+    [DerivedTypeShape(typeof(Derived), Name = "case1", Tag = 1)]
+    [DerivedTypeShape(typeof(Derived), Name = "case2", Tag = 2)]
+    private class PolymorphicClassWithInvalidDerivedType_ConflictingTypes
+    {
+        public class Derived : PolymorphicClassWithInvalidDerivedType_ConflictingTypes;
+    }
+
+    [DerivedTypeShape(typeof(Derived1), Name = "case1", Tag = 1)]
+    [DerivedTypeShape(typeof(Derived2), Name = "case1", Tag = 2)]
+    private class PolymorphicClassWithInvalidDerivedType_ConflictingNames
+    {
+        public class Derived1 : PolymorphicClassWithInvalidDerivedType_ConflictingNames;
+        public class Derived2 : PolymorphicClassWithInvalidDerivedType_ConflictingNames;
+    }
+
+    [DerivedTypeShape(typeof(Derived1), Name = "case1", Tag = 42)]
+    [DerivedTypeShape(typeof(Derived2), Name = "case2", Tag = 42)]
+    private class PolymorphicClassWithInvalidDerivedType_ConflictingTags
+    {
+        public class Derived1 : PolymorphicClassWithInvalidDerivedType_ConflictingTags;
+        public class Derived2 : PolymorphicClassWithInvalidDerivedType_ConflictingTags;
     }
 }
 

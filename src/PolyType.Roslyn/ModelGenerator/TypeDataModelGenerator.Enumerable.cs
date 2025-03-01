@@ -176,6 +176,7 @@ public partial class TypeDataModelGenerator
             Type = type,
             ElementType = elementType,
             EnumerableKind = kind,
+            DerivedTypes = IncludeDerivedTypes(type, ref ctx),
             ConstructionStrategy = constructionStrategy,
             AddElementMethod = addElementMethod,
             FactoryMethod = factoryMethod,

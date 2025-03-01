@@ -16,9 +16,9 @@ public enum TypeDataKind
     Enum,
 
     /// <summary>
-    /// Type is a <see cref="NullableDataModel"/>.
+    /// Type is a <see cref="OptionalDataModel"/>.
     /// </summary>
-    Nullable,
+    Optional,
 
     /// <summary>
     /// Type is a <see cref="EnumerableDataModel"/>.

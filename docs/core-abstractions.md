@@ -126,7 +126,7 @@ public interface IDictionaryTypeShape<TDictionary, TKey, TValue> : ITypeShape<TD
 A collection type is classed as a dictionary if it implements one of the known dictionary interfaces. Non-generic collections use `object` as the element, key and value types. As before, enumerable shapes can be unpacked by the relevant methods of `ITypeShapeVisitor`:
 
 ```C#
-public interface ITypeShapeVisitor
+public partial interface ITypeShapeVisitor
 {
     object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state = null);
     object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null);
@@ -176,33 +176,27 @@ partial class CounterVisitor : TypeShapeVisitor
 }
 ```
 
-### Enum types and `Nullable<T>`
+### Enum types
 
-Enum types and `Nullable<T>` as classed as special type shapes:
+Enum types are classed as a special type shape:
 
 ```C#
 public interface IEnumTypeShape<TEnum, TUnderlying> : ITypeShape<TEnum> where TEnum : struct, Enum
 {
     public ITypeShape<TUnderlying> UnderlyingType { get; }
 }
-
-public interface INullableTypeShape<TElement> : ITypeShape<TElement?> where TElement : struct
-{
-    public ITypeShape<TElement> ElementType { get; }
-}
 ```
 
 The `TUnderlying` represents the underlying numeric representation used by the enum in question. As before, `ITypeShapeVisitor` exposes relevant methods for consuming the new shapes:
 
 ```C#
-public interface ITypeShapeVisitor
+public partial interface ITypeShapeVisitor
 {
     object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null) where TEnum : struct, Enum;
-    object? VisitNullable<TElement>(INullableTypeShape<TElement> nullableShape, object? state = null) where TElement : struct;
 }
 ```
 
-Like before we can extend `CounterVisitor` to nullable and enum types like so:
+Like before we can extend `CounterVisitor` to enum types like so:
 
 ```C#
 partial class CounterVisitor : TypeShapeVisitor
@@ -211,22 +205,182 @@ partial class CounterVisitor : TypeShapeVisitor
     {
         return new Func<TEnum, int>(_ => 1);
     }
+}
+```
 
-    public override object? VisitNullable<TElement>(INullableTypeShape<TElement> nullableShape, object? _)
+### Optional types
+
+An optional type is any container type encapsulating zero or one values of a given type. The most common example is `System.Nullable<T>` but it also includes the [F# option types](https://learn.microsoft.com/dotnet/fsharp/language-reference/options). It does not include nullable reference types since they constitute a compile-time annotation as opposed to being a real .NET type. Optional types map to the following shape:
+
+```C#
+public interface IOptionalTypeShape<TOptional, TElement> : ITypeShape<TOptional>
+{
+    // The shape of the value encapsulated by the optional type.
+    ITypeShape<TElement> ElementType { get; }
+
+    // Constructor delegates for the empty and populated cases.
+    Func<TOptional> GetNoneConstructor();
+    Func<TElement, TOptional> GetSomeConstructor();
+
+    // Deconstructor delegate for optional values.
+    OptionDeconstructor<TOptional, TElement> GetDeconstructor();
+}
+
+public delegate bool OptionDeconstructor<TOptional, TElement>(TOptional optional, out TElement value);
+```
+
+In the case of `Nullable<T>`, the type `int?` with map to an optional shape with `TOptional` set to `int?` and `TElement` set to `int`. The relevant `ITypeShapeVisitor` method looks as follows:
+
+```C#
+public partial interface ITypeShapeVisitor
+{
+    object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state = null);
+}
+```
+
+We can extend `CounterVisitor` to optional types like so:
+
+```C#
+partial class CounterVisitor : TypeShapeVisitor
+{
+    public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? _)
     {
-        var elementCounter = (Func<TElement, int>)nullableShape.ElementType.Accept(this)!;
-        return new Func<TElement?, int>(nullable => nullable is null ? 0 : elementConverter(nullable.Value));
+        var elementCounter = (Func<TElement, int>)optionalShape.ElementType.Accept(this);
+        var deconstructor = optionalShape.GetDeconstructor();
+        return new Func<TOptional, int>(optional => deconstructor(optional, out TElement element) ? elementCounter(element) : 0);
+    }
+}
+```
+
+### Union types
+
+PolyType supports union types through the `IUnionTypeShape` abstraction. Currently two kinds of union types are supported:
+
+1. Polymorphic class or interface hierarchies declared via `DerivedTypeShape` attribute annotations and
+2. F# [discriminated union](https://learn.microsoft.com/dotnet/fsharp/language-reference/discriminated-unions) types.
+
+The shape abstraction for union types looks as follows:
+
+```C#
+public interface IUnionTypeShape<TUnion> : ITypeShape<TUnion>
+{
+    // The list of all registered union cases and their shapes.
+    IReadOnlyList<IUnionCaseShape> UnionCases { get; }
+
+    // The underlying shape for the base type, used as the fallback case.
+    new ITypeShape<TUnion> BaseType { get; }
+
+    // Gets a delegate used to compute the union case index for a given value, or -1 if none is found.
+    Getter<TUnion, int> GetGetUnionCaseIndex();
+}
+
+public interface IUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShape
+    where TUnionCase : TUnion
+{
+    // A unique string identifier for the union case.
+    string Name { get; }
+
+    // A unique integer identifier for the union case.
+    int Tag { get; }
+
+    // The underlying shape for the current union case.
+    ITypeShape<TUnionCase> Type { get; }
+}
+```
+
+And as before, `ITypeShapeVisitor` exposes relevant methods for the two types:
+
+```C#
+public partial interface ITypeShapeVisitor
+{
+    object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null);
+    object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
+        where TUnionCase : TUnion;
+}
+```
+
+Putting it all together, here's how we can extend our counter example to support union types:
+
+```C#
+partial class CounterVisitor : TypeShapeVisitor
+{
+    public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? _)
+    {
+        var getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
+        var baseTypeCounter = (Func<Union, int>)unionShape.BaseType.Accept(this);
+        var unionCaseCounters = unionShape.UnionCases
+            .Select(unionCase => (Func<Union, int>)unionCase.Accept(this))
+            .ToArray();
+
+        return new Func<Union, int>(union =>
+        {
+            int index = getUnionCaseIndex(ref union);
+            Func<TUnion, int> counter = index < 0 ? baseTypeCounter : unionCaseCounters[index];
+            return counter(union);
+        });
+    }
+
+    public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? _)
+    {
+        var caseCounter = (Func<TUnionCase, int>)unionCaseShape.Type.Accept(this)!;
+        return new Func<TUnion, int>(union => caseCounter((TUnionCase)union!));
+    }
+}
+```
+
+## Surrogate types
+
+PolyType lets users customize the shape of a given type by marshalling its data to a surrogate type. This is done by declaring an implementation of the `IMarshaller<T, TSurrogate>` interface on the type, which defines a bidirectional mapping between the instances of the type itself and the surrogate. Such types are mapped to the following abstraction:
+
+```C#
+public interface ISurrogateTypeShape<T, TSurrogate> : ITypeShape<T>
+{
+    // The shape of the surrogate type
+    ITypeShape<TSurrogate> SurrogateType { get; }
+    
+    // The bidirectional mapping between T and TSurrogate
+    IMarshaller<T, TSurrogate> Marshaller { get; }
+}
+
+public interface IMarshaller<T, TSurrogate>
+{
+    TSurrogate? ToSurrogate(T? value);
+    T? FromSurrogate(TSurrogate? value);
+}
+```
+
+And corresponding visitor method
+
+```C#
+public partial interface ITypeShapeVisitor
+{
+    object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null);
+}
+```
+
+We can extend the counter example to surrogate types as follows:
+
+```C#
+partial class CounterVisitor : TypeShapeVisitor
+{
+    public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? _)
+    {
+        var surrogateCounter = (Func<TSurrogate, int>)surrogateShape.Accept(this)!;
+        var marshaller = surrogateShape.Marshaller;
+        return new Func<T, int>(t => surrogateCounter(marshaller.ToSurrogate(t)));
     }
 }
 ```
 
 To recap, the `ITypeShape` model splits .NET types into five separate kinds:
 
-* Base `ITypeShape` instances which may or may not define properties,
+* `IObjectTypeShape` instances which may or may not define properties,
 * `IEnumerableTypeShape` instances describing enumerable types,
 * `IDictionaryTypeShape` instances describing dictionary types,
 * `IEnumTypeShape` instances describing enum types and
-* `INullableTypeShape` instances describing `Nullable<T>` types.
+* `IOptionalTypeShape` instances describing optional types such as `Nullable<T>` or F# option types.
+* `IUnionTypeShape` instances describing union types such as polymorphic type hierarchies or F# discriminated unions.
+* `ISurrogateTypeShape` instances that delegate their shape declaration to surrogate types.
 
 ## Constructing and mutating types
 

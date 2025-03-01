@@ -30,9 +30,9 @@ enum TypeShapeKind
     Enum = 2,
 
     /// <summary>
-    /// Shape represents a <see cref="Nullable{T}"/> using <see cref="INullableTypeShape"/>.
+    /// Shape represents an optional type using <see cref="IOptionalTypeShape"/>.
     /// </summary>
-    Nullable = 3,
+    Optional = 3,
 
     /// <summary>
     /// Shape represents an enumerable type using <see cref="IEnumerableTypeShape"/>.
@@ -48,4 +48,9 @@ enum TypeShapeKind
     /// Shape that maps to a surrogate type using <see cref="ISurrogateTypeShape"/>.
     /// </summary>
     Surrogate = 6,
+
+    /// <summary>
+    /// Shape that maps to a union type using <see cref="IUnionTypeShape"/>.
+    /// </summary>
+    Union = 7,
 }

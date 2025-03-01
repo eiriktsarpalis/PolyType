@@ -1,7 +1,7 @@
 ﻿using Microsoft.CodeAnalysis.Text;
-using System.Diagnostics;
 using PolyType.Roslyn;
 using PolyType.SourceGenerator.Model;
+using System.Diagnostics;
 
 namespace PolyType.SourceGenerator;
 
@@ -37,8 +37,8 @@ internal sealed partial class SourceFormatter
                 FormatEnumTypeShapeFactory(writer, generatedFactoryMethodName, enumShapeModel);
                 break;
 
-            case NullableShapeModel nullableShapeModel:
-                FormatNullableTypeShapeFactory(writer, generatedFactoryMethodName, nullableShapeModel);
+            case OptionalShapeModel optionalShapeModel:
+                FormatOptionalTypeShapeFactory(writer, generatedFactoryMethodName, optionalShapeModel);
                 break;
             
             case SurrogateShapeModel surrogateShapeModel:
@@ -51,6 +51,14 @@ internal sealed partial class SourceFormatter
 
             case DictionaryShapeModel dictionaryShapeModel:
                 FormatDictionaryTypeShapeFactory(writer, generatedFactoryMethodName, dictionaryShapeModel);
+                break;
+
+            case UnionShapeModel unionShapeModel:
+                FormatUnionTypeShapeFactory(writer, generatedFactoryMethodName, unionShapeModel);
+                break;
+
+            case FSharpUnionShapeModel fsharpUnionShapeModel:
+                FormatFSharpUnionTypeShapeFactory(writer, generatedFactoryMethodName, fsharpUnionShapeModel);
                 break;
 
             default:

@@ -15,10 +15,19 @@ internal static class XmlHelpers
         }
     }
 
-    public static void WriteNullElement(this XmlWriter writer, string localName)
+    public static void WriteAsElement<T>(this XmlConverter<T> converter, XmlWriter writer, string localName, T? value)
     {
         writer.WriteStartElement(localName);
-        writer.WriteAttributeString("nil", "true");
+        
+        if (value is null)
+        {
+            writer.WriteAttributeString("nil", "true");
+        }
+        else
+        {
+            converter.Write(writer, value);
+        }
+
         writer.WriteEndElement();
     }
 

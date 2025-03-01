@@ -14,6 +14,12 @@ internal class CborDictionaryConverter<TDictionary, TKey, TValue>(
 
     public override TDictionary? Read(CborReader reader)
     {
+        if (default(TDictionary) is null && reader.PeekState() == CborReaderState.Null)
+        {
+            reader.ReadNull();
+            return default;
+        }
+
         throw new NotSupportedException($"Type {typeof(TDictionary)} does not support deserialization.");
     }
 

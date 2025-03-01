@@ -106,6 +106,13 @@ public partial class TypeDataModelGenerator
     protected virtual ITypeSymbol NormalizeType(ITypeSymbol type) => type;
 
     /// <summary>
+    /// When overridden, returns the derived types of the given type.
+    /// </summary>
+    /// <param name="type"></param>
+    /// <returns>An IEnumerable containing derived type models</returns>
+    protected virtual IEnumerable<DerivedTypeModel> ResolveDerivedTypes(ITypeSymbol type) => [];
+
+    /// <summary>
     /// Wraps the <see cref="MapType(ITypeSymbol, TypeDataKind?, ref TypeDataModelGenerationContext, out TypeDataModel?)"/> method
     /// with pre- and post-processing steps necessary for a type graph traversal.
     /// </summary>
@@ -189,8 +196,8 @@ public partial class TypeDataModelGenerator
                 }
                 goto None;
 
-            case TypeDataKind.Nullable:
-                if (TryMapNullable(type, ref ctx, out model, out status))
+            case TypeDataKind.Optional:
+                if (TryMapOptional(type, ref ctx, out model, out status))
                 {
                     return status;
                 }
@@ -233,7 +240,7 @@ public partial class TypeDataModelGenerator
             return status;
         }
 
-        if (TryMapNullable(type, ref ctx, out model, out status))
+        if (TryMapOptional(type, ref ctx, out model, out status))
         {
             return status;
         }
@@ -262,7 +269,12 @@ public partial class TypeDataModelGenerator
 
         None:
         // A supported type of unrecognized kind, do not include any metadata.
-        model = new TypeDataModel { Type = type };
+        model = new TypeDataModel
+        { 
+            Type = type,
+            DerivedTypes = IncludeDerivedTypes(type, ref ctx) 
+        };
+
         return TypeDataModelGenerationStatus.Success;
     }
 
@@ -284,5 +296,49 @@ public partial class TypeDataModelGenerator
     {
         return type.TypeKind is not (TypeKind.Pointer or TypeKind.Error) &&
           type.SpecialType is not SpecialType.System_Void && !type.ContainsGenericParameters();
+    }
+
+    private ImmutableArray<DerivedTypeModel> IncludeDerivedTypes(ITypeSymbol type, ref TypeDataModelGenerationContext ctx)
+    {
+        // 1. Resolve the shapes for all derived types.
+        List<DerivedTypeModel> derivedTypeModels = [];
+        DerivedTypeModel baseTypeModel = new() { Type = type, Name = null!, Tag = -1, Index = -1, IsBaseType = true };
+        foreach (DerivedTypeModel derivedType in ResolveDerivedTypes(type))
+        {
+            if (IncludeNestedType(derivedType.Type, ref ctx) is TypeDataModelGenerationStatus.Success)
+            {
+                derivedTypeModels.Add(derivedType);
+            }
+
+            if (derivedType.IsBaseType)
+            {
+                baseTypeModel = derivedType; // Replace the placeholder value for the base type.
+            }
+        }
+
+        // 2. Perform a topological sort of the derived types, starting from most derived down to the base type.
+        if (derivedTypeModels.Count < 2)
+        {
+            return derivedTypeModels.ToImmutableArray();
+        }
+
+        return CommonHelpers.TraverseGraphWithTopologicalSort(baseTypeModel, GetDerivedTypes)
+            .Where(unionCase => unionCase.Index >= 0)
+            .Reverse()
+            .ToImmutableArray();
+
+        IReadOnlyCollection<DerivedTypeModel> GetDerivedTypes(DerivedTypeModel current)
+        {
+            List<DerivedTypeModel> derivedTypes = [];
+            foreach (DerivedTypeModel derivedType in derivedTypeModels)
+            {
+                if (!SymbolEqualityComparer.Default.Equals(current.Type, derivedType.Type) && current.Type.IsAssignableFrom(derivedType.Type))
+                {
+                    derivedTypes.Add(derivedType);
+                }
+            }
+
+            return derivedTypes;
+        }
     }
 }

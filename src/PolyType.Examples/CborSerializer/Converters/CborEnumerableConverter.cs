@@ -12,6 +12,12 @@ internal class CborEnumerableConverter<TEnumerable, TElement>(
 
     public override TEnumerable? Read(CborReader reader)
     {
+        if (default(TEnumerable) is null && reader.PeekState() == CborReaderState.Null)
+        {
+            reader.ReadNull();
+            return default;
+        }
+
         throw new NotSupportedException($"Deserialization not supported for type {typeof(TEnumerable)}.");
     }
 

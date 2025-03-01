@@ -14,7 +14,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
 {
     public Getter<TDeclaringType, TPropertyType> CreateGetter<TDeclaringType, TPropertyType>(MemberInfo memberInfo, MemberInfo[]? parentMembers)
     {
-        Debug.Assert(memberInfo is FieldInfo or MemberInfo);
+        Debug.Assert(memberInfo is FieldInfo or PropertyInfo);
         Debug.Assert(parentMembers is null || typeof(TDeclaringType).IsNestedTupleRepresentation());
 
         DynamicMethod dynamicMethod = CreateDynamicMethod(memberInfo.Name, typeof(TPropertyType), [typeof(TDeclaringType).MakeByRefType()]);
@@ -587,6 +587,94 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
 
             generator.Emit(ldfldOpCode, (FieldInfo)element.Member);
         }
+    }
+
+    public Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeShapeAttribute[] derivedTypeAttributes)
+    {
+        Debug.Assert(!typeof(TUnion).IsValueType);
+        Debug.Assert(derivedTypeAttributes.Length > 0);
+
+        // Creates a topological sort of all cases from most derived to least derived
+        // and then emits a switch statement in that order to obtain the correct index.
+
+        // 1. Pre-process attribute data.
+        Dictionary<Type, int> typesAndIndices = new();
+        int defaultIndex = -1;
+        for (int i = 0; i < derivedTypeAttributes.Length; i++)
+        {
+            DerivedTypeShapeAttribute attribute = derivedTypeAttributes[i];
+            if (attribute.Type == typeof(TUnion))
+            {
+                defaultIndex = i;
+            }
+            else
+            {
+                typesAndIndices.Add(attribute.Type, i);
+            }
+        }
+
+        // 2. Perform the topological sort.
+        Type[] sortedTypes = CommonHelpers.TraverseGraphWithTopologicalSort(typeof(TUnion), GetSubtypes);
+        Debug.Assert(sortedTypes.Length > 0 && sortedTypes[0] == typeof(TUnion));
+        Array.Reverse(sortedTypes);
+
+        IReadOnlyCollection<Type> GetSubtypes(Type type)
+        {
+            List<Type> descendants = new();
+            foreach (Type derivedType in typesAndIndices.Keys)
+            {
+                if (derivedType != type && type.IsAssignableFrom(derivedType))
+                {
+                    descendants.Add(derivedType);
+                }
+            }
+
+            return descendants;
+        }
+
+        // 3. Emit the dynamic method.
+        DynamicMethod dynamicMethod = CreateDynamicMethod("getUnionCaseIndex", typeof(int), [typeof(TUnion).MakeByRefType()]);
+        ILGenerator generator = dynamicMethod.GetILGenerator();
+
+        var localValue = generator.DeclareLocal(typeof(TUnion));
+        var localResult = generator.DeclareLocal(typeof(int));
+
+        generator.Emit(OpCodes.Ldarg_0);
+        generator.Emit(OpCodes.Ldind_Ref);
+        generator.Emit(OpCodes.Stloc, localValue);
+
+        // Emit the type test opcodes
+        Label[] labels = new Label[sortedTypes.Length - 1];
+        for (int i = 0; i < sortedTypes.Length - 1; i++)
+        {
+            generator.Emit(OpCodes.Ldloc, localValue);
+            generator.Emit(OpCodes.Isinst, sortedTypes[i]);
+            generator.Emit(OpCodes.Brtrue_S, labels[i] = generator.DefineLabel());
+        }
+
+        Label defaultCaseLabel = generator.DefineLabel();
+        generator.Emit(OpCodes.Br_S, defaultCaseLabel);
+
+        // Emit the result mapping opcodes
+        Label returnLabel = generator.DefineLabel();
+        for (int i = 0; i < labels.Length; i++)
+        {
+            generator.MarkLabel(labels[i]);
+            generator.Emit(OpCodes.Ldc_I4, typesAndIndices[sortedTypes[i]]);
+            generator.Emit(OpCodes.Stloc, localResult);
+            generator.Emit(OpCodes.Br_S, returnLabel);
+        }
+
+        generator.MarkLabel(defaultCaseLabel);
+        generator.Emit(OpCodes.Ldc_I4, defaultIndex);
+        generator.Emit(OpCodes.Stloc, localResult);
+        generator.Emit(OpCodes.Br_S, returnLabel);
+
+        generator.MarkLabel(returnLabel);
+        generator.Emit(OpCodes.Ldloc, localResult);
+        generator.Emit(OpCodes.Ret);
+
+        return CreateDelegate<Getter<TUnion, int>>(dynamicMethod);
     }
 
     private static DynamicMethod CreateDynamicMethod(string name, Type returnType, Type[] parameters)

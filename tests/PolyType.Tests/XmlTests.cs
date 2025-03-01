@@ -18,7 +18,7 @@ public abstract class XmlTests(ProviderUnderTest providerUnderTest)
     [MemberData(nameof(GetValuesAndExpectedEncoding))]
     public void ReturnsExpectedEncoding<T>(TestCase<T> testCase, string expectedEncoding)
     {
-        XmlConverter<T> converter = GetConverterUnderTest<T>(testCase);
+        XmlConverter<T> converter = GetConverterUnderTest(testCase);
 
         string xml = converter.Serialize(testCase.Value, s_writerSettings);
         Assert.Equal(expectedEncoding, xml);
@@ -28,7 +28,7 @@ public abstract class XmlTests(ProviderUnderTest providerUnderTest)
     [MemberData(nameof(GetValuesAndExpectedEncoding))]
     public void ExpectedEncodingDeserializedToValue<T>(TestCase<T> testCase, string expectedEncoding)
     {
-        XmlConverter<T> converter = GetConverterUnderTest<T>(testCase);
+        XmlConverter<T> converter = GetConverterUnderTest(testCase);
 
         T? result = converter.Deserialize(expectedEncoding);
         if (testCase.IsEquatable)
@@ -77,6 +77,10 @@ public abstract class XmlTests(ProviderUnderTest providerUnderTest)
 #endif
         yield return [TestCase.Create(new SimpleRecord(value: 42), p), "<value><value>42</value></value>"];
         yield return [TestCase.Create(new BaseClass { X = 42 }, p), "<value><X>42</X></value>"];
+        yield return [TestCase.Create(new PolymorphicClass(42), p), """<value type="PolymorphicClass"><Int>42</Int></value>"""];
+        yield return [TestCase.Create<PolymorphicClass>(new PolymorphicClass.DerivedClass(42, "str"), p), """<value type="DerivedClass"><String>str</String><Int>42</Int></value>"""];
+        yield return [TestCase.Create<Tree>(new Leaf(), p), """<value type="leaf" />"""];
+        yield return [TestCase.Create<Tree>(new Node(42, new Leaf(), new Leaf()), p), """<value type="node"><Value>42</Value><Left type="leaf" /><Right type="leaf" /></value>"""];
     }
 
     [Theory]
@@ -87,7 +91,7 @@ public abstract class XmlTests(ProviderUnderTest providerUnderTest)
 
         string xmlEncoding = converter.Serialize(testCase.Value);
 
-        if (!providerUnderTest.HasConstructor(testCase))
+        if (testCase.Value is not null && !providerUnderTest.HasConstructor(testCase))
         {
             Assert.Throws<NotSupportedException>(() => converter.Deserialize(xmlEncoding));
         }

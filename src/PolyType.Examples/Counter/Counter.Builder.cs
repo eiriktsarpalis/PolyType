@@ -50,10 +50,11 @@ public static partial class Counter
         public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state) => 
             new Func<TEnum, long>(_ => 1);
 
-        public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state)
+        public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
         {
-            var elementTypeCounter = (Func<T, long>)nullableShape.ElementType.Accept(this)!;
-            return new Func<T?, long>(t => t.HasValue ? elementTypeCounter(t.Value) : 0);
+            var elementTypeCounter = (Func<TElement, long>)optionalShape.ElementType.Accept(this)!;
+            var deconstructor = optionalShape.GetDeconstructor();
+            return new Func<TOptional, long>(t => deconstructor(t, out TElement? value) ? elementTypeCounter(value) : 0);
         }
 
         public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
@@ -105,6 +106,33 @@ public static partial class Counter
 
                 return count;
             });
+        }
+
+        public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
+        {
+            var getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
+            var baseCaseCounter = (Func<TUnion, long>)unionShape.BaseType.Accept(this)!;
+            var unionCaseCounters = unionShape.UnionCases
+                .Select(unionCase => (Func<TUnion, long>)unionCase.Accept(this)!)
+                .ToArray();
+
+            return new Func<TUnion, long>(union =>
+            {
+                if (union is null)
+                {
+                    return 0;
+                }
+
+                int index = getUnionCaseIndex(ref union);
+                var derivedCounter = index < 0 ? baseCaseCounter : unionCaseCounters[index];
+                return derivedCounter(union);
+            });
+        }
+
+        public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCase, object? state = null)
+        {
+            var underlyingCounter = (Func<TUnionCase, long>)unionCase.Type.Accept(this)!;
+            return new Func<TUnion, long>(union => underlyingCounter((TUnionCase)union!));
         }
     }
 

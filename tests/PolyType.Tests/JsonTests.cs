@@ -1,9 +1,11 @@
-﻿using System.Collections;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+﻿using Microsoft.FSharp.Core;
 using PolyType.Examples.JsonSerializer;
 using PolyType.Examples.JsonSerializer.Converters;
-using Xunit;
+using PolyType.Tests.FSharp;
+using System.Collections;
+using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace PolyType.Tests;
 
@@ -62,12 +64,12 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         }
 
         JsonConverter<PocoWithGenericProperty<T>> converter = JsonSerializerTS.CreateConverter<PocoWithGenericProperty<T>>(providerUnderTest.Provider);
-        PocoWithGenericProperty<T> poco = new PocoWithGenericProperty<T> { Value = testCase.Value };
+        PocoWithGenericProperty<T> poco = new() { Value = testCase.Value };
 
         string json = converter.Serialize(poco);
         Assert.Equal(ToJsonBaseline(poco), json);
 
-        if (!providerUnderTest.HasConstructor(testCase))
+        if (testCase.Value is not null && !providerUnderTest.HasConstructor(testCase))
         {
             Assert.Throws<NotSupportedException>(() => converter.Deserialize(json));
         }
@@ -112,7 +114,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         string json = converter.Serialize(list);
         Assert.Equal(ToJsonBaseline(list), json);
 
-        if (!providerUnderTest.HasConstructor(testCase))
+        if (testCase.Value is not null && !providerUnderTest.HasConstructor(testCase))
         {
             Assert.Throws<NotSupportedException>(() => converter.Deserialize(json));
         }
@@ -157,7 +159,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         string json = converter.Serialize(dict);
         Assert.Equal(ToJsonBaseline(dict), json);
 
-        if (!providerUnderTest.HasConstructor(testCase))
+        if (testCase.Value is not null && !providerUnderTest.HasConstructor(testCase))
         {
             Assert.Throws<NotSupportedException>(() => converter.Deserialize(json));
         }
@@ -309,6 +311,48 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
             """[[[1,0,0,0,0],[0,1,0,0,0]],[[1,2,3,4,5],[6,7,8,9,10]],[[1,1,1,1,1],[1,1,1,1,1]]]"""];
     }
 
+    [Theory]
+    [MemberData(nameof(GetFSharpUnionsAndExpectedJson))]
+    public void Roundtrip_FSharpUnions<TUnion>(TestCase<TUnion> testCase, string expectedEncoding)
+    {
+        var converter = GetConverterUnderTest(testCase);
+
+        string json = converter.Serialize(testCase.Value);
+        Assert.Equal(expectedEncoding, json);
+
+        TUnion? result = converter.Deserialize(json);
+        Assert.Equal(testCase.Value, result);
+    }
+
+    public static IEnumerable<object[]> GetFSharpUnionsAndExpectedJson()
+    {
+#if NET8_0_OR_GREATER
+        Witness p = new();
+#else
+        ITypeShapeProvider p = Witness.ShapeProvider;
+#endif
+        yield return [TestCase.Create(FSharpOption<int>.None, p), """null"""];
+        yield return [TestCase.Create(FSharpOption<int>.Some(42), p), """42"""];
+        yield return [TestCase.Create(FSharpUnion.NewA("string", 42), p), """{"$type":"A","bar":"string","baz":42}"""];
+        yield return [TestCase.Create(FSharpUnion.B, p), """{"$type":"B"}"""];
+        yield return [TestCase.Create(FSharpUnion.NewC(42), p), """{"$type":"C","foo":42}"""];
+        yield return [TestCase.Create(FSharpEnumUnion.A, p), """{"$type":"A"}"""];
+        yield return [TestCase.Create(FSharpEnumUnion.B, p), """{"$type":"B"}"""];
+        yield return [TestCase.Create(FSharpEnumUnion.C, p), """{"$type":"C"}"""];
+        yield return [TestCase.Create(FSharpSingleCaseUnion.NewCase(42), p), """{"$type":"Case","Item":42}"""];
+        yield return [TestCase.Create(FSharpValueOption<int>.None, p), """null"""];
+        yield return [TestCase.Create(FSharpValueOption<int>.Some(42), p), """42"""];
+        yield return [TestCase.Create(FSharpStructUnion.NewA("string", 42), p), """{"$type":"A","bar":"string","baz":42}"""];
+        yield return [TestCase.Create(FSharpStructUnion.B, p), """{"$type":"B"}"""];
+        yield return [TestCase.Create(FSharpStructUnion.NewC(42), p), """{"$type":"C","foo":42}"""];
+        yield return [TestCase.Create(FSharpEnumStructUnion.A, p), """{"$type":"A"}"""];
+        yield return [TestCase.Create(FSharpEnumStructUnion.B, p), """{"$type":"B"}"""];
+        yield return [TestCase.Create(FSharpEnumStructUnion.C, p), """{"$type":"C"}"""];
+        yield return [TestCase.Create(FSharpSingleCaseStructUnion.NewCase(42), p), """{"$type":"Case","Item":42}"""];
+        yield return [TestCase.Create(FSharpResult<string, int>.NewOk("str"), p), """{"$type":"Ok","ResultValue":"str"}"""];
+        yield return [TestCase.Create(FSharpResult<string, int>.NewError(-1), p), """{"$type":"Error","ErrorValue":-1}"""];
+    }
+
     [Fact]
     public void Roundtrip_DerivedClassWithVirtualProperties()
     {
@@ -319,7 +363,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         string json = converter.Serialize(value);
         Assert.Equal(ExpectedJson, json);
     }
-    
+
     [Fact]
     public void Roundtrip_ClassWithMarshaller()
     {
@@ -374,6 +418,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         value.HasRefConstructorParameters ||
         value.CustomKind is not null ||
         value.UsesMarshaller ||
+        value.IsUnion && (!typeof(T).GetCustomAttributes<JsonDerivedTypeAttribute>().Any() || value.IsAbstract) ||
         value.Value is DerivedClassWithVirtualProperties; // https://github.com/dotnet/runtime/issues/96996
 }
 

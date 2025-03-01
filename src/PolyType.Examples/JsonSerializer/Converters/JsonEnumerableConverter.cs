@@ -18,6 +18,11 @@ internal class JsonEnumerableConverter<TEnumerable, TElement>(JsonConverter<TEle
 
     public override TEnumerable? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
+        if (default(TEnumerable) is null && reader.TokenType is JsonTokenType.Null)
+        {
+            return default;
+        }
+
         throw new NotSupportedException($"Deserialization not supported for type {typeof(TEnumerable)}.");
     }
 

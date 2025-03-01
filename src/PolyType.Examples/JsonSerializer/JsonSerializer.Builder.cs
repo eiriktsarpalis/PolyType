@@ -12,7 +12,7 @@ public static partial class JsonSerializerTS
     private sealed class Builder(TypeGenerationContext generationContext) : ITypeShapeVisitor, ITypeShapeFunc
     {
         public JsonConverter<T> GetOrAddConverter<T>(ITypeShape<T> shape) =>
-            (JsonConverter<T>)generationContext.GetOrAdd(shape, this)!;
+            (JsonConverter<T>)generationContext.GetOrAdd(shape)!;
 
         object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state)
         {
@@ -141,10 +141,13 @@ public static partial class JsonSerializerTS
             };
         }
 
-        public object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state) where T : struct
+        public object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
         {
-            JsonConverter<T> elementConverter = GetOrAddConverter(nullableShape.ElementType);
-            return new JsonNullableConverter<T>(elementConverter);
+            return new JsonOptionalConverter<TOptional, TElement>(
+                elementConverter: GetOrAddConverter(optionalShape.ElementType),
+                deconstructor: optionalShape.GetDeconstructor(),
+                createNone: optionalShape.GetNoneConstructor(),
+                createSome: optionalShape.GetSomeConstructor());
         }
 
         public object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state) where TEnum : struct, Enum
@@ -157,6 +160,23 @@ public static partial class JsonSerializerTS
         {
             JsonConverter<TSurrogate> surrogateConverter = GetOrAddConverter(surrogateShape.SurrogateType);
             return new JsonSurrogateConverter<T, TSurrogate>(surrogateShape.Marshaller, surrogateConverter);
+        }
+
+        public object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state)
+        {
+            var getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
+            var baseTypeConverter = (JsonConverter<TUnion>)unionShape.BaseType.Invoke(this)!;
+            var unionCases = unionShape.UnionCases
+                .Select(unionCase => (JsonUnionCaseConverter<TUnion>)unionCase.Accept(this, null)!)
+                .ToArray();
+
+            return new JsonUnionConverter<TUnion>(getUnionCaseIndex, baseTypeConverter, unionCases);
+        }
+
+        public object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state) where TUnionCase : TUnion
+        {
+            var caseConverter = (JsonConverter<TUnionCase>)unionCaseShape.Type.Accept(this)!;
+            return new JsonUnionCaseConverter<TUnionCase, TUnion>(unionCaseShape.Name, caseConverter);
         }
 
         private static readonly Dictionary<Type, JsonConverter> s_defaultConverters = new JsonConverter[]

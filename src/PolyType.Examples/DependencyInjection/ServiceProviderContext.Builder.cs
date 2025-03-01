@@ -112,12 +112,13 @@ public sealed partial class ServiceProviderContext
             return null;
         }
 
-        public object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state = null) where T : struct
+        public object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
         {
-            if (GetOrAddFactory(nullableShape.ElementType) is { } elementFactory)
+            if (GetOrAddFactory(optionalShape.ElementType) is { } elementFactory)
             {
                 var lifetime = CombineLifetimes(ResolveLifetime(state), elementFactory.Lifetime);
-                return ServiceFactory.FromFunc<T?>(provider => elementFactory.Factory(provider), ResolveLifetime(state));
+                var createSome = optionalShape.GetSomeConstructor();
+                return ServiceFactory.FromFunc<TOptional>(provider => createSome(elementFactory.Factory(provider)), ResolveLifetime(state));
             }
 
             return null;
@@ -135,6 +136,8 @@ public sealed partial class ServiceProviderContext
             return null;
         }
 
+        public object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null) => null;
+        public object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null) where TUnionCase : TUnion => null;
         public object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null) where TEnum : struct, Enum => null;
         public object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> propertyShape, object? state = null) => null;
         private ServiceLifetime ResolveLifetime(object? state) => state is ServiceLifetime lifetime ? lifetime : serviceProviderCtx.DefaultLifetime;

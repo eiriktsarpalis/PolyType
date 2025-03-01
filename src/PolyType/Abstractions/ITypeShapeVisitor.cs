@@ -56,14 +56,14 @@ public interface ITypeShapeVisitor
         where TEnum : struct, Enum;
 
     /// <summary>
-    /// Visits an <see cref="INullableTypeShape{T}"/> instance representing the <see cref="Nullable{T}"/> type.
+    /// Visits an <see cref="IOptionalTypeShape{TOptional, TElement}"/> instance representing optional types.
     /// </summary>
-    /// <typeparam name="T">The element type of the visited nullable.</typeparam>
-    /// <param name="nullableShape">The nullable shape to visit.</param>
+    /// <typeparam name="TOptional">The optional type described by the shape.</typeparam>
+    /// <typeparam name="TElement">The type of the value encapsulated by the option type.</typeparam>
+    /// <param name="optionalShape">The optional shape to visit.</param>
     /// <param name="state">Defines user-provided state.</param>
     /// <returns>The result produced by the visitor.</returns>
-    object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state = null)
-        where T : struct;
+    object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state = null);
 
     /// <summary>
     /// Visits an <see cref="IEnumerableTypeShape{TEnumerable,TElement}"/> instance representing an enumerable type.
@@ -96,4 +96,23 @@ public interface ITypeShapeVisitor
     /// <param name="state">Defines user-provided state.</param>
     /// <returns>The result produced by the visitor.</returns>
     object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null);
+
+    /// <summary>
+    /// Visits an <see cref="IUnionTypeShape{TUnion}"/> instance representing a union type.
+    /// </summary>
+    /// <typeparam name="TUnion">The type of the visited union.</typeparam>
+    /// <param name="unionShape">The union shape to visit.</param>
+    /// <param name="state">Defines user-provided state.</param>
+    /// <returns>The result produced by the visitor.</returns>
+    object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null);
+
+    /// <summary>
+    /// Visits an <see cref="IUnionCaseShape{TUnionCase, TUnion}"/> instance representing a union case.
+    /// </summary>
+    /// <typeparam name="TUnionCase">The type of the visited union case.</typeparam>
+    /// <typeparam name="TUnion">The type of the visited union.</typeparam>
+    /// <param name="unionCaseShape">The union case shape to visit.</param>
+    /// <param name="state">Defines user-provided state.</param>
+    /// <returns>The result produced by the visitor.</returns>
+    object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null) where TUnionCase : TUnion;
 }

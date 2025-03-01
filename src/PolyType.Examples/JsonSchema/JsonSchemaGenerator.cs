@@ -83,8 +83,9 @@ public static class JsonSchemaGenerator
 
                     break;
 
-                case INullableTypeShape nullableShape:
-                    schema = GenerateSchema(nullableShape.ElementType, cacheLocation: false);
+                case IOptionalTypeShape optionalShape:
+                    schema = GenerateSchema(optionalShape.ElementType, cacheLocation: false);
+                    ApplyNullability(schema, allowNull: true);
                     break;
                 
                 case ISurrogateTypeShape surrogateShape:
@@ -169,7 +170,83 @@ public static class JsonSchemaGenerator
                     }
 
                     break;
-                
+
+                case IUnionTypeShape unionShape:
+                    JsonArray anyOf = new();
+                    Push("anyOf");
+
+                    bool unionCasesContainBaseType = false;
+                    foreach (IUnionCaseShape caseShape in unionShape.UnionCases)
+                    {
+                        Push($"{anyOf.Count}");
+                        JsonObject caseSchema = GenerateSchema(caseShape.Type, cacheLocation: false);
+                        Pop();
+
+                        if (caseShape.Type is IObjectTypeShape or IDictionaryTypeShape)
+                        {
+                            // Schema is already an object schema, embed discriminator inside it
+                            JsonObject properties;
+                            if (caseSchema.TryGetPropertyValue("properties", out JsonNode? propertiesValue))
+                            {
+                                properties = (JsonObject)propertiesValue!;
+                            }
+                            else
+                            {
+                                caseSchema["properties"] = properties = new JsonObject();
+                            }
+
+                            JsonArray required;
+                            if (caseSchema.TryGetPropertyValue("required", out JsonNode? requiredValue))
+                            {
+                                required = (JsonArray)requiredValue!;
+                            }
+                            else
+                            {
+                                caseSchema["required"] = required = new JsonArray();
+                            }
+
+                            properties["$type"] = new JsonObject { ["const"] = caseShape.Name };
+                            required.Add((JsonNode)"$type");
+                        }
+                        else
+                        {
+                            // Embed in the schema for an envelope type.
+                            caseSchema = new JsonObject
+                            {
+                                ["properties"] = new JsonObject
+                                {
+                                    ["$type"] = new JsonObject { ["const"] = caseShape.Name },
+                                    ["$values"] = caseSchema
+                                },
+                                ["required"] = new JsonArray { (JsonNode)"$type", (JsonNode)"$values" }
+                            };
+                        }
+
+                        anyOf.Add((JsonNode)caseSchema);
+
+                        if (caseShape.Type.Type == unionShape.Type)
+                        {
+                            unionCasesContainBaseType = true;
+                        }
+                    }
+
+                    if (!unionCasesContainBaseType)
+                    {
+                        Push($"{anyOf.Count}");
+                        JsonNode caseSchema = GenerateSchema(unionShape.BaseType, cacheLocation: false);
+                        Pop();
+
+                        anyOf.Add(caseSchema);
+                    }
+
+                    schema = new JsonObject
+                    {
+                        ["anyOf"] = anyOf,
+                    };
+
+                    Pop();
+                    break;
+
                 default:
                     schema = new JsonObject();
                     break;

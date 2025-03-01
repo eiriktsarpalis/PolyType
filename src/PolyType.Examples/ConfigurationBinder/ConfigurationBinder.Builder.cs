@@ -11,6 +11,8 @@ public static partial class ConfigurationBinderTS
 {
     private sealed class Builder(ITypeShapeFunc self) : TypeShapeVisitor, ITypeShapeFunc
     {
+        private const string TypeDiscriminator = "$type";
+        private const string ValuesProperty = "$values";
         private delegate void PropertyBinder<T>(ref T obj, IConfigurationSection section);
         private static readonly Dictionary<Type, object> s_builtInParsers = GetBuiltInParsers().ToDictionary();
 
@@ -32,7 +34,7 @@ public static partial class ConfigurationBinderTS
         {
             return objectShape.Constructor is { } ctorShape
                 ? ctorShape.Accept(this) 
-                : throw new NotSupportedException(typeof(T).ToString());
+                : CreateNotSupportedBinder<T>();
         }
 
         public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructorShape, object? state = null)
@@ -176,7 +178,7 @@ public static partial class ConfigurationBinderTS
                     });
                 
                 default:
-                    throw new NotSupportedException(typeof(TEnumerable).ToString());
+                    return CreateNotSupportedBinder<TEnumerable>();
             }
         }
 
@@ -205,6 +207,11 @@ public static partial class ConfigurationBinderTS
                         TDictionary dict = defaultCtor();
                         foreach (IConfigurationSection section in configuration.GetChildren())
                         {
+                            if (section.Key is TypeDiscriminator)
+                            {
+                                continue;
+                            }
+
                             KeyValuePair<TKey, TValue> entry = new(keyBinder(section), valueBinder(section));
                             addEntry(ref dict, entry);
                         }
@@ -224,6 +231,11 @@ public static partial class ConfigurationBinderTS
                         using var buffer = new PooledList<KeyValuePair<TKey, TValue>>();
                         foreach (IConfigurationSection section in configuration.GetChildren())
                         {
+                            if (section.Key is TypeDiscriminator)
+                            {
+                                continue;
+                            }
+
                             KeyValuePair<TKey, TValue> entry = new(keyBinder(section), valueBinder(section));
                             buffer.Add(entry);
                         }
@@ -243,6 +255,11 @@ public static partial class ConfigurationBinderTS
                         var buffer = new List<KeyValuePair<TKey, TValue>>();
                         foreach (IConfigurationSection section in configuration.GetChildren())
                         {
+                            if (section.Key is TypeDiscriminator)
+                            {
+                                continue;
+                            }
+
                             KeyValuePair<TKey, TValue> entry = new(keyBinder(section), valueBinder(section));
                             buffer.Add(entry);
                         }
@@ -251,7 +268,7 @@ public static partial class ConfigurationBinderTS
                     });
                 
                 default:
-                    throw new NotSupportedException(typeof(TDictionary).ToString());
+                    return CreateNotSupportedBinder<TDictionary>();
             }
         }
 
@@ -262,10 +279,12 @@ public static partial class ConfigurationBinderTS
             return new Func<IConfiguration, T?>(configuration => marshaller.FromSurrogate(surrogateBinder(configuration)));
         }
 
-        public override object? VisitNullable<T>(INullableTypeShape<T> nullableShape, object? state = null)
+        public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state = null)
         {
-            Func<IConfiguration, T> elementBinder = GetOrAddBinder(nullableShape.ElementType);
-            return new Func<IConfiguration, T?>(configuration => IsNullConfiguration(configuration) ? null : elementBinder(configuration));
+            Func<IConfiguration, TElement?> elementBinder = GetOrAddBinder(optionalShape.ElementType);
+            var createNone = optionalShape.GetNoneConstructor();
+            var createSome = optionalShape.GetSomeConstructor();
+            return new Func<IConfiguration, TOptional>(configuration => IsNullConfiguration(configuration) ? createNone() : createSome(elementBinder(configuration)!));
         }
 
         public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null)
@@ -275,6 +294,43 @@ public static partial class ConfigurationBinderTS
 #else
             return CreateValueBinder(text => (TEnum)Enum.Parse(typeof(TEnum), text));
 #endif
+        }
+
+        public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
+        {
+            var baseTypeBinder = (Func<IConfiguration, TUnion>)unionShape.BaseType.Invoke(this)!;
+            var unionCaseBinders = unionShape.UnionCases
+                .Select(unionCase => (Func<IConfiguration, TUnion>)unionCase.Accept(this, null)!)
+                .ToArray();
+
+            var discriminatorLookup = unionShape.UnionCases.ToDictionary(c => c.Name, c => c.Index);
+
+            return new Func<IConfiguration, TUnion?>(configuration =>
+            {
+                if (IsNullConfiguration(configuration))
+                {
+                    return default;
+                }
+
+                IConfigurationSection discriminator = configuration.GetSection(TypeDiscriminator);
+                var polymorphicBinder = discriminator.Value is not null && discriminatorLookup.TryGetValue(discriminator.Value, out int index)
+                    ? unionCaseBinders[index]
+                    : baseTypeBinder;
+
+                return polymorphicBinder(configuration);
+            });
+        }
+
+        public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
+        {
+            var caseBinder = (Func<IConfiguration, TUnion>)unionCaseShape.Type.Accept(this)!;
+            if (unionCaseShape.Type is IObjectTypeShape or IDictionaryTypeShape)
+            {
+                return caseBinder;
+            }
+
+            // Non-object schemas nest the case value under the $values property.
+            return new Func<IConfiguration, TUnion>(cfg => cfg.GetSection(ValuesProperty) is { } section ? caseBinder(section) : default!);
         }
 
         private static IEnumerable<KeyValuePair<Type, object>> GetBuiltInParsers()
@@ -356,6 +412,9 @@ public static partial class ConfigurationBinderTS
                 }
             };
         }
+
+        private static Func<IConfiguration, T> CreateNotSupportedBinder<T>() =>
+            config => default(T) is null && IsNullConfiguration(config) ? default! : throw new NotSupportedException($"Type '{typeof(T)}' is not supported.");
 
         private static bool IsNullConfiguration(IConfiguration configuration) =>
             // https://github.com/dotnet/runtime/issues/36510

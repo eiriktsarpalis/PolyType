@@ -10,6 +10,12 @@ public sealed partial class Parser
 {
     private TypeShapeModel MapModel(TypeDataModel model, TypeId typeId, string sourceIdentifier)
     {
+        TypeShapeModel incrementalModel = MapModelCore(model, typeId, sourceIdentifier);
+        return model.DerivedTypes is [] ? incrementalModel : MapUnionModel(model, incrementalModel, sourceIdentifier);
+    }
+
+    private TypeShapeModel MapModelCore(TypeDataModel model, TypeId typeId, string sourceIdentifier, bool isFSharpUnionCase = false)
+    {
         return model switch
         {
             EnumDataModel enumModel => new EnumShapeModel
@@ -19,11 +25,18 @@ public sealed partial class Parser
                 UnderlyingType = CreateTypeId(enumModel.UnderlyingType),
             },
 
-            NullableDataModel nullableModel => new NullableShapeModel
+            OptionalDataModel optionalModel => new OptionalShapeModel
             {
                 Type = typeId,
+                Kind = optionalModel.Type switch
+                {
+                    { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } => OptionalKind.NullableOfT,
+                    { Name: "FSharpOption" } => OptionalKind.FSharpOption,
+                    { Name: "FSharpValueOption" } => OptionalKind.FSharpValueOption,
+                    _ => throw new InvalidOperationException(),
+                },
                 SourceIdentifier = sourceIdentifier,
-                ElementType = CreateTypeId(nullableModel.ElementType),
+                ElementType = CreateTypeId(optionalModel.ElementType),
             },
             
             SurrogateTypeDataModel surrogateModel => new SurrogateShapeModel
@@ -116,7 +129,7 @@ public sealed partial class Parser
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
                 Constructor = objectModel.Constructors
-                    .Select(c => MapConstructor(objectModel, typeId, c))
+                    .Select(c => MapConstructor(objectModel, typeId, c, isFSharpUnionCase))
                     .FirstOrDefault(),
 
                 Properties = objectModel.Properties
@@ -143,6 +156,35 @@ public sealed partial class Parser
                 IsRecordType = false,
             },
 
+            FSharpUnionDataModel unionModel => new FSharpUnionShapeModel
+            {
+                Type = typeId,
+                SourceIdentifier = sourceIdentifier,
+                TagReader = unionModel.TagReader switch
+                {
+                    { MethodKind: MethodKind.PropertyGet } tagReader => tagReader.AssociatedSymbol!.Name,
+                    var tagReader => tagReader.GetFullyQualifiedName(),
+                },
+
+                TagReaderIsMethod = unionModel.TagReader.MethodKind is not MethodKind.PropertyGet,
+                UnderlyingModel = new ObjectShapeModel
+                { 
+                    Type = typeId,
+                    Constructor = null,
+                    Properties = [],
+                    SourceIdentifier = sourceIdentifier + "__Underlying",
+                    IsValueTupleType = false,
+                    IsTupleType = false,
+                    IsRecordType = false,
+                },
+                UnionCases = unionModel.UnionCases
+                    .Select(unionCase => new FSharpUnionCaseShapeModel(
+                        Name: unionCase.Name, 
+                        Tag: unionCase.Tag, 
+                        TypeModel: MapModelCore(unionCase.Type, CreateTypeId(unionCase.Type.Type), $"{sourceIdentifier}__Case_{unionCase.Name}", isFSharpUnionCase: true)))
+                    .ToImmutableEquatableArray(),
+            },
+
             _ => new ObjectShapeModel
             { 
                 Type = typeId,
@@ -161,99 +203,30 @@ public sealed partial class Parser
         }
     }
 
-    protected override TypeDataModelGenerationStatus MapType(ITypeSymbol type, TypeDataKind? requestedKind, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model)
+    private static UnionShapeModel MapUnionModel(TypeDataModel model, TypeShapeModel underlyingIncrementalModel, string sourceIdentifier)
     {
-        Debug.Assert(requestedKind is null);
-        ParseTypeShapeAttribute(type, out TypeShapeKind? requestedTypeShapeKind, out ITypeSymbol? marshaller, out Location? location);
+        Debug.Assert(model.DerivedTypes.Length > 0);
 
-        if (marshaller is not null || requestedTypeShapeKind is TypeShapeKind.Surrogate)
+        return new UnionShapeModel
         {
-            return MapSurrogateType(type, marshaller, ref ctx, out model);
-        }
-        
-        requestedKind = MapTypeShapeKindToDataKind(requestedTypeShapeKind);
-        TypeDataModelGenerationStatus status = base.MapType(type, requestedKind, ref ctx, out model);
-        
-        if (requestedKind is not null && model is { Kind: TypeDataKind actualKind } && requestedKind != actualKind)
-        {
-            ReportDiagnostic(InvalidTypeShapeKind, location, requestedKind.Value, type.ToDisplayString());
-        }
-
-        return status;
-    }
-
-    private TypeDataModelGenerationStatus MapSurrogateType(ITypeSymbol type, ITypeSymbol? marshaller, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model)
-    {
-        model = null;
-
-        if (marshaller is not INamedTypeSymbol namedMarshaller)
-        {
-            return ReportInvalidMarshallerAndExit();
-        }
-
-        if (namedMarshaller.IsUnboundGenericType)
-        {
-            // If the marshaller type is an unbound generic,
-            // apply type arguments from the declaring type.
-            ITypeSymbol[] typeArgs = ((INamedTypeSymbol)type).GetRecursiveTypeArguments();
-            INamedTypeSymbol? specializedMarshaller = namedMarshaller.OriginalDefinition.ConstructRecursive(typeArgs);
-            if (specializedMarshaller is null)
+            Type = underlyingIncrementalModel.Type,
+            SourceIdentifier = underlyingIncrementalModel.SourceIdentifier,
+            UnderlyingModel = underlyingIncrementalModel with
             {
-                return ReportInvalidMarshallerAndExit();
-            }
+                SourceIdentifier = underlyingIncrementalModel.SourceIdentifier + "__Underlying",
+            },
 
-            namedMarshaller = specializedMarshaller;
-        }
-
-        IMethodSymbol? defaultCtor = namedMarshaller.GetMembers()
-            .OfType<IMethodSymbol>()
-            .FirstOrDefault(method => method is { MethodKind: MethodKind.Constructor, IsStatic: false, Parameters: [] });
-
-        if (defaultCtor is null || !IsAccessibleSymbol(defaultCtor))
-        {
-            return ReportInvalidMarshallerAndExit();
-        }
-
-        // Check that the surrogate marshaller implements exactly one IMarshaller<,> for the source type.
-        ITypeSymbol? surrogateType = null;
-        foreach (INamedTypeSymbol interfaceType in namedMarshaller.AllInterfaces)
-        {
-            if (interfaceType.IsGenericType &&
-                SymbolEqualityComparer.Default.Equals(interfaceType.OriginalDefinition, _knownSymbols.MarshallerType))
-            {
-                var typeArgs = interfaceType.TypeArguments;
-                if (SymbolEqualityComparer.Default.Equals(typeArgs[0], type))
+            UnionCases = model.DerivedTypes
+                .Select(derived => new UnionCaseModel
                 {
-                    if (surrogateType is not null)
-                    {
-                        // We have conflicting implementations.
-                        return ReportInvalidMarshallerAndExit();
-                    }
-
-                    surrogateType = typeArgs[1];
-                }
-            }
-        }
-
-        if (surrogateType is null)
-        {
-            return ReportInvalidMarshallerAndExit();
-        }
-
-        // Generate the shape for the surrogate type.
-        TypeDataModelGenerationStatus status = IncludeNestedType(surrogateType, ref ctx);
-        if (status is TypeDataModelGenerationStatus.Success)
-        {
-            model = new SurrogateTypeDataModel { Type = type, SurrogateType = surrogateType, MarshallerType = namedMarshaller };
-        }
-
-        return status;
-
-        TypeDataModelGenerationStatus ReportInvalidMarshallerAndExit()
-        {
-            ReportDiagnostic(InvalidMarshaller, type.Locations.FirstOrDefault(), type.ToDisplayString());
-            return TypeDataModelGenerationStatus.UnsupportedType;
-        }
+                    Type = CreateTypeId(derived.Type),
+                    Name = derived.Name,
+                    Tag = derived.Tag,
+                    Index = derived.Index,
+                    IsBaseType = derived.IsBaseType,
+                })
+                .ToImmutableEquatableArray(),
+        };
     }
 
     private PropertyShapeModel MapProperty(ITypeSymbol parentType, TypeId parentTypeId, PropertyDataModel property, bool isClassTupleType = false, int tupleElementIndex = -1)
@@ -294,7 +267,7 @@ public sealed partial class Parser
         };
     }
 
-    private ConstructorShapeModel MapConstructor(ObjectDataModel objectModel, TypeId declaringTypeId, ConstructorDataModel constructor)
+    private ConstructorShapeModel MapConstructor(ObjectDataModel objectModel, TypeId declaringTypeId, ConstructorDataModel constructor, bool isFSharpUnionCase)
     {
         int position = constructor.Parameters.Length;
         List<ConstructorParameterShapeModel>? requiredMembers = null;
@@ -359,7 +332,7 @@ public sealed partial class Parser
                 ? declaringTypeId
                 : CreateTypeId(constructor.DeclaringType),
 
-            Parameters = constructor.Parameters.Select(p => MapConstructorParameter(objectModel, declaringTypeId, p)).ToImmutableEquatableArray(),
+            Parameters = constructor.Parameters.Select(p => MapConstructorParameter(objectModel, declaringTypeId, p, isFSharpUnionCase)).ToImmutableEquatableArray(),
             RequiredMembers = requiredMembers?.ToImmutableEquatableArray() ?? [],
             OptionalMembers = optionalMembers?.ToImmutableEquatableArray() ?? [],
             OptionalMemberFlagsType = (optionalMembers?.Count ?? 0) switch
@@ -372,9 +345,16 @@ public sealed partial class Parser
                 _ => OptionalMemberFlagsType.BitArray,
             },
 
-            StaticFactoryName = constructor.Constructor.IsStatic ? constructor.Constructor.GetFullyQualifiedName() : null,
+            StaticFactoryName = constructor.Constructor switch
+            {
+                { IsStatic: true, MethodKind: MethodKind.PropertyGet } ctor => ctor.AssociatedSymbol!.GetFullyQualifiedName(),
+                { IsStatic: true } ctor => ctor.GetFullyQualifiedName(),
+                _ => null,
+            },
+            StaticFactoryIsProperty = constructor.Constructor.MethodKind is MethodKind.PropertyGet,
+            ResultRequiresCast = !SymbolEqualityComparer.Default.Equals(constructor.Constructor.ReturnType, objectModel.Type),
             IsPublic = constructor.Constructor.DeclaredAccessibility is Accessibility.Public,
-            CanUseUnsafeAccessors = _knownSymbols.TargetFramework switch 
+            CanUseUnsafeAccessors = _knownSymbols.TargetFramework switch
             {
                 // .NET 8 or later supports unsafe accessors for properties of non-generic types.
                 var tfm when tfm >= TargetFramework.Net80 => !constructor.DeclaringType.IsGenericType,
@@ -384,7 +364,7 @@ public sealed partial class Parser
         };
     }
 
-    private ConstructorParameterShapeModel MapConstructorParameter(ObjectDataModel objectModel, TypeId declaringTypeId, ConstructorParameterDataModel parameter)
+    private ConstructorParameterShapeModel MapConstructorParameter(ObjectDataModel objectModel, TypeId declaringTypeId, ConstructorParameterDataModel parameter, bool isFSharpUnionCase)
     {
         string name = parameter.Parameter.Name;
 
@@ -394,6 +374,12 @@ public sealed partial class Parser
         {
             // Resolve the [ParameterShape] attribute name override
             name = value;
+        }
+        else if (isFSharpUnionCase && 
+                 name.StartsWith("_", StringComparison.Ordinal) &&
+                 objectModel.Properties.All(p => p.Name != name))
+        {
+            name = name[1..];
         }
         else
         {
@@ -456,6 +442,8 @@ public sealed partial class Parser
                 OptionalMembers = [],
                 OptionalMemberFlagsType = OptionalMemberFlagsType.None,
                 StaticFactoryName = null,
+                StaticFactoryIsProperty = false,
+                ResultRequiresCast = false,
                 IsAccessible = true,
                 CanUseUnsafeAccessors = false,
                 IsPublic = true,
@@ -472,6 +460,8 @@ public sealed partial class Parser
                 OptionalMembers = [],
                 OptionalMemberFlagsType = OptionalMemberFlagsType.None,
                 StaticFactoryName = null,
+                StaticFactoryIsProperty = false,
+                ResultRequiresCast = false,
                 IsAccessible = true,
                 CanUseUnsafeAccessors = false,
                 IsPublic = true,
@@ -539,7 +529,7 @@ public sealed partial class Parser
         {
             null => null,
             TypeShapeKind.Enum => TypeDataKind.Enum,
-            TypeShapeKind.Nullable => TypeDataKind.Nullable,
+            TypeShapeKind.Optional => TypeDataKind.Optional,
             TypeShapeKind.Enumerable => TypeDataKind.Enumerable,
             TypeShapeKind.Dictionary => TypeDataKind.Dictionary,
             TypeShapeKind.Object => TypeDataKind.Object,

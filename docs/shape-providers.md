@@ -164,6 +164,44 @@ public record MyPoco<T>(T Value)
 }
 ```
 
+### Polymorphic types
+
+The `DerivedTypeShape` attribute can be used to declare polymorphic type hierarchies for classes and interfaces:
+
+```C#
+[DerivedTypeShape(typeof(Horse))]
+[DerivedTypeShape(typeof(Dog))]
+[DerivedTypeShape(typeof(Cat))]
+interface IAnimal;
+
+class Dog : IAnimal;
+class Cat : IAnimal;
+class Horse : IAnimal;
+```
+
+The above incorporates the shapes for `Cat`, `Dog` and `Horse` as polymorphic cases in the shape of `IAnimal`.
+Serializing an instance of type `Dog` as `IAnimal` using the example JSON serializer will produce the following payload:
+
+```JSON
+{ "$type": "Dog" }
+```
+
+Each derived type declaration is given a unique string identifier (the name) and a unique integer identifier (the tag).
+The former is used as a type discriminator in the case of text-based formats like XML or JSON and the latter is used
+as a discriminator in compact binary formats like CBOR or MessagePack. Either name or tag can be specified explicitly
+for each derived type declaration:
+
+```C#
+[DerivedTypeShape(typeof(Leaf), Name = "leaf", Tag = 5)]
+[DerivedTypeShape(typeof(Leaf), Name = "node", Tag = 6)]
+abstract record BinTree;
+abstract record Leaf : BinTree;
+abstract record Node(int label, int left, int right) : BinTree
+```
+
+If left unset, the name of a derived type defaults to its type name (i.e. `nameof(TDerived)`) and the tag corresponds to the attribute declaration order.
+It should be noted that mono reflection does not preserve attribute declaration ordering, so it is recommended that applications targeting mono should either use the source generator or explicitly set the tags for all model types.
+
 ### PropertyShapeAttribute
 
 Configures aspects of a generated property shape, for example:
