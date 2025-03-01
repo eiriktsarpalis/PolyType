@@ -268,7 +268,7 @@ public interface IUnionTypeShape<TUnion> : ITypeShape<TUnion>
     IReadOnlyList<IUnionCaseShape> UnionCases { get; }
 
     // The underlying shape for the base type, used as the fallback case.
-    new ITypeShape<TUnion> BaseType { get; }
+    ITypeShape<TUnion> BaseType { get; }
 
     // Gets a delegate used to compute the union case index for a given value, or -1 if none is found.
     Getter<TUnion, int> GetGetUnionCaseIndex();
