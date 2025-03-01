@@ -108,7 +108,7 @@ public partial class TypeDataModelGenerator
     /// <summary>
     /// When overridden, returns the derived types of the given type.
     /// </summary>
-    /// <param name="type"></param>
+    /// <param name="type">The base type to resolve derived types from.</param>
     /// <returns>An IEnumerable containing derived type models</returns>
     protected virtual IEnumerable<DerivedTypeModel> ResolveDerivedTypes(ITypeSymbol type) => [];
 
