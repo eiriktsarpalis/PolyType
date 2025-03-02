@@ -142,12 +142,14 @@ internal sealed partial class SourceFormatter
 
                 private static {{property.PropertyType.FullyQualifiedName}} {{accessorName}}({{refPrefix}}{{property.DeclaringType.FullyQualifiedName}} obj)
                 {
-                    return ({{property.PropertyType.FullyQualifiedName}}){{accessorName}}_FieldInfo.GetValueDirect(__makeref(obj))!;
+                    return ({{property.PropertyType.FullyQualifiedName}}){{accessorName}}_FieldInfo.GetValue(obj)!;
                 }
 
                 private static void {{accessorName}}_set({{refPrefix}}{{property.DeclaringType.FullyQualifiedName}} obj, {{property.PropertyType.FullyQualifiedName}} value)
                 {
-                    {{accessorName}}_FieldInfo.SetValueDirect(__makeref(obj), value);
+                    object boxedObj = obj;
+                    {{accessorName}}_FieldInfo.SetValue(boxedObj, value);
+                    obj = ({{property.DeclaringType.FullyQualifiedName}})boxedObj;
                 }
                 """);
 

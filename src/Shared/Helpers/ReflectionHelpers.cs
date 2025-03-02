@@ -30,6 +30,8 @@ internal static class ReflectionHelpers
 #endif
     }
 
+    public static bool IsMonoRuntime { get; } = Type.GetType("Mono.Runtime") is not null;
+
     public static bool IsNullabilityInfoContextSupported { get; } =
 #if NET
         !AppContext.TryGetSwitch("System.Reflection.NullabilityInfoContext.IsSupported", out bool isSupported) || isSupported;

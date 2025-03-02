@@ -668,6 +668,11 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             return; // tuples don't report attribute metadata.
         }
 
+        if (ReflectionHelpers.IsMonoRuntime && typeof(T) is { IsGenericType: true, IsValueType: true })
+        {
+            return; // Mono does not correctly resolve nullable annotations for generic structs.
+        }
+
         ITypeShape<T> shape = providerUnderTest.ResolveShape(testCase);
 
         if (shape is not IObjectTypeShape objectShape)
