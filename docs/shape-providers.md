@@ -208,8 +208,8 @@ For the case of unregistered derived types, PolyType applies a "nearest known an
 [DerivedTypeShape(typeof(Horse))]
 [DerivedTypeShape(typeof(Cow))]
 class Animal;
-class Horse;
-class Cow;
+class Horse : Animal;
+class Cow : Animal;
 
 class Pony : Horse;
 class Chicken : Animal;
@@ -221,8 +221,8 @@ instances of type `Pony` will resolve as `Horse` and instances of type `Chicken`
 [DerivedTypeShape(typeof(IDerived1))]
 [DerivedTypeShape(typeof(IDerived2))]
 interface IBase;
-interface IDerived1;
-interface IDerived2;
+interface IDerived1 : IBase;
+interface IDerived2 : IBase;
 
 class Impl : IDerived1, IDerived2;
 ```
