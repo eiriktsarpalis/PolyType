@@ -202,7 +202,7 @@ abstract record Node(int label, int left, int right) : BinTree
 If left unset, the name of a derived type defaults to its type name (i.e. `nameof(TDerived)`) and the tag corresponds to the attribute declaration order.
 It should be noted that mono reflection does not preserve attribute declaration ordering, so it is recommended that applications targeting mono should either use the source generator or explicitly set the tags for all model types.
 
-For the case of unregistered derived types, PolyType applies a "nearest ancestor" resolution algorithm. Given the type hierarchy
+For the case of unregistered derived types, PolyType applies a "nearest known ancestor" resolution algorithm. Given the type hierarchy
 
 ```C#
 [DerivedTypeShape(typeof(Horse))]
