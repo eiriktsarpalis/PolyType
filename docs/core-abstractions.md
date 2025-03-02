@@ -328,7 +328,7 @@ partial class CounterVisitor : TypeShapeVisitor
 }
 ```
 
-## Surrogate types
+### Surrogate types
 
 PolyType lets users customize the shape of a given type by marshalling its data to a surrogate type. This is done by declaring an implementation of the `IMarshaller<T, TSurrogate>` interface on the type, which defines a bidirectional mapping between the instances of the type itself and the surrogate. Such types are mapped to the following abstraction:
 

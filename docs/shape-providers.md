@@ -202,6 +202,33 @@ abstract record Node(int label, int left, int right) : BinTree
 If left unset, the name of a derived type defaults to its type name (i.e. `nameof(TDerived)`) and the tag corresponds to the attribute declaration order.
 It should be noted that mono reflection does not preserve attribute declaration ordering, so it is recommended that applications targeting mono should either use the source generator or explicitly set the tags for all model types.
 
+For the case of unregistered derived types, PolyType applies a "nearest ancestor" resolution algorithm. Given the type hierarchy
+
+```C#
+[DerivedTypeShape(typeof(Horse))]
+[DerivedTypeShape(typeof(Cow))]
+class Animal;
+class Horse;
+class Cow;
+
+class Pony : Horse;
+class Chicken : Animal;
+```
+
+instances of type `Pony` will resolve as `Horse` and instances of type `Chicken` will resolve as the `Animal` base. Note that this can result in undefined behavior in the case of diamonds in interface hierarchies:
+
+```C#
+[DerivedTypeShape(typeof(IDerived1))]
+[DerivedTypeShape(typeof(IDerived2))]
+interface IBase;
+interface IDerived1;
+interface IDerived2;
+
+class Impl : IDerived1, IDerived2;
+```
+
+Instances of type `Impl` could resolve as either `IDerived1` or `IDerived2`, depending on the particular runtime and shape provider implementation. This ambiguity can be resolved by explicitly adding a `DerivedTypeShape` declaration for `Impl` or any intermediate interface type implementing both `IDerived1` and `IDerived2`.
+
 ### PropertyShapeAttribute
 
 Configures aspects of a generated property shape, for example:
