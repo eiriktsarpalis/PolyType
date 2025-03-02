@@ -57,15 +57,18 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 9.0.x
+    - name: Setup Mono Runtime
+      run: sudo apt-get install -y mono-runtime
     - name: Build & Test
       run: make
-    - name: Report Test Results
-      uses: dorny/test-reporter@v1
-      if: success() || failure()
-      with:
-        name: Linux Tests
-        path: artifacts/**/*.trx
-        reporter: dotnet-trx
+# Disable until 'Maximum call stack size exceeded' errors are resolved
+#    - name: Report Test Results
+#      uses: dorny/test-reporter@v1
+#      if: success() || failure()
+#      with:
+#        name: Linux Tests
+#        path: artifacts/**/*.trx
+#        reporter: dotnet-trx
 
   MacOS:
     runs-on: macos-latest
@@ -80,10 +83,11 @@ jobs:
         dotnet-version: 9.0.x
     - name: Build & Test
       run: make
-    - name: Report Test Results
-      uses: dorny/test-reporter@v1
-      if: success() || failure()
-      with:
-        name: MacOS Tests
-        path: artifacts/**/*.trx
-        reporter: dotnet-trx
+# Disable until 'Maximum call stack size exceeded' errors are resolved
+#    - name: Report Test Results
+#      uses: dorny/test-reporter@v1
+#      if: success() || failure()
+#      with:
+#        name: MacOS Tests
+#        path: artifacts/**/*.trx
+#        reporter: dotnet-trx
