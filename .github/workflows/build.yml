@@ -60,8 +60,8 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 9.0.x
-    - name: Setup Mono Runtime
-      run: sudo apt-get install -y mono-runtime
+    - name: Setup Mono
+      run: sudo apt-get install -y mono-devel
     - name: Build & Test
       run: make
 # Disable until 'Maximum call stack size exceeded' errors are resolved
