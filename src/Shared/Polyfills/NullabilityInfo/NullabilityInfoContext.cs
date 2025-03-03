@@ -187,9 +187,9 @@ internal sealed class NullabilityInfoContext
     /// If the nullablePublicOnly feature is set for an assembly, like it does in .NET SDK, the private and/or internal member's
     /// nullability attributes are omitted, in this case the API will return NullabilityState.Unknown state.
     /// </summary>
-    /// <param name="propertyInfo">The parameter which nullability info gets populated</param>
-    /// <exception cref="ArgumentNullException">If the propertyInfo parameter is null</exception>
-    /// <returns><see cref="NullabilityInfo" /></returns>
+    /// <param name="propertyInfo">The parameter which nullability info gets populated.</param>
+    /// <exception cref="ArgumentNullException">If the propertyInfo parameter is null.</exception>
+    /// <returns><see cref="NullabilityInfo" />.</returns>
     public NullabilityInfo Create(PropertyInfo propertyInfo)
     {
 #if NET
