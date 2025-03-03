@@ -668,6 +668,11 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             return; // tuples don't report attribute metadata.
         }
 
+        if (ReflectionHelpers.IsMonoRuntime && typeof(T) is { IsGenericType: true, IsValueType: true })
+        {
+            return; // Mono does not correctly resolve nullable annotations for generic structs.
+        }
+
         ITypeShape<T> shape = providerUnderTest.ResolveShape(testCase);
 
         if (shape is not IObjectTypeShape objectShape)
@@ -754,6 +759,28 @@ public static class ReflectionExtensions
 public sealed class TypeShapeProviderTests_Reflection() : TypeShapeProviderTests(RefectionProviderUnderTest.NoEmit);
 public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderTests(RefectionProviderUnderTest.Emit)
 {
+    [Fact]
+    public void ReflectionTypeShapeProvider_Default_UsesReflectionEmit()
+    {
+        Assert.True(ReflectionTypeShapeProvider.Default.Options.UseReflectionEmit);
+    }
+    
+    [Fact]
+    public void ReflectionTypeShapeProvider_Default_IsSingleton()
+    {
+        Assert.Same(ReflectionTypeShapeProvider.Default, ReflectionTypeShapeProvider.Default);
+    }
+    
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ReflectionTypeShapeProvider_Default_Factory_ReflectsParameters(bool useReflectionEmit)
+    {
+        ReflectionTypeShapeProviderOptions options = new() { UseReflectionEmit = useReflectionEmit };
+        ReflectionTypeShapeProvider provider = ReflectionTypeShapeProvider.Create(options);
+        Assert.Equal(useReflectionEmit, provider.Options.UseReflectionEmit);
+    }
+    
     [Theory]
     [InlineData(typeof(ClassWithEnumKind))]
     [InlineData(typeof(ClassWithNullableKind))]

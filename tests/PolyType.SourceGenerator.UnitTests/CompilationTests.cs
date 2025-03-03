@@ -460,27 +460,30 @@ public static class CompilationTests
         Assert.Empty(result.Diagnostics);
     }
     
-    [Fact]
-    public static void EnumerableTypes_NoErrors()
+    [Theory]
+    [InlineData("int[,]")]
+    [InlineData("System.ReadOnlyMemory<int>")]
+    [InlineData("System.Memory<int>")]
+    [InlineData("System.Collections.Immutable.ImmutableArray<int>")]
+    [InlineData("System.Collections.Immutable.ImmutableList<int>")]
+    [InlineData("System.Collections.Immutable.ImmutableQueue<int>")]
+    [InlineData("System.Collections.Immutable.ImmutableStack<int>")]
+    [InlineData("System.Collections.Immutable.ImmutableHashSet<int>")]
+    [InlineData("System.Collections.Immutable.ImmutableSortedSet<int>")]
+    [InlineData("System.Collections.Generic.IEnumerable<int>")]
+    [InlineData("System.Collections.Generic.ISet<int>")]
+    [InlineData("System.Collections.Generic.List<int>")]
+    public static void EnumerableTypes_NoErrors(string type)
     {
-        Compilation compilation = CompilationHelpers.CreateCompilation("""
+        if (CompilationHelpers.IsMonoRuntime && type.Contains("Memory<"))
+        {
+            return; // Ambiguity between types in System.Memory and mscorlib.
+        }
+        
+        Compilation compilation = CompilationHelpers.CreateCompilation($"""
            using PolyType;
-           using System;
-           using System.Collections.Generic;
-           using System.Collections.Immutable;
 
-           [GenerateShape<int[,]>]
-           [GenerateShape<ReadOnlyMemory<int>>]
-           [GenerateShape<Memory<int>>]
-           [GenerateShape<ImmutableArray<int>>]
-           [GenerateShape<ImmutableList<int>>]
-           [GenerateShape<ImmutableQueue<int>>]
-           [GenerateShape<ImmutableStack<int>>]
-           [GenerateShape<ImmutableHashSet<int>>]
-           [GenerateShape<ImmutableSortedSet<int>>]
-           [GenerateShape<IEnumerable<int>>]
-           [GenerateShape<ISet<int>>]
-           [GenerateShape<List<int>>]
+           [GenerateShape<{type}>]
            partial class Witness;
            """);
 

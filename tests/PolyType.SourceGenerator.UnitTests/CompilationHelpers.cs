@@ -21,8 +21,10 @@ public static class CompilationHelpers
 {
     private static readonly CSharpParseOptions s_defaultParseOptions = CreateParseOptions();
 #if NET
-    private static readonly Assembly systemRuntimeAssembly = Assembly.Load(new AssemblyName("System.Runtime"));
+    private static readonly Assembly s_systemRuntimeAssembly = Assembly.Load(new AssemblyName("System.Runtime"));
 #endif
+    public static bool IsMonoRuntime { get; } = Type.GetType("Mono.Runtime") is not null;
+    
     private static string GetAssemblyFromSharedFrameworkDirectory(string assemblyName) =>
         Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, assemblyName);
 
@@ -51,24 +53,31 @@ public static class CompilationHelpers
         parseOptions ??= s_defaultParseOptions;
         additionalReferences ??= [];
         
-        SyntaxTree[] syntaxTrees = 
+        List<SyntaxTree> syntaxTrees = 
         [ 
             CSharpSyntaxTree.ParseText(source, parseOptions),
 #if !NET
-            CSharpSyntaxTree.ParseText(PolyfillAttributes, parseOptions),
+            CSharpSyntaxTree.ParseText(CompilerPolyfillAttributes, parseOptions),
 #endif
         ];
+        
+#if !NET
+        if (!IsMonoRuntime)
+        {
+            syntaxTrees.Add(CSharpSyntaxTree.ParseText(NullabilityPolyfillAttributes, parseOptions));
+        }
+#endif
 
         MetadataReference[] references = 
         [
             MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-            MetadataReference.CreateFromFile(GetAssemblyFromSharedFrameworkDirectory("netstandard.dll")),
+            MetadataReference.CreateFromFile(GetAssemblyFromSharedFrameworkDirectory(IsMonoRuntime ? "Facades/netstandard.dll" : "netstandard.dll")),
             MetadataReference.CreateFromFile(typeof(System.Linq.Enumerable).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.Collections.Immutable.ImmutableArray).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(Microsoft.FSharp.Core.Unit).Assembly.Location),
 #if NET
             MetadataReference.CreateFromFile(typeof(LinkedList<>).Assembly.Location),
-            MetadataReference.CreateFromFile(systemRuntimeAssembly.Location),
+            MetadataReference.CreateFromFile(s_systemRuntimeAssembly.Location),
 #else
             MetadataReference.CreateFromFile(typeof(ReadOnlySpan<>).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).Assembly.Location),
@@ -244,7 +253,7 @@ public static class CompilationHelpers
     }
 
 #if !NET
-    private const string PolyfillAttributes = """
+    private const string CompilerPolyfillAttributes = """
         namespace System.Runtime.CompilerServices
         {
             internal static class IsExternalInit { }
@@ -258,13 +267,17 @@ public static class CompilationHelpers
                 public CompilerFeatureRequiredAttribute(string featureName) { }
             }
         }
-
+        
         namespace System.Diagnostics.CodeAnalysis
         {
             [AttributeUsage(AttributeTargets.All, AllowMultiple = true, Inherited = false)]
             internal sealed class SetsRequiredMembersAttribute : Attribute { }
+        }
+        """;
 
-        #if !NET
+    private const string NullabilityPolyfillAttributes = """
+        namespace System.Diagnostics.CodeAnalysis
+        {
             [AttributeUsage (AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property, Inherited = false)]
             internal sealed class AllowNullAttribute : Attribute { }
 
@@ -276,7 +289,6 @@ public static class CompilationHelpers
 
             [AttributeUsage (AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue, Inherited = false)]
             internal sealed class NotNullAttribute : Attribute { }
-        #endif
         }
         """;
 #endif

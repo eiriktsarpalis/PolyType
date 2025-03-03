@@ -29,8 +29,11 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                 return (ref TDeclaringType obj) => getterDelegate(obj);
             }
 
+            // https://github.com/mono/mono/issues/10372
             var f = (FieldInfo)memberInfo;
-            return (ref TDeclaringType obj) => (TPropertyType)f.GetValueDirect(__makeref(obj))!;
+            return ReflectionHelpers.IsMonoRuntime
+                ? (ref TDeclaringType obj) => (TPropertyType)f.GetValue(obj)!
+                : (ref TDeclaringType obj) => (TPropertyType)f.GetValueDirect(__makeref(obj))!;
         }
 
         Debug.Assert(typeof(TDeclaringType).IsNestedTupleRepresentation());
@@ -44,14 +47,13 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
             var parentFields = (FieldInfo[])parentMembers;
             return (ref TDeclaringType obj) =>
             {
-                TypedReference typedRef = __makeref(obj);
+                object boxedObj = obj!;
                 for (int i = 0; i < parentFields.Length; i++)
                 {
-                    object value = parentFields[i].GetValueDirect(typedRef)!;
-                    typedRef = __makeref(value);
+                    boxedObj = parentFields[i].GetValue(boxedObj)!;
                 }
 
-                return (TPropertyType)fieldInfo.GetValueDirect(typedRef)!;
+                return (TPropertyType)fieldInfo.GetValue(boxedObj)!;
             };
         }
         else
@@ -94,8 +96,16 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                 return (ref TDeclaringType obj, TPropertyType value) => setterDelegate(obj, value);
             }
 
+            // https://github.com/mono/mono/issues/10372
             var f = (FieldInfo)memberInfo;
-            return (ref TDeclaringType obj, TPropertyType value) => f.SetValueDirect(__makeref(obj), value!);
+            return ReflectionHelpers.IsMonoRuntime
+                ? (ref TDeclaringType obj, TPropertyType value) =>
+                {
+                    object boxedObj = obj!;
+                    f.SetValue(boxedObj, value);
+                    obj = (TDeclaringType)boxedObj;
+                }
+                : (ref TDeclaringType obj, TPropertyType value) => f.SetValueDirect(__makeref(obj), value!);
         }
 
         Debug.Assert(typeof(TDeclaringType).IsNestedTupleRepresentation());
