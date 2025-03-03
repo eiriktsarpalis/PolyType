@@ -6,9 +6,6 @@ on:
   pull_request:
     branches: ["main"]
 
-env:  
-  VSTEST_CONNECTION_TIMEOUT: 180
-
 jobs:
   Windows:
     runs-on: windows-latest

@@ -3,9 +3,6 @@ name: Publish to NuGet
 on:
   release:
     types: ["published"]
-    
-env:
-  VSTEST_CONNECTION_TIMEOUT: 180
 
 jobs:
   Ubuntu:
