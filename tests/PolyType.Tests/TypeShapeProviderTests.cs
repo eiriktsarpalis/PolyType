@@ -18,12 +18,12 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
     public void TypeShapeReportsExpectedInfo<T>(TestCase<T> testCase)
     {
         ITypeShape<T> shape = providerUnderTest.ResolveShape(testCase);
-        
+
         Assert.Equal(typeof(T), shape.Type);
         Assert.Equal(typeof(T), shape.AttributeProvider);
-        Assert.Equal(typeof(T).IsRecordType() && testCase is { UsesMarshaller: false, IsUnion: false }, shape is IObjectTypeShape { IsRecordType: true});
+        Assert.Equal(typeof(T).IsRecordType() && testCase is { UsesMarshaller: false, IsUnion: false }, shape is IObjectTypeShape { IsRecordType: true });
         Assert.Equal(typeof(T).IsTupleType() && testCase is { UsesMarshaller: false, IsUnion: false }, shape is IObjectTypeShape { IsTupleType: true });
-        
+
         Assert.Same(providerUnderTest.Provider, shape.Provider);
         Assert.Same(shape, shape.Provider.GetShape(shape.Type));
 
@@ -135,7 +135,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         {
             return;
         }
-        
+
         var visitor = new ConstructorTestVisitor();
         if (objectShape.Constructor is { } ctor)
         {
@@ -155,7 +155,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             {
                 Assert.Throws<InvalidOperationException>(() => constructor.GetArgumentStateConstructor());
                 Assert.Throws<InvalidOperationException>(() => constructor.GetParameterizedConstructor());
-                
+
                 var defaultCtor = constructor.GetDefaultConstructor();
                 Assert.Same(constructor.GetDefaultConstructor(), constructor.GetDefaultConstructor());
                 TDeclaringType defaultValue = defaultCtor();
@@ -164,7 +164,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             else
             {
                 Assert.Throws<InvalidOperationException>(() => constructor.GetDefaultConstructor());
-                
+
                 int i = 0;
                 var argumentStateCtor = constructor.GetArgumentStateConstructor();
                 Assert.NotNull(argumentStateCtor);
@@ -187,7 +187,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                     Assert.NotNull(value);
                 }
             }
-            
+
             return null;
         }
 
@@ -263,7 +263,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             return null;
         }
     }
-    
+
     [Theory]
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
     public void GetSurrogateType<T>(TestCase<T> testCase)
@@ -292,7 +292,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             {
                 marshallerType = marshallerType.MakeGenericType(typeof(T).GetGenericArguments());
             }
-            
+
             Assert.Equal(typeof(T), surrogateShape.Type);
             Assert.Equal(typeof(TSurrogate), surrogateShape.SurrogateType.Type);
             Assert.IsType(marshallerType, surrogateShape.Marshaller);
@@ -309,6 +309,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         if (shape.Kind is TypeShapeKind.Union)
         {
             IUnionTypeShape<T> unionShape = Assert.IsAssignableFrom<IUnionTypeShape<T>>(shape);
+            DerivedTypeShapeAttribute[] attributes = unionShape.AttributeProvider?.GetCustomAttributes(typeof(DerivedTypeShapeAttribute), false)?.Cast<DerivedTypeShapeAttribute>().ToArray() ?? [];
             Assert.NotSame(shape, unionShape.BaseType);
             Assert.NotEmpty(unionShape.UnionCases);
             int i = 0;
@@ -317,6 +318,9 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                 Assert.True(typeof(T).IsAssignableFrom(unionCase.Type.Type));
                 Assert.NotNull(unionCase.Name);
                 Assert.Equal(i++, unionCase.Index);
+
+                DerivedTypeShapeAttribute? attribute = attributes.FirstOrDefault(a => a.Type == unionCase.Type.Type);
+                Assert.Equal(unionCase.IsTagSpecified, attribute is not null && attribute.Tag != -1);
             }
 
             Getter<T, int> unionCaseIndexGetter = unionShape.GetGetUnionCaseIndex();
@@ -764,13 +768,13 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
     {
         Assert.True(ReflectionTypeShapeProvider.Default.Options.UseReflectionEmit);
     }
-    
+
     [Fact]
     public void ReflectionTypeShapeProvider_Default_IsSingleton()
     {
         Assert.Same(ReflectionTypeShapeProvider.Default, ReflectionTypeShapeProvider.Default);
     }
-    
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -780,7 +784,7 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
         ReflectionTypeShapeProvider provider = ReflectionTypeShapeProvider.Create(options);
         Assert.Equal(useReflectionEmit, provider.Options.UseReflectionEmit);
     }
-    
+
     [Theory]
     [InlineData(typeof(ClassWithEnumKind))]
     [InlineData(typeof(ClassWithNullableKind))]
@@ -832,7 +836,7 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
 
     [TypeShape(Marshaller = typeof(int))]
     private class ClassWithInvalidMarshaller;
-    
+
     [TypeShape(Marshaller = typeof(Marshaller))]
     private class ClassWithMismatchingMarshaller
     {

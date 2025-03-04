@@ -222,6 +222,7 @@ public sealed partial class Parser
                     Type = CreateTypeId(derived.Type),
                     Name = derived.Name,
                     Tag = derived.Tag,
+                    IsTagSpecified = derived.IsTagSpecified,
                     Index = derived.Index,
                     IsBaseType = derived.IsBaseType,
                 })

@@ -24,6 +24,11 @@ public interface IUnionCaseShape
     int Tag { get; }
 
     /// <summary>
+    /// Gets a value indicating whether <see cref="Tag"/> has been explicitly specified or inferred in a less stable way.
+    /// </summary>
+    bool IsTagSpecified { get; }
+
+    /// <summary>
     /// Gets the unique index corresponding to the current union case.
     /// </summary>
     /// <remarks>

@@ -25,6 +25,9 @@ public sealed class SourceGenUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShap
     /// </summary>
     public required int Tag { get; init; }
 
+    /// <inheritdoc/>
+    public required bool IsTagSpecified { get; init; }
+
     /// <summary>
     /// Gets the unique index corresponding to the current union case.
     /// </summary>

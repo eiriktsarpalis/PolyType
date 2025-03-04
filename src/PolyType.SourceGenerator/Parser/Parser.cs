@@ -162,7 +162,8 @@ public sealed partial class Parser : TypeDataModelGenerator
                 continue;
             }
 
-            tag = tag < 0 ? i : tag;
+            bool isTagSpecified = tag >= 0;
+            tag = isTagSpecified ? tag : i;
             name ??= derivedType.Name;
 
             if (!types.Add(derivedType))
@@ -188,6 +189,7 @@ public sealed partial class Parser : TypeDataModelGenerator
                 Type = derivedType,
                 Name = name,
                 Tag = tag,
+                IsTagSpecified = isTagSpecified,
                 Index = i,
                 IsBaseType = SymbolEqualityComparer.Default.Equals(derivedType, type),
             };

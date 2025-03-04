@@ -422,9 +422,10 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
     internal IUnionCaseShape CreateUnionCaseShape(IUnionTypeShape unionTypeShape, DerivedTypeShapeAttribute derivedTypeAttribute, int index)
     {
         string name = derivedTypeAttribute.Name;
-        int tag = derivedTypeAttribute.Tag < 0 ? index : derivedTypeAttribute.Tag;
+        bool isTagSpecified = derivedTypeAttribute.Tag >= 0;
+        int tag = isTagSpecified ? derivedTypeAttribute.Tag : index;
         Type unionCaseType = typeof(ReflectionUnionCaseShape<,>).MakeGenericType(derivedTypeAttribute.Type, unionTypeShape.Type);
-        return (IUnionCaseShape)Activator.CreateInstance(unionCaseType, unionTypeShape, name, tag, index, this)!;
+        return (IUnionCaseShape)Activator.CreateInstance(unionCaseType, unionTypeShape, name, tag, isTagSpecified, index, this)!;
     }
 
     internal static IConstructorShapeInfo CreateTupleConstructorShapeInfo(Type tupleType)
