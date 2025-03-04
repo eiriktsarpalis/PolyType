@@ -58,6 +58,7 @@ internal sealed class FSharpUnionCaseShape<TUnionCase, TUnion>(FSharpUnionCaseIn
     public ITypeShape<TUnionCase> Type { get; } = new FSharpUnionCaseTypeShape<TUnionCase>(unionCaseInfo, provider);
     public string Name => unionCaseInfo.Name;
     public int Tag => unionCaseInfo.Tag;
+    public bool IsTagSpecified => false; // F# tags are inferred from the union case ordering
     public int Index => unionCaseInfo.Tag;
     ITypeShape IUnionCaseShape.Type => Type;
     public object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitUnionCase(this, state);

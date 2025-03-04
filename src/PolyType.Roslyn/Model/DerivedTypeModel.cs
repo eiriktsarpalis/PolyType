@@ -23,6 +23,11 @@ public sealed class DerivedTypeModel
     public required int Tag { get; init; }
 
     /// <summary>
+    /// Gets a value indicating whether <see cref="Tag"/> has been explicitly specified or inferred in a less stable way.
+    /// </summary>
+    public required bool IsTagSpecified { get; init; }
+
+    /// <summary>
     /// The index of the derived type.
     /// </summary>
     public required int Index { get; init; }

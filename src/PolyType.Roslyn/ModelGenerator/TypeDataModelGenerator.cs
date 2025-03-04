@@ -302,7 +302,7 @@ public partial class TypeDataModelGenerator
     {
         // 1. Resolve the shapes for all derived types.
         List<DerivedTypeModel> derivedTypeModels = [];
-        DerivedTypeModel baseTypeModel = new() { Type = type, Name = null!, Tag = -1, Index = -1, IsBaseType = true };
+        DerivedTypeModel baseTypeModel = new() { Type = type, Name = null!, Tag = -1, IsTagSpecified = false, Index = -1, IsBaseType = true };
         foreach (DerivedTypeModel derivedType in ResolveDerivedTypes(type))
         {
             if (IncludeNestedType(derivedType.Type, ref ctx) is TypeDataModelGenerationStatus.Success)

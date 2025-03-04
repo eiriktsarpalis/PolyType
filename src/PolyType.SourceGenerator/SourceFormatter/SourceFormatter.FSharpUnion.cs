@@ -46,6 +46,7 @@ internal sealed partial class SourceFormatter
                     Type = {{unionCase.TypeModel.SourceIdentifier}},
                     Name = "{{unionCase.Name}}",
                     Tag = {{unionCase.Tag}},
+                    IsTagSpecified = false,
                     Index = {{unionCase.Tag}},
                 },
                 """);

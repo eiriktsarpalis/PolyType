@@ -17,6 +17,7 @@ public sealed record UnionCaseModel
     public required TypeId Type { get; init; }
     public required string Name { get; init; }
     public required int Tag { get; init; }
+    public required bool IsTagSpecified { get; init; }
     public required int Index { get; init; }
     public required bool IsBaseType { get; init; }
 }
