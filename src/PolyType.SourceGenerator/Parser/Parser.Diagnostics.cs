@@ -102,4 +102,12 @@ public sealed partial class Parser
         category: "PolyType.SourceGenerator",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+
+    private static DiagnosticDescriptor DerivedTypeUnsupportedGenerics { get; } = new DiagnosticDescriptor(
+        id: "TS0013",
+        title: "Derived type uses unsupported generics.",
+        messageFormat: "The declared derived type '{0}' introduces unsupported type parameters over '{1}'.",
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
 }

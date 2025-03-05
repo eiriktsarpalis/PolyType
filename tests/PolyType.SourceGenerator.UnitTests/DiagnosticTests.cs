@@ -709,4 +709,57 @@ public static class DiagnosticTests
         Assert.Equal((4, 1), diagnostic.Location.GetStartPosition());
         Assert.Equal((4, 61), diagnostic.Location.GetEndPosition());
     }
+
+    [Fact]
+    public static void PolymorphicClassWithGenericDerivedType_ErrorDiagnostic()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [DerivedTypeShape(typeof(Derived<>))]
+            class PolymorphicClassWithGenericDerivedType
+            {
+                public class Derived<T> : PolymorphicClassWithGenericDerivedType;
+            }
+
+            [GenerateShape<PolymorphicClassWithGenericDerivedType>]
+            partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("TS0013", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("introduces unsupported type parameters", diagnostic.GetMessage());
+        Assert.Equal((2, 1), diagnostic.Location.GetStartPosition());
+        Assert.Equal((2, 36), diagnostic.Location.GetEndPosition());
+    }
+
+    [Fact]
+    public static void GenericPolymorphicClassWithMismatchingGenericDerivedType_ErrorDiagnostic()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+            using System.Collections.Generic;
+
+            [DerivedTypeShape(typeof(Derived<>))]
+            class GenericPolymorphicClassWithMismatchingGenericDerivedType<T>
+            {
+                public class Derived<S> : GenericPolymorphicClassWithMismatchingGenericDerivedType<List<S>>;
+            }
+
+            [GenerateShape<GenericPolymorphicClassWithMismatchingGenericDerivedType<string>>]
+            partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("TS0013", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("introduces unsupported type parameters", diagnostic.GetMessage());
+        Assert.Equal((3, 1), diagnostic.Location.GetStartPosition());
+        Assert.Equal((3, 36), diagnostic.Location.GetEndPosition());
+    }
 }

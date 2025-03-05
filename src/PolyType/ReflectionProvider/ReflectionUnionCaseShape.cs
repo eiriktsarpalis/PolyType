@@ -2,16 +2,16 @@
 
 namespace PolyType.ReflectionProvider;
 
-internal sealed class ReflectionUnionCaseShape<TUnionCase, TUnion>(IUnionTypeShape unionType, string name, int tag, bool isTagSpecified, int index, ReflectionTypeShapeProvider provider) : IUnionCaseShape<TUnionCase, TUnion>
+internal sealed class ReflectionUnionCaseShape<TUnionCase, TUnion>(IUnionTypeShape unionType, DerivedTypeInfo derivedTypeInfo, ReflectionTypeShapeProvider provider) : IUnionCaseShape<TUnionCase, TUnion>
     where TUnionCase : TUnion
 {
     public ITypeShape<TUnionCase> Type => _type ??= typeof(TUnionCase) == typeof(TUnion) ? (ITypeShape<TUnionCase>)unionType.BaseType : provider.GetShape<TUnionCase>();
     private ITypeShape<TUnionCase>? _type;
 
-    public string Name { get; } = name;
-    public int Tag { get; } = tag;
-    public bool IsTagSpecified { get; } = isTagSpecified;
-    public int Index { get; } = index;
+    public string Name => derivedTypeInfo.Name;
+    public int Tag => derivedTypeInfo.Tag;
+    public bool IsTagSpecified => derivedTypeInfo.IsTagSpecified;
+    public int Index => derivedTypeInfo.Index;
 
     ITypeShape IUnionCaseShape.Type => Type;
 

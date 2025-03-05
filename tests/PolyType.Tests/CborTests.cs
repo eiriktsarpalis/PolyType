@@ -68,8 +68,8 @@ public abstract partial class CborTests(ProviderUnderTest providerUnderTest)
         yield return [TestCase.Create((42, "str"), p), "A2654974656D31182A654974656D3263737472"];
         yield return [TestCase.Create(new PolymorphicClass(42), p), "D8B9A163496E74182A"];
         yield return [TestCase.Create<PolymorphicClass>(new PolymorphicClass.DerivedClass(42, "str"), p), "D8BAA266537472696E676373747263496E74182A"];
-        yield return [TestCase.Create<Tree>(new Leaf(), p), "D9078AA0"];
-        yield return [TestCase.Create<Tree>(new Node(42, new Leaf(), new Leaf()), p), "D8B8821903E8A36556616C7565182A644C656674D9078AA0655269676874D9078AA0"];
+        yield return [TestCase.Create<Tree>(new Tree.Leaf(), p), "D9078AA0"];
+        yield return [TestCase.Create<Tree>(new Tree.Node(42, new Tree.Leaf(), new Tree.Leaf()), p), "D8B8821903E8A36556616C7565182A644C656674D9078AA0655269676874D9078AA0"];
     }
 
     [Theory]

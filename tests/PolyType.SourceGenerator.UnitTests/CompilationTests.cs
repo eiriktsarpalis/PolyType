@@ -673,6 +673,28 @@ public static class CompilationTests
     }
 
     [Fact]
+    public static void PolymorphicGenericClass_NoWarnings()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [DerivedTypeShape(typeof(GenericTree<>.Leaf), Name = "leaf", Tag = 10)]
+            [DerivedTypeShape(typeof(GenericTree<>.Node), Name = "node", Tag = 1000)]
+            public partial record GenericTree<T>
+            {
+                public record Leaf : GenericTree<T>;
+                public record Node(T Value, GenericTree<T> Left, GenericTree<T> Right) : GenericTree<T>;
+            }
+
+            [GenerateShape<GenericTree<string>>]
+            partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
     public static void FSharpUnion_NoWarnings()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""

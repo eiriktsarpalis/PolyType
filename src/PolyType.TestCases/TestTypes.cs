@@ -555,7 +555,14 @@ public static class TestTypes
                 new IPolymorphicInterface.IDiamond.Impl2 { X = 1 }],
             isUnion: true);
 
-        yield return TestCase.Create<Tree>(new Node(42, new Leaf(), new Leaf()), additionalValues: [new Leaf()], isUnion: true);
+        yield return TestCase.Create(
+            (PolymorphicClassWithGenericDerivedType)new PolymorphicClassWithGenericDerivedType.Derived<int>(42),
+            additionalValues: [new PolymorphicClassWithGenericDerivedType.Derived<string>("str")],
+            isUnion: true);
+
+        yield return TestCase.Create<Tree>(new Tree.Node(42, new Tree.Leaf(), new Tree.Leaf()), additionalValues: [new Tree.Leaf()], isUnion: true);
+        yield return TestCase.Create((GenericTree<string>)new GenericTree<string>.Node("str", new GenericTree<string>.Leaf(), new GenericTree<string>.Leaf()), additionalValues: [new GenericTree<string>.Leaf()], isUnion: true, provider: p);
+        yield return TestCase.Create((GenericTree<int>)new GenericTree<int>.Node(42, new GenericTree<int>.Leaf(), new GenericTree<int>.Leaf()), additionalValues: [new GenericTree<int>.Leaf()], isUnion: true, provider: p);
 
         // F# types
         yield return TestCase.Create(new FSharpRecord(42, "str", true), p);
@@ -2238,13 +2245,33 @@ public partial interface IPolymorphicInterface
 }
 
 [GenerateShape]
+[DerivedTypeShape(typeof(Derived<int>), Name = "DerivedInt")]
+[DerivedTypeShape(typeof(Derived<string>), Name = "DerivedString")]
+[JsonDerivedType(typeof(Derived<int>), "DerivedInt")]
+[JsonDerivedType(typeof(Derived<string>), "DerivedString")]
+public partial record PolymorphicClassWithGenericDerivedType
+{
+    public record Derived<T>(T Value) : PolymorphicClassWithGenericDerivedType;
+}
+
+[GenerateShape]
 [DerivedTypeShape(typeof(Leaf), Name = "leaf", Tag = 10)]
 [DerivedTypeShape(typeof(Node), Name = "node", Tag = 1000)]
 [JsonDerivedType(typeof(Leaf), "leaf")]
 [JsonDerivedType(typeof(Node), "node")]
-public partial record Tree;
-public record Leaf : Tree;
-public record Node(int Value, Tree Left, Tree Right) : Tree;
+public partial record Tree
+{
+    public record Leaf : Tree;
+    public record Node(int Value, Tree Left, Tree Right) : Tree;
+}
+
+[DerivedTypeShape(typeof(GenericTree<>.Leaf), Name = "leaf", Tag = 10)]
+[DerivedTypeShape(typeof(GenericTree<>.Node), Name = "node", Tag = 1000)]
+public partial record GenericTree<T>
+{
+    public record Leaf : GenericTree<T>;
+    public record Node(T Value, GenericTree<T> Left, GenericTree<T> Right) : GenericTree<T>;
+}
 
 [GenerateShape<object>]
 [GenerateShape<bool>]
@@ -2432,6 +2459,8 @@ public record Node(int Value, Tree Left, Tree Right) : Tree;
 [GenerateShape<TypeWithGenericMarshaller<int>>]
 [GenerateShape<TypeWithGenericMarshaller<string>>]
 [GenerateShape<GenericDictionaryWithMarshaller<string, int>>]
+[GenerateShape<GenericTree<string>>]
+[GenerateShape<GenericTree<int>>]
 [GenerateShape<FSharpRecord>]
 [GenerateShape<FSharpStructRecord>]
 [GenerateShape<GenericFSharpRecord<string>>]

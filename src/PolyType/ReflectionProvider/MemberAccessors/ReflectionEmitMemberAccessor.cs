@@ -589,10 +589,10 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         }
     }
 
-    public Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeShapeAttribute[] derivedTypeAttributes)
+    public Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeInfo[] derivedTypeInfos)
     {
         Debug.Assert(!typeof(TUnion).IsValueType);
-        Debug.Assert(derivedTypeAttributes.Length > 0);
+        Debug.Assert(derivedTypeInfos.Length > 0);
 
         // Creates a topological sort of all cases from most derived to least derived
         // and then emits a switch statement in that order to obtain the correct index.
@@ -600,16 +600,15 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         // 1. Pre-process attribute data.
         Dictionary<Type, int> typesAndIndices = new();
         int defaultIndex = -1;
-        for (int i = 0; i < derivedTypeAttributes.Length; i++)
+        foreach (DerivedTypeInfo derivedTypeInfo in derivedTypeInfos)
         {
-            DerivedTypeShapeAttribute attribute = derivedTypeAttributes[i];
-            if (attribute.Type == typeof(TUnion))
+            if (derivedTypeInfo.Type == typeof(TUnion))
             {
-                defaultIndex = i;
+                defaultIndex = derivedTypeInfo.Index;
             }
             else
             {
-                typesAndIndices.Add(attribute.Type, i);
+                typesAndIndices.Add(derivedTypeInfo.Type, derivedTypeInfo.Index);
             }
         }
 

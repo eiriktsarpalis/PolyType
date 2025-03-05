@@ -319,8 +319,10 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                 Assert.NotNull(unionCase.Name);
                 Assert.Equal(i++, unionCase.Index);
 
-                DerivedTypeShapeAttribute? attribute = attributes.FirstOrDefault(a => a.Type == unionCase.Type.Type);
-                Assert.Equal(unionCase.IsTagSpecified, attribute is not null && attribute.Tag != -1);
+                DerivedTypeShapeAttribute? attribute = attributes.FirstOrDefault(a => NormalizeType(a.Type) == NormalizeType(unionCase.Type.Type));
+                Assert.Equal(attribute is not null && attribute.Tag != -1, unionCase.IsTagSpecified);
+
+                static Type NormalizeType(Type type) => type.IsGenericType ? type.GetGenericTypeDefinition() : type;
             }
 
             Getter<T, int> unionCaseIndexGetter = unionShape.GetGetUnionCaseIndex();
@@ -895,6 +897,27 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
     {
         public class Derived1 : PolymorphicClassWithInvalidDerivedType_ConflictingTags;
         public class Derived2 : PolymorphicClassWithInvalidDerivedType_ConflictingTags;
+    }
+
+    [Theory]
+    [InlineData(typeof(PolymorphicClassWithGenericDerivedType), "Derived")]
+    [InlineData(typeof(GenericPolymorphicClassWithMismatchingGenericDerivedType<int>), "Derived")]
+    public void PolymorphicClassWithGenericDerivedType_ThrowsInvalidOperationException(Type type, string derivedTypeName)
+    {
+        var ex = Assert.Throws<InvalidOperationException>(() => Provider.GetShape(type));
+        Assert.Contains(derivedTypeName, ex.Message);
+    }
+
+    [DerivedTypeShape(typeof(Derived<>))]
+    private class PolymorphicClassWithGenericDerivedType
+    {
+        public class Derived<T> : PolymorphicClassWithGenericDerivedType;
+    }
+
+    [DerivedTypeShape(typeof(Derived<>))]
+    private class GenericPolymorphicClassWithMismatchingGenericDerivedType<T>
+    {
+        public class Derived<S> : GenericPolymorphicClassWithMismatchingGenericDerivedType<List<S>>;
     }
 }
 

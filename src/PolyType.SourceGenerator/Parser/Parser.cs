@@ -144,6 +144,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
 
         int i = 0;
+        ITypeSymbol[]? baseTypeArgs = null;
         HashSet<ITypeSymbol> types = new(SymbolEqualityComparer.Default);
         HashSet<int> tags = new();
         HashSet<string> names = new(StringComparer.Ordinal);
@@ -156,7 +157,19 @@ public sealed partial class Parser : TypeDataModelGenerator
 
             ParseDerivedTypeShapeAttribute(attribute, out ITypeSymbol derivedType, out string? name, out int tag);
 
-            if (!type.IsAssignableFrom(derivedType))
+            if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true } namedDerivedType)
+            {
+                baseTypeArgs ??= ((INamedTypeSymbol)type).GetRecursiveTypeArguments();
+                INamedTypeSymbol? specializedDerivedType = namedDerivedType.OriginalDefinition.ConstructRecursive(baseTypeArgs);
+                if (specializedDerivedType is null || !type.IsAssignableFrom(specializedDerivedType))
+                {
+                    ReportDiagnostic(DerivedTypeUnsupportedGenerics, attribute.GetLocation(), derivedType.ToDisplayString(), type.ToDisplayString());
+                    continue;
+                }
+
+                derivedType = specializedDerivedType;
+            }
+            else if (!type.IsAssignableFrom(derivedType))
             {
                 ReportDiagnostic(DerivedTypeNotAssignableToBase, attribute.GetLocation(), derivedType.ToDisplayString(), type.ToDisplayString());
                 continue;
