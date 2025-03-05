@@ -42,6 +42,22 @@ public interface ITypeShape
     /// <param name="state">The state to be passed to the function.</param>
     /// <returns>The result produced by the function.</returns>
     object? Invoke(ITypeShapeFunc func, object? state = null);
+
+    /// <summary>
+    /// Gets the factory for a type related to this property's declared type,
+    /// as captured by a <see cref="GenerateShapeEdgeAttribute"/>.
+    /// </summary>
+    /// <param name="relatedType">
+    /// The generic type definition of the related type (the one found in the <see cref="GenerateShapeEdgeAttribute.To"/> property.
+    /// This open generic type will be closed using the same type arguments used to close the <see cref="Type"/>.
+    /// </param>
+    /// <returns>A factory for the related type, or <see langword="null" /> if no factory for the related type is available.</returns>
+    /// <remarks>
+    /// <see cref="ReflectionProvider.ReflectionTypeShapeProvider"/> can produce the factory on demand without any <see cref="GenerateShapeEdgeAttribute"/>,
+    /// while <see cref="SourceGenModel.SourceGenTypeShapeProvider"/> is expected to only produce the factory that was explicitly requested via attribute.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">Thrown when this method is called on an instance that does not represent a generic type.</exception>
+    Func<object>? GetRelatedTypeFactory(Type relatedType);
 }
 
 /// <summary>
