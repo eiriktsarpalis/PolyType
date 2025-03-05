@@ -22,7 +22,7 @@ public class GenerateShapeEdgeAttribute : Attribute
     /// <param name="from">The generic type definition of a type which, if a type shape is generated for it, should lead to the construction of a factory for an associated generic type.</param>
     /// <param name="to">
     /// The generic type definition of the type to make available via <see cref="IGenericTypeShape.GetRelatedTypeFactory(Type)" />.
-    /// This type must have a public, default constructor.
+    /// This type must be public and have a public, default constructor.
     /// </param>
     /// <exception cref="ArgumentNullException"></exception>
     /// <exception cref="ArgumentException"></exception>
