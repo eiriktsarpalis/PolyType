@@ -13,7 +13,7 @@ namespace PolyType.Abstractions;
 
 public partial interface IObjectTypeShape<TDeclaringType> : ITypeShape
 {
-    IEnumerable<IPropertyShape> GetProperties();
+    IReadOnlyList<IPropertyShape> Properties { get; }
 }
 
 public partial interface IPropertyShape<TDeclaringType, TPropertyType> : IPropertyShape
@@ -52,7 +52,7 @@ partial class CounterVisitor : TypeShapeVisitor
     public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? _)
     {
         // Generate counter delegates for each individual property or field:
-        Func<T, int>[] propertyCounters = objectShape.GetProperties()
+        Func<T, int>[] propertyCounters = objectShape.Properties
             .Where(prop => prop.HasGetter)
             .Select(prop => (Func<T, int>)prop.Accept(this)!)
             .ToArray();
@@ -409,7 +409,7 @@ class MutatorVisitor : TypeShapeVisitor
 {
     public override object? VisitObject(IObjectTypeShape<T> objectShape, object? _)
     {
-        Mutator<T>[] propertyMutators = objectShape.GetProperties()
+        Mutator<T>[] propertyMutators = objectShape.Properties
             .Where(prop => prop.HasSetter)
             .Select(prop => (Mutator<T>)prop.Accept(this)!)
             .ToArray();
@@ -449,7 +449,7 @@ While property setters should suffice when mutating existing objects, constructi
 ```C#
 public partial interface IObjectTypeShape<T>
 {
-    IConstructorShape? GetConstructor();
+    IConstructorShape? Constructor { get; }
 }
 
 public partial interface IConstructorShape<TDeclaringType, TArgumentState> : IConstructorShape
@@ -483,7 +483,7 @@ The two delegates define the means for creating a default instance of the mutabl
 ```C#
 public partial interface IConstructorShape<TDeclaringType, TArgumentState> : IConstructorShape
 {
-    IEnumerable<IConstructorParameterShape> GetConstructorParameters();
+    IReadOnlyList<IConstructorParameterShape> Parameters { get; }
 }
 
 public partial interface IConstructorParameterShape<TArgumentState, TParameterType> : IConstructorParameterShape
@@ -517,7 +517,7 @@ class EmptyConstructorVisitor : TypeShapeVisitor
     {
         Func<TArgumentState> argumentStateCtor = constructorShape.GetArgumentStateConstructor();
         Func<TArgumentState, TDeclaringType> ctor = constructorShape.GetParameterizedConstructor();
-        ParameterSetter<TArgumentState>[] parameterSetters = constructorShape.GetConstructorParameters()
+        ParameterSetter<TArgumentState>[] parameterSetters = constructorShape.Parameters
             .Where(param => (ParameterSetter<TArgumentState>)param.Accept(this)!)
             .ToArray();
 
