@@ -19,7 +19,8 @@ public sealed partial class Parser
     {
         var associatedTypeSymbols = model.AssociatedTypes;
 
-        if (model.Type is INamedTypeSymbol namedType && (
+        var namedType = model.Type as INamedTypeSymbol;
+        if (namedType is not null && (
             _typeShapeExtensions.TryGetValue(namedType, out TypeExtensionModel? extensionModel) ||
             (namedType.IsGenericType && _typeShapeExtensions.TryGetValue(namedType.ConstructUnboundGenericType(), out extensionModel))))
         {
@@ -27,7 +28,7 @@ public sealed partial class Parser
         }
 
         List<(TypeId Open, TypeId Closed)> associatedTypesBuilder = new();
-        ITypeSymbol[] typeArgs = ((INamedTypeSymbol)model.Type).GetRecursiveTypeArguments();
+        ITypeSymbol[] typeArgs = namedType?.GetRecursiveTypeArguments() ?? [];
         foreach (INamedTypeSymbol openType in associatedTypeSymbols)
         {
             if (openType.OriginalDefinition.ConstructRecursive(typeArgs) is INamedTypeSymbol closedType)

@@ -717,7 +717,6 @@ public sealed partial class Parser : TypeDataModelGenerator
         return new TypeId
         {
             FullyQualifiedName = type.GetFullyQualifiedName(),
-            TypeArguments = type is INamedTypeSymbol { IsGenericType: true } namedType ? namedType.GetRecursiveTypeArguments().Select(CreateTypeId).ToImmutableArray() : ImmutableArray<TypeId>.Empty,
             IsValueType = type.IsValueType,
             SpecialType = type.OriginalDefinition.SpecialType,
         };
@@ -744,7 +743,6 @@ public sealed partial class Parser : TypeDataModelGenerator
             Id = new()
             {
                 FullyQualifiedName = $"global::PolyType.SourceGenerator.{typeName}",
-                TypeArguments = ImmutableArray<TypeId>.Empty,
                 IsValueType = false,
                 SpecialType = SpecialType.None,
             },

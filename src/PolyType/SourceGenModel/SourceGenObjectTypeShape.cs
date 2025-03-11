@@ -40,19 +40,19 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
     public override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);
 
     /// <inheritdoc/>
-    public override Func<object>? GetAssociatedTypeFactory(Type relatedType)
+    public override Func<object>? GetAssociatedTypeFactory(Type associatedType)
     {
         if (!typeof(TObject).IsGenericType)
         {
             throw new InvalidOperationException();
         }
 
-        if (!relatedType.IsGenericTypeDefinition || relatedType.GenericTypeArguments.Length != typeof(TObject).GenericTypeArguments.Length)
+        if (!associatedType.IsGenericTypeDefinition || associatedType.GenericTypeArguments.Length != typeof(TObject).GenericTypeArguments.Length)
         {
             throw new ArgumentException("Type is not a generic type definition or does not have an equal count of generic type parameters with this type shape.");
         }
 
-        return this.AssociatedTypeFactories?.Invoke(relatedType);
+        return this.AssociatedTypeFactories?.Invoke(associatedType);
     }
 
     IReadOnlyList<IPropertyShape> IObjectTypeShape.Properties => _properties ??= (CreatePropertiesFunc?.Invoke()).AsReadOnlyList();
