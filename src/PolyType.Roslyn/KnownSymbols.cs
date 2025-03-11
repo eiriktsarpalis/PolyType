@@ -9,6 +9,11 @@ namespace PolyType.Roslyn;
 public class KnownSymbols(Compilation compilation)
 {
     /// <summary>
+    /// The name of the property on TypeShapeAttribute that stores associated types.
+    /// </summary>
+    public const string TypeShapeAssociatedTypesPropertyName = "AssociatedTypes";
+
+    /// <summary>
     /// The compilation from which information is being queried.
     /// </summary>
     public Compilation Compilation { get; } = compilation;
@@ -19,8 +24,11 @@ public class KnownSymbols(Compilation compilation)
     public IAssemblySymbol CoreLibAssembly => _CoreLibAssembly ??= Compilation.GetSpecialType(SpecialType.System_Int32).ContainingAssembly;
     private IAssemblySymbol? _CoreLibAssembly;
 
-    public INamedTypeSymbol GenerateFactoryFromShapeAttribute => _GenerateFactoryFromShapeAttribute ??= Compilation.GetTypeByMetadataName("PolyType.GenerateFactoryFromShapeAttribute") ?? throw new InvalidOperationException("GenerateFactoryFromShapeAttribute not found.");
-    private INamedTypeSymbol? _GenerateFactoryFromShapeAttribute;
+    /// <summary>
+    /// Gets the symbol for TypeShapeExtensionAttribute.
+    /// </summary>
+    public INamedTypeSymbol TypeShapeExtensionAttribute => _TypeShapeExtensionAttribute ??= Compilation.GetTypeByMetadataName("PolyType.TypeShapeExtensionAttribute") ?? throw new InvalidOperationException("TypeShapeExtensionAttribute not found.");
+    private INamedTypeSymbol? _TypeShapeExtensionAttribute;
 
     /// <summary>
     /// The type symbol for <see cref="System.Reflection.MemberInfo"/>.

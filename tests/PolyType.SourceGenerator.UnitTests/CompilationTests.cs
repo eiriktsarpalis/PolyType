@@ -58,10 +58,9 @@ public static class CompilationTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [assembly: GenerateFactoryFromShape(typeof(GenericClass<,>), typeof(GenericConverter<,>))]
+            [assembly: TypeShapeExtension(typeof(GenericClass<,>), AssociatedTypes = [typeof(GenericConverter<,>)])]
 
             public class GenericClass<T1, T2>;
-
             public class GenericConverter<T1, T2>;
 
             [GenerateShape<GenericClass<int, string>>]

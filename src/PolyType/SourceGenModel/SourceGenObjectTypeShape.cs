@@ -40,7 +40,7 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
     public override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);
 
     /// <inheritdoc/>
-    public override Func<object>? GetRelatedTypeFactory(Type relatedType)
+    public override Func<object>? GetAssociatedTypeFactory(Type relatedType)
     {
         if (!typeof(TObject).IsGenericType)
         {

@@ -43,18 +43,16 @@ internal sealed partial class SourceFormatter
 
     private static string FormatRelatedTypeFactory(ObjectShapeModel objectShapeModel)
     {
-        if (objectShapeModel.RelatedTypes.IsEmpty)
+        if (objectShapeModel.AssociatedTypes.Length == 0)
         {
             return "null";
         }
 
         StringBuilder builder = new();
-        builder.Append("static relatedType => ");
-        foreach (TypeId relatedType in objectShapeModel.RelatedTypes)
+        builder.Append("static associatedType => ");
+        foreach ((TypeId open, TypeId closed) in objectShapeModel.AssociatedTypes)
         {
-            builder.Append($"relatedType == typeof({relatedType.FullyQualifiedName}) ? () => new ");
-            relatedType.WriteFullyQualifiedNameWithTypeArgs(builder, objectShapeModel.Type.TypeArguments.AsSpan());
-            builder.Append("() : ");
+            builder.Append($"associatedType == typeof({open.FullyQualifiedName}) ? () => new {closed.FullyQualifiedName}() : ");
         }
 
         builder.Append("null");

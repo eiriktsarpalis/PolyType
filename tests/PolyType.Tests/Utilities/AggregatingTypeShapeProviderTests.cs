@@ -179,7 +179,7 @@ public class AggregatingTypeShapeProviderTests
             throw new NotImplementedException();
         }
 
-        public Func<object>? GetRelatedTypeFactory(Type relatedType)
+        public Func<object>? GetAssociatedTypeFactory(Type associatedType)
         {
             throw new NotImplementedException();
         }

@@ -17,9 +17,23 @@ public sealed partial class Parser
 
     private TypeShapeModel MapModelCore(TypeDataModel model, TypeId typeId, string sourceIdentifier, bool isFSharpUnionCase = false)
     {
-        if (model.Type is not INamedTypeSymbol { IsGenericType: true } genericType || !_relatedTypes.TryGetValue(genericType.ConstructUnboundGenericType(), out ImmutableArray<TypeId> relatedTypes))
+        ImmutableEquatableArray<(TypeId Open, TypeId Closed)> associatedTypes = ImmutableEquatableArray<(TypeId, TypeId)>.Empty;
+
+        if (model.Type is INamedTypeSymbol namedType && (
+            _typeShapeExtensions.TryGetValue(namedType, out TypeExtensionModel? extensionModel) ||
+            (namedType.IsGenericType && _typeShapeExtensions.TryGetValue(namedType.ConstructUnboundGenericType(), out extensionModel))))
         {
-            relatedTypes = ImmutableArray<TypeId>.Empty;
+            List<(TypeId Open, TypeId Closed)> associatedTypesBuilder = new();
+            ITypeSymbol[] typeArgs = ((INamedTypeSymbol)model.Type).GetRecursiveTypeArguments();
+            foreach (INamedTypeSymbol openType in extensionModel.AssociatedTypes)
+            {
+                if (openType.OriginalDefinition.ConstructRecursive(typeArgs) is INamedTypeSymbol closedType)
+                {
+                    associatedTypesBuilder.Add((CreateTypeId(openType), CreateTypeId(closedType)));
+                }
+            }
+
+            associatedTypes = associatedTypesBuilder.ToImmutableEquatableArray();
         }
 
         return model switch
@@ -29,7 +43,7 @@ public sealed partial class Parser
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
                 UnderlyingType = CreateTypeId(enumModel.UnderlyingType),
-                RelatedTypes = relatedTypes,
+                AssociatedTypes = associatedTypes,
             },
 
             OptionalDataModel optionalModel => new OptionalShapeModel
@@ -44,7 +58,7 @@ public sealed partial class Parser
                 },
                 SourceIdentifier = sourceIdentifier,
                 ElementType = CreateTypeId(optionalModel.ElementType),
-                RelatedTypes = relatedTypes,
+                AssociatedTypes = associatedTypes,
             },
 
             SurrogateTypeDataModel surrogateModel => new SurrogateShapeModel
@@ -53,7 +67,7 @@ public sealed partial class Parser
                 SourceIdentifier = sourceIdentifier,
                 SurrogateType = CreateTypeId(surrogateModel.SurrogateType),
                 MarshallerType = CreateTypeId(surrogateModel.MarshallerType),
-                RelatedTypes = relatedTypes,
+                AssociatedTypes = associatedTypes,
             },
 
             EnumerableDataModel enumerableModel => new EnumerableShapeModel
@@ -93,7 +107,7 @@ public sealed partial class Parser
                 Kind = enumerableModel.EnumerableKind,
                 Rank = enumerableModel.Rank,
                 ElementTypeContainsNullableAnnotations = enumerableModel.ElementType.ContainsNullabilityAnnotations(),
-                RelatedTypes = relatedTypes,
+                AssociatedTypes = associatedTypes,
             },
 
             DictionaryDataModel dictionaryModel => new DictionaryShapeModel
@@ -132,7 +146,7 @@ public sealed partial class Parser
                 KeyValueTypesContainNullableAnnotations =
                     dictionaryModel.KeyType.ContainsNullabilityAnnotations() ||
                     dictionaryModel.ValueType.ContainsNullabilityAnnotations(),
-                RelatedTypes = relatedTypes,
+                AssociatedTypes = associatedTypes,
             },
 
             ObjectDataModel objectModel => new ObjectShapeModel
@@ -151,7 +165,7 @@ public sealed partial class Parser
                 IsValueTupleType = false,
                 IsTupleType = false,
                 IsRecordType = model.Type.IsRecord,
-                RelatedTypes = relatedTypes,
+                AssociatedTypes = associatedTypes,
             },
 
             TupleDataModel tupleModel => new ObjectShapeModel
@@ -166,7 +180,7 @@ public sealed partial class Parser
                 IsValueTupleType = tupleModel.IsValueTuple,
                 IsTupleType = true,
                 IsRecordType = false,
-                RelatedTypes = relatedTypes,
+                AssociatedTypes = associatedTypes,
             },
 
             FSharpUnionDataModel unionModel => new FSharpUnionShapeModel
@@ -189,7 +203,7 @@ public sealed partial class Parser
                     IsValueTupleType = false,
                     IsTupleType = false,
                     IsRecordType = false,
-                    RelatedTypes = relatedTypes,
+                    AssociatedTypes = associatedTypes,
                 },
                 UnionCases = unionModel.UnionCases
                     .Select(unionCase => new FSharpUnionCaseShapeModel(
@@ -197,7 +211,7 @@ public sealed partial class Parser
                         Tag: unionCase.Tag,
                         TypeModel: MapModelCore(unionCase.Type, CreateTypeId(unionCase.Type.Type), $"{sourceIdentifier}__Case_{unionCase.Name}", isFSharpUnionCase: true)))
                     .ToImmutableEquatableArray(),
-                RelatedTypes = relatedTypes,
+                AssociatedTypes = associatedTypes,
             },
 
             _ => new ObjectShapeModel
@@ -209,7 +223,7 @@ public sealed partial class Parser
                 IsValueTupleType = false,
                 IsTupleType = false,
                 IsRecordType = false,
-                RelatedTypes = relatedTypes,
+                AssociatedTypes = associatedTypes,
             }
         };
 
@@ -243,7 +257,7 @@ public sealed partial class Parser
                     IsBaseType = derived.IsBaseType,
                 })
                 .ToImmutableEquatableArray(),
-            RelatedTypes = ImmutableArray<TypeId>.Empty,
+            AssociatedTypes = ImmutableEquatableArray<(TypeId, TypeId)>.Empty,
         };
     }
 

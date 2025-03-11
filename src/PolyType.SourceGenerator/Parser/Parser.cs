@@ -22,18 +22,19 @@ public sealed partial class Parser : TypeDataModelGenerator
             CommonHelpers.CamelCaseInvariantComparer.Instance);
 
     private readonly PolyTypeKnownSymbols _knownSymbols;
-    private readonly IReadOnlyDictionary<ITypeSymbol, ImmutableArray<TypeId>> _relatedTypes;
+    private readonly ImmutableDictionary<INamedTypeSymbol, TypeExtensionModel> _typeShapeExtensions;
 
-    private Parser(ISymbol generationScope, IReadOnlyDictionary<ITypeSymbol, ImmutableArray<TypeId>> relatedTypes, PolyTypeKnownSymbols knownSymbols, CancellationToken cancellationToken)
+    private Parser(ISymbol generationScope, ImmutableDictionary<INamedTypeSymbol, TypeExtensionModel> typeShapeExtensions, PolyTypeKnownSymbols knownSymbols, CancellationToken cancellationToken)
         : base(generationScope, knownSymbols, cancellationToken)
     {
         _knownSymbols = knownSymbols;
-        _relatedTypes = relatedTypes;
+        _typeShapeExtensions = typeShapeExtensions;
     }
 
     public static TypeShapeProviderModel? ParseFromGenerateShapeAttributes(
         ImmutableArray<TypeWithAttributeDeclarationContext> generateShapeDeclarations,
         PolyTypeKnownSymbols knownSymbols,
+        ImmutableDictionary<INamedTypeSymbol, TypeExtensionModel> typeShapeExtensions,
         CancellationToken cancellationToken)
     {
         if (generateShapeDeclarations.IsEmpty)
@@ -41,45 +42,72 @@ public sealed partial class Parser : TypeDataModelGenerator
             return null;
         }
 
-        Dictionary<ITypeSymbol, ImmutableArray<TypeId>> relatedTypes = new(SymbolEqualityComparer.Default);
-        AddRelatedTypes(knownSymbols, knownSymbols.Compilation.Assembly, relatedTypes);
-        foreach (MetadataReference reference in knownSymbols.Compilation.References)
-        {
-            if (knownSymbols.Compilation.GetAssemblyOrModuleSymbol(reference) is IAssemblySymbol referencedAssembly)
-            {
-                AddRelatedTypes(knownSymbols, referencedAssembly, relatedTypes);
-            }
-        }
-
-        Parser parser = new(knownSymbols.Compilation.Assembly, relatedTypes, knownSymbols, cancellationToken);
+        Parser parser = new(knownSymbols.Compilation.Assembly, typeShapeExtensions, knownSymbols, cancellationToken);
         TypeDeclarationModel shapeProviderDeclaration = CreateShapeProviderDeclaration(knownSymbols.Compilation);
         ImmutableEquatableArray<TypeDeclarationModel> generateShapeTypes = parser.IncludeTypesUsingGenerateShapeAttributes(generateShapeDeclarations);
         return parser.ExportTypeShapeProviderModel(shapeProviderDeclaration, generateShapeTypes);
     }
 
-    private static void AddRelatedTypes(KnownSymbols knownSymbols, IAssemblySymbol assemblySymbol, Dictionary<ITypeSymbol, ImmutableArray<TypeId>> relatedTypes)
+    public static ImmutableArray<TypeExtensionModel> DiscoverTypeShapeExtensions(KnownSymbols knownSymbols, Compilation compilation, MetadataReference metadataReference, CancellationToken cancellationToken)
     {
+        if (compilation.GetAssemblyOrModuleSymbol(metadataReference) is not IAssemblySymbol assemblySymbol)
+        {
+            return ImmutableArray<TypeExtensionModel>.Empty;
+        }
+
+        return DiscoverTypeShapeExtensions(knownSymbols, assemblySymbol, cancellationToken);
+    }
+
+    public static ImmutableArray<TypeExtensionModel> DiscoverTypeShapeExtensions(KnownSymbols knownSymbols, IAssemblySymbol assemblySymbol, CancellationToken cancellationToken)
+    {
+        Dictionary<ITypeSymbol, TypeExtensionModel> associatedTypes = new(SymbolEqualityComparer.Default);
         foreach (AttributeData attribute in assemblySymbol.GetAttributes())
         {
-            if (!SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, knownSymbols.GenerateFactoryFromShapeAttribute))
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, knownSymbols.TypeShapeExtensionAttribute))
             {
                 continue;
             }
 
-            if (attribute.ConstructorArguments is not [{ Value: ITypeSymbol shapedType }, { Value: ITypeSymbol relatedType }])
+            if (attribute.ConstructorArguments is not [{ Value: INamedTypeSymbol targetType }])
             {
                 continue;
             }
 
-            if (relatedTypes.TryGetValue(shapedType, out ImmutableArray<TypeId> existingRelatedTypes))
+            var associatedTypesNamedArg = attribute.NamedArguments.FirstOrDefault(kv => kv.Key == KnownSymbols.TypeShapeAssociatedTypesPropertyName);
+            if (associatedTypesNamedArg.Value.Values is { IsDefaultOrEmpty: false } associatedTypesArg)
             {
-                relatedTypes[shapedType] = existingRelatedTypes.Add(CreateTypeId(relatedType));
-            }
-            else
-            {
-                relatedTypes[shapedType] = ImmutableArray.Create(CreateTypeId(relatedType));
+                List<INamedTypeSymbol> associatedTypeSymbols = new(associatedTypesArg.Length);
+                foreach (TypedConstant tc in associatedTypesArg)
+                {
+                    if (tc.Value is INamedTypeSymbol associatedType)
+                    {
+                        associatedTypeSymbols.Add(associatedType);
+                    }
+                }
+
+                if (associatedTypeSymbols.Count > 0)
+                {
+                    if (!associatedTypes.TryGetValue(targetType, out TypeExtensionModel? existingRelatedTypes))
+                    {
+                        existingRelatedTypes = new TypeExtensionModel
+                        {
+                            Target = targetType,
+                            AssociatedTypes = ImmutableArray<INamedTypeSymbol>.Empty,
+                        };
+                    }
+
+                    existingRelatedTypes = existingRelatedTypes with
+                    {
+                        AssociatedTypes = existingRelatedTypes.AssociatedTypes.AddRange(associatedTypeSymbols),
+                    };
+
+                    associatedTypes[targetType] = existingRelatedTypes;
+                }
             }
         }
+
+        return associatedTypes.Values.ToImmutableArray();
     }
 
     // We want to flatten System.Tuple types for consistency with

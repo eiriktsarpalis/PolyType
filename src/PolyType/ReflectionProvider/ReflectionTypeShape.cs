@@ -17,24 +17,18 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
     ICustomAttributeProvider? ITypeShape.AttributeProvider => typeof(T);
     object? ITypeShape.Invoke(ITypeShapeFunc func, object? state) => func.Invoke(this, state);
 
-    public Func<object>? GetRelatedTypeFactory(
-        Type relatedType)
+    public Func<object>? GetAssociatedTypeFactory(Type relatedType)
     {
-        if (!this.Type.IsGenericType)
+        if (this.Type.GenericTypeArguments.Length != relatedType.GenericTypeArguments.Length)
         {
-            throw new InvalidOperationException();
+            throw new ArgumentException($"Related type arity ({relatedType.GenericTypeArguments.Length}) mismatch with original type ({this.Type.GenericTypeArguments.Length}).");
         }
 
-        if (!relatedType.IsGenericTypeDefinition || relatedType.GenericTypeArguments.Length != this.Type.GenericTypeArguments.Length)
-        {
-            throw new ArgumentException("Type is not a generic type definition or does not have an equal count of generic type parameters with this type shape.");
-        }
+        Type closedType = relatedType.IsGenericTypeDefinition
+            ? relatedType.MakeGenericType(this.Type.GenericTypeArguments)
+            : relatedType;
 
-        if (relatedType.MakeGenericType(this.Type.GenericTypeArguments)?.GetConstructor(Type.EmptyTypes) is not ConstructorInfo ctor)
-        {
-            return null;
-        }
-
-        return () => ctor.Invoke([]);
+        ConstructorInfo? ctor = closedType?.GetConstructor(Type.EmptyTypes);
+        return ctor is null ? null : () => ctor.Invoke([]);
     }
 }

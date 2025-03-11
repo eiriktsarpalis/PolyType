@@ -13,8 +13,7 @@ public abstract record TypeShapeModel
     public required string SourceIdentifier { get; init; }
 
     /// <summary>
-    /// An array of type IDs for related types.
-    /// These will all be generic type definitions.
+    /// An array of type IDs for associated types.
     /// </summary>
-    public required ImmutableArray<TypeId> RelatedTypes { get; init; }
+    public required ImmutableEquatableArray<(TypeId Open, TypeId Closed)> AssociatedTypes { get; init; }
 }
