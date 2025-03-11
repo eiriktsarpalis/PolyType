@@ -19,7 +19,7 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
 
     public Func<object>? GetAssociatedTypeFactory(Type relatedType)
     {
-        if (this.Type.GenericTypeArguments.Length != relatedType.GenericTypeArguments.Length)
+        if (relatedType.IsGenericTypeDefinition && this.Type.GenericTypeArguments.Length != relatedType.GetTypeInfo().GenericTypeParameters.Length)
         {
             throw new ArgumentException($"Related type arity ({relatedType.GenericTypeArguments.Length}) mismatch with original type ({this.Type.GenericTypeArguments.Length}).");
         }

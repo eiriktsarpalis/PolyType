@@ -1,4 +1,5 @@
 ﻿using PolyType.Abstractions;
+using System.Reflection;
 
 namespace PolyType.SourceGenModel;
 
@@ -42,12 +43,7 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
     /// <inheritdoc/>
     public override Func<object>? GetAssociatedTypeFactory(Type associatedType)
     {
-        if (!typeof(TObject).IsGenericType)
-        {
-            throw new InvalidOperationException();
-        }
-
-        if (!associatedType.IsGenericTypeDefinition || associatedType.GenericTypeArguments.Length != typeof(TObject).GenericTypeArguments.Length)
+        if (associatedType.IsGenericTypeDefinition && typeof(TObject).GenericTypeArguments.Length != associatedType.GetTypeInfo().GenericTypeParameters.Length)
         {
             throw new ArgumentException("Type is not a generic type definition or does not have an equal count of generic type parameters with this type shape.");
         }

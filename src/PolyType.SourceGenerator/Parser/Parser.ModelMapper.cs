@@ -31,7 +31,11 @@ public sealed partial class Parser
         ITypeSymbol[] typeArgs = namedType?.GetRecursiveTypeArguments() ?? [];
         foreach (INamedTypeSymbol openType in associatedTypeSymbols)
         {
-            if (openType.OriginalDefinition.ConstructRecursive(typeArgs) is INamedTypeSymbol closedType)
+            if (!openType.IsUnboundGenericType)
+            {
+                associatedTypesBuilder.Add((CreateTypeId(openType), CreateTypeId(openType)));
+            }
+            else if (openType.OriginalDefinition.ConstructRecursive(typeArgs) is INamedTypeSymbol closedType)
             {
                 associatedTypesBuilder.Add((CreateTypeId(openType), CreateTypeId(closedType)));
             }
