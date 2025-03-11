@@ -376,25 +376,24 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         throw new NotSupportedException();
     }
 
-    public Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeShapeAttribute[] derivedTypeAttributes)
+    public Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeInfo[] derivedTypeInfos)
     {
         Debug.Assert(!typeof(TUnion).IsValueType);
-        Debug.Assert(derivedTypeAttributes.Length > 0);
+        Debug.Assert(derivedTypeInfos.Length > 0);
 
         ConcurrentDictionary<Type, int> cache = new();
         int defaultIndex = -1;
-        for (int i = 0; i < derivedTypeAttributes.Length; i++)
+        foreach (DerivedTypeInfo derivedTypeInfo in derivedTypeInfos)
         {
-            DerivedTypeShapeAttribute attribute = derivedTypeAttributes[i];
-            cache.TryAdd(attribute.Type, i);
-            if (attribute.Type == typeof(TUnion))
+            cache.TryAdd(derivedTypeInfo.Type, derivedTypeInfo.Index);
+            if (derivedTypeInfo.Type == typeof(TUnion))
             {
-                defaultIndex = i;
+                defaultIndex = derivedTypeInfo.Index;
             }
         }
 
         // Add the base type as a sentinel value if it hasn't been added by the attributes yet.
-        cache.TryAdd(typeof(TUnion), -1);
+        cache.TryAdd(typeof(TUnion), defaultIndex);
 
         return (ref TUnion union) =>
         {

@@ -21,5 +21,5 @@ internal interface IReflectionMemberAccessor
     Func<T, TResult> CreateFuncDelegate<T, TResult>(ConstructorInfo ctorInfo);
     SpanConstructor<T, TResult> CreateSpanConstructorDelegate<T, TResult>(ConstructorInfo ctorInfo);
 
-    Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeShapeAttribute[] derivedTypeAttributes);
+    Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeInfo[] derivedTypeInfos);
 }

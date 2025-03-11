@@ -7,7 +7,7 @@ namespace PolyType.ReflectionProvider;
 
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
-internal sealed class ReflectionUnionTypeShape<TUnion>(DerivedTypeShapeAttribute[] derivedTypeAttributes, ReflectionTypeShapeProvider provider)
+internal sealed class ReflectionUnionTypeShape<TUnion>(DerivedTypeInfo[] derivedTypeInfos, ReflectionTypeShapeProvider provider)
     : ReflectionTypeShape<TUnion>(provider), IUnionTypeShape<TUnion>
 {
     public override TypeShapeKind Kind => TypeShapeKind.Union;
@@ -19,17 +19,18 @@ internal sealed class ReflectionUnionTypeShape<TUnion>(DerivedTypeShapeAttribute
     public IReadOnlyList<IUnionCaseShape> UnionCases => _unionCases ??= CreateUnionCaseShapes().AsReadOnlyList();
     private IReadOnlyList<IUnionCaseShape>? _unionCases;
 
-    public Getter<TUnion, int> GetGetUnionCaseIndex() => _unionCaseIndexReader ??= Provider.MemberAccessor.CreateGetUnionCaseIndex<TUnion>(derivedTypeAttributes);
+    public Getter<TUnion, int> GetGetUnionCaseIndex() => _unionCaseIndexReader ??= Provider.MemberAccessor.CreateGetUnionCaseIndex<TUnion>(derivedTypeInfos);
     private Getter<TUnion, int>? _unionCaseIndexReader;
 
     ITypeShape IUnionTypeShape.BaseType => BaseType;
 
     private IEnumerable<IUnionCaseShape> CreateUnionCaseShapes()
     {
-        int i = 0;
-        foreach (DerivedTypeShapeAttribute attribute in derivedTypeAttributes)
+        foreach (DerivedTypeInfo derivedTypeInfo in derivedTypeInfos)
         {
-            yield return Provider.CreateUnionCaseShape(this, attribute, i++);
+            yield return Provider.CreateUnionCaseShape(this, derivedTypeInfo);
         }
     }
 }
+
+internal sealed record DerivedTypeInfo(Type Type, string Name, int Tag, int Index, bool IsTagSpecified);

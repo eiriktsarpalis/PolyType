@@ -272,20 +272,47 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
         DerivedTypeShapeAttribute[] derivedTypeAttributes = unionType.GetCustomAttributes<DerivedTypeShapeAttribute>().ToArray();
         HashSet<Type> types = new();
-        HashSet<int> tags = new();
         HashSet<string> names = new(StringComparer.Ordinal);
-        int i = 0;
+        HashSet<int> tags = new();
+        List<DerivedTypeInfo> derivedTypeInfos = [];
         foreach (DerivedTypeShapeAttribute derivedTypeAttribute in derivedTypeAttributes)
         {
-            if (!unionType.IsAssignableFrom(derivedTypeAttribute.Type))
+            Type derivedType = derivedTypeAttribute.Type;
+
+            if (derivedType.IsGenericTypeDefinition)
             {
-                throw new InvalidOperationException($"The declared derived type '{derivedTypeAttribute.Type}' is not a valid subtype of '{unionType}'.");
+                try
+                {
+                    // Accept generic derived types provided we can apply the type parameters for the base type.
+                    Type derivedWithBaseTypeParams = derivedType.MakeGenericType(unionType.GetGenericArguments());
+                    if (!unionType.IsAssignableFrom(derivedWithBaseTypeParams))
+                    {
+                        throw new InvalidOperationException();
+                    }
+
+                    derivedType = derivedWithBaseTypeParams;
+                }
+                catch
+                {
+                    throw new InvalidOperationException($"The declared derived type '{derivedType}' introduces unsupported type parameters over '{unionType}'.");
+                }
+            }
+            else if (!unionType.IsAssignableFrom(derivedType))
+            {
+                throw new InvalidOperationException($"The declared derived type '{derivedType}' is not a valid subtype of '{unionType}'.");
             }
 
-            int tag = derivedTypeAttribute.Tag < 0 ? i : derivedTypeAttribute.Tag;
             string name = derivedTypeAttribute.Name;
+            int index = derivedTypeInfos.Count;
+            int tag = derivedTypeAttribute.Tag;
+            bool isTagSpecified = true;
+            if (tag < 0)
+            {
+                tag = index;
+                isTagSpecified = false;
+            }
 
-            if (!types.Add(derivedTypeAttribute.Type))
+            if (!types.Add(derivedType))
             {
                 throw new InvalidOperationException($"Polymorphic type '{unionType}' uses duplicate assignments for the derived type '{derivedTypeAttribute.Type}'.");
             }
@@ -300,11 +327,11 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
                 throw new InvalidOperationException($"Polymorphic type '{unionType}' uses duplicate assignments for the name '{name}'.");
             }
 
-            i++;
+            derivedTypeInfos.Add(new (derivedType, name, tag, index, isTagSpecified));
         }
 
         Type unionTypeTy = typeof(ReflectionUnionTypeShape<>).MakeGenericType(unionType);
-        return (IUnionTypeShape)Activator.CreateInstance(unionTypeTy, derivedTypeAttributes, this)!;
+        return (IUnionTypeShape)Activator.CreateInstance(unionTypeTy, derivedTypeInfos.ToArray(), this)!;
     }
 
     private static TypeShapeKind DetermineTypeKind(Type type, bool allowUnionShapes, out TypeShapeAttribute? typeShapeAttribute, out FSharpUnionInfo? fsharpUnionInfo)
@@ -419,13 +446,10 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         return (IConstructorParameterShape)Activator.CreateInstance(reflectionConstructorParameterType, this, ctorInfo, parameterInfo, position)!;
     }
 
-    internal IUnionCaseShape CreateUnionCaseShape(IUnionTypeShape unionTypeShape, DerivedTypeShapeAttribute derivedTypeAttribute, int index)
+    internal IUnionCaseShape CreateUnionCaseShape(IUnionTypeShape unionTypeShape, DerivedTypeInfo derivedTypeInfo)
     {
-        string name = derivedTypeAttribute.Name;
-        bool isTagSpecified = derivedTypeAttribute.Tag >= 0;
-        int tag = isTagSpecified ? derivedTypeAttribute.Tag : index;
-        Type unionCaseType = typeof(ReflectionUnionCaseShape<,>).MakeGenericType(derivedTypeAttribute.Type, unionTypeShape.Type);
-        return (IUnionCaseShape)Activator.CreateInstance(unionCaseType, unionTypeShape, name, tag, isTagSpecified, index, this)!;
+        Type unionCaseType = typeof(ReflectionUnionCaseShape<,>).MakeGenericType(derivedTypeInfo.Type, unionTypeShape.Type);
+        return (IUnionCaseShape)Activator.CreateInstance(unionCaseType, unionTypeShape, derivedTypeInfo, this)!;
     }
 
     internal static IConstructorShapeInfo CreateTupleConstructorShapeInfo(Type tupleType)

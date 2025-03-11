@@ -139,7 +139,10 @@ internal static partial class RoslynHelpers
 
         void GetAllTypeArgumentsCore(INamedTypeSymbol type)
         {
-            Debug.Assert(type.IsGenericType);
+            if (!type.IsGenericType)
+            {
+                return;
+            }
 
             if (type.ContainingType is { IsGenericType: true } containingType)
             {

@@ -79,8 +79,8 @@ public abstract class XmlTests(ProviderUnderTest providerUnderTest)
         yield return [TestCase.Create(new BaseClass { X = 42 }, p), "<value><X>42</X></value>"];
         yield return [TestCase.Create(new PolymorphicClass(42), p), """<value type="PolymorphicClass"><Int>42</Int></value>"""];
         yield return [TestCase.Create<PolymorphicClass>(new PolymorphicClass.DerivedClass(42, "str"), p), """<value type="DerivedClass"><String>str</String><Int>42</Int></value>"""];
-        yield return [TestCase.Create<Tree>(new Leaf(), p), """<value type="leaf" />"""];
-        yield return [TestCase.Create<Tree>(new Node(42, new Leaf(), new Leaf()), p), """<value type="node"><Value>42</Value><Left type="leaf" /><Right type="leaf" /></value>"""];
+        yield return [TestCase.Create<Tree>(new Tree.Leaf(), p), """<value type="leaf" />"""];
+        yield return [TestCase.Create<Tree>(new Tree.Node(42, new Tree.Leaf(), new Tree.Leaf()), p), """<value type="node"><Value>42</Value><Left type="leaf" /><Right type="leaf" /></value>"""];
     }
 
     [Theory]
