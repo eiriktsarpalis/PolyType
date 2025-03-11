@@ -19,6 +19,9 @@ public class KnownSymbols(Compilation compilation)
     public IAssemblySymbol CoreLibAssembly => _CoreLibAssembly ??= Compilation.GetSpecialType(SpecialType.System_Int32).ContainingAssembly;
     private IAssemblySymbol? _CoreLibAssembly;
 
+    public INamedTypeSymbol GenerateFactoryFromShapeAttribute => _GenerateFactoryFromShapeAttribute ??= Compilation.GetTypeByMetadataName("PolyType.GenerateFactoryFromShapeAttribute") ?? throw new InvalidOperationException("GenerateFactoryFromShapeAttribute not found.");
+    private INamedTypeSymbol? _GenerateFactoryFromShapeAttribute;
+
     /// <summary>
     /// The type symbol for <see cref="System.Reflection.MemberInfo"/>.
     /// </summary>

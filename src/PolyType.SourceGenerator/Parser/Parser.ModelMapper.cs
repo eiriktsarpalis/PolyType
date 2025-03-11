@@ -2,6 +2,7 @@
 using PolyType.Roslyn;
 using PolyType.SourceGenerator.Helpers;
 using PolyType.SourceGenerator.Model;
+using System.Collections.Immutable;
 using System.Diagnostics;
 
 namespace PolyType.SourceGenerator;
@@ -16,6 +17,11 @@ public sealed partial class Parser
 
     private TypeShapeModel MapModelCore(TypeDataModel model, TypeId typeId, string sourceIdentifier, bool isFSharpUnionCase = false)
     {
+        if (model.Type is not INamedTypeSymbol { IsGenericType: true } genericType || !_relatedTypes.TryGetValue(genericType.ConstructUnboundGenericType(), out ImmutableArray<TypeId> relatedTypes))
+        {
+            relatedTypes = ImmutableArray<TypeId>.Empty;
+        }
+
         return model switch
         {
             EnumDataModel enumModel => new EnumShapeModel
@@ -23,6 +29,7 @@ public sealed partial class Parser
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
                 UnderlyingType = CreateTypeId(enumModel.UnderlyingType),
+                RelatedTypes = relatedTypes,
             },
 
             OptionalDataModel optionalModel => new OptionalShapeModel
@@ -37,14 +44,16 @@ public sealed partial class Parser
                 },
                 SourceIdentifier = sourceIdentifier,
                 ElementType = CreateTypeId(optionalModel.ElementType),
+                RelatedTypes = relatedTypes,
             },
-            
+
             SurrogateTypeDataModel surrogateModel => new SurrogateShapeModel
             {
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
                 SurrogateType = CreateTypeId(surrogateModel.SurrogateType),
                 MarshallerType = CreateTypeId(surrogateModel.MarshallerType),
+                RelatedTypes = relatedTypes,
             },
 
             EnumerableDataModel enumerableModel => new EnumerableShapeModel
@@ -59,31 +68,32 @@ public sealed partial class Parser
 
                     CollectionModelConstructionStrategy.Mutable => CollectionConstructionStrategy.Mutable,
                     CollectionModelConstructionStrategy.Span => CollectionConstructionStrategy.Span,
-                    CollectionModelConstructionStrategy.List => 
-                        IsFactoryAcceptingIEnumerable(enumerableModel.FactoryMethod) 
-                        ? CollectionConstructionStrategy.Enumerable 
+                    CollectionModelConstructionStrategy.List =>
+                        IsFactoryAcceptingIEnumerable(enumerableModel.FactoryMethod)
+                        ? CollectionConstructionStrategy.Enumerable
                         : CollectionConstructionStrategy.Span,
 
                     _ => CollectionConstructionStrategy.None,
                 },
 
                 AddElementMethod = enumerableModel.AddElementMethod?.Name,
-                ImplementationTypeFQN = 
+                ImplementationTypeFQN =
                     enumerableModel.ConstructionStrategy is CollectionModelConstructionStrategy.Mutable &&
-                    enumerableModel.FactoryMethod is { IsStatic: false, ContainingType: INamedTypeSymbol implType } && 
+                    enumerableModel.FactoryMethod is { IsStatic: false, ContainingType: INamedTypeSymbol implType } &&
                     !SymbolEqualityComparer.Default.Equals(implType, enumerableModel.Type)
 
                     ? implType.GetFullyQualifiedName()
                     : null,
 
                 StaticFactoryMethod = enumerableModel.FactoryMethod is { IsStatic: true } m ? m.GetFullyQualifiedName() : null,
-                CtorRequiresListConversion = 
+                CtorRequiresListConversion =
                     enumerableModel.ConstructionStrategy is CollectionModelConstructionStrategy.List &&
                     !IsFactoryAcceptingIEnumerable(enumerableModel.FactoryMethod),
 
                 Kind = enumerableModel.EnumerableKind,
                 Rank = enumerableModel.Rank,
                 ElementTypeContainsNullableAnnotations = enumerableModel.ElementType.ContainsNullabilityAnnotations(),
+                RelatedTypes = relatedTypes,
             },
 
             DictionaryDataModel dictionaryModel => new DictionaryShapeModel
@@ -119,9 +129,10 @@ public sealed partial class Parser
                 CtorRequiresDictionaryConversion =
                     dictionaryModel.ConstructionStrategy is CollectionModelConstructionStrategy.Dictionary &&
                     !IsFactoryAcceptingIEnumerable(dictionaryModel.FactoryMethod),
-                KeyValueTypesContainNullableAnnotations = 
+                KeyValueTypesContainNullableAnnotations =
                     dictionaryModel.KeyType.ContainsNullabilityAnnotations() ||
                     dictionaryModel.ValueType.ContainsNullabilityAnnotations(),
+                RelatedTypes = relatedTypes,
             },
 
             ObjectDataModel objectModel => new ObjectShapeModel
@@ -140,6 +151,7 @@ public sealed partial class Parser
                 IsValueTupleType = false,
                 IsTupleType = false,
                 IsRecordType = model.Type.IsRecord,
+                RelatedTypes = relatedTypes,
             },
 
             TupleDataModel tupleModel => new ObjectShapeModel
@@ -154,6 +166,7 @@ public sealed partial class Parser
                 IsValueTupleType = tupleModel.IsValueTuple,
                 IsTupleType = true,
                 IsRecordType = false,
+                RelatedTypes = relatedTypes,
             },
 
             FSharpUnionDataModel unionModel => new FSharpUnionShapeModel
@@ -168,7 +181,7 @@ public sealed partial class Parser
 
                 TagReaderIsMethod = unionModel.TagReader.MethodKind is not MethodKind.PropertyGet,
                 UnderlyingModel = new ObjectShapeModel
-                { 
+                {
                     Type = typeId,
                     Constructor = null,
                     Properties = [],
@@ -176,17 +189,19 @@ public sealed partial class Parser
                     IsValueTupleType = false,
                     IsTupleType = false,
                     IsRecordType = false,
+                    RelatedTypes = relatedTypes,
                 },
                 UnionCases = unionModel.UnionCases
                     .Select(unionCase => new FSharpUnionCaseShapeModel(
-                        Name: unionCase.Name, 
-                        Tag: unionCase.Tag, 
+                        Name: unionCase.Name,
+                        Tag: unionCase.Tag,
                         TypeModel: MapModelCore(unionCase.Type, CreateTypeId(unionCase.Type.Type), $"{sourceIdentifier}__Case_{unionCase.Name}", isFSharpUnionCase: true)))
                     .ToImmutableEquatableArray(),
+                RelatedTypes = relatedTypes,
             },
 
             _ => new ObjectShapeModel
-            { 
+            {
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
                 Constructor = null,
@@ -194,6 +209,7 @@ public sealed partial class Parser
                 IsValueTupleType = false,
                 IsTupleType = false,
                 IsRecordType = false,
+                RelatedTypes = relatedTypes,
             }
         };
 
@@ -227,6 +243,7 @@ public sealed partial class Parser
                     IsBaseType = derived.IsBaseType,
                 })
                 .ToImmutableEquatableArray(),
+            RelatedTypes = ImmutableArray<TypeId>.Empty,
         };
     }
 
@@ -236,7 +253,7 @@ public sealed partial class Parser
 
         bool emitGetter = property.IncludeGetter;
         bool emitSetter = property.IncludeSetter && !property.IsInitOnly;
-        
+
         return new PropertyShapeModel
         {
             Name = isClassTupleType ? $"Item{tupleElementIndex + 1}" : propertyName ?? property.Name,
@@ -273,7 +290,7 @@ public sealed partial class Parser
         int position = constructor.Parameters.Length;
         List<ConstructorParameterShapeModel>? requiredMembers = null;
         List<ConstructorParameterShapeModel>? optionalMembers = null;
-        
+
         bool isAccessibleConstructor = IsAccessibleSymbol(constructor.Constructor);
         bool isParameterizedConstructor = position > 0 || constructor.MemberInitializers.Any(p => p.IsRequired || p.IsInitOnly);
         IEnumerable<PropertyDataModel> memberInitializers = isParameterizedConstructor
@@ -376,7 +393,7 @@ public sealed partial class Parser
             // Resolve the [ParameterShape] attribute name override
             name = value;
         }
-        else if (isFSharpUnionCase && 
+        else if (isFSharpUnionCase &&
                  name.StartsWith("_", StringComparison.Ordinal) &&
                  objectModel.Properties.All(p => p.Name != name))
         {
@@ -466,7 +483,7 @@ public sealed partial class Parser
                 IsAccessible = true,
                 CanUseUnsafeAccessors = false,
                 IsPublic = true,
-            };   
+            };
         }
 
         static ConstructorParameterShapeModel MapTupleConstructorParameter(TypeId typeId, PropertyDataModel tupleElement, int position)

@@ -20,13 +20,15 @@ public sealed partial class Parser : TypeDataModelGenerator
         CommonHelpers.CreateTupleComparer<ITypeSymbol, string>(
             SymbolEqualityComparer.Default,
             CommonHelpers.CamelCaseInvariantComparer.Instance);
-    
-    private readonly PolyTypeKnownSymbols _knownSymbols;
 
-    private Parser(ISymbol generationScope, PolyTypeKnownSymbols knownSymbols, CancellationToken cancellationToken)
+    private readonly PolyTypeKnownSymbols _knownSymbols;
+    private readonly IReadOnlyDictionary<ITypeSymbol, ImmutableArray<TypeId>> _relatedTypes;
+
+    private Parser(ISymbol generationScope, IReadOnlyDictionary<ITypeSymbol, ImmutableArray<TypeId>> relatedTypes, PolyTypeKnownSymbols knownSymbols, CancellationToken cancellationToken)
         : base(generationScope, knownSymbols, cancellationToken)
     {
         _knownSymbols = knownSymbols;
+        _relatedTypes = relatedTypes;
     }
 
     public static TypeShapeProviderModel? ParseFromGenerateShapeAttributes(
@@ -39,10 +41,45 @@ public sealed partial class Parser : TypeDataModelGenerator
             return null;
         }
 
-        Parser parser = new(knownSymbols.Compilation.Assembly, knownSymbols, cancellationToken);
+        Dictionary<ITypeSymbol, ImmutableArray<TypeId>> relatedTypes = new(SymbolEqualityComparer.Default);
+        AddRelatedTypes(knownSymbols, knownSymbols.Compilation.Assembly, relatedTypes);
+        foreach (MetadataReference reference in knownSymbols.Compilation.References)
+        {
+            if (knownSymbols.Compilation.GetAssemblyOrModuleSymbol(reference) is IAssemblySymbol referencedAssembly)
+            {
+                AddRelatedTypes(knownSymbols, referencedAssembly, relatedTypes);
+            }
+        }
+
+        Parser parser = new(knownSymbols.Compilation.Assembly, relatedTypes, knownSymbols, cancellationToken);
         TypeDeclarationModel shapeProviderDeclaration = CreateShapeProviderDeclaration(knownSymbols.Compilation);
         ImmutableEquatableArray<TypeDeclarationModel> generateShapeTypes = parser.IncludeTypesUsingGenerateShapeAttributes(generateShapeDeclarations);
         return parser.ExportTypeShapeProviderModel(shapeProviderDeclaration, generateShapeTypes);
+    }
+
+    private static void AddRelatedTypes(KnownSymbols knownSymbols, IAssemblySymbol assemblySymbol, Dictionary<ITypeSymbol, ImmutableArray<TypeId>> relatedTypes)
+    {
+        foreach (AttributeData attribute in assemblySymbol.GetAttributes())
+        {
+            if (!SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, knownSymbols.GenerateFactoryFromShapeAttribute))
+            {
+                continue;
+            }
+
+            if (attribute.ConstructorArguments is not [{ Value: ITypeSymbol shapedType }, { Value: ITypeSymbol relatedType }])
+            {
+                continue;
+            }
+
+            if (relatedTypes.TryGetValue(shapedType, out ImmutableArray<TypeId> existingRelatedTypes))
+            {
+                relatedTypes[shapedType] = existingRelatedTypes.Add(CreateTypeId(relatedType));
+            }
+            else
+            {
+                relatedTypes[shapedType] = ImmutableArray.Create(CreateTypeId(relatedType));
+            }
+        }
     }
 
     // We want to flatten System.Tuple types for consistency with
@@ -123,9 +160,9 @@ public sealed partial class Parser : TypeDataModelGenerator
         HashSet<(ITypeSymbol, string)> readOnlyProperties = new(
             properties
                 .Where(p => !p.IncludeSetter)
-                .Select(p => (p.PropertyType, p.Name)), 
+                .Select(p => (p.PropertyType, p.Name)),
             s_ctorParamComparer);
-            
+
         return constructors
             .OrderByDescending(ctor =>
             {
@@ -637,6 +674,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         return new TypeId
         {
             FullyQualifiedName = type.GetFullyQualifiedName(),
+            TypeArguments = type is INamedTypeSymbol { IsGenericType: true } namedType ? namedType.GetRecursiveTypeArguments().Select(CreateTypeId).ToImmutableArray() : ImmutableArray<TypeId>.Empty,
             IsValueType = type.IsValueType,
             SpecialType = type.OriginalDefinition.SpecialType,
         };
@@ -663,6 +701,7 @@ public sealed partial class Parser : TypeDataModelGenerator
             Id = new()
             {
                 FullyQualifiedName = $"global::PolyType.SourceGenerator.{typeName}",
+                TypeArguments = ImmutableArray<TypeId>.Empty,
                 IsValueType = false,
                 SpecialType = SpecialType.None,
             },

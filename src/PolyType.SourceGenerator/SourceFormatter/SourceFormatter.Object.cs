@@ -1,5 +1,6 @@
 ﻿using PolyType.Roslyn;
 using PolyType.SourceGenerator.Model;
+using System.Text;
 
 namespace PolyType.SourceGenerator;
 
@@ -20,6 +21,7 @@ internal sealed partial class SourceFormatter
                     IsRecordType = {{FormatBool(objectShapeModel.IsRecordType)}},
                     IsTupleType = {{FormatBool(objectShapeModel.IsTupleType)}},
                     Provider = this,
+                    RelatedTypeFactories = {{FormatRelatedTypeFactory(objectShapeModel)}},
                 };
             }
             """, trimNullAssignmentLines: true);
@@ -37,6 +39,27 @@ internal sealed partial class SourceFormatter
         }
 
         FormatMemberAccessors(writer, objectShapeModel);
+    }
+
+    private static string FormatRelatedTypeFactory(ObjectShapeModel objectShapeModel)
+    {
+        if (objectShapeModel.RelatedTypes.IsEmpty)
+        {
+            return "null";
+        }
+
+        StringBuilder builder = new();
+        builder.Append("static relatedType => ");
+        foreach (TypeId relatedType in objectShapeModel.RelatedTypes)
+        {
+            builder.Append($"relatedType == typeof({relatedType.FullyQualifiedName}) ? () => new ");
+            relatedType.WriteFullyQualifiedNameWithTypeArgs(builder, objectShapeModel.Type.TypeArguments.AsSpan());
+            builder.Append("() : ");
+        }
+
+        builder.Append("null");
+
+        return builder.ToString();
     }
 
     private static void FormatMemberAccessors(SourceWriter writer, ObjectShapeModel objectShapeModel)
@@ -59,7 +82,7 @@ internal sealed partial class SourceFormatter
                     FormatPropertyGetterAccessor(writer, objectShapeModel, property);
                 }
 
-                if ((!property.IsSetterAccessible || property.IsInitOnly) && 
+                if ((!property.IsSetterAccessible || property.IsInitOnly) &&
                     (property.EmitSetter || IsUsedByConstructor(property)))
                 {
                     writer.WriteLine();
@@ -68,11 +91,11 @@ internal sealed partial class SourceFormatter
 
                 bool IsUsedByConstructor(PropertyShapeModel property)
                 {
-                    if (objectShapeModel.Constructor is not {} ctor)
+                    if (objectShapeModel.Constructor is not { } ctor)
                     {
                         return false;
                     }
-                    
+
                     foreach (var parameter in ctor.RequiredMembers.Concat(ctor.OptionalMembers))
                     {
                         if (parameter.Name == property.Name)

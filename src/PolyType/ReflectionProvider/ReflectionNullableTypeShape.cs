@@ -1,7 +1,10 @@
 ﻿using PolyType.Abstractions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PolyType.ReflectionProvider;
 
+[RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
+[RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 internal sealed class ReflectionNullableTypeShape<T>(ReflectionTypeShapeProvider provider) : ReflectionTypeShape<T?>(provider), IOptionalTypeShape<T?, T>
     where T : struct
 {

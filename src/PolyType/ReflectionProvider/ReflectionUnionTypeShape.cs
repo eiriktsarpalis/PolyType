@@ -1,9 +1,12 @@
 ﻿using PolyType.Abstractions;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PolyType.ReflectionProvider;
 
+[RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
+[RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 internal sealed class ReflectionUnionTypeShape<TUnion>(DerivedTypeShapeAttribute[] derivedTypeAttributes, ReflectionTypeShapeProvider provider)
     : ReflectionTypeShape<TUnion>(provider), IUnionTypeShape<TUnion>
 {

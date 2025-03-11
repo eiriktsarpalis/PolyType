@@ -27,7 +27,7 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
 
         if (!relatedType.IsGenericTypeDefinition || relatedType.GenericTypeArguments.Length != this.Type.GenericTypeArguments.Length)
         {
-            throw new ArgumentException();
+            throw new ArgumentException("Type is not a generic type definition or does not have an equal count of generic type parameters with this type shape.");
         }
 
         if (relatedType.MakeGenericType(this.Type.GenericTypeArguments)?.GetConstructor(Type.EmptyTypes) is not ConstructorInfo ctor)
