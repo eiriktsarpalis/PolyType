@@ -17,24 +17,26 @@ public sealed partial class Parser
 
     private TypeShapeModel MapModelCore(TypeDataModel model, TypeId typeId, string sourceIdentifier, bool isFSharpUnionCase = false)
     {
-        ImmutableEquatableArray<(TypeId Open, TypeId Closed)> associatedTypes = ImmutableEquatableArray<(TypeId, TypeId)>.Empty;
+        var associatedTypeSymbols = model.AssociatedTypes;
 
         if (model.Type is INamedTypeSymbol namedType && (
             _typeShapeExtensions.TryGetValue(namedType, out TypeExtensionModel? extensionModel) ||
             (namedType.IsGenericType && _typeShapeExtensions.TryGetValue(namedType.ConstructUnboundGenericType(), out extensionModel))))
         {
-            List<(TypeId Open, TypeId Closed)> associatedTypesBuilder = new();
-            ITypeSymbol[] typeArgs = ((INamedTypeSymbol)model.Type).GetRecursiveTypeArguments();
-            foreach (INamedTypeSymbol openType in extensionModel.AssociatedTypes)
-            {
-                if (openType.OriginalDefinition.ConstructRecursive(typeArgs) is INamedTypeSymbol closedType)
-                {
-                    associatedTypesBuilder.Add((CreateTypeId(openType), CreateTypeId(closedType)));
-                }
-            }
-
-            associatedTypes = associatedTypesBuilder.ToImmutableEquatableArray();
+            associatedTypeSymbols = associatedTypeSymbols.AddRange(extensionModel.AssociatedTypes);
         }
+
+        List<(TypeId Open, TypeId Closed)> associatedTypesBuilder = new();
+        ITypeSymbol[] typeArgs = ((INamedTypeSymbol)model.Type).GetRecursiveTypeArguments();
+        foreach (INamedTypeSymbol openType in associatedTypeSymbols)
+        {
+            if (openType.OriginalDefinition.ConstructRecursive(typeArgs) is INamedTypeSymbol closedType)
+            {
+                associatedTypesBuilder.Add((CreateTypeId(openType), CreateTypeId(closedType)));
+            }
+        }
+
+        ImmutableEquatableArray<(TypeId Open, TypeId Closed)> associatedTypes = associatedTypesBuilder.ToImmutableEquatableArray();
 
         return model switch
         {
@@ -530,11 +532,13 @@ public sealed partial class Parser
         ITypeSymbol typeSymbol,
         out TypeShapeKind? kind,
         out ITypeSymbol? marshaller,
+        out ImmutableArray<INamedTypeSymbol> associatedTypes,
         out Location? location)
     {
         kind = null;
         marshaller = null;
         location = null;
+        associatedTypes = ImmutableArray<INamedTypeSymbol>.Empty;
 
         if (typeSymbol.GetAttribute(_knownSymbols.TypeShapeAttribute) is AttributeData propertyAttr)
         {
@@ -548,6 +552,16 @@ public sealed partial class Parser
                         break;
                     case "Marshaller":
                         marshaller = namedArgument.Value.Value as ITypeSymbol;
+                        break;
+                    case KnownSymbols.TypeShapeAssociatedTypesPropertyName:
+                        if (namedArgument.Value.Values is { Length: > 0 } associatedTypesArray)
+                        {
+                            associatedTypes = ImmutableArray.CreateRange(
+                                from tc in associatedTypesArray
+                                where tc.Value is INamedTypeSymbol s
+                                select (INamedTypeSymbol)tc.Value!);
+                        }
+
                         break;
                 }
             }

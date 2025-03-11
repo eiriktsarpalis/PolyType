@@ -276,14 +276,15 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
     }
 
-    protected override TypeDataModelGenerationStatus MapType(ITypeSymbol type, TypeDataKind? requestedKind, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model)
+    protected override TypeDataModelGenerationStatus MapType(ITypeSymbol type, TypeDataKind? requestedKind, ImmutableArray<INamedTypeSymbol> associatedTypes, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model)
     {
         Debug.Assert(requestedKind is null);
-        ParseTypeShapeAttribute(type, out TypeShapeKind? requestedTypeShapeKind, out ITypeSymbol? marshaller, out Location? location);
+        ParseTypeShapeAttribute(type, out TypeShapeKind? requestedTypeShapeKind, out ITypeSymbol? marshaller, out ImmutableArray<INamedTypeSymbol> typeShapeAssociatedTypes, out Location? location);
+        associatedTypes = associatedTypes.AddRange(typeShapeAssociatedTypes);
 
         if (marshaller is not null || requestedTypeShapeKind is TypeShapeKind.Surrogate)
         {
-            return MapSurrogateType(type, marshaller, ref ctx, out model);
+            return MapSurrogateType(type, marshaller, associatedTypes, ref ctx, out model);
         }
 
         if (_knownSymbols.ResolveFSharpUnionMetadata(type) is FSharpUnionInfo unionInfo)
@@ -296,7 +297,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
 
         requestedKind = MapTypeShapeKindToDataKind(requestedTypeShapeKind);
-        TypeDataModelGenerationStatus status = base.MapType(type, requestedKind, ref ctx, out model);
+        TypeDataModelGenerationStatus status = base.MapType(type, requestedKind, associatedTypes, ref ctx, out model);
 
         if (requestedKind is not null && model is { Kind: TypeDataKind actualKind } && requestedKind != actualKind)
         {
@@ -306,7 +307,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         return status;
     }
 
-    private TypeDataModelGenerationStatus MapSurrogateType(ITypeSymbol type, ITypeSymbol? marshaller, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model)
+    private TypeDataModelGenerationStatus MapSurrogateType(ITypeSymbol type, ITypeSymbol? marshaller, ImmutableArray<INamedTypeSymbol> associatedTypes, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model)
     {
         model = null;
 
@@ -373,6 +374,7 @@ public sealed partial class Parser : TypeDataModelGenerator
                 Type = type,
                 SurrogateType = surrogateType,
                 MarshallerType = namedMarshaller,
+                AssociatedTypes = associatedTypes,
             };
         }
 

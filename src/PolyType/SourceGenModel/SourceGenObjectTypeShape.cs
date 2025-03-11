@@ -31,7 +31,7 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
     /// <summary>
     /// Gets the factory for a given related type.
     /// </summary>
-    public Func<Type, Func<object>?>? RelatedTypeFactories { get; init; }
+    public Func<Type, Func<object>?>? AssociatedTypeFactories { get; init; }
 
     /// <inheritdoc/>
     public override TypeShapeKind Kind => TypeShapeKind.Object;
@@ -52,7 +52,7 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
             throw new ArgumentException("Type is not a generic type definition or does not have an equal count of generic type parameters with this type shape.");
         }
 
-        return this.RelatedTypeFactories?.Invoke(relatedType);
+        return this.AssociatedTypeFactories?.Invoke(relatedType);
     }
 
     IReadOnlyList<IPropertyShape> IObjectTypeShape.Properties => _properties ??= (CreatePropertiesFunc?.Invoke()).AsReadOnlyList();

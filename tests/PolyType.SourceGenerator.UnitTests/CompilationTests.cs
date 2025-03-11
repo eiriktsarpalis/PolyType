@@ -53,13 +53,32 @@ public static class CompilationTests
     }
 
     [Fact]
-    public static void CompileShapeWithRelatedTypeFactories()
+    public static void TypeShapeExtensionWithAssociatedTypes()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
             [assembly: TypeShapeExtension(typeof(GenericClass<,>), AssociatedTypes = [typeof(GenericConverter<,>)])]
 
+            public class GenericClass<T1, T2>;
+            public class GenericConverter<T1, T2>;
+
+            [GenerateShape<GenericClass<int, string>>]
+            public partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+
+    [Fact]
+    public static void TypeShapeWithAssociatedTypes()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [TypeShape(AssociatedTypes = [typeof(GenericConverter<,>)])]
             public class GenericClass<T1, T2>;
             public class GenericConverter<T1, T2>;
 

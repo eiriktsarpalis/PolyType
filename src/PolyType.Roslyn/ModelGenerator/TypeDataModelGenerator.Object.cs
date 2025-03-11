@@ -71,7 +71,7 @@ public partial class TypeDataModelGenerator
         return false;
     }
 
-    private bool TryMapObject(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
+    private bool TryMapObject(ITypeSymbol type, ImmutableArray<INamedTypeSymbol> associatedTypes, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
     {
         status = default;
         model = null;
@@ -94,6 +94,7 @@ public partial class TypeDataModelGenerator
             Constructors = constructors,
             Properties = properties,
             DerivedTypes = derivedTypes,
+            AssociatedTypes = associatedTypes,
         };
 
         return true;

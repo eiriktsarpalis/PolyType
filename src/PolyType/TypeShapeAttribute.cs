@@ -59,7 +59,7 @@ public sealed class TypeShapeAttribute : Attribute
     /// with the same number of generic type parameters.
     /// </para>
     /// </remarks>
-    public Type[] AssociatedTypes { get; } = [];
+    public Type[] AssociatedTypes { get; init; } = [];
 
     internal TypeShapeKind? GetRequestedKind() => _kind == Undefined ? null : _kind;
 }

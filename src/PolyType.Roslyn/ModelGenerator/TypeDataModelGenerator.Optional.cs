@@ -1,10 +1,11 @@
 ﻿using Microsoft.CodeAnalysis;
+using System.Collections.Immutable;
 
 namespace PolyType.Roslyn;
 
 public partial class TypeDataModelGenerator
 {
-    private bool TryMapOptional(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
+    private bool TryMapOptional(ITypeSymbol type, ImmutableArray<INamedTypeSymbol> associatedTypes, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
     {
         model = null;
         status = default;
@@ -25,6 +26,7 @@ public partial class TypeDataModelGenerator
         {
             Type = type,
             ElementType = elementType,
+            AssociatedTypes = associatedTypes,
         };
 
         return true;
