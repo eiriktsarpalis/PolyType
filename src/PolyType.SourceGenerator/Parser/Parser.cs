@@ -281,7 +281,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         Debug.Assert(requestedKind is null);
         ParseTypeShapeAttribute(type, out TypeShapeKind? requestedTypeShapeKind, out ITypeSymbol? marshaller, out ImmutableArray<AssociatedTypeModel> typeShapeAssociatedTypes, out Location? location);
         ParseCustomAssociatedTypeAttributes(type, out ImmutableArray<AssociatedTypeModel> customAssociatedTypes);
-        associatedTypes = associatedTypes.AddRange(typeShapeAssociatedTypes).AddRange(customAssociatedTypes);
+        associatedTypes = associatedTypes.Concat(typeShapeAssociatedTypes).Concat(customAssociatedTypes).Distinct(AssociateTypeModelSymbolEqualityComparer.Instance).ToImmutableArray();
 
         if (marshaller is not null || requestedTypeShapeKind is TypeShapeKind.Surrogate)
         {
@@ -834,4 +834,11 @@ public sealed partial class Parser : TypeDataModelGenerator
     }
 
     private static readonly Regex s_escapeAssemblyName = new(@"[^\w]", RegexOptions.Compiled);
+
+    private class AssociateTypeModelSymbolEqualityComparer : IEqualityComparer<AssociatedTypeModel>
+    {
+        public static readonly AssociateTypeModelSymbolEqualityComparer Instance = new();
+        public bool Equals(AssociatedTypeModel x, AssociatedTypeModel y) => SymbolEqualityComparer.Default.Equals(x.Symbol, y.Symbol);
+        public int GetHashCode(AssociatedTypeModel obj) => SymbolEqualityComparer.Default.GetHashCode(obj.Symbol);
+    }
 }
