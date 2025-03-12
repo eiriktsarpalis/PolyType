@@ -82,7 +82,7 @@ public sealed partial class Parser : TypeDataModelGenerator
                 {
                     if (tc.Value is INamedTypeSymbol associatedType)
                     {
-                        associatedTypeSymbols.Add(new AssociatedTypeModel(associatedType, attribute.GetLocation()));
+                        associatedTypeSymbols.Add(new AssociatedTypeModel(associatedType, assemblySymbol, attribute.GetLocation()));
                     }
                 }
 
@@ -838,7 +838,7 @@ public sealed partial class Parser : TypeDataModelGenerator
     private class AssociateTypeModelSymbolEqualityComparer : IEqualityComparer<AssociatedTypeModel>
     {
         public static readonly AssociateTypeModelSymbolEqualityComparer Instance = new();
-        public bool Equals(AssociatedTypeModel x, AssociatedTypeModel y) => SymbolEqualityComparer.Default.Equals(x.Symbol, y.Symbol);
-        public int GetHashCode(AssociatedTypeModel obj) => SymbolEqualityComparer.Default.GetHashCode(obj.Symbol);
+        public bool Equals(AssociatedTypeModel x, AssociatedTypeModel y) => SymbolEqualityComparer.Default.Equals(x.AssociatedType, y.AssociatedType);
+        public int GetHashCode(AssociatedTypeModel obj) => SymbolEqualityComparer.Default.GetHashCode(obj.AssociatedType);
     }
 }

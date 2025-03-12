@@ -30,9 +30,9 @@ public sealed partial class Parser
 
         List<AssociatedTypeId> associatedTypesBuilder = new();
         ITypeSymbol[] typeArgs = namedType?.GetRecursiveTypeArguments() ?? [];
-        foreach ((INamedTypeSymbol openType, Location? location) in associatedTypeSymbols)
+        foreach ((INamedTypeSymbol openType, IAssemblySymbol associatedAssembly, Location? location) in associatedTypeSymbols)
         {
-            if (!SymbolEqualityComparer.Default.Equals(openType.ContainingAssembly, KnownSymbols.Compilation.Assembly))
+            if (!SymbolEqualityComparer.Default.Equals(openType.ContainingAssembly, associatedAssembly))
             {
                 ReportDiagnostic(AssociatedTypeInExternalAssembly, location, openType.GetFullyQualifiedName());
                 continue;
@@ -651,13 +651,13 @@ public sealed partial class Parser
                         {
                             if (argValue.Value is INamedTypeSymbol namedType)
                             {
-                                yield return new AssociatedTypeModel(namedType, location);
+                                yield return new AssociatedTypeModel(namedType, typeSymbol.ContainingAssembly, location);
                             }
                         }
                     }
                     else if (arg.Value is INamedTypeSymbol namedType)
                     {
-                        yield return new AssociatedTypeModel(namedType, location);
+                        yield return new AssociatedTypeModel(namedType, typeSymbol.ContainingAssembly, location);
                     }
                 }
             }
@@ -718,7 +718,7 @@ public sealed partial class Parser
                             associatedTypes = ImmutableArray.CreateRange(
                                 from tc in associatedTypesArray
                                 where tc.Value is INamedTypeSymbol s
-                                select new AssociatedTypeModel((INamedTypeSymbol)tc.Value!, localLocation));
+                                select new AssociatedTypeModel((INamedTypeSymbol)tc.Value!, typeSymbol.ContainingAssembly, localLocation));
                         }
 
                         break;
