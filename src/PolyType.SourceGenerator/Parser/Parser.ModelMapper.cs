@@ -2,6 +2,7 @@
 using PolyType.Roslyn;
 using PolyType.SourceGenerator.Helpers;
 using PolyType.SourceGenerator.Model;
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics;
 
@@ -548,6 +549,105 @@ public sealed partial class Parser
                 ParameterTypeContainsNullabilityAnnotations = tupleElement.PropertyType.ContainsNullabilityAnnotations(),
                 DefaultValueExpr = null,
             };
+        }
+    }
+
+    private record struct CustomAttributeAssociatedTypeProvider(ImmutableArray<string> Names);
+
+    private readonly Dictionary<INamedTypeSymbol, CustomAttributeAssociatedTypeProvider> customAttributes = new(SymbolEqualityComparer.Default);
+
+    private void ParseCustomAssociatedTypeAttributes(
+        ITypeSymbol typeSymbol,
+        out ImmutableArray<AssociatedTypeModel> associatedTypes)
+    {
+        associatedTypes = ImmutableArray<AssociatedTypeModel>.Empty;
+        foreach (AttributeData att in typeSymbol.GetAttributes())
+        {
+            if (att.AttributeClass is null)
+            {
+                continue;
+            }
+
+            // Is this attribute a custom one that provides associated types?
+            if (!customAttributes.TryGetValue(att.AttributeClass, out CustomAttributeAssociatedTypeProvider provider))
+            {
+                customAttributes[att.AttributeClass] = provider = GetAttributeProviderData(att.AttributeClass);
+            }
+
+            if (provider.Names.IsEmpty)
+            {
+                continue;
+            }
+
+            Location? location = att.GetLocation();
+            foreach (string name in provider.Names)
+            {
+                bool match = false;
+
+                // First try to match the name to a parameter.
+                for (int i = 0; i < att.AttributeConstructor?.Parameters.Length && !match; i++)
+                {
+                    if (att.AttributeConstructor.Parameters[i].Name == name)
+                    {
+                        match = true;
+                        associatedTypes = associatedTypes.AddRange(ParseArgument(att.ConstructorArguments[i]));
+                    }
+                }
+
+                // Now try to match the name to a named argument.
+                if (!match)
+                {
+                    foreach (KeyValuePair<string, TypedConstant> namedArgument in att.NamedArguments)
+                    {
+                        if (namedArgument.Key == name)
+                        {
+                            associatedTypes = associatedTypes.AddRange(ParseArgument(namedArgument.Value));
+                            match = true;
+                            break;
+                        }
+                    }
+                }
+
+                IEnumerable<AssociatedTypeModel> ParseArgument(TypedConstant arg)
+                {
+                    if (arg.Kind == TypedConstantKind.Array)
+                    {
+                        foreach (TypedConstant argValue in arg.Values)
+                        {
+                            if (argValue.Value is INamedTypeSymbol namedType)
+                            {
+                                yield return new AssociatedTypeModel(namedType, location);
+                            }
+                        }
+                    }
+                    else if (arg.Value is INamedTypeSymbol namedType)
+                    {
+                        yield return new AssociatedTypeModel(namedType, location);
+                    }
+                }
+            }
+        }
+
+        CustomAttributeAssociatedTypeProvider GetAttributeProviderData(INamedTypeSymbol attributeClass)
+        {
+            var names = ImmutableArray.CreateBuilder<string>();
+            foreach (AttributeData att in attributeClass.GetAttributes())
+            {
+                if (att.AttributeClass is null)
+                {
+                    continue;
+                }
+
+                if (SymbolEqualityComparer.Default.Equals(att.AttributeClass, _knownSymbols.AssociatedTypeAttributeAttribute))
+                {
+                    if (att.ConstructorArguments is [{ Value: string name }])
+                    {
+                        names.Add(name);
+                    }
+                }
+            }
+
+            return new CustomAttributeAssociatedTypeProvider(names.ToImmutable());
         }
     }
 

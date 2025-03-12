@@ -31,6 +31,12 @@ public class KnownSymbols(Compilation compilation)
     private INamedTypeSymbol? _TypeShapeExtensionAttribute;
 
     /// <summary>
+    /// Gets the symbol for AssociatedTypeAttributeAttribute.
+    /// </summary>
+    public INamedTypeSymbol AssociatedTypeAttributeAttribute => _AssociatedTypeAttributeAttribute ??= Compilation.GetTypeByMetadataName("PolyType.AssociatedTypeAttributeAttribute") ?? throw new InvalidOperationException("AssociatedTypeAttributeAttribute not found.");
+    private INamedTypeSymbol? _AssociatedTypeAttributeAttribute;
+
+    /// <summary>
     /// The type symbol for <see cref="System.Reflection.MemberInfo"/>.
     /// </summary>
     public INamedTypeSymbol? MemberInfoType => GetOrResolveType("System.Reflection.MemberInfo", ref _MemberInfoType);

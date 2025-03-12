@@ -72,11 +72,35 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
         Assert.IsType<GenericWrapper<int>.GenericNested<string>>(factory.Invoke());
     }
 
+    [Fact]
+    public void AssociatedTypeAttribute_ConstructorParameter()
+    {
+        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(CustomTypeWithCustomConverter));
+        Assert.NotNull(typeShape);
+        Func<object>? factory = typeShape.GetAssociatedTypeFactory(typeof(CustomTypeConverter));
+        Assert.NotNull(factory);
+        Assert.IsType<CustomTypeConverter>(factory.Invoke());
+    }
+
+    [Fact]
+    public void AssociatedTypeAttribute_NamedParameter()
+    {
+        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(CustomTypeWithCustomConverter));
+        Assert.NotNull(typeShape);
+        Func<object>? factory1 = typeShape.GetAssociatedTypeFactory(typeof(CustomTypeConverter1));
+        Assert.NotNull(factory1);
+        Assert.IsType<CustomTypeConverter1>(factory1.Invoke());
+
+        Func<object>? factory2 = typeShape.GetAssociatedTypeFactory(typeof(CustomTypeConverter2));
+        Assert.NotNull(factory2);
+        Assert.IsType<CustomTypeConverter2>(factory2.Invoke());
+    }
+
     [GenerateShape]
     [TypeShape(AssociatedTypes = [typeof(NonGenericDataTypeConverter)])]
     public partial class NonGenericDataType;
 
-    internal class NonGenericDataTypeConverter;
+    public class NonGenericDataTypeConverter;
 
     [TypeShape(AssociatedTypes = [typeof(GenericDataTypeConverter<,>), typeof(GenericDataTypeCloner<,>), typeof(NonGenericDataTypeConverter), typeof(GenericWrapper<>.GenericNested<>)])]
     public class GenericDataType<T1, T2>;
@@ -92,6 +116,27 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
 
     [GenerateShape<GenericDataType<int, string>>]
     internal partial class Witness;
+
+    [GenerateShape]
+    [MyConverter(typeof(CustomTypeConverter))]
+    [MyConverterNamedArg(Types = [typeof(CustomTypeConverter1), typeof(CustomTypeConverter2)])]
+    internal partial class CustomTypeWithCustomConverter;
+
+    public class CustomTypeConverter;
+    public class CustomTypeConverter1;
+    public class CustomTypeConverter2;
+
+    [AssociatedTypeAttribute(nameof(type))]
+    internal class MyConverterAttribute(Type type) : Attribute
+    {
+        public Type Type => type;
+    }
+
+    [AssociatedTypeAttribute(nameof(Types))]
+    internal class MyConverterNamedArgAttribute : Attribute
+    {
+        public Type[] Types { get; init; } = [];
+    }
 
     public sealed class Reflection() : AssociatedTypesTests(RefectionProviderUnderTest.NoEmit);
     public sealed class ReflectionEmit() : AssociatedTypesTests(RefectionProviderUnderTest.Emit);

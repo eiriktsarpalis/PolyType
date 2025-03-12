@@ -280,7 +280,8 @@ public sealed partial class Parser : TypeDataModelGenerator
     {
         Debug.Assert(requestedKind is null);
         ParseTypeShapeAttribute(type, out TypeShapeKind? requestedTypeShapeKind, out ITypeSymbol? marshaller, out ImmutableArray<AssociatedTypeModel> typeShapeAssociatedTypes, out Location? location);
-        associatedTypes = associatedTypes.AddRange(typeShapeAssociatedTypes);
+        ParseCustomAssociatedTypeAttributes(type, out ImmutableArray<AssociatedTypeModel> customAssociatedTypes);
+        associatedTypes = associatedTypes.AddRange(typeShapeAssociatedTypes).AddRange(customAssociatedTypes);
 
         if (marshaller is not null || requestedTypeShapeKind is TypeShapeKind.Surrogate)
         {
