@@ -122,7 +122,7 @@ public sealed partial class Parser
     private static DiagnosticDescriptor AssociatedTypeInaccessibleError { get; } = new DiagnosticDescriptor(
         id: "TS0015",
         title: "Associated type is private.",
-        messageFormat: "The associated type '{0}' is protected or private, which will prevent its activation from within a [GenerateShape] graph.",
+        messageFormat: "The associated type '{0}' is protected or private, and/or it has no accessible default constructor, which will prevent its activation from within a [GenerateShape] graph.",
         category: "PolyType.SourceGenerator",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);

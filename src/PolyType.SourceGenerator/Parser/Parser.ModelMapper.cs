@@ -32,31 +32,60 @@ public sealed partial class Parser
         ITypeSymbol[] typeArgs = namedType?.GetRecursiveTypeArguments() ?? [];
         foreach ((INamedTypeSymbol openType, Location? location) in associatedTypeSymbols)
         {
-            if (!this.KnownSymbols.Compilation.IsSymbolAccessibleWithin(openType, GenerationScope))
+            if (!this.IsAccessibleSymbol(openType))
             {
                 // Skip types that are not accessible in the current scope
                 ReportDiagnostic(AssociatedTypeInaccessibleError, location, openType.GetFullyQualifiedName());
                 continue;
             }
-            else if (openType.DeclaredAccessibility != Accessibility.Public)
-            {
-                ReportDiagnostic(AssociatedTypeInternal, location, openType.GetFullyQualifiedName());
-            }
 
+            IMethodSymbol? defaultCtor = null;
             if (!openType.IsUnboundGenericType)
             {
-                associatedTypesBuilder.Add((CreateTypeId(openType), CreateTypeId(openType)));
+                if (TryGetCtorOrReport(openType, out defaultCtor))
+                {
+                    associatedTypesBuilder.Add((CreateTypeId(openType), CreateTypeId(openType)));
+                }
+                else
+                {
+                    continue;
+                }
             }
             else
             {
                 if (openType.OriginalDefinition.ConstructRecursive(typeArgs) is INamedTypeSymbol closedType)
                 {
-                    associatedTypesBuilder.Add((CreateTypeId(openType), CreateTypeId(closedType)));
+                    if (TryGetCtorOrReport(closedType, out defaultCtor))
+                    {
+                        associatedTypesBuilder.Add((CreateTypeId(openType), CreateTypeId(closedType)));
+                    }
+                    else
+                    {
+                        continue;
+                    }
                 }
                 else if (openType.Arity != typeArgs.Length)
                 {
                     ReportDiagnostic(AssociatedTypeArityMismatch, location, openType.GetFullyQualifiedName(), openType.Arity, typeArgs.Length);
+                    continue;
                 }
+            }
+
+            if (openType.DeclaredAccessibility != Accessibility.Public || defaultCtor?.DeclaredAccessibility != Accessibility.Public)
+            {
+                ReportDiagnostic(AssociatedTypeInternal, location, openType.GetFullyQualifiedName());
+            }
+
+            bool TryGetCtorOrReport(INamedTypeSymbol type, out IMethodSymbol? defaultCtor)
+            {
+                defaultCtor = type.InstanceConstructors.FirstOrDefault(c => c.Parameters.IsEmpty);
+                if (defaultCtor is null || !this.IsAccessibleSymbol(defaultCtor))
+                {
+                    ReportDiagnostic(AssociatedTypeInaccessibleError, location, openType.GetFullyQualifiedName());
+                    return false;
+                }
+
+                return true;
             }
         }
 

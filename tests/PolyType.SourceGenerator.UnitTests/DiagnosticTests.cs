@@ -305,6 +305,35 @@ public static class DiagnosticTests
     }
 
     [Fact]
+    public static void TypeShape_PrivateCtorOnAssociatedType()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            partial class Wrapper
+            {
+                [TypeShape(AssociatedTypes = new[] { typeof(InternalAssociatedType) })]
+                [GenerateShape]
+                internal partial class MyPoco;
+            
+                public class InternalAssociatedType
+                {
+                    private InternalAssociatedType() { }
+                }
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+
+        Assert.Equal("TS0015", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Equal((4, 5), diagnostic.Location.GetStartPosition());
+        Assert.Equal((4, 74), diagnostic.Location.GetEndPosition());
+    }
+
+    [Fact]
     public static void TypeShapeExtension_InternalAssociatedType()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
@@ -315,6 +344,32 @@ public static class DiagnosticTests
             [GenerateShape]
             partial class MyPoco;
             class InternalAssociatedType;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+
+        Assert.Equal("TS0014", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Equal((2, 11), diagnostic.Location.GetStartPosition());
+        Assert.Equal((2, 105), diagnostic.Location.GetEndPosition());
+    }
+
+    [Fact]
+    public static void TypeShapeExtension_InternalCtorOnAssociatedType()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [assembly: TypeShapeExtension(typeof(MyPoco), AssociatedTypes = new[] { typeof(InternalAssociatedType) })]
+
+            [GenerateShape]
+            partial class MyPoco;
+            public class InternalAssociatedType
+            {
+                internal InternalAssociatedType() { }
+            }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
