@@ -33,6 +33,18 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     }
 
     [Fact]
+    public void CanConstructAssociatedType_WithClosedGeneric()
+    {
+        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
+        Assert.NotNull(typeShape);
+        Func<object>? factory = typeShape.GetAssociatedTypeFactory(typeof(GenericDataTypeConverter<int, string>));
+        Assert.NotNull(factory);
+        var instance1 = Assert.IsType<GenericDataTypeConverter<int, string>>(factory.Invoke());
+        var instance2 = factory.Invoke();
+        Assert.NotSame(instance1, instance2);
+    }
+
+    [Fact]
     public void CanConstructAssociatedType_ByExtension()
     {
         ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));

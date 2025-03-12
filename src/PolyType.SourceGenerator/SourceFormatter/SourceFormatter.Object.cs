@@ -49,13 +49,13 @@ internal sealed partial class SourceFormatter
         }
 
         StringBuilder builder = new();
-        builder.Append("static associatedType => ");
-        foreach ((TypeId open, TypeId closed) in objectShapeModel.AssociatedTypes)
+        builder.Append("static associatedType => associatedType switch { ");
+        foreach (AssociatedTypeId associatedType in objectShapeModel.AssociatedTypes)
         {
-            builder.Append($"associatedType == typeof({open.FullyQualifiedName}) ? () => new {closed.FullyQualifiedName}() : ");
+            builder.Append($"\"{associatedType.Open}\" or \"{associatedType.Closed}\" => () => new {associatedType.Constructor}(), ");
         }
 
-        builder.Append("null");
+        builder.Append("_ => null }");
 
         return builder.ToString();
     }

@@ -72,7 +72,6 @@ public static class CompilationTests
         Assert.Empty(result.Diagnostics);
     }
 
-
     [Fact]
     [Trait("AssociatedTypes", "true")]
     public static void TypeShapeWithAssociatedTypes()
@@ -86,6 +85,33 @@ public static class CompilationTests
 
             [GenerateShape<GenericClass<int, string>>]
             public partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    [Trait("AssociatedTypes", "true")]
+    public static void TypeShapeWithAssociatedTypes_GenericNestedInGeneric()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            namespace PolyType.Tests;
+
+            public partial class AssociatedTypesTests
+            {
+                [TypeShape(AssociatedTypes = [typeof(GenericWrapper<>.GenericNested<>)])]
+                public class GenericClass<T1, T2>;
+
+                public class GenericWrapper<T1>
+                {
+                    public class GenericNested<T2>;
+                }
+
+
+                [GenerateShape<GenericClass<int, string>>]
+                public partial class Witness;
+            }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);

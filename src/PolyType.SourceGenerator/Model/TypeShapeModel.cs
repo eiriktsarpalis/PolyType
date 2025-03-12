@@ -15,5 +15,5 @@ public abstract record TypeShapeModel
     /// <summary>
     /// An array of type IDs for associated types.
     /// </summary>
-    public required ImmutableEquatableArray<(TypeId Open, TypeId Closed)> AssociatedTypes { get; init; }
+    public required ImmutableEquatableArray<AssociatedTypeId> AssociatedTypes { get; init; }
 }

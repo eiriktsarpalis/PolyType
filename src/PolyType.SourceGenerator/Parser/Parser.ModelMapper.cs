@@ -28,7 +28,7 @@ public sealed partial class Parser
             associatedTypeSymbols = associatedTypeSymbols.AddRange(extensionModel.AssociatedTypes);
         }
 
-        List<(TypeId Open, TypeId Closed)> associatedTypesBuilder = new();
+        List<AssociatedTypeId> associatedTypesBuilder = new();
         ITypeSymbol[] typeArgs = namedType?.GetRecursiveTypeArguments() ?? [];
         foreach ((INamedTypeSymbol openType, Location? location) in associatedTypeSymbols)
         {
@@ -50,7 +50,7 @@ public sealed partial class Parser
             {
                 if (TryGetCtorOrReport(openType, out defaultCtor))
                 {
-                    associatedTypesBuilder.Add((CreateTypeId(openType), CreateTypeId(openType)));
+                    associatedTypesBuilder.Add(CreateAssociatedTypeId(openType, openType));
                 }
                 else
                 {
@@ -63,7 +63,7 @@ public sealed partial class Parser
                 {
                     if (TryGetCtorOrReport(closedType, out defaultCtor))
                     {
-                        associatedTypesBuilder.Add((CreateTypeId(openType), CreateTypeId(closedType)));
+                        associatedTypesBuilder.Add((CreateAssociatedTypeId(openType, closedType)));
                     }
                     else
                     {
@@ -95,7 +95,7 @@ public sealed partial class Parser
             }
         }
 
-        ImmutableEquatableArray<(TypeId Open, TypeId Closed)> associatedTypes = associatedTypesBuilder.ToImmutableEquatableArray();
+        ImmutableEquatableArray<AssociatedTypeId> associatedTypes = associatedTypesBuilder.ToImmutableEquatableArray();
 
         return model switch
         {
@@ -318,7 +318,7 @@ public sealed partial class Parser
                     IsBaseType = derived.IsBaseType,
                 })
                 .ToImmutableEquatableArray(),
-            AssociatedTypes = ImmutableEquatableArray<(TypeId, TypeId)>.Empty,
+            AssociatedTypes = ImmutableEquatableArray<AssociatedTypeId>.Empty,
         };
     }
 
