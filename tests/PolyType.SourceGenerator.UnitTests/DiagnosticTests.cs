@@ -256,6 +256,7 @@ public static class DiagnosticTests
     }
 
     [Fact]
+    [Trait("AssociatedTypes", "true")]
     public static void TypeShape_InternalAssociatedType()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
@@ -279,6 +280,7 @@ public static class DiagnosticTests
     }
 
     [Fact]
+    [Trait("AssociatedTypes", "true")]
     public static void TypeShape_PrivateAssociatedType()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
@@ -305,6 +307,7 @@ public static class DiagnosticTests
     }
 
     [Fact]
+    [Trait("AssociatedTypes", "true")]
     public static void TypeShape_PrivateCtorOnAssociatedType()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
@@ -334,6 +337,7 @@ public static class DiagnosticTests
     }
 
     [Fact]
+    [Trait("AssociatedTypes", "true")]
     public static void TypeShapeExtension_InternalAssociatedType()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
@@ -357,6 +361,7 @@ public static class DiagnosticTests
     }
 
     [Fact]
+    [Trait("AssociatedTypes", "true")]
     public static void TypeShapeExtension_InternalCtorOnAssociatedType()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""

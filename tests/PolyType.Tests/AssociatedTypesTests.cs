@@ -5,6 +5,7 @@ using PolyType.Tests;
 
 namespace PolyType.Tests;
 
+[Trait("AssociatedTypes", "true")]
 public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnderTest)
 {
     [Fact]
