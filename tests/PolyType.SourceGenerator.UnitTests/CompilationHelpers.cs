@@ -129,7 +129,7 @@ public static class CompilationHelpers
 
         if (TestContext.Current.TestOutputHelper is { } logger)
         {
-            foreach (Diagnostic diagnostic in compilationDiagnostics)
+            foreach (Diagnostic diagnostic in diagnostics.Concat(compilationDiagnostics))
             {
                 logger.WriteLine(diagnostic.ToString());
             }
@@ -150,7 +150,7 @@ public static class CompilationHelpers
         {
             NewCompilation = outCompilation,
             GeneratedModels = [.. generatedModels],
-            Diagnostics = [.. diagnostics, .. outCompilation.GetDiagnostics()],
+            Diagnostics = [.. diagnostics, .. compilationDiagnostics],
         };
     }
 

@@ -29,15 +29,33 @@ public sealed partial class Parser
 
         List<(TypeId Open, TypeId Closed)> associatedTypesBuilder = new();
         ITypeSymbol[] typeArgs = namedType?.GetRecursiveTypeArguments() ?? [];
-        foreach (INamedTypeSymbol openType in associatedTypeSymbols)
+        foreach ((INamedTypeSymbol openType, Location? location) in associatedTypeSymbols)
         {
+            if (!this.KnownSymbols.Compilation.IsSymbolAccessibleWithin(openType, GenerationScope))
+            {
+                // Skip types that are not accessible in the current scope
+                ReportDiagnostic(AssociatedTypeInaccessibleError, location, openType.GetFullyQualifiedName());
+                continue;
+            }
+            else if (openType.DeclaredAccessibility != Accessibility.Public)
+            {
+                ReportDiagnostic(AssociatedTypeInternal, location, openType.GetFullyQualifiedName());
+            }
+
             if (!openType.IsUnboundGenericType)
             {
                 associatedTypesBuilder.Add((CreateTypeId(openType), CreateTypeId(openType)));
             }
-            else if (openType.OriginalDefinition.ConstructRecursive(typeArgs) is INamedTypeSymbol closedType)
+            else
             {
-                associatedTypesBuilder.Add((CreateTypeId(openType), CreateTypeId(closedType)));
+                if (openType.OriginalDefinition.ConstructRecursive(typeArgs) is INamedTypeSymbol closedType)
+                {
+                    associatedTypesBuilder.Add((CreateTypeId(openType), CreateTypeId(closedType)));
+                }
+                else if (openType.Arity != typeArgs.Length)
+                {
+                    ReportDiagnostic(AssociatedTypeArityMismatch, location, openType.GetFullyQualifiedName(), openType.Arity, typeArgs.Length);
+                }
             }
         }
 
@@ -537,17 +555,18 @@ public sealed partial class Parser
         ITypeSymbol typeSymbol,
         out TypeShapeKind? kind,
         out ITypeSymbol? marshaller,
-        out ImmutableArray<INamedTypeSymbol> associatedTypes,
+        out ImmutableArray<AssociatedTypeModel> associatedTypes,
         out Location? location)
     {
         kind = null;
         marshaller = null;
         location = null;
-        associatedTypes = ImmutableArray<INamedTypeSymbol>.Empty;
+        associatedTypes = ImmutableArray<AssociatedTypeModel>.Empty;
 
         if (typeSymbol.GetAttribute(_knownSymbols.TypeShapeAttribute) is AttributeData propertyAttr)
         {
             location = propertyAttr.GetLocation();
+            Location? localLocation = location;
             foreach (KeyValuePair<string, TypedConstant> namedArgument in propertyAttr.NamedArguments)
             {
                 switch (namedArgument.Key)
@@ -564,7 +583,7 @@ public sealed partial class Parser
                             associatedTypes = ImmutableArray.CreateRange(
                                 from tc in associatedTypesArray
                                 where tc.Value is INamedTypeSymbol s
-                                select (INamedTypeSymbol)tc.Value!);
+                                select new AssociatedTypeModel((INamedTypeSymbol)tc.Value!, localLocation));
                         }
 
                         break;

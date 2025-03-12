@@ -113,7 +113,7 @@ public partial class TypeDataModelGenerator
     protected virtual IEnumerable<DerivedTypeModel> ResolveDerivedTypes(ITypeSymbol type) => [];
 
     /// <summary>
-    /// Wraps the <see cref="MapType(ITypeSymbol, TypeDataKind?, ImmutableArray{INamedTypeSymbol}, ref TypeDataModelGenerationContext, out TypeDataModel?)"/> method
+    /// Wraps the <see cref="MapType(ITypeSymbol, TypeDataKind?, ImmutableArray{AssociatedTypeModel}, ref TypeDataModelGenerationContext, out TypeDataModel?)"/> method
     /// with pre- and post-processing steps necessary for a type graph traversal.
     /// </summary>
     /// <param name="type">The type for which to generate a data model.</param>
@@ -150,7 +150,7 @@ public partial class TypeDataModelGenerator
         // Create a new snapshot with the current type pushed onto the stack.
         // Only commit the generated model if the type is successfully mapped.
         TypeDataModelGenerationContext scopedCtx = ctx.Push(type);
-        TypeDataModelGenerationStatus status = MapType(type, requestedKind: null, ImmutableArray<INamedTypeSymbol>.Empty, ref scopedCtx, out model);
+        TypeDataModelGenerationStatus status = MapType(type, requestedKind: null, ImmutableArray<AssociatedTypeModel>.Empty, ref scopedCtx, out model);
 
         if (status is TypeDataModelGenerationStatus.Success != model is not null)
         {
@@ -182,7 +182,7 @@ public partial class TypeDataModelGenerator
     protected virtual TypeDataModelGenerationStatus MapType(
         ITypeSymbol type, 
         TypeDataKind? requestedKind,
-        ImmutableArray<INamedTypeSymbol> associatedTypes,
+        ImmutableArray<AssociatedTypeModel> associatedTypes,
         ref TypeDataModelGenerationContext ctx,
         out TypeDataModel? model)
     {

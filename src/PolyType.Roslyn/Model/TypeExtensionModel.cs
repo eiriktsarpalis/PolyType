@@ -16,5 +16,5 @@ public sealed record TypeExtensionModel
     /// <summary>
     /// An aggregate of all the associated types registered with the <see cref="Target"/>.
     /// </summary>
-    public required ImmutableArray<INamedTypeSymbol> AssociatedTypes { get; init; }
+    public required ImmutableArray<AssociatedTypeModel> AssociatedTypes { get; init; }
 }

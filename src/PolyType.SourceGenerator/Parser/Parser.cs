@@ -77,12 +77,12 @@ public sealed partial class Parser : TypeDataModelGenerator
             var associatedTypesNamedArg = attribute.NamedArguments.FirstOrDefault(kv => kv.Key == KnownSymbols.TypeShapeAssociatedTypesPropertyName);
             if (associatedTypesNamedArg.Value.Values is { IsDefaultOrEmpty: false } associatedTypesArg)
             {
-                List<INamedTypeSymbol> associatedTypeSymbols = new(associatedTypesArg.Length);
+                List<AssociatedTypeModel> associatedTypeSymbols = new(associatedTypesArg.Length);
                 foreach (TypedConstant tc in associatedTypesArg)
                 {
                     if (tc.Value is INamedTypeSymbol associatedType)
                     {
-                        associatedTypeSymbols.Add(associatedType);
+                        associatedTypeSymbols.Add(new AssociatedTypeModel(associatedType, attribute.GetLocation()));
                     }
                 }
 
@@ -93,7 +93,7 @@ public sealed partial class Parser : TypeDataModelGenerator
                         existingRelatedTypes = new TypeExtensionModel
                         {
                             Target = targetType,
-                            AssociatedTypes = ImmutableArray<INamedTypeSymbol>.Empty,
+                            AssociatedTypes = ImmutableArray<AssociatedTypeModel>.Empty,
                         };
                     }
 
@@ -276,10 +276,10 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
     }
 
-    protected override TypeDataModelGenerationStatus MapType(ITypeSymbol type, TypeDataKind? requestedKind, ImmutableArray<INamedTypeSymbol> associatedTypes, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model)
+    protected override TypeDataModelGenerationStatus MapType(ITypeSymbol type, TypeDataKind? requestedKind, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model)
     {
         Debug.Assert(requestedKind is null);
-        ParseTypeShapeAttribute(type, out TypeShapeKind? requestedTypeShapeKind, out ITypeSymbol? marshaller, out ImmutableArray<INamedTypeSymbol> typeShapeAssociatedTypes, out Location? location);
+        ParseTypeShapeAttribute(type, out TypeShapeKind? requestedTypeShapeKind, out ITypeSymbol? marshaller, out ImmutableArray<AssociatedTypeModel> typeShapeAssociatedTypes, out Location? location);
         associatedTypes = associatedTypes.AddRange(typeShapeAssociatedTypes);
 
         if (marshaller is not null || requestedTypeShapeKind is TypeShapeKind.Surrogate)
@@ -307,7 +307,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         return status;
     }
 
-    private TypeDataModelGenerationStatus MapSurrogateType(ITypeSymbol type, ITypeSymbol? marshaller, ImmutableArray<INamedTypeSymbol> associatedTypes, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model)
+    private TypeDataModelGenerationStatus MapSurrogateType(ITypeSymbol type, ITypeSymbol? marshaller, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model)
     {
         model = null;
 
