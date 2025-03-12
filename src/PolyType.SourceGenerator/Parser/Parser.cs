@@ -835,7 +835,7 @@ public sealed partial class Parser : TypeDataModelGenerator
 
     private static readonly Regex s_escapeAssemblyName = new(@"[^\w]", RegexOptions.Compiled);
 
-    private class AssociateTypeModelSymbolEqualityComparer : IEqualityComparer<AssociatedTypeModel>
+    private sealed class AssociateTypeModelSymbolEqualityComparer : IEqualityComparer<AssociatedTypeModel>
     {
         public static readonly AssociateTypeModelSymbolEqualityComparer Instance = new();
         public bool Equals(AssociatedTypeModel x, AssociatedTypeModel y) => SymbolEqualityComparer.Default.Equals(x.AssociatedType, y.AssociatedType);
