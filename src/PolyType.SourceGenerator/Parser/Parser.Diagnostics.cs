@@ -134,4 +134,12 @@ public sealed partial class Parser
         category: "PolyType.SourceGenerator",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+
+    private static DiagnosticDescriptor AssociatedTypeInExternalAssembly { get; } = new DiagnosticDescriptor(
+        id: "TS0017",
+        title: "Associated type must be declared in same assembly.",
+        messageFormat: "The associated type '{0}' is not declared in the same assembly as required.",
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
 }

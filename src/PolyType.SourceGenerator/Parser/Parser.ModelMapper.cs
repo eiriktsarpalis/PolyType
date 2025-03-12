@@ -32,6 +32,12 @@ public sealed partial class Parser
         ITypeSymbol[] typeArgs = namedType?.GetRecursiveTypeArguments() ?? [];
         foreach ((INamedTypeSymbol openType, Location? location) in associatedTypeSymbols)
         {
+            if (!SymbolEqualityComparer.Default.Equals(openType.ContainingAssembly, KnownSymbols.Compilation.Assembly))
+            {
+                ReportDiagnostic(AssociatedTypeInExternalAssembly, location, openType.GetFullyQualifiedName());
+                continue;
+            }
+
             if (!this.IsAccessibleSymbol(openType))
             {
                 // Skip types that are not accessible in the current scope
