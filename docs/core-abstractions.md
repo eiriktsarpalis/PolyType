@@ -27,7 +27,7 @@ public partial interface IPropertyShape<TDeclaringType, TPropertyType> : IProper
 This model is fairly similar to `System.Type` and `System.Reflection.PropertyInfo`, with the notable difference that both models are generic and the property shape is capable of producing a strongly typed getter delegate. It can be traversed using the following generic visitor type:
 
 ```C#
-public partial interface ITypeShapeVisitor
+public partial interface TypeShapeVisitor
 {
     object? VisitObject<TDeclaringType>(IObjectTypeShape<TDeclaringType> objectShape, object? state = null);
     object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> typeShape, object? state = null);
@@ -35,12 +35,12 @@ public partial interface ITypeShapeVisitor
 
 public partial interface ITypeShape
 {
-    object? Accept(ITypeShapeVisitor visitor, object? state = null);
+    object? Accept(TypeShapeVisitor visitor, object? state = null);
 }
 
 public partial interface IPropertyShape
 {
-    object? Accept(ITypeShapeVisitor visitor, object? state = null);
+    object? Accept(TypeShapeVisitor visitor, object? state = null);
 }
 ```
 
@@ -98,7 +98,7 @@ record MyPoco(string? x, string? y);
 It should be noted that the visitor is only used when constructing, or _folding_ the counter delegate but not when the delegate itself is being invoked. At the same time, traversing the type graph via the visitor requires casting of the intermediate delegates, however the traversal of the object graph via the resultant delegate is fully type-safe and doesn't require any casting.
 
 > [!NOTE]
-> In technical terms, `ITypeShape` encodes a [GADT representation](https://en.wikipedia.org/wiki/Generalized_algebraic_data_type) over .NET types and `ITypeShapeVisitor` encodes a pattern match over the GADT. This technique was originally described in [this publication](https://www.microsoft.com/research/publication/generalized-algebraic-data-types-and-object-oriented-programming/).
+> In technical terms, `ITypeShape` encodes a [GADT representation](https://en.wikipedia.org/wiki/Generalized_algebraic_data_type) over .NET types and `TypeShapeVisitor` encodes a pattern match over the GADT. This technique was originally described in [this publication](https://www.microsoft.com/research/publication/generalized-algebraic-data-types-and-object-oriented-programming/).
 >
 > The casting requirement for visitors is a known restriction of this approach, and possible extensions to the C# type system that allow type-safe pattern matching on GADTs are discussed in the paper.
 
@@ -123,10 +123,10 @@ public interface IDictionaryTypeShape<TDictionary, TKey, TValue> : ITypeShape<TD
 }
 ```
 
-A collection type is classed as a dictionary if it implements one of the known dictionary interfaces. Non-generic collections use `object` as the element, key and value types. As before, enumerable shapes can be unpacked by the relevant methods of `ITypeShapeVisitor`:
+A collection type is classed as a dictionary if it implements one of the known dictionary interfaces. Non-generic collections use `object` as the element, key and value types. As before, enumerable shapes can be unpacked by the relevant methods of `TypeShapeVisitor`:
 
 ```C#
-public partial interface ITypeShapeVisitor
+public partial interface TypeShapeVisitor
 {
     object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state = null);
     object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null);
@@ -187,10 +187,10 @@ public interface IEnumTypeShape<TEnum, TUnderlying> : ITypeShape<TEnum> where TE
 }
 ```
 
-The `TUnderlying` represents the underlying numeric representation used by the enum in question. As before, `ITypeShapeVisitor` exposes relevant methods for consuming the new shapes:
+The `TUnderlying` represents the underlying numeric representation used by the enum in question. As before, `TypeShapeVisitor` exposes relevant methods for consuming the new shapes:
 
 ```C#
-public partial interface ITypeShapeVisitor
+public partial interface TypeShapeVisitor
 {
     object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null) where TEnum : struct, Enum;
 }
@@ -229,10 +229,10 @@ public interface IOptionalTypeShape<TOptional, TElement> : ITypeShape<TOptional>
 public delegate bool OptionDeconstructor<TOptional, TElement>(TOptional optional, out TElement value);
 ```
 
-In the case of `Nullable<T>`, the type `int?` maps to an optional shape with `TOptional` set to `int?` and `TElement` set to `int`. The relevant `ITypeShapeVisitor` method looks as follows:
+In the case of `Nullable<T>`, the type `int?` maps to an optional shape with `TOptional` set to `int?` and `TElement` set to `int`. The relevant `TypeShapeVisitor` method looks as follows:
 
 ```C#
-public partial interface ITypeShapeVisitor
+public partial interface TypeShapeVisitor
 {
     object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state = null);
 }
@@ -288,10 +288,10 @@ public interface IUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShape
 }
 ```
 
-And as before, `ITypeShapeVisitor` exposes relevant methods for the two types:
+And as before, `TypeShapeVisitor` exposes relevant methods for the two types:
 
 ```C#
-public partial interface ITypeShapeVisitor
+public partial interface TypeShapeVisitor
 {
     object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null);
     object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
@@ -352,7 +352,7 @@ public interface IMarshaller<T, TSurrogate>
 And corresponding visitor method
 
 ```C#
-public partial interface ITypeShapeVisitor
+public partial interface TypeShapeVisitor
 {
     object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null);
 }
@@ -459,7 +459,7 @@ public partial interface IConstructorShape<TDeclaringType, TArgumentState> : ICo
     Func<TArgumentState, TDeclaringType> GetParameterizedConstructor();
 }
 
-public partial interface ITypeShapeVisitor
+public partial interface TypeShapeVisitor
 {
     object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> shape, object? state = null);
 }
@@ -492,7 +492,7 @@ public partial interface IConstructorParameterShape<TArgumentState, TParameterTy
     Setter<TArgumentState, TParameterType> GetSetter();
 }
 
-public partial interface ITypeShapeVisitor
+public partial interface TypeShapeVisitor
 {
     object? VisitConstructor<TArgumentState, TParameterType>(IConstructorParameterShape<TArgumentState, TParameterType> shape, object? state = null);
 }

@@ -32,7 +32,7 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
     public override TypeShapeKind Kind => TypeShapeKind.Object;
 
     /// <inheritdoc/>
-    public override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);
+    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);
 
     IReadOnlyList<IPropertyShape> IObjectTypeShape.Properties => _properties ??= (CreatePropertiesFunc?.Invoke()).AsReadOnlyList();
     private IReadOnlyList<IPropertyShape>? _properties;

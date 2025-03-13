@@ -6,7 +6,7 @@ namespace PolyType.Examples.XmlSerializer;
 
 public static partial class XmlSerializer
 {
-    private sealed class Builder(TypeGenerationContext self) : ITypeShapeVisitor, ITypeShapeFunc
+    private sealed class Builder(TypeGenerationContext self) : TypeShapeVisitor, ITypeShapeFunc
     {
         /// <summary>Recursively looks up or creates a converter for the specified shape.</summary>
         public XmlConverter<T> GetOrAddConverter<T>(ITypeShape<T> shape) =>
@@ -22,7 +22,7 @@ public static partial class XmlSerializer
             return typeShape.Accept(this);
         }
 
-        public object? VisitObject<T>(IObjectTypeShape<T> type, object? state)
+        public override object? VisitObject<T>(IObjectTypeShape<T> type, object? state)
         {
             if (typeof(T) == typeof(object))
             {
@@ -39,13 +39,13 @@ public static partial class XmlSerializer
                 : new XmlObjectConverter<T>(properties);
         }
 
-        public object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> property, object? state)
+        public override object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> property, object? state)
         {
             XmlConverter<TPropertyType> propertyConverter = GetOrAddConverter(property.PropertyType);
             return new XmlPropertyConverter<TDeclaringType, TPropertyType>(property, propertyConverter);
         }
 
-        public object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructor, object? state)
+        public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructor, object? state)
         {
             var properties = (XmlPropertyConverter<TDeclaringType>[])state!;
 
@@ -65,13 +65,13 @@ public static partial class XmlSerializer
                 properties);
         }
 
-        public object? VisitConstructorParameter<TArgumentState, TParameterType>(IConstructorParameterShape<TArgumentState, TParameterType> parameter, object? state)
+        public override object? VisitConstructorParameter<TArgumentState, TParameterType>(IConstructorParameterShape<TArgumentState, TParameterType> parameter, object? state)
         {
             XmlConverter<TParameterType> paramConverter = GetOrAddConverter(parameter.ParameterType);
             return new XmlPropertyConverter<TArgumentState, TParameterType>(parameter, paramConverter);
         }
 
-        public object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state)
+        public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state)
         {
             XmlConverter<TElement> elementConverter = GetOrAddConverter(enumerableShape.ElementType);
             Func<TEnumerable, IEnumerable<TElement>> getEnumerable = enumerableShape.GetGetEnumerable();
@@ -98,7 +98,7 @@ public static partial class XmlSerializer
             };
         }
 
-        public object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state) where TKey : notnull
+        public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state)
         {
             XmlConverter<TKey> keyConverter = GetOrAddConverter(dictionaryShape.KeyType);
             XmlConverter<TValue> valueConverter = GetOrAddConverter(dictionaryShape.ValueType);
@@ -132,7 +132,7 @@ public static partial class XmlSerializer
             };
         }
 
-        public object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
+        public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
         {
             return new XmlOptionalConverter<TOptional, TElement>(
                 elementConverter: GetOrAddConverter(optionalShape.ElementType),
@@ -141,18 +141,18 @@ public static partial class XmlSerializer
                 createSome: optionalShape.GetSomeConstructor());
         }
 
-        public object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state) where TEnum : struct, Enum
+        public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state)
         {
             return new XmlEnumConverter<TEnum>();
         }
 
-        public object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state)
+        public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state)
         {
             XmlConverter<TSurrogate> surrogateConverter = GetOrAddConverter(surrogateShape.SurrogateType);
             return new XmlSurrogateConverter<T, TSurrogate>(surrogateShape.Marshaller, surrogateConverter);
         }
 
-        public object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state)
+        public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state)
         {
             var getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
             var baseCaseConverter = (XmlConverter<TUnion>)unionShape.BaseType.Accept(this)!;
@@ -167,7 +167,7 @@ public static partial class XmlSerializer
             return new XmlUnionConverter<TUnion>(getUnionCaseIndex, baseCaseConverter, unionCaseConverter);
         }
 
-        public object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state) where TUnionCase : TUnion
+        public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state)
         {
             // NB: don't use the cached converter for TUnionCase, as it might equal TUnion.
             var caseConverter = (XmlConverter<TUnionCase>)unionCaseShape.Type.Invoke(this)!;

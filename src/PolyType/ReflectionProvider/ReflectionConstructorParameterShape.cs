@@ -38,7 +38,7 @@ internal sealed class ReflectionConstructorParameterShape<TArgumentState, TParam
     object? IConstructorParameterShape.DefaultValue => _parameterInfo.DefaultValue;
     public ICustomAttributeProvider? AttributeProvider => _parameterInfo.AttributeProvider;
     ITypeShape IConstructorParameterShape.ParameterType => ParameterType;
-    object? IConstructorParameterShape.Accept(ITypeShapeVisitor visitor, object? state) => visitor.VisitConstructorParameter(this, state);
+    object? IConstructorParameterShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitConstructorParameter(this, state);
 
     public Setter<TArgumentState, TParameter> GetSetter() =>
         _setter ??= _provider.MemberAccessor.CreateConstructorArgumentStateSetter<TArgumentState, TParameter>(_ctorInfo, Position);

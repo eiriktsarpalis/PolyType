@@ -6,7 +6,7 @@ namespace PolyType.Examples.DependencyInjection;
 
 public sealed partial class ServiceProviderContext
 {
-    private sealed class Builder(ServiceProviderContext serviceProviderCtx, ITypeShapeFunc self) : ITypeShapeVisitor, ITypeShapeFunc
+    private sealed class Builder(ServiceProviderContext serviceProviderCtx, ITypeShapeFunc self) : TypeShapeVisitor, ITypeShapeFunc
     {
         private delegate void ConstructorParameterMapper<TService>(ServiceProvider serviceProvider, ref TService service);
 
@@ -31,13 +31,13 @@ public sealed partial class ServiceProviderContext
             return typeShape.Accept(this, state);
         }
 
-        public object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
+        public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
         {
             // Only objects with constructors are supported.
             return objectShape.Constructor?.Accept(this, state);
         }
 
-        public object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructorShape, object? state = null)
+        public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructorShape, object? state = null)
         {
             if (constructorShape.Parameters is [])
             {
@@ -70,7 +70,7 @@ public sealed partial class ServiceProviderContext
             }, lifetime);
         }
 
-        public object? VisitConstructorParameter<TArgumentState, TParameterType>(IConstructorParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
+        public override object? VisitConstructorParameter<TArgumentState, TParameterType>(IConstructorParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
         {
             var parameterTypeFactory = GetOrAddFactory(parameterShape.ParameterType);
             if (parameterTypeFactory is null)
@@ -89,8 +89,7 @@ public sealed partial class ServiceProviderContext
             return (mapper, parameterTypeFactory.Lifetime);
         }
 
-        public object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
-            where TKey : notnull
+        public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
         {
             if (dictionaryShape.ConstructionStrategy is CollectionConstructionStrategy.Mutable)
             {
@@ -101,7 +100,7 @@ public sealed partial class ServiceProviderContext
             return null;
         }
 
-        public object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state = null)
+        public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state = null)
         {
             if (enumerableShape.ConstructionStrategy is CollectionConstructionStrategy.Mutable)
             {
@@ -112,7 +111,7 @@ public sealed partial class ServiceProviderContext
             return null;
         }
 
-        public object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
+        public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
         {
             if (GetOrAddFactory(optionalShape.ElementType) is { } elementFactory)
             {
@@ -124,7 +123,7 @@ public sealed partial class ServiceProviderContext
             return null;
         }
 
-        public object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
+        public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
         {
             if (GetOrAddFactory(surrogateShape.SurrogateType) is { } surrogateFactory)
             {
@@ -136,10 +135,10 @@ public sealed partial class ServiceProviderContext
             return null;
         }
 
-        public object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null) => null;
-        public object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null) where TUnionCase : TUnion => null;
-        public object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null) where TEnum : struct, Enum => null;
-        public object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> propertyShape, object? state = null) => null;
+        public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null) => null;
+        public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null) => null;
+        public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null) => null;
+        public override object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> propertyShape, object? state = null) => null;
         private ServiceLifetime ResolveLifetime(object? state) => state is ServiceLifetime lifetime ? lifetime : serviceProviderCtx.DefaultLifetime;
         private static ServiceLifetime CombineLifetimes(ServiceLifetime serviceLifetime1, ServiceLifetime serviceLifetime2) =>
             (ServiceLifetime)Math.Max((int)serviceLifetime1, (int)serviceLifetime2);
@@ -149,7 +148,7 @@ public sealed partial class ServiceProviderContext
     {
         public static DelayedServiceFactoryFactory Instance { get; } = new();
         public DelayedValue Create<T>(ITypeShape<T> typeShape) =>
-            new DelayedValue<ServiceFactory<T>>(self => 
+            new DelayedValue<ServiceFactory<T>>(self =>
                 new(provider => throw new InvalidOperationException($"The dependency graph for type '{typeof(T)}' is cyclic."), ServiceLifetime.Singleton));
     }
 }

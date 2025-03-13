@@ -20,7 +20,7 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
     public ICustomAttributeProvider? AttributeProvider => ctorInfo.AttributeProvider;
     public bool IsPublic => ctorInfo.IsPublic;
     IObjectTypeShape IConstructorShape.DeclaringType => DeclaringType;
-    object? IConstructorShape.Accept(ITypeShapeVisitor visitor, object? state) => visitor.VisitConstructor(this, state);
+    object? IConstructorShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitConstructor(this, state);
 
     public IReadOnlyList<IConstructorParameterShape> Parameters => _parameters ??= GetParameters().AsReadOnlyList();
 

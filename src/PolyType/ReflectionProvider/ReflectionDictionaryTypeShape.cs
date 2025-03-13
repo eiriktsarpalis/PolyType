@@ -26,7 +26,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     private SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary>? _spanCtorDelegate;
 
     public sealed override TypeShapeKind Kind => TypeShapeKind.Dictionary;
-    public sealed override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitDictionary(this, state);
+    public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitDictionary(this, state);
 
     public CollectionConstructionStrategy ConstructionStrategy => _constructionStrategy ??= DetermineConstructionStrategy();
     public ITypeShape<TKey> KeyType => Provider.GetShape<TKey>();

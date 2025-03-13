@@ -8,7 +8,7 @@ namespace PolyType.Abstractions;
 /// <remarks>
 /// All methods are <see langword="virtual"/>, and will throw <see cref="NotImplementedException"/> if not overridden.
 /// </remarks>
-public abstract class TypeShapeVisitor : ITypeShapeVisitor
+public abstract class TypeShapeVisitor
 {
     /// <summary>
     /// Visits an <see cref="IObjectTypeShape{T}"/> representing a simple type or object.

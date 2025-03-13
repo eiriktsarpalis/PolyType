@@ -6,7 +6,7 @@ internal sealed class ReflectionNullableTypeShape<T>(ReflectionTypeShapeProvider
     where T : struct
 {
     public override TypeShapeKind Kind => TypeShapeKind.Optional;
-    public override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitOptional(this, state);
+    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitOptional(this, state);
 
     public Func<T?> GetNoneConstructor() => static () => null;
     public Func<T, T?> GetSomeConstructor() => static t => t;

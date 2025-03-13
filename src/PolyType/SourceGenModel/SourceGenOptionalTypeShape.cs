@@ -33,7 +33,7 @@ public sealed class SourceGenOptionalTypeShape<TOptional, TElement> : SourceGenT
     public override TypeShapeKind Kind => TypeShapeKind.Optional;
 
     /// <inheritdoc/>
-    public override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitOptional(this, state);
+    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitOptional(this, state);
 
     Func<TOptional> IOptionalTypeShape<TOptional, TElement>.GetNoneConstructor() => NoneConstructor;
     Func<TElement, TOptional> IOptionalTypeShape<TOptional, TElement>.GetSomeConstructor() => SomeConstructor;

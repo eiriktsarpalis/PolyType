@@ -6,7 +6,7 @@ internal sealed class ReflectionEnumTypeShape<TEnum, TUnderlying>(ReflectionType
     where TEnum : struct, Enum
 {
     public override TypeShapeKind Kind => TypeShapeKind.Enum;
-    public override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitEnum(this, state);
+    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnum(this, state);
     public ITypeShape<TUnderlying> UnderlyingType => Provider.GetShape<TUnderlying>();
     ITypeShape IEnumTypeShape.UnderlyingType => UnderlyingType;
 }

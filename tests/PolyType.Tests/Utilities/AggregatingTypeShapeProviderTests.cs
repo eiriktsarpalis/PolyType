@@ -174,7 +174,7 @@ public class AggregatingTypeShapeProviderTests
 
         public ICustomAttributeProvider? AttributeProvider => throw new NotImplementedException();
 
-        public object? Accept(ITypeShapeVisitor visitor, object? state = null)
+        public object? Accept(TypeShapeVisitor visitor, object? state = null)
         {
             throw new NotImplementedException();
         }
