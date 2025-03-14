@@ -55,7 +55,7 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     public override TypeShapeKind Kind => TypeShapeKind.Dictionary;
 
     /// <inheritdoc/>
-    public override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitDictionary(this, state);
+    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitDictionary(this, state);
 
     ITypeShape IDictionaryTypeShape.KeyType => KeyType;
     ITypeShape IDictionaryTypeShape.ValueType => ValueType;

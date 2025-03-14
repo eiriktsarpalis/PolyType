@@ -28,12 +28,12 @@ public interface ITypeShape
     public ICustomAttributeProvider? AttributeProvider { get; }
 
     /// <summary>
-    /// Accepts an <see cref="ITypeShapeVisitor"/> for strongly-typed traversal.
+    /// Accepts an <see cref="TypeShapeVisitor"/> for strongly-typed traversal.
     /// </summary>
     /// <param name="visitor">The visitor to accept.</param>
     /// <param name="state">The state parameter to pass to the underlying visitor.</param>
     /// <returns>The <see cref="object"/> result returned by the visitor.</returns>
-    object? Accept(ITypeShapeVisitor visitor, object? state = null);
+    object? Accept(TypeShapeVisitor visitor, object? state = null);
 
     /// <summary>
     /// Invokes the specified generic function with the given state.

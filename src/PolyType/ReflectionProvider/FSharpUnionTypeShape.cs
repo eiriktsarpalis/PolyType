@@ -11,7 +11,7 @@ internal sealed class FSharpUnionTypeShape<TUnion>(FSharpUnionInfo unionInfo, Re
     : ReflectionTypeShape<TUnion>(provider), IUnionTypeShape<TUnion>
 {
     public override TypeShapeKind Kind => TypeShapeKind.Union;
-    public override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitUnion(this, state);
+    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnion(this, state);
     public ITypeShape<TUnion> BaseType { get; } = new FSharpUnionCaseTypeShape<TUnion>(null, provider);
 
     public IReadOnlyList<IUnionCaseShape> UnionCases => _unionCases ??= CreateUnionCaseShapes().AsReadOnlyList();
@@ -61,7 +61,7 @@ internal sealed class FSharpUnionCaseShape<TUnionCase, TUnion>(FSharpUnionCaseIn
     public bool IsTagSpecified => false; // F# tags are inferred from the union case ordering
     public int Index => unionCaseInfo.Tag;
     ITypeShape IUnionCaseShape.Type => Type;
-    public object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitUnionCase(this, state);
+    public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnionCase(this, state);
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]

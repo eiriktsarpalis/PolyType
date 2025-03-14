@@ -19,7 +19,7 @@ public sealed class SourceGenEnumTypeShape<TEnum, TUnderlying> : SourceGenTypeSh
     public override TypeShapeKind Kind => TypeShapeKind.Enum;
 
     /// <inheritdoc/>
-    public override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitEnum(this, state);
+    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnum(this, state);
 
     ITypeShape IEnumTypeShape.UnderlyingType => UnderlyingType;
 }

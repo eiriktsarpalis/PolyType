@@ -13,7 +13,7 @@ public partial class RandomGenerator
 {
     private delegate void RandomPropertySetter<T>(ref T value, Random random, int size);
 
-    private sealed class Builder(ITypeShapeFunc self) : ITypeShapeVisitor, ITypeShapeFunc
+    private sealed class Builder(ITypeShapeFunc self) : TypeShapeVisitor, ITypeShapeFunc
     {
         private static readonly Dictionary<Type, (object Generator, RandomGenerator<object?> BoxingGenerator)> s_defaultGenerators = CreateDefaultGenerators().ToDictionary();
 
@@ -30,7 +30,7 @@ public partial class RandomGenerator
             return typeShape.Accept(this);
         }
 
-        public object? VisitObject<T>(IObjectTypeShape<T> type, object? state)
+        public override object? VisitObject<T>(IObjectTypeShape<T> type, object? state)
         {
             if (typeof(T) == typeof(object))
             {
@@ -42,14 +42,14 @@ public partial class RandomGenerator
                 : CreateNotSupportedGenerator<T>();
         }
 
-        public object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> property, object? state)
+        public override object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> property, object? state)
         {
             Setter<TDeclaringType, TPropertyType> setter = property.GetSetter();
             RandomGenerator<TPropertyType> propertyGenerator = GetOrAddGenerator(property.PropertyType);
             return new RandomPropertySetter<TDeclaringType>((ref TDeclaringType obj, Random random, int size) => setter(ref obj, propertyGenerator(random, size)));
         }
 
-        public object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructor, object? state)
+        public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructor, object? state)
         {
             if (constructor.Parameters is [])
             {
@@ -105,14 +105,14 @@ public partial class RandomGenerator
             }
         }
 
-        public object? VisitConstructorParameter<TArgumentState, TParameter>(IConstructorParameterShape<TArgumentState, TParameter> parameter, object? state)
+        public override object? VisitConstructorParameter<TArgumentState, TParameter>(IConstructorParameterShape<TArgumentState, TParameter> parameter, object? state)
         {
             Setter<TArgumentState, TParameter> setter = parameter.GetSetter();
             RandomGenerator<TParameter> parameterGenerator = GetOrAddGenerator(parameter.ParameterType);
             return new RandomPropertySetter<TArgumentState>((ref TArgumentState obj, Random random, int size) => setter(ref obj, parameterGenerator(random, size)));
         }
 
-        public object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state) where TEnum: struct, Enum
+        public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state)
         {
 #if NET
             TEnum[] values = Enum.GetValues<TEnum>();
@@ -122,7 +122,7 @@ public partial class RandomGenerator
             return new RandomGenerator<TEnum>((Random random, int _) => values[random.Next(0, values.Length)]);
         }
 
-        public object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
+        public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
         {
             RandomGenerator<TElement> elementGenerator = GetOrAddGenerator(optionalShape.ElementType);
             var createNone = optionalShape.GetNoneConstructor();
@@ -130,7 +130,7 @@ public partial class RandomGenerator
             return new RandomGenerator<TOptional>((Random random, int size) => NextBoolean(random) ? createNone() : createSome(elementGenerator(random, size - 1)));
         }
 
-        public object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state)
+        public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state)
         {
             RandomGenerator<TElement> elementGenerator = GetOrAddGenerator(enumerableShape.ElementType);
 
@@ -232,7 +232,7 @@ public partial class RandomGenerator
             }
         }
 
-        public object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state) where TKey : notnull
+        public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state)
         {
             RandomGenerator<TKey> keyGenerator = GetOrAddGenerator(dictionaryShape.KeyType);
             RandomGenerator<TValue> valueGenerator = GetOrAddGenerator(dictionaryShape.ValueType);
@@ -319,14 +319,14 @@ public partial class RandomGenerator
             });
         }
 
-        public object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state)
+        public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state)
         {
             IMarshaller<T, TSurrogate> marshaller = surrogateShape.Marshaller;
             RandomGenerator<TSurrogate> surrogateGenerator = GetOrAddGenerator(surrogateShape.SurrogateType);
             return new RandomGenerator<T>((Random random, int size) => marshaller.FromSurrogate(surrogateGenerator(random, size))!);
         }
 
-        public object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state)
+        public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state)
         {
             bool foundBaseType = false;
             List<RandomGenerator<TUnion>> unionCaseGenerators = [];
@@ -371,11 +371,11 @@ public partial class RandomGenerator
                 };
         }
 
-        public object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state) where TUnionCase : TUnion =>
+        public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state) =>
             throw new NotImplementedException();
 
         private static RandomGenerator<T> CreateNotSupportedGenerator<T>() =>
-            (_,_) => throw new NotSupportedException($"Type '{typeof(T)}' does not support random generation.");
+            (_, _) => throw new NotSupportedException($"Type '{typeof(T)}' does not support random generation.");
 
         private static IEnumerable<KeyValuePair<Type, (object Generator, RandomGenerator<object?> BoxingGenerator)>> CreateDefaultGenerators()
         {
@@ -449,7 +449,7 @@ public partial class RandomGenerator
             });
 
             static KeyValuePair<Type, (object Generator, RandomGenerator<object?> BoxingGenerator)> Create<T>(RandomGenerator<T> randomGenerator)
-                => new(typeof(T), (randomGenerator, (r,i) => randomGenerator(r,i)));
+                => new(typeof(T), (randomGenerator, (r, i) => randomGenerator(r, i)));
         }
 
         private static long NextLong(Random random)

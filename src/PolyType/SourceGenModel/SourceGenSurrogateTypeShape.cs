@@ -23,7 +23,7 @@ public sealed class SourceGenSurrogateTypeShape<T, TSurrogate> : SourceGenTypeSh
     public override TypeShapeKind Kind => TypeShapeKind.Surrogate;
 
     /// <inheritdoc/>
-    public override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitSurrogate(this, state);
+    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitSurrogate(this, state);
 
     ITypeShape ISurrogateTypeShape.SurrogateType => SurrogateType;
 }

@@ -64,7 +64,7 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
 
     IObjectTypeShape IPropertyShape.DeclaringType => DeclaringType;
     ITypeShape IPropertyShape.PropertyType => PropertyType;
-    object? IPropertyShape.Accept(ITypeShapeVisitor visitor, object? state) => visitor.VisitProperty(this, state);
+    object? IPropertyShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitProperty(this, state);
 
     public Getter<TDeclaringType, TPropertyType> GetGetter()
     {

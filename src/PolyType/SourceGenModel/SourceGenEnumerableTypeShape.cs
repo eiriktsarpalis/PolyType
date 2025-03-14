@@ -53,7 +53,7 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     public override TypeShapeKind Kind => TypeShapeKind.Enumerable;
 
     /// <inheritdoc/>
-    public override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitEnumerable(this, state);
+    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnumerable(this, state);
 
     ITypeShape IEnumerableTypeShape.ElementType => ElementType;
 

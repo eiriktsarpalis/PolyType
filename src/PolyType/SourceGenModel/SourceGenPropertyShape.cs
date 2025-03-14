@@ -76,5 +76,5 @@ public sealed class SourceGenPropertyShape<TDeclaringType, TPropertyType> : IPro
     bool IPropertyShape.HasGetter => Getter is not null;
     bool IPropertyShape.HasSetter => Setter is not null;
     ICustomAttributeProvider? IPropertyShape.AttributeProvider => AttributeProviderFunc?.Invoke();
-    object? IPropertyShape.Accept(ITypeShapeVisitor visitor, object? state) => visitor.VisitProperty(this, state);
+    object? IPropertyShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitProperty(this, state);
 }

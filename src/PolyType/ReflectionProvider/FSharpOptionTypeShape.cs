@@ -12,7 +12,7 @@ internal sealed class FSharpOptionTypeShape<TOptional, TElement>(FSharpUnionInfo
     where TOptional : IEquatable<TOptional>
 {
     public override TypeShapeKind Kind => TypeShapeKind.Optional;
-    public override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitOptional(this, state);
+    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitOptional(this, state);
 
     public ITypeShape<TElement> ElementType => Provider.GetShape<TElement>();
     ITypeShape IOptionalTypeShape.ElementType => ElementType;

@@ -34,5 +34,5 @@ public sealed class SourceGenUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShap
     public required int Index { get; init; }
 
     ITypeShape IUnionCaseShape.Type => Type;
-    object? IUnionCaseShape.Accept(ITypeShapeVisitor visitor, object? state) => visitor.VisitUnionCase(this, state);
+    object? IUnionCaseShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitUnionCase(this, state);
 }

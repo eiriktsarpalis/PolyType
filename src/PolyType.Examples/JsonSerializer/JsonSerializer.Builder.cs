@@ -9,7 +9,7 @@ namespace PolyType.Examples.JsonSerializer;
 
 public static partial class JsonSerializerTS
 {
-    private sealed class Builder(TypeGenerationContext generationContext) : ITypeShapeVisitor, ITypeShapeFunc
+    private sealed class Builder(TypeGenerationContext generationContext) : TypeShapeVisitor, ITypeShapeFunc
     {
         public JsonConverter<T> GetOrAddConverter<T>(ITypeShape<T> shape) =>
             (JsonConverter<T>)generationContext.GetOrAdd(shape)!;
@@ -26,7 +26,7 @@ public static partial class JsonSerializerTS
             return typeShape.Accept(this);
         }
 
-        public object? VisitObject<T>(IObjectTypeShape<T> type, object? state)
+        public override object? VisitObject<T>(IObjectTypeShape<T> type, object? state)
         {
             if (typeof(T) == typeof(object))
             {
@@ -42,13 +42,13 @@ public static partial class JsonSerializerTS
                 : new JsonObjectConverter<T>(properties);
         }
 
-        public object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> property, object? state)
+        public override object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> property, object? state)
         {
             JsonConverter<TPropertyType> propertyConverter = GetOrAddConverter(property.PropertyType);
             return new JsonPropertyConverter<TDeclaringType, TPropertyType>(property, propertyConverter);
         }
 
-        public object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructor, object? state)
+        public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructor, object? state)
         {
             var properties = (JsonPropertyConverter<TDeclaringType>[])state!;
 
@@ -68,13 +68,13 @@ public static partial class JsonSerializerTS
                 properties);
         }
 
-        public object? VisitConstructorParameter<TArgumentState, TParameter>(IConstructorParameterShape<TArgumentState, TParameter> parameter, object? state)
+        public override object? VisitConstructorParameter<TArgumentState, TParameter>(IConstructorParameterShape<TArgumentState, TParameter> parameter, object? state)
         {
             JsonConverter<TParameter> paramConverter = GetOrAddConverter(parameter.ParameterType);
             return new JsonPropertyConverter<TArgumentState, TParameter>(parameter, paramConverter);
         }
 
-        public object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state)
+        public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state)
         {
             JsonConverter<TElement> elementConverter = GetOrAddConverter(enumerableShape.ElementType);
 
@@ -108,7 +108,7 @@ public static partial class JsonSerializerTS
             };
         }
 
-        public object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state) where TKey : notnull
+        public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state)
         {
             JsonConverter<TKey> keyConverter = GetOrAddConverter(dictionaryShape.KeyType);
             JsonConverter<TValue> valueConverter = GetOrAddConverter(dictionaryShape.ValueType);
@@ -141,7 +141,7 @@ public static partial class JsonSerializerTS
             };
         }
 
-        public object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
+        public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
         {
             return new JsonOptionalConverter<TOptional, TElement>(
                 elementConverter: GetOrAddConverter(optionalShape.ElementType),
@@ -150,19 +150,19 @@ public static partial class JsonSerializerTS
                 createSome: optionalShape.GetSomeConstructor());
         }
 
-        public object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state) where TEnum : struct, Enum
+        public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state)
         {
             var converter = new JsonStringEnumConverter<TEnum>();
             return converter.CreateConverter(typeof(TEnum), s_options);
         }
 
-        public object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state)
+        public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state)
         {
             JsonConverter<TSurrogate> surrogateConverter = GetOrAddConverter(surrogateShape.SurrogateType);
             return new JsonSurrogateConverter<T, TSurrogate>(surrogateShape.Marshaller, surrogateConverter);
         }
 
-        public object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state)
+        public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state)
         {
             var getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
             var baseTypeConverter = (JsonConverter<TUnion>)unionShape.BaseType.Invoke(this)!;
@@ -173,7 +173,7 @@ public static partial class JsonSerializerTS
             return new JsonUnionConverter<TUnion>(getUnionCaseIndex, baseTypeConverter, unionCases);
         }
 
-        public object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state) where TUnionCase : TUnion
+        public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state)
         {
             var caseConverter = (JsonConverter<TUnionCase>)unionCaseShape.Type.Accept(this)!;
             return new JsonUnionCaseConverter<TUnionCase, TUnion>(unionCaseShape.Name, caseConverter);

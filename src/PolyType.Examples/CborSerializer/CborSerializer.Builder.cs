@@ -5,7 +5,7 @@ namespace PolyType.Examples.CborSerializer;
 
 public static partial class CborSerializer
 {
-    private sealed class Builder(ITypeShapeFunc self) : ITypeShapeVisitor, ITypeShapeFunc
+    private sealed class Builder(ITypeShapeFunc self) : TypeShapeVisitor, ITypeShapeFunc
     {
         /// <summary>Recursively looks up or creates a converter for the specified shape.</summary>
         public CborConverter<T> GetOrAddConverter<T>(ITypeShape<T> typeShape) =>
@@ -23,7 +23,7 @@ public static partial class CborSerializer
             return typeShape.Accept(this);
         }
 
-        public object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state)
+        public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state)
         {
             CborPropertyConverter<T>[] properties = objectShape.Properties
                 .Select(prop => (CborPropertyConverter<T>)prop.Accept(this)!)
@@ -34,13 +34,13 @@ public static partial class CborSerializer
                 : new CborObjectConverter<T>(properties);
         }
 
-        public object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> property, object? state)
+        public override object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> property, object? state)
         {
             CborConverter<TPropertyType> propertyConverter = GetOrAddConverter(property.PropertyType);
             return new CborPropertyConverter<TDeclaringType, TPropertyType>(property, propertyConverter);
         }
 
-        public object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructor, object? state)
+        public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructor, object? state)
         {
             var properties = (CborPropertyConverter<TDeclaringType>[])state!;
 
@@ -60,13 +60,13 @@ public static partial class CborSerializer
                 properties);
         }
 
-        public object? VisitConstructorParameter<TArgumentState, TParameterType>(IConstructorParameterShape<TArgumentState, TParameterType> parameter, object? state)
+        public override object? VisitConstructorParameter<TArgumentState, TParameterType>(IConstructorParameterShape<TArgumentState, TParameterType> parameter, object? state)
         {
             CborConverter<TParameterType> paramConverter = GetOrAddConverter(parameter.ParameterType);
             return new CborPropertyConverter<TArgumentState, TParameterType>(parameter, paramConverter);
         }
 
-        public object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state)
+        public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state)
         {
             CborConverter<TElement> elementConverter = GetOrAddConverter(enumerableShape.ElementType);
             Func<TEnumerable, IEnumerable<TElement>> getEnumerable = enumerableShape.GetGetEnumerable();
@@ -96,7 +96,7 @@ public static partial class CborSerializer
             };
         }
 
-        public object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state) where TKey : notnull
+        public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state)
         {
             CborConverter<TKey> keyConverter = GetOrAddConverter(dictionaryShape.KeyType);
             CborConverter<TValue> valueConverter = GetOrAddConverter(dictionaryShape.ValueType);
@@ -130,7 +130,7 @@ public static partial class CborSerializer
             };
         }
 
-        public object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
+        public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
         {
             return new CborOptionalConverter<TOptional, TElement>(
                 elementConverter: GetOrAddConverter(optionalShape.ElementType),
@@ -139,18 +139,18 @@ public static partial class CborSerializer
                 createSome: optionalShape.GetSomeConstructor());
         }
 
-        public object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state) where TEnum : struct, Enum
+        public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state)
         {
             return new CborEnumConverter<TEnum>();
         }
 
-        public object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state)
+        public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state)
         {
             CborConverter<TSurrogate> surrogateConverter = GetOrAddConverter(surrogateShape.SurrogateType);
             return new CborSurrogateConverter<T, TSurrogate>(surrogateShape.Marshaller, surrogateConverter);
         }
 
-        public object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state)
+        public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state)
         {
             var getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
             var baseTypeConverter = (CborConverter<TUnion>)unionShape.BaseType.Invoke(this)!;
@@ -165,7 +165,7 @@ public static partial class CborSerializer
             return new CborUnionConverter<TUnion>(getUnionCaseIndex, baseTypeConverter, unionCases);
         }
 
-        public object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state) where TUnionCase : TUnion
+        public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state)
         {
             // NB: don't use the cached converter for TUnionCase, as it might equal TUnion.
             var caseConverter = (CborConverter<TUnionCase>)unionCaseShape.Type.Invoke(this)!;

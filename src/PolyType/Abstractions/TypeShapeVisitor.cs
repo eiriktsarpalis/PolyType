@@ -1,9 +1,14 @@
-﻿namespace PolyType.Abstractions;
+﻿using System.Runtime.CompilerServices;
+
+namespace PolyType.Abstractions;
 
 /// <summary>
 /// Provides a visitor for strongly-typed traversal of .NET types.
 /// </summary>
-public abstract class TypeShapeVisitor : ITypeShapeVisitor
+/// <remarks>
+/// All methods are <see langword="virtual"/>, and will throw <see cref="NotImplementedException"/> if not overridden.
+/// </remarks>
+public abstract class TypeShapeVisitor
 {
     /// <summary>
     /// Visits an <see cref="IObjectTypeShape{T}"/> representing a simple type or object.
@@ -13,7 +18,7 @@ public abstract class TypeShapeVisitor : ITypeShapeVisitor
     /// <param name="state">Defines user-provided state.</param>
     /// <returns>The result produced by the visitor.</returns>
     public virtual object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? state = null)
-        => ThrowNotImplementedException(nameof(VisitObject));
+        => ThrowNotImplementedException();
 
     /// <summary>
     /// Visits an <see cref="IPropertyShape{TDeclaringType, TPropertyType}"/> instance.
@@ -24,7 +29,7 @@ public abstract class TypeShapeVisitor : ITypeShapeVisitor
     /// <param name="state">Defines user-provided state.</param>
     /// <returns>The result produced by the visitor.</returns>
     public virtual object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> propertyShape, object? state = null)
-        => ThrowNotImplementedException(nameof(VisitProperty));
+        => ThrowNotImplementedException();
 
     /// <summary>
     /// Visits an <see cref="IConstructorParameterShape{TDeclaringType, TArgumentState}"/> instance.
@@ -35,7 +40,7 @@ public abstract class TypeShapeVisitor : ITypeShapeVisitor
     /// <param name="state">Defines user-provided state.</param>
     /// <returns>The result produced by the visitor.</returns>
     public virtual object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructorShape, object? state = null)
-        => ThrowNotImplementedException(nameof(VisitConstructor));
+        => ThrowNotImplementedException();
 
     /// <summary>
     /// Visits an <see cref="IConstructorParameterShape{TArgumentState, TParameterType}"/> instance.
@@ -46,7 +51,7 @@ public abstract class TypeShapeVisitor : ITypeShapeVisitor
     /// <param name="state">Defines user-provided state.</param>
     /// <returns>The result produced by the visitor.</returns>
     public virtual object? VisitConstructorParameter<TArgumentState, TParameterType>(IConstructorParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
-        => ThrowNotImplementedException(nameof(VisitConstructorParameter));
+        => ThrowNotImplementedException();
 
     /// <summary>
     /// Visits an <see cref="IEnumTypeShape{TEnum,TUnderlying}"/> instance.
@@ -58,7 +63,7 @@ public abstract class TypeShapeVisitor : ITypeShapeVisitor
     /// <returns>The result produced by the visitor.</returns>
     public virtual object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null)
         where TEnum : struct, Enum
-        => ThrowNotImplementedException(nameof(VisitEnum));
+        => ThrowNotImplementedException();
 
     /// <summary>
     /// Visits an <see cref="IOptionalTypeShape{TOptional, TElement}"/> instance representing optional types.
@@ -69,7 +74,7 @@ public abstract class TypeShapeVisitor : ITypeShapeVisitor
     /// <param name="state">Defines user-provided state.</param>
     /// <returns>The result produced by the visitor.</returns>
     public virtual object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state = null)
-        => ThrowNotImplementedException(nameof(VisitOptional));
+        => ThrowNotImplementedException();
 
     /// <summary>
     /// Visits an <see cref="IEnumerableTypeShape{TEnumerable,TElement}"/> instance representing an enumerable type.
@@ -80,7 +85,7 @@ public abstract class TypeShapeVisitor : ITypeShapeVisitor
     /// <param name="state">Defines user-provided state.</param>
     /// <returns>The result produced by the visitor.</returns>
     public virtual object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state = null)
-        => ThrowNotImplementedException(nameof(VisitEnumerable));
+        => ThrowNotImplementedException();
 
     /// <summary>
     /// Visits an <see cref="IDictionaryTypeShape{TDictionary, TKey, TValue}"/> instance representing a dictionary type.
@@ -93,7 +98,7 @@ public abstract class TypeShapeVisitor : ITypeShapeVisitor
     /// <returns>The result produced by the visitor.</returns>
     public virtual object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null)
         where TKey : notnull
-        => ThrowNotImplementedException(nameof(VisitDictionary));
+        => ThrowNotImplementedException();
 
     /// <summary>
     /// Visits an <see cref="ISurrogateTypeShape{T, TSurrogate}"/> instance representing a type employing a surrogate type.
@@ -104,7 +109,7 @@ public abstract class TypeShapeVisitor : ITypeShapeVisitor
     /// <param name="state">Defines user-provided state.</param>
     /// <returns>The result produced by the visitor.</returns>
     public virtual object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
-        => ThrowNotImplementedException(nameof(VisitSurrogate));
+        => ThrowNotImplementedException();
 
     /// <summary>
     /// Visits an <see cref="IUnionTypeShape{TUnion}"/> instance representing a union type.
@@ -114,7 +119,7 @@ public abstract class TypeShapeVisitor : ITypeShapeVisitor
     /// <param name="state">Defines user-provided state.</param>
     /// <returns>The result produced by the visitor.</returns>
     public virtual object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
-        => ThrowNotImplementedException(nameof(VisitUnion));
+        => ThrowNotImplementedException();
 
     /// <summary>
     /// Visits an <see cref="IUnionCaseShape{TUnionCase, TUnion}"/> instance representing a union case.
@@ -125,8 +130,8 @@ public abstract class TypeShapeVisitor : ITypeShapeVisitor
     /// <param name="state">Defines user-provided state.</param>
     /// <returns>The result produced by the visitor.</returns>
     public virtual object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null) where TUnionCase : TUnion
-        => ThrowNotImplementedException(nameof(VisitUnionCase));
+        => ThrowNotImplementedException();
 
-    private object? ThrowNotImplementedException(string methodName)
+    private object? ThrowNotImplementedException([CallerMemberName] string? methodName = null)
         => throw new NotImplementedException($"The visitor method {GetType().Name}.{methodName} has not been implemented.");
 }

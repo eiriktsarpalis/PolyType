@@ -27,7 +27,7 @@ public sealed class SourceGenUnionTypeShape<TUnion> : SourceGenTypeShape<TUnion>
     public override TypeShapeKind Kind => TypeShapeKind.Union;
 
     /// <inheritdoc/>
-    public override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitUnion(this, state);
+    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnion(this, state);
 
     IReadOnlyList<IUnionCaseShape> IUnionTypeShape.UnionCases => _unionCases ??= CreateUnionCasesFunc().AsReadOnlyList();
     private IReadOnlyList<IUnionCaseShape>? _unionCases;

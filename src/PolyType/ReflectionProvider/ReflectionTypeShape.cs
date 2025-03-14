@@ -6,7 +6,7 @@ namespace PolyType.ReflectionProvider;
 internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provider) : ITypeShape<T>
 {
     public abstract TypeShapeKind Kind { get; }
-    public abstract object? Accept(ITypeShapeVisitor visitor, object? state = null);
+    public abstract object? Accept(TypeShapeVisitor visitor, object? state = null);
     public ReflectionTypeShapeProvider Provider => provider;
     public Type Type => typeof(T);
 

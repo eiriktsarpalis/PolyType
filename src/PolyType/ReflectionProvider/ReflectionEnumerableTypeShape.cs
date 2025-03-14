@@ -29,7 +29,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
     public abstract Func<TEnumerable, IEnumerable<TElement>> GetGetEnumerable();
 
     public sealed override TypeShapeKind Kind => TypeShapeKind.Enumerable;
-    public sealed override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitEnumerable(this, state);
+    public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnumerable(this, state);
     public ITypeShape<TElement> ElementType => Provider.GetShape<TElement>();
     ITypeShape IEnumerableTypeShape.ElementType => ElementType;
 

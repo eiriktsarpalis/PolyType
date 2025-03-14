@@ -8,7 +8,7 @@ namespace PolyType.ReflectionProvider;
 internal abstract class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider provider) : ReflectionTypeShape<T>(provider), IObjectTypeShape<T>
 {
     public sealed override TypeShapeKind Kind => TypeShapeKind.Object;
-    public sealed override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);
+    public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);
 
     public virtual bool IsRecordType => false;
     public virtual bool IsTupleType => false;

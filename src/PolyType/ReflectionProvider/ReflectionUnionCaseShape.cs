@@ -15,5 +15,5 @@ internal sealed class ReflectionUnionCaseShape<TUnionCase, TUnion>(IUnionTypeSha
 
     ITypeShape IUnionCaseShape.Type => Type;
 
-    public object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitUnionCase(this, state);
+    public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnionCase(this, state);
 }

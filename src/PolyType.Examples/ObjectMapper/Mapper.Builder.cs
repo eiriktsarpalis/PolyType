@@ -375,7 +375,7 @@ public static partial class Mapper
         public ITypeShapeProvider Provider => source.Provider;
         public Type Type => typeof(Mapper<TSource, TTarget>);
         public ICustomAttributeProvider? AttributeProvider => typeof(Mapper<TSource, TTarget>);
-        public object? Accept(ITypeShapeVisitor visitor, object? state = null) => ((MapperTypeShapeVisitor)visitor).VisitMapper(source, target, state);
+        public object? Accept(TypeShapeVisitor visitor, object? state = null) => ((MapperTypeShapeVisitor)visitor).VisitMapper(source, target, state);
         public object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
     }
 
