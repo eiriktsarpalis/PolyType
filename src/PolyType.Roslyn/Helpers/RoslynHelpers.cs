@@ -220,16 +220,16 @@ internal static class RoslynHelpers
     public static bool HasSetsRequiredMembersAttribute(this IMethodSymbol constructor)
     {
         return constructor.MethodKind is MethodKind.Constructor &&
-            constructor.GetAttributes().Any(attr => 
-                attr.AttributeClass is { Name: "SetsRequiredMembersAttribute", ContainingNamespace: INamespaceSymbol ns } && 
+            constructor.GetAttributes().Any(attr =>
+                attr.AttributeClass is { Name: "SetsRequiredMembersAttribute", ContainingNamespace: INamespaceSymbol ns } &&
                 ns.ToDisplayString() == "System.Diagnostics.CodeAnalysis");
     }
 
     public static bool TryGetCollectionBuilderAttribute(
-        this Compilation compilation, 
-        INamedTypeSymbol type, 
-        ITypeSymbol elementType, 
-        [NotNullWhen(true)] out IMethodSymbol? builderMethod, 
+        this Compilation compilation,
+        INamedTypeSymbol type,
+        ITypeSymbol elementType,
+        [NotNullWhen(true)] out IMethodSymbol? builderMethod,
         CancellationToken cancellationToken)
     {
         builderMethod = null;
@@ -271,7 +271,7 @@ internal static class RoslynHelpers
         return builderMethod != null;
 
         bool TryParseAttributeData(
-            AttributeData? attributeData, 
+            AttributeData? attributeData,
             [NotNullWhen(true)] out INamedTypeSymbol? builderType,
             [NotNullWhen(true)] out string? builderMethod)
         {
@@ -303,7 +303,7 @@ internal static class RoslynHelpers
                                 builderMethod = literalExpr.Token.ValueText;
                                 break;
 
-                            case InvocationExpressionSyntax 
+                            case InvocationExpressionSyntax
                             {
                                 Expression: IdentifierNameSyntax { Identifier.Text: "nameof" },
                                 ArgumentList.Arguments: [ArgumentSyntax argument]
@@ -323,7 +323,7 @@ internal static class RoslynHelpers
                         }
                     }
                 }
-            } 
+            }
             else if (
                 attributeData.ConstructorArguments.Length == 2 &&
                 attributeData.ConstructorArguments[0].Value is INamedTypeSymbol typeParam &&
@@ -487,7 +487,7 @@ internal static class RoslynHelpers
             object num => Convert.ToString(num, CultureInfo.InvariantCulture),
         };
 
-        bool requiresCast = parameter.Type 
+        bool requiresCast = parameter.Type
             is { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T }
             or { TypeKind: TypeKind.Enum };
 

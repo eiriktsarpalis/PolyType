@@ -19,6 +19,11 @@ public class TypeDataModel
     public ImmutableArray<DerivedTypeModel> DerivedTypes { get; init; } = ImmutableArray<DerivedTypeModel>.Empty;
 
     /// <summary>
+    /// The collection of associated types specified via TypeShapeAttribute.AssociatedTypes.
+    /// </summary>
+    public ImmutableArray<AssociatedTypeModel> AssociatedTypes { get; init; } = ImmutableArray<AssociatedTypeModel>.Empty;
+
+    /// <summary>
     /// Determines the type of <see cref="TypeDataModel"/> being used.
     /// </summary>
     public virtual TypeDataKind Kind => TypeDataKind.None;
