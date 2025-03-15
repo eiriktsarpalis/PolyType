@@ -1,7 +1,8 @@
 ﻿using Microsoft.CodeAnalysis;
+using PolyType.Roslyn;
 using System.Collections.Immutable;
 
-namespace PolyType.Roslyn;
+namespace PolyType.SourceGenerator.Model;
 
 /// <summary>
 /// Captures the data collected from all the TypeShapeExtensionAttribute attributes that target a particular type.

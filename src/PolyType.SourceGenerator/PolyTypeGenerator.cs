@@ -33,10 +33,10 @@ public sealed class PolyTypeGenerator : IIncrementalGenerator
 
         // In combining extensions from multiple sources, we *could* apply a merge policy that the local compilation wins when there's a conflict.
         // Type extensions have some aspects that can be merged (e.g. associated types) and some that cannot be (e.g. Kind and Marshaller).
-        IncrementalValueProvider<ImmutableDictionary<INamedTypeSymbol, TypeExtensionModel>> allTypeShapeExtensions = externalTypeShapeExtensions
+        IncrementalValueProvider<IReadOnlyDictionary<INamedTypeSymbol, TypeExtensionModel>> allTypeShapeExtensions = externalTypeShapeExtensions
             .Collect()
             .Combine(ownTypeShapeExtensions.Collect())
-            .Select((tuple, token) => tuple.Left.Concat(tuple.Right).ToImmutableDictionary<TypeExtensionModel, INamedTypeSymbol>(m => m.Target, SymbolEqualityComparer.Default));
+            .Select((tuple, token) => (IReadOnlyDictionary<INamedTypeSymbol, TypeExtensionModel>)tuple.Left.Concat(tuple.Right).ToDictionary<TypeExtensionModel, INamedTypeSymbol, TypeExtensionModel>(e => e.Target, e => e, SymbolEqualityComparer.Default));
 
         IncrementalValueProvider<TypeShapeProviderModel?> providerModel = context.SyntaxProvider
             .ForTypesWithAttributeDeclarations(

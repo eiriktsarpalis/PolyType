@@ -174,6 +174,9 @@ For example, serializers may need to jump from a type shape to its converter.
 [!code-csharp[](../samples/CSharpSamples/AssociatedTypes.cs#TypeShapeOneType)]
 
 @PolyType.Abstractions.ITypeShape.GetAssociatedTypeFactory*?displayProperty=nameWithType is the method to use to obtain a factory for instances of the associated type.
+The @PolyType.SourceGenModel.SourceGenTypeShapeProvider implementation of this method requires that the associated types be pre-determined at compile time via attributes.
+The @PolyType.ReflectionProvider.ReflectionTypeShapeProvider does _not_ require these attributes.
+Thus, it can be valuable to test your associated types code with the source generation provider to ensure your code is AOT-compatible.
 
 An associated type must have a public default constructor.
 An associated type must have at least `internal` visibility to activate the associated type from within its same assembly,

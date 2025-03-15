@@ -22,9 +22,9 @@ public sealed partial class Parser : TypeDataModelGenerator
             CommonHelpers.CamelCaseInvariantComparer.Instance);
 
     private readonly PolyTypeKnownSymbols _knownSymbols;
-    private readonly ImmutableDictionary<INamedTypeSymbol, TypeExtensionModel> _typeShapeExtensions;
+    private readonly IReadOnlyDictionary<INamedTypeSymbol, TypeExtensionModel> _typeShapeExtensions;
 
-    private Parser(ISymbol generationScope, ImmutableDictionary<INamedTypeSymbol, TypeExtensionModel> typeShapeExtensions, PolyTypeKnownSymbols knownSymbols, CancellationToken cancellationToken)
+    private Parser(ISymbol generationScope, IReadOnlyDictionary<INamedTypeSymbol, TypeExtensionModel> typeShapeExtensions, PolyTypeKnownSymbols knownSymbols, CancellationToken cancellationToken)
         : base(generationScope, knownSymbols, cancellationToken)
     {
         _knownSymbols = knownSymbols;
@@ -34,7 +34,7 @@ public sealed partial class Parser : TypeDataModelGenerator
     public static TypeShapeProviderModel? ParseFromGenerateShapeAttributes(
         ImmutableArray<TypeWithAttributeDeclarationContext> generateShapeDeclarations,
         PolyTypeKnownSymbols knownSymbols,
-        ImmutableDictionary<INamedTypeSymbol, TypeExtensionModel> typeShapeExtensions,
+        IReadOnlyDictionary<INamedTypeSymbol, TypeExtensionModel> typeShapeExtensions,
         CancellationToken cancellationToken)
     {
         if (generateShapeDeclarations.IsEmpty)
@@ -48,7 +48,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         return parser.ExportTypeShapeProviderModel(shapeProviderDeclaration, generateShapeTypes);
     }
 
-    public static ImmutableArray<TypeExtensionModel> DiscoverTypeShapeExtensions(KnownSymbols knownSymbols, Compilation compilation, MetadataReference metadataReference, CancellationToken cancellationToken)
+    public static ImmutableArray<TypeExtensionModel> DiscoverTypeShapeExtensions(PolyTypeKnownSymbols knownSymbols, Compilation compilation, MetadataReference metadataReference, CancellationToken cancellationToken)
     {
         if (compilation.GetAssemblyOrModuleSymbol(metadataReference) is not IAssemblySymbol assemblySymbol)
         {
@@ -58,7 +58,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         return DiscoverTypeShapeExtensions(knownSymbols, assemblySymbol, cancellationToken);
     }
 
-    public static ImmutableArray<TypeExtensionModel> DiscoverTypeShapeExtensions(KnownSymbols knownSymbols, IAssemblySymbol assemblySymbol, CancellationToken cancellationToken)
+    public static ImmutableArray<TypeExtensionModel> DiscoverTypeShapeExtensions(PolyTypeKnownSymbols knownSymbols, IAssemblySymbol assemblySymbol, CancellationToken cancellationToken)
     {
         Dictionary<ITypeSymbol, TypeExtensionModel> associatedTypes = new(SymbolEqualityComparer.Default);
         foreach (AttributeData attribute in assemblySymbol.GetAttributes())

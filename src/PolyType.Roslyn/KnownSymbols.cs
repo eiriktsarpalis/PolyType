@@ -24,17 +24,6 @@ public class KnownSymbols(Compilation compilation)
     public IAssemblySymbol CoreLibAssembly => _CoreLibAssembly ??= Compilation.GetSpecialType(SpecialType.System_Int32).ContainingAssembly;
     private IAssemblySymbol? _CoreLibAssembly;
 
-    /// <summary>
-    /// Gets the symbol for TypeShapeExtensionAttribute.
-    /// </summary>
-    public INamedTypeSymbol TypeShapeExtensionAttribute => _TypeShapeExtensionAttribute ??= Compilation.GetTypeByMetadataName("PolyType.TypeShapeExtensionAttribute") ?? throw new InvalidOperationException("TypeShapeExtensionAttribute not found.");
-    private INamedTypeSymbol? _TypeShapeExtensionAttribute;
-
-    /// <summary>
-    /// Gets the symbol for AssociatedTypeAttributeAttribute.
-    /// </summary>
-    public INamedTypeSymbol AssociatedTypeAttributeAttribute => _AssociatedTypeAttributeAttribute ??= Compilation.GetTypeByMetadataName("PolyType.AssociatedTypeAttributeAttribute") ?? throw new InvalidOperationException("AssociatedTypeAttributeAttribute not found.");
-    private INamedTypeSymbol? _AssociatedTypeAttributeAttribute;
 
     /// <summary>
     /// The type symbol for <see cref="System.Reflection.MemberInfo"/>.

@@ -2,7 +2,6 @@
 using PolyType.Roslyn;
 using PolyType.SourceGenerator.Helpers;
 using PolyType.SourceGenerator.Model;
-using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics;
 
@@ -18,84 +17,7 @@ public sealed partial class Parser
 
     private TypeShapeModel MapModelCore(TypeDataModel model, TypeId typeId, string sourceIdentifier, bool isFSharpUnionCase = false)
     {
-        var associatedTypeSymbols = model.AssociatedTypes;
-
-        var namedType = model.Type as INamedTypeSymbol;
-        if (namedType is not null && (
-            _typeShapeExtensions.TryGetValue(namedType, out TypeExtensionModel? extensionModel) ||
-            (namedType.IsGenericType && _typeShapeExtensions.TryGetValue(namedType.ConstructUnboundGenericType(), out extensionModel))))
-        {
-            associatedTypeSymbols = associatedTypeSymbols.AddRange(extensionModel.AssociatedTypes);
-        }
-
-        List<AssociatedTypeId> associatedTypesBuilder = new();
-        ITypeSymbol[] typeArgs = namedType?.GetRecursiveTypeArguments() ?? [];
-        foreach ((INamedTypeSymbol openType, IAssemblySymbol associatedAssembly, Location? location) in associatedTypeSymbols)
-        {
-            if (!SymbolEqualityComparer.Default.Equals(openType.ContainingAssembly, associatedAssembly))
-            {
-                ReportDiagnostic(AssociatedTypeInExternalAssembly, location, openType.GetFullyQualifiedName());
-                continue;
-            }
-
-            if (!this.IsAccessibleSymbol(openType))
-            {
-                // Skip types that are not accessible in the current scope
-                ReportDiagnostic(AssociatedTypeInaccessibleError, location, openType.GetFullyQualifiedName());
-                continue;
-            }
-
-            IMethodSymbol? defaultCtor = null;
-            if (!openType.IsUnboundGenericType)
-            {
-                if (TryGetCtorOrReport(openType, out defaultCtor))
-                {
-                    associatedTypesBuilder.Add(CreateAssociatedTypeId(openType, openType));
-                }
-                else
-                {
-                    continue;
-                }
-            }
-            else
-            {
-                if (openType.OriginalDefinition.ConstructRecursive(typeArgs) is INamedTypeSymbol closedType)
-                {
-                    if (TryGetCtorOrReport(closedType, out defaultCtor))
-                    {
-                        associatedTypesBuilder.Add((CreateAssociatedTypeId(openType, closedType)));
-                    }
-                    else
-                    {
-                        continue;
-                    }
-                }
-                else if (openType.Arity != typeArgs.Length)
-                {
-                    ReportDiagnostic(AssociatedTypeArityMismatch, location, openType.GetFullyQualifiedName(), openType.Arity, typeArgs.Length);
-                    continue;
-                }
-            }
-
-            if (openType.DeclaredAccessibility != Accessibility.Public || defaultCtor?.DeclaredAccessibility != Accessibility.Public)
-            {
-                ReportDiagnostic(AssociatedTypeInternal, location, openType.GetFullyQualifiedName());
-            }
-
-            bool TryGetCtorOrReport(INamedTypeSymbol type, out IMethodSymbol? defaultCtor)
-            {
-                defaultCtor = type.InstanceConstructors.FirstOrDefault(c => c.Parameters.IsEmpty);
-                if (defaultCtor is null || !this.IsAccessibleSymbol(defaultCtor))
-                {
-                    ReportDiagnostic(AssociatedTypeInaccessibleError, location, openType.GetFullyQualifiedName());
-                    return false;
-                }
-
-                return true;
-            }
-        }
-
-        ImmutableEquatableArray<AssociatedTypeId> associatedTypes = associatedTypesBuilder.ToImmutableEquatableArray();
+        ImmutableEquatableArray<AssociatedTypeId> associatedTypes = CollectAssociatedTypes(model);
 
         return model switch
         {
@@ -292,6 +214,89 @@ public sealed partial class Parser
         {
             return method?.Parameters is [{ Type: INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Collections_Generic_IEnumerable_T } }];
         }
+    }
+
+    private ImmutableEquatableArray<AssociatedTypeId> CollectAssociatedTypes(TypeDataModel model)
+    {
+        var associatedTypeSymbols = model.AssociatedTypes;
+
+        var namedType = model.Type as INamedTypeSymbol;
+        if (namedType is not null && (
+            _typeShapeExtensions.TryGetValue(namedType, out TypeExtensionModel? extensionModel) ||
+            (namedType.IsGenericType && _typeShapeExtensions.TryGetValue(namedType.ConstructUnboundGenericType(), out extensionModel))))
+        {
+            associatedTypeSymbols = associatedTypeSymbols.AddRange(extensionModel.AssociatedTypes);
+        }
+
+        List<AssociatedTypeId> associatedTypesBuilder = new();
+        ITypeSymbol[] typeArgs = namedType?.GetRecursiveTypeArguments() ?? [];
+        foreach ((INamedTypeSymbol openType, IAssemblySymbol associatedAssembly, Location? location) in associatedTypeSymbols)
+        {
+            if (!SymbolEqualityComparer.Default.Equals(openType.ContainingAssembly, associatedAssembly))
+            {
+                ReportDiagnostic(AssociatedTypeInExternalAssembly, location, openType.GetFullyQualifiedName());
+                continue;
+            }
+
+            if (!IsAccessibleSymbol(openType))
+            {
+                // Skip types that are not accessible in the current scope
+                ReportDiagnostic(AssociatedTypeInaccessibleError, location, openType.GetFullyQualifiedName());
+                continue;
+            }
+
+            IMethodSymbol? defaultCtor = null;
+            if (!openType.IsUnboundGenericType)
+            {
+                if (TryGetCtorOrReport(openType, out defaultCtor))
+                {
+                    associatedTypesBuilder.Add(CreateAssociatedTypeId(openType, openType));
+                }
+                else
+                {
+                    continue;
+                }
+            }
+            else
+            {
+                if (openType.OriginalDefinition.ConstructRecursive(typeArgs) is INamedTypeSymbol closedType)
+                {
+                    if (TryGetCtorOrReport(closedType, out defaultCtor))
+                    {
+                        associatedTypesBuilder.Add((CreateAssociatedTypeId(openType, closedType)));
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+                else if (openType.Arity != typeArgs.Length)
+                {
+                    ReportDiagnostic(AssociatedTypeArityMismatch, location, openType.GetFullyQualifiedName(), openType.Arity, typeArgs.Length);
+                    continue;
+                }
+            }
+
+            if (openType.DeclaredAccessibility != Accessibility.Public || defaultCtor?.DeclaredAccessibility != Accessibility.Public)
+            {
+                ReportDiagnostic(AssociatedTypeInternal, location, openType.GetFullyQualifiedName());
+            }
+
+            bool TryGetCtorOrReport(INamedTypeSymbol type, out IMethodSymbol? defaultCtor)
+            {
+                defaultCtor = type.InstanceConstructors.FirstOrDefault(c => c.Parameters.IsEmpty);
+                if (defaultCtor is null || !IsAccessibleSymbol(defaultCtor))
+                {
+                    ReportDiagnostic(AssociatedTypeInaccessibleError, location, openType.GetFullyQualifiedName());
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
+        ImmutableEquatableArray<AssociatedTypeId> associatedTypes = associatedTypesBuilder.ToImmutableEquatableArray();
+        return associatedTypes;
     }
 
     private static UnionShapeModel MapUnionModel(TypeDataModel model, TypeShapeModel underlyingIncrementalModel)
