@@ -504,7 +504,7 @@ public sealed partial class Parser : TypeDataModelGenerator
     {
         return new TypeShapeProviderModel
         {
-            DynamicAccessAttributeAvailable = _knownSymbols.DynamicallyAccessedMembersAttribute is { DeclaredAccessibility: Accessibility.Public },
+            DynamicAccessAttributeAvailable = _knownSymbols.DynamicallyAccessedMembersAttribute is not null,
             ProviderDeclaration = providerDeclaration,
             ProvidedTypes = GetGeneratedTypesAndIdentifiers()
                 .ToImmutableEquatableDictionary(

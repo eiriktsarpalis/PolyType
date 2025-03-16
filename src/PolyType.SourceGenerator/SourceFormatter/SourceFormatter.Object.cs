@@ -6,7 +6,7 @@ namespace PolyType.SourceGenerator;
 
 internal sealed partial class SourceFormatter
 {
-    private void FormatObjectTypeShapeFactory(SourceWriter writer, string methodName, ObjectShapeModel objectShapeModel, bool emitDynamicAccessAttribute)
+    private void FormatObjectTypeShapeFactory(SourceWriter writer, string methodName, ObjectShapeModel objectShapeModel)
     {
         string? propertiesFactoryMethodName = objectShapeModel.Properties.Length > 0 ? $"__CreateProperties_{objectShapeModel.SourceIdentifier}" : null;
         string? constructorFactoryMethodName = objectShapeModel.Constructor != null ? $"__CreateConstructor_{objectShapeModel.SourceIdentifier}" : null;
@@ -21,7 +21,7 @@ internal sealed partial class SourceFormatter
                     IsRecordType = {{FormatBool(objectShapeModel.IsRecordType)}},
                     IsTupleType = {{FormatBool(objectShapeModel.IsTupleType)}},
                     Provider = this,
-                    AssociatedTypesCloser = {{FormatAssociatedTypesCloser(objectShapeModel, emitDynamicAccessAttribute)}},
+                    AssociatedTypesCloser = {{FormatAssociatedTypesCloser(objectShapeModel)}},
                 };
             }
             """, trimNullAssignmentLines: true);
@@ -41,7 +41,7 @@ internal sealed partial class SourceFormatter
         FormatMemberAccessors(writer, objectShapeModel);
     }
 
-    private static string FormatAssociatedTypesCloser(ObjectShapeModel objectShapeModel, bool emitDynamicAccessAttribute)
+    private static string FormatAssociatedTypesCloser(ObjectShapeModel objectShapeModel)
     {
         if (objectShapeModel.AssociatedTypes.Length == 0)
         {
@@ -74,18 +74,10 @@ internal sealed partial class SourceFormatter
         counter = 0;
         foreach (AssociatedTypeId associatedType in objectShapeModel.AssociatedTypes)
         {
-            writer.WriteLine(/* lang=c#-test */ """
+            writer.WriteLine(/* lang=c#-test */ $"""
 
                 [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-                """);
-            if (emitDynamicAccessAttribute)
-            {
-                writer.WriteLine(/* lang=c#-test */ """
                 [return: global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
-                """);
-            }
-
-            writer.WriteLine($"""
                 static global::System.Type Return{counter++}() => typeof({associatedType.CSharpTypeName});
                 """);
         }
