@@ -21,7 +21,7 @@ internal sealed partial class SourceFormatter
                     IsRecordType = {{FormatBool(objectShapeModel.IsRecordType)}},
                     IsTupleType = {{FormatBool(objectShapeModel.IsTupleType)}},
                     Provider = this,
-                    AssociatedTypeFactories = {{FormatAssociatedTypeFactory(objectShapeModel)}},
+                    AssociatedTypesCloser = {{FormatAssociatedTypesCloser(objectShapeModel)}},
                 };
             }
             """, trimNullAssignmentLines: true);
@@ -41,7 +41,7 @@ internal sealed partial class SourceFormatter
         FormatMemberAccessors(writer, objectShapeModel);
     }
 
-    private static string FormatAssociatedTypeFactory(ObjectShapeModel objectShapeModel)
+    private static string FormatAssociatedTypesCloser(ObjectShapeModel objectShapeModel)
     {
         if (objectShapeModel.AssociatedTypes.Length == 0)
         {
@@ -52,7 +52,7 @@ internal sealed partial class SourceFormatter
         builder.Append("static associatedType => associatedType switch { ");
         foreach (AssociatedTypeId associatedType in objectShapeModel.AssociatedTypes)
         {
-            builder.Append($"\"{associatedType.Open}\" or \"{associatedType.Closed}\" => () => new {associatedType.Constructor}(), ");
+            builder.Append($"\"{associatedType.Open}\" or \"{associatedType.Closed}\" => typeof({associatedType.Constructor}), ");
         }
 
         builder.Append("_ => null }");

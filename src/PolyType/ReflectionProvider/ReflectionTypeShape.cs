@@ -17,18 +17,23 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
     ICustomAttributeProvider? ITypeShape.AttributeProvider => typeof(T);
     object? ITypeShape.Invoke(ITypeShapeFunc func, object? state) => func.Invoke(this, state);
 
-    public Func<object>? GetAssociatedTypeFactory(Type relatedType)
+#if NET
+    [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+#endif
+    public Type? GetAssociatedType(Type relatedType)
     {
-        if (relatedType.IsGenericTypeDefinition && this.Type.GenericTypeArguments.Length != relatedType.GetTypeInfo().GenericTypeParameters.Length)
+        if (!Type.IsGenericType)
+        {
+            throw new InvalidOperationException("This method can only be called on shapes of generic types.");
+        }
+
+        if (Type.GenericTypeArguments.Length != relatedType.GetTypeInfo().GenericTypeParameters.Length)
         {
             throw new ArgumentException($"Related type arity ({relatedType.GenericTypeArguments.Length}) mismatch with original type ({this.Type.GenericTypeArguments.Length}).");
         }
 
-        Type closedType = relatedType.IsGenericTypeDefinition
+        return relatedType.IsGenericTypeDefinition
             ? relatedType.MakeGenericType(this.Type.GenericTypeArguments)
             : relatedType;
-
-        ConstructorInfo? ctor = closedType?.GetConstructor(Type.EmptyTypes);
-        return ctor is null ? null : () => ctor.Invoke([]);
     }
 }
