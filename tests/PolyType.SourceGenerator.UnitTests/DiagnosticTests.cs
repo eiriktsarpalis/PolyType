@@ -257,30 +257,6 @@ public static class DiagnosticTests
 
     [Fact]
     [Trait("AssociatedTypes", "true")]
-    public static void TypeShape_InternalAssociatedType()
-    {
-        Compilation compilation = CompilationHelpers.CreateCompilation("""
-            using PolyType;
-
-            [GenerateShape]
-            [TypeShape(AssociatedTypes = new[] { typeof(InternalAssociatedType) })]
-            partial class MyPoco;
-
-            class InternalAssociatedType;
-            """);
-
-        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
-
-        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
-
-        Assert.Equal("TS0014", diagnostic.Id);
-        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
-        Assert.Equal((3, 1), diagnostic.Location.GetStartPosition());
-        Assert.Equal((3, 70), diagnostic.Location.GetEndPosition());
-    }
-
-    [Fact]
-    [Trait("AssociatedTypes", "true")]
     public static void TypeShape_PrivateAssociatedType()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
@@ -300,8 +276,8 @@ public static class DiagnosticTests
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
 
-        Assert.Equal("TS0015", diagnostic.Id);
-        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Equal("TS0005", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         Assert.Equal((4, 5), diagnostic.Location.GetStartPosition());
         Assert.Equal((4, 74), diagnostic.Location.GetEndPosition());
     }
@@ -330,61 +306,10 @@ public static class DiagnosticTests
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
 
-        Assert.Equal("TS0015", diagnostic.Id);
-        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Equal("TS0005", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         Assert.Equal((4, 5), diagnostic.Location.GetStartPosition());
         Assert.Equal((4, 74), diagnostic.Location.GetEndPosition());
-    }
-
-    [Fact]
-    [Trait("AssociatedTypes", "true")]
-    public static void TypeShapeExtension_InternalAssociatedType()
-    {
-        Compilation compilation = CompilationHelpers.CreateCompilation("""
-            using PolyType;
-
-            [assembly: TypeShapeExtension(typeof(MyPoco), AssociatedTypes = new[] { typeof(InternalAssociatedType) })]
-
-            [GenerateShape]
-            partial class MyPoco;
-            class InternalAssociatedType;
-            """);
-
-        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
-
-        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
-
-        Assert.Equal("TS0014", diagnostic.Id);
-        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
-        Assert.Equal((2, 11), diagnostic.Location.GetStartPosition());
-        Assert.Equal((2, 105), diagnostic.Location.GetEndPosition());
-    }
-
-    [Fact]
-    [Trait("AssociatedTypes", "true")]
-    public static void TypeShapeExtension_InternalCtorOnAssociatedType()
-    {
-        Compilation compilation = CompilationHelpers.CreateCompilation("""
-            using PolyType;
-
-            [assembly: TypeShapeExtension(typeof(MyPoco), AssociatedTypes = new[] { typeof(InternalAssociatedType) })]
-
-            [GenerateShape]
-            partial class MyPoco;
-            public class InternalAssociatedType
-            {
-                internal InternalAssociatedType() { }
-            }
-            """);
-
-        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
-
-        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
-
-        Assert.Equal("TS0014", diagnostic.Id);
-        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
-        Assert.Equal((2, 11), diagnostic.Location.GetStartPosition());
-        Assert.Equal((2, 105), diagnostic.Location.GetEndPosition());
     }
 
     [Fact]

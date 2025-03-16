@@ -241,7 +241,7 @@ public sealed partial class Parser
             if (!IsAccessibleSymbol(openType))
             {
                 // Skip types that are not accessible in the current scope
-                ReportDiagnostic(AssociatedTypeInaccessibleError, location, openType.GetFullyQualifiedName());
+                ReportDiagnostic(TypeNotAccessible, location, openType.ToDisplayString());
                 continue;
             }
 
@@ -277,17 +277,12 @@ public sealed partial class Parser
                 }
             }
 
-            if (openType.DeclaredAccessibility != Accessibility.Public || defaultCtor?.DeclaredAccessibility != Accessibility.Public)
-            {
-                ReportDiagnostic(AssociatedTypeInternal, location, openType.GetFullyQualifiedName());
-            }
-
             bool TryGetCtorOrReport(INamedTypeSymbol type, out IMethodSymbol? defaultCtor)
             {
                 defaultCtor = type.InstanceConstructors.FirstOrDefault(c => c.Parameters.IsEmpty);
                 if (defaultCtor is null || !IsAccessibleSymbol(defaultCtor))
                 {
-                    ReportDiagnostic(AssociatedTypeInaccessibleError, location, openType.GetFullyQualifiedName());
+                    ReportDiagnostic(TypeNotAccessible, location, openType.ToDisplayString());
                     return false;
                 }
 

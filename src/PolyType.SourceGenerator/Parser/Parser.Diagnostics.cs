@@ -111,22 +111,6 @@ public sealed partial class Parser
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    private static DiagnosticDescriptor AssociatedTypeInternal { get; } = new DiagnosticDescriptor(
-        id: "TS0014",
-        title: "Associated type is internal.",
-        messageFormat: "The associated type '{0}' is internal, which will prevent its activation from within a [GenerateShape] graph produced from another assembly. Associated types should generally be public.",
-        category: "PolyType.SourceGenerator",
-        defaultSeverity: DiagnosticSeverity.Warning,
-        isEnabledByDefault: true);
-
-    private static DiagnosticDescriptor AssociatedTypeInaccessibleError { get; } = new DiagnosticDescriptor(
-        id: "TS0015",
-        title: "Associated type is private.",
-        messageFormat: "The associated type '{0}' is protected or private, and/or it has no accessible default constructor, which will prevent its activation from within a [GenerateShape] graph.",
-        category: "PolyType.SourceGenerator",
-        defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
-
     private static DiagnosticDescriptor AssociatedTypeArityMismatch { get; } = new DiagnosticDescriptor(
         id: "TS0016",
         title: "Associated type arity mismatch.",
