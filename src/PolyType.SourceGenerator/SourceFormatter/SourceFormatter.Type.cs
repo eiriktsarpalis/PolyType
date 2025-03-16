@@ -30,7 +30,7 @@ internal sealed partial class SourceFormatter
         switch (type)
         {
             case ObjectShapeModel objectShapeModel:
-                FormatObjectTypeShapeFactory(writer, generatedFactoryMethodName, objectShapeModel);
+                FormatObjectTypeShapeFactory(writer, generatedFactoryMethodName, objectShapeModel, provider.DynamicAccessAttributeAvailable);
                 break;
 
             case EnumShapeModel enumShapeModel:

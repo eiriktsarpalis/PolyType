@@ -4,6 +4,7 @@ namespace PolyType.SourceGenerator.Model;
 
 public sealed record TypeShapeProviderModel
 {
+    public required bool DynamicAccessAttributeAvailable { get; init; }
     public required TypeDeclarationModel ProviderDeclaration { get; init; }
     public required ImmutableEquatableDictionary<TypeId, TypeShapeModel> ProvidedTypes { get; init; }
     public required ImmutableEquatableSet<EquatableDiagnostic> Diagnostics { get; init; }
