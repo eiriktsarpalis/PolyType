@@ -108,8 +108,8 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
             """);
 #else
         writer.WriteLine("""
-#nullable enable annotations
-#nullable disable warnings
+            #nullable enable annotations
+            #nullable disable warnings
 
             """);
 #endif
