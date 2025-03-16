@@ -48,16 +48,43 @@ internal sealed partial class SourceFormatter
             return "null";
         }
 
-        StringBuilder builder = new();
-        builder.Append("static associatedType => associatedType switch { ");
+        SourceWriter writer = new() { Indentation = 0 };
+        writer.WriteLine(/* lang=c#-test */ """
+            static associatedType =>
+                    {
+                        return associatedType switch
+                        {
+            """);
+
+        writer.Indentation = 4;
+        int counter = 0;
         foreach (AssociatedTypeId associatedType in objectShapeModel.AssociatedTypes)
         {
-            builder.Append($"\"{associatedType.Open}\" or \"{associatedType.Closed}\" => typeof({associatedType.Constructor}), ");
+            writer.WriteLine($"\"{associatedType.Open}\" or \"{associatedType.Closed}\" => Return{counter++}(),");
         }
 
-        builder.Append("_ => null }");
+        writer.Indentation -= 2;
+        writer.WriteLine(/* lang=c#-test */ """
+                    _ => null,
+                };
+            """);
 
-        return builder.ToString();
+        // Emit the location functions.
+        writer.Indentation += 1;
+        counter = 0;
+        foreach (AssociatedTypeId associatedType in objectShapeModel.AssociatedTypes)
+        {
+            writer.WriteLine(/* lang=c#-test */ $"""
+
+                [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+                static global::System.Type Return{counter++}() => typeof({associatedType.CSharpTypeName});
+                """);
+        }
+
+        writer.Indentation -= 1;
+        writer.WriteLine("}");
+
+        return writer.ToString().TrimEnd();
     }
 
     private static void FormatMemberAccessors(SourceWriter writer, ObjectShapeModel objectShapeModel)

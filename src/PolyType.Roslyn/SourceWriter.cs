@@ -144,6 +144,11 @@ public sealed class SourceWriter
         return SourceText.From(_sb.ToString(), Encoding.UTF8);
     }
 
+    /// <summary>
+    /// Renders the written text as a string.
+    /// </summary>
+    public override string ToString() => _sb.ToString();
+
     private void AddIndentation()
         => _sb.Append(IndentationChar, CharsPerIndentation * _indentation);
 
