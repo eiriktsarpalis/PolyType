@@ -22,30 +22,13 @@ public sealed class PolyTypeGenerator : IIncrementalGenerator
         IncrementalValueProvider<PolyTypeKnownSymbols> knownSymbols = context.CompilationProvider
             .Select((compilation, _) => new PolyTypeKnownSymbols(compilation));
 
-        IncrementalValuesProvider<TypeExtensionModel> externalTypeShapeExtensions = context.MetadataReferencesProvider
-            .Combine(context.CompilationProvider)
-            .Combine(knownSymbols)
-            .SelectMany((tuple, token) => Parser.DiscoverTypeShapeExtensions(tuple.Right, tuple.Left.Right, tuple.Left.Left, token));
-
-        IncrementalValuesProvider<TypeExtensionModel> ownTypeShapeExtensions = context.CompilationProvider
-            .Combine(knownSymbols)
-            .SelectMany((tuple, token) => Parser.DiscoverTypeShapeExtensions(tuple.Right, tuple.Left.Assembly, token));
-
-        // In combining extensions from multiple sources, we *could* apply a merge policy that the local compilation wins when there's a conflict.
-        // Type extensions have some aspects that can be merged (e.g. associated types) and some that cannot be (e.g. Kind and Marshaller).
-        IncrementalValueProvider<IReadOnlyDictionary<INamedTypeSymbol, TypeExtensionModel>> allTypeShapeExtensions = externalTypeShapeExtensions
-            .Collect()
-            .Combine(ownTypeShapeExtensions.Collect())
-            .Select((tuple, token) => (IReadOnlyDictionary<INamedTypeSymbol, TypeExtensionModel>)tuple.Left.Concat(tuple.Right).ToDictionary<TypeExtensionModel, INamedTypeSymbol, TypeExtensionModel>(e => e.Target, e => e, SymbolEqualityComparer.Default));
-
         IncrementalValueProvider<TypeShapeProviderModel?> providerModel = context.SyntaxProvider
             .ForTypesWithAttributeDeclarations(
                 attributeFullyQualifiedNames: ["PolyType.GenerateShapeAttribute<T>", "PolyType.GenerateShapeAttribute"],
                 (node, _) => node is TypeDeclarationSyntax)
             .Collect()
             .Combine(knownSymbols)
-            .Combine(allTypeShapeExtensions)
-            .Select((tuple, token) => Parser.ParseFromGenerateShapeAttributes(tuple.Left.Left, tuple.Left.Right, tuple.Right, token));
+            .Select((tuple, token) => Parser.ParseFromGenerateShapeAttributes(tuple.Left, tuple.Right, token));
 
         context.RegisterSourceOutput(providerModel, GenerateSource);
     }

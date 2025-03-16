@@ -34,7 +34,6 @@ public sealed partial class Parser : TypeDataModelGenerator
     public static TypeShapeProviderModel? ParseFromGenerateShapeAttributes(
         ImmutableArray<TypeWithAttributeDeclarationContext> generateShapeDeclarations,
         PolyTypeKnownSymbols knownSymbols,
-        IReadOnlyDictionary<INamedTypeSymbol, TypeExtensionModel> typeShapeExtensions,
         CancellationToken cancellationToken)
     {
         if (generateShapeDeclarations.IsEmpty)
@@ -42,72 +41,82 @@ public sealed partial class Parser : TypeDataModelGenerator
             return null;
         }
 
+        Dictionary<INamedTypeSymbol, TypeExtensionModel> typeShapeExtensions = DiscoverTypeShapeExtensions(knownSymbols, cancellationToken);
         Parser parser = new(knownSymbols.Compilation.Assembly, typeShapeExtensions, knownSymbols, cancellationToken);
         TypeDeclarationModel shapeProviderDeclaration = CreateShapeProviderDeclaration(knownSymbols.Compilation);
         ImmutableEquatableArray<TypeDeclarationModel> generateShapeTypes = parser.IncludeTypesUsingGenerateShapeAttributes(generateShapeDeclarations);
         return parser.ExportTypeShapeProviderModel(shapeProviderDeclaration, generateShapeTypes);
     }
 
-    public static ImmutableArray<TypeExtensionModel> DiscoverTypeShapeExtensions(PolyTypeKnownSymbols knownSymbols, Compilation compilation, MetadataReference metadataReference, CancellationToken cancellationToken)
+    private static Dictionary<INamedTypeSymbol, TypeExtensionModel> DiscoverTypeShapeExtensions(PolyTypeKnownSymbols knownSymbols, CancellationToken cancellationToken)
     {
-        if (compilation.GetAssemblyOrModuleSymbol(metadataReference) is not IAssemblySymbol assemblySymbol)
+        // The compilation itself.
+        ImmutableArray<TypeExtensionModel> typeShapeExtensions = DiscoverTypeShapeExtensionsInAssembly(knownSymbols.Compilation.Assembly);
+
+        // All referenced assemblies.
+        foreach (MetadataReference metadataReference in knownSymbols.Compilation.References)
         {
-            return ImmutableArray<TypeExtensionModel>.Empty;
+            if (knownSymbols.Compilation.GetAssemblyOrModuleSymbol(metadataReference) is IAssemblySymbol referencedAssembly)
+            {
+                typeShapeExtensions = typeShapeExtensions.AddRange(DiscoverTypeShapeExtensionsInAssembly(referencedAssembly));
+            }
         }
 
-        return DiscoverTypeShapeExtensions(knownSymbols, assemblySymbol, cancellationToken);
-    }
+        // In combining extensions from multiple sources, we *could* apply a merge policy that the local compilation wins when there's a conflict.
+        // Type extensions have some aspects that can be merged (e.g. associated types) and some that cannot be (e.g. Kind and Marshaller).
+        return typeShapeExtensions.ToDictionary<INamedTypeSymbol, TypeExtensionModel>(m => m.Target, SymbolEqualityComparer.Default);
 
-    public static ImmutableArray<TypeExtensionModel> DiscoverTypeShapeExtensions(PolyTypeKnownSymbols knownSymbols, IAssemblySymbol assemblySymbol, CancellationToken cancellationToken)
-    {
-        Dictionary<ITypeSymbol, TypeExtensionModel> associatedTypes = new(SymbolEqualityComparer.Default);
-        foreach (AttributeData attribute in assemblySymbol.GetAttributes())
+        ImmutableArray<TypeExtensionModel> DiscoverTypeShapeExtensionsInAssembly(IAssemblySymbol assemblySymbol)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (!SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, knownSymbols.TypeShapeExtensionAttribute))
+            Dictionary<ITypeSymbol, TypeExtensionModel> associatedTypes = new(SymbolEqualityComparer.Default);
+            foreach (AttributeData attribute in assemblySymbol.GetAttributes())
             {
-                continue;
-            }
-
-            if (attribute.ConstructorArguments is not [{ Value: INamedTypeSymbol targetType }])
-            {
-                continue;
-            }
-
-            var associatedTypesNamedArg = attribute.NamedArguments.FirstOrDefault(kv => kv.Key == KnownSymbols.TypeShapeAssociatedTypesPropertyName);
-            if (associatedTypesNamedArg.Value.Values is { IsDefaultOrEmpty: false } associatedTypesArg)
-            {
-                List<AssociatedTypeModel> associatedTypeSymbols = new(associatedTypesArg.Length);
-                foreach (TypedConstant tc in associatedTypesArg)
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, knownSymbols.TypeShapeExtensionAttribute))
                 {
-                    if (tc.Value is INamedTypeSymbol associatedType)
-                    {
-                        associatedTypeSymbols.Add(new AssociatedTypeModel(associatedType, assemblySymbol, attribute.GetLocation()));
-                    }
+                    continue;
                 }
 
-                if (associatedTypeSymbols.Count > 0)
+                if (attribute.ConstructorArguments is not [{ Value: INamedTypeSymbol targetType }])
                 {
-                    if (!associatedTypes.TryGetValue(targetType, out TypeExtensionModel? existingRelatedTypes))
+                    continue;
+                }
+
+                var associatedTypesNamedArg = attribute.NamedArguments.FirstOrDefault(kv => kv.Key == KnownSymbols.TypeShapeAssociatedTypesPropertyName);
+                if (associatedTypesNamedArg.Value.Values is { IsDefaultOrEmpty: false } associatedTypesArg)
+                {
+                    List<AssociatedTypeModel> associatedTypeSymbols = new(associatedTypesArg.Length);
+                    foreach (TypedConstant tc in associatedTypesArg)
                     {
-                        existingRelatedTypes = new TypeExtensionModel
+                        if (tc.Value is INamedTypeSymbol associatedType)
                         {
-                            Target = targetType,
-                            AssociatedTypes = ImmutableArray<AssociatedTypeModel>.Empty,
-                        };
+                            associatedTypeSymbols.Add(new AssociatedTypeModel(associatedType, assemblySymbol, attribute.GetLocation()));
+                        }
                     }
 
-                    existingRelatedTypes = existingRelatedTypes with
+                    if (associatedTypeSymbols.Count > 0)
                     {
-                        AssociatedTypes = existingRelatedTypes.AssociatedTypes.AddRange(associatedTypeSymbols),
-                    };
+                        if (!associatedTypes.TryGetValue(targetType, out TypeExtensionModel? existingRelatedTypes))
+                        {
+                            existingRelatedTypes = new TypeExtensionModel
+                            {
+                                Target = targetType,
+                                AssociatedTypes = ImmutableArray<AssociatedTypeModel>.Empty,
+                            };
+                        }
 
-                    associatedTypes[targetType] = existingRelatedTypes;
+                        existingRelatedTypes = existingRelatedTypes with
+                        {
+                            AssociatedTypes = existingRelatedTypes.AssociatedTypes.AddRange(associatedTypeSymbols),
+                        };
+
+                        associatedTypes[targetType] = existingRelatedTypes;
+                    }
                 }
             }
-        }
 
-        return associatedTypes.Values.ToImmutableArray();
+            return associatedTypes.Values.ToImmutableArray();
+        }
     }
 
     // We want to flatten System.Tuple types for consistency with
