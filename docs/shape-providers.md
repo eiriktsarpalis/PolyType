@@ -171,9 +171,9 @@ This provides a Reflection-free way to activate an associated type via its defau
 given its @PolyType.Abstractions.ITypeShape.
 For example, serializers may need to jump from a type shape to its converter.
 
-[!code-csharp[](../samples/CSharpSamples/AssociatedTypes.cs#TypeShapeOneType)]
+[!code-csharp[](CSharpSamples/AssociatedTypes.cs#TypeShapeOneType)]
 
-@PolyType.Abstractions.ITypeShape.GetAssociatedTypeFactory*?displayProperty=nameWithType is the method to use to obtain a factory for instances of the associated type.
+@PolyType.Abstractions.ITypeShape.GetAssociatedType*?displayProperty=nameWithType is the method to use to obtain a factory for instances of the associated type.
 The @PolyType.SourceGenModel.SourceGenTypeShapeProvider implementation of this method requires that the associated types be pre-determined at compile time via attributes.
 The @PolyType.ReflectionProvider.ReflectionTypeShapeProvider does _not_ require these attributes.
 Thus, it can be valuable to test your associated types code with the source generation provider to ensure your code is AOT-compatible.
@@ -184,7 +184,7 @@ but making the type `public` is highly recommended so that when the data type is
 
 Registering associated types is particularly important when the associated type is generic, and the generic type arguments come from the target type.
 
-[!code-csharp[](../samples/CSharpSamples/AssociatedTypes.cs#GenericAssociatedType)]
+[!code-csharp[](CSharpSamples/AssociatedTypes.cs#GenericAssociatedType)]
 
 ### TypeShapeExtensionAttribute
 
