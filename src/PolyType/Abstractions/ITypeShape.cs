@@ -42,6 +42,24 @@ public interface ITypeShape
     /// <param name="state">The state to be passed to the function.</param>
     /// <returns>The result produced by the function.</returns>
     object? Invoke(ITypeShapeFunc func, object? state = null);
+
+    /// <summary>
+    /// Gets the factory for a type associated to this property's declared <see cref="Type"/>,
+    /// as captured in <see cref="TypeShapeAttribute.AssociatedTypes"/> or
+    /// <see cref="TypeShapeExtensionAttribute.AssociatedTypes"/>.
+    /// </summary>
+    /// <param name="associatedType">
+    /// The associated type (which must be one found in the <see cref="TypeShapeAttribute.AssociatedTypes"/> property).
+    /// If the associated type is a generic type definition, the type arguments used on this shape's <see cref="Type"/>
+    /// will be used to close the associated generic type.
+    /// </param>
+    /// <returns>A factory for the associated type, or <see langword="null" /> if no factory for the associated type is available.</returns>
+    /// <remarks>
+    /// <see cref="ReflectionProvider.ReflectionTypeShapeProvider"/> can produce the factory on demand without any <see cref="TypeShapeAttribute.AssociatedTypes"/>,
+    /// while <see cref="SourceGenModel.SourceGenTypeShapeProvider"/> is expected to only produce the factory that was explicitly requested via attribute.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">Thrown when this method is called on an instance that does not represent a generic type.</exception>
+    Func<object>? GetAssociatedTypeFactory(Type associatedType);
 }
 
 /// <summary>

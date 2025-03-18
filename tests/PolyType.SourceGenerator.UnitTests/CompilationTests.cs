@@ -53,6 +53,91 @@ public static class CompilationTests
     }
 
     [Fact]
+    [Trait("AssociatedTypes", "true")]
+    public static void TypeShapeExtensionWithAssociatedTypes()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [assembly: TypeShapeExtension(typeof(GenericClass<,>), AssociatedTypes = [typeof(GenericConverter<,>)])]
+
+            public class GenericClass<T1, T2>;
+            public class GenericConverter<T1, T2>;
+
+            [GenerateShape<GenericClass<int, string>>]
+            public partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    [Trait("AssociatedTypes", "true")]
+    public static void TypeShapeWithAssociatedTypes()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [TypeShape(AssociatedTypes = [typeof(GenericConverter<,>)])]
+            public class GenericClass<T1, T2>;
+            public class GenericConverter<T1, T2>;
+
+            [GenerateShape<GenericClass<int, string>>]
+            public partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    [Trait("AssociatedTypes", "true")]
+    public static void TypeShapeWithAssociatedTypes_Duplicates()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [TypeShape(AssociatedTypes = [typeof(GenericConverter<,>), typeof(GenericConverter<,>)])]
+            public class GenericClass<T1, T2>;
+            public class GenericConverter<T1, T2>;
+
+            [GenerateShape<GenericClass<int, string>>]
+            public partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    [Trait("AssociatedTypes", "true")]
+    public static void TypeShapeWithAssociatedTypes_GenericNestedInGeneric()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            namespace PolyType.Tests;
+
+            public partial class AssociatedTypesTests
+            {
+                [TypeShape(AssociatedTypes = [typeof(GenericWrapper<>.GenericNested<>)])]
+                public class GenericClass<T1, T2>;
+
+                public class GenericWrapper<T1>
+                {
+                    public class GenericNested<T2>;
+                }
+
+
+                [GenerateShape<GenericClass<int, string>>]
+                public partial class Witness;
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
     public static void CompileSimpleCollection_NoErrors()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
@@ -208,7 +293,7 @@ public static class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
-    
+
     [Fact]
     public static void EnumGeneration_NoErrors()
     {
@@ -427,7 +512,7 @@ public static class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
-    
+
     [Fact]
     public static void TupleTypes_NoErrors()
     {
@@ -443,7 +528,7 @@ public static class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
-    
+
     [Fact]
     public static void NullableTypes_NoErrors()
     {
@@ -459,7 +544,7 @@ public static class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
-    
+
     [Theory]
     [InlineData("int[,]")]
     [InlineData("System.ReadOnlyMemory<int>")]
@@ -479,7 +564,7 @@ public static class CompilationTests
         {
             return; // Ambiguity between types in System.Memory and mscorlib.
         }
-        
+
         Compilation compilation = CompilationHelpers.CreateCompilation($"""
            using PolyType;
 
@@ -490,7 +575,7 @@ public static class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
-    
+
     [Fact]
     public static void DictionaryTypes_NoErrors()
     {
@@ -580,11 +665,11 @@ public static class CompilationTests
                 int x0 = 0, int x1 = 1, int x2 = 2, int x3 = 3, int x4 = 4, int x5 = 5, int x6 = 5,
                 int x7 = 7, int x8 = 8, string x9 = "str", LargeClassRecord? nested = null);                                                                                                                      
             """);
-        
+
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
-    
+
     [Fact]
     public static void NullabilityAttributes_NoErrors()
     {
@@ -648,7 +733,7 @@ public static class CompilationTests
                 public string? DisallowNullField = "str";
             }                                                                                                         
             """);
-        
+
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }

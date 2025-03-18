@@ -9,6 +9,11 @@ namespace PolyType.Roslyn;
 public class KnownSymbols(Compilation compilation)
 {
     /// <summary>
+    /// The name of the property on TypeShapeAttribute that stores associated types.
+    /// </summary>
+    public const string TypeShapeAssociatedTypesPropertyName = "AssociatedTypes";
+
+    /// <summary>
     /// The compilation from which information is being queried.
     /// </summary>
     public Compilation Compilation { get; } = compilation;
@@ -18,6 +23,7 @@ public class KnownSymbols(Compilation compilation)
     /// </summary>
     public IAssemblySymbol CoreLibAssembly => _CoreLibAssembly ??= Compilation.GetSpecialType(SpecialType.System_Int32).ContainingAssembly;
     private IAssemblySymbol? _CoreLibAssembly;
+
 
     /// <summary>
     /// The type symbol for <see cref="System.Reflection.MemberInfo"/>.
@@ -258,9 +264,40 @@ public class KnownSymbols(Compilation compilation)
             return field.Value;
         }
 
-        INamedTypeSymbol? type = Compilation.GetTypeByMetadataName(fullyQualifiedName);
-        field = new(type);
-        return type;
+        if (Compilation.Assembly.GetTypeByMetadataName(fullyQualifiedName) is { } ownSymbol)
+        {
+            // This assembly defines it.
+            field = new(ownSymbol);
+        }
+        else
+        {
+            foreach (MetadataReference? reference in Compilation.References)
+            {
+                if (!reference.Properties.Aliases.IsEmpty)
+                {
+                    // We don't (yet) generate code to leverage aliases, so we skip any symbols defined in aliased references.
+                    continue;
+                }
+
+                if (Compilation.GetAssemblyOrModuleSymbol(reference) is IAssemblySymbol referencedAssembly)
+                {
+                    if (referencedAssembly.GetTypeByMetadataName(fullyQualifiedName) is { } externalSymbol)
+                    {
+                        if (Compilation.IsSymbolAccessibleWithin(externalSymbol, Compilation.Assembly))
+                        {
+                            // A referenced assembly declares this symbol and it is accessible to our own.
+                            field = new(externalSymbol);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Ensure to record that we tried, whether we found it or not.
+            field = new(field.Value);
+        }
+
+        return field.Value;
     }
 
     /// <summary>

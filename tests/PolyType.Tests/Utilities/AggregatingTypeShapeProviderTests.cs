@@ -179,6 +179,8 @@ public class AggregatingTypeShapeProviderTests
             throw new NotImplementedException();
         }
 
+        public Func<object>? GetAssociatedTypeFactory(Type associatedType) => throw new NotImplementedException();
+
         public object? Invoke(ITypeShapeFunc func, object? state = null)
         {
             throw new NotImplementedException();

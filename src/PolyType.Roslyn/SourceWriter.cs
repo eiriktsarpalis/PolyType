@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -94,7 +95,7 @@ public sealed class SourceWriter
     /// <param name="trimNullAssignmentLines">Trims any lines containing 'Identifier = null,' assignments.</param>
     /// <param name="disableIndentation">Append text without preserving the current indentation.</param>
     public void WriteLine(
-        string text,
+        [StringSyntax("c#-test")] string text,
         bool trimNullAssignmentLines = false,
         bool disableIndentation = false)
     {
@@ -143,6 +144,11 @@ public sealed class SourceWriter
         Debug.Assert(_indentation == 0 && _sb.Length > 0);
         return SourceText.From(_sb.ToString(), Encoding.UTF8);
     }
+
+    /// <summary>
+    /// Renders the written text as a string.
+    /// </summary>
+    public override string ToString() => _sb.ToString();
 
     private void AddIndentation()
         => _sb.Append(IndentationChar, CharsPerIndentation * _indentation);

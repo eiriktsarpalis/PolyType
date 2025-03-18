@@ -110,4 +110,20 @@ public sealed partial class Parser
         category: "PolyType.SourceGenerator",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+
+    private static DiagnosticDescriptor AssociatedTypeArityMismatch { get; } = new DiagnosticDescriptor(
+        id: "TS0016",
+        title: "Associated type arity mismatch.",
+        messageFormat: "The associated type '{0}' has arity {1} which must be 0 or match the target type, which has arity {2}.",
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    private static DiagnosticDescriptor AssociatedTypeInExternalAssembly { get; } = new DiagnosticDescriptor(
+        id: "TS0017",
+        title: "Associated type must be declared in same assembly.",
+        messageFormat: "The associated type '{0}' is not declared in the same assembly as the attribute annotation specifying it.",
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
 }

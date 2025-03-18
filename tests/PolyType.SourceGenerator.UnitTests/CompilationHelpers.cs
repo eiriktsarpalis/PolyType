@@ -4,6 +4,7 @@ using PolyType.Roslyn;
 using PolyType.SourceGenerator.Model;
 using System.Collections;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Xunit;
 
@@ -19,12 +20,14 @@ public record PolyTypeSourceGeneratorResult
 
 public static class CompilationHelpers
 {
+    private static readonly string FileSeparator = new string('=', 140);
+
     private static readonly CSharpParseOptions s_defaultParseOptions = CreateParseOptions();
 #if NET
     private static readonly Assembly s_systemRuntimeAssembly = Assembly.Load(new AssemblyName("System.Runtime"));
 #endif
     public static bool IsMonoRuntime { get; } = Type.GetType("Mono.Runtime") is not null;
-    
+
     private static string GetAssemblyFromSharedFrameworkDirectory(string assemblyName) =>
         Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, assemblyName);
 
@@ -43,7 +46,7 @@ public static class CompilationHelpers
     }
 
     public static Compilation CreateCompilation(
-        string source,
+        [StringSyntax("c#-test")] string source,
         MetadataReference[]? additionalReferences = null,
         string assemblyName = "TestAssembly",
         CSharpParseOptions? parseOptions = null,
@@ -52,15 +55,15 @@ public static class CompilationHelpers
     {
         parseOptions ??= s_defaultParseOptions;
         additionalReferences ??= [];
-        
-        List<SyntaxTree> syntaxTrees = 
-        [ 
+
+        List<SyntaxTree> syntaxTrees =
+        [
             CSharpSyntaxTree.ParseText(source, parseOptions),
 #if !NET
             CSharpSyntaxTree.ParseText(CompilerPolyfillAttributes, parseOptions),
 #endif
         ];
-        
+
 #if !NET
         if (!IsMonoRuntime)
         {
@@ -68,7 +71,7 @@ public static class CompilationHelpers
         }
 #endif
 
-        MetadataReference[] references = 
+        MetadataReference[] references =
         [
             MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
             MetadataReference.CreateFromFile(GetAssemblyFromSharedFrameworkDirectory(IsMonoRuntime ? "Facades/netstandard.dll" : "netstandard.dll")),
@@ -87,7 +90,7 @@ public static class CompilationHelpers
             MetadataReference.CreateFromFile(typeof(PolyType.Abstractions.ITypeShape).Assembly.Location),
             .. additionalReferences,
         ];
-        
+
         return CSharpCompilation.Create(
             assemblyName,
             syntaxTrees: syntaxTrees,
@@ -122,10 +125,24 @@ public static class CompilationHelpers
 
         CSharpGeneratorDriver driver = CreatePolyTypeSourceGeneratorDriver(compilation, generator);
         driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation outCompilation, out ImmutableArray<Diagnostic> diagnostics);
+        var compilationDiagnostics = outCompilation.GetDiagnostics();
+
+        if (TestContext.Current.TestOutputHelper is { } logger)
+        {
+            foreach (Diagnostic diagnostic in diagnostics.Concat(compilationDiagnostics))
+            {
+                logger.WriteLine(diagnostic.ToString());
+            }
+
+            foreach (var tree in outCompilation.SyntaxTrees)
+            {
+                LogGeneratedCode(tree, logger);
+            }
+        }
 
         if (!disableDiagnosticValidation)
         {
-            outCompilation.GetDiagnostics().AssertMaxSeverity(DiagnosticSeverity.Info);
+            compilationDiagnostics.AssertMaxSeverity(DiagnosticSeverity.Info);
             diagnostics.AssertMaxSeverity(DiagnosticSeverity.Info);
         }
 
@@ -133,7 +150,7 @@ public static class CompilationHelpers
         {
             NewCompilation = outCompilation,
             GeneratedModels = [.. generatedModels],
-            Diagnostics = [.. diagnostics, .. outCompilation.GetDiagnostics()],
+            Diagnostics = [.. diagnostics, .. compilationDiagnostics],
         };
     }
 
@@ -292,4 +309,16 @@ public static class CompilationHelpers
         }
         """;
 #endif
+
+
+    internal static void LogGeneratedCode(SyntaxTree tree, ITestOutputHelper logger)
+    {
+        logger.WriteLine(FileSeparator);
+        logger.WriteLine($"{tree.FilePath} content:");
+        logger.WriteLine(FileSeparator);
+        using NumberedLineWriter lineWriter = new(logger);
+        tree.GetRoot().WriteTo(lineWriter);
+        lineWriter.WriteLine(string.Empty);
+    }
+
 }

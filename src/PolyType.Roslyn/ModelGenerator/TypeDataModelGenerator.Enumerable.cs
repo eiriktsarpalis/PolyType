@@ -1,12 +1,13 @@
 ﻿using Microsoft.CodeAnalysis;
-using System.Diagnostics.CodeAnalysis;
 using PolyType.Roslyn.Helpers;
+using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PolyType.Roslyn;
 
 public partial class TypeDataModelGenerator
 {
-    private bool TryMapEnumerable(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
+    private bool TryMapEnumerable(ITypeSymbol type, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
     {
         model = null;
         status = default;
@@ -181,6 +182,7 @@ public partial class TypeDataModelGenerator
             AddElementMethod = addElementMethod,
             FactoryMethod = factoryMethod,
             Rank = rank,
+            AssociatedTypes = associatedTypes,
         };
 
         return true;

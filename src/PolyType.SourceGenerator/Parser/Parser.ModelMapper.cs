@@ -2,6 +2,7 @@
 using PolyType.Roslyn;
 using PolyType.SourceGenerator.Helpers;
 using PolyType.SourceGenerator.Model;
+using System.Collections.Immutable;
 using System.Diagnostics;
 
 namespace PolyType.SourceGenerator;
@@ -16,6 +17,8 @@ public sealed partial class Parser
 
     private TypeShapeModel MapModelCore(TypeDataModel model, TypeId typeId, string sourceIdentifier, bool isFSharpUnionCase = false)
     {
+        ImmutableEquatableArray<AssociatedTypeId> associatedTypes = CollectAssociatedTypes(model);
+
         return model switch
         {
             EnumDataModel enumModel => new EnumShapeModel
@@ -23,6 +26,7 @@ public sealed partial class Parser
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
                 UnderlyingType = CreateTypeId(enumModel.UnderlyingType),
+                AssociatedTypes = associatedTypes,
             },
 
             OptionalDataModel optionalModel => new OptionalShapeModel
@@ -37,14 +41,16 @@ public sealed partial class Parser
                 },
                 SourceIdentifier = sourceIdentifier,
                 ElementType = CreateTypeId(optionalModel.ElementType),
+                AssociatedTypes = associatedTypes,
             },
-            
+
             SurrogateTypeDataModel surrogateModel => new SurrogateShapeModel
             {
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
                 SurrogateType = CreateTypeId(surrogateModel.SurrogateType),
                 MarshallerType = CreateTypeId(surrogateModel.MarshallerType),
+                AssociatedTypes = associatedTypes,
             },
 
             EnumerableDataModel enumerableModel => new EnumerableShapeModel
@@ -59,31 +65,32 @@ public sealed partial class Parser
 
                     CollectionModelConstructionStrategy.Mutable => CollectionConstructionStrategy.Mutable,
                     CollectionModelConstructionStrategy.Span => CollectionConstructionStrategy.Span,
-                    CollectionModelConstructionStrategy.List => 
-                        IsFactoryAcceptingIEnumerable(enumerableModel.FactoryMethod) 
-                        ? CollectionConstructionStrategy.Enumerable 
+                    CollectionModelConstructionStrategy.List =>
+                        IsFactoryAcceptingIEnumerable(enumerableModel.FactoryMethod)
+                        ? CollectionConstructionStrategy.Enumerable
                         : CollectionConstructionStrategy.Span,
 
                     _ => CollectionConstructionStrategy.None,
                 },
 
                 AddElementMethod = enumerableModel.AddElementMethod?.Name,
-                ImplementationTypeFQN = 
+                ImplementationTypeFQN =
                     enumerableModel.ConstructionStrategy is CollectionModelConstructionStrategy.Mutable &&
-                    enumerableModel.FactoryMethod is { IsStatic: false, ContainingType: INamedTypeSymbol implType } && 
+                    enumerableModel.FactoryMethod is { IsStatic: false, ContainingType: INamedTypeSymbol implType } &&
                     !SymbolEqualityComparer.Default.Equals(implType, enumerableModel.Type)
 
                     ? implType.GetFullyQualifiedName()
                     : null,
 
                 StaticFactoryMethod = enumerableModel.FactoryMethod is { IsStatic: true } m ? m.GetFullyQualifiedName() : null,
-                CtorRequiresListConversion = 
+                CtorRequiresListConversion =
                     enumerableModel.ConstructionStrategy is CollectionModelConstructionStrategy.List &&
                     !IsFactoryAcceptingIEnumerable(enumerableModel.FactoryMethod),
 
                 Kind = enumerableModel.EnumerableKind,
                 Rank = enumerableModel.Rank,
                 ElementTypeContainsNullableAnnotations = enumerableModel.ElementType.ContainsNullabilityAnnotations(),
+                AssociatedTypes = associatedTypes,
             },
 
             DictionaryDataModel dictionaryModel => new DictionaryShapeModel
@@ -119,9 +126,10 @@ public sealed partial class Parser
                 CtorRequiresDictionaryConversion =
                     dictionaryModel.ConstructionStrategy is CollectionModelConstructionStrategy.Dictionary &&
                     !IsFactoryAcceptingIEnumerable(dictionaryModel.FactoryMethod),
-                KeyValueTypesContainNullableAnnotations = 
+                KeyValueTypesContainNullableAnnotations =
                     dictionaryModel.KeyType.ContainsNullabilityAnnotations() ||
                     dictionaryModel.ValueType.ContainsNullabilityAnnotations(),
+                AssociatedTypes = associatedTypes,
             },
 
             ObjectDataModel objectModel => new ObjectShapeModel
@@ -140,6 +148,7 @@ public sealed partial class Parser
                 IsValueTupleType = false,
                 IsTupleType = false,
                 IsRecordType = model.Type.IsRecord,
+                AssociatedTypes = associatedTypes,
             },
 
             TupleDataModel tupleModel => new ObjectShapeModel
@@ -154,6 +163,7 @@ public sealed partial class Parser
                 IsValueTupleType = tupleModel.IsValueTuple,
                 IsTupleType = true,
                 IsRecordType = false,
+                AssociatedTypes = associatedTypes,
             },
 
             FSharpUnionDataModel unionModel => new FSharpUnionShapeModel
@@ -168,7 +178,7 @@ public sealed partial class Parser
 
                 TagReaderIsMethod = unionModel.TagReader.MethodKind is not MethodKind.PropertyGet,
                 UnderlyingModel = new ObjectShapeModel
-                { 
+                {
                     Type = typeId,
                     Constructor = null,
                     Properties = [],
@@ -176,17 +186,19 @@ public sealed partial class Parser
                     IsValueTupleType = false,
                     IsTupleType = false,
                     IsRecordType = false,
+                    AssociatedTypes = associatedTypes,
                 },
                 UnionCases = unionModel.UnionCases
                     .Select(unionCase => new FSharpUnionCaseShapeModel(
-                        Name: unionCase.Name, 
-                        Tag: unionCase.Tag, 
+                        Name: unionCase.Name,
+                        Tag: unionCase.Tag,
                         TypeModel: MapModelCore(unionCase.Type, CreateTypeId(unionCase.Type.Type), $"{sourceIdentifier}__Case_{unionCase.Name}", isFSharpUnionCase: true)))
                     .ToImmutableEquatableArray(),
+                AssociatedTypes = associatedTypes,
             },
 
             _ => new ObjectShapeModel
-            { 
+            {
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
                 Constructor = null,
@@ -194,6 +206,7 @@ public sealed partial class Parser
                 IsValueTupleType = false,
                 IsTupleType = false,
                 IsRecordType = false,
+                AssociatedTypes = associatedTypes,
             }
         };
 
@@ -201,6 +214,84 @@ public sealed partial class Parser
         {
             return method?.Parameters is [{ Type: INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Collections_Generic_IEnumerable_T } }];
         }
+    }
+
+    private ImmutableEquatableArray<AssociatedTypeId> CollectAssociatedTypes(TypeDataModel model)
+    {
+        var associatedTypeSymbols = model.AssociatedTypes;
+
+        var namedType = model.Type as INamedTypeSymbol;
+        if (namedType is not null && (
+            _typeShapeExtensions.TryGetValue(namedType, out TypeExtensionModel? extensionModel) ||
+            (namedType.IsGenericType && _typeShapeExtensions.TryGetValue(namedType.ConstructUnboundGenericType(), out extensionModel))))
+        {
+            associatedTypeSymbols = associatedTypeSymbols.AddRange(extensionModel.AssociatedTypes);
+        }
+
+        List<AssociatedTypeId> associatedTypesBuilder = new();
+        ITypeSymbol[] typeArgs = namedType?.GetRecursiveTypeArguments() ?? [];
+        foreach ((INamedTypeSymbol openType, IAssemblySymbol associatedAssembly, Location? location) in associatedTypeSymbols)
+        {
+            if (!SymbolEqualityComparer.Default.Equals(openType.ContainingAssembly, associatedAssembly))
+            {
+                ReportDiagnostic(AssociatedTypeInExternalAssembly, location, openType.GetFullyQualifiedName());
+                continue;
+            }
+
+            if (!IsAccessibleSymbol(openType))
+            {
+                // Skip types that are not accessible in the current scope
+                ReportDiagnostic(TypeNotAccessible, location, openType.ToDisplayString());
+                continue;
+            }
+
+            IMethodSymbol? defaultCtor = null;
+            if (!openType.IsUnboundGenericType)
+            {
+                if (TryGetCtorOrReport(openType, out defaultCtor))
+                {
+                    associatedTypesBuilder.Add(CreateAssociatedTypeId(openType, openType));
+                }
+                else
+                {
+                    continue;
+                }
+            }
+            else
+            {
+                if (openType.OriginalDefinition.ConstructRecursive(typeArgs) is INamedTypeSymbol closedType)
+                {
+                    if (TryGetCtorOrReport(closedType, out defaultCtor))
+                    {
+                        associatedTypesBuilder.Add((CreateAssociatedTypeId(openType, closedType)));
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+                else if (openType.Arity != typeArgs.Length)
+                {
+                    ReportDiagnostic(AssociatedTypeArityMismatch, location, openType.GetFullyQualifiedName(), openType.Arity, typeArgs.Length);
+                    continue;
+                }
+            }
+
+            bool TryGetCtorOrReport(INamedTypeSymbol type, out IMethodSymbol? defaultCtor)
+            {
+                defaultCtor = type.InstanceConstructors.FirstOrDefault(c => c.Parameters.IsEmpty);
+                if (defaultCtor is null || !IsAccessibleSymbol(defaultCtor))
+                {
+                    ReportDiagnostic(TypeNotAccessible, location, openType.ToDisplayString());
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
+        ImmutableEquatableArray<AssociatedTypeId> associatedTypes = associatedTypesBuilder.ToImmutableEquatableArray();
+        return associatedTypes;
     }
 
     private static UnionShapeModel MapUnionModel(TypeDataModel model, TypeShapeModel underlyingIncrementalModel)
@@ -227,6 +318,7 @@ public sealed partial class Parser
                     IsBaseType = derived.IsBaseType,
                 })
                 .ToImmutableEquatableArray(),
+            AssociatedTypes = ImmutableEquatableArray<AssociatedTypeId>.Empty,
         };
     }
 
@@ -236,7 +328,7 @@ public sealed partial class Parser
 
         bool emitGetter = property.IncludeGetter;
         bool emitSetter = property.IncludeSetter && !property.IsInitOnly;
-        
+
         return new PropertyShapeModel
         {
             Name = isClassTupleType ? $"Item{tupleElementIndex + 1}" : propertyName ?? property.Name,
@@ -273,7 +365,7 @@ public sealed partial class Parser
         int position = constructor.Parameters.Length;
         List<ConstructorParameterShapeModel>? requiredMembers = null;
         List<ConstructorParameterShapeModel>? optionalMembers = null;
-        
+
         bool isAccessibleConstructor = IsAccessibleSymbol(constructor.Constructor);
         bool isParameterizedConstructor = position > 0 || constructor.MemberInitializers.Any(p => p.IsRequired || p.IsInitOnly);
         IEnumerable<PropertyDataModel> memberInitializers = isParameterizedConstructor
@@ -376,7 +468,7 @@ public sealed partial class Parser
             // Resolve the [ParameterShape] attribute name override
             name = value;
         }
-        else if (isFSharpUnionCase && 
+        else if (isFSharpUnionCase &&
                  name.StartsWith("_", StringComparison.Ordinal) &&
                  objectModel.Properties.All(p => p.Name != name))
         {
@@ -466,7 +558,7 @@ public sealed partial class Parser
                 IsAccessible = true,
                 CanUseUnsafeAccessors = false,
                 IsPublic = true,
-            };   
+            };
         }
 
         static ConstructorParameterShapeModel MapTupleConstructorParameter(TypeId typeId, PropertyDataModel tupleElement, int position)
@@ -495,19 +587,121 @@ public sealed partial class Parser
         }
     }
 
+    private record struct CustomAttributeAssociatedTypeProvider(ImmutableArray<string> Names);
+
+    private readonly Dictionary<INamedTypeSymbol, CustomAttributeAssociatedTypeProvider> customAttributes = new(SymbolEqualityComparer.Default);
+
+    private void ParseCustomAssociatedTypeAttributes(
+        ITypeSymbol typeSymbol,
+        out ImmutableArray<AssociatedTypeModel> associatedTypes)
+    {
+        associatedTypes = ImmutableArray<AssociatedTypeModel>.Empty;
+        foreach (AttributeData att in typeSymbol.GetAttributes())
+        {
+            if (att.AttributeClass is null)
+            {
+                continue;
+            }
+
+            // Is this attribute a custom one that provides associated types?
+            if (!customAttributes.TryGetValue(att.AttributeClass, out CustomAttributeAssociatedTypeProvider provider))
+            {
+                customAttributes[att.AttributeClass] = provider = GetAttributeProviderData(att.AttributeClass);
+            }
+
+            if (provider.Names.IsEmpty)
+            {
+                continue;
+            }
+
+            Location? location = att.GetLocation();
+            foreach (string name in provider.Names)
+            {
+                bool match = false;
+
+                // First try to match the name to a parameter.
+                for (int i = 0; i < att.AttributeConstructor?.Parameters.Length && !match; i++)
+                {
+                    if (att.AttributeConstructor.Parameters[i].Name == name)
+                    {
+                        match = true;
+                        associatedTypes = associatedTypes.AddRange(ParseArgument(att.ConstructorArguments[i]));
+                    }
+                }
+
+                // Now try to match the name to a named argument.
+                if (!match)
+                {
+                    foreach (KeyValuePair<string, TypedConstant> namedArgument in att.NamedArguments)
+                    {
+                        if (namedArgument.Key == name)
+                        {
+                            associatedTypes = associatedTypes.AddRange(ParseArgument(namedArgument.Value));
+                            match = true;
+                            break;
+                        }
+                    }
+                }
+
+                IEnumerable<AssociatedTypeModel> ParseArgument(TypedConstant arg)
+                {
+                    if (arg.Kind == TypedConstantKind.Array)
+                    {
+                        foreach (TypedConstant argValue in arg.Values)
+                        {
+                            if (argValue.Value is INamedTypeSymbol namedType)
+                            {
+                                yield return new AssociatedTypeModel(namedType, typeSymbol.ContainingAssembly, location);
+                            }
+                        }
+                    }
+                    else if (arg.Value is INamedTypeSymbol namedType)
+                    {
+                        yield return new AssociatedTypeModel(namedType, typeSymbol.ContainingAssembly, location);
+                    }
+                }
+            }
+        }
+
+        CustomAttributeAssociatedTypeProvider GetAttributeProviderData(INamedTypeSymbol attributeClass)
+        {
+            var names = ImmutableArray.CreateBuilder<string>();
+            foreach (AttributeData att in attributeClass.GetAttributes())
+            {
+                if (att.AttributeClass is null)
+                {
+                    continue;
+                }
+
+                if (SymbolEqualityComparer.Default.Equals(att.AttributeClass, _knownSymbols.AssociatedTypeAttributeAttribute))
+                {
+                    if (att.ConstructorArguments is [{ Value: string name }])
+                    {
+                        names.Add(name);
+                    }
+                }
+            }
+
+            return new CustomAttributeAssociatedTypeProvider(names.ToImmutable());
+        }
+    }
+
     private void ParseTypeShapeAttribute(
         ITypeSymbol typeSymbol,
         out TypeShapeKind? kind,
         out ITypeSymbol? marshaller,
+        out ImmutableArray<AssociatedTypeModel> associatedTypes,
         out Location? location)
     {
         kind = null;
         marshaller = null;
         location = null;
+        associatedTypes = ImmutableArray<AssociatedTypeModel>.Empty;
 
         if (typeSymbol.GetAttribute(_knownSymbols.TypeShapeAttribute) is AttributeData propertyAttr)
         {
             location = propertyAttr.GetLocation();
+            Location? localLocation = location;
             foreach (KeyValuePair<string, TypedConstant> namedArgument in propertyAttr.NamedArguments)
             {
                 switch (namedArgument.Key)
@@ -517,6 +711,16 @@ public sealed partial class Parser
                         break;
                     case "Marshaller":
                         marshaller = namedArgument.Value.Value as ITypeSymbol;
+                        break;
+                    case KnownSymbols.TypeShapeAssociatedTypesPropertyName:
+                        if (namedArgument.Value.Values is { Length: > 0 } associatedTypesArray)
+                        {
+                            associatedTypes = ImmutableArray.CreateRange(
+                                from tc in associatedTypesArray
+                                where tc.Value is INamedTypeSymbol s
+                                select new AssociatedTypeModel((INamedTypeSymbol)tc.Value!, typeSymbol.ContainingAssembly, localLocation));
+                        }
+
                         break;
                 }
             }

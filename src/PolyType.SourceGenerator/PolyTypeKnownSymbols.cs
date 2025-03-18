@@ -14,6 +14,12 @@ public sealed class PolyTypeKnownSymbols(Compilation compilation) : KnownSymbols
     public INamedTypeSymbol? TypeShapeAttribute => GetOrResolveType("PolyType.TypeShapeAttribute", ref _TypeShapeAttribute);
     private Option<INamedTypeSymbol?> _TypeShapeAttribute;
 
+    public INamedTypeSymbol? TypeShapeExtensionAttribute => GetOrResolveType("PolyType.TypeShapeExtensionAttribute", ref _TypeShapeExtensionAttribute);
+    private Option<INamedTypeSymbol?> _TypeShapeExtensionAttribute;
+
+    public INamedTypeSymbol? AssociatedTypeAttributeAttribute => GetOrResolveType("PolyType.AssociatedTypeAttributeAttribute", ref _AssociatedTypeAttributeAttribute);
+    private Option<INamedTypeSymbol?> _AssociatedTypeAttributeAttribute;
+
     public INamedTypeSymbol? PropertyShapeAttribute => GetOrResolveType("PolyType.PropertyShapeAttribute", ref _PropertyShapeAttribute);
     private Option<INamedTypeSymbol?> _PropertyShapeAttribute;
 

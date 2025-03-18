@@ -185,7 +185,7 @@ public static class DiagnosticTests
         Assert.Equal((4, 5), diagnostic.Location.GetStartPosition());
         Assert.Equal((4, 18), diagnostic.Location.GetEndPosition());
     }
-    
+
     [Fact]
     public static void DuplicateConstructorShapeAttribute_ProducesWarnings()
     {
@@ -255,6 +255,110 @@ public static class DiagnosticTests
         Assert.Equal((3, 29), diagnostic.Location.GetEndPosition());
     }
 
+    [Fact]
+    [Trait("AssociatedTypes", "true")]
+    public static void TypeShape_PrivateAssociatedType()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            partial class Wrapper
+            {
+                [TypeShape(AssociatedTypes = new[] { typeof(InternalAssociatedType) })]
+                [GenerateShape]
+                internal partial class MyPoco;
+            
+                class InternalAssociatedType;
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+
+        Assert.Equal("TS0005", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Equal((4, 5), diagnostic.Location.GetStartPosition());
+        Assert.Equal((4, 74), diagnostic.Location.GetEndPosition());
+    }
+
+    [Fact]
+    [Trait("AssociatedTypes", "true")]
+    public static void TypeShape_PrivateCtorOnAssociatedType()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            partial class Wrapper
+            {
+                [TypeShape(AssociatedTypes = new[] { typeof(InternalAssociatedType) })]
+                [GenerateShape]
+                internal partial class MyPoco;
+            
+                public class InternalAssociatedType
+                {
+                    private InternalAssociatedType() { }
+                }
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+
+        Assert.Equal("TS0005", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Equal((4, 5), diagnostic.Location.GetStartPosition());
+        Assert.Equal((4, 74), diagnostic.Location.GetEndPosition());
+    }
+
+    [Fact]
+    public static void TypeShape_ArityMismatch_0to1()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [TypeShape(AssociatedTypes = new[] { typeof(InternalAssociatedType<>) })]
+            [GenerateShape]
+            partial class MyPoco;
+            public class InternalAssociatedType<T>;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+
+        Assert.Equal("TS0016", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Equal((2, 1), diagnostic.Location.GetStartPosition());
+        Assert.Equal((2, 72), diagnostic.Location.GetEndPosition());
+    }
+
+
+    [Fact]
+    public static void TypeShape_ArityMismatch_2to1()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [TypeShape(AssociatedTypes = new[] { typeof(InternalAssociatedType<>) })]
+            partial class MyPoco<T1, T2>;
+            public class InternalAssociatedType<T>;
+
+            [GenerateShape<MyPoco<int, string>>]
+            partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+
+        Assert.Equal("TS0016", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Equal((2, 1), diagnostic.Location.GetStartPosition());
+        Assert.Equal((2, 72), diagnostic.Location.GetEndPosition());
+    }
+
     [Theory]
     [InlineData(LanguageVersion.CSharp2)]
     [InlineData(LanguageVersion.CSharp7_3)]
@@ -316,7 +420,7 @@ public static class DiagnosticTests
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
-        
+
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
 
         Assert.Equal("TS0009", diagnostic.Id);
@@ -394,7 +498,7 @@ public static class DiagnosticTests
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
-        
+
         Assert.Empty(result.Diagnostics);
     }
 
@@ -469,7 +573,7 @@ public static class DiagnosticTests
             }
         }
         """)]
-     [InlineData("""
+    [InlineData("""
          using PolyType;
 
          [GenerateShape, TypeShape(Marshaller = typeof(Marshaller))]
@@ -545,10 +649,10 @@ public static class DiagnosticTests
 
         PolyTypeSourceGeneratorResult result =
             CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
-        
+
         Assert.Empty(result.Diagnostics);
     }
-    
+
     [Theory]
     [InlineData("""
         using PolyType;
@@ -608,7 +712,7 @@ public static class DiagnosticTests
 
         PolyTypeSourceGeneratorResult result =
             CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
-        
+
         Assert.Empty(result.Diagnostics);
     }
 
@@ -624,7 +728,7 @@ public static class DiagnosticTests
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
-        
+
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
         Assert.Equal("TS0011", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);

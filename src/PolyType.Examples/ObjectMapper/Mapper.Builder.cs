@@ -377,6 +377,7 @@ public static partial class Mapper
         public ICustomAttributeProvider? AttributeProvider => typeof(Mapper<TSource, TTarget>);
         public object? Accept(TypeShapeVisitor visitor, object? state = null) => ((MapperTypeShapeVisitor)visitor).VisitMapper(source, target, state);
         public object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
+        public Func<object>? GetAssociatedTypeFactory(Type relatedType) => throw new NotImplementedException();
     }
 
     private abstract class MapperTypeShapeVisitor : TypeShapeVisitor

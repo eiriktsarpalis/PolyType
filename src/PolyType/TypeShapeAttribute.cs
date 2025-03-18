@@ -45,5 +45,21 @@ public sealed class TypeShapeAttribute : Attribute
         }
     }
 
+    /// <summary>
+    /// Types for which a factory should be generated when a type shape is generated for
+    /// the type this attribute is applied to.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Each type must declare a public default constructor.
+    /// </para>
+    /// <para>
+    /// If the type this attribute is applied to is a generic type definition,
+    /// each type in this array must also be a generic type definition
+    /// with the same number of generic type parameters.
+    /// </para>
+    /// </remarks>
+    public Type[] AssociatedTypes { get; init; } = [];
+
     internal TypeShapeKind? GetRequestedKind() => _kind == Undefined ? null : _kind;
 }

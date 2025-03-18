@@ -5,6 +5,8 @@ using System.Reflection;
 
 namespace PolyType.ReflectionProvider;
 
+[RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
+[RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 internal abstract class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider provider) : ReflectionTypeShape<T>(provider), IObjectTypeShape<T>
 {
     public sealed override TypeShapeKind Kind => TypeShapeKind.Object;

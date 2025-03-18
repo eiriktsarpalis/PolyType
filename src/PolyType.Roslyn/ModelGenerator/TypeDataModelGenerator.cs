@@ -113,7 +113,7 @@ public partial class TypeDataModelGenerator
     protected virtual IEnumerable<DerivedTypeModel> ResolveDerivedTypes(ITypeSymbol type) => [];
 
     /// <summary>
-    /// Wraps the <see cref="MapType(ITypeSymbol, TypeDataKind?, ref TypeDataModelGenerationContext, out TypeDataModel?)"/> method
+    /// Wraps the <see cref="MapType(ITypeSymbol, TypeDataKind?, ImmutableArray{AssociatedTypeModel}, ref TypeDataModelGenerationContext, out TypeDataModel?)"/> method
     /// with pre- and post-processing steps necessary for a type graph traversal.
     /// </summary>
     /// <param name="type">The type for which to generate a data model.</param>
@@ -150,7 +150,7 @@ public partial class TypeDataModelGenerator
         // Create a new snapshot with the current type pushed onto the stack.
         // Only commit the generated model if the type is successfully mapped.
         TypeDataModelGenerationContext scopedCtx = ctx.Push(type);
-        TypeDataModelGenerationStatus status = MapType(type, requestedKind: null, ref scopedCtx, out model);
+        TypeDataModelGenerationStatus status = MapType(type, requestedKind: null, ImmutableArray<AssociatedTypeModel>.Empty, ref scopedCtx, out model);
 
         if (status is TypeDataModelGenerationStatus.Success != model is not null)
         {
@@ -171,6 +171,7 @@ public partial class TypeDataModelGenerator
     /// </summary>
     /// <param name="type">The type for which to generate a data model.</param>
     /// <param name="requestedKind">The target kind as specified in configuration.</param>
+    /// <param name="associatedTypes">Associated types for this shape.</param>
     /// <param name="ctx">The context token holding state for the current type graph traversal.</param>
     /// <param name="model">The model that the current symbol is being mapped to.</param>
     /// <returns>The model generation status for the given type.</returns>
@@ -181,6 +182,7 @@ public partial class TypeDataModelGenerator
     protected virtual TypeDataModelGenerationStatus MapType(
         ITypeSymbol type, 
         TypeDataKind? requestedKind,
+        ImmutableArray<AssociatedTypeModel> associatedTypes,
         ref TypeDataModelGenerationContext ctx,
         out TypeDataModel? model)
     {
@@ -190,42 +192,42 @@ public partial class TypeDataModelGenerator
         {
             // If the configuration specifies an explicit kind, try to resolve that or fall back to no shape.
             case TypeDataKind.Enum:
-                if (TryMapEnum(type, ref ctx, out model, out status))
+                if (TryMapEnum(type, associatedTypes, ref ctx, out model, out status))
                 {
                     return status;
                 }
                 goto None;
 
             case TypeDataKind.Optional:
-                if (TryMapOptional(type, ref ctx, out model, out status))
+                if (TryMapOptional(type, associatedTypes, ref ctx, out model, out status))
                 {
                     return status;
                 }
                 goto None;
 
             case TypeDataKind.Dictionary:
-                if (TryMapDictionary(type, ref ctx, out model, out status))
+                if (TryMapDictionary(type, associatedTypes, ref ctx, out model, out status))
                 {
                     return status;
                 }
                 goto None;
 
             case TypeDataKind.Enumerable:
-                if (TryMapEnumerable(type, ref ctx, out model, out status))
+                if (TryMapEnumerable(type, associatedTypes, ref ctx, out model, out status))
                 {
                     return status;
                 }
                 goto None;
 
             case TypeDataKind.Tuple:
-                if (TryMapTuple(type, ref ctx, out model, out status))
+                if (TryMapTuple(type, associatedTypes, ref ctx, out model, out status))
                 {
                     return status;
                 }
                 goto None;
 
             case TypeDataKind.Object:
-                if (TryMapObject(type, ref ctx, out model, out status))
+                if (TryMapObject(type, associatedTypes, ref ctx, out model, out status))
                 {
                     return status;
                 }
@@ -235,34 +237,34 @@ public partial class TypeDataModelGenerator
                 goto None;
         }
 
-        if (TryMapEnum(type, ref ctx, out model, out status))
+        if (TryMapEnum(type, associatedTypes, ref ctx, out model, out status))
         {
             return status;
         }
 
-        if (TryMapOptional(type, ref ctx, out model, out status))
+        if (TryMapOptional(type, associatedTypes, ref ctx, out model, out status))
         {
             return status;
         }
 
         // Important: Dictionary resolution goes before Enumerable
         // since Dictionary also implements IEnumerable
-        if (TryMapDictionary(type, ref ctx, out model, out status))
+        if (TryMapDictionary(type, associatedTypes, ref ctx, out model, out status))
         {
             return status;
         }
 
-        if (TryMapEnumerable(type, ref ctx, out model, out status))
+        if (TryMapEnumerable(type, associatedTypes, ref ctx, out model, out status))
         {
             return status;
         }
 
-        if (TryMapTuple(type, ref ctx, out model, out status))
+        if (TryMapTuple(type, associatedTypes, ref ctx, out model, out status))
         {
             return status;
         }
 
-        if (TryMapObject(type, ref ctx, out model, out status))
+        if (TryMapObject(type, associatedTypes, ref ctx, out model, out status))
         {
             return status;
         }
@@ -272,7 +274,7 @@ public partial class TypeDataModelGenerator
         model = new TypeDataModel
         { 
             Type = type,
-            DerivedTypes = IncludeDerivedTypes(type, ref ctx) 
+            DerivedTypes = IncludeDerivedTypes(type, ref ctx),
         };
 
         return TypeDataModelGenerationStatus.Success;
