@@ -13,8 +13,11 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     {
         ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
         Assert.NotNull(typeShape);
-        Type? closedGeneric = typeShape.GetAssociatedType(typeof(GenericDataTypeConverter<,>));
-        Assert.Equal(typeof(GenericDataTypeConverter<int, string>), closedGeneric);
+        Func<object>? factory = typeShape.GetAssociatedTypeFactory(typeof(GenericDataTypeConverter<,>));
+        Assert.NotNull(factory);
+        var instance1 = Assert.IsType<GenericDataTypeConverter<int, string>>(factory.Invoke());
+        var instance2 = factory.Invoke();
+        Assert.NotSame(instance1, instance2);
     }
 
     [Fact]
@@ -22,8 +25,11 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     {
         ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
         Assert.NotNull(typeShape);
-        Type? closedGeneric = typeShape.GetAssociatedType(typeof(GenericDataTypeCloner<,>));
-        Assert.Equal(typeof(GenericDataTypeCloner<int, string>), closedGeneric);
+        Func<object>? factory = typeShape.GetAssociatedTypeFactory(typeof(GenericDataTypeCloner<,>));
+        Assert.NotNull(factory);
+        var instance1 = Assert.IsType<GenericDataTypeCloner<int, string>>(factory.Invoke());
+        var instance2 = factory.Invoke();
+        Assert.NotSame(instance1, instance2);
     }
 
     [Fact]
@@ -31,7 +37,11 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     {
         ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
         Assert.NotNull(typeShape);
-        Assert.Throws<ArgumentException>(() => typeShape.GetAssociatedType(typeof(GenericDataTypeConverter<int, string>)));
+        Func<object>? factory = typeShape.GetAssociatedTypeFactory(typeof(GenericDataTypeConverter<int, string>));
+        Assert.NotNull(factory);
+        var instance1 = Assert.IsType<GenericDataTypeConverter<int, string>>(factory.Invoke());
+        var instance2 = factory.Invoke();
+        Assert.NotSame(instance1, instance2);
     }
 
     [Fact]
@@ -39,8 +49,9 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     {
         ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
         Assert.NotNull(typeShape);
-        Type? closedGeneric = typeShape.GetAssociatedType(typeof(GenericDataTypeVerifier<,>));
-        Assert.Equal(typeof(GenericDataTypeVerifier<int, string>), closedGeneric);
+        Func<object>? factory = typeShape.GetAssociatedTypeFactory(typeof(GenericDataTypeVerifier<,>));
+        Assert.NotNull(factory);
+        Assert.IsType<GenericDataTypeVerifier<int, string>>(factory.Invoke());
     }
 
     [Fact]
@@ -48,7 +59,9 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     {
         ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(NonGenericDataType));
         Assert.NotNull(typeShape);
-        Assert.Throws<InvalidOperationException>(() => typeShape.GetAssociatedType(typeof(NonGenericDataTypeConverter)));
+        Func<object>? factory = typeShape.GetAssociatedTypeFactory(typeof(NonGenericDataTypeConverter));
+        Assert.NotNull(factory);
+        Assert.IsType<NonGenericDataTypeConverter>(factory.Invoke());
     }
 
     [Fact]
@@ -56,7 +69,9 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     {
         ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
         Assert.NotNull(typeShape);
-        Assert.Throws<ArgumentException>(() => typeShape.GetAssociatedType(typeof(NonGenericDataTypeConverter)));
+        Func<object>? factory = typeShape.GetAssociatedTypeFactory(typeof(NonGenericDataTypeConverter));
+        Assert.NotNull(factory);
+        Assert.IsType<NonGenericDataTypeConverter>(factory.Invoke());
     }
 
 
@@ -65,29 +80,33 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     {
         ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
         Assert.NotNull(typeShape);
-        Type? closedGeneric = typeShape.GetAssociatedType(typeof(GenericWrapper<>.GenericNested<>));
-        Assert.Equal(typeof(GenericWrapper<int>.GenericNested<string>), closedGeneric);
+        Func<object>? factory = typeShape.GetAssociatedTypeFactory(typeof(GenericWrapper<>.GenericNested<>));
+        Assert.NotNull(factory);
+        Assert.IsType<GenericWrapper<int>.GenericNested<string>>(factory.Invoke());
     }
 
     [Fact]
     public void AssociatedTypeAttribute_ConstructorParameter()
     {
-        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(CustomTypeWithCustomConverter<int>));
+        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(CustomTypeWithCustomConverter));
         Assert.NotNull(typeShape);
-        Type? closedGeneric = typeShape.GetAssociatedType(typeof(CustomTypeConverter<>));
-        Assert.Equal(typeof(CustomTypeConverter<int>), closedGeneric);
+        Func<object>? factory = typeShape.GetAssociatedTypeFactory(typeof(CustomTypeConverter));
+        Assert.NotNull(factory);
+        Assert.IsType<CustomTypeConverter>(factory.Invoke());
     }
 
     [Fact]
     public void AssociatedTypeAttribute_NamedParameter()
     {
-        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(CustomTypeWithCustomConverter<int>));
+        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(CustomTypeWithCustomConverter));
         Assert.NotNull(typeShape);
-        Type? closedGeneric1 = typeShape.GetAssociatedType(typeof(CustomTypeConverter1<>));
-        Assert.Equal(typeof(CustomTypeConverter1<int>), closedGeneric1);
+        Func<object>? factory1 = typeShape.GetAssociatedTypeFactory(typeof(CustomTypeConverter1));
+        Assert.NotNull(factory1);
+        Assert.IsType<CustomTypeConverter1>(factory1.Invoke());
 
-        Type? closedGeneric2 = typeShape.GetAssociatedType(typeof(CustomTypeConverter2<>));
-        Assert.Equal(typeof(CustomTypeConverter2<int>), closedGeneric2);
+        Func<object>? factory2 = typeShape.GetAssociatedTypeFactory(typeof(CustomTypeConverter2));
+        Assert.NotNull(factory2);
+        Assert.IsType<CustomTypeConverter2>(factory2.Invoke());
     }
 
     [GenerateShape]
@@ -109,16 +128,16 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     }
 
     [GenerateShape<GenericDataType<int, string>>]
-    [GenerateShape<CustomTypeWithCustomConverter<int>>]
     internal partial class Witness;
 
-    [MyConverter(typeof(CustomTypeConverter<>))]
-    [MyConverterNamedArg(Types = [typeof(CustomTypeConverter1<>), typeof(CustomTypeConverter2<>)])]
-    internal partial class CustomTypeWithCustomConverter<T>;
+    [GenerateShape]
+    [MyConverter(typeof(CustomTypeConverter))]
+    [MyConverterNamedArg(Types = [typeof(CustomTypeConverter1), typeof(CustomTypeConverter2)])]
+    internal partial class CustomTypeWithCustomConverter;
 
-    public class CustomTypeConverter<T>;
-    public class CustomTypeConverter1<T>;
-    public class CustomTypeConverter2<T>;
+    public class CustomTypeConverter;
+    public class CustomTypeConverter1;
+    public class CustomTypeConverter2;
 
     [AssociatedTypeAttribute(nameof(type))]
     internal class MyConverterAttribute(Type type) : Attribute

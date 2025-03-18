@@ -1,5 +1,4 @@
 ﻿using PolyType.Abstractions;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace PolyType.SourceGenModel;
@@ -35,8 +34,5 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
     object? ITypeShape.Invoke(ITypeShapeFunc func, object? state) => func.Invoke(this, state);
 
     /// <inheritdoc/>
-#if NET
-    [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-#endif
-    public virtual Type? GetAssociatedType(Type associatedType) => null;
+    public virtual Func<object>? GetAssociatedTypeFactory(Type associatedType) => null;
 }

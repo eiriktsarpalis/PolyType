@@ -1,20 +1,14 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Text;
 using PolyType.Roslyn;
 using PolyType.SourceGenerator.Model;
 using System.Diagnostics;
-using System.Reflection;
-using System.Text;
 
 namespace PolyType.SourceGenerator;
 
 internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
 {
-    public static string[] ReservedIdentifiers { get; } = [ProviderSingletonProperty, GetShapeMethodName];
-
-    private static readonly SourceText DynamicallyAccessedMemberTypes = FetchPolyfill("LinkerAttributes/DynamicallyAccessedMemberTypes.cs");
-    private static readonly SourceText DynamicallyAccessedMembersAttribute = FetchPolyfill("LinkerAttributes/DynamicallyAccessedMembersAttribute.cs");
+    public static string[] ReservedIdentifiers { get; } = [ProviderSingletonProperty,GetShapeMethodName];
 
     private const string InstanceBindingFlagsConstMember = "__BindingFlags_Instance_All";
     private const string InitializeMethodName = "__Init_Singleton";
@@ -38,10 +32,8 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
         context.CancellationToken.ThrowIfCancellationRequested();
         context.AddSource($"{provider.ProviderDeclaration.SourceFilenamePrefix}.g.cs", FormatShapeProviderMainFile(provider));
 
-        bool anyAssociatedTypesDefined = false;
         foreach (TypeShapeModel type in provider.ProvidedTypes.Values)
         {
-            anyAssociatedTypesDefined |= type.AssociatedTypes.Length > 0;
             context.CancellationToken.ThrowIfCancellationRequested();
             context.AddSource($"{provider.ProviderDeclaration.SourceFilenamePrefix}.{type.SourceIdentifier}.g.cs", FormatProvidedType(provider, type));
             switch (type)
@@ -87,13 +79,6 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
                 context.AddSource(sourceFile, FormatIShapeableOfTStub(typeDeclaration, typeToImplement, provider));
             }
         }
-
-        if (anyAssociatedTypesDefined && !provider.DynamicAccessAttributeAvailable)
-        {
-            // We need to polyfill this attribute and its accompanying enum ourselves.
-            context.AddSource("DynamicallyAccessedMembersAttribute.g.cs", DynamicallyAccessedMembersAttribute);
-            context.AddSource("DynamicallyAccessedMemberTypes.g.cs", DynamicallyAccessedMemberTypes);
-        }
     }
 
     private static void StartFormatSourceFile(SourceWriter writer, TypeDeclarationModel typeDeclaration)
@@ -113,7 +98,7 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
 
             """);
 #endif
-
+        
         if (typeDeclaration.Namespace is string @namespace)
         {
             writer.WriteLine($"namespace {@namespace}");
@@ -131,17 +116,11 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
 
     private static void EndFormatSourceFile(SourceWriter writer)
     {
-        while (writer.Indentation > 0)
+        while (writer.Indentation > 0) 
         {
             writer.Indentation--;
             writer.WriteLine('}');
         }
-    }
-
-    private static SourceText FetchPolyfill(string polyfillName)
-    {
-        using var resource = new StreamReader(Assembly.GetExecutingAssembly().GetManifestResourceStream($"{ThisAssembly.RootNamespace}.Shared.Polyfills.{polyfillName.Replace('\\', '.').Replace('/', '.')}"));
-        return SourceText.From(resource.ReadToEnd(), Encoding.UTF8);
     }
 
     private TypeShapeModel GetShapeModel(TypeId typeId) => provider.ProvidedTypes[typeId];

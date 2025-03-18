@@ -179,10 +179,7 @@ public class AggregatingTypeShapeProviderTests
             throw new NotImplementedException();
         }
 
-#if NET
-        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-#endif
-        public Type? GetAssociatedType(Type associatedType) => throw new NotImplementedException();
+        public Func<object>? GetAssociatedTypeFactory(Type associatedType) => throw new NotImplementedException();
 
         public object? Invoke(ITypeShapeFunc func, object? state = null)
         {

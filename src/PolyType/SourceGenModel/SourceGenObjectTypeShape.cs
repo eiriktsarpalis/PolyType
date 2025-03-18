@@ -1,5 +1,4 @@
 ﻿using PolyType.Abstractions;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text;
 
@@ -11,16 +10,6 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TObject">The type whose shape is described.</typeparam>
 public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObject>, IObjectTypeShape<TObject>
 {
-    /// <summary>
-    /// The delegate used by <see cref="AssociatedTypesCloser"/>.
-    /// </summary>
-    /// <param name="name">The specially formatted name of the associated type.</param>
-    /// <returns>The closed generic type, if available.</returns>
-#if NET
-    [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-#endif
-    public delegate Type? AssociatedTypeResolver(string name);
-
     /// <summary>
     /// Gets a value indicating whether the type represents a record.
     /// </summary>
@@ -42,10 +31,9 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
     public Func<IConstructorShape>? CreateConstructorFunc { get; init; }
 
     /// <summary>
-    /// Gets a function that retrieves a closed generic type for a named generic type definition
-    /// that is a known associated type.
+    /// Gets the factory for a given related type.
     /// </summary>
-    public AssociatedTypeResolver? AssociatedTypesCloser { get; init; }
+    public Func<string, Func<object>?>? AssociatedTypeFactories { get; init; }
 
     /// <inheritdoc/>
     public override TypeShapeKind Kind => TypeShapeKind.Object;
@@ -54,24 +42,16 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
     public override object? Accept(ITypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);
 
     /// <inheritdoc/>
-#if NET
-    [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-#endif
-    public override Type? GetAssociatedType(Type associatedType)
+    public override Func<object>? GetAssociatedTypeFactory(Type associatedType)
     {
-        if (!typeof(TObject).IsGenericType)
-        {
-            throw new InvalidOperationException("This method can only be called on shapes of generic types.");
-        }
-
-        if (typeof(TObject).GenericTypeArguments.Length != associatedType.GetTypeInfo().GenericTypeParameters.Length)
+        if (associatedType.IsGenericTypeDefinition && typeof(TObject).GenericTypeArguments.Length != associatedType.GetTypeInfo().GenericTypeParameters.Length)
         {
             throw new ArgumentException("Type is not a generic type definition or does not have an equal count of generic type parameters with this type shape.");
         }
 
         StringBuilder builder = new();
         ConstructStableName(associatedType, builder);
-        return AssociatedTypesCloser?.Invoke(builder.ToString());
+        return AssociatedTypeFactories?.Invoke(builder.ToString());
 
         static void ConstructStableName(Type type, StringBuilder builder)
         {

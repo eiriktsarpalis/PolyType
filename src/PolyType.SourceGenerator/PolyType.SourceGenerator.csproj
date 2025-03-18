@@ -15,11 +15,6 @@
   </ItemGroup>
     
   <ItemGroup>
-    <EmbeddedResource Include="..\Shared\Polyfills\LinkerAttributes\DynamicallyAccessedMembersAttribute.cs" Link="Shared\Polyfills\LinkerAttributes\%(Filename).cs" />
-    <EmbeddedResource Include="..\Shared\Polyfills\LinkerAttributes\DynamicallyAccessedMemberTypes.cs" Link="Shared\Polyfills\LinkerAttributes\%(Filename).cs" />
-  </ItemGroup>
-    
-  <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" Pack="false" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
   </ItemGroup>

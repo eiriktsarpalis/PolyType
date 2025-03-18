@@ -21,7 +21,7 @@ internal sealed partial class SourceFormatter
                     IsRecordType = {{FormatBool(objectShapeModel.IsRecordType)}},
                     IsTupleType = {{FormatBool(objectShapeModel.IsTupleType)}},
                     Provider = this,
-                    AssociatedTypesCloser = {{FormatAssociatedTypesCloser(objectShapeModel)}},
+                    AssociatedTypeFactories = {{FormatAssociatedTypeFactory(objectShapeModel)}},
                 };
             }
             """, trimNullAssignmentLines: true);
@@ -41,51 +41,23 @@ internal sealed partial class SourceFormatter
         FormatMemberAccessors(writer, objectShapeModel);
     }
 
-    private static string FormatAssociatedTypesCloser(ObjectShapeModel objectShapeModel)
+    private static string FormatAssociatedTypeFactory(ObjectShapeModel objectShapeModel)
     {
         if (objectShapeModel.AssociatedTypes.Length == 0)
         {
             return "null";
         }
 
-        SourceWriter writer = new() { Indentation = 0 };
-        writer.WriteLine(/* lang=c#-test */ """
-            static associatedType =>
-                    {
-                        return associatedType switch
-                        {
-            """);
-
-        writer.Indentation = 4;
-        int counter = 0;
+        StringBuilder builder = new();
+        builder.Append("static associatedType => associatedType switch { ");
         foreach (AssociatedTypeId associatedType in objectShapeModel.AssociatedTypes)
         {
-            writer.WriteLine($"\"{associatedType.Open}\" or \"{associatedType.Closed}\" => Return{counter++}(),");
+            builder.Append($"\"{associatedType.Open}\" or \"{associatedType.Closed}\" => () => new {associatedType.CSharpTypeName}(), ");
         }
 
-        writer.Indentation -= 2;
-        writer.WriteLine(/* lang=c#-test */ """
-                    _ => null,
-                };
-            """);
+        builder.Append("_ => null }");
 
-        // Emit the location functions.
-        writer.Indentation += 1;
-        counter = 0;
-        foreach (AssociatedTypeId associatedType in objectShapeModel.AssociatedTypes)
-        {
-            writer.WriteLine(/* lang=c#-test */ $"""
-
-                [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-                [return: global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
-                static global::System.Type Return{counter++}() => typeof({associatedType.CSharpTypeName});
-                """);
-        }
-
-        writer.Indentation -= 1;
-        writer.WriteLine("}");
-
-        return writer.ToString().TrimEnd();
+        return builder.ToString();
     }
 
     private static void FormatMemberAccessors(SourceWriter writer, ObjectShapeModel objectShapeModel)

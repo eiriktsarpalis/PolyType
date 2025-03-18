@@ -24,11 +24,6 @@ public class KnownSymbols(Compilation compilation)
     public IAssemblySymbol CoreLibAssembly => _CoreLibAssembly ??= Compilation.GetSpecialType(SpecialType.System_Int32).ContainingAssembly;
     private IAssemblySymbol? _CoreLibAssembly;
 
-    /// <summary>
-    /// Gets the DynamicallyAccessedMembersAttribute, if present.
-    /// </summary>
-    public INamedTypeSymbol? DynamicallyAccessedMembersAttribute => GetOrResolveType("System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute", ref _DynamicallyAccessedMembersAttribute);
-    private Option<INamedTypeSymbol?> _DynamicallyAccessedMembersAttribute;
 
     /// <summary>
     /// The type symbol for <see cref="System.Reflection.MemberInfo"/>.
