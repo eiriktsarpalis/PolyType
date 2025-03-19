@@ -19,6 +19,20 @@ public static partial class CborSerializer
                 return (CborConverter<T>)defaultConverter;
             }
 
+            // Look for a custom converter attribute.
+            CborConverterAttribute? converterAttribute = (CborConverterAttribute?)typeof(T).GetCustomAttributes(typeof(CborConverterAttribute), false).FirstOrDefault();
+            if (converterAttribute is not null)
+            {
+                Type converterType = converterAttribute.ConverterType;
+                Func<object>? factory = typeShape.GetAssociatedTypeFactory(converterType);
+                if (factory is null)
+                {
+                    throw new InvalidOperationException($"The type {typeof(T)} is missing its associated type factory for converter {converterType}.");
+                }
+
+                return (CborConverter<T>)factory();
+            }
+
             // Otherwise, build a converter using the visitor.
             return typeShape.Accept(this);
         }
@@ -28,7 +42,7 @@ public static partial class CborSerializer
             CborPropertyConverter<T>[] properties = objectShape.Properties
                 .Select(prop => (CborPropertyConverter<T>)prop.Accept(this)!)
                 .ToArray();
-            
+
             return objectShape.Constructor is { } ctor
                 ? (CborObjectConverter<T>)ctor.Accept(this, state: properties)!
                 : new CborObjectConverter<T>(properties);
@@ -104,7 +118,7 @@ public static partial class CborSerializer
 
             return dictionaryShape.ConstructionStrategy switch
             {
-                CollectionConstructionStrategy.Mutable => 
+                CollectionConstructionStrategy.Mutable =>
                     new CborMutableDictionaryConverter<TDictionary, TKey, TValue>(
                         keyConverter,
                         valueConverter,
@@ -112,7 +126,7 @@ public static partial class CborSerializer
                         dictionaryShape.GetDefaultConstructor(),
                         dictionaryShape.GetAddKeyValuePair()),
 
-                CollectionConstructionStrategy.Enumerable => 
+                CollectionConstructionStrategy.Enumerable =>
                     new CborEnumerableConstructorDictionaryConverter<TDictionary, TKey, TValue>(
                         keyConverter,
                         valueConverter,

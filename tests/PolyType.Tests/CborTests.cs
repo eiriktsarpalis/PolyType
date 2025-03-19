@@ -1,5 +1,6 @@
-﻿using System.Numerics;
-using PolyType.Examples.CborSerializer;
+﻿using PolyType.Examples.CborSerializer;
+using System.Formats.Cbor;
+using System.Numerics;
 using Xunit;
 
 namespace PolyType.Tests;
