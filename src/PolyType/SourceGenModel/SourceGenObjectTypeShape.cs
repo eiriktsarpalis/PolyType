@@ -69,7 +69,7 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
 
             if (type.IsGenericType)
             {
-                string nameNoArity = type.Name.Substring(0, type.Name.IndexOf('`'));
+                string nameNoArity = type.Name[..type.Name.IndexOf('`')];
                 builder.Append(nameNoArity);
                 builder.Append('<');
                 if (type.IsGenericTypeDefinition)

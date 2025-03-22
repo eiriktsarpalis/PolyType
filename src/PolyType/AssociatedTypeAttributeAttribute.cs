@@ -16,5 +16,6 @@ public class AssociatedTypeAttributeAttribute : Attribute
     /// </param>
     public AssociatedTypeAttributeAttribute(string parameterOrNamedArgumentName)
     {
+        _ = parameterOrNamedArgumentName;
     }
 }

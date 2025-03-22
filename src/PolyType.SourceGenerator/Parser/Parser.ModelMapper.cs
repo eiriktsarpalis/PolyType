@@ -263,7 +263,7 @@ public sealed partial class Parser
                 {
                     if (TryGetCtorOrReport(closedType, out defaultCtor))
                     {
-                        associatedTypesBuilder.Add((CreateAssociatedTypeId(openType, closedType)));
+                        associatedTypesBuilder.Add(CreateAssociatedTypeId(openType, closedType));
                     }
                     else
                     {
@@ -637,7 +637,6 @@ public sealed partial class Parser
                         if (namedArgument.Key == name)
                         {
                             associatedTypes = associatedTypes.AddRange(ParseArgument(namedArgument.Value));
-                            match = true;
                             break;
                         }
                     }
