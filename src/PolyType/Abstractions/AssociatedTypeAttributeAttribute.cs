@@ -1,4 +1,4 @@
-﻿namespace PolyType;
+﻿namespace PolyType.Abstractions;
 
 /// <summary>
 /// An attribute to apply to other attribute classes that accept one or more <see cref="Type"/> arguments
