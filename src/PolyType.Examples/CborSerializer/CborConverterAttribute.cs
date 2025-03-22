@@ -1,4 +1,6 @@
-﻿namespace PolyType.Examples.CborSerializer;
+﻿using PolyType.Abstractions;
+
+namespace PolyType.Examples.CborSerializer;
 
 /// <summary>
 /// Identifies a custom converter for the type.
