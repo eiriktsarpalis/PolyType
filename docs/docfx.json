@@ -37,6 +37,7 @@
       "_appName": "PolyType",
       "_appTitle": "PolyType",
       "_appLogoPath": "images/polytype-logo.svg",
+      "_appFaviconPath": "images/favicon.svg",
       "_enableSearch": true,
       "pdf": false
     }
