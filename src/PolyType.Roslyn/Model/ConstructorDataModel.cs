@@ -21,7 +21,7 @@ public readonly struct ConstructorDataModel
     /// <summary>
     /// The parameters of the constructor.
     /// </summary>
-    public required ImmutableArray<ConstructorParameterDataModel> Parameters { get; init; }
+    public required ImmutableArray<ParameterDataModel> Parameters { get; init; }
 
     /// <summary>
     /// The members that could or should be initialized in conjunction with this constructor.

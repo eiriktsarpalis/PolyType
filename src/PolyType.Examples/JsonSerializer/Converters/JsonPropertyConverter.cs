@@ -11,7 +11,7 @@ internal abstract class JsonPropertyConverter<TDeclaringType>(string name)
     public JsonEncodedText EncodedName { get; } = JsonEncodedText.Encode(name);
     public abstract bool HasGetter { get; }
     public abstract bool HasSetter { get; }
-    public bool IsConstructorParameter { get; private protected init; }
+    public bool IsParameter { get; private protected init; }
 
     public abstract void Read(ref Utf8JsonReader reader, ref TDeclaringType declaringType, JsonSerializerOptions options);
     public abstract void Write(Utf8JsonWriter writer, ref TDeclaringType declaringType, JsonSerializerOptions options);
@@ -43,13 +43,13 @@ internal sealed class JsonPropertyConverter<TDeclaringType, TPropertyType> : Jso
         }
     }
 
-    public JsonPropertyConverter(IConstructorParameterShape<TDeclaringType, TPropertyType> parameter, JsonConverter<TPropertyType> propertyConverter)
+    public JsonPropertyConverter(IParameterShape<TDeclaringType, TPropertyType> parameter, JsonConverter<TPropertyType> propertyConverter)
         : base(parameter.Name)
     {
         _propertyTypeConverter = propertyConverter;
         _setterDisallowsNull = parameter.IsNonNullable;
         _setter = parameter.GetSetter();
-        IsConstructorParameter = parameter.Kind is ConstructorParameterKind.ConstructorParameter;
+        IsParameter = parameter.Kind is ParameterKind.MethodParameter;
     }
 
     public override bool HasGetter => _getter != null;

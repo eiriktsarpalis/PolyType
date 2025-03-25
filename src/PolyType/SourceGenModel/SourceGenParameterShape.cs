@@ -8,7 +8,7 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TArgumentState">The mutable constructor argument state type.</typeparam>
 /// <typeparam name="TParameter">The constructor parameter type.</typeparam>
-public sealed class SourceGenConstructorParameterShape<TArgumentState, TParameter> : IConstructorParameterShape<TArgumentState, TParameter>
+public sealed class SourceGenParameterShape<TArgumentState, TParameter> : IParameterShape<TArgumentState, TParameter>
 {
     /// <summary>
     /// Gets the position of the parameter in the constructor signature.
@@ -23,7 +23,7 @@ public sealed class SourceGenConstructorParameterShape<TArgumentState, TParamete
     /// <summary>
     /// Gets the kind of the parameter.
     /// </summary>
-    public required ConstructorParameterKind Kind { get; init; }
+    public required ParameterKind Kind { get; init; }
 
     /// <summary>
     /// Gets a value indicating whether the parameter is required.
@@ -65,9 +65,9 @@ public sealed class SourceGenConstructorParameterShape<TArgumentState, TParamete
     /// </summary>
     public TParameter? DefaultValue { get; init; }
 
-    object? IConstructorParameterShape.DefaultValue => HasDefaultValue ? DefaultValue : null;
-    ITypeShape IConstructorParameterShape.ParameterType => ParameterType;
-    ICustomAttributeProvider? IConstructorParameterShape.AttributeProvider => AttributeProviderFunc?.Invoke();
-    object? IConstructorParameterShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitConstructorParameter(this, state);
-    Setter<TArgumentState, TParameter> IConstructorParameterShape<TArgumentState, TParameter>.GetSetter() => Setter;
+    object? IParameterShape.DefaultValue => HasDefaultValue ? DefaultValue : null;
+    ITypeShape IParameterShape.ParameterType => ParameterType;
+    ICustomAttributeProvider? IParameterShape.AttributeProvider => AttributeProviderFunc?.Invoke();
+    object? IParameterShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitParameter(this, state);
+    Setter<TArgumentState, TParameter> IParameterShape<TArgumentState, TParameter>.GetSetter() => Setter;
 }

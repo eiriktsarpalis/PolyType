@@ -29,7 +29,7 @@ public interface IConstructorShape
     /// Includes all formal parameters of the underlying constructor,
     /// as well as any member that can be specified in a member initializer expression.
     /// </remarks>
-    IReadOnlyList<IConstructorParameterShape> Parameters { get; }
+    IReadOnlyList<IParameterShape> Parameters { get; }
 
     /// <summary>
     /// Accepts an <see cref="TypeShapeVisitor"/> for strongly-typed traversal.

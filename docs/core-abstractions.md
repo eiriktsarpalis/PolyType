@@ -478,15 +478,15 @@ class MyPocoConstructorShape : IConstructorShape<MyPoco, (int, string)>
 }
 ```
 
-The two delegates define the means for creating a default instance of the mutable state token and constructing an instance of the declaring type from a populated token, respectively. Separately, there needs to be a mechanism for populating the state token which is achieved using the `IConstructorParameterShape` interface:
+The two delegates define the means for creating a default instance of the mutable state token and constructing an instance of the declaring type from a populated token, respectively. Separately, there needs to be a mechanism for populating the state token which is achieved using the `IParameterShape` interface:
 
 ```C#
 public partial interface IConstructorShape<TDeclaringType, TArgumentState> : IConstructorShape
 {
-    IReadOnlyList<IConstructorParameterShape> Parameters { get; }
+    IReadOnlyList<IParameterShape> Parameters { get; }
 }
 
-public partial interface IConstructorParameterShape<TArgumentState, TParameterType> : IConstructorParameterShape
+public partial interface IParameterShape<TArgumentState, TParameterType> : IParameterShape
 {
     ITypeShape<TParameterType> ParameterType { get; }
     Setter<TArgumentState, TParameterType> GetSetter();
@@ -494,7 +494,7 @@ public partial interface IConstructorParameterShape<TArgumentState, TParameterTy
 
 public abstract partial class TypeShapeVisitor
 {
-    object? VisitConstructor<TArgumentState, TParameterType>(IConstructorParameterShape<TArgumentState, TParameterType> shape, object? state = null);
+    object? VisitConstructor<TArgumentState, TParameterType>(IParameterShape<TArgumentState, TParameterType> shape, object? state = null);
 }
 ```
 
@@ -531,7 +531,7 @@ class EmptyConstructorVisitor : TypeShapeVisitor
         });
     }
 
-    public override object? VisitConstructorParameter<TArgumentState, TParameter>(IConstructorParameterShape<TArgumentState, TParameter> parameter, object? _)
+    public override object? VisitParameter<TArgumentState, TParameter>(IParameterShape<TArgumentState, TParameter> parameter, object? _)
     {
         var parameterFactory = (Func<TParameter>)parameter.ParameterType.Accept(this);
         Setter<TArgumentState, TParameter> setter = parameter.GetSetter();

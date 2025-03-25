@@ -76,7 +76,7 @@ public static partial class Cloner
                 .Select(param =>
                 {
                     // Use case-insensitive comparison for constructor parameters, but case-sensitive for members.
-                    StringComparison comparison = param.Kind is ConstructorParameterKind.ConstructorParameter
+                    StringComparison comparison = param.Kind is ParameterKind.MethodParameter
                         ? StringComparison.OrdinalIgnoreCase
                         : StringComparison.Ordinal;
                     
@@ -122,7 +122,7 @@ public static partial class Cloner
         {
             public override object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> propertyShape, object? state)
             {
-                var parameterShape = (IConstructorParameterShape<TArgumentState, TPropertyType>)state!;
+                var parameterShape = (IParameterShape<TArgumentState, TPropertyType>)state!;
                 var elementCloner = parent.GetOrAddCloner(propertyShape.PropertyType);
                 var getter = propertyShape.GetGetter();
                 var setter = parameterShape.GetSetter();

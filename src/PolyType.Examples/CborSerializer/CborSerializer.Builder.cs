@@ -72,7 +72,7 @@ public static partial class CborSerializer
                 properties);
         }
 
-        public override object? VisitConstructorParameter<TArgumentState, TParameterType>(IConstructorParameterShape<TArgumentState, TParameterType> parameter, object? state)
+        public override object? VisitParameter<TArgumentState, TParameterType>(IParameterShape<TArgumentState, TParameterType> parameter, object? state)
         {
             CborConverter<TParameterType> paramConverter = GetOrAddConverter(parameter.ParameterType);
             return new CborPropertyConverter<TArgumentState, TParameterType>(parameter, paramConverter);

@@ -33,7 +33,7 @@ public sealed class SourceGenConstructorShape<TDeclaringType, TArgumentState> : 
     /// <summary>
     /// Gets the parameter shapes for the constructor.
     /// </summary>
-    public Func<IEnumerable<IConstructorParameterShape>>? GetParametersFunc { get; init; }
+    public Func<IEnumerable<IParameterShape>>? GetParametersFunc { get; init; }
 
     /// <summary>
     /// Gets the default constructor for the declaring type.
@@ -50,8 +50,8 @@ public sealed class SourceGenConstructorShape<TDeclaringType, TArgumentState> : 
     /// </summary>
     public Constructor<TArgumentState, TDeclaringType>? ParameterizedConstructorFunc { get; init; }
 
-    IReadOnlyList<IConstructorParameterShape> IConstructorShape.Parameters => _parameters ??= (GetParametersFunc?.Invoke()).AsReadOnlyList();
-    private IReadOnlyList<IConstructorParameterShape>? _parameters;
+    IReadOnlyList<IParameterShape> IConstructorShape.Parameters => _parameters ??= (GetParametersFunc?.Invoke()).AsReadOnlyList();
+    private IReadOnlyList<IParameterShape>? _parameters;
 
     Func<TDeclaringType> IConstructorShape<TDeclaringType, TArgumentState>.GetDefaultConstructor()
         => DefaultConstructorFunc ?? throw new InvalidOperationException("Constructor shape does not specify a default constructor.");

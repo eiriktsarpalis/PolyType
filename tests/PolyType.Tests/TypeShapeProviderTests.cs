@@ -171,7 +171,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                 Assert.Same(constructor.GetArgumentStateConstructor(), constructor.GetArgumentStateConstructor());
 
                 TArgumentState argumentState = argumentStateCtor();
-                foreach (IConstructorParameterShape parameter in constructor.Parameters)
+                foreach (IParameterShape parameter in constructor.Parameters)
                 {
                     Assert.Equal(i++, parameter.Position);
                     argumentState = (TArgumentState)parameter.Accept(this, argumentState)!;
@@ -191,7 +191,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             return null;
         }
 
-        public override object? VisitConstructorParameter<TArgumentState, TParameter>(IConstructorParameterShape<TArgumentState, TParameter> parameter, object? state)
+        public override object? VisitParameter<TArgumentState, TParameter>(IParameterShape<TArgumentState, TParameter> parameter, object? state)
         {
             var argState = (TArgumentState)state!;
             var setter = parameter.GetSetter();
@@ -598,7 +598,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             bool hasSetsRequiredMembersAttribute = ctorInfo.SetsRequiredMembers();
 
             int i = 0;
-            foreach (IConstructorParameterShape ctorParam in constructor.Parameters)
+            foreach (IParameterShape ctorParam in constructor.Parameters)
             {
                 if (i < parameters.Length)
                 {
@@ -623,7 +623,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                     Assert.Equal(hasDefaultValue, ctorParam.HasDefaultValue);
                     Assert.Equal(defaultValue, ctorParam.DefaultValue);
                     Assert.Equal(!hasDefaultValue, ctorParam.IsRequired);
-                    Assert.Equal(ConstructorParameterKind.ConstructorParameter, ctorParam.Kind);
+                    Assert.Equal(ParameterKind.MethodParameter, ctorParam.Kind);
                     Assert.True(ctorParam.IsPublic);
 
                     ParameterInfo paramInfo = Assert.IsAssignableFrom<ParameterInfo>(ctorParam.AttributeProvider);
@@ -644,7 +644,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                     Assert.False(ctorParam.HasDefaultValue);
                     Assert.Null(ctorParam.DefaultValue);
                     Assert.Equal(!hasSetsRequiredMembersAttribute && memberInfo.IsRequired(), ctorParam.IsRequired);
-                    Assert.Equal(ConstructorParameterKind.MemberInitializer, ctorParam.Kind);
+                    Assert.Equal(ParameterKind.MemberInitializer, ctorParam.Kind);
 
                     if (memberInfo is PropertyInfo p)
                     {
@@ -703,7 +703,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             ParameterInfo[] parameters = ctorInfo.GetParameters();
             Assert.True(parameters.Length <= constructor.Parameters.Count);
 
-            foreach (IConstructorParameterShape ctorParam in constructor.Parameters)
+            foreach (IParameterShape ctorParam in constructor.Parameters)
             {
                 if (ctorParam.AttributeProvider is ParameterInfo pInfo)
                 {

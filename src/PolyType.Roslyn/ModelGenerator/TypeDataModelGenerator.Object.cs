@@ -194,7 +194,7 @@ public partial class TypeDataModelGenerator
     {
         Debug.Assert(constructor.MethodKind is MethodKind.Constructor || constructor.IsStatic);
 
-        var parameters = new List<ConstructorParameterDataModel>();
+        var parameters = new List<ParameterDataModel>();
         TypeDataModelGenerationContext scopedCtx = ctx;
         foreach (IParameterSymbol parameter in constructor.Parameters)
         {
@@ -210,7 +210,7 @@ public partial class TypeDataModelGenerator
                 return null;
             }
 
-            ConstructorParameterDataModel parameterModel = MapConstructorParameter(parameter);
+            ParameterDataModel parameterModel = MapParameter(parameter);
             parameters.Add(parameterModel);
         }
 
@@ -265,9 +265,9 @@ public partial class TypeDataModelGenerator
         };
     }
 
-    private static ConstructorParameterDataModel MapConstructorParameter(IParameterSymbol parameter)
+    private static ParameterDataModel MapParameter(IParameterSymbol parameter)
     {
-        return new ConstructorParameterDataModel
+        return new ParameterDataModel
         {
             Parameter = parameter
         };

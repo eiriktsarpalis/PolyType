@@ -65,7 +65,7 @@ public static partial class XmlSerializer
                 properties);
         }
 
-        public override object? VisitConstructorParameter<TArgumentState, TParameterType>(IConstructorParameterShape<TArgumentState, TParameterType> parameter, object? state)
+        public override object? VisitParameter<TArgumentState, TParameterType>(IParameterShape<TArgumentState, TParameterType> parameter, object? state)
         {
             XmlConverter<TParameterType> paramConverter = GetOrAddConverter(parameter.ParameterType);
             return new XmlPropertyConverter<TArgumentState, TParameterType>(parameter, paramConverter);

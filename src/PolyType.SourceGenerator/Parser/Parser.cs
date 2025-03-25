@@ -485,7 +485,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         {
             Constructor = unionCaseInfo.Constructor,
             Parameters = parameters
-                .Select(p => new ConstructorParameterDataModel { Parameter = p })
+                .Select(p => new ParameterDataModel { Parameter = p })
                 .ToImmutableArray(),
             MemberInitializers = ImmutableArray<PropertyDataModel>.Empty,
         };

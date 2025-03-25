@@ -65,11 +65,11 @@ public static partial class Mapper
 
         public override object? VisitProperty<TSource, TSourceProperty>(IPropertyShape<TSource, TSourceProperty> sourceGetter, object? state = null)
         {
-            DebugExt.Assert(state is IPropertyShape or IConstructorParameterShape);
+            DebugExt.Assert(state is IPropertyShape or IParameterShape);
             var visitor = new PropertyScopedVisitor<TSource, TSourceProperty>(this);
             return state is IPropertyShape targetProp
                 ? targetProp.Accept(visitor, sourceGetter)
-                : ((IConstructorParameterShape)state).Accept(visitor, state: sourceGetter);
+                : ((IParameterShape)state).Accept(visitor, state: sourceGetter);
         }
 
         public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
@@ -141,7 +141,7 @@ public static partial class Mapper
                         .Select(targetParam =>
                         {
                             // Use case-insensitive comparison for constructor parameters, but case-sensitive for members.
-                            StringComparison comparison = targetParam.Kind is ConstructorParameterKind.ConstructorParameter
+                            StringComparison comparison = targetParam.Kind is ParameterKind.MethodParameter
                                 ? StringComparison.OrdinalIgnoreCase
                                 : StringComparison.Ordinal;
 
@@ -195,7 +195,7 @@ public static partial class Mapper
                 });
             }
 
-            public override object? VisitConstructorParameter<TArgumentState, TTargetParameter>(IConstructorParameterShape<TArgumentState, TTargetParameter> targetParameter, object? state)
+            public override object? VisitParameter<TArgumentState, TTargetParameter>(IParameterShape<TArgumentState, TTargetParameter> targetParameter, object? state)
             {
                 var sourceProperty = (IPropertyShape<TSource, TSourceProperty>)state!;
                 var propertyTypeMapper = baseVisitor.GetOrAddMapper(sourceProperty.PropertyType, targetParameter.ParameterType);

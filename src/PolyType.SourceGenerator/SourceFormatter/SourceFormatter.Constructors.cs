@@ -40,7 +40,7 @@ internal sealed partial class SourceFormatter
         if (constructorParameterFactoryName != null)
         {
             writer.WriteLine();
-            FormatConstructorParameterFactory(writer, type, constructorParameterFactoryName, constructor, constructorArgumentStateFQN);
+            FormatParameterFactory(writer, type, constructorParameterFactoryName, constructor, constructorArgumentStateFQN);
         }
         
         static string FormatAttributeProviderFunc(ObjectShapeModel type, ConstructorShapeModel constructor)
@@ -177,7 +177,7 @@ internal sealed partial class SourceFormatter
                 string FormatInitializerBody() => string.Join(", ", constructor.RequiredMembers.Select(p => $"{p.UnderlyingMemberName} = {FormatCtorParameterExpr(p)}"));
                 string FormatRequiredMemberAssignments() => string.Join(" ", constructor.RequiredMembers.Select(FormatMemberAssignment));
                 string FormatOptionalMemberAssignments() => string.Join(" ", constructor.OptionalMembers.Select(FormatOptionalMemberAssignment));
-                string FormatOptionalMemberAssignment(ConstructorParameterShapeModel parameter)
+                string FormatOptionalMemberAssignment(ParameterShapeModel parameter)
                 {
                     Debug.Assert(parameter.Kind is ParameterKind.OptionalMember);
                     int flagOffset = parameter.Position - constructor.Parameters.Length - constructor.RequiredMembers.Length;
@@ -191,7 +191,7 @@ internal sealed partial class SourceFormatter
                     return $"if ({conditionalExpr}) {assignmentBody}";
                 }
 
-                string FormatMemberAssignment(ConstructorParameterShapeModel parameter)
+                string FormatMemberAssignment(ParameterShapeModel parameter)
                 {
                     if (parameter.IsInitOnlyProperty || !parameter.IsAccessible)
                     {
@@ -214,7 +214,7 @@ internal sealed partial class SourceFormatter
                     return $"obj.{RoslynHelpers.EscapeKeywordIdentifier(parameter.UnderlyingMemberName)} = {FormatCtorParameterExpr(parameter)};";
                 }
 
-                string FormatCtorParameterExpr(ConstructorParameterShapeModel parameter, bool isSingleParameter = false)
+                string FormatCtorParameterExpr(ParameterShapeModel parameter, bool isSingleParameter = false)
                 {
                     // Reserved for cases where we have Nullable<T> ctor parameters with [DisallowNull] annotation.
                     bool requiresSuppression = parameter.ParameterTypeContainsNullabilityAnnotations || parameter is
@@ -262,14 +262,14 @@ internal sealed partial class SourceFormatter
         }
     }
 
-    private void FormatConstructorParameterFactory(SourceWriter writer, ObjectShapeModel type, string methodName, ConstructorShapeModel constructor, string constructorArgumentStateFQN)
+    private void FormatParameterFactory(SourceWriter writer, ObjectShapeModel type, string methodName, ConstructorShapeModel constructor, string constructorArgumentStateFQN)
     {
-        writer.WriteLine($"private global::PolyType.Abstractions.IConstructorParameterShape[] {methodName}() => new global::PolyType.Abstractions.IConstructorParameterShape[]");
+        writer.WriteLine($"private global::PolyType.Abstractions.IParameterShape[] {methodName}() => new global::PolyType.Abstractions.IParameterShape[]");
         writer.WriteLine('{');
         writer.Indentation++;
 
         int i = 0;
-        foreach (ConstructorParameterShapeModel parameter in constructor.Parameters
+        foreach (ParameterShapeModel parameter in constructor.Parameters
                                                             .Concat(constructor.RequiredMembers)
                                                             .Concat(constructor.OptionalMembers))
         {
@@ -279,7 +279,7 @@ internal sealed partial class SourceFormatter
             }
 
             writer.WriteLine($$"""
-                new global::PolyType.SourceGenModel.SourceGenConstructorParameterShape<{{constructorArgumentStateFQN}}, {{parameter.ParameterType.FullyQualifiedName}}>
+                new global::PolyType.SourceGenModel.SourceGenParameterShape<{{constructorArgumentStateFQN}}, {{parameter.ParameterType.FullyQualifiedName}}>
                 {
                     Position = {{parameter.Position}},
                     Name = {{FormatStringLiteral(parameter.Name)}},
@@ -297,14 +297,14 @@ internal sealed partial class SourceFormatter
 
             i++;
 
-            static string FormatAttributeProviderFunc(ObjectShapeModel type, ConstructorShapeModel constructor, ConstructorParameterShapeModel parameter)
+            static string FormatAttributeProviderFunc(ObjectShapeModel type, ConstructorShapeModel constructor, ParameterShapeModel parameter)
             {
                 if (type.IsTupleType || constructor.IsStaticFactory)
                 {
                     return "null";
                 }
 
-                if (parameter.Kind is not ParameterKind.ConstructorParameter)
+                if (parameter.Kind is not ParameterKind.MethodParameter)
                 {
                     return parameter.IsField
                         ? $$"""static () => typeof({{parameter.DeclaringType.FullyQualifiedName}}).GetField({{FormatStringLiteral(parameter.UnderlyingMemberName)}}, {{InstanceBindingFlagsConstMember}})"""
@@ -318,7 +318,7 @@ internal sealed partial class SourceFormatter
                 return $"static () => typeof({constructor.DeclaringType.FullyQualifiedName}).GetConstructor({InstanceBindingFlagsConstMember}, null, {parameterTypes}, null)?.GetParameters()[{parameter.Position}]";
             }
 
-            static string FormatSetterBody(ConstructorShapeModel constructor, ConstructorParameterShapeModel parameter)
+            static string FormatSetterBody(ConstructorShapeModel constructor, ParameterShapeModel parameter)
             {
                 // Suppress non-nullable Nullable<T> property setters (i.e. setters with [DisallowNull] annotation)
                 bool suppressSetter = parameter.ParameterTypeContainsNullabilityAnnotations || parameter is 
@@ -347,17 +347,17 @@ internal sealed partial class SourceFormatter
                 return assignValueExpr;
             }
 
-            static string FormatParameterKind(ConstructorParameterShapeModel parameter)
+            static string FormatParameterKind(ParameterShapeModel parameter)
             {
                 string identifier = parameter.Kind switch
                 {
-                    ParameterKind.ConstructorParameter => "ConstructorParameter",
+                    ParameterKind.MethodParameter => "MethodParameter",
                     ParameterKind.RequiredMember or
                     ParameterKind.OptionalMember => "MemberInitializer",
                     _ => throw new InvalidOperationException($"Unsupported parameter kind: {parameter.Kind}"),
                 };
 
-                return $"global::PolyType.Abstractions.ConstructorParameterKind.{identifier}";
+                return $"global::PolyType.Abstractions.ParameterKind.{identifier}";
             }
         }
 
@@ -365,9 +365,9 @@ internal sealed partial class SourceFormatter
         writer.WriteLine("};");
     }
 
-    private static string FormatDefaultValueExpr(ConstructorParameterShapeModel constructorParameter)
+    private static string FormatDefaultValueExpr(ParameterShapeModel parameter)
     {
-        return constructorParameter switch
+        return parameter switch
         {
             { DefaultValueExpr: string defaultValueExpr } => defaultValueExpr,
             { ParameterType.IsValueType: true } => "default",
@@ -426,7 +426,7 @@ internal sealed partial class SourceFormatter
         Debug.Assert(!constructorModel.IsAccessible);
 
         StringBuilder parameterSignature = new();
-        foreach (ConstructorParameterShapeModel parameter in constructorModel.Parameters)
+        foreach (ParameterShapeModel parameter in constructorModel.Parameters)
         {
             string refPrefix = parameter.RefKind switch
             {
@@ -454,7 +454,7 @@ internal sealed partial class SourceFormatter
                 ? "[]"
                 : $$"""[{{string.Join(", ", constructorModel.Parameters.Select(FormatParameterType))}}]""";
 
-            static string FormatParameterType(ConstructorParameterShapeModel parameter)
+            static string FormatParameterType(ParameterShapeModel parameter)
             {
                 return parameter.RefKind is RefKind.None 
                     ? $"typeof({parameter.ParameterType.FullyQualifiedName})"
