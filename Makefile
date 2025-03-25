@@ -30,8 +30,11 @@ push:
 restore-tools:
 	dotnet tool restore
 
-generate-docs: restore-tools
+generate-docs: restore-tools build
 	dotnet docfx $(DOCS_PATH)/docfx.json
+
+serve-docs: generate-docs
+	dotnet docfx serve $(ARTIFACT_PATH)/_site --port 8080
 
 release: restore-tools
 	test -n "$(VERSION)" || (echo "must specify VERSION" && exit 1)
