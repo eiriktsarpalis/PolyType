@@ -1,8 +1,9 @@
-name: Update Docs
+name: Publish Docs
 
 on:
-  push:
-    branches: [ "main" ]
+  release:
+    types: [published]
+  workflow_dispatch:
   
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -29,7 +30,7 @@ jobs:
         fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
 
     - name: Dotnet Setup
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 9.0.x
 
