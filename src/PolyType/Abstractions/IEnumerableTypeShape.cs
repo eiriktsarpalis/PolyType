@@ -50,7 +50,7 @@ public interface IEnumerableTypeShape<TEnumerable, TElement> : ITypeShape<TEnume
     new ITypeShape<TElement> ElementType { get; }
 
     /// <summary>
-    /// Creates a delegate used for getting a <see cref="IEnumerable{TElement}"/>
+    /// Creates a delegate used for getting an <see cref="IEnumerable{TElement}"/>
     /// view of the enumerable.
     /// </summary>
     /// <returns>
@@ -67,7 +67,7 @@ public interface IEnumerableTypeShape<TEnumerable, TElement> : ITypeShape<TEnume
     Func<TEnumerable> GetDefaultConstructor();
 
     /// <summary>
-    /// Creates a setter delegate used for appending an <typeparamref name="TElement"/> to a mutable collection.
+    /// Creates a setter delegate used for appending a <typeparamref name="TElement"/> to a mutable collection.
     /// </summary>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Mutable"/>.</exception>
     /// <returns>A setter delegate used for appending elements to a mutable collection.</returns>
