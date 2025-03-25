@@ -32,7 +32,7 @@ public abstract class TypeShapeVisitor
         => ThrowNotImplementedException();
 
     /// <summary>
-    /// Visits an <see cref="IConstructorParameterShape{TDeclaringType, TArgumentState}"/> instance.
+    /// Visits an <see cref="IParameterShape{TArgumentState,TParameterType}"/> instance.
     /// </summary>
     /// <typeparam name="TDeclaringType">The declaring type of the visited constructor.</typeparam>
     /// <typeparam name="TArgumentState">The constructor argument state type used for aggregating constructor arguments.</typeparam>
@@ -43,14 +43,14 @@ public abstract class TypeShapeVisitor
         => ThrowNotImplementedException();
 
     /// <summary>
-    /// Visits an <see cref="IConstructorParameterShape{TArgumentState, TParameterType}"/> instance.
+    /// Visits an <see cref="IParameterShape{TArgumentState,TParameterType}"/> instance.
     /// </summary>
     /// <typeparam name="TArgumentState">The constructor argument state type used for aggregating constructor arguments.</typeparam>
     /// <typeparam name="TParameterType">The type of the visited constructor parameter.</typeparam>
     /// <param name="parameterShape">The parameter shape to visit.</param>
     /// <param name="state">Defines user-provided state.</param>
     /// <returns>The result produced by the visitor.</returns>
-    public virtual object? VisitConstructorParameter<TArgumentState, TParameterType>(IConstructorParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
+    public virtual object? VisitParameter<TArgumentState, TParameterType>(IParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
         => ThrowNotImplementedException();
 
     /// <summary>

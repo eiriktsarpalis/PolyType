@@ -4,30 +4,30 @@ using System.Reflection;
 namespace PolyType.Abstractions;
 
 /// <summary>
-/// Provides a strongly typed shape model for a given .NET constructor parameter,
-/// representing either an actual constructor parameter or a member initializer.
+/// Provides a strongly typed shape model for a given .NET method parameter,
+/// representing either an actual parameter or a member initializer.
 /// </summary>
-public interface IConstructorParameterShape
+public interface IParameterShape
 {
     /// <summary>
-    /// Gets the 0-indexed position of the current constructor parameter.
+    /// Gets the 0-indexed position of the current method parameter.
     /// </summary>
     int Position { get; }
 
     /// <summary>
-    /// Gets the shape of the constructor parameter type.
+    /// Gets the shape of the method parameter type.
     /// </summary>
     ITypeShape ParameterType { get; }
 
     /// <summary>
-    /// Gets the name of the constructor parameter.
+    /// Gets the name of the method parameter.
     /// </summary>
     string Name { get; }
 
     /// <summary>
     /// Gets specifies the kind of the current parameter.
     /// </summary>
-    ConstructorParameterKind Kind { get; }
+    ParameterKind Kind { get; }
 
     /// <summary>
     /// Gets a value indicating whether the parameter has a default value.
@@ -44,7 +44,7 @@ public interface IConstructorParameterShape
     /// </summary>
     /// <remarks>
     /// A parameter is reported as required if it is either a
-    /// constructor parameter without a default value or a required property.
+    /// parameter without a default value or a required property.
     /// </remarks>
     bool IsRequired { get; }
 
@@ -80,15 +80,15 @@ public interface IConstructorParameterShape
 }
 
 /// <summary>
-/// Provides a strongly typed shape model for a given .NET constructor parameter,
-/// representing either an actual constructor parameter or a required or init-only property.
+/// Provides a strongly typed shape model for a given .NET method parameter,
+/// representing either an actual method parameter or a required or init-only property.
 /// </summary>
-/// <typeparam name="TArgumentState">The state type used for aggregating constructor arguments.</typeparam>
-/// <typeparam name="TParameterType">The type of the underlying constructor parameter.</typeparam>
-public interface IConstructorParameterShape<TArgumentState, TParameterType> : IConstructorParameterShape
+/// <typeparam name="TArgumentState">The state type used for aggregating method arguments.</typeparam>
+/// <typeparam name="TParameterType">The type of the underlying method parameter.</typeparam>
+public interface IParameterShape<TArgumentState, TParameterType> : IParameterShape
 {
     /// <summary>
-    /// Gets the shape of the constructor parameter type.
+    /// Gets the shape of the method parameter type.
     /// </summary>
     new ITypeShape<TParameterType> ParameterType { get; }
 

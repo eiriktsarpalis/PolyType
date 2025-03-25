@@ -11,7 +11,7 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
     IConstructorShapeInfo ctorInfo) :
     IConstructorShape<TDeclaringType, TArgumentState>
 {
-    private IReadOnlyList<IConstructorParameterShape>? _parameters;
+    private IReadOnlyList<IParameterShape>? _parameters;
     private Func<TArgumentState>? _argumentStateConstructor;
     private Constructor<TArgumentState, TDeclaringType>? _parameterizedConstructor;
     private Func<TDeclaringType>? _defaultConstructor;
@@ -22,7 +22,7 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
     IObjectTypeShape IConstructorShape.DeclaringType => DeclaringType;
     object? IConstructorShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitConstructor(this, state);
 
-    public IReadOnlyList<IConstructorParameterShape> Parameters => _parameters ??= GetParameters().AsReadOnlyList();
+    public IReadOnlyList<IParameterShape> Parameters => _parameters ??= GetParameters().AsReadOnlyList();
 
     public Func<TArgumentState> GetArgumentStateConstructor()
     {
@@ -57,11 +57,11 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
         return _defaultConstructor ??= provider.MemberAccessor.CreateDefaultConstructor<TDeclaringType>(ctorInfo);
     }
 
-    private IEnumerable<IConstructorParameterShape> GetParameters()
+    private IEnumerable<IParameterShape> GetParameters()
     {
         for (int i = 0; i < ctorInfo.Parameters.Length; i++)
         {
-            yield return provider.CreateConstructorParameter(typeof(TArgumentState), ctorInfo, i);
+            yield return provider.CreateParameter(typeof(TArgumentState), ctorInfo, i);
         }
     }
 }

@@ -8,7 +8,7 @@ public sealed partial class ServiceProviderContext
 {
     private sealed class Builder(ServiceProviderContext serviceProviderCtx, ITypeShapeFunc self) : TypeShapeVisitor, ITypeShapeFunc
     {
-        private delegate void ConstructorParameterMapper<TService>(ServiceProvider serviceProvider, ref TService service);
+        private delegate void ParameterMapper<TService>(ServiceProvider serviceProvider, ref TService service);
 
         /// <summary>Recursively looks up or creates a factory for the specified shape.</summary>
         private ServiceFactory<TService>? GetOrAddFactory<TService>(ITypeShape<TService> shape) =>
@@ -49,10 +49,10 @@ public sealed partial class ServiceProviderContext
             var parameterizedCtor = constructorShape.GetParameterizedConstructor();
 
             ServiceLifetime lifetime = ResolveLifetime(state); // The lifetime of the service is the maximum lifetime of its dependencies.
-            ConstructorParameterMapper<TArgumentState>[] parameterMappers = constructorShape.Parameters
+            ParameterMapper<TArgumentState>[] parameterMappers = constructorShape.Parameters
                 .Select(p =>
                 {
-                    var result = ((ConstructorParameterMapper<TArgumentState>? Mapper, ServiceLifetime Lifetime))p.Accept(this)!;
+                    var result = ((ParameterMapper<TArgumentState>? Mapper, ServiceLifetime Lifetime))p.Accept(this)!;
                     lifetime = CombineLifetimes(lifetime, result.Lifetime);
                     return result.Mapper;
                 })
@@ -70,7 +70,7 @@ public sealed partial class ServiceProviderContext
             }, lifetime);
         }
 
-        public override object? VisitConstructorParameter<TArgumentState, TParameterType>(IConstructorParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
+        public override object? VisitParameter<TArgumentState, TParameterType>(IParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
         {
             var parameterTypeFactory = GetOrAddFactory(parameterShape.ParameterType);
             if (parameterTypeFactory is null)
@@ -80,12 +80,12 @@ public sealed partial class ServiceProviderContext
                     throw new InvalidOperationException($"No instance for the required service '{parameterShape.ParameterType.Type}' has been registered.");
                 }
 
-                return ((ConstructorParameterMapper<TArgumentState>?)null, ServiceLifetime.Singleton);
+                return ((ParameterMapper<TArgumentState>?)null, ServiceLifetime.Singleton);
             }
 
             var factory = parameterTypeFactory.Factory;
             var setter = parameterShape.GetSetter();
-            var mapper = new ConstructorParameterMapper<TArgumentState>((ServiceProvider provider, ref TArgumentState state) => setter(ref state, factory(provider)));
+            var mapper = new ParameterMapper<TArgumentState>((ServiceProvider provider, ref TArgumentState state) => setter(ref state, factory(provider)));
             return (mapper, parameterTypeFactory.Lifetime);
         }
 

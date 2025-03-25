@@ -2,7 +2,7 @@
 
 namespace PolyType.SourceGenerator.Model;
 
-public sealed record ConstructorParameterShapeModel
+public sealed record ParameterShapeModel
 {
     public required string Name { get; init; }
     public required string UnderlyingMemberName { get; init; }
@@ -25,7 +25,7 @@ public sealed record ConstructorParameterShapeModel
 
 public enum ParameterKind
 {
-    ConstructorParameter,
+    MethodParameter,
     RequiredMember,
     OptionalMember
 }

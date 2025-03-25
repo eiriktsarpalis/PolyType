@@ -439,11 +439,11 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         return (IConstructorShape)Activator.CreateInstance(reflectionConstructorType, this, declaringType, ctorInfo)!;
     }
 
-    internal IConstructorParameterShape CreateConstructorParameter(Type constructorArgumentState, IConstructorShapeInfo ctorInfo, int position)
+    internal IParameterShape CreateParameter(Type constructorArgumentState, IConstructorShapeInfo ctorInfo, int position)
     {
         IParameterShapeInfo parameterInfo = ctorInfo.Parameters[position];
-        Type reflectionConstructorParameterType = typeof(ReflectionConstructorParameterShape<,>).MakeGenericType(constructorArgumentState, parameterInfo.Type);
-        return (IConstructorParameterShape)Activator.CreateInstance(reflectionConstructorParameterType, this, ctorInfo, parameterInfo, position)!;
+        Type constructorParameterType = typeof(ReflectionParameterShape<,>).MakeGenericType(constructorArgumentState, parameterInfo.Type);
+        return (IParameterShape)Activator.CreateInstance(constructorParameterType, this, ctorInfo, parameterInfo, position)!;
     }
 
     internal IUnionCaseShape CreateUnionCaseShape(IUnionTypeShape unionTypeShape, DerivedTypeInfo derivedTypeInfo)

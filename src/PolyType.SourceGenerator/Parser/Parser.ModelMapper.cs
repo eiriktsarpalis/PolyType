@@ -363,8 +363,8 @@ public sealed partial class Parser
     private ConstructorShapeModel MapConstructor(ObjectDataModel objectModel, TypeId declaringTypeId, ConstructorDataModel constructor, bool isFSharpUnionCase)
     {
         int position = constructor.Parameters.Length;
-        List<ConstructorParameterShapeModel>? requiredMembers = null;
-        List<ConstructorParameterShapeModel>? optionalMembers = null;
+        List<ParameterShapeModel>? requiredMembers = null;
+        List<ParameterShapeModel>? optionalMembers = null;
 
         bool isAccessibleConstructor = IsAccessibleSymbol(constructor.Constructor);
         bool isParameterizedConstructor = position > 0 || constructor.MemberInitializers.Any(p => p.IsRequired || p.IsInitOnly);
@@ -378,7 +378,7 @@ public sealed partial class Parser
         {
             ParsePropertyShapeAttribute(propertyModel.PropertySymbol, out string propertyName, out _);
 
-            var memberInitializer = new ConstructorParameterShapeModel
+            var memberInitializer = new ParameterShapeModel
             {
                 ParameterType = CreateTypeId(propertyModel.PropertyType),
                 DeclaringType = SymbolEqualityComparer.Default.Equals(propertyModel.DeclaringType, objectModel.Type)
@@ -425,7 +425,7 @@ public sealed partial class Parser
                 ? declaringTypeId
                 : CreateTypeId(constructor.DeclaringType),
 
-            Parameters = constructor.Parameters.Select(p => MapConstructorParameter(objectModel, declaringTypeId, p, isFSharpUnionCase)).ToImmutableEquatableArray(),
+            Parameters = constructor.Parameters.Select(p => MapParameter(objectModel, declaringTypeId, p, isFSharpUnionCase)).ToImmutableEquatableArray(),
             RequiredMembers = requiredMembers?.ToImmutableEquatableArray() ?? [],
             OptionalMembers = optionalMembers?.ToImmutableEquatableArray() ?? [],
             OptionalMemberFlagsType = (optionalMembers?.Count ?? 0) switch
@@ -457,7 +457,7 @@ public sealed partial class Parser
         };
     }
 
-    private ConstructorParameterShapeModel MapConstructorParameter(ObjectDataModel objectModel, TypeId declaringTypeId, ConstructorParameterDataModel parameter, bool isFSharpUnionCase)
+    private ParameterShapeModel MapParameter(ObjectDataModel objectModel, TypeId declaringTypeId, ParameterDataModel parameter, bool isFSharpUnionCase)
     {
         string name = parameter.Parameter.Name;
 
@@ -500,14 +500,14 @@ public sealed partial class Parser
             }
         }
 
-        return new ConstructorParameterShapeModel
+        return new ParameterShapeModel
         {
             Name = name,
             UnderlyingMemberName = parameter.Parameter.Name,
             Position = parameter.Parameter.Ordinal,
             DeclaringType = declaringTypeId,
             ParameterType = CreateTypeId(parameter.Parameter.Type),
-            Kind = ParameterKind.ConstructorParameter,
+            Kind = ParameterKind.MethodParameter,
             RefKind = parameter.Parameter.RefKind,
             IsRequired = !parameter.HasDefaultValue,
             IsAccessible = true,
@@ -561,10 +561,10 @@ public sealed partial class Parser
             };
         }
 
-        static ConstructorParameterShapeModel MapTupleConstructorParameter(TypeId typeId, PropertyDataModel tupleElement, int position)
+        static ParameterShapeModel MapTupleConstructorParameter(TypeId typeId, PropertyDataModel tupleElement, int position)
         {
             string name = $"Item{position + 1}";
-            return new ConstructorParameterShapeModel
+            return new ParameterShapeModel
             {
                 Name = name,
                 UnderlyingMemberName = name,
@@ -572,7 +572,7 @@ public sealed partial class Parser
                 ParameterType = CreateTypeId(tupleElement.PropertyType),
                 DeclaringType = typeId,
                 HasDefaultValue = false,
-                Kind = ParameterKind.ConstructorParameter,
+                Kind = ParameterKind.MethodParameter,
                 RefKind = RefKind.None,
                 IsRequired = true,
                 IsAccessible = true,

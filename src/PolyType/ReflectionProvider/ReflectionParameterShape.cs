@@ -4,14 +4,14 @@ using System.Reflection;
 
 namespace PolyType.ReflectionProvider;
 
-internal sealed class ReflectionConstructorParameterShape<TArgumentState, TParameter> : IConstructorParameterShape<TArgumentState, TParameter>
+internal sealed class ReflectionParameterShape<TArgumentState, TParameter> : IParameterShape<TArgumentState, TParameter>
 {
     private readonly ReflectionTypeShapeProvider _provider;
     private readonly IConstructorShapeInfo _ctorInfo;
     private readonly IParameterShapeInfo _parameterInfo;
     private Setter<TArgumentState, TParameter>? _setter;
 
-    public ReflectionConstructorParameterShape(
+    public ReflectionParameterShape(
         ReflectionTypeShapeProvider provider,
         IConstructorShapeInfo ctorInfo,
         IParameterShapeInfo parameterInfo,
@@ -29,16 +29,16 @@ internal sealed class ReflectionConstructorParameterShape<TArgumentState, TParam
 
     public int Position { get; }
     public string Name => _parameterInfo.Name;
-    public ConstructorParameterKind Kind => _parameterInfo.Kind;
+    public ParameterKind Kind => _parameterInfo.Kind;
     public bool HasDefaultValue => _parameterInfo.HasDefaultValue;
     public bool IsRequired => _parameterInfo.IsRequired;
     public bool IsNonNullable => _parameterInfo.IsNonNullable;
     public bool IsPublic => _parameterInfo.IsPublic;
     public TParameter? DefaultValue => (TParameter?)_parameterInfo.DefaultValue;
-    object? IConstructorParameterShape.DefaultValue => _parameterInfo.DefaultValue;
+    object? IParameterShape.DefaultValue => _parameterInfo.DefaultValue;
     public ICustomAttributeProvider? AttributeProvider => _parameterInfo.AttributeProvider;
-    ITypeShape IConstructorParameterShape.ParameterType => ParameterType;
-    object? IConstructorParameterShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitConstructorParameter(this, state);
+    ITypeShape IParameterShape.ParameterType => ParameterType;
+    object? IParameterShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitParameter(this, state);
 
     public Setter<TArgumentState, TParameter> GetSetter() =>
         _setter ??= _provider.MemberAccessor.CreateConstructorArgumentStateSetter<TArgumentState, TParameter>(_ctorInfo, Position);
@@ -48,7 +48,7 @@ internal interface IParameterShapeInfo
 {
     Type Type { get; }
     string Name { get; }
-    ConstructorParameterKind Kind { get; }
+    ParameterKind Kind { get; }
     ICustomAttributeProvider? AttributeProvider { get; }
     bool IsByRef { get; }
     bool IsRequired { get; }
@@ -83,7 +83,7 @@ internal sealed class MethodParameterShapeInfo : IParameterShapeInfo
 
     public Type Type { get; }
     public string Name { get; }
-    public ConstructorParameterKind Kind => ConstructorParameterKind.ConstructorParameter;
+    public ParameterKind Kind => ParameterKind.MethodParameter;
     public ICustomAttributeProvider? AttributeProvider => ParameterInfo;
     public bool IsByRef => ParameterInfo.ParameterType.IsByRef;
     public bool IsRequired => !ParameterInfo.HasDefaultValue;
@@ -120,5 +120,5 @@ internal sealed class MemberInitializerShapeInfo : IParameterShapeInfo
     public ICustomAttributeProvider? AttributeProvider => MemberInfo;
     public bool HasDefaultValue => false;
     public object? DefaultValue => null;
-    public ConstructorParameterKind Kind => ConstructorParameterKind.MemberInitializer;
+    public ParameterKind Kind => ParameterKind.MemberInitializer;
 }

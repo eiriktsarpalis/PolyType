@@ -105,7 +105,7 @@ public partial class RandomGenerator
             }
         }
 
-        public override object? VisitConstructorParameter<TArgumentState, TParameter>(IConstructorParameterShape<TArgumentState, TParameter> parameter, object? state)
+        public override object? VisitParameter<TArgumentState, TParameter>(IParameterShape<TArgumentState, TParameter> parameter, object? state)
         {
             Setter<TArgumentState, TParameter> setter = parameter.GetSetter();
             RandomGenerator<TParameter> parameterGenerator = GetOrAddGenerator(parameter.ParameterType);

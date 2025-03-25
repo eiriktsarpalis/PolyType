@@ -1,14 +1,14 @@
 ﻿namespace PolyType.Abstractions;
 
 /// <summary>
-/// Specifies the kind of constructor parameter.
+/// Specifies the kind of method parameter.
 /// </summary>
-public enum ConstructorParameterKind
+public enum ParameterKind
 {
     /// <summary>
-    /// Represents a constructor parameter.
+    /// Represents a method parameter.
     /// </summary>
-    ConstructorParameter,
+    MethodParameter,
 
     /// <summary>
     /// Represents a member initializer.

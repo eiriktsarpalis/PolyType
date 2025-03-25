@@ -131,8 +131,8 @@ public static class JsonSchemaGenerator
                     if (objectShape.Properties is not [])
                     {
                         IConstructorShape? ctor = objectShape.Constructor;
-                        Dictionary<string, IConstructorParameterShape>? ctorParams = ctor?.Parameters
-                            .Where(p => p.Kind is ConstructorParameterKind.ConstructorParameter || p.IsRequired)
+                        Dictionary<string, IParameterShape>? ctorParams = ctor?.Parameters
+                            .Where(p => p.Kind is ParameterKind.MethodParameter || p.IsRequired)
                             .ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
 
                         JsonObject properties = new();
@@ -141,7 +141,7 @@ public static class JsonSchemaGenerator
                         Push("properties");
                         foreach (IPropertyShape prop in objectShape.Properties)
                         {
-                            IConstructorParameterShape? associatedParameter = null;
+                            IParameterShape? associatedParameter = null;
                             ctorParams?.TryGetValue(prop.Name, out associatedParameter);
 
                             bool isNonNullable = 

@@ -6,7 +6,7 @@ namespace PolyType.Roslyn;
 /// <summary>
 /// A constructor parameter data model wrapping an <see cref="IParameterSymbol"/>.
 /// </summary>
-public readonly struct ConstructorParameterDataModel
+public readonly struct ParameterDataModel
 {
     /// <summary>
     /// The parameter symbol that this model represents.

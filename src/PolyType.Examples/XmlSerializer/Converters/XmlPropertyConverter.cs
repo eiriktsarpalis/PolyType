@@ -9,7 +9,7 @@ internal abstract class XmlPropertyConverter<TDeclaringType>(string name)
     public string Name { get; } = XmlConvert.EncodeLocalName(name);
     public abstract bool HasGetter { get; }
     public abstract bool HasSetter { get; }
-    public bool IsConstructorParameter { get; private protected init; }
+    public bool IsParameter { get; private protected init; }
 
     public abstract void Write(XmlWriter writer, ref TDeclaringType value);
     public abstract void Read(XmlReader reader, ref TDeclaringType value);
@@ -37,12 +37,12 @@ internal sealed class XmlPropertyConverter<TDeclaringType, TPropertyType> : XmlP
         }
     }
 
-    public XmlPropertyConverter(IConstructorParameterShape<TDeclaringType, TPropertyType> parameter, XmlConverter<TPropertyType> propertyConverter)
+    public XmlPropertyConverter(IParameterShape<TDeclaringType, TPropertyType> parameter, XmlConverter<TPropertyType> propertyConverter)
     : base(parameter.Name)
     {
         _propertyConverter = propertyConverter;
         _setter = parameter.GetSetter();
-        IsConstructorParameter = parameter.Kind is ConstructorParameterKind.ConstructorParameter;
+        IsParameter = parameter.Kind is ParameterKind.MethodParameter;
     }
 
     public override bool HasGetter => _getter != null;

@@ -107,7 +107,7 @@ public static partial class ConfigurationBinderTS
             return new PropertyBinder<TDeclaringType>((ref TDeclaringType obj, IConfigurationSection section) => setter(ref obj, propertyTypeBinder(section)!));
         }
 
-        public override object? VisitConstructorParameter<TArgumentState, TParameterType>(IConstructorParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
+        public override object? VisitParameter<TArgumentState, TParameterType>(IParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
         {
             Func<IConfiguration, TParameterType?> parameterTypeBinder = GetOrAddBinder(parameterShape.ParameterType);
             Setter<TArgumentState, TParameterType> setter = parameterShape.GetSetter();
