@@ -27,7 +27,7 @@ public partial interface IPropertyShape<TDeclaringType, TPropertyType> : IProper
 This model is fairly similar to `System.Type` and `System.Reflection.PropertyInfo`, with the notable difference that both models are generic and the property shape is capable of producing a strongly typed getter delegate. It can be traversed using the following generic visitor type:
 
 ```C#
-public partial interface TypeShapeVisitor
+public abstract partial class TypeShapeVisitor
 {
     object? VisitObject<TDeclaringType>(IObjectTypeShape<TDeclaringType> objectShape, object? state = null);
     object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> typeShape, object? state = null);
@@ -126,7 +126,7 @@ public interface IDictionaryTypeShape<TDictionary, TKey, TValue> : ITypeShape<TD
 A collection type is classed as a dictionary if it implements one of the known dictionary interfaces. Non-generic collections use `object` as the element, key and value types. As before, enumerable shapes can be unpacked by the relevant methods of `TypeShapeVisitor`:
 
 ```C#
-public partial interface TypeShapeVisitor
+public abstract partial class TypeShapeVisitor
 {
     object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state = null);
     object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state = null);
@@ -190,7 +190,7 @@ public interface IEnumTypeShape<TEnum, TUnderlying> : ITypeShape<TEnum> where TE
 The `TUnderlying` represents the underlying numeric representation used by the enum in question. As before, `TypeShapeVisitor` exposes relevant methods for consuming the new shapes:
 
 ```C#
-public partial interface TypeShapeVisitor
+public abstract partial class TypeShapeVisitor
 {
     object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null) where TEnum : struct, Enum;
 }
@@ -232,7 +232,7 @@ public delegate bool OptionDeconstructor<TOptional, TElement>(TOptional optional
 In the case of `Nullable<T>`, the type `int?` maps to an optional shape with `TOptional` set to `int?` and `TElement` set to `int`. The relevant `TypeShapeVisitor` method looks as follows:
 
 ```C#
-public partial interface TypeShapeVisitor
+public abstract partial class TypeShapeVisitor
 {
     object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state = null);
 }
@@ -291,7 +291,7 @@ public interface IUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShape
 And as before, `TypeShapeVisitor` exposes relevant methods for the two types:
 
 ```C#
-public partial interface TypeShapeVisitor
+public abstract partial class TypeShapeVisitor
 {
     object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null);
     object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
@@ -352,7 +352,7 @@ public interface IMarshaller<T, TSurrogate>
 And corresponding visitor method
 
 ```C#
-public partial interface TypeShapeVisitor
+public abstract partial class TypeShapeVisitor
 {
     object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null);
 }
@@ -459,7 +459,7 @@ public partial interface IConstructorShape<TDeclaringType, TArgumentState> : ICo
     Func<TArgumentState, TDeclaringType> GetParameterizedConstructor();
 }
 
-public partial interface TypeShapeVisitor
+public abstract partial class TypeShapeVisitor
 {
     object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> shape, object? state = null);
 }
@@ -492,7 +492,7 @@ public partial interface IConstructorParameterShape<TArgumentState, TParameterTy
     Setter<TArgumentState, TParameterType> GetSetter();
 }
 
-public partial interface TypeShapeVisitor
+public abstract partial class TypeShapeVisitor
 {
     object? VisitConstructor<TArgumentState, TParameterType>(IConstructorParameterShape<TArgumentState, TParameterType> shape, object? state = null);
 }

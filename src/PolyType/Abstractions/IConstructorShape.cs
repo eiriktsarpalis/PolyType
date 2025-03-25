@@ -55,21 +55,21 @@ public interface IConstructorShape<TDeclaringType, TArgumentState> : IConstructo
     /// <summary>
     /// Creates a delegate wrapping a parameterless constructor, if applicable.
     /// </summary>
-    /// <exception cref="InvalidOperationException">The <see cref="IConstructorShape.Parameters"/> property of the constructor is empty.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="IConstructorShape.Parameters"/> property of the constructor is not empty.</exception>
     /// <returns>A parameterless delegate creating a default instance of <typeparamref name="TArgumentState"/>.</returns>
     Func<TDeclaringType> GetDefaultConstructor();
 
     /// <summary>
     /// Creates a constructor delegate for creating a default argument state instance.
     /// </summary>
-    /// <exception cref="InvalidOperationException">The <see cref="IConstructorShape.Parameters"/> property of the constructor is not empty.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="IConstructorShape.Parameters"/> property of the constructor is empty.</exception>
     /// <returns>A delegate for constructing new <typeparamref name="TArgumentState"/> instances.</returns>
     Func<TArgumentState> GetArgumentStateConstructor();
 
     /// <summary>
     /// Creates a constructor delegate parameterized on an argument state object.
     /// </summary>
-    /// <exception cref="InvalidOperationException">The <see cref="IConstructorShape.Parameters"/> property of the constructor is not empty.</exception>
+    /// <exception cref="InvalidOperationException">The <see cref="IConstructorShape.Parameters"/> property of the constructor is empty.</exception>
     /// <returns>A parameterized delegate returning an instance of <typeparamref name="TDeclaringType"/>.</returns>
     Constructor<TArgumentState, TDeclaringType> GetParameterizedConstructor();
 }
