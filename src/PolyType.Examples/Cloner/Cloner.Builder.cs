@@ -142,7 +142,7 @@ public static partial class Cloner
             switch (enumerableShape.ConstructionStrategy)
             {
                 case CollectionConstructionStrategy.Mutable:
-                    var defaultCtor = enumerableShape.GetDefaultConstructor();
+                    var defaultCtor = enumerableShape.GetDefaultConstructor(CollectionConstructionOptions<TElement>.Default);
                     var addMember = enumerableShape.GetAddElement();
                     return new Func<TEnumerable?, TEnumerable?>(source =>
                     {
@@ -161,7 +161,7 @@ public static partial class Cloner
                     });
                 
                 case CollectionConstructionStrategy.Span:
-                    var spanCtor = enumerableShape.GetSpanConstructor();
+                    var spanCtor = enumerableShape.GetSpanConstructor(CollectionConstructionOptions<TElement>.Default);
                     return new Func<TEnumerable?, TEnumerable?>(source =>
                     {
                         if (source is null)
@@ -179,7 +179,7 @@ public static partial class Cloner
                     });
                 
                 case CollectionConstructionStrategy.Enumerable:
-                    var enumerableCtor = enumerableShape.GetEnumerableConstructor();
+                    var enumerableCtor = enumerableShape.GetEnumerableConstructor(CollectionConstructionOptions<TElement>.Default);
                     return new Func<TEnumerable?, TEnumerable?>(source =>
                     {
                         if (source is null)
@@ -203,7 +203,7 @@ public static partial class Cloner
             switch (dictionaryShape.ConstructionStrategy)
             {
                 case CollectionConstructionStrategy.Mutable:
-                    var defaultCtor = dictionaryShape.GetDefaultConstructor();
+                    var defaultCtor = dictionaryShape.GetDefaultConstructor(CollectionConstructionOptions<TKey>.Default);
                     var addEntry = dictionaryShape.GetAddKeyValuePair();
                     return new Func<TDictionary?, TDictionary?>(source =>
                     {
@@ -223,7 +223,7 @@ public static partial class Cloner
                     });
                 
                 case CollectionConstructionStrategy.Span:
-                    var spanCtor = dictionaryShape.GetSpanConstructor();
+                    var spanCtor = dictionaryShape.GetSpanConstructor(CollectionConstructionOptions<TKey>.Default);
                     return new Func<TDictionary?, TDictionary?>(source =>
                     {
                         if (source is null)
@@ -242,7 +242,7 @@ public static partial class Cloner
                     });
                 
                 case CollectionConstructionStrategy.Enumerable:
-                    var enumerableCtor = dictionaryShape.GetEnumerableConstructor();
+                    var enumerableCtor = dictionaryShape.GetEnumerableConstructor(CollectionConstructionOptions<TKey>.Default);
                     return new Func<TDictionary?, TDictionary?>(source =>
                     {
                         if (source is null)
