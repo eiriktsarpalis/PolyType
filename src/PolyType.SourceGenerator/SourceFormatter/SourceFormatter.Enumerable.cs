@@ -43,7 +43,9 @@ internal sealed partial class SourceFormatter
         static string FormatDefaultConstructorFunc(EnumerableShapeModel enumerableType)
         {
             return enumerableType.ConstructionStrategy is CollectionConstructionStrategy.Mutable
-                ? $"static () => new {enumerableType.ImplementationTypeFQN ?? enumerableType.Type.FullyQualifiedName}()"
+                ? $"static options => options is null" +
+                    $" ? () => new {enumerableType.ImplementationTypeFQN ?? enumerableType.Type.FullyQualifiedName}()" +
+                    $" : () => new {enumerableType.ImplementationTypeFQN ?? enumerableType.Type.FullyQualifiedName}()" // TODO use options
                 : "null";
         }
 
@@ -71,9 +73,15 @@ internal sealed partial class SourceFormatter
             string valuesExpr = enumerableType.CtorRequiresListConversion ? $"global::PolyType.SourceGenModel.CollectionHelpers.CreateList(values{suppressSuffix})" : $"values{suppressSuffix}";
             return enumerableType switch
             {
-                { Kind: EnumerableKind.ArrayOfT or EnumerableKind.ReadOnlyMemoryOfT or EnumerableKind.MemoryOfT } => $"static values => {valuesExpr}.ToArray()",
-                { StaticFactoryMethod: string spanFactory } => $"static values => {spanFactory}({valuesExpr})",
-                _ => $"static values => new {enumerableType.Type.FullyQualifiedName}({valuesExpr})",
+                { Kind: EnumerableKind.ArrayOfT or EnumerableKind.ReadOnlyMemoryOfT or EnumerableKind.MemoryOfT } => $"static options => options is null" +
+                    $" ? static values => {valuesExpr}.ToArray()" +
+                    $" : static values => {valuesExpr}.ToArray()", // TODO use options
+                { StaticFactoryMethod: string spanFactory } => $"static options => options is null" +
+                    $" ? static values => {spanFactory}({valuesExpr})" +
+                    $" : static values => {spanFactory}({valuesExpr})", // TODO use options
+                _ => $"static options => options is null" +
+                    $" ? static values => new {enumerableType.Type.FullyQualifiedName}({valuesExpr})" +
+                    $" : static values => new {enumerableType.Type.FullyQualifiedName}({valuesExpr})", // TODO use options
             };
         }
 
@@ -87,8 +95,12 @@ internal sealed partial class SourceFormatter
             string suppressSuffix = enumerableType.ElementTypeContainsNullableAnnotations ? "!" : "";
             return enumerableType switch
             {
-                { StaticFactoryMethod: { } enumerableFactory } => $"static values => {enumerableFactory}(values{suppressSuffix})",
-                _ => $"static values => new {enumerableType.Type.FullyQualifiedName}(values{suppressSuffix})",
+                { StaticFactoryMethod: { } enumerableFactory } => $"static options => options is null" +
+                    $" ? static values => {enumerableFactory}(values{suppressSuffix})" +
+                    $" : static values => {enumerableFactory}(values{suppressSuffix})", // TODO use options
+                _ => $"static options => options is null" +
+                    $" ? static values => new {enumerableType.Type.FullyQualifiedName}(values{suppressSuffix})" +
+                    $" : static values => new {enumerableType.Type.FullyQualifiedName}(values{suppressSuffix})", // TODO use options
             };
         }
     }

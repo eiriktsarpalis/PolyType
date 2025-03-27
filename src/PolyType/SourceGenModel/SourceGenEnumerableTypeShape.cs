@@ -32,7 +32,7 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     /// <summary>
     /// Gets the function that constructs a default instance of the collection.
     /// </summary>
-    public Func<TEnumerable>? DefaultConstructorFunc { get; init; }
+    public Func<CollectionConstructionOptions<TElement>?, Func<TEnumerable>>? DefaultConstructorFunc { get; init; }
 
     /// <summary>
     /// Gets the function that adds an element to the collection.
@@ -42,12 +42,12 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     /// <summary>
     /// Gets the function that constructs a collection from an enumerable.
     /// </summary>
-    public Func<IEnumerable<TElement>, TEnumerable>? EnumerableConstructorFunc { get; init; }
+    public Func<CollectionConstructionOptions<TElement>?, Func<IEnumerable<TElement>, TEnumerable>>? EnumerableConstructorFunc { get; init; }
 
     /// <summary>
     /// Gets the function that constructs a collection from a span.
     /// </summary>
-    public SpanConstructor<TElement, TEnumerable>? SpanConstructorFunc { get; init; }
+    public Func<CollectionConstructionOptions<TElement>?, SpanConstructor<TElement, TEnumerable>>? SpanConstructorFunc { get; init; }
 
     /// <inheritdoc/>
     public override TypeShapeKind Kind => TypeShapeKind.Enumerable;
@@ -60,15 +60,15 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     Func<TEnumerable, IEnumerable<TElement>> IEnumerableTypeShape<TEnumerable, TElement>.GetGetEnumerable()
         => GetEnumerableFunc;
 
-    Func<TEnumerable> IEnumerableTypeShape<TEnumerable, TElement>.GetDefaultConstructor()
-        => DefaultConstructorFunc ?? throw new InvalidOperationException("Enumerable shape does not specify a default constructor.");
+    Func<TEnumerable> IEnumerableTypeShape<TEnumerable, TElement>.GetDefaultConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions)
+        => DefaultConstructorFunc?.Invoke(collectionConstructionOptions) ?? throw new InvalidOperationException("Enumerable shape does not specify a default constructor.");
 
     Setter<TEnumerable, TElement> IEnumerableTypeShape<TEnumerable, TElement>.GetAddElement()
         => AddElementFunc ?? throw new InvalidOperationException("Enumerable shape does not specify an append delegate.");
 
-    Func<IEnumerable<TElement>, TEnumerable> IEnumerableTypeShape<TEnumerable, TElement>.GetEnumerableConstructor()
-        => EnumerableConstructorFunc ?? throw new InvalidOperationException("Enumerable shape does not specify an enumerable constructor.");
+    Func<IEnumerable<TElement>, TEnumerable> IEnumerableTypeShape<TEnumerable, TElement>.GetEnumerableConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions)
+        => EnumerableConstructorFunc?.Invoke(collectionConstructionOptions) ?? throw new InvalidOperationException("Enumerable shape does not specify an enumerable constructor.");
 
-    SpanConstructor<TElement, TEnumerable> IEnumerableTypeShape<TEnumerable, TElement>.GetSpanConstructor()
-        => SpanConstructorFunc ?? throw new InvalidOperationException("Enumerable shape does not specify a span constructor.");
+    SpanConstructor<TElement, TEnumerable> IEnumerableTypeShape<TEnumerable, TElement>.GetSpanConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions)
+        => SpanConstructorFunc?.Invoke(collectionConstructionOptions) ?? throw new InvalidOperationException("Enumerable shape does not specify a span constructor.");
 }

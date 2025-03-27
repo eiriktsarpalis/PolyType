@@ -48,7 +48,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         return _addDelegate ??= Provider.MemberAccessor.CreateDictionaryAddDelegate<TDictionary, TKey, TValue>(_addMethod);
     }
 
-    public Func<TDictionary> GetDefaultConstructor()
+    public Func<TDictionary> GetDefaultConstructor(CollectionConstructionOptions<TKey>? collectionConstructionOptions)
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
         {
@@ -59,12 +59,14 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         return _defaultCtorDelegate ??= CreateDefaultCtor();
         Func<TDictionary> CreateDefaultCtor()
         {
+            // TODO use options
+
             DebugExt.Assert(_defaultCtor != null);
             return Provider.MemberAccessor.CreateDefaultConstructor<TDictionary>(new MethodConstructorShapeInfo(typeof(TDictionary), _defaultCtor, parameters: []));
         }
     }
 
-    public Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> GetEnumerableConstructor()
+    public Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> GetEnumerableConstructor(CollectionConstructionOptions<TKey>? collectionConstructionOptions)
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Enumerable)
         {
@@ -75,6 +77,8 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         return _enumerableCtorDelegate ??= CreateEnumerableCtor();
         Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> CreateEnumerableCtor()
         {
+            // TODO use options
+
             DebugExt.Assert(_enumerableCtor != null);
             if (_isFSharpMap)
             {
@@ -90,7 +94,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         }
     }
 
-    public SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> GetSpanConstructor()
+    public SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> GetSpanConstructor(CollectionConstructionOptions<TKey>? collectionConstructionOptions)
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Span)
         {
@@ -101,10 +105,12 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         return _spanCtorDelegate ??= CreateSpanConstructor();
         SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> CreateSpanConstructor()
         {
+            // TODO use options
+
             if (_dictionaryCtor is ConstructorInfo dictionaryCtor)
             {
                 var dictionaryCtorDelegate = Provider.MemberAccessor.CreateFuncDelegate<Dictionary<TKey, TValue>, TDictionary>(dictionaryCtor);
-                return span => dictionaryCtorDelegate(CollectionHelpers.CreateDictionary(span));
+                return span => dictionaryCtorDelegate(CollectionHelpers.CreateDictionary(span, collectionConstructionOptions?.EqualityComparer));
             }
 
             DebugExt.Assert(_spanCtor != null);
@@ -165,6 +171,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
             if (typeof(TDictionary).IsAssignableFrom(typeof(Dictionary<TKey, TValue>)))
             {
                 // Handle IDictionary, IDictionary<TKey, TValue> and IReadOnlyDictionary<TKey, TValue> using Dictionary<TKey, TValue>
+                // TODO CreateDictionary now takes an extra param for the comparer
                 MethodInfo? gm = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateDictionary), BindingFlags.Public | BindingFlags.Static);
                 _spanCtor = gm?.MakeGenericMethod(typeof(TKey), typeof(TValue));
                 return _spanCtor != null ? CollectionConstructionStrategy.Span : CollectionConstructionStrategy.None;
@@ -173,6 +180,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
             if (typeof(TDictionary) == typeof(IDictionary))
             {
                 // Handle IDictionary using Dictionary<object, object>
+                // TODO CreateDictionary now takes an extra param for the comparer
                 Debug.Assert(typeof(TKey) == typeof(object) && typeof(TValue) == typeof(object));
                 MethodInfo? gm = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateDictionary), BindingFlags.Public | BindingFlags.Static);
                 _spanCtor = gm?.MakeGenericMethod(typeof(object), typeof(object));
