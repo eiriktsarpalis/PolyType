@@ -46,12 +46,15 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
 
         IsGetterNonNullable = HasGetter && shapeInfo.IsGetterNonNullable;
         IsSetterNonNullable = HasSetter && shapeInfo.IsSetterNonNullable;
+
+        IsRequired = shapeInfo.IsRequired;
     }
 
     public string Name { get; }
     public ICustomAttributeProvider AttributeProvider { get; }
     public IObjectTypeShape<TDeclaringType> DeclaringType { get; }
     public ITypeShape<TPropertyType> PropertyType => _provider.GetShape<TPropertyType>();
+    public bool IsRequired { get; }
 
     public bool IsField { get; }
     public bool IsGetterPublic { get; }
@@ -96,6 +99,7 @@ internal sealed record PropertyShapeInfo(
     MemberInfo[]? ParentMembers = null,
     string? LogicalName = null,
     int Order = 0,
+    bool IsRequired = false,
     bool IncludeNonPublicAccessors = false,
     bool IsGetterNonNullable = false,
     bool IsSetterNonNullable = false);

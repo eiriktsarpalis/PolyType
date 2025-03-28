@@ -44,7 +44,9 @@ public interface IParameterShape
     /// </summary>
     /// <remarks>
     /// A parameter is reported as required if it is either a
-    /// parameter without a default value or a required property.
+    /// parameter without a default value or related to a property declared with the <see langword="required" /> modifier.
+    /// This value will switch to the value set by <see cref="PropertyShapeAttribute.IsRequired"/>
+    /// or <see cref="ParameterShapeAttribute.IsRequired"/> (successively) if they are set.
     /// </remarks>
     bool IsRequired { get; }
 

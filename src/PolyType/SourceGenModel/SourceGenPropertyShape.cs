@@ -60,6 +60,9 @@ public sealed class SourceGenPropertyShape<TDeclaringType, TPropertyType> : IPro
     /// </summary>
     public required bool IsSetterNonNullable { get; init; }
 
+    /// <inheritdoc />
+    public bool IsRequired { get; init; }
+
     /// <summary>
     /// Gets a value indicating whether the shape represents a field.
     /// </summary>

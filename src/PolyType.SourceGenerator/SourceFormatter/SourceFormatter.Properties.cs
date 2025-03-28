@@ -50,6 +50,7 @@ internal sealed partial class SourceFormatter
                     IsSetterPublic = {{FormatBool(property.IsSetterPublic)}},
                     IsGetterNonNullable = {{FormatBool(property.IsGetterNonNullable)}},
                     IsSetterNonNullable = {{FormatBool(property.IsSetterNonNullable)}},
+                    IsRequired = {{FormatBool(property.IsRequired)}},
                 },
                 """, trimNullAssignmentLines: true);
 

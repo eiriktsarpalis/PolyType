@@ -142,14 +142,17 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                 member.MemberInfo.GetMemberType() == parameterType &&
                 CommonHelpers.CamelCaseInvariantComparer.Instance.Equals(parameter.Name, member.MemberInfo.Name));
 
-            string? logicalName = parameter.GetCustomAttribute<ParameterShapeAttribute>()?.Name;
+            ParameterShapeAttribute? parameterShapeAttribute = parameter.GetCustomAttribute<ParameterShapeAttribute>();
+            string? logicalName = parameterShapeAttribute?.Name;
             if (logicalName is null && matchingMember is not null)
             {
                 // If no custom name is specified, adopt the name from the matching property.
                 logicalName = matchingMember.LogicalName ?? matchingMember.MemberInfo.Name;
             }
 
-            parameterShapeInfos[i++] = new(parameter, isNonNullable, matchingMember?.MemberInfo, logicalName);
+            bool? isRequired = parameterShapeAttribute?.IsRequiredSpecified is true ? parameterShapeAttribute.IsRequired : null;
+
+            parameterShapeInfos[i++] = new(parameter, isNonNullable, matchingMember?.MemberInfo, logicalName, isRequired);
         }
 
         bool setsRequiredMembers = constructorInfo.SetsRequiredMembers();
@@ -300,6 +303,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
             string? logicalName = null;
             bool includeNonPublic = false;
             int order = 0;
+            bool isRequired = memberInfo.IsRequired();
 
             if (propertyAttr != null)
             {
@@ -317,6 +321,10 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                 }
 
                 includeNonPublic = true;
+                if (propertyAttr.IsRequiredSpecified)
+                {
+                    isRequired = propertyAttr.IsRequired;
+                }
             }
             else
             {
@@ -337,7 +345,8 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                 Order: order,
                 IncludeNonPublicAccessors: includeNonPublic,
                 IsGetterNonNullable: isGetterNonNullable,
-                IsSetterNonNullable: isSetterNonNullable));
+                IsSetterNonNullable: isSetterNonNullable,
+                IsRequired: isRequired));
         }
     }
 
