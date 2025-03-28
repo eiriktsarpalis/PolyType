@@ -28,7 +28,7 @@ test: build
 		--results-directory $(ARTIFACT_PATH)/testResults \
 		--collect "Code Coverage;Format=cobertura" \
 		--logger "trx" \
-		 --settings test.runsettings \
+		--settings test.runsettings \
 		-- \
 		RunConfiguration.CollectSourceInformation=true
 
