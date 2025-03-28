@@ -97,14 +97,14 @@ internal sealed class MethodParameterShapeInfo : IParameterShapeInfo
 
 internal sealed class MemberInitializerShapeInfo : IParameterShapeInfo
 {
-    public MemberInitializerShapeInfo(MemberInfo memberInfo, string? logicalName, bool ctorSetsRequiredMembers, bool isSetterNonNullable)
+    public MemberInitializerShapeInfo(MemberInfo memberInfo, string? logicalName, bool ctorSetsRequiredMembers, bool isSetterNonNullable, bool? isRequiredByAttribute)
     {
         Debug.Assert(memberInfo is PropertyInfo or FieldInfo);
 
         Type = memberInfo.MemberType();
         Name = logicalName ?? memberInfo.Name;
         MemberInfo = memberInfo;
-        IsRequired = !ctorSetsRequiredMembers && memberInfo.IsRequired();
+        IsRequired = isRequiredByAttribute ?? (!ctorSetsRequiredMembers && memberInfo.IsRequired());
         IsInitOnly = memberInfo.IsInitOnly();
         IsPublic = memberInfo is FieldInfo { IsPublic: true } or PropertyInfo { GetMethod.IsPublic: true };
         IsNonNullable = isSetterNonNullable;

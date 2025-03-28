@@ -10,80 +10,9 @@ public abstract partial class IsRequiredTests(ProviderUnderTest providerUnderTes
     {
         var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetShape(typeof(HasRequiredProperty));
         Assert.NotNull(shape);
-        Assert.True(shape.Properties.Single(p => p.Name == nameof(HasRequiredProperty.RequiredProperty)).IsRequired);
-        Assert.False(shape.Properties.Single(p => p.Name == nameof(HasRequiredProperty.NotRequiredProperty)).IsRequired);
-    }
-
-    [Fact]
-    public void AttributedProperties_NoChanges()
-    {
-        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetShape(typeof(HasRequiredPropertyWithNonOverriddingAttributes));
-        Assert.NotNull(shape);
-        Assert.True(shape.Properties.Single(p => p.Name == nameof(HasRequiredProperty.RequiredProperty)).IsRequired);
-        Assert.False(shape.Properties.Single(p => p.Name == nameof(HasRequiredProperty.NotRequiredProperty)).IsRequired);
-    }
-
-    [Fact]
-    public void AttributedProperties_WithChanges()
-    {
-        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetShape(typeof(HasRequiredPropertyWithOverriddingAttributes));
-        Assert.NotNull(shape);
-        Assert.False(shape.Properties.Single(p => p.Name == nameof(HasRequiredProperty.RequiredProperty)).IsRequired); // Updated to check for false
-        Assert.True(shape.Properties.Single(p => p.Name == nameof(HasRequiredProperty.NotRequiredProperty)).IsRequired); // Updated to check for true
-    }
-
-    [Fact]
-    public void NonDefaultCtor()
-    {
-        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetShape(typeof(HasNonDefaultConstructor));
-        Assert.NotNull(shape);
-        Assert.False(shape.Properties.Single(p => p.Name == nameof(HasNonDefaultConstructor.MyProperty)).IsRequired);
-        Assert.True(shape.Constructor?.Parameters[0].IsRequired);
-    }
-
-    [Fact]
-    public void NonDefaultCtor_NonRequiredProperty_WithOverride()
-    {
-        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetShape(typeof(HasNonDefaultConstructorAndParameterOverride));
-        Assert.NotNull(shape);
-        Assert.False(shape.Properties.Single(p => p.Name == nameof(HasNonDefaultConstructorAndParameterOverride.MyProperty)).IsRequired);
-        Assert.False(shape.Constructor?.Parameters[0].IsRequired);
-    }
-
-    [Fact]
-    public void NonDefaultCtor_NonRequiredProperty_WithShapeNoOverride()
-    {
-        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetShape(typeof(HasNonDefaultConstructorAndParameterNonOverride));
-        Assert.NotNull(shape);
-        Assert.False(shape.Properties.Single(p => p.Name == nameof(HasNonDefaultConstructorAndParameterNonOverride.MyProperty)).IsRequired);
-        Assert.True(shape.Constructor?.Parameters[0].IsRequired);
-    }
-
-    [Fact]
-    public void RequiredPropertyAndCtorWithDefaultValue()
-    {
-        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetShape(typeof(HasNonDefaultConstructorWithDefaultAndRequiredProperty));
-        Assert.NotNull(shape);
-        Assert.True(shape.Properties.Single(p => p.Name == nameof(HasNonDefaultConstructorWithDefaultAndRequiredProperty.MyProperty)).IsRequired);
-        Assert.False(shape.Constructor?.Parameters[0].IsRequired);
-    }
-
-    [Fact]
-    public void NonDefaultConstructorAndUnrelatedRequiredProperty()
-    {
-        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetShape(typeof(HasNonDefaultConstructorAndUnrelatedRequiredProperty));
-        Assert.NotNull(shape);
-        Assert.True(shape.Properties.Single(p => p.Name == nameof(HasNonDefaultConstructorAndUnrelatedRequiredProperty.RequiredProperty)).IsRequired);
-        Assert.True(shape.Constructor?.Parameters[0].IsRequired);
-    }
-
-    [Fact]
-    public void NonDefaultConstructorAndUnrelatedRequiredOverriddenProperty()
-    {
-        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetShape(typeof(HasNonDefaultConstructorAndUnrelatedRequiredOverriddenProperty));
-        Assert.NotNull(shape);
-        Assert.False(shape.Properties.Single(p => p.Name == nameof(HasNonDefaultConstructorAndUnrelatedRequiredOverriddenProperty.RequiredProperty)).IsRequired);
-        Assert.True(shape.Constructor?.Parameters[0].IsRequired);
+        Assert.NotNull(shape.Constructor);
+        Assert.True(shape.Constructor.Parameters.Single(p => p.Name == nameof(HasRequiredProperty.RequiredProperty)).IsRequired);
+        Assert.False(shape.Constructor.Parameters.Single(p => p.Name == nameof(HasRequiredProperty.NotRequiredProperty)).IsRequired);
     }
 
     [GenerateShape]
@@ -92,6 +21,16 @@ public abstract partial class IsRequiredTests(ProviderUnderTest providerUnderTes
         public required bool RequiredProperty { get; init; }
 
         public bool NotRequiredProperty { get; init; }
+    }
+
+    [Fact]
+    public void AttributedProperties_NoChanges()
+    {
+        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetShape(typeof(HasRequiredPropertyWithNonOverriddingAttributes));
+        Assert.NotNull(shape);
+        Assert.NotNull(shape.Constructor);
+        Assert.True(shape.Constructor.Parameters.Single(p => p.Name == nameof(HasRequiredPropertyWithNonOverriddingAttributes.RequiredProperty)).IsRequired);
+        Assert.False(shape.Constructor.Parameters.Single(p => p.Name == nameof(HasRequiredPropertyWithNonOverriddingAttributes.NotRequiredProperty)).IsRequired);
     }
 
     [GenerateShape]
@@ -104,6 +43,16 @@ public abstract partial class IsRequiredTests(ProviderUnderTest providerUnderTes
         public bool NotRequiredProperty { get; init; }
     }
 
+    [Fact]
+    public void AttributedProperties_WithChanges()
+    {
+        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetShape(typeof(HasRequiredPropertyWithOverriddingAttributes));
+        Assert.NotNull(shape);
+        Assert.NotNull(shape.Constructor);
+        Assert.False(shape.Constructor.Parameters.Single(p => p.Name == nameof(HasRequiredPropertyWithOverriddingAttributes.RequiredProperty)).IsRequired);
+        Assert.True(shape.Constructor.Parameters.Single(p => p.Name == nameof(HasRequiredPropertyWithOverriddingAttributes.NotRequiredProperty)).IsRequired);
+    }
+
     [GenerateShape]
     public partial class HasRequiredPropertyWithOverriddingAttributes
     {
@@ -112,6 +61,47 @@ public abstract partial class IsRequiredTests(ProviderUnderTest providerUnderTes
 
         [PropertyShape(IsRequired = true)]
         public bool NotRequiredProperty { get; init; }
+    }
+
+    [Fact]
+    public void PropertyRequiredByAttribute()
+    {
+        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetShape(typeof(HasPropertyRequiredByAttribute));
+        Assert.NotNull(shape);
+        Assert.NotNull(shape.Constructor);
+        Assert.True(shape.Constructor.Parameters.Single(p => p.Name == nameof(HasPropertyRequiredByAttribute.RequiredProperty)).IsRequired);
+    }
+
+    [GenerateShape]
+    public partial class HasPropertyRequiredByAttribute
+    {
+        [PropertyShape(IsRequired = true)]
+        public bool RequiredProperty { get; init; }
+    }
+
+    [Fact]
+    public void PropertyRequiredButNotByAttribute()
+    {
+        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetShape(typeof(HasPropertyRequiredButNotByAttribute));
+        Assert.NotNull(shape);
+        Assert.NotNull(shape.Constructor);
+        Assert.False(shape.Constructor.Parameters.Single(p => p.Name == nameof(HasPropertyRequiredButNotByAttribute.RequiredProperty)).IsRequired);
+    }
+
+    [GenerateShape]
+    public partial class HasPropertyRequiredButNotByAttribute
+    {
+        [PropertyShape(IsRequired = false)]
+        public required bool RequiredProperty { get; init; }
+    }
+
+    [Fact]
+    public void NonDefaultCtor()
+    {
+        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetShape(typeof(HasNonDefaultConstructor));
+        Assert.NotNull(shape);
+        Assert.NotNull(shape.Constructor);
+        Assert.True(shape.Constructor.Parameters.Single(p => p.Name == nameof(HasNonDefaultConstructor.MyProperty)).IsRequired);
     }
 
     [GenerateShape]
@@ -125,15 +115,13 @@ public abstract partial class IsRequiredTests(ProviderUnderTest providerUnderTes
         public int MyProperty { get; set; }
     }
 
-    [GenerateShape]
-    public partial class HasNonDefaultConstructorAndParameterNonOverride
+    [Fact]
+    public void NonDefaultCtor_NonRequiredProperty_WithOverride()
     {
-        public HasNonDefaultConstructorAndParameterNonOverride([ParameterShape] int myProperty)
-        {
-            MyProperty = myProperty;
-        }
-
-        public int MyProperty { get; set; }
+        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetShape(typeof(HasNonDefaultConstructorAndParameterOverride));
+        Assert.NotNull(shape);
+        Assert.NotNull(shape.Constructor);
+        Assert.False(shape.Constructor.Parameters.Single(p => p.Name == nameof(HasNonDefaultConstructorAndParameterOverride.MyProperty)).IsRequired);
     }
 
     [GenerateShape]
@@ -147,6 +135,38 @@ public abstract partial class IsRequiredTests(ProviderUnderTest providerUnderTes
         public int MyProperty { get; set; }
     }
 
+    [Fact]
+    public void NonDefaultCtor_NonRequiredProperty_WithShapeNoOverride()
+    {
+        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetShape(typeof(HasNonDefaultConstructorAndParameterNonOverride));
+        Assert.NotNull(shape);
+        Assert.NotNull(shape.Constructor);
+        Assert.True(shape.Constructor.Parameters.Single(p => p.Name == nameof(HasNonDefaultConstructorAndParameterNonOverride.MyProperty)).IsRequired);
+    }
+
+    [GenerateShape]
+    public partial class HasNonDefaultConstructorAndParameterNonOverride
+    {
+        public HasNonDefaultConstructorAndParameterNonOverride([ParameterShape] int myProperty)
+        {
+            MyProperty = myProperty;
+        }
+
+        public int MyProperty { get; set; }
+    }
+
+    [Fact]
+    public void RequiredPropertyAndCtorWithDefaultValue()
+    {
+        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetShape(typeof(HasNonDefaultConstructorWithDefaultAndRequiredProperty));
+        Assert.NotNull(shape);
+        Assert.NotNull(shape.Constructor);
+        var parameter = shape.Constructor.Parameters.Single(p => p.Name == nameof(HasNonDefaultConstructorWithDefaultAndRequiredProperty.MyProperty) && p.Kind == ParameterKind.MethodParameter);
+        var member = shape.Constructor.Parameters.Single(p => p.Name == nameof(HasNonDefaultConstructorWithDefaultAndRequiredProperty.MyProperty) && p.Kind == ParameterKind.MemberInitializer);
+        Assert.False(parameter.IsRequired);
+        Assert.True(member.IsRequired);
+    }
+
     [GenerateShape]
     public partial class HasNonDefaultConstructorWithDefaultAndRequiredProperty
     {
@@ -158,6 +178,15 @@ public abstract partial class IsRequiredTests(ProviderUnderTest providerUnderTes
         public required int MyProperty { get; set; }
     }
 
+    [Fact]
+    public void NonDefaultConstructorAndUnrelatedRequiredProperty()
+    {
+        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetShape(typeof(HasNonDefaultConstructorAndUnrelatedRequiredProperty));
+        Assert.NotNull(shape);
+        Assert.NotNull(shape.Constructor);
+        Assert.True(shape.Constructor.Parameters.Single(p => p.Name == nameof(HasNonDefaultConstructorAndUnrelatedRequiredProperty.RequiredProperty)).IsRequired);
+    }
+
     [GenerateShape]
     public partial class HasNonDefaultConstructorAndUnrelatedRequiredProperty
     {
@@ -166,6 +195,15 @@ public abstract partial class IsRequiredTests(ProviderUnderTest providerUnderTes
         }
 
         public required bool RequiredProperty { get; set; }
+    }
+
+    [Fact]
+    public void NonDefaultConstructorAndUnrelatedRequiredOverriddenProperty()
+    {
+        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetShape(typeof(HasNonDefaultConstructorAndUnrelatedRequiredOverriddenProperty));
+        Assert.NotNull(shape);
+        Assert.NotNull(shape.Constructor);
+        Assert.False(shape.Constructor.Parameters.Single(p => p.Name == nameof(HasNonDefaultConstructorAndUnrelatedRequiredOverriddenProperty.RequiredProperty)).IsRequired);
     }
 
     [GenerateShape]

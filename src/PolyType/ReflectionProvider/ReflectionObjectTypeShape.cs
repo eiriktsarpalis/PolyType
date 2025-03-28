@@ -186,7 +186,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
         {
             return allMembers
                 .Where(m => m.MemberInfo is PropertyInfo { CanWrite: true } or FieldInfo { IsInitOnly: false })
-                .Select(m => new MemberInitializerShapeInfo(m.MemberInfo, m.LogicalName, ctorSetsRequiredMembers, m.IsSetterNonNullable))
+                .Select(m => new MemberInitializerShapeInfo(m.MemberInfo, m.LogicalName, ctorSetsRequiredMembers, m.IsSetterNonNullable, m.IsRequiredByAttribute))
                 .OrderByDescending(m => m.IsRequired || m.IsInitOnly) // Shift required or init members first
                 .ToArray();
         }
@@ -303,7 +303,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
             string? logicalName = null;
             bool includeNonPublic = false;
             int order = 0;
-            bool isRequired = memberInfo.IsRequired();
+            bool? isRequiredByAttribute = null;
 
             if (propertyAttr != null)
             {
@@ -323,7 +323,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                 includeNonPublic = true;
                 if (propertyAttr.IsRequiredSpecified)
                 {
-                    isRequired = propertyAttr.IsRequired;
+                    isRequiredByAttribute = propertyAttr.IsRequired;
                 }
             }
             else
@@ -346,7 +346,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                 IncludeNonPublicAccessors: includeNonPublic,
                 IsGetterNonNullable: isGetterNonNullable,
                 IsSetterNonNullable: isSetterNonNullable,
-                IsRequired: isRequired));
+                IsRequiredByAttribute: isRequiredByAttribute));
         }
     }
 

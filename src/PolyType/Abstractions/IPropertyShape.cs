@@ -14,17 +14,6 @@ public interface IPropertyShape
     string Name { get; }
 
     /// <summary>
-    /// Gets a value indicating whether a value for this property is required when constructing
-    /// a new instance of the declaring type.
-    /// </summary>
-    /// <value>
-    /// The default value is <see langword="true" /> when the property is declared with
-    /// <see langword="required" /> modifier, and may be overridden by the
-    /// <see cref="PropertyShapeAttribute.IsRequired"/> property.
-    /// </value>
-    bool IsRequired { get; }
-
-    /// <summary>
     /// Gets the provider used for property-level attribute resolution.
     /// </summary>
     ICustomAttributeProvider? AttributeProvider { get; }
