@@ -622,7 +622,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                     bool hasDefaultValue = actualParameter.TryGetDefaultValueNormalized(out object? defaultValue);
                     Assert.Equal(hasDefaultValue, ctorParam.HasDefaultValue);
                     Assert.Equal(defaultValue, ctorParam.DefaultValue);
-                    Assert.Equal(!hasDefaultValue, ctorParam.IsRequired);
+                    Assert.Equal(shapeAttr?.IsRequiredSpecified is true ? shapeAttr.IsRequired : !hasDefaultValue, ctorParam.IsRequired);
                     Assert.Equal(ParameterKind.MethodParameter, ctorParam.Kind);
                     Assert.True(ctorParam.IsPublic);
 
@@ -643,7 +643,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                     Assert.Equal(i, ctorParam.Position);
                     Assert.False(ctorParam.HasDefaultValue);
                     Assert.Null(ctorParam.DefaultValue);
-                    Assert.Equal(!hasSetsRequiredMembersAttribute && memberInfo.IsRequired(), ctorParam.IsRequired);
+                    Assert.Equal(attr?.IsRequiredSpecified is true ? attr.IsRequired : (!hasSetsRequiredMembersAttribute && memberInfo.IsRequired()), ctorParam.IsRequired);
                     Assert.Equal(ParameterKind.MemberInitializer, ctorParam.Kind);
 
                     if (memberInfo is PropertyInfo p)

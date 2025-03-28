@@ -541,12 +541,12 @@ public static class TestTypes
         // Union types
         yield return TestCase.Create(new PolymorphicClass(42),
             additionalValues: [
-                new PolymorphicClass.DerivedClass(42, "str"), 
+                new PolymorphicClass.DerivedClass(42, "str"),
                 new PolymorphicClass.DerivedEnumerable { 42 },
                 new PolymorphicClass.DerivedDictionary { ["key"] = 42 }],
             isUnion: true);
         yield return TestCase.Create<IPolymorphicInterface>(
-            new IPolymorphicInterface.Derived { X = 1 }, 
+            new IPolymorphicInterface.Derived { X = 1 },
             additionalValues: [
                 new IPolymorphicInterface.IDerived1.Impl { X = 1, Y = 2 },
                 new IPolymorphicInterface.IDerived2.Impl { X = 1, Z = 2 },
@@ -563,6 +563,12 @@ public static class TestTypes
         yield return TestCase.Create<Tree>(new Tree.Node(42, new Tree.Leaf(), new Tree.Leaf()), additionalValues: [new Tree.Leaf()], isUnion: true);
         yield return TestCase.Create((GenericTree<string>)new GenericTree<string>.Node("str", new GenericTree<string>.Leaf(), new GenericTree<string>.Leaf()), additionalValues: [new GenericTree<string>.Leaf()], isUnion: true, provider: p);
         yield return TestCase.Create((GenericTree<int>)new GenericTree<int>.Node(42, new GenericTree<int>.Leaf(), new GenericTree<int>.Leaf()), additionalValues: [new GenericTree<int>.Leaf()], isUnion: true, provider: p);
+
+        // IsRequired on attributes
+        yield return TestCase.Create(new PropertyRequiredByAttribute { AttributeRequiredProperty = true });
+        yield return TestCase.Create(new PropertyNotRequiredByAttribute { AttributeNotRequiredProperty = true });
+        yield return TestCase.Create(new CtorParameterRequiredByAttribute(true));
+        yield return TestCase.Create(new CtorParameterNotRequiredByAttribute(true));
 
         // F# types
         yield return TestCase.Create(new FSharpRecord(42, "str", true), p);
@@ -2271,6 +2277,42 @@ public partial record GenericTree<T>
 {
     public record Leaf : GenericTree<T>;
     public record Node(T Value, GenericTree<T> Left, GenericTree<T> Right) : GenericTree<T>;
+}
+
+[GenerateShape]
+public partial record PropertyRequiredByAttribute
+{
+    [PropertyShape(IsRequired = true)]
+    public bool AttributeRequiredProperty { get; set; }
+}
+
+[GenerateShape]
+public partial record PropertyNotRequiredByAttribute
+{
+    [PropertyShape(IsRequired = false)]
+    public required bool AttributeNotRequiredProperty { get; set; }
+}
+
+[GenerateShape]
+public partial record CtorParameterRequiredByAttribute
+{
+    public CtorParameterRequiredByAttribute([ParameterShape(IsRequired = true)] bool p = false)
+    {
+        P = p;
+    }
+
+    public bool P { get; }
+}
+
+[GenerateShape]
+public partial record CtorParameterNotRequiredByAttribute
+{
+    public CtorParameterNotRequiredByAttribute([ParameterShape(IsRequired = false)] bool p)
+    {
+        P = p;
+    }
+
+    public bool P { get; }
 }
 
 [GenerateShape<object>]
