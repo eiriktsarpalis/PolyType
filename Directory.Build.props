@@ -8,6 +8,7 @@
     <AssemblyOriginatorKeyFile>$(RepoRoot)\key.snk</AssemblyOriginatorKeyFile>
     <VSTestLogger>trx%3bLogFileName=$(MSBuildProjectName).$(TargetFramework).$(OS).trx</VSTestLogger>
     <VSTestResultsDirectory>$(MSBuildThisFileDirectory)/artifacts/TestResults</VSTestResultsDirectory>
+    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
