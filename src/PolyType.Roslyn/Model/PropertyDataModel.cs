@@ -95,7 +95,7 @@ public readonly struct PropertyDataModel
     public required bool IsSetterNonNullable { get; init; }
 
     /// <summary>
-    /// Whether the property or field is required.
+    /// Whether the property or field is declared with the <see langword="required" /> modifier.
     /// </summary>
     public bool IsRequired { get; init; }
 

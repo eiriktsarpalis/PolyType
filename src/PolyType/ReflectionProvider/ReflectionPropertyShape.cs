@@ -96,6 +96,7 @@ internal sealed record PropertyShapeInfo(
     MemberInfo[]? ParentMembers = null,
     string? LogicalName = null,
     int Order = 0,
+    bool? IsRequiredByAttribute = null,
     bool IncludeNonPublicAccessors = false,
     bool IsGetterNonNullable = false,
     bool IsSetterNonNullable = false);

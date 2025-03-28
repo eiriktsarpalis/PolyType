@@ -60,7 +60,7 @@ internal interface IParameterShapeInfo
 
 internal sealed class MethodParameterShapeInfo : IParameterShapeInfo
 {
-    public MethodParameterShapeInfo(ParameterInfo parameterInfo, bool isNonNullable, MemberInfo? matchingMember = null, string? logicalName = null)
+    public MethodParameterShapeInfo(ParameterInfo parameterInfo, bool isNonNullable, MemberInfo? matchingMember = null, string? logicalName = null, bool? isRequired = null)
     {
         string? name = logicalName ?? parameterInfo.Name;
         DebugExt.Assert(name != null);
@@ -76,6 +76,8 @@ internal sealed class MethodParameterShapeInfo : IParameterShapeInfo
             HasDefaultValue = true;
             DefaultValue = defaultValue;
         }
+
+        IsRequired = isRequired ?? !ParameterInfo.HasDefaultValue;
     }
 
     public ParameterInfo ParameterInfo { get; }
@@ -86,7 +88,7 @@ internal sealed class MethodParameterShapeInfo : IParameterShapeInfo
     public ParameterKind Kind => ParameterKind.MethodParameter;
     public ICustomAttributeProvider? AttributeProvider => ParameterInfo;
     public bool IsByRef => ParameterInfo.ParameterType.IsByRef;
-    public bool IsRequired => !ParameterInfo.HasDefaultValue;
+    public bool IsRequired { get; }
     public bool IsNonNullable { get; }
     public bool IsPublic => true;
     public bool HasDefaultValue { get; }
@@ -95,14 +97,14 @@ internal sealed class MethodParameterShapeInfo : IParameterShapeInfo
 
 internal sealed class MemberInitializerShapeInfo : IParameterShapeInfo
 {
-    public MemberInitializerShapeInfo(MemberInfo memberInfo, string? logicalName, bool ctorSetsRequiredMembers, bool isSetterNonNullable)
+    public MemberInitializerShapeInfo(MemberInfo memberInfo, string? logicalName, bool ctorSetsRequiredMembers, bool isSetterNonNullable, bool? isRequiredByAttribute)
     {
         Debug.Assert(memberInfo is PropertyInfo or FieldInfo);
 
         Type = memberInfo.MemberType();
         Name = logicalName ?? memberInfo.Name;
         MemberInfo = memberInfo;
-        IsRequired = !ctorSetsRequiredMembers && memberInfo.IsRequired();
+        IsRequired = isRequiredByAttribute ?? (!ctorSetsRequiredMembers && memberInfo.IsRequired());
         IsInitOnly = memberInfo.IsInitOnly();
         IsPublic = memberInfo is FieldInfo { IsPublic: true } or PropertyInfo { GetMethod.IsPublic: true };
         IsNonNullable = isSetterNonNullable;

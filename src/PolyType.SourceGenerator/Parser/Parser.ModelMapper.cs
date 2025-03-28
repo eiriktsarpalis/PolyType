@@ -324,7 +324,7 @@ public sealed partial class Parser
 
     private PropertyShapeModel MapProperty(ITypeSymbol parentType, TypeId parentTypeId, PropertyDataModel property, bool isClassTupleType = false, int tupleElementIndex = -1)
     {
-        ParsePropertyShapeAttribute(property.PropertySymbol, out string propertyName, out int order);
+        ParsePropertyShapeAttribute(property.PropertySymbol, out string propertyName, out int order, out bool? isRequired);
 
         bool emitGetter = property.IncludeGetter;
         bool emitSetter = property.IncludeSetter && !property.IsInitOnly;
@@ -355,6 +355,7 @@ public sealed partial class Parser
             IsGetterPublic = emitGetter && property.BaseSymbol is IPropertySymbol { GetMethod.DeclaredAccessibility: Accessibility.Public } or IFieldSymbol { DeclaredAccessibility: Accessibility.Public },
             IsSetterPublic = emitSetter && property.BaseSymbol is IPropertySymbol { SetMethod.DeclaredAccessibility: Accessibility.Public } or IFieldSymbol { DeclaredAccessibility: Accessibility.Public },
             IsInitOnly = property.IsInitOnly,
+            IsRequired = isRequired ?? property.IsRequired,
             IsField = property.IsField,
             Order = order,
         };
@@ -376,7 +377,7 @@ public sealed partial class Parser
 
         foreach (PropertyDataModel propertyModel in memberInitializers)
         {
-            ParsePropertyShapeAttribute(propertyModel.PropertySymbol, out string propertyName, out _);
+            ParsePropertyShapeAttribute(propertyModel.PropertySymbol, out string propertyName, out _, out bool? isRequired);
 
             var memberInitializer = new ParameterShapeModel
             {
@@ -388,7 +389,7 @@ public sealed partial class Parser
                 Name = propertyName,
                 UnderlyingMemberName = propertyModel.Name,
                 Position = position++,
-                IsRequired = propertyModel.IsRequired,
+                IsRequired = isRequired ?? propertyModel.IsRequired,
                 IsAccessible = propertyModel.IsSetterAccessible,
                 CanUseUnsafeAccessors = _knownSymbols.TargetFramework switch
                 {
@@ -460,8 +461,14 @@ public sealed partial class Parser
     private ParameterShapeModel MapParameter(ObjectDataModel objectModel, TypeId declaringTypeId, ParameterDataModel parameter, bool isFSharpUnionCase)
     {
         string name = parameter.Parameter.Name;
+        bool isRequired = !parameter.HasDefaultValue;
 
         AttributeData? parameterAttr = parameter.Parameter.GetAttribute(_knownSymbols.ParameterShapeAttribute);
+        if (parameterAttr?.TryGetNamedArgument("IsRequired", out bool? isRequiredValue) is true && isRequiredValue is not null)
+        {
+            isRequired = isRequiredValue.Value;
+        }
+
         if (parameterAttr != null &&
             parameterAttr.TryGetNamedArgument("Name", out string? value) && value != null)
         {
@@ -509,7 +516,7 @@ public sealed partial class Parser
             ParameterType = CreateTypeId(parameter.Parameter.Type),
             Kind = ParameterKind.MethodParameter,
             RefKind = parameter.Parameter.RefKind,
-            IsRequired = !parameter.HasDefaultValue,
+            IsRequired = isRequired,
             IsAccessible = true,
             CanUseUnsafeAccessors = false,
             IsInitOnlyProperty = false,
@@ -741,10 +748,11 @@ public sealed partial class Parser
         };
     }
 
-    private void ParsePropertyShapeAttribute(ISymbol propertySymbol, out string propertyName, out int order)
+    private void ParsePropertyShapeAttribute(ISymbol propertySymbol, out string propertyName, out int order, out bool? isRequired)
     {
         propertyName = propertySymbol.Name;
         order = 0;
+        isRequired = null;
 
         if (propertySymbol.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData propertyAttr)
         {
@@ -757,6 +765,9 @@ public sealed partial class Parser
                         break;
                     case "Order":
                         order = (int)namedArgument.Value.Value!;
+                        break;
+                    case "IsRequired":
+                        isRequired = (bool)namedArgument.Value.Value!;
                         break;
                 }
             }
