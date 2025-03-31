@@ -51,7 +51,7 @@ release: restore
 	git commit -m "Bump version to $(VERSION)"
 	dotnet nbgv tag
 	git push && git push --tags
-	gh release create "`git describe --tags --abbrev=0`" --generate-notes --draft --verify-tag
+	gh release create "`git describe --tags --abbrev=0`" --generate-notes --verify-tag
 
 docker-build: clean
 	docker build -t $(DOCKER_IMAGE_NAME) . && \
