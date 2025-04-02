@@ -12,7 +12,6 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
     <!-- Build Infra & Packaging -->
     <PackageVersion Include="PolySharp" Version="1.15.0" />
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
     <PackageVersion Include="Nerdbank.GitVersioning" Version="3.6.146" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.1.118" />
     <!-- Testing dependencies -->
