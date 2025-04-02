@@ -324,7 +324,7 @@ public sealed partial class Parser
 
     private PropertyShapeModel MapProperty(ITypeSymbol parentType, TypeId parentTypeId, PropertyDataModel property, bool isClassTupleType = false, int tupleElementIndex = -1)
     {
-        ParsePropertyShapeAttribute(property.PropertySymbol, out string propertyName, out int order, out bool? isRequired);
+        ParsePropertyShapeAttribute(property.PropertySymbol, out string propertyName, out int order);
 
         bool emitGetter = property.IncludeGetter;
         bool emitSetter = property.IncludeSetter && !property.IsInitOnly;
@@ -355,7 +355,8 @@ public sealed partial class Parser
             IsGetterPublic = emitGetter && property.BaseSymbol is IPropertySymbol { GetMethod.DeclaredAccessibility: Accessibility.Public } or IFieldSymbol { DeclaredAccessibility: Accessibility.Public },
             IsSetterPublic = emitSetter && property.BaseSymbol is IPropertySymbol { SetMethod.DeclaredAccessibility: Accessibility.Public } or IFieldSymbol { DeclaredAccessibility: Accessibility.Public },
             IsInitOnly = property.IsInitOnly,
-            IsRequired = isRequired ?? property.IsRequired,
+            IsRequiredBySyntax = property.IsRequiredBySyntax,
+            IsRequiredByPolicy = property.IsRequiredByPolicy,
             IsField = property.IsField,
             Order = order,
         };
@@ -368,16 +369,16 @@ public sealed partial class Parser
         List<ParameterShapeModel>? optionalMembers = null;
 
         bool isAccessibleConstructor = IsAccessibleSymbol(constructor.Constructor);
-        bool isParameterizedConstructor = position > 0 || constructor.MemberInitializers.Any(p => p.IsRequired || p.IsInitOnly);
+        bool isParameterizedConstructor = position > 0 || constructor.MemberInitializers.Any(p => p.IsRequiredBySyntax || p.IsRequiredByPolicy is true || p.IsInitOnly);
         IEnumerable<PropertyDataModel> memberInitializers = isParameterizedConstructor
             // Include all settable members but process required members first.
-            ? constructor.MemberInitializers.OrderByDescending(p => p.IsRequired)
+            ? constructor.MemberInitializers.OrderByDescending(p => p.IsRequiredBySyntax ? 2 : p.IsRequiredByPolicy is true ? 1 : 0)
             // Do not include any member initializers in parameterless constructors.
             : [];
 
         foreach (PropertyDataModel propertyModel in memberInitializers)
         {
-            ParsePropertyShapeAttribute(propertyModel.PropertySymbol, out string propertyName, out _, out bool? isRequired);
+            ParsePropertyShapeAttribute(propertyModel.PropertySymbol, out string propertyName, out _);
 
             var memberInitializer = new ParameterShapeModel
             {
@@ -389,7 +390,7 @@ public sealed partial class Parser
                 Name = propertyName,
                 UnderlyingMemberName = propertyModel.Name,
                 Position = position++,
-                IsRequired = isRequired ?? propertyModel.IsRequired,
+                IsRequired = propertyModel.IsRequiredByPolicy ?? propertyModel.IsRequiredBySyntax,
                 IsAccessible = propertyModel.IsSetterAccessible,
                 CanUseUnsafeAccessors = _knownSymbols.TargetFramework switch
                 {
@@ -398,7 +399,7 @@ public sealed partial class Parser
                     _ => false
                 },
                 IsInitOnlyProperty = propertyModel.IsInitOnly,
-                Kind = propertyModel.IsRequired ? ParameterKind.RequiredMember : ParameterKind.OptionalMember,
+                Kind = propertyModel.IsRequiredBySyntax || propertyModel.IsRequiredByPolicy is true ? ParameterKind.RequiredMember : ParameterKind.OptionalMember,
                 RefKind = RefKind.None,
                 IsNonNullable = propertyModel.IsSetterNonNullable,
                 ParameterTypeContainsNullabilityAnnotations = propertyModel.PropertyType.ContainsNullabilityAnnotations(),
@@ -748,11 +749,10 @@ public sealed partial class Parser
         };
     }
 
-    private void ParsePropertyShapeAttribute(ISymbol propertySymbol, out string propertyName, out int order, out bool? isRequired)
+    private void ParsePropertyShapeAttribute(ISymbol propertySymbol, out string propertyName, out int order)
     {
         propertyName = propertySymbol.Name;
         order = 0;
-        isRequired = null;
 
         if (propertySymbol.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData propertyAttr)
         {
@@ -765,9 +765,6 @@ public sealed partial class Parser
                         break;
                     case "Order":
                         order = (int)namedArgument.Value.Value!;
-                        break;
-                    case "IsRequired":
-                        isRequired = (bool)namedArgument.Value.Value!;
                         break;
                 }
             }

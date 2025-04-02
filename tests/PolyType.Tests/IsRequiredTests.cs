@@ -76,7 +76,7 @@ public abstract partial class IsRequiredTests(ProviderUnderTest providerUnderTes
     public partial class HasPropertyRequiredByAttribute
     {
         [PropertyShape(IsRequired = true)]
-        public bool RequiredProperty { get; init; }
+        public bool RequiredProperty { get; set; }
     }
 
     [Fact]

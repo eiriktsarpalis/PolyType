@@ -71,6 +71,16 @@ public partial class TypeDataModelGenerator
         return false;
     }
 
+    /// <summary>
+    /// Determines whether a member should be considered required.
+    /// </summary>
+    /// <param name="member">The member.</param>
+    /// <returns>A value indicating whether the member is required.</returns>
+    protected virtual bool? IsRequiredByPolicy(IPropertySymbol member) => null;
+
+    /// <inheritdoc cref="IsRequiredByPolicy(IPropertySymbol)"/>
+    protected virtual bool? IsRequiredByPolicy(IFieldSymbol member) => null;
+
     private bool TryMapObject(ITypeSymbol type, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
     {
         status = default;
@@ -156,6 +166,8 @@ public partial class TypeDataModelGenerator
             IsSetterAccessible = baseProperty.SetMethod is { } setter && IsAccessibleSymbol(setter),
             IsGetterNonNullable = isGetterNonNullable,
             IsSetterNonNullable = isSetterNonNullable,
+            IsRequiredBySyntax = property.IsRequired(),
+            IsRequiredByPolicy = IsRequiredByPolicy(property),
         };
     }
 
@@ -172,6 +184,8 @@ public partial class TypeDataModelGenerator
             IsSetterAccessible = isAccessible && !field.IsReadOnly,
             IsGetterNonNullable = isGetterNonNullable,
             IsSetterNonNullable = isSetterNonNullable,
+            IsRequiredBySyntax = field.IsRequired(),
+            IsRequiredByPolicy = IsRequiredByPolicy(field),
         };
     }
 
@@ -228,13 +242,13 @@ public partial class TypeDataModelGenerator
                 continue;
             }
 
-            if (setsRequiredMembers && property.IsRequired)
+            if (setsRequiredMembers && property.IsRequiredBySyntax)
             {
                 // Disable 'IsRequired' flag for constructors setting required members.
-                property = property with { IsRequired = false };
+                property = property with { IsRequiredBySyntax = false };
             }
 
-            if (!property.IsRequired && MatchesConstructorParameter(property))
+            if (!property.IsRequiredBySyntax && MatchesConstructorParameter(property))
             {
                 // Deduplicate any optional properties whose signature matches a constructor parameter.
                 continue;
