@@ -267,6 +267,25 @@ public static class CompilationTests
     }
 
     [Fact]
+    public static void IsRequiredProperty()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+            #nullable enable
+
+            [GenerateShape]
+            public partial class Foo
+            {
+                [PropertyShape(IsRequired = true)]
+                public string? PropA { get; set; }
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
     public static void MultiplePartialContextDeclarations_NoErrors()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""

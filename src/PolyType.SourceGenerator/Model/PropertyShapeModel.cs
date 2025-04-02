@@ -22,7 +22,8 @@ public sealed record PropertyShapeModel
     public required bool IsGetterNonNullable { get; init; }
     public required bool IsSetterNonNullable { get; init; }
 
-    public required bool IsRequired { get; init; }
+    public required bool IsRequiredBySyntax { get; init; }
+    public required bool? IsRequiredByPolicy { get; init; }
     
     /// <summary>
     /// Whether the property type or type parameters of the

@@ -14,7 +14,7 @@ public readonly struct PropertyDataModel
     public PropertyDataModel(IPropertySymbol property)
     {
         PropertySymbol = property;
-        IsRequired = property.IsRequired();
+        IsRequiredBySyntax = property.IsRequired();
     }
 
     /// <summary>
@@ -23,7 +23,7 @@ public readonly struct PropertyDataModel
     public PropertyDataModel(IFieldSymbol field)
     {
         PropertySymbol = field;
-        IsRequired = field.IsRequired();
+        IsRequiredBySyntax = field.IsRequired();
     }
 
     /// <summary>
@@ -97,7 +97,12 @@ public readonly struct PropertyDataModel
     /// <summary>
     /// Whether the property or field is declared with the <see langword="required" /> modifier.
     /// </summary>
-    public bool IsRequired { get; init; }
+    public bool IsRequiredBySyntax { get; init; }
+
+    /// <summary>
+    /// Whether the property or field is considered required by policy (e.g. syntax, overridden by attribute).
+    /// </summary>
+    public bool? IsRequiredByPolicy { get; init; }
 
     /// <summary>
     /// Whether the property is init-only.

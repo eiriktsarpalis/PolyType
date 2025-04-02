@@ -164,6 +164,26 @@ public sealed partial class Parser : TypeDataModelGenerator
         return base.IncludeField(field);
     }
 
+    protected override bool? IsRequiredByPolicy(IPropertySymbol member)
+    {
+        if (member.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData fieldAttribute && fieldAttribute.TryGetNamedArgument("IsRequired", out bool isRequiredValue))
+        {
+            return  isRequiredValue;
+        }
+
+        return base.IsRequiredByPolicy(member);
+    }
+
+    protected override bool? IsRequiredByPolicy(IFieldSymbol member)
+    {
+        if (member.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData fieldAttribute && fieldAttribute.TryGetNamedArgument("IsRequired", out bool isRequiredValue))
+        {
+            return isRequiredValue;
+        }
+
+        return base.IsRequiredByPolicy(member);
+    }
+
     // Resolve constructors with the [ConstructorShape] attribute.
     protected override IEnumerable<IMethodSymbol> ResolveConstructors(ITypeSymbol type, ImmutableArray<PropertyDataModel> properties)
     {
