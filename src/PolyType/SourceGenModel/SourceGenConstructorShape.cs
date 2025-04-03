@@ -50,6 +50,11 @@ public sealed class SourceGenConstructorShape<TDeclaringType, TArgumentState> : 
     /// </summary>
     public Constructor<TArgumentState, TDeclaringType>? ParameterizedConstructorFunc { get; init; }
 
+    /// <summary>
+    /// Gets a function to check whether all parameters required by policy are set.
+    /// </summary>
+    public InFunc<TArgumentState, bool>? AreRequiredParametersSetFunc { get; init; }
+
     IReadOnlyList<IParameterShape> IConstructorShape.Parameters => _parameters ??= (GetParametersFunc?.Invoke()).AsReadOnlyList();
     private IReadOnlyList<IParameterShape>? _parameters;
 
@@ -63,6 +68,10 @@ public sealed class SourceGenConstructorShape<TDeclaringType, TArgumentState> : 
         => ParameterizedConstructorFunc ?? throw new InvalidOperationException("Constructor shape does not specify a parameterized constructor.");
 
     object? IConstructorShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitConstructor(this, state);
+
+    InFunc<TArgumentState, bool> IConstructorShape<TDeclaringType, TArgumentState>.GetAreRequiredParametersSet()
+        => AreRequiredParametersSetFunc ?? throw new InvalidOperationException("Constructor shape does not specify a function to check required parameters.");
+
     ICustomAttributeProvider? IConstructorShape.AttributeProvider => AttributeProviderFunc?.Invoke();
     IObjectTypeShape IConstructorShape.DeclaringType => DeclaringType;
 }

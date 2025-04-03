@@ -62,8 +62,9 @@ public static partial class JsonSerializerTS
                 .ToArray();
 
             return new JsonObjectConverterWithParameterizedCtor<TDeclaringType, TArgumentState>(
-                constructor.GetArgumentStateConstructor(), 
-                constructor.GetParameterizedConstructor(), 
+                constructor.GetArgumentStateConstructor(),
+                constructor.GetParameterizedConstructor(),
+                constructor.GetAreRequiredParametersSet(),
                 constructorParams,
                 properties);
         }
