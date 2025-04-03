@@ -394,6 +394,11 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         return CreateDelegate<Constructor<TArgumentState, TDeclaringType>>(EmitParameterizedConstructorMethod(typeof(TDeclaringType), typeof(TArgumentState), ctorInfo));
     }
 
+    public InFunc<TArgumentState, bool> CreateAreRequiredParametersSet<TArgumentState>(IConstructorShapeInfo ctorInfo)
+    {
+        return new((in TArgumentState state) => true);
+    }
+
     private static DynamicMethod EmitParameterizedConstructorMethod(Type declaringType, Type argumentStateType, IConstructorShapeInfo ctorInfo)
     {
         Debug.Assert(ctorInfo.Parameters.Length > 0);

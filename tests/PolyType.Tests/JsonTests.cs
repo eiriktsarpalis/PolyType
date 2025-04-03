@@ -221,6 +221,44 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         Assert.Null(result.value);
     }
 
+    [Fact]
+    public void Deserialize_ThrowsForMissingRequiredField()
+    {
+        var converter = JsonSerializerTS.CreateConverter<PropertyRequiredByAttribute>(providerUnderTest.Provider);
+
+        converter.Deserialize("""{ "AttributeRequiredProperty": true }""");
+
+        JsonException ex = Assert.Throws<JsonException>(() => converter.Deserialize("""{}"""));
+        TestContext.Current.TestOutputHelper!.WriteLine(ex.Message);
+    }
+
+    [Fact]
+    public void Deserialize_DoesNotThrowForRequiredParameterNotRequiredByAttribute()
+    {
+        var converter = JsonSerializerTS.CreateConverter<CtorParameterNotRequiredByAttribute>(providerUnderTest.Provider);
+
+        converter.Deserialize("""{ }""");
+    }
+
+    [Fact]
+    public void Deserialize_DoesNotThrowForRequiredFieldWithNotRequiredAttribute()
+    {
+        var converter = JsonSerializerTS.CreateConverter<PropertyNotRequiredByAttribute>(providerUnderTest.Provider);
+
+        converter.Deserialize("""{ }""");
+    }
+
+    [Fact]
+    public void Deserialize_ThrowsForDefaultParameterRequiredByAttribute()
+    {
+        var converter = JsonSerializerTS.CreateConverter<CtorParameterRequiredByAttribute>(providerUnderTest.Provider);
+
+        converter.Deserialize("""{"p": true}""");
+
+        JsonException ex = Assert.Throws<JsonException>(() => converter.Deserialize("""{}"""));
+        TestContext.Current.TestOutputHelper!.WriteLine(ex.Message);
+    }
+
     [Theory]
     [MemberData(nameof(GetLongTuplesAndExpectedJson))]
     public void LongTuples_SerializedAsFlatJson<TTuple>(TestCase<TTuple> testCase, string expectedEncoding)
