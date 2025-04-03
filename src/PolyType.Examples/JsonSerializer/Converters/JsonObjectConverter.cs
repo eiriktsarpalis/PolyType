@@ -68,7 +68,7 @@ internal sealed class JsonObjectConverterWithDefaultCtor<T>(Func<T> defaultConst
 
             JsonPropertyConverter<T>? jsonProperty = propertiesToRead.LookupProperty(ref reader);
             reader.EnsureRead();
-            
+
             if (jsonProperty != null)
             {
                 jsonProperty.Read(ref reader, ref result, options);
@@ -88,6 +88,7 @@ internal sealed class JsonObjectConverterWithDefaultCtor<T>(Func<T> defaultConst
 internal sealed class JsonObjectConverterWithParameterizedCtor<TDeclaringType, TArgumentState>(
     Func<TArgumentState> createArgumentState,
     Constructor<TArgumentState, TDeclaringType> createObject,
+    InFunc<TArgumentState, bool> areRequiredParametersSet,
     JsonPropertyConverter<TArgumentState>[] constructorParameters,
     JsonPropertyConverter<TDeclaringType>[] properties) : JsonObjectConverter<TDeclaringType>(properties)
 {
@@ -123,6 +124,11 @@ internal sealed class JsonObjectConverterWithParameterizedCtor<TDeclaringType, T
             }
 
             reader.EnsureRead();
+        }
+
+        if (!areRequiredParametersSet(argumentState))
+        {
+            throw new JsonException("Not all required parameters were set.");
         }
 
         return createObject(ref argumentState);
