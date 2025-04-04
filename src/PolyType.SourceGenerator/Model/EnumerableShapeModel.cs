@@ -1,4 +1,5 @@
 ﻿using PolyType.Roslyn;
+using System.Collections.Immutable;
 
 namespace PolyType.SourceGenerator.Model;
 
@@ -13,4 +14,5 @@ public sealed record EnumerableShapeModel : TypeShapeModel
     public required string? StaticFactoryMethod { get; init; }
     public required bool CtorRequiresListConversion { get; init; }
     public required bool ElementTypeContainsNullableAnnotations { get; init; }
+    public required ImmutableArray<ImmutableArray<EnumerableParameterType>> ParameterLists { get; init; }
 }
