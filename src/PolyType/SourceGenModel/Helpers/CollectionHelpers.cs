@@ -35,14 +35,15 @@ public static class CollectionHelpers
     /// </summary>
     /// <typeparam name="T">The element type of the set.</typeparam>
     /// <param name="span">The span containing the elements of the set.</param>
+    /// <param name="comparer">An optional comparer for the returned set.</param>
     /// <returns>A new set containing the specified elements.</returns>
-    public static HashSet<T> CreateHashSet<T>(ReadOnlySpan<T> span)
+    public static HashSet<T> CreateHashSet<T>(ReadOnlySpan<T> span, IEqualityComparer<T>? comparer)
     {
         HashSet<T> set =
 #if NET
-            new(span.Length);
+            new(span.Length, comparer);
 #else
-            new();
+            new(comparer);
 #endif
 
         for (int i = 0; i < span.Length; i++)
@@ -59,11 +60,12 @@ public static class CollectionHelpers
     /// <typeparam name="TKey">The key type of the dictionary.</typeparam>
     /// <typeparam name="TValue">The value type of the dictionary.</typeparam>
     /// <param name="span">The span containing the entries of the dictionary.</param>
+    /// <param name="keyComparer">An optional key comparer for the returned dictionary.</param>
     /// <returns>A new dictionary containing the specified entries.</returns>
-    public static Dictionary<TKey, TValue> CreateDictionary<TKey, TValue>(ReadOnlySpan<KeyValuePair<TKey, TValue>> span)
+    public static Dictionary<TKey, TValue> CreateDictionary<TKey, TValue>(ReadOnlySpan<KeyValuePair<TKey, TValue>> span, IEqualityComparer<TKey>? keyComparer)
         where TKey : notnull
     {
-        var dict = new Dictionary<TKey, TValue>(span.Length);
+        var dict = new Dictionary<TKey, TValue>(span.Length, keyComparer);
         for (int i = 0; i < span.Length; i++)
         {
             KeyValuePair<TKey, TValue> kvp = span[i];
