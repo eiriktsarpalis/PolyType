@@ -15,6 +15,7 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
     private Func<TArgumentState>? _argumentStateConstructor;
     private Constructor<TArgumentState, TDeclaringType>? _parameterizedConstructor;
     private Func<TDeclaringType>? _defaultConstructor;
+    private InFunc<TArgumentState, bool>? _areRequiredParametersSet;
 
     public IObjectTypeShape<TDeclaringType> DeclaringType { get; } = declaringType;
     public ICustomAttributeProvider? AttributeProvider => ctorInfo.AttributeProvider;
@@ -51,10 +52,21 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
         if (Parameters is not [])
         {
             Throw();
-            static void Throw() => throw new InvalidOperationException("The current constructor shape is not parameterless.");
+            static void Throw() => throw new InvalidOperationException("The current constructor shape is not parameterized.");
         }
 
         return _defaultConstructor ??= provider.MemberAccessor.CreateDefaultConstructor<TDeclaringType>(ctorInfo);
+    }
+
+    public InFunc<TArgumentState, bool> GetAreRequiredParametersSet()
+    {
+        if (Parameters is [])
+        {
+            Throw();
+            static void Throw() => throw new InvalidOperationException("The current constructor shape is not parameterized.");
+        }
+
+        return _areRequiredParametersSet ??= provider.MemberAccessor.CreateAreRequiredParametersSet<TArgumentState>(ctorInfo);
     }
 
     private IEnumerable<IParameterShape> GetParameters()
@@ -91,7 +103,7 @@ internal sealed class MethodConstructorShapeInfo : IConstructorShapeInfo
         ConstructorParameters = parameters;
 
         MemberInitializers = memberInitializers ?? [];
-        Parameters = [ ..ConstructorParameters, ..MemberInitializers ];
+        Parameters = [.. ConstructorParameters, .. MemberInitializers];
     }
 
     public Type ConstructedType { get; }
