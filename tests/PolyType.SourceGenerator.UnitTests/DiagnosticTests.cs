@@ -19,7 +19,7 @@ public static class DiagnosticTests
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
 
-        Diagnostic? diagnostic = result.Diagnostics.FirstOrDefault(d => d.Id == "TS0001");
+        Diagnostic? diagnostic = result.Diagnostics.FirstOrDefault(d => d.Id == "PT0001");
 
         Assert.NotNull(diagnostic);
         Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
@@ -41,7 +41,7 @@ public static class DiagnosticTests
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
 
-        Assert.Equal("TS0002", diagnostic.Id);
+        Assert.Equal("PT0002", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         Assert.Equal((2, 0), diagnostic.Location.GetStartPosition());
         Assert.Equal((3, 31), diagnostic.Location.GetEndPosition());
@@ -63,7 +63,7 @@ public static class DiagnosticTests
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
 
-        Assert.Equal("TS0002", diagnostic.Id);
+        Assert.Equal("PT0002", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         Assert.Equal((2, 0), diagnostic.Location.GetStartPosition());
         Assert.Equal((3, 30), diagnostic.Location.GetEndPosition());
@@ -76,7 +76,7 @@ public static class DiagnosticTests
             using PolyType;
 
             [GenerateShape]
-            public partial class GenericType<T> 
+            public partial class GenericType<T>
             {
             }
             """);
@@ -85,7 +85,7 @@ public static class DiagnosticTests
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
 
-        Assert.Equal("TS0004", diagnostic.Id);
+        Assert.Equal("PT0004", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         Assert.Equal((2, 0), diagnostic.Location.GetStartPosition());
         Assert.Equal((5, 1), diagnostic.Location.GetEndPosition());
@@ -110,7 +110,7 @@ public static class DiagnosticTests
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
 
-        Assert.Equal("TS0004", diagnostic.Id);
+        Assert.Equal("PT0004", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         Assert.Equal((4, 4), diagnostic.Location.GetStartPosition());
         Assert.Equal((7, 5), diagnostic.Location.GetEndPosition());
@@ -132,7 +132,7 @@ public static class DiagnosticTests
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
 
-        Assert.Equal("TS0004", diagnostic.Id);
+        Assert.Equal("PT0004", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         Assert.Equal((2, 0), diagnostic.Location.GetStartPosition());
         Assert.Equal((5, 1), diagnostic.Location.GetEndPosition());
@@ -157,7 +157,7 @@ public static class DiagnosticTests
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
 
-        Assert.Equal("TS0004", diagnostic.Id);
+        Assert.Equal("PT0004", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         Assert.Equal((4, 4), diagnostic.Location.GetStartPosition());
         Assert.Equal((7, 5), diagnostic.Location.GetEndPosition());
@@ -180,7 +180,7 @@ public static class DiagnosticTests
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
 
-        Assert.Equal("TS0005", diagnostic.Id);
+        Assert.Equal("PT0005", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         Assert.Equal((4, 5), diagnostic.Location.GetStartPosition());
         Assert.Equal((4, 18), diagnostic.Location.GetEndPosition());
@@ -197,7 +197,7 @@ public static class DiagnosticTests
            {
                [ConstructorShape]
                public MyPoco() { }
-               
+
                [ConstructorShape]
                public MyPoco(int value) { }
            }
@@ -207,7 +207,7 @@ public static class DiagnosticTests
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
 
-        Assert.Equal("TS0006", diagnostic.Id);
+        Assert.Equal("PT0006", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         Assert.Equal((9, 11), diagnostic.Location.GetStartPosition());
         Assert.Equal((9, 17), diagnostic.Location.GetEndPosition());
@@ -227,7 +227,7 @@ public static class DiagnosticTests
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
 
-        Assert.Equal("TS0007", diagnostic.Id);
+        Assert.Equal("PT0007", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         Assert.Equal((2, 0), diagnostic.Location.GetStartPosition());
         Assert.Equal((3, 29), diagnostic.Location.GetEndPosition());
@@ -249,7 +249,7 @@ public static class DiagnosticTests
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
 
-        Assert.Equal("TS0007", diagnostic.Id);
+        Assert.Equal("PT0007", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         Assert.Equal((2, 0), diagnostic.Location.GetStartPosition());
         Assert.Equal((3, 29), diagnostic.Location.GetEndPosition());
@@ -267,7 +267,7 @@ public static class DiagnosticTests
                 [TypeShape(AssociatedTypes = new[] { typeof(InternalAssociatedType) })]
                 [GenerateShape]
                 internal partial class MyPoco;
-            
+
                 class InternalAssociatedType;
             }
             """);
@@ -276,7 +276,7 @@ public static class DiagnosticTests
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
 
-        Assert.Equal("TS0005", diagnostic.Id);
+        Assert.Equal("PT0005", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         Assert.Equal((4, 5), diagnostic.Location.GetStartPosition());
         Assert.Equal((4, 74), diagnostic.Location.GetEndPosition());
@@ -294,7 +294,7 @@ public static class DiagnosticTests
                 [TypeShape(AssociatedTypes = new[] { typeof(InternalAssociatedType) })]
                 [GenerateShape]
                 internal partial class MyPoco;
-            
+
                 public class InternalAssociatedType
                 {
                     private InternalAssociatedType() { }
@@ -306,7 +306,7 @@ public static class DiagnosticTests
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
 
-        Assert.Equal("TS0005", diagnostic.Id);
+        Assert.Equal("PT0005", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         Assert.Equal((4, 5), diagnostic.Location.GetStartPosition());
         Assert.Equal((4, 74), diagnostic.Location.GetEndPosition());
@@ -328,7 +328,7 @@ public static class DiagnosticTests
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
 
-        Assert.Equal("TS0016", diagnostic.Id);
+        Assert.Equal("PT0016", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         Assert.Equal((2, 1), diagnostic.Location.GetStartPosition());
         Assert.Equal((2, 72), diagnostic.Location.GetEndPosition());
@@ -353,7 +353,7 @@ public static class DiagnosticTests
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
 
-        Assert.Equal("TS0016", diagnostic.Id);
+        Assert.Equal("PT0016", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         Assert.Equal((2, 1), diagnostic.Location.GetStartPosition());
         Assert.Equal((2, 72), diagnostic.Location.GetEndPosition());
@@ -381,7 +381,7 @@ public static class DiagnosticTests
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
 
-        Assert.Equal("TS0008", diagnostic.Id);
+        Assert.Equal("PT0008", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         Assert.Same(Location.None, diagnostic.Location);
     }
@@ -423,7 +423,7 @@ public static class DiagnosticTests
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
 
-        Assert.Equal("TS0009", diagnostic.Id);
+        Assert.Equal("PT0009", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         Assert.Equal((2, 1), diagnostic.Location.GetStartPosition());
         Assert.Equal(2, diagnostic.Location.GetEndPosition().startLine);
@@ -449,7 +449,7 @@ public static class DiagnosticTests
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
 
-        Assert.Equal("TS0009", diagnostic.Id);
+        Assert.Equal("PT0009", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         Assert.Equal((3, 1), diagnostic.Location.GetStartPosition());
         Assert.Equal(3, diagnostic.Location.GetEndPosition().startLine);
@@ -476,7 +476,7 @@ public static class DiagnosticTests
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
 
-        Assert.Equal("TS0009", diagnostic.Id);
+        Assert.Equal("PT0009", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         Assert.Equal((3, 1), diagnostic.Location.GetStartPosition());
         Assert.Equal(3, diagnostic.Location.GetEndPosition().startLine);
@@ -562,7 +562,7 @@ public static class DiagnosticTests
         """)]
     [InlineData("""
         using PolyType;
-        
+
         [GenerateShape, TypeShape(Marshaller = typeof(Marshaller))]
         partial class MyPoco
         {
@@ -606,7 +606,7 @@ public static class DiagnosticTests
         [GenerateShape, TypeShape(Marshaller = typeof(Marshaller))]
         public partial class MyPoco
         {
-            public class Marshaller : 
+            public class Marshaller :
                 IMarshaller<MyPoco, object>,
                 IMarshaller<MyPoco, int>
             {
@@ -625,7 +625,7 @@ public static class DiagnosticTests
         PolyTypeSourceGeneratorResult result =
             CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
 
-        Diagnostic? diagnostic = result.Diagnostics.SingleOrDefault(d => d.Id == "TS0010");
+        Diagnostic? diagnostic = result.Diagnostics.SingleOrDefault(d => d.Id == "PT0010");
         Assert.NotNull(diagnostic);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
     }
@@ -635,7 +635,7 @@ public static class DiagnosticTests
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
-            
+
             [GenerateShape, TypeShape(Marshaller = typeof(Marshaller))]
             public partial class MyPoco
             {
@@ -671,7 +671,7 @@ public static class DiagnosticTests
         """)]
     [InlineData("""
         using PolyType;
-        
+
         [TypeShape(Marshaller = typeof(MyPoco<>.Marshaller))]
         public record MyPoco<T>(T Value)
         {
@@ -681,7 +681,7 @@ public static class DiagnosticTests
                 public MyPoco<T>? FromSurrogate(T? value) => value is null ? null : new(value);
             }
         }
-        
+
         [GenerateShape<MyPoco<int>>]
         public partial class Witness;
         """)]
@@ -690,7 +690,7 @@ public static class DiagnosticTests
 
         [TypeShape(Marshaller = typeof(Container<>.Container2.Marshaller<>))]
         public record MyPoco<T1, T2>(T1 Value1, T2 Value2);
-        
+
         public static class Container<T1>
         {
             public class Container2
@@ -730,7 +730,7 @@ public static class DiagnosticTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
-        Assert.Equal("TS0011", diagnostic.Id);
+        Assert.Equal("PT0011", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         Assert.Contains("'object'", diagnostic.GetMessage());
         Assert.Equal((3, 1), diagnostic.Location.GetStartPosition());
@@ -755,7 +755,7 @@ public static class DiagnosticTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
-        Assert.Equal("TS0012", diagnostic.Id);
+        Assert.Equal("PT0012", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         Assert.Contains("type 'PolymorphicClassWithInvalidDerivedType_ConflictingTypes.Derived'", diagnostic.GetMessage());
         Assert.Equal((4, 1), diagnostic.Location.GetStartPosition());
@@ -781,7 +781,7 @@ public static class DiagnosticTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
-        Assert.Equal("TS0012", diagnostic.Id);
+        Assert.Equal("PT0012", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         Assert.Contains("name 'case1'", diagnostic.GetMessage());
         Assert.Equal((4, 1), diagnostic.Location.GetStartPosition());
@@ -807,7 +807,7 @@ public static class DiagnosticTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
-        Assert.Equal("TS0012", diagnostic.Id);
+        Assert.Equal("PT0012", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         Assert.Contains("tag '42'", diagnostic.GetMessage());
         Assert.Equal((4, 1), diagnostic.Location.GetStartPosition());
@@ -833,7 +833,7 @@ public static class DiagnosticTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
-        Assert.Equal("TS0013", diagnostic.Id);
+        Assert.Equal("PT0013", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         Assert.Contains("introduces unsupported type parameters", diagnostic.GetMessage());
         Assert.Equal((2, 1), diagnostic.Location.GetStartPosition());
@@ -860,7 +860,7 @@ public static class DiagnosticTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
 
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
-        Assert.Equal("TS0013", diagnostic.Id);
+        Assert.Equal("PT0013", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         Assert.Contains("introduces unsupported type parameters", diagnostic.GetMessage());
         Assert.Equal((3, 1), diagnostic.Location.GetStartPosition());
