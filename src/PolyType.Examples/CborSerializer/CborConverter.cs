@@ -1,4 +1,5 @@
 ﻿using System.Formats.Cbor;
+using PolyType.Abstractions;
 
 namespace PolyType.Examples.CborSerializer;
 
@@ -13,6 +14,11 @@ public abstract class CborConverter
     /// The type being targeted by the current converter.
     /// </summary>
     public abstract Type Type { get; }
+
+    /// <summary>
+    /// Gets or sets the shape that drove creation of this converter.
+    /// </summary>
+    public ITypeShape? TypeShape { get; set; }
 }
 
 /// <summary>

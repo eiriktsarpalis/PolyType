@@ -22,6 +22,7 @@ internal sealed partial class SourceFormatter
                     IsTupleType = {{FormatBool(objectShapeModel.IsTupleType)}},
                     Provider = this,
                     AssociatedTypeFactories = {{FormatAssociatedTypeFactory(objectShapeModel)}},
+                    AssociatedTypeShapes = {{FormatAssociatedTypeShapes(objectShapeModel)}},
                 };
             }
             """, trimNullAssignmentLines: true);
@@ -43,16 +44,41 @@ internal sealed partial class SourceFormatter
 
     private static string FormatAssociatedTypeFactory(ObjectShapeModel objectShapeModel)
     {
-        if (objectShapeModel.AssociatedTypes.Length == 0)
+        var associatedTypeFactories = (from associatedType in objectShapeModel.AssociatedTypes
+                                       where associatedType.Value.Value.HasFlag(AssociatedTypeRequirements.Factory)
+                                       select associatedType.Key).ToArray();
+        if (associatedTypeFactories.Length == 0)
         {
             return "null";
         }
 
         StringBuilder builder = new();
         builder.Append("static associatedType => associatedType switch { ");
-        foreach (AssociatedTypeId associatedType in objectShapeModel.AssociatedTypes)
+        foreach (AssociatedTypeId associatedType in associatedTypeFactories)
         {
             builder.Append($"\"{associatedType.Open}\" or \"{associatedType.Closed}\" => () => new {associatedType.CSharpTypeName}(), ");
+        }
+
+        builder.Append("_ => null }");
+
+        return builder.ToString();
+    }
+
+    private string FormatAssociatedTypeShapes(ObjectShapeModel objectShapeModel)
+    {
+        var associatedTypeShapes = (from associatedType in objectShapeModel.AssociatedTypes
+                                       where associatedType.Value.Value.HasFlag(AssociatedTypeRequirements.Shape)
+                                       select associatedType.Key).ToArray();
+        if (associatedTypeShapes.Length == 0)
+        {
+            return "null";
+        }
+
+        StringBuilder builder = new();
+        builder.Append("static associatedType => associatedType switch { ");
+        foreach (AssociatedTypeId associatedType in associatedTypeShapes)
+        {
+            builder.Append($"\"{associatedType.Open}\" or \"{associatedType.Closed}\" => {provider.ProviderDeclaration.Id.FullyQualifiedName}.{ProviderSingletonProperty}.{GetShapeModel(associatedType.ClosedTypeId).SourceIdentifier}, ");
         }
 
         builder.Append("_ => null }");

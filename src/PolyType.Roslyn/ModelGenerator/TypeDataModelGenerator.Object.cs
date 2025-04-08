@@ -97,6 +97,7 @@ public partial class TypeDataModelGenerator
         ImmutableArray<PropertyDataModel> properties = MapProperties(namedType, ref ctx);
         ImmutableArray<ConstructorDataModel> constructors = MapConstructors(namedType, properties, ref ctx);
         ImmutableArray<DerivedTypeModel> derivedTypes = IncludeDerivedTypes(type, ref ctx);
+        IncludeAssociatedShapes(type, associatedTypes, ref ctx);
 
         model = new ObjectDataModel
         {
@@ -110,6 +111,20 @@ public partial class TypeDataModelGenerator
         return true;
     }
 
+    private void IncludeAssociatedShapes(ITypeSymbol type, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx)
+    {
+        foreach (AssociatedTypeModel associatedType in associatedTypes)
+        {
+            if (associatedType.Requirements.HasFlag(AssociatedTypeRequirements.Shape))
+            {
+                INamedTypeSymbol closedAssociatedType = associatedType.AssociatedType.IsUnboundGenericType
+                    ? associatedType.AssociatedType.OriginalDefinition.ConstructRecursive((type as INamedTypeSymbol)?.GetRecursiveTypeArguments() ?? [])!
+                    : associatedType.AssociatedType;
+                IncludeNestedType(closedAssociatedType, ref ctx);
+            }
+        }
+    }
+
     private ImmutableArray<PropertyDataModel> MapProperties(INamedTypeSymbol type, ref TypeDataModelGenerationContext ctx)
     {
         List<PropertyDataModel> properties = [];
@@ -120,8 +135,8 @@ public partial class TypeDataModelGenerator
             IOrderedEnumerable<ISymbol> members = current.GetMembers()
                 .Where(m => m.Kind is SymbolKind.Field or SymbolKind.Property)
                 .OrderByDescending(m => m.Kind is SymbolKind.Property); // for consistency with reflection, sort properties ahead of fields
-            
-            foreach (ISymbol member in members) 
+
+            foreach (ISymbol member in members)
             {
                 if (member is IPropertySymbol { IsStatic: false, Parameters: [] } ps &&
                     !IsOverriddenOrShadowed(ps) && IncludeProperty(ps, out bool includeGetter, out bool includeSetter) &&
@@ -217,7 +232,7 @@ public partial class TypeDataModelGenerator
                 // Skip constructors with out parameters
                 return null;
             }
-            
+
             if (IncludeNestedType(parameter.Type, ref scopedCtx) != TypeDataModelGenerationStatus.Success)
             {
                 // Skip constructors with unsupported parameter types

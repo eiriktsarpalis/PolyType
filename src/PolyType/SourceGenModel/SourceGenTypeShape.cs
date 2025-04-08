@@ -35,4 +35,7 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
 
     /// <inheritdoc/>
     public virtual Func<object>? GetAssociatedTypeFactory(Type associatedType) => null;
+
+    /// <inheritdoc/>
+    public virtual ITypeShape? GetAssociatedTypeShape(Type associatedType) => null;
 }

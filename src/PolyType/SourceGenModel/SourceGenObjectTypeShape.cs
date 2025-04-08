@@ -35,6 +35,11 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
     /// </summary>
     public Func<string, Func<object>?>? AssociatedTypeFactories { get; init; }
 
+    /// <summary>
+    /// Gets the shape of an associated type, by its name.
+    /// </summary>
+    public Func<string, ITypeShape?>? AssociatedTypeShapes { get; init; }
+
     /// <inheritdoc/>
     public override TypeShapeKind Kind => TypeShapeKind.Object;
 
@@ -52,49 +57,62 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
         StringBuilder builder = new();
         ConstructStableName(associatedType, builder);
         return AssociatedTypeFactories?.Invoke(builder.ToString());
+    }
 
-        static void ConstructStableName(Type type, StringBuilder builder)
+    /// <inheritdoc/>
+    public override ITypeShape? GetAssociatedTypeShape(Type associatedType)
+    {
+        if (associatedType.IsGenericTypeDefinition && typeof(TObject).GenericTypeArguments.Length != associatedType.GetTypeInfo().GenericTypeParameters.Length)
         {
-            // The string created here must match the string created in the source generator (Parser.CreateAssociatedTypeId).
-            if (type.DeclaringType is not null)
-            {
-                ConstructStableName(type.DeclaringType, builder);
-                builder.Append('+');
-            }
-            else if (!string.IsNullOrEmpty(type.Namespace))
-            {
-                builder.Append(type.Namespace);
-                builder.Append('.');
-            }
+            throw new ArgumentException("Type is not a generic type definition or does not have an equal count of generic type parameters with this type shape.");
+        }
 
-            if (type.IsGenericType)
+        StringBuilder builder = new();
+        ConstructStableName(associatedType, builder);
+        return AssociatedTypeShapes?.Invoke(builder.ToString());
+    }
+
+    private static void ConstructStableName(Type type, StringBuilder builder)
+    {
+        // The string created here must match the string created in the source generator (Parser.CreateAssociatedTypeId).
+        if (type.DeclaringType is not null)
+        {
+            ConstructStableName(type.DeclaringType, builder);
+            builder.Append('+');
+        }
+        else if (!string.IsNullOrEmpty(type.Namespace))
+        {
+            builder.Append(type.Namespace);
+            builder.Append('.');
+        }
+
+        if (type.IsGenericType)
+        {
+            string nameNoArity = type.Name[..type.Name.IndexOf('`')];
+            builder.Append(nameNoArity);
+            builder.Append('<');
+            if (type.IsGenericTypeDefinition)
             {
-                string nameNoArity = type.Name[..type.Name.IndexOf('`')];
-                builder.Append(nameNoArity);
-                builder.Append('<');
-                if (type.IsGenericTypeDefinition)
-                {
-                    builder.Append(',', GetOwnGenericTypeParameterCount(type) - 1);
-                }
-                else
-                {
-                    for (int i = 0; i < type.GenericTypeArguments.Length; i++)
-                    {
-                        if (i > 0)
-                        {
-                            builder.Append(',');
-                        }
-
-                        ConstructStableName(type.GenericTypeArguments[i], builder);
-                    }
-                }
-
-                builder.Append('>');
+                builder.Append(',', GetOwnGenericTypeParameterCount(type) - 1);
             }
             else
             {
-                builder.Append(type.Name);
+                for (int i = 0; i < type.GenericTypeArguments.Length; i++)
+                {
+                    if (i > 0)
+                    {
+                        builder.Append(',');
+                    }
+
+                    ConstructStableName(type.GenericTypeArguments[i], builder);
+                }
             }
+
+            builder.Append('>');
+        }
+        else
+        {
+            builder.Append(type.Name);
         }
 
         static int GetOwnGenericTypeParameterCount(Type type)

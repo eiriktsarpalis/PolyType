@@ -124,82 +124,8 @@ internal static partial class RoslynHelpers
             : $"{symbol.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}.{symbol.Name}";
     }
 
-    public static bool IsGenericTypeDefinition(this ITypeSymbol type) =>
-        type is INamedTypeSymbol { IsGenericType: true, IsDefinition: true };
-
     public static IEnumerable<TMember> GetMembers<TMember>(this ITypeSymbol type, string name) where TMember : ISymbol
         => type.GetMembers(name).OfType<TMember>();
-
-    // Gets all type arguments, including the ones specified by containing types in order of nesting.
-    public static ITypeSymbol[] GetRecursiveTypeArguments(this INamedTypeSymbol type)
-    {
-        List<ITypeSymbol> typeArguments = [];
-        GetAllTypeArgumentsCore(type);
-        return typeArguments.ToArray();
-
-        void GetAllTypeArgumentsCore(INamedTypeSymbol type)
-        {
-            if (!type.IsGenericType)
-            {
-                return;
-            }
-
-            if (type.ContainingType is { IsGenericType: true } containingType)
-            {
-                GetAllTypeArgumentsCore(containingType);
-            }
-            
-            typeArguments.AddRange(type.TypeArguments);
-        }
-    }
-
-    // Applies the type arguments to the type, working recursively on container types that may also be generic.
-    // Returns null if there is a mismatch between the number of parameters and the combined arity of the generic type.
-    public static INamedTypeSymbol? ConstructRecursive(this INamedTypeSymbol typeDefinition, ReadOnlySpan<ITypeSymbol> typeArguments)
-    {
-        INamedTypeSymbol? result = ConstructRecursiveCore(typeDefinition, ref typeArguments);
-        return typeArguments.IsEmpty ? result : null;
-
-        static INamedTypeSymbol? ConstructRecursiveCore(INamedTypeSymbol typeDefinition, ref ReadOnlySpan<ITypeSymbol> remainingTypeArgs)
-        {
-            Debug.Assert(typeDefinition.IsGenericTypeDefinition());
-            
-            if (typeDefinition.ContainingType?.IsGenericTypeDefinition() is true)
-            {
-                INamedTypeSymbol? specializedContainingType = ConstructRecursiveCore(typeDefinition.ContainingType, ref remainingTypeArgs);
-                if (specializedContainingType is null)
-                {
-                    return null;
-                }
-                
-                typeDefinition = specializedContainingType.GetTypeMembers().First(t => t.Name == typeDefinition.Name && t.Arity == typeDefinition.Arity);
-            }
-
-            if (remainingTypeArgs.Length < typeDefinition.Arity)
-            {
-                return null;
-            }
-            
-            if (typeDefinition.Arity is 0)
-            {
-                return typeDefinition;
-            }
-
-            ITypeSymbol[] args = remainingTypeArgs[.. typeDefinition.Arity].ToArray();
-            remainingTypeArgs = remainingTypeArgs[typeDefinition.Arity ..];
-            return typeDefinition.Construct(args);
-        }
-    }
-
-    public static IPropertySymbol GetBaseProperty(this IPropertySymbol property)
-    {
-        while (property.OverriddenProperty is { } baseProp)
-        {
-            property = baseProp;
-        }
-
-        return property;
-    }
 
     public static bool MatchesNamespace(this ISymbol? symbol, ImmutableArray<string> namespaceTokens)
     {
@@ -295,34 +221,6 @@ internal static partial class RoslynHelpers
                 }
             }
         }
-    }
-
-    public static bool IsAssignableFrom([NotNullWhen(true)] this ITypeSymbol? baseType, [NotNullWhen(true)] ITypeSymbol? type)
-    {
-        if (baseType is null || type is null)
-        {
-            return false;
-        }
-
-        SymbolEqualityComparer comparer = SymbolEqualityComparer.Default;
-
-        for (ITypeSymbol? current = type; current != null; current = current.BaseType)
-        {
-            if (comparer.Equals(current, baseType))
-            {
-                return true;
-            }
-        }
-
-        foreach (INamedTypeSymbol @interface in type.AllInterfaces)
-        {
-            if (comparer.Equals(@interface, baseType))
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     public static bool IsCSharpKeyword(string name) =>
