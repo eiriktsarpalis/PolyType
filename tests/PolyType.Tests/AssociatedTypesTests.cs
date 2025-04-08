@@ -1,7 +1,7 @@
 ﻿using PolyType;
 using PolyType.Tests;
 
-[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedTypes = [typeof(AssociatedTypesTests.GenericDataTypeVerifier<,>)])]
+[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedTypes = [typeof(AssociatedTypesTests.GenericDataTypeVerifier<,>)], AssociatedShapes = [typeof(AssociatedTypesTests.ExtraShape<,>)])]
 
 namespace PolyType.Tests;
 
@@ -109,6 +109,27 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
         Assert.IsType<CustomTypeConverter2>(factory2.Invoke());
     }
 
+    [Fact]
+    public void TypeShapeExtension_AssociatedShape()
+    {
+        // Get it through the associated type shape API, which accepts an unbound generic type.
+        // We do this by first starting with a known shape, then jumping to the associated type.
+        ITypeShape? ordinaryShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
+        Assert.NotNull(ordinaryShape);
+
+        // Fetch as an independent shape.
+        ITypeShape? associatedShape = providerUnderTest.Provider.GetShape(typeof(ExtraShape<int, string>));
+        Assert.NotNull(associatedShape);
+
+        // Fetch as an associated shape by its unbound generic.
+        associatedShape = ordinaryShape.GetAssociatedTypeShape(typeof(ExtraShape<,>));
+        Assert.NotNull(associatedShape);
+
+        // Fetch as an associated shape by its closed generic.
+        associatedShape = ordinaryShape.GetAssociatedTypeShape(typeof(ExtraShape<int, string>));
+        Assert.NotNull(associatedShape);
+    }
+
     [GenerateShape]
     [TypeShape(AssociatedTypes = [typeof(NonGenericDataTypeConverter)])]
     public partial class NonGenericDataType;
@@ -121,6 +142,12 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     public class GenericDataTypeConverter<T1, T2>;
     public class GenericDataTypeCloner<T1, T2>;
     public class GenericDataTypeVerifier<T1, T2>;
+
+    /// <summary>
+    /// A class that should <em>not</em> be directly referenced by any other shaped type.
+    /// It should have a shape generated for it, due to type extensions.
+    /// </summary>
+    public class ExtraShape<T1, T2>;
 
     public class GenericWrapper<T1>
     {
@@ -139,13 +166,13 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     public class CustomTypeConverter1;
     public class CustomTypeConverter2;
 
-    [AssociatedTypeAttribute(nameof(type))]
+    [AssociatedTypeAttribute(nameof(type), AssociatedTypeRequirements.Factory)]
     internal class MyConverterAttribute(Type type) : Attribute
     {
         public Type Type => type;
     }
 
-    [AssociatedTypeAttribute(nameof(Types))]
+    [AssociatedTypeAttribute(nameof(Types), AssociatedTypeRequirements.Factory)]
     internal class MyConverterNamedArgAttribute : Attribute
     {
         public Type[] Types { get; init; } = [];

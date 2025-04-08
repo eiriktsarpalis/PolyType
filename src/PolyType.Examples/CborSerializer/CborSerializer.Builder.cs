@@ -24,11 +24,13 @@ public static partial class CborSerializer
             if (converterAttribute is not null)
             {
                 Type converterType = converterAttribute.ConverterType;
-                Func<object>? factory = 
+                Func<object>? factory =
                     typeShape.GetAssociatedTypeFactory(converterType)
                     ?? throw new InvalidOperationException($"The type {typeof(T)} is missing its associated type factory for converter {converterType}.");
 
-                return (CborConverter<T>)factory();
+                var converter = (CborConverter<T>)factory();
+                converter.TypeShape = typeShape;
+                return converter;
             }
 
             // Otherwise, build a converter using the visitor.

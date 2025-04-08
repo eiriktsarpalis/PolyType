@@ -14,7 +14,8 @@ public class AssociatedTypeAttributeAttribute : Attribute
     /// The name of the attribute constructor parameter or named argument (i.e. attribute property)
     /// whose <see cref="Type"/> or <see cref="Type"/> array argument should be included as associated types.
     /// </param>
-    public AssociatedTypeAttributeAttribute(string parameterOrNamedArgumentName)
+    /// <param name="requirements">The requirements to apply to each associated type.</param>
+    public AssociatedTypeAttributeAttribute(string parameterOrNamedArgumentName, AssociatedTypeRequirements requirements)
     {
         _ = parameterOrNamedArgumentName;
     }

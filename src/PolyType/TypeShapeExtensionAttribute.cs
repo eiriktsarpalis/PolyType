@@ -43,4 +43,13 @@ public class TypeShapeExtensionAttribute : Attribute
     /// </para>
     /// </remarks>
     public Type[] AssociatedTypes { get; init; } = [];
+
+    /// <summary>
+    /// Types for which a shape should be generated when a type shape is generated for <see cref="Target"/>.
+    /// </summary>
+    /// <remarks>
+    /// If <see cref="Target"/> is a generic type definition, each type in this array must also be a generic type definition
+    /// with the same number of generic type parameters.
+    /// </remarks>
+    public Type[] AssociatedShapes { get; init; } = [];
 }
