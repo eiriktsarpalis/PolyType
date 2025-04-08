@@ -464,7 +464,7 @@ internal static class RoslynHelpers
 
         string literalExpr = parameter.ExplicitDefaultValue switch
         {
-            null => "null!",
+            null => parameter.Type.IsNullable() ? "null!" : "default",
             false => "false",
             true => "true",
 

@@ -181,6 +181,38 @@ public static class CompilationTests
     }
 
     [Fact]
+    public static void CtorWithNullableGenericParameterAndDefault()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            public record GenericClass<T>(T? Value = default);
+
+            [GenerateShape<GenericClass<int>>]
+            public partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void CtorWithNullableGenericParameterAndDefault_ValueConstrained()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            public record GenericClass<T>(T? Value = default) where T : struct;
+
+            [GenerateShape<GenericClass<int>>]
+            public partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
     public static void ClassWithSetsRequiredMembersConstructor_NoErrors()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
