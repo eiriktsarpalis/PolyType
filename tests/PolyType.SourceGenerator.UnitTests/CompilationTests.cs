@@ -59,7 +59,7 @@ public static class CompilationTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [assembly: TypeShapeExtension(typeof(GenericClass<,>), AssociatedTypes = [typeof(GenericConverter<,>)])]
+            [assembly: TypeShapeExtension(typeof(GenericClass<,>), AssociatedShapeDepth = TypeShapeDepth.Constructor, AssociatedTypes = [typeof(GenericConverter<,>)])]
 
             public class GenericClass<T1, T2>;
             public class GenericConverter<T1, T2>;
@@ -79,7 +79,7 @@ public static class CompilationTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [TypeShape(AssociatedTypes = [typeof(GenericConverter<,>)])]
+            [AssociatedTypeShape(typeof(GenericConverter<,>))]
             public class GenericClass<T1, T2>;
             public class GenericConverter<T1, T2>;
 
@@ -98,7 +98,7 @@ public static class CompilationTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [TypeShape(AssociatedShapes = [typeof(GenericHelper<,>)])]
+            [AssociatedTypeShape(typeof(GenericHelper<,>))]
             public class GenericClass<T1, T2>;
             public class GenericHelper<T1, T2>;
 
@@ -117,11 +117,78 @@ public static class CompilationTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [assembly: TypeShapeExtension(typeof(GenericClass<,>), AssociatedShapes = [typeof(GenericHelper<,>)])]
+            [assembly: TypeShapeExtension(typeof(GenericClass<,>), AssociatedTypes = [typeof(GenericHelper<,>)])]
 
             public class GenericClass<T1, T2>;
             public class GenericHelper<T1, T2>;
 
+            [GenerateShape<GenericClass<int, string>>]
+            public partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    [Trait("AssociatedTypes", "true")]
+    public static void TypeShapeExtensionWithAssociatedShapes_UnionFlags()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [assembly: TypeShapeExtension(typeof(GenericClass<,>), AssociatedShapeDepth = TypeShapeDepth.Constructor, AssociatedTypes = [typeof(GenericHelper<,>)])]
+            [assembly: TypeShapeExtension(typeof(GenericClass<,>), AssociatedShapeDepth = TypeShapeDepth.Properties, AssociatedTypes = [typeof(GenericHelper<,>)])]
+
+            public class GenericClass<T1, T2>;
+            public class GenericHelper<T1, T2> { public int Prop { get; set; } }
+
+            [GenerateShape<GenericClass<int, string>>]
+            public partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    [Trait("AssociatedTypes", "true")]
+    public static void UnionShapeDepthFlags_AssociatedTypeFirst()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [assembly: TypeShapeExtension(typeof(GenericClass<,>), AssociatedShapeDepth = TypeShapeDepth.Constructor, AssociatedTypes = [typeof(GenericHelper<,>)])]
+
+            public class GenericClass<T1, T2>;
+            public class GenericHelper<T1, T2> { public int Prop { get; set; } }
+
+            public record AnotherShapeReference(GenericHelper<int, string> helper);
+
+            [GenerateShape<GenericClass<int, string>>]
+            [GenerateShape<AnotherShapeReference>]
+            public partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    [Trait("AssociatedTypes", "true")]
+    public static void UnionShapeDepthFlags_FullShapeReferenceFirst()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [assembly: TypeShapeExtension(typeof(GenericClass<,>), AssociatedShapeDepth = TypeShapeDepth.Constructor, AssociatedTypes = [typeof(GenericHelper<,>)])]
+
+            public class GenericClass<T1, T2>;
+            public class GenericHelper<T1, T2> { public int Prop { get; set; } }
+
+            public record AnotherShapeReference(GenericHelper<int, string> helper);
+
+            [GenerateShape<AnotherShapeReference>]
             [GenerateShape<GenericClass<int, string>>]
             public partial class Witness;
             """);
@@ -139,8 +206,8 @@ public static class CompilationTests
             using PolyType;
             using PolyType.Abstractions;
 
-            [AssociatedTypeAttribute(nameof(converterType), AssociatedTypeRequirements.Factory)]
-            [AssociatedTypeAttribute(nameof(Shapes), AssociatedTypeRequirements.Shape)]
+            [AssociatedTypeAttribute(nameof(converterType), TypeShapeDepth.Constructor)]
+            [AssociatedTypeAttribute(nameof(Shapes), TypeShapeDepth.All)]
             [AttributeUsage(AttributeTargets.Class)]
             public class CustomAttribute(Type converterType) : Attribute
             {
@@ -169,7 +236,7 @@ public static class CompilationTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [TypeShape(AssociatedTypes = [typeof(GenericConverter<,>), typeof(GenericConverter<,>)])]
+            [AssociatedTypeShape(typeof(GenericConverter<,>), typeof(GenericConverter<,>))]
             public class GenericClass<T1, T2>;
             public class GenericConverter<T1, T2>;
 
@@ -190,7 +257,7 @@ public static class CompilationTests
 
             public partial class AssociatedTypesTests
             {
-                [TypeShape(AssociatedTypes = [typeof(GenericWrapper<>.GenericNested<>)])]
+                [AssociatedTypeShape(typeof(GenericWrapper<>.GenericNested<>))]
                 public class GenericClass<T1, T2>;
 
                 public class GenericWrapper<T1>
@@ -218,8 +285,8 @@ public static class CompilationTests
 
             namespace PolyType.Tests;
 
-            [AssociatedTypeAttribute("Factories", AssociatedTypeRequirements.Factory)]
-            [AssociatedTypeAttribute("Shapes", AssociatedTypeRequirements.Shape)]
+            [AssociatedTypeAttribute("Factories", TypeShapeDepth.Constructor)]
+            [AssociatedTypeAttribute("Shapes", TypeShapeDepth.All)]
             [AttributeUsage(AttributeTargets.Class)]
             public class CustomAttribute : Attribute
             {

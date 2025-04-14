@@ -7,18 +7,10 @@ namespace PolyType;
 /// An assembly-level attribute that can extend an existing type's generated shape,
 /// as if <see cref="TypeShapeAttribute"/> had been applied to the target type.
 /// </summary>
+/// <param name="target">The type to be extended.</param>
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
-public class TypeShapeExtensionAttribute : Attribute
+public class TypeShapeExtensionAttribute(Type target) : Attribute
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="TypeShapeExtensionAttribute"/> class.
-    /// </summary>
-    /// <param name="target">The type to be extended.</param>
-    public TypeShapeExtensionAttribute(Type target)
-    {
-        Target = target;
-    }
-
     /// <summary>
     /// Gets the target type.
     /// </summary>
@@ -28,21 +20,13 @@ public class TypeShapeExtensionAttribute : Attribute
     /// consider removing this attribute in favor of applying <see cref="TypeShapeAttribute"/>
     /// directly to the target type.
     /// </remarks>
-    public Type Target { get; }
+    public Type Target => target;
 
     /// <summary>
-    /// Types for which a factory should be generated when a type shape is generated for <see cref="Target"/>.
+    /// Gets the elements of the generated shape that are required at runtime.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Each type must declare a public default constructor.
-    /// </para>
-    /// <para>
-    /// If <see cref="Target"/> is a generic type definition, each type in this array must also be a generic type definition
-    /// with the same number of generic type parameters.
-    /// </para>
-    /// </remarks>
-    public Type[] AssociatedTypes { get; init; } = [];
+    /// <value>The default value is <see cref="TypeShapeDepth.All"/>.</value>
+    public TypeShapeDepth AssociatedShapeDepth { get; init; } = TypeShapeDepth.All;
 
     /// <summary>
     /// Types for which a shape should be generated when a type shape is generated for <see cref="Target"/>.
@@ -51,5 +35,5 @@ public class TypeShapeExtensionAttribute : Attribute
     /// If <see cref="Target"/> is a generic type definition, each type in this array must also be a generic type definition
     /// with the same number of generic type parameters.
     /// </remarks>
-    public Type[] AssociatedShapes { get; init; } = [];
+    public Type[] AssociatedTypes { get; init; } = [];
 }

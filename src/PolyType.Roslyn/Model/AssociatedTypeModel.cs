@@ -9,24 +9,32 @@ namespace PolyType.Roslyn;
 /// <param name="AssociatingAssembly">The assembly that declared the association.</param>
 /// <param name="Location">The location where the association is declared.</param>
 /// <param name="Requirements">The associated type's requirements.</param>
-public record struct AssociatedTypeModel(INamedTypeSymbol AssociatedType, IAssemblySymbol AssociatingAssembly, Location? Location, AssociatedTypeRequirements Requirements);
+public record struct AssociatedTypeModel(INamedTypeSymbol AssociatedType, IAssemblySymbol AssociatingAssembly, Location? Location, TypeShapeDepth Requirements);
 
 /// <summary>
 /// Describes the requirements for preparing an associated type.
 /// </summary>
+/// <devremarks>
+/// Keep this in sync with the TypeShapeDepth enum defined in the PolyType assembly.
+/// </devremarks>
 [Flags]
-public enum AssociatedTypeRequirements
+public enum TypeShapeDepth
 {
-    /// <summary>No requirements.</summary>
+    /// <summary>No shape is required.</summary>
     None = 0x0,
 
     /// <summary>
-    /// A factory method should be prepared for the associated type.
+    /// A constructor should be included in the shape, if one is declared.
     /// </summary>
-    Factory = 0x1,
+    Constructor = 0x1,
 
     /// <summary>
-    /// An ITypeShape should be generated for the associated type.
+    /// Properties should be included in the shape, if any are declared.
     /// </summary>
-    Shape = 0x2,
+    Properties = 0x2,
+
+    /// <summary>
+    /// The shape should be fully generated.
+    /// </summary>
+    All = Constructor | Properties,
 }

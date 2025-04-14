@@ -22,6 +22,7 @@ public partial class TypeDataModelGenerator
         model = new EnumDataModel
         {
             Type = type,
+            Depth = TypeShapeDepth.All,
             UnderlyingType = underlyingType,
             AssociatedTypes = associatedTypes,
         };

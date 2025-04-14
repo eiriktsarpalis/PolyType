@@ -83,41 +83,35 @@ public sealed partial class Parser : TypeDataModelGenerator
                     continue;
                 }
 
-                MergeAssociatedTypes(KnownSymbols.TypeShapeAssociatedTypesPropertyName, AssociatedTypeRequirements.Factory);
-                MergeAssociatedTypes(KnownSymbols.TypeShapeAssociatedShapesPropertyName, AssociatedTypeRequirements.Shape);
-
-                void MergeAssociatedTypes(string propertyName, AssociatedTypeRequirements requirement)
+                TypeShapeDepth typeShapeDepth = attribute.TryGetNamedArgument(PolyTypeKnownSymbols.TypeShapeExtensionAttributePropertyNames.AssociatedShapeDepth, out TypeShapeDepth depth) ? depth : TypeShapeDepth.All;
+                if (attribute.TryGetNamedArguments(PolyTypeKnownSymbols.TypeShapeExtensionAttributePropertyNames.AssociatedTypes, out ImmutableArray<TypedConstant> associatedTypesArg))
                 {
-                    var associatedTypesNamedArg = attribute.NamedArguments.FirstOrDefault(kv => kv.Key == propertyName);
-                    if (associatedTypesNamedArg.Key is not null && associatedTypesNamedArg.Value is { Kind: TypedConstantKind.Array, Values: { IsDefaultOrEmpty: false } associatedTypesArg })
+                    List<AssociatedTypeModel> associatedTypeSymbols = new(associatedTypesArg.Length);
+                    foreach (TypedConstant tc in associatedTypesArg)
                     {
-                        List<AssociatedTypeModel> associatedTypeSymbols = new(associatedTypesArg.Length);
-                        foreach (TypedConstant tc in associatedTypesArg)
+                        if (tc.Value is INamedTypeSymbol associatedType)
                         {
-                            if (tc.Value is INamedTypeSymbol associatedType)
-                            {
-                                associatedTypeSymbols.Add(new AssociatedTypeModel(associatedType, assemblySymbol, attribute.GetLocation(), requirement));
-                            }
+                            associatedTypeSymbols.Add(new AssociatedTypeModel(associatedType, assemblySymbol, attribute.GetLocation(), typeShapeDepth));
                         }
+                    }
 
-                        if (associatedTypeSymbols.Count > 0)
+                    if (associatedTypeSymbols.Count > 0)
+                    {
+                        if (!associatedTypes.TryGetValue(targetType, out TypeExtensionModel? existingRelatedTypes))
                         {
-                            if (!associatedTypes.TryGetValue(targetType, out TypeExtensionModel? existingRelatedTypes))
+                            existingRelatedTypes = new TypeExtensionModel
                             {
-                                existingRelatedTypes = new TypeExtensionModel
-                                {
-                                    Target = targetType,
-                                    AssociatedTypes = ImmutableArray<AssociatedTypeModel>.Empty,
-                                };
-                            }
-
-                            existingRelatedTypes = existingRelatedTypes with
-                            {
-                                AssociatedTypes = existingRelatedTypes.AssociatedTypes.AddRange(associatedTypeSymbols),
+                                Target = targetType,
+                                AssociatedTypes = ImmutableArray<AssociatedTypeModel>.Empty,
                             };
-
-                            associatedTypes[targetType] = existingRelatedTypes;
                         }
+
+                        existingRelatedTypes = existingRelatedTypes with
+                        {
+                            AssociatedTypes = existingRelatedTypes.AssociatedTypes.AddRange(associatedTypeSymbols),
+                        };
+
+                        associatedTypes[targetType] = existingRelatedTypes;
                     }
                 }
             }
@@ -312,40 +306,47 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
     }
 
-    protected override TypeDataModelGenerationStatus MapType(ITypeSymbol type, TypeDataKind? requestedKind, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model)
+    protected override TypeDataModelGenerationStatus MapType(ITypeSymbol type, TypeDataKind? requestedKind, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeDepth depth, out TypeDataModel? model)
     {
         Debug.Assert(requestedKind is null);
-        ParseTypeShapeAttribute(type, out TypeShapeKind? requestedTypeShapeKind, out ITypeSymbol? marshaller, out ImmutableArray<AssociatedTypeModel> typeShapeAssociatedTypes, out Location? location);
+        ParseTypeShapeAttribute(type, out TypeShapeKind? requestedTypeShapeKind, out ITypeSymbol? marshaller, out Location? typeShapeLocation);
         ParseCustomAssociatedTypeAttributes(type, out ImmutableArray<AssociatedTypeModel> customAssociatedTypes);
+        ImmutableArray<AssociatedTypeModel> associatedTypeShapes = ParseAssociatedTypeShapeAttributes(type);
         ImmutableArray<AssociatedTypeModel> typeExtensionAssociatedTypes = GetExtensionModel(type)?.AssociatedTypes ?? ImmutableArray<AssociatedTypeModel>.Empty;
-        associatedTypes = associatedTypes.Concat(typeShapeAssociatedTypes).Concat(customAssociatedTypes).Concat(typeExtensionAssociatedTypes).Distinct(AssociateTypeModelSymbolEqualityComparer.Instance).ToImmutableArray();
+
+        // Aggregate the associated types from all sources, and aggregate flags specified for the same type.
+        associatedTypes =
+            associatedTypes.Concat(associatedTypeShapes).Concat(customAssociatedTypes).Concat(typeExtensionAssociatedTypes)
+            .GroupBy(at => at.AssociatedType, SymbolEqualityComparer.Default)
+            .Select(g => g.Aggregate((left, right) => new AssociatedTypeModel(left.AssociatedType, left.AssociatingAssembly, left.Location, left.Requirements | right.Requirements)))
+            .ToImmutableArray();
 
         if (marshaller is not null || requestedTypeShapeKind is TypeShapeKind.Surrogate)
         {
-            return MapSurrogateType(type, marshaller, associatedTypes, ref ctx, out model);
+            return MapSurrogateType(type, marshaller, associatedTypes, ref ctx, depth, out model);
         }
 
         if (_knownSymbols.ResolveFSharpUnionMetadata(type) is FSharpUnionInfo unionInfo)
         {
             return unionInfo switch
             {
-                FSharpOptionInfo optionInfo => MapFSharpOptionDataModel(optionInfo, ref ctx, out model),
+                FSharpOptionInfo optionInfo => MapFSharpOptionDataModel(optionInfo, ref ctx, depth, out model),
                 _ => MapFSharpUnionDataModel((GenericFSharpUnionInfo)unionInfo, ref ctx, out model),
             };
         }
 
         requestedKind = MapTypeShapeKindToDataKind(requestedTypeShapeKind);
-        TypeDataModelGenerationStatus status = base.MapType(type, requestedKind, associatedTypes, ref ctx, out model);
+        TypeDataModelGenerationStatus status = base.MapType(type, requestedKind, associatedTypes, ref ctx, depth, out model);
 
         if (requestedKind is not null && model is { Kind: TypeDataKind actualKind } && requestedKind != actualKind)
         {
-            ReportDiagnostic(InvalidTypeShapeKind, location, requestedKind.Value, type.ToDisplayString());
+            ReportDiagnostic(InvalidTypeShapeKind, typeShapeLocation, requestedKind.Value, type.ToDisplayString());
         }
 
         return status;
     }
 
-    private TypeDataModelGenerationStatus MapSurrogateType(ITypeSymbol type, ITypeSymbol? marshaller, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model)
+    private TypeDataModelGenerationStatus MapSurrogateType(ITypeSymbol type, ITypeSymbol? marshaller, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeDepth depth, out TypeDataModel? model)
     {
         model = null;
 
@@ -404,12 +405,13 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
 
         // Generate the shape for the surrogate type.
-        TypeDataModelGenerationStatus status = IncludeNestedType(surrogateType, ref ctx);
+        TypeDataModelGenerationStatus status = IncludeNestedType(surrogateType, ref ctx, depth);
         if (status is TypeDataModelGenerationStatus.Success)
         {
             model = new SurrogateTypeDataModel
             {
                 Type = type,
+                Depth = TypeShapeDepth.All,
                 SurrogateType = surrogateType,
                 MarshallerType = namedMarshaller,
                 AssociatedTypes = associatedTypes,
@@ -425,9 +427,9 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
     }
 
-    private TypeDataModelGenerationStatus MapFSharpOptionDataModel(FSharpOptionInfo optionInfo, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model)
+    private TypeDataModelGenerationStatus MapFSharpOptionDataModel(FSharpOptionInfo optionInfo, ref TypeDataModelGenerationContext ctx, TypeShapeDepth depth, out TypeDataModel? model)
     {
-        TypeDataModelGenerationStatus status = IncludeNestedType(optionInfo.ElementType, ref ctx);
+        TypeDataModelGenerationStatus status = IncludeNestedType(optionInfo.ElementType, ref ctx, depth);
         if (status is not TypeDataModelGenerationStatus.Success)
         {
             model = null;
@@ -437,6 +439,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         model = new OptionalDataModel
         {
             Type = optionInfo.Type,
+            Depth = TypeShapeDepth.All,
             ElementType = optionInfo.ElementType,
         };
 
@@ -468,6 +471,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         model = new FSharpUnionDataModel
         {
             Type = unionInfo.Type,
+            Depth = TypeShapeDepth.All,
             UnionCases = unionCaseModels.ToImmutableArray(),
             TagReader = unionInfo.TagReader,
         };
@@ -521,6 +525,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         model = new ObjectDataModel
         {
             Type = unionCaseInfo.DeclaringType,
+            Depth = TypeShapeDepth.All,
             Properties = properties.ToImmutableArray(),
             Constructors = ImmutableArray.Create(constructorDataModel),
         };
@@ -875,7 +880,7 @@ public sealed partial class Parser : TypeDataModelGenerator
     private sealed class AssociateTypeModelSymbolEqualityComparer : IEqualityComparer<AssociatedTypeModel>
     {
         public static readonly AssociateTypeModelSymbolEqualityComparer Instance = new();
-        public bool Equals(AssociatedTypeModel x, AssociatedTypeModel y) => SymbolEqualityComparer.Default.Equals(x.AssociatedType, y.AssociatedType);
+        public bool Equals(AssociatedTypeModel x, AssociatedTypeModel y) => x.Requirements == y.Requirements && SymbolEqualityComparer.Default.Equals(x.AssociatedType, y.AssociatedType);
         public int GetHashCode(AssociatedTypeModel obj) => SymbolEqualityComparer.Default.GetHashCode(obj.AssociatedType);
     }
 }

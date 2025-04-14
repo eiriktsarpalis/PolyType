@@ -9,16 +9,6 @@ namespace PolyType.Roslyn;
 public class KnownSymbols(Compilation compilation)
 {
     /// <summary>
-    /// The name of the property on TypeShapeAttribute that stores associated types.
-    /// </summary>
-    public const string TypeShapeAssociatedTypesPropertyName = "AssociatedTypes";
-
-    /// <summary>
-    /// The name of the property on TypeShapeAttribute that stores associated shapes.
-    /// </summary>
-    public const string TypeShapeAssociatedShapesPropertyName = "AssociatedShapes";
-
-    /// <summary>
     /// The compilation from which information is being queried.
     /// </summary>
     public Compilation Compilation { get; } = compilation;

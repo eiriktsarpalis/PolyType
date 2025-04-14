@@ -21,7 +21,6 @@ internal sealed partial class SourceFormatter
                     IsRecordType = {{FormatBool(objectShapeModel.IsRecordType)}},
                     IsTupleType = {{FormatBool(objectShapeModel.IsTupleType)}},
                     Provider = this,
-                    AssociatedTypeFactories = {{FormatAssociatedTypeFactory(objectShapeModel)}},
                     AssociatedTypeShapes = {{FormatAssociatedTypeShapes(objectShapeModel)}},
                 };
             }
@@ -42,32 +41,10 @@ internal sealed partial class SourceFormatter
         FormatMemberAccessors(writer, objectShapeModel);
     }
 
-    private static string FormatAssociatedTypeFactory(ObjectShapeModel objectShapeModel)
-    {
-        var associatedTypeFactories = (from associatedType in objectShapeModel.AssociatedTypes
-                                       where associatedType.Value.Value.HasFlag(AssociatedTypeRequirements.Factory)
-                                       select associatedType.Key).ToArray();
-        if (associatedTypeFactories.Length == 0)
-        {
-            return "null";
-        }
-
-        StringBuilder builder = new();
-        builder.Append("static associatedType => associatedType switch { ");
-        foreach (AssociatedTypeId associatedType in associatedTypeFactories)
-        {
-            builder.Append($"\"{associatedType.Open}\" or \"{associatedType.Closed}\" => () => new {associatedType.CSharpTypeName}(), ");
-        }
-
-        builder.Append("_ => null }");
-
-        return builder.ToString();
-    }
-
     private string FormatAssociatedTypeShapes(ObjectShapeModel objectShapeModel)
     {
         var associatedTypeShapes = (from associatedType in objectShapeModel.AssociatedTypes
-                                       where associatedType.Value.Value.HasFlag(AssociatedTypeRequirements.Shape)
+                                       where associatedType.Value.Value != TypeShapeDepth.None
                                        select associatedType.Key).ToArray();
         if (associatedTypeShapes.Length == 0)
         {

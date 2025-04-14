@@ -22,7 +22,7 @@ internal static partial class RoslynHelpers
             _ => ((IFieldSymbol)memberSymbol).Type,
         };
     }
-    
+
     /// <summary>
     /// Removes erased compiler metadata such as tuple names and nullable annotations.
     /// </summary>
@@ -90,7 +90,7 @@ internal static partial class RoslynHelpers
         {
             return arrayType.ElementType.ContainsNullabilityAnnotations();
         }
-        
+
         if (type is INamedTypeSymbol namedType)
         {
             if (namedType.ContainingType?.ContainsNullabilityAnnotations() is true)
@@ -110,7 +110,7 @@ internal static partial class RoslynHelpers
     /// <summary>
     /// this.QualifiedNameOnly = containingSymbol.QualifiedNameOnly + "." + this.Name
     /// </summary>
-    public static SymbolDisplayFormat QualifiedNameOnlyFormat { get; } = 
+    public static SymbolDisplayFormat QualifiedNameOnlyFormat { get; } =
         new SymbolDisplayFormat(
             globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
             typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
@@ -152,8 +152,8 @@ internal static partial class RoslynHelpers
         string identifier = sb.ToString();
 
         // Do not return identifiers that are C# keywords or reserved identifiers.
-        return IsCSharpKeyword(identifier) || reservedIdentifiers.IndexOf(identifier) >= 0 
-            ? "__Type_" + identifier 
+        return IsCSharpKeyword(identifier) || reservedIdentifiers.IndexOf(identifier) >= 0
+            ? "__Type_" + identifier
             : identifier;
 
         void GenerateCore(ITypeSymbol type, StringBuilder sb)
@@ -279,6 +279,21 @@ internal static partial class RoslynHelpers
             if (namedArg.Key == name)
             {
                 result = (T)namedArg.Value.Value!;
+                return true;
+            }
+        }
+
+        result = default;
+        return false;
+    }
+
+    public static bool TryGetNamedArguments(this AttributeData attributeData, string name, out ImmutableArray<TypedConstant> result)
+    {
+        foreach (KeyValuePair<string, TypedConstant> namedArg in attributeData.NamedArguments)
+        {
+            if (namedArg.Key == name)
+            {
+                result = namedArg.Value.Values!;
                 return true;
             }
         }

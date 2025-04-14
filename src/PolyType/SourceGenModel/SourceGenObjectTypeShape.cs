@@ -31,11 +31,6 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
     public Func<IConstructorShape>? CreateConstructorFunc { get; init; }
 
     /// <summary>
-    /// Gets the factory for a given related type.
-    /// </summary>
-    public Func<string, Func<object>?>? AssociatedTypeFactories { get; init; }
-
-    /// <summary>
     /// Gets the shape of an associated type, by its name.
     /// </summary>
     public Func<string, ITypeShape?>? AssociatedTypeShapes { get; init; }
@@ -45,19 +40,6 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
 
     /// <inheritdoc/>
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);
-
-    /// <inheritdoc/>
-    public override Func<object>? GetAssociatedTypeFactory(Type associatedType)
-    {
-        if (associatedType.IsGenericTypeDefinition && typeof(TObject).GenericTypeArguments.Length != associatedType.GetTypeInfo().GenericTypeParameters.Length)
-        {
-            throw new ArgumentException("Type is not a generic type definition or does not have an equal count of generic type parameters with this type shape.");
-        }
-
-        StringBuilder builder = new();
-        ConstructStableName(associatedType, builder);
-        return AssociatedTypeFactories?.Invoke(builder.ToString());
-    }
 
     /// <inheritdoc/>
     public override ITypeShape? GetAssociatedTypeShape(Type associatedType)

@@ -13,5 +13,5 @@ public sealed record TypeShapeExtensionModel
     /// <summary>
     /// A map of type IDs for associated types and their requirements.
     /// </summary>
-    public required ImmutableEquatableDictionary<AssociatedTypeId, EquatableEnum<AssociatedTypeRequirements>> AssociatedTypes { get; init; }
+    public required ImmutableEquatableDictionary<AssociatedTypeId, EquatableEnum<TypeShapeDepth>> AssociatedTypes { get; init; }
 }

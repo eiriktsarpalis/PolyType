@@ -25,8 +25,8 @@ public static partial class CborSerializer
             {
                 Type converterType = converterAttribute.ConverterType;
                 Func<object>? factory =
-                    typeShape.GetAssociatedTypeFactory(converterType)
-                    ?? throw new InvalidOperationException($"The type {typeof(T)} is missing its associated type factory for converter {converterType}.");
+                    (typeShape.GetAssociatedTypeShape(converterType) as IObjectTypeShape)?.GetDefaultConstructor()
+                    ?? throw new InvalidOperationException($"The type {typeof(T)} is missing its associated shape or default constructor for converter {converterType}.");
 
                 var converter = (CborConverter<T>)factory();
                 converter.TypeShape = typeShape;
