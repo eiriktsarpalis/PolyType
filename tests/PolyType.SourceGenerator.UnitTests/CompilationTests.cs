@@ -231,6 +231,25 @@ public static class CompilationTests
 
     [Fact]
     [Trait("AssociatedTypes", "true")]
+    public static void AssociatedTypeAttribute_RequirementsNone()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [AssociatedTypeShape(typeof(GenericHelper<,>), Requirements = TypeShapeRequirements.None)]
+            public class GenericClass<T1, T2>;
+            public class GenericHelper<T1, T2>;
+
+            [GenerateShape<GenericClass<int, string>>]
+            public partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    [Trait("AssociatedTypes", "true")]
     public static void TypeShapeWithAssociatedTypes_Duplicates()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""

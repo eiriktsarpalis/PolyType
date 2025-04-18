@@ -117,19 +117,16 @@ public partial class TypeDataModelGenerator
     {
         foreach (AssociatedTypeModel associatedType in associatedTypes)
         {
-            if (associatedType.Requirements != TypeShapeRequirements.None)
+            INamedTypeSymbol? closedAssociatedType = associatedType.AssociatedType.IsUnboundGenericType
+                ? associatedType.AssociatedType.OriginalDefinition.ConstructRecursive((type as INamedTypeSymbol)?.GetRecursiveTypeArguments() ?? [])
+                : associatedType.AssociatedType;
+
+            if (closedAssociatedType is null)
             {
-                INamedTypeSymbol? closedAssociatedType = associatedType.AssociatedType.IsUnboundGenericType
-                    ? associatedType.AssociatedType.OriginalDefinition.ConstructRecursive((type as INamedTypeSymbol)?.GetRecursiveTypeArguments() ?? [])
-                    : associatedType.AssociatedType;
-
-                if (closedAssociatedType is null)
-                {
-                    continue;
-                }
-
-                IncludeNestedType(closedAssociatedType, ref ctx, associatedType.Requirements);
+                continue;
             }
+
+            IncludeNestedType(closedAssociatedType, ref ctx, associatedType.Requirements);
         }
     }
 

@@ -107,6 +107,17 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     }
 
     [Fact]
+    public void AssociatedTypeAttribute_MissingEverything()
+    {
+        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
+        Assert.NotNull(typeShape);
+        IObjectTypeShape<GenericDataTypeNoneAtAll<int, string>>? associatedShape = (IObjectTypeShape<GenericDataTypeNoneAtAll<int, string>>?)typeShape.GetAssociatedTypeShape(typeof(GenericDataTypeNoneAtAll<,>));
+        Assert.NotNull(associatedShape);
+        AssertPartialShape(() => associatedShape.Constructor);
+        AssertPartialShape(() => associatedShape.Properties);
+    }
+
+    [Fact]
     public void PartialAssociationAndFullReference()
     {
         ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
@@ -223,6 +234,7 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
 
     [AssociatedTypeShape(typeof(GenericDataTypeConverter<,>), typeof(GenericDataTypeCloner<,>), typeof(NonGenericDataTypeConverter), typeof(GenericWrapper<>.GenericNested<>))]
     [AssociatedTypeShape(typeof(GenericDataTypePropertiesOnly<,>), Requirements = TypeShapeRequirements.Properties)]
+    [AssociatedTypeShape(typeof(GenericDataTypeNoneAtAll<,>), Requirements = TypeShapeRequirements.None)]
     public class GenericDataType<T1, T2>;
 
     public class GenericDataTypeConverter<T1, T2>;
@@ -233,6 +245,7 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     }
 
     public class GenericDataTypePropertiesOnly<T1, T2>;
+    public class GenericDataTypeNoneAtAll<T1, T2>;
 
     /// <summary>
     /// A class for which a type extension defines an associated type shape that is only partially generated
