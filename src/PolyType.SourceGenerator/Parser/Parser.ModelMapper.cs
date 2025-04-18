@@ -19,7 +19,7 @@ public sealed partial class Parser
 
     private TypeShapeModel MapModelCore(TypeDataModel model, TypeId typeId, string sourceIdentifier, bool isFSharpUnionCase = false)
     {
-        ImmutableEquatableDictionary<AssociatedTypeId, EquatableEnum<TypeShapeDepth>> associatedTypes = CollectAssociatedTypes(model);
+        ImmutableEquatableDictionary<AssociatedTypeId, EquatableEnum<TypeShapeRequirements>> associatedTypes = CollectAssociatedTypes(model);
 
         return model switch
         {
@@ -230,7 +230,7 @@ public sealed partial class Parser
         return null;
     }
 
-    private ImmutableEquatableDictionary<AssociatedTypeId, EquatableEnum<TypeShapeDepth>> CollectAssociatedTypes(TypeDataModel model)
+    private ImmutableEquatableDictionary<AssociatedTypeId, EquatableEnum<TypeShapeRequirements>> CollectAssociatedTypes(TypeDataModel model)
     {
         var associatedTypeSymbols = model.AssociatedTypes;
 
@@ -240,9 +240,9 @@ public sealed partial class Parser
             associatedTypeSymbols = associatedTypeSymbols.AddRange(extensionModel.AssociatedTypes);
         }
 
-        Dictionary<AssociatedTypeId, EquatableEnum<TypeShapeDepth>> associatedTypesBuilder = new();
+        Dictionary<AssociatedTypeId, EquatableEnum<TypeShapeRequirements>> associatedTypesBuilder = new();
         ITypeSymbol[] typeArgs = namedType?.GetRecursiveTypeArguments() ?? [];
-        foreach ((INamedTypeSymbol openType, IAssemblySymbol associatedAssembly, Location? location, TypeShapeDepth requirements) in associatedTypeSymbols)
+        foreach ((INamedTypeSymbol openType, IAssemblySymbol associatedAssembly, Location? location, TypeShapeRequirements requirements) in associatedTypeSymbols)
         {
             if (!SymbolEqualityComparer.Default.Equals(openType.ContainingAssembly, associatedAssembly))
             {
@@ -276,16 +276,16 @@ public sealed partial class Parser
                 }
             }
 
-            void AddOrMerge(AssociatedTypeId typeId, TypeShapeDepth newRequirements)
+            void AddOrMerge(AssociatedTypeId typeId, TypeShapeRequirements newRequirements)
             {
-                TypeShapeDepth existingRequirements = associatedTypesBuilder.TryGetValue(typeId, out EquatableEnum<TypeShapeDepth> existingRequirementsWrapper)
+                TypeShapeRequirements existingRequirements = associatedTypesBuilder.TryGetValue(typeId, out EquatableEnum<TypeShapeRequirements> existingRequirementsWrapper)
                     ? existingRequirementsWrapper.Value
-                    : TypeShapeDepth.None;
+                    : TypeShapeRequirements.None;
                 associatedTypesBuilder[typeId] = new(existingRequirements | newRequirements);
             }
         }
 
-        ImmutableEquatableDictionary<AssociatedTypeId, EquatableEnum<TypeShapeDepth>> associatedTypes = associatedTypesBuilder.ToImmutableEquatableDictionary();
+        ImmutableEquatableDictionary<AssociatedTypeId, EquatableEnum<TypeShapeRequirements>> associatedTypes = associatedTypesBuilder.ToImmutableEquatableDictionary();
         return associatedTypes;
     }
 
@@ -313,7 +313,7 @@ public sealed partial class Parser
                     IsBaseType = derived.IsBaseType,
                 })
                 .ToImmutableEquatableArray(),
-            AssociatedTypes = ImmutableEquatableDictionary<AssociatedTypeId, EquatableEnum<TypeShapeDepth>>.Empty,
+            AssociatedTypes = ImmutableEquatableDictionary<AssociatedTypeId, EquatableEnum<TypeShapeRequirements>>.Empty,
         };
     }
 
@@ -590,7 +590,7 @@ public sealed partial class Parser
         }
     }
 
-    private record struct CustomAttributeAssociatedTypeProvider(ImmutableDictionary<string, TypeShapeDepth> NamesAndRequirements);
+    private record struct CustomAttributeAssociatedTypeProvider(ImmutableDictionary<string, TypeShapeRequirements> NamesAndRequirements);
 
     private readonly Dictionary<INamedTypeSymbol, CustomAttributeAssociatedTypeProvider> customAttributes = new(SymbolEqualityComparer.Default);
 
@@ -623,7 +623,7 @@ public sealed partial class Parser
             }
 
             Location? location = att.GetLocation();
-            foreach ((string name, TypeShapeDepth requirements) in provider.NamesAndRequirements)
+            foreach ((string name, TypeShapeRequirements requirements) in provider.NamesAndRequirements)
             {
                 bool match = false;
 
@@ -672,7 +672,7 @@ public sealed partial class Parser
 
         CustomAttributeAssociatedTypeProvider GetAttributeProviderData(INamedTypeSymbol attributeClass)
         {
-            var names = ImmutableDictionary.CreateBuilder<string, TypeShapeDepth>();
+            var names = ImmutableDictionary.CreateBuilder<string, TypeShapeRequirements>();
             foreach (AttributeData att in attributeClass.GetAttributes())
             {
                 if (att.AttributeClass is null)
@@ -684,7 +684,7 @@ public sealed partial class Parser
                 {
                     if (att.ConstructorArguments is [{ Value: string name }, { Value: int requirements }])
                     {
-                        names.Add(name, (TypeShapeDepth)requirements);
+                        names.Add(name, (TypeShapeRequirements)requirements);
                     }
                 }
             }
@@ -730,8 +730,8 @@ public sealed partial class Parser
             {
                 Location? location = associatedTypeAttr.GetLocation();
 
-                TypeShapeDepth depth = associatedTypeAttr.TryGetNamedArgument(PolyTypeKnownSymbols.AssociatedTypeShapeAttributePropertyNames.Requirements, out TypeShapeDepth depthArg)
-                    ? depthArg : TypeShapeDepth.All;
+                TypeShapeRequirements depth = associatedTypeAttr.TryGetNamedArgument(PolyTypeKnownSymbols.AssociatedTypeShapeAttributePropertyNames.Requirements, out TypeShapeRequirements depthArg)
+                    ? depthArg : TypeShapeRequirements.All;
                 if (associatedTypeAttr.ConstructorArguments is [{ Kind: TypedConstantKind.Array, Values: { } typeArgs }, ..])
                 {
                     associatedTypes.AddRange(

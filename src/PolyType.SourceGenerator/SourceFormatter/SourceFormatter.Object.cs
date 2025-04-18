@@ -44,7 +44,7 @@ internal sealed partial class SourceFormatter
     private string FormatAssociatedTypeShapes(ObjectShapeModel objectShapeModel)
     {
         var associatedTypeShapes = (from associatedType in objectShapeModel.AssociatedTypes
-                                       where associatedType.Value.Value != TypeShapeDepth.None
+                                       where associatedType.Value.Value != TypeShapeRequirements.None
                                        select associatedType.Key).ToArray();
         if (associatedTypeShapes.Length == 0)
         {

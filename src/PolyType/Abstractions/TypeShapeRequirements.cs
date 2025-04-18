@@ -4,10 +4,10 @@ namespace PolyType;
 /// Describes the requirements for preparing an associated type.
 /// </summary>
 /// <devremarks>
-/// Keep this in sync with the TypeShapeDepth enum defined in the PolyType.SourceGenerator assembly.
+/// Keep this in sync with the TypeShapeRequirements enum defined in the PolyType.SourceGenerator assembly.
 /// </devremarks>
 [Flags]
-public enum TypeShapeDepth
+public enum TypeShapeRequirements
 {
     /// <summary>No shape is required.</summary>
     None = 0x0,

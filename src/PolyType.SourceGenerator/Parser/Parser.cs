@@ -83,7 +83,7 @@ public sealed partial class Parser : TypeDataModelGenerator
                     continue;
                 }
 
-                TypeShapeDepth typeShapeDepth = attribute.TryGetNamedArgument(PolyTypeKnownSymbols.TypeShapeExtensionAttributePropertyNames.AssociatedShapeDepth, out TypeShapeDepth depth) ? depth : TypeShapeDepth.All;
+                TypeShapeRequirements typeShapeDepth = attribute.TryGetNamedArgument(PolyTypeKnownSymbols.TypeShapeExtensionAttributePropertyNames.AssociatedShapeDepth, out TypeShapeRequirements depth) ? depth : TypeShapeRequirements.All;
                 if (attribute.TryGetNamedArguments(PolyTypeKnownSymbols.TypeShapeExtensionAttributePropertyNames.AssociatedTypes, out ImmutableArray<TypedConstant> associatedTypesArg))
                 {
                     List<AssociatedTypeModel> associatedTypeSymbols = new(associatedTypesArg.Length);
@@ -306,7 +306,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
     }
 
-    protected override TypeDataModelGenerationStatus MapType(ITypeSymbol type, TypeDataKind? requestedKind, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeDepth depth, out TypeDataModel? model)
+    protected override TypeDataModelGenerationStatus MapType(ITypeSymbol type, TypeDataKind? requestedKind, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements depth, out TypeDataModel? model)
     {
         Debug.Assert(requestedKind is null);
         ParseTypeShapeAttribute(type, out TypeShapeKind? requestedTypeShapeKind, out ITypeSymbol? marshaller, out Location? typeShapeLocation);
@@ -346,7 +346,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         return status;
     }
 
-    private TypeDataModelGenerationStatus MapSurrogateType(ITypeSymbol type, ITypeSymbol? marshaller, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeDepth depth, out TypeDataModel? model)
+    private TypeDataModelGenerationStatus MapSurrogateType(ITypeSymbol type, ITypeSymbol? marshaller, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements depth, out TypeDataModel? model)
     {
         model = null;
 
@@ -411,7 +411,7 @@ public sealed partial class Parser : TypeDataModelGenerator
             model = new SurrogateTypeDataModel
             {
                 Type = type,
-                Depth = TypeShapeDepth.All,
+                Depth = TypeShapeRequirements.All,
                 SurrogateType = surrogateType,
                 MarshallerType = namedMarshaller,
                 AssociatedTypes = associatedTypes,
@@ -427,7 +427,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
     }
 
-    private TypeDataModelGenerationStatus MapFSharpOptionDataModel(FSharpOptionInfo optionInfo, ref TypeDataModelGenerationContext ctx, TypeShapeDepth depth, out TypeDataModel? model)
+    private TypeDataModelGenerationStatus MapFSharpOptionDataModel(FSharpOptionInfo optionInfo, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements depth, out TypeDataModel? model)
     {
         TypeDataModelGenerationStatus status = IncludeNestedType(optionInfo.ElementType, ref ctx, depth);
         if (status is not TypeDataModelGenerationStatus.Success)
@@ -439,7 +439,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         model = new OptionalDataModel
         {
             Type = optionInfo.Type,
-            Depth = TypeShapeDepth.All,
+            Depth = TypeShapeRequirements.All,
             ElementType = optionInfo.ElementType,
         };
 
@@ -471,7 +471,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         model = new FSharpUnionDataModel
         {
             Type = unionInfo.Type,
-            Depth = TypeShapeDepth.All,
+            Depth = TypeShapeRequirements.All,
             UnionCases = unionCaseModels.ToImmutableArray(),
             TagReader = unionInfo.TagReader,
         };
@@ -525,7 +525,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         model = new ObjectDataModel
         {
             Type = unionCaseInfo.DeclaringType,
-            Depth = TypeShapeDepth.All,
+            Depth = TypeShapeRequirements.All,
             Properties = properties.ToImmutableArray(),
             Constructors = ImmutableArray.Create(constructorDataModel),
         };

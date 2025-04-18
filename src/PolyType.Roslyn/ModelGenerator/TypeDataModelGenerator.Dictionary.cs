@@ -132,11 +132,11 @@ public partial class TypeDataModelGenerator
         model = new DictionaryDataModel
         {
             Type = type,
-            Depth = TypeShapeDepth.All,
+            Depth = TypeShapeRequirements.All,
             KeyType = keyType,
             ValueType = valueType,
             DictionaryKind = kind,
-            DerivedTypes = IncludeDerivedTypes(type, ref ctx, TypeShapeDepth.All),
+            DerivedTypes = IncludeDerivedTypes(type, ref ctx, TypeShapeRequirements.All),
             ConstructionStrategy = constructionStrategy,
             FactoryMethod = factoryMethod,
             AssociatedTypes = associatedTypes,

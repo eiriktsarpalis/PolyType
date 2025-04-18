@@ -113,14 +113,14 @@ public partial class TypeDataModelGenerator
     protected virtual IEnumerable<DerivedTypeModel> ResolveDerivedTypes(ITypeSymbol type) => [];
 
     /// <summary>
-    /// Wraps the <see cref="MapType(ITypeSymbol, TypeDataKind?, ImmutableArray{AssociatedTypeModel}, ref TypeDataModelGenerationContext, TypeShapeDepth, out TypeDataModel?)"/> method
+    /// Wraps the <see cref="MapType(ITypeSymbol, TypeDataKind?, ImmutableArray{AssociatedTypeModel}, ref TypeDataModelGenerationContext, TypeShapeRequirements, out TypeDataModel?)"/> method
     /// with pre- and post-processing steps necessary for a type graph traversal.
     /// </summary>
     /// <param name="type">The type for which to generate a data model.</param>
     /// <param name="ctx">The context token holding state for the current type graph traversal.</param>
     /// <param name="depth">The detail to include in the shape.</param>
     /// <returns>The model generation status for the given type.</returns>
-    protected TypeDataModelGenerationStatus IncludeNestedType(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, TypeShapeDepth depth = TypeShapeDepth.All)
+    protected TypeDataModelGenerationStatus IncludeNestedType(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements depth = TypeShapeRequirements.All)
     {
         CancellationToken.ThrowIfCancellationRequested();
 
@@ -129,7 +129,7 @@ public partial class TypeDataModelGenerator
         if (ctx.GeneratedModels.TryGetValue(type, out TypeDataModel? model))
         {
             // Consider that a prior request may have produced a shape with less than the depth requested on this run.
-            if ((depth & ~model.Depth) == TypeShapeDepth.None)
+            if ((depth & ~model.Depth) == TypeShapeRequirements.None)
             {
                 model.IsRootType |= ctx.Stack.IsEmpty;
                 return TypeDataModelGenerationStatus.Success;
@@ -190,14 +190,14 @@ public partial class TypeDataModelGenerator
     /// <returns>The model generation status for the given type.</returns>
     /// <remarks>
     /// The method should only be overridden but not invoked directly. 
-    /// Call <see cref="IncludeNestedType(ITypeSymbol, ref TypeDataModelGenerationContext, TypeShapeDepth)"/> instead.
+    /// Call <see cref="IncludeNestedType(ITypeSymbol, ref TypeDataModelGenerationContext, TypeShapeRequirements)"/> instead.
     /// </remarks>
     protected virtual TypeDataModelGenerationStatus MapType(
         ITypeSymbol type,
         TypeDataKind? requestedKind,
         ImmutableArray<AssociatedTypeModel> associatedTypes,
         ref TypeDataModelGenerationContext ctx,
-        TypeShapeDepth depth,
+        TypeShapeRequirements depth,
         out TypeDataModel? model)
     {
         TypeDataModelGenerationStatus status;
@@ -289,7 +289,7 @@ public partial class TypeDataModelGenerator
         {
             Type = type,
             DerivedTypes = IncludeDerivedTypes(type, ref ctx, depth),
-            Depth = TypeShapeDepth.All,
+            Depth = TypeShapeRequirements.All,
         };
 
         return TypeDataModelGenerationStatus.Success;
@@ -315,7 +315,7 @@ public partial class TypeDataModelGenerator
           type.SpecialType is not SpecialType.System_Void && !type.ContainsGenericParameters();
     }
 
-    private ImmutableArray<DerivedTypeModel> IncludeDerivedTypes(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, TypeShapeDepth depth)
+    private ImmutableArray<DerivedTypeModel> IncludeDerivedTypes(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements depth)
     {
         // 1. Resolve the shapes for all derived types.
         List<DerivedTypeModel> derivedTypeModels = [];

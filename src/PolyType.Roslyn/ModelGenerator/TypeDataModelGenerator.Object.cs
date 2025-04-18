@@ -81,7 +81,7 @@ public partial class TypeDataModelGenerator
     /// <inheritdoc cref="IsRequiredByPolicy(IPropertySymbol)"/>
     protected virtual bool? IsRequiredByPolicy(IFieldSymbol member) => null;
 
-    private bool TryMapObject(ITypeSymbol type, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeDepth depth, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
+    private bool TryMapObject(ITypeSymbol type, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements depth, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
     {
         status = default;
         model = null;
@@ -94,8 +94,8 @@ public partial class TypeDataModelGenerator
             return false;
         }
 
-        ImmutableArray<PropertyDataModel> properties = depth.HasFlag(TypeShapeDepth.Properties) ? MapProperties(namedType, ref ctx) : ImmutableArray<PropertyDataModel>.Empty;
-        ImmutableArray<ConstructorDataModel> constructors = depth.HasFlag(TypeShapeDepth.Constructor) ? MapConstructors(namedType, properties, ref ctx) : ImmutableArray<ConstructorDataModel>.Empty;
+        ImmutableArray<PropertyDataModel> properties = depth.HasFlag(TypeShapeRequirements.Properties) ? MapProperties(namedType, ref ctx) : ImmutableArray<PropertyDataModel>.Empty;
+        ImmutableArray<ConstructorDataModel> constructors = depth.HasFlag(TypeShapeRequirements.Constructor) ? MapConstructors(namedType, properties, ref ctx) : ImmutableArray<ConstructorDataModel>.Empty;
         ImmutableArray<DerivedTypeModel> derivedTypes = IncludeDerivedTypes(type, ref ctx, depth);
         IncludeAssociatedShapes(type, associatedTypes, ref ctx);
 
@@ -116,7 +116,7 @@ public partial class TypeDataModelGenerator
     {
         foreach (AssociatedTypeModel associatedType in associatedTypes)
         {
-            if (associatedType.Requirements != TypeShapeDepth.None)
+            if (associatedType.Requirements != TypeShapeRequirements.None)
             {
                 INamedTypeSymbol? closedAssociatedType = associatedType.AssociatedType.IsUnboundGenericType
                     ? associatedType.AssociatedType.OriginalDefinition.ConstructRecursive((type as INamedTypeSymbol)?.GetRecursiveTypeArguments() ?? [])

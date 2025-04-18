@@ -16,7 +16,7 @@ public class TypeDataModel
     /// <summary>
     /// The depth that was applied when this shape was generated.
     /// </summary>
-    public required TypeShapeDepth Depth { get; init; }
+    public required TypeShapeRequirements Depth { get; init; }
 
     /// <summary>
     /// The list of known derived types for the given type in topological order from most to least derived.

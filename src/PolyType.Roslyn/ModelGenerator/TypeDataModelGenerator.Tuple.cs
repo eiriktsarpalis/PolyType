@@ -48,7 +48,7 @@ public partial class TypeDataModelGenerator
             model = new TupleDataModel
             {
                 Type = type,
-                Depth = TypeShapeDepth.All,
+                Depth = TypeShapeRequirements.All,
                 Elements = elements.ToImmutableArray(),
                 IsValueTuple = true,
             };
@@ -77,7 +77,7 @@ public partial class TypeDataModelGenerator
             model = new TupleDataModel
             {
                 Type = type,
-                Depth = TypeShapeDepth.All,
+                Depth = TypeShapeRequirements.All,
                 Elements = elements.ToImmutableArray(),
                 IsValueTuple = false,
                 AssociatedTypes = associatedTypes,

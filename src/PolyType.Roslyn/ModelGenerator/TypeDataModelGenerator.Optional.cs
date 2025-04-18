@@ -5,7 +5,7 @@ namespace PolyType.Roslyn;
 
 public partial class TypeDataModelGenerator
 {
-    private bool TryMapOptional(ITypeSymbol type, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeDepth depth, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
+    private bool TryMapOptional(ITypeSymbol type, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements depth, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
     {
         model = null;
         status = default;
@@ -25,7 +25,7 @@ public partial class TypeDataModelGenerator
         model = new OptionalDataModel
         {
             Type = type,
-            Depth = TypeShapeDepth.All,
+            Depth = TypeShapeRequirements.All,
             ElementType = elementType,
             AssociatedTypes = associatedTypes,
         };

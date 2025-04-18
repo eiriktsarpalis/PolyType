@@ -2,12 +2,12 @@
 using PolyType.Tests;
 using Xunit.Internal;
 
-[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedShapeDepth = TypeShapeDepth.Constructor, AssociatedTypes = [typeof(AssociatedTypesTests.GenericDataTypeVerifier<,>)])]
-[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedShapeDepth = TypeShapeDepth.All, AssociatedTypes = [typeof(AssociatedTypesTests.ExtraShape<,>)])]
+[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedShapeDepth = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(AssociatedTypesTests.GenericDataTypeVerifier<,>)])]
+[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedShapeDepth = TypeShapeRequirements.All, AssociatedTypes = [typeof(AssociatedTypesTests.ExtraShape<,>)])]
 
 // This pair is for testing the union of depth flags for a given shape.
-[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedShapeDepth = TypeShapeDepth.Properties, AssociatedTypes = [typeof(AssociatedTypesTests.ExtraShape2<,>)])]
-[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedShapeDepth = TypeShapeDepth.Constructor, AssociatedTypes = [typeof(AssociatedTypesTests.ExtraShape2<,>)])]
+[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedShapeDepth = TypeShapeRequirements.Properties, AssociatedTypes = [typeof(AssociatedTypesTests.ExtraShape2<,>)])]
+[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedShapeDepth = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(AssociatedTypesTests.ExtraShape2<,>)])]
 
 namespace PolyType.Tests;
 
@@ -246,13 +246,13 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     public class CustomTypeConverter1 { public string? MyProperty { get; set; } }
     public class CustomTypeConverter2 { public string? MyProperty { get; set; } }
 
-    [AssociatedTypeAttribute(nameof(type), TypeShapeDepth.Constructor)]
+    [AssociatedTypeAttribute(nameof(type), TypeShapeRequirements.Constructor)]
     internal class MyConverterAttribute(Type type) : Attribute
     {
         public Type Type => type;
     }
 
-    [AssociatedTypeAttribute(nameof(Types), TypeShapeDepth.Constructor)]
+    [AssociatedTypeAttribute(nameof(Types), TypeShapeRequirements.Constructor)]
     internal class MyConverterNamedArgAttribute : Attribute
     {
         public Type[] Types { get; init; } = [];
