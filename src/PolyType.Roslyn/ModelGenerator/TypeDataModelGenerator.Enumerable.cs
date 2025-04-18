@@ -175,10 +175,10 @@ public partial class TypeDataModelGenerator
         model = new EnumerableDataModel
         {
             Type = type,
-            Depth = TypeShapeRequirements.All,
+            Depth = TypeShapeRequirements.Full,
             ElementType = elementType,
             EnumerableKind = kind,
-            DerivedTypes = IncludeDerivedTypes(type, ref ctx, TypeShapeRequirements.All),
+            DerivedTypes = IncludeDerivedTypes(type, ref ctx, TypeShapeRequirements.Full),
             ConstructionStrategy = constructionStrategy,
             AddElementMethod = addElementMethod,
             FactoryMethod = factoryMethod,

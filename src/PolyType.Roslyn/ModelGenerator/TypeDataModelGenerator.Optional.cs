@@ -25,7 +25,7 @@ public partial class TypeDataModelGenerator
         model = new OptionalDataModel
         {
             Type = type,
-            Depth = TypeShapeRequirements.All,
+            Depth = TypeShapeRequirements.Full,
             ElementType = elementType,
             AssociatedTypes = associatedTypes,
         };

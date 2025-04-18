@@ -8,7 +8,7 @@ namespace PolyType.Examples.CborSerializer;
 /// <param name="converterType"></param>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false, AllowMultiple = false)]
 [AssociatedTypeAttribute(nameof(converterType), TypeShapeRequirements.Constructor)]
-[AssociatedTypeAttribute(nameof(RequiredShapes), TypeShapeRequirements.All)]
+[AssociatedTypeAttribute(nameof(RequiredShapes), TypeShapeRequirements.Full)]
 public class CborConverterAttribute(Type converterType) : Attribute
 {
     /// <summary>

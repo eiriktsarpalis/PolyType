@@ -54,7 +54,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         // The compilation itself.
         ImmutableArray<TypeExtensionModel> typeShapeExtensions = DiscoverTypeShapeExtensionsInAssembly(knownSymbols.Compilation.Assembly);
 
-        // All referenced assemblies.
+        // Full referenced assemblies.
         foreach (MetadataReference metadataReference in knownSymbols.Compilation.References)
         {
             if (knownSymbols.Compilation.GetAssemblyOrModuleSymbol(metadataReference) is IAssemblySymbol referencedAssembly)
@@ -83,7 +83,7 @@ public sealed partial class Parser : TypeDataModelGenerator
                     continue;
                 }
 
-                TypeShapeRequirements typeShapeDepth = attribute.TryGetNamedArgument(PolyTypeKnownSymbols.TypeShapeExtensionAttributePropertyNames.AssociatedShapeDepth, out TypeShapeRequirements depth) ? depth : TypeShapeRequirements.All;
+                TypeShapeRequirements typeShapeDepth = attribute.TryGetNamedArgument(PolyTypeKnownSymbols.TypeShapeExtensionAttributePropertyNames.AssociatedShapeDepth, out TypeShapeRequirements depth) ? depth : TypeShapeRequirements.Full;
                 if (attribute.TryGetNamedArguments(PolyTypeKnownSymbols.TypeShapeExtensionAttributePropertyNames.AssociatedTypes, out ImmutableArray<TypedConstant> associatedTypesArg))
                 {
                     List<AssociatedTypeModel> associatedTypeSymbols = new(associatedTypesArg.Length);
@@ -124,7 +124,7 @@ public sealed partial class Parser : TypeDataModelGenerator
     // the reflection-based provider (which caters to F# model types).
     protected override bool FlattenSystemTupleTypes => true;
 
-    // All types used as generic parameters so we must exclude ref structs.
+    // Full types used as generic parameters so we must exclude ref structs.
     protected override bool IsSupportedType(ITypeSymbol type) =>
         base.IsSupportedType(type) && !type.IsRefLikeType && !type.IsStatic;
 
@@ -411,7 +411,7 @@ public sealed partial class Parser : TypeDataModelGenerator
             model = new SurrogateTypeDataModel
             {
                 Type = type,
-                Depth = TypeShapeRequirements.All,
+                Depth = TypeShapeRequirements.Full,
                 SurrogateType = surrogateType,
                 MarshallerType = namedMarshaller,
                 AssociatedTypes = associatedTypes,
@@ -439,7 +439,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         model = new OptionalDataModel
         {
             Type = optionInfo.Type,
-            Depth = TypeShapeRequirements.All,
+            Depth = TypeShapeRequirements.Full,
             ElementType = optionInfo.ElementType,
         };
 
@@ -471,7 +471,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         model = new FSharpUnionDataModel
         {
             Type = unionInfo.Type,
-            Depth = TypeShapeRequirements.All,
+            Depth = TypeShapeRequirements.Full,
             UnionCases = unionCaseModels.ToImmutableArray(),
             TagReader = unionInfo.TagReader,
         };
@@ -525,7 +525,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         model = new ObjectDataModel
         {
             Type = unionCaseInfo.DeclaringType,
-            Depth = TypeShapeRequirements.All,
+            Depth = TypeShapeRequirements.Full,
             Properties = properties.ToImmutableArray(),
             Constructors = ImmutableArray.Create(constructorDataModel),
         };

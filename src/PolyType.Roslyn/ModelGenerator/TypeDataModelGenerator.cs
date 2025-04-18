@@ -48,7 +48,7 @@ public partial class TypeDataModelGenerator
     public CancellationToken CancellationToken { get; }
 
     /// <summary>
-    /// All generated models, keyed by their type symbol.
+    /// Full generated models, keyed by their type symbol.
     /// </summary>
     public ImmutableDictionary<ITypeSymbol, TypeDataModel> GeneratedModels => _generatedModels;
 
@@ -120,7 +120,7 @@ public partial class TypeDataModelGenerator
     /// <param name="ctx">The context token holding state for the current type graph traversal.</param>
     /// <param name="depth">The detail to include in the shape.</param>
     /// <returns>The model generation status for the given type.</returns>
-    protected TypeDataModelGenerationStatus IncludeNestedType(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements depth = TypeShapeRequirements.All)
+    protected TypeDataModelGenerationStatus IncludeNestedType(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements depth = TypeShapeRequirements.Full)
     {
         CancellationToken.ThrowIfCancellationRequested();
 
@@ -289,7 +289,7 @@ public partial class TypeDataModelGenerator
         {
             Type = type,
             DerivedTypes = IncludeDerivedTypes(type, ref ctx, depth),
-            Depth = TypeShapeRequirements.All,
+            Depth = TypeShapeRequirements.Full,
         };
 
         return TypeDataModelGenerationStatus.Success;

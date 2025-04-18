@@ -25,8 +25,8 @@ public class TypeShapeExtensionAttribute(Type target) : Attribute
     /// <summary>
     /// Gets the elements of the generated shape that are required at runtime.
     /// </summary>
-    /// <value>The default value is <see cref="TypeShapeRequirements.All"/>.</value>
-    public TypeShapeRequirements AssociatedShapeDepth { get; init; } = TypeShapeRequirements.All;
+    /// <value>The default value is <see cref="TypeShapeRequirements.Full"/>.</value>
+    public TypeShapeRequirements AssociatedShapeDepth { get; init; } = TypeShapeRequirements.Full;
 
     /// <summary>
     /// Types for which a shape should be generated when a type shape is generated for <see cref="Target"/>.

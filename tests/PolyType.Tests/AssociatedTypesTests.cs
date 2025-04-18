@@ -3,7 +3,7 @@ using PolyType.Tests;
 using Xunit.Internal;
 
 [assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedShapeDepth = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(AssociatedTypesTests.GenericDataTypeVerifier<,>)])]
-[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedShapeDepth = TypeShapeRequirements.All, AssociatedTypes = [typeof(AssociatedTypesTests.ExtraShape<,>)])]
+[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedShapeDepth = TypeShapeRequirements.Full, AssociatedTypes = [typeof(AssociatedTypesTests.ExtraShape<,>)])]
 
 // This pair is for testing the union of depth flags for a given shape.
 [assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedShapeDepth = TypeShapeRequirements.Properties, AssociatedTypes = [typeof(AssociatedTypesTests.ExtraShape2<,>)])]

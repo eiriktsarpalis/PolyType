@@ -731,7 +731,7 @@ public sealed partial class Parser
                 Location? location = associatedTypeAttr.GetLocation();
 
                 TypeShapeRequirements depth = associatedTypeAttr.TryGetNamedArgument(PolyTypeKnownSymbols.AssociatedTypeShapeAttributePropertyNames.Requirements, out TypeShapeRequirements depthArg)
-                    ? depthArg : TypeShapeRequirements.All;
+                    ? depthArg : TypeShapeRequirements.Full;
                 if (associatedTypeAttr.ConstructorArguments is [{ Kind: TypedConstantKind.Array, Values: { } typeArgs }, ..])
                 {
                     associatedTypes.AddRange(

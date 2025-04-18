@@ -24,17 +24,17 @@ public enum TypeShapeRequirements
     None = 0x0,
 
     /// <summary>
-    /// A constructor should be included in the shape, if one is declared.
+    /// A constructor, its parameters and their types should be included in the shape, if one is declared.
     /// </summary>
     Constructor = 0x1,
 
     /// <summary>
-    /// Properties should be included in the shape, if any are declared.
+    /// Properties and their types should be included in the shape, if any are declared.
     /// </summary>
     Properties = 0x2,
 
     /// <summary>
     /// The shape should be fully generated.
     /// </summary>
-    All = Constructor | Properties,
+    Full = Constructor | Properties,
 }
