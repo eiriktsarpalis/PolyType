@@ -64,7 +64,8 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
         if (partialShapesSupported)
         {
             // Verify the associated type's shape is only partially available.
-            Assert.Empty(associatedShape.Properties);
+            Exception ex = Assert.Throws<NotImplementedException>(() => associatedShape.Properties);
+            TestContext.Current.TestOutputHelper?.WriteLine(ex.ToString());
         }
     }
 
@@ -113,7 +114,8 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
         if (partialShapesSupported)
         {
             // Verify the associated type's shape is only partially available.
-            Assert.Empty(associatedShape.Properties);
+            Exception ex = Assert.Throws<NotImplementedException>(() => associatedShape.Properties);
+            TestContext.Current.TestOutputHelper?.WriteLine(ex.ToString());
         }
     }
 
@@ -129,7 +131,9 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
         Assert.IsType<CustomTypeConverter1>(factory1.Invoke());
         if (partialShapesSupported)
         {
-            Assert.Empty(associatedShape.Properties); // Verify the associated type's shape is only partially available.
+            // Verify the associated type's shape is only partially available.
+            Exception ex = Assert.Throws<NotImplementedException>(() => associatedShape.Properties);
+            TestContext.Current.TestOutputHelper?.WriteLine(ex.ToString());
         }
 
         associatedShape = (IObjectTypeShape?)typeShape.GetAssociatedTypeShape(typeof(CustomTypeConverter2));
@@ -139,7 +143,9 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
         Assert.IsType<CustomTypeConverter2>(factory2.Invoke());
         if (partialShapesSupported)
         {
-            Assert.Empty(associatedShape.Properties); // Verify the associated type's shape is only partially available.
+            // Verify the associated type's shape is only partially available.
+            Exception ex = Assert.Throws<NotImplementedException>(() => associatedShape.Properties);
+            TestContext.Current.TestOutputHelper?.WriteLine(ex.ToString());
         }
     }
 

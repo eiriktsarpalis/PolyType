@@ -19,4 +19,9 @@ public sealed class ObjectDataModel : TypeDataModel
     /// List of instance constructors defined on the type.
     /// </summary>
     public required ImmutableArray<ConstructorDataModel> Constructors { get; init; }
+
+    /// <summary>
+    /// Gets the implemented elements of the shape.
+    /// </summary>
+    public required TypeShapeRequirements Requirements { get; init; }
 }

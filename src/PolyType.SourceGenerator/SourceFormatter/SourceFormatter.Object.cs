@@ -6,6 +6,8 @@ namespace PolyType.SourceGenerator;
 
 internal sealed partial class SourceFormatter
 {
+    private const string ThrowPartialShapeMethodName = "ThrowPartialShape";
+
     private void FormatObjectTypeShapeFactory(SourceWriter writer, string methodName, ObjectShapeModel objectShapeModel)
     {
         string? propertiesFactoryMethodName = objectShapeModel.Properties.Length > 0 ? $"__CreateProperties_{objectShapeModel.SourceIdentifier}" : null;
@@ -16,8 +18,8 @@ internal sealed partial class SourceFormatter
             {
                 return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<{{objectShapeModel.Type.FullyQualifiedName}}>
                 {
-                    CreatePropertiesFunc = {{FormatNull(propertiesFactoryMethodName)}},
-                    CreateConstructorFunc = {{FormatNull(constructorFactoryMethodName)}},
+                    CreatePropertiesFunc = {{FormatNullOrThrowPartial(propertiesFactoryMethodName, !objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Properties))}},
+                    CreateConstructorFunc = {{FormatNullOrThrowPartial(constructorFactoryMethodName, !objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Constructor))}},
                     IsRecordType = {{FormatBool(objectShapeModel.IsRecordType)}},
                     IsTupleType = {{FormatBool(objectShapeModel.IsTupleType)}},
                     Provider = this,
@@ -26,13 +28,13 @@ internal sealed partial class SourceFormatter
             }
             """, trimNullAssignmentLines: true);
 
-        if (propertiesFactoryMethodName != null)
+        if (objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Properties) && propertiesFactoryMethodName != null)
         {
             writer.WriteLine();
             FormatPropertyFactory(writer, propertiesFactoryMethodName, objectShapeModel);
         }
 
-        if (constructorFactoryMethodName != null)
+        if (objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Constructor) && constructorFactoryMethodName != null)
         {
             writer.WriteLine();
             FormatConstructorFactory(writer, constructorFactoryMethodName, objectShapeModel, objectShapeModel.Constructor!);
@@ -40,6 +42,9 @@ internal sealed partial class SourceFormatter
 
         FormatMemberAccessors(writer, objectShapeModel);
     }
+
+    private static string FormatNullOrThrowPartial(string? stringExpr, bool missing)
+        => missing ? "() => throw new global::System.NotImplementedException(\"This shape is not fully implemented.\")" : FormatNull(stringExpr);
 
     private string FormatAssociatedTypeShapes(ObjectShapeModel objectShapeModel)
     {

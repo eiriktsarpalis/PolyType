@@ -136,6 +136,7 @@ public sealed partial class Parser
 
             ObjectDataModel objectModel => new ObjectShapeModel
             {
+                Requirements = objectModel.Requirements,
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
                 Constructor = objectModel.Constructors
@@ -155,6 +156,7 @@ public sealed partial class Parser
 
             TupleDataModel tupleModel => new ObjectShapeModel
             {
+                Requirements = TypeShapeRequirements.Full,
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
                 Constructor = MapTupleConstructor(typeId, tupleModel),
@@ -181,6 +183,7 @@ public sealed partial class Parser
                 TagReaderIsMethod = unionModel.TagReader.MethodKind is not MethodKind.PropertyGet,
                 UnderlyingModel = new ObjectShapeModel
                 {
+                    Requirements = TypeShapeRequirements.Full,
                     Type = typeId,
                     Constructor = null,
                     Properties = [],
@@ -201,6 +204,7 @@ public sealed partial class Parser
 
             _ => new ObjectShapeModel
             {
+                Requirements = TypeShapeRequirements.Full,
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
                 Constructor = null,

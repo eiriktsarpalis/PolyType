@@ -81,7 +81,7 @@ public partial class TypeDataModelGenerator
     /// <inheritdoc cref="IsRequiredByPolicy(IPropertySymbol)"/>
     protected virtual bool? IsRequiredByPolicy(IFieldSymbol member) => null;
 
-    private bool TryMapObject(ITypeSymbol type, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements depth, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
+    private bool TryMapObject(ITypeSymbol type, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements requirements, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
     {
         status = default;
         model = null;
@@ -94,15 +94,16 @@ public partial class TypeDataModelGenerator
             return false;
         }
 
-        ImmutableArray<PropertyDataModel> properties = depth.HasFlag(TypeShapeRequirements.Properties) ? MapProperties(namedType, ref ctx) : ImmutableArray<PropertyDataModel>.Empty;
-        ImmutableArray<ConstructorDataModel> constructors = depth.HasFlag(TypeShapeRequirements.Constructor) ? MapConstructors(namedType, properties, ref ctx) : ImmutableArray<ConstructorDataModel>.Empty;
-        ImmutableArray<DerivedTypeModel> derivedTypes = IncludeDerivedTypes(type, ref ctx, depth);
+        ImmutableArray<PropertyDataModel> properties = requirements.HasFlag(TypeShapeRequirements.Properties) ? MapProperties(namedType, ref ctx) : ImmutableArray<PropertyDataModel>.Empty;
+        ImmutableArray<ConstructorDataModel> constructors = requirements.HasFlag(TypeShapeRequirements.Constructor) ? MapConstructors(namedType, properties, ref ctx) : ImmutableArray<ConstructorDataModel>.Empty;
+        ImmutableArray<DerivedTypeModel> derivedTypes = IncludeDerivedTypes(type, ref ctx, requirements);
         IncludeAssociatedShapes(type, associatedTypes, ref ctx);
 
         model = new ObjectDataModel
         {
+            Requirements = requirements,
             Type = type,
-            Depth = depth,
+            Depth = requirements,
             Constructors = constructors,
             Properties = properties,
             DerivedTypes = derivedTypes,

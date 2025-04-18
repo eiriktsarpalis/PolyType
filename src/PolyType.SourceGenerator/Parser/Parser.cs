@@ -524,6 +524,7 @@ public sealed partial class Parser : TypeDataModelGenerator
 
         model = new ObjectDataModel
         {
+            Requirements = TypeShapeRequirements.Full,
             Type = unionCaseInfo.DeclaringType,
             Depth = TypeShapeRequirements.Full,
             Properties = properties.ToImmutableArray(),
