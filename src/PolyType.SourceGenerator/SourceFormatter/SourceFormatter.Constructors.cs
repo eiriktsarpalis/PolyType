@@ -29,6 +29,7 @@ internal sealed partial class SourceFormatter
                 DefaultConstructorFunc = {{FormatDefaultCtor(type, constructor)}},
                 ArgumentStateConstructorFunc = {{FormatArgumentStateCtor(constructor, constructorArgumentStateFQN)}},
                 ParameterizedConstructorFunc = {{FormatParameterizedCtor(type, constructor, constructorArgumentStateFQN)}},
+                AreRequiredParametersSetFunc = {{FormatAreRequiredParametersSet(type, constructor, constructorArgumentStateFQN)}},
                 AttributeProviderFunc = {{FormatAttributeProviderFunc(type, constructor)}},
                 IsPublic = {{FormatBool(constructor.IsPublic)}},
             };
@@ -90,6 +91,11 @@ internal sealed partial class SourceFormatter
             return $"static () => {argumentCtorExpr}";
             static string FormatTupleConstructor(IEnumerable<string> elementValues)
                 => $"({string.Join(", ", elementValues)})";
+        }
+
+        static string FormatAreRequiredParametersSet(ObjectShapeModel type, ConstructorShapeModel constructor, string constructorArgumentStateFQN)
+        {
+            return "null";
         }
 
         static string FormatParameterizedCtor(ObjectShapeModel type, ConstructorShapeModel constructor, string constructorArgumentStateFQN)

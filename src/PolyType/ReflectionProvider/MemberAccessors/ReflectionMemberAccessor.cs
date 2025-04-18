@@ -367,6 +367,13 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         return null!;
     }
 
+    public InFunc<TArgumentState, bool> CreateAreRequiredParametersSet<TArgumentState>(IConstructorShapeInfo ctorInfo)
+    {
+        Debug.Assert(ctorInfo.Parameters.Length > 0);
+
+        return new InFunc<TArgumentState, bool>((in TArgumentState state) => true);
+    }
+
     public Func<T, TResult> CreateFuncDelegate<T, TResult>(ConstructorInfo ctorInfo)
         => value => (TResult)ctorInfo.Invoke([value]);
 

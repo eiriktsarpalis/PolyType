@@ -72,4 +72,11 @@ public interface IConstructorShape<TDeclaringType, TArgumentState> : IConstructo
     /// <exception cref="InvalidOperationException">The <see cref="IConstructorShape.Parameters"/> property of the constructor is empty.</exception>
     /// <returns>A parameterized delegate returning an instance of <typeparamref name="TDeclaringType"/>.</returns>
     Constructor<TArgumentState, TDeclaringType> GetParameterizedConstructor();
+
+    /// <summary>
+    /// Gets a function that checks whether all required parameters have been set.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The <see cref="IConstructorShape.Parameters"/> property of the constructor is empty.</exception>
+    /// <returns>A function that indicates whether a given <typeparamref name="TArgumentState"/> has had all required parameters set.</returns>
+    public InFunc<TArgumentState, bool> GetAreRequiredParametersSet();
 }
