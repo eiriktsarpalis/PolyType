@@ -4,6 +4,7 @@ using Xunit.Internal;
 
 [assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedShapeDepth = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(AssociatedTypesTests.GenericDataTypeVerifier<,>)])]
 [assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedShapeDepth = TypeShapeRequirements.Full, AssociatedTypes = [typeof(AssociatedTypesTests.ExtraShape<,>)])]
+[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedShapeDepth = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(AssociatedTypesTests.GenericDataTypeFullAndPartialPaths<,>)])]
 
 // This pair is for testing the union of depth flags for a given shape.
 [assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedShapeDepth = TypeShapeRequirements.Properties, AssociatedTypes = [typeof(AssociatedTypesTests.ExtraShape2<,>)])]
@@ -61,12 +62,7 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
         Assert.NotNull(factory);
         Assert.IsType<GenericDataTypeVerifier<int, string>>(factory.Invoke());
 
-        if (partialShapesSupported)
-        {
-            // Verify the associated type's shape is only partially available.
-            Exception ex = Assert.Throws<NotImplementedException>(() => associatedShape.Properties);
-            TestContext.Current.TestOutputHelper?.WriteLine(ex.ToString());
-        }
+        AssertPartialShape(() => associatedShape.Properties);
     }
 
     [Fact]
@@ -89,7 +85,6 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
         Assert.IsType<NonGenericDataTypeConverter>(factory.Invoke());
     }
 
-
     [Fact]
     public void CanConstructAssociatedType_TypeArgsSplitAcrossTypes()
     {
@@ -98,6 +93,28 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
         Func<object>? factory = GetAssociatedTypeFactory(typeShape, typeof(GenericWrapper<>.GenericNested<>));
         Assert.NotNull(factory);
         Assert.IsType<GenericWrapper<int>.GenericNested<string>>(factory.Invoke());
+    }
+
+    [Fact]
+    public void AssociatedTypeAttribute_MissingConstructor()
+    {
+        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
+        Assert.NotNull(typeShape);
+        IObjectTypeShape<GenericDataTypePropertiesOnly<int, string>>? associatedShape = (IObjectTypeShape<GenericDataTypePropertiesOnly<int, string>>?)typeShape.GetAssociatedTypeShape(typeof(GenericDataTypePropertiesOnly<,>));
+        Assert.NotNull(associatedShape);
+        Assert.Empty(associatedShape.Properties);
+        AssertPartialShape(() => associatedShape.Constructor);
+    }
+
+    [Fact]
+    public void PartialAssociationAndFullReference()
+    {
+        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
+        Assert.NotNull(typeShape);
+        IObjectTypeShape<GenericDataTypeFullAndPartialPaths<int, string>>? associatedShape = (IObjectTypeShape<GenericDataTypeFullAndPartialPaths<int, string>>?)typeShape.GetAssociatedTypeShape(typeof(GenericDataTypeFullAndPartialPaths<,>));
+        Assert.NotNull(associatedShape);
+        Assert.NotEmpty(associatedShape.Properties);
+        Assert.NotNull(associatedShape.Constructor);
     }
 
     [Fact]
@@ -110,13 +127,7 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
         Func<object>? factory = associatedShape.GetDefaultConstructor();
         Assert.NotNull(factory);
         Assert.IsType<CustomTypeConverter>(factory.Invoke());
-
-        if (partialShapesSupported)
-        {
-            // Verify the associated type's shape is only partially available.
-            Exception ex = Assert.Throws<NotImplementedException>(() => associatedShape.Properties);
-            TestContext.Current.TestOutputHelper?.WriteLine(ex.ToString());
-        }
+        AssertPartialShape(() => associatedShape.Properties);
     }
 
     [Fact]
@@ -129,24 +140,14 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
         Func<object>? factory1 = associatedShape.GetDefaultConstructor();
         Assert.NotNull(factory1);
         Assert.IsType<CustomTypeConverter1>(factory1.Invoke());
-        if (partialShapesSupported)
-        {
-            // Verify the associated type's shape is only partially available.
-            Exception ex = Assert.Throws<NotImplementedException>(() => associatedShape.Properties);
-            TestContext.Current.TestOutputHelper?.WriteLine(ex.ToString());
-        }
+        AssertPartialShape(() => associatedShape.Properties);
 
         associatedShape = (IObjectTypeShape?)typeShape.GetAssociatedTypeShape(typeof(CustomTypeConverter2));
         Assert.NotNull(associatedShape);
         Func<object>? factory2 = associatedShape.GetDefaultConstructor();
         Assert.NotNull(factory2);
         Assert.IsType<CustomTypeConverter2>(factory2.Invoke());
-        if (partialShapesSupported)
-        {
-            // Verify the associated type's shape is only partially available.
-            Exception ex = Assert.Throws<NotImplementedException>(() => associatedShape.Properties);
-            TestContext.Current.TestOutputHelper?.WriteLine(ex.ToString());
-        }
+        AssertPartialShape(() => associatedShape.Properties);
     }
 
     [Fact]
@@ -201,6 +202,19 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     private static Func<object>? GetAssociatedTypeFactory(ITypeShape typeShape, Type associatedType)
         => (typeShape.GetAssociatedTypeShape(associatedType) as IObjectTypeShape)?.GetDefaultConstructor();
 
+    private void AssertPartialShape(Func<object?> partialThrows)
+    {
+        if (partialShapesSupported)
+        {
+            Exception ex = Assert.Throws<NotImplementedException>(partialThrows);
+            TestContext.Current.TestOutputHelper?.WriteLine(ex.ToString());
+        }
+        else
+        {
+            partialThrows();
+        }
+    }
+
     [GenerateShape]
     [AssociatedTypeShape(typeof(NonGenericDataTypeConverter))]
     public partial class NonGenericDataType;
@@ -208,6 +222,7 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     public class NonGenericDataTypeConverter;
 
     [AssociatedTypeShape(typeof(GenericDataTypeConverter<,>), typeof(GenericDataTypeCloner<,>), typeof(NonGenericDataTypeConverter), typeof(GenericWrapper<>.GenericNested<>))]
+    [AssociatedTypeShape(typeof(GenericDataTypePropertiesOnly<,>), Requirements = TypeShapeRequirements.Properties)]
     public class GenericDataType<T1, T2>;
 
     public class GenericDataTypeConverter<T1, T2>;
@@ -215,6 +230,17 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     public class GenericDataTypeVerifier<T1, T2>
     {
         public string? Property { get; set; }
+    }
+
+    public class GenericDataTypePropertiesOnly<T1, T2>;
+
+    /// <summary>
+    /// A class for which a type extension defines an associated type shape that is only partially generated
+    /// <em>and</em> which is directly referenced by a generated shape.
+    /// </summary>
+    public class GenericDataTypeFullAndPartialPaths<T1, T2>
+    {
+        public int MyProperty { get; set; }
     }
 
     /// <summary>
@@ -241,6 +267,7 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     }
 
     [GenerateShape<GenericDataType<int, string>>]
+    [GenerateShape<GenericDataTypeFullAndPartialPaths<int, string>>]
     internal partial class Witness;
 
     [GenerateShape]
