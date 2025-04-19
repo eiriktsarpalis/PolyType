@@ -23,6 +23,6 @@ public readonly ref struct TypeDataModelGenerationContext
     internal TypeDataModelGenerationContext Commit(TypeDataModel type)
     {
         Debug.Assert(GeneratedModels.KeyComparer.Equals(type.Type, Stack.Peek()));
-        return new(Stack.Pop(), GeneratedModels.Add(type.Type, type));
+        return new(Stack.Pop(), GeneratedModels.SetItem(type.Type, type));
     }
 }

@@ -6,7 +6,7 @@ namespace PolyType.Abstractions;
 /// Provides a visitor for strongly-typed traversal of .NET types.
 /// </summary>
 /// <remarks>
-/// All methods are <see langword="virtual"/>, and will throw <see cref="NotImplementedException"/> if not overridden.
+/// Full methods are <see langword="virtual"/>, and will throw <see cref="NotImplementedException"/> if not overridden.
 /// </remarks>
 public abstract class TypeShapeVisitor
 {

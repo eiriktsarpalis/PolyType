@@ -13,7 +13,7 @@ public abstract record TypeShapeModel
     public required string SourceIdentifier { get; init; }
 
     /// <summary>
-    /// An array of type IDs for associated types.
+    /// A map of type IDs for associated types and their requirements.
     /// </summary>
-    public required ImmutableEquatableArray<AssociatedTypeId> AssociatedTypes { get; init; }
+    public required ImmutableEquatableDictionary<AssociatedTypeId, EquatableEnum<TypeShapeRequirements>> AssociatedTypes { get; init; }
 }

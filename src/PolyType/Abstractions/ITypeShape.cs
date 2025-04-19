@@ -44,22 +44,22 @@ public interface ITypeShape
     object? Invoke(ITypeShapeFunc func, object? state = null);
 
     /// <summary>
-    /// Gets the factory for a type associated to this property's declared <see cref="Type"/>,
-    /// as captured in <see cref="TypeShapeAttribute.AssociatedTypes"/> or
+    /// Gets the shape for a type associated to this property's declared <see cref="Type"/>,
+    /// as captured in <see cref="AssociatedTypeShapeAttribute.AssociatedTypes"/> or
     /// <see cref="TypeShapeExtensionAttribute.AssociatedTypes"/>.
     /// </summary>
     /// <param name="associatedType">
-    /// The associated type (which must be one found in the <see cref="TypeShapeAttribute.AssociatedTypes"/> property).
+    /// The associated type (which must be one found in the <see cref="AssociatedTypeShapeAttribute.AssociatedTypes"/> property).
     /// If the associated type is a generic type definition, the type arguments used on this shape's <see cref="Type"/>
     /// will be used to close the associated generic type.
     /// </param>
-    /// <returns>A factory for the associated type, or <see langword="null" /> if no factory for the associated type is available.</returns>
+    /// <returns>The shape for the associated type, or <see langword="null" /> if no shape for the associated type is available.</returns>
     /// <remarks>
-    /// <see cref="ReflectionProvider.ReflectionTypeShapeProvider"/> can produce the factory on demand without any <see cref="TypeShapeAttribute.AssociatedTypes"/>,
-    /// while <see cref="SourceGenModel.SourceGenTypeShapeProvider"/> is expected to only produce the factory that was explicitly requested via attribute.
+    /// <see cref="ReflectionProvider.ReflectionTypeShapeProvider"/> can produce the shape on demand without any <see cref="AssociatedTypeShapeAttribute.AssociatedTypes"/>,
+    /// while <see cref="SourceGenModel.SourceGenTypeShapeProvider"/> is expected to only produce the shape that was explicitly requested via attribute.
     /// </remarks>
     /// <exception cref="InvalidOperationException">Thrown when this method is called on an instance that does not represent a generic type.</exception>
-    Func<object>? GetAssociatedTypeFactory(Type associatedType);
+    ITypeShape? GetAssociatedTypeShape(Type associatedType);
 }
 
 /// <summary>

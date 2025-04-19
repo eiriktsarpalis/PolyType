@@ -264,7 +264,7 @@ public static class DiagnosticTests
 
             partial class Wrapper
             {
-                [TypeShape(AssociatedTypes = new[] { typeof(InternalAssociatedType) })]
+                [AssociatedTypeShape(typeof(InternalAssociatedType))]
                 [GenerateShape]
                 internal partial class MyPoco;
 
@@ -279,46 +279,17 @@ public static class DiagnosticTests
         Assert.Equal("PT0005", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         Assert.Equal((4, 5), diagnostic.Location.GetStartPosition());
-        Assert.Equal((4, 74), diagnostic.Location.GetEndPosition());
+        Assert.Equal((4, 56), diagnostic.Location.GetEndPosition());
     }
 
     [Fact]
     [Trait("AssociatedTypes", "true")]
-    public static void TypeShape_PrivateCtorOnAssociatedType()
-    {
-        Compilation compilation = CompilationHelpers.CreateCompilation("""
-            using PolyType;
-
-            partial class Wrapper
-            {
-                [TypeShape(AssociatedTypes = new[] { typeof(InternalAssociatedType) })]
-                [GenerateShape]
-                internal partial class MyPoco;
-
-                public class InternalAssociatedType
-                {
-                    private InternalAssociatedType() { }
-                }
-            }
-            """);
-
-        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
-
-        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
-
-        Assert.Equal("PT0005", diagnostic.Id);
-        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
-        Assert.Equal((4, 5), diagnostic.Location.GetStartPosition());
-        Assert.Equal((4, 74), diagnostic.Location.GetEndPosition());
-    }
-
-    [Fact]
     public static void TypeShape_ArityMismatch_0to1()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [TypeShape(AssociatedTypes = new[] { typeof(InternalAssociatedType<>) })]
+            [AssociatedTypeShape(typeof(InternalAssociatedType<>))]
             [GenerateShape]
             partial class MyPoco;
             public class InternalAssociatedType<T>;
@@ -331,17 +302,18 @@ public static class DiagnosticTests
         Assert.Equal("PT0016", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         Assert.Equal((2, 1), diagnostic.Location.GetStartPosition());
-        Assert.Equal((2, 72), diagnostic.Location.GetEndPosition());
+        Assert.Equal((2, 54), diagnostic.Location.GetEndPosition());
     }
 
 
     [Fact]
+    [Trait("AssociatedTypes", "true")]
     public static void TypeShape_ArityMismatch_2to1()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [TypeShape(AssociatedTypes = new[] { typeof(InternalAssociatedType<>) })]
+            [AssociatedTypeShape(typeof(InternalAssociatedType<>))]
             partial class MyPoco<T1, T2>;
             public class InternalAssociatedType<T>;
 
@@ -356,7 +328,7 @@ public static class DiagnosticTests
         Assert.Equal("PT0016", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         Assert.Equal((2, 1), diagnostic.Location.GetStartPosition());
-        Assert.Equal((2, 72), diagnostic.Location.GetEndPosition());
+        Assert.Equal((2, 54), diagnostic.Location.GetEndPosition());
     }
 
     [Theory]
