@@ -19,6 +19,10 @@ public class AssociatedTypeShapeAttribute(params Type[] associatedTypes) : Attri
     /// Gets the elements of the generated shape that are required at runtime.
     /// </summary>
     /// <value>The default value is <see cref="TypeShapeRequirements.Full"/>.</value>
+    /// <remarks>
+    /// This property only impacts generation of object shapes.
+    /// All other shapes (e.g. collections, enums, unions) are always completely defined.
+    /// </remarks>
     public TypeShapeRequirements Requirements { get; init; } = TypeShapeRequirements.Full;
 
     /// <summary>

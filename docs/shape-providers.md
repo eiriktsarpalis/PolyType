@@ -167,24 +167,38 @@ public record MyPoco<T>(T Value)
 #### Associated types
 
 The `TypeShape` attribute can also be used to specify associated types for the target type.
-This provides a Reflection-free way to activate an associated type via its default constructor
-given its @PolyType.Abstractions.ITypeShape.
+This provides a Reflection-free way to leap from one @PolyType.Abstractions.ITypeShape to an associated shape, and get all the functionality of the associated shape.
 For example, serializers may need to jump from a type shape to its converter.
 
 [!code-csharp[](CSharpSamples/AssociatedTypes.cs#TypeShapeOneType)]
 
-@PolyType.Abstractions.ITypeShape.GetAssociatedType*?displayProperty=nameWithType is the method to use to obtain a factory for instances of the associated type.
+Use the @PolyType.Abstractions.ITypeShape.GetAssociatedTypeShape*?displayProperty=nameWithType method to obtain the shape of an associated type.
 The @PolyType.SourceGenModel.SourceGenTypeShapeProvider implementation of this method requires that the associated types be pre-determined at compile time via attributes.
 The @PolyType.ReflectionProvider.ReflectionTypeShapeProvider does _not_ require these attributes.
 Thus, it can be valuable to test your associated types code with the source generation provider to ensure your code is AOT-compatible.
 
-An associated type must have a public default constructor.
-An associated type must have at least `internal` visibility to activate the associated type from within its same assembly,
-but making the type `public` is highly recommended so that when the data type is used in other assemblies, the associated type can be activated from their context as well.
+An associated type must have at least `internal` visibility for its shape to be generated for use within its same assembly.
+Making the type `public` is highly recommended so that when the data type is used in other assemblies, the associated type's shape is available from their context as well.
 
 Registering associated types is particularly important when the associated type is generic, and the generic type arguments come from the target type.
 
 [!code-csharp[](CSharpSamples/AssociatedTypes.cs#GenericAssociatedType)]
+
+Associated shapes can be only partially defined.
+If for example you only need to be able to activate an instance of an associated type but don't need its properties (and their respective types) defined, you can indicate this and shrink the output of source generation.
+This can be appropriate for a serializer that needs to jump from a generic data type to a generic converter, for example.
+
+[!code-csharp[](CSharpSamples/AssociatedTypes.cs#SerializerConverter)]
+
+Only @PolyType.SourceGenModel.SourceGenTypeShapeProvider produces partial shapes.
+The @PolyType.ReflectionProvider.ReflectionTypeShapeProvider always produces complete shapes.
+
+At present, only @PolyType.Abstractions.IObjectTypeShape shapes are generated partially.
+Shapes for collections, enums, unions, etc. are generated as full shapes.
+
+Type associations can be defined directly on the originating type via @PolyType.AssociatedTypeShapeAttribute.AssociatedTypes?displayProperty=nameWithType when that type and its associated type are in the same assembly.
+When the associated type is in another assembly, use @PolyType.TypeShapeExtensionAttribute.AssociatedTypes?displayProperty=nameWithType in the assembly that declares the associated type.
+You can also define a custom attribute that can define associated types by attributing your own custom attribute with @PolyType.Abstractions.AssociatedTypeAttributeAttribute.
 
 ### TypeShapeExtensionAttribute
 

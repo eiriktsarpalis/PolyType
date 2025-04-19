@@ -26,4 +26,20 @@ public partial class AssociatedTypes
     {
     }
     #endregion
+
+    #region SerializerConverter
+    [AssociatedTypeShape(typeof(SomeDataTypeConverter<>), Requirements = TypeShapeRequirements.Constructor)]
+    public class SomeDataType<T>
+    {
+        public T? Value { get; set; }
+    }
+
+    public class SomeDataTypeConverter<T> : Converter<SomeDataType<T>>
+    {
+        // This type can be activated via the constructor defined on its shape.
+        // Properties on this type will not be available on the associated shape.
+    }
+    #endregion
+
+    public abstract class Converter<T>;
 }
