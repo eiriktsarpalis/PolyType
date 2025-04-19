@@ -59,7 +59,7 @@ public static class CompilationTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [assembly: TypeShapeExtension(typeof(GenericClass<,>), AssociatedShapeDepth = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(GenericConverter<,>)])]
+            [assembly: TypeShapeExtension(typeof(GenericClass<,>), Requirements = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(GenericConverter<,>)])]
 
             public class GenericClass<T1, T2>;
             public class GenericConverter<T1, T2>;
@@ -137,8 +137,8 @@ public static class CompilationTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [assembly: TypeShapeExtension(typeof(GenericClass<,>), AssociatedShapeDepth = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(GenericHelper<,>)])]
-            [assembly: TypeShapeExtension(typeof(GenericClass<,>), AssociatedShapeDepth = TypeShapeRequirements.Properties, AssociatedTypes = [typeof(GenericHelper<,>)])]
+            [assembly: TypeShapeExtension(typeof(GenericClass<,>), Requirements = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(GenericHelper<,>)])]
+            [assembly: TypeShapeExtension(typeof(GenericClass<,>), Requirements = TypeShapeRequirements.Properties, AssociatedTypes = [typeof(GenericHelper<,>)])]
 
             public class GenericClass<T1, T2>;
             public class GenericHelper<T1, T2> { public int Prop { get; set; } }
@@ -158,7 +158,7 @@ public static class CompilationTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [assembly: TypeShapeExtension(typeof(GenericClass<,>), AssociatedShapeDepth = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(GenericHelper<,>)])]
+            [assembly: TypeShapeExtension(typeof(GenericClass<,>), Requirements = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(GenericHelper<,>)])]
 
             public class GenericClass<T1, T2>;
             public class GenericHelper<T1, T2> { public int Prop { get; set; } }
@@ -181,7 +181,7 @@ public static class CompilationTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [assembly: TypeShapeExtension(typeof(GenericClass<,>), AssociatedShapeDepth = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(GenericHelper<,>)])]
+            [assembly: TypeShapeExtension(typeof(GenericClass<,>), Requirements = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(GenericHelper<,>)])]
 
             public class GenericClass<T1, T2>;
             public class GenericHelper<T1, T2> { public int Prop { get; set; } }

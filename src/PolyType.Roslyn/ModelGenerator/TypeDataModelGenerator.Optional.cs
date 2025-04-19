@@ -5,7 +5,7 @@ namespace PolyType.Roslyn;
 
 public partial class TypeDataModelGenerator
 {
-    private bool TryMapOptional(ITypeSymbol type, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements depth, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
+    private bool TryMapOptional(ITypeSymbol type, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements requirements, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
     {
         model = null;
         status = default;
@@ -16,7 +16,7 @@ public partial class TypeDataModelGenerator
         }
 
         ITypeSymbol elementType = ((INamedTypeSymbol)type).TypeArguments[0]!;
-        if ((status = IncludeNestedType(elementType, ref ctx, depth)) != TypeDataModelGenerationStatus.Success)
+        if ((status = IncludeNestedType(elementType, ref ctx, requirements)) != TypeDataModelGenerationStatus.Success)
         {
             // return true but a null model to indicate that the type is an unsupported nullable type
             return true;

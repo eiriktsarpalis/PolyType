@@ -30,7 +30,7 @@ public class TypeShapeExtensionAttribute(Type target) : Attribute
     /// This property only impacts generation of object shapes.
     /// All other shapes (e.g. collections, enums, unions) are always completely defined.
     /// </remarks>
-    public TypeShapeRequirements AssociatedShapeDepth { get; init; } = TypeShapeRequirements.Full;
+    public TypeShapeRequirements Requirements { get; init; } = TypeShapeRequirements.Full;
 
     /// <summary>
     /// Types for which a shape should be generated when a type shape is generated for <see cref="Target"/>.

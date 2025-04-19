@@ -2,13 +2,13 @@
 using PolyType.Tests;
 using Xunit.Internal;
 
-[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedShapeDepth = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(AssociatedTypesTests.GenericDataTypeVerifier<,>)])]
-[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedShapeDepth = TypeShapeRequirements.Full, AssociatedTypes = [typeof(AssociatedTypesTests.ExtraShape<,>)])]
-[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedShapeDepth = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(AssociatedTypesTests.GenericDataTypeFullAndPartialPaths<,>)])]
+[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), Requirements = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(AssociatedTypesTests.GenericDataTypeVerifier<,>)])]
+[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), Requirements = TypeShapeRequirements.Full, AssociatedTypes = [typeof(AssociatedTypesTests.ExtraShape<,>)])]
+[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), Requirements = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(AssociatedTypesTests.GenericDataTypeFullAndPartialPaths<,>)])]
 
 // This pair is for testing the union of depth flags for a given shape.
-[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedShapeDepth = TypeShapeRequirements.Properties, AssociatedTypes = [typeof(AssociatedTypesTests.ExtraShape2<,>)])]
-[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), AssociatedShapeDepth = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(AssociatedTypesTests.ExtraShape2<,>)])]
+[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), Requirements = TypeShapeRequirements.Properties, AssociatedTypes = [typeof(AssociatedTypesTests.ExtraShape2<,>)])]
+[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), Requirements = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(AssociatedTypesTests.ExtraShape2<,>)])]
 
 namespace PolyType.Tests;
 

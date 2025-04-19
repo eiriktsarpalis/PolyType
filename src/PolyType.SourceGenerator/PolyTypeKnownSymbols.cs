@@ -10,7 +10,7 @@ public sealed class PolyTypeKnownSymbols(Compilation compilation) : KnownSymbols
     /// </summary>
     public static class TypeShapeExtensionAttributePropertyNames
     {
-        public const string AssociatedShapeDepth = "AssociatedShapeDepth";
+        public const string Requirements = "Requirements";
         public const string AssociatedTypes = "AssociatedTypes";
     }
 

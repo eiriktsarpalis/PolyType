@@ -83,7 +83,7 @@ public sealed partial class Parser : TypeDataModelGenerator
                     continue;
                 }
 
-                TypeShapeRequirements typeShapeDepth = attribute.TryGetNamedArgument(PolyTypeKnownSymbols.TypeShapeExtensionAttributePropertyNames.AssociatedShapeDepth, out TypeShapeRequirements depth) ? depth : TypeShapeRequirements.Full;
+                TypeShapeRequirements typeShapeDepth = attribute.TryGetNamedArgument(PolyTypeKnownSymbols.TypeShapeExtensionAttributePropertyNames.Requirements, out TypeShapeRequirements requirements) ? requirements : TypeShapeRequirements.Full;
                 if (attribute.TryGetNamedArguments(PolyTypeKnownSymbols.TypeShapeExtensionAttributePropertyNames.AssociatedTypes, out ImmutableArray<TypedConstant> associatedTypesArg))
                 {
                     List<AssociatedTypeModel> associatedTypeSymbols = new(associatedTypesArg.Length);
@@ -306,7 +306,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
     }
 
-    protected override TypeDataModelGenerationStatus MapType(ITypeSymbol type, TypeDataKind? requestedKind, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements depth, out TypeDataModel? model)
+    protected override TypeDataModelGenerationStatus MapType(ITypeSymbol type, TypeDataKind? requestedKind, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements requirements, out TypeDataModel? model)
     {
         Debug.Assert(requestedKind is null);
         ParseTypeShapeAttribute(type, out TypeShapeKind? requestedTypeShapeKind, out ITypeSymbol? marshaller, out Location? typeShapeLocation);
@@ -323,20 +323,20 @@ public sealed partial class Parser : TypeDataModelGenerator
 
         if (marshaller is not null || requestedTypeShapeKind is TypeShapeKind.Surrogate)
         {
-            return MapSurrogateType(type, marshaller, associatedTypes, ref ctx, depth, out model);
+            return MapSurrogateType(type, marshaller, associatedTypes, ref ctx, requirements, out model);
         }
 
         if (_knownSymbols.ResolveFSharpUnionMetadata(type) is FSharpUnionInfo unionInfo)
         {
             return unionInfo switch
             {
-                FSharpOptionInfo optionInfo => MapFSharpOptionDataModel(optionInfo, ref ctx, depth, out model),
+                FSharpOptionInfo optionInfo => MapFSharpOptionDataModel(optionInfo, ref ctx, requirements, out model),
                 _ => MapFSharpUnionDataModel((GenericFSharpUnionInfo)unionInfo, ref ctx, out model),
             };
         }
 
         requestedKind = MapTypeShapeKindToDataKind(requestedTypeShapeKind);
-        TypeDataModelGenerationStatus status = base.MapType(type, requestedKind, associatedTypes, ref ctx, depth, out model);
+        TypeDataModelGenerationStatus status = base.MapType(type, requestedKind, associatedTypes, ref ctx, requirements, out model);
 
         if (requestedKind is not null && model is { Kind: TypeDataKind actualKind } && requestedKind != actualKind)
         {
@@ -346,7 +346,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         return status;
     }
 
-    private TypeDataModelGenerationStatus MapSurrogateType(ITypeSymbol type, ITypeSymbol? marshaller, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements depth, out TypeDataModel? model)
+    private TypeDataModelGenerationStatus MapSurrogateType(ITypeSymbol type, ITypeSymbol? marshaller, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements requirements, out TypeDataModel? model)
     {
         model = null;
 
@@ -405,7 +405,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
 
         // Generate the shape for the surrogate type.
-        TypeDataModelGenerationStatus status = IncludeNestedType(surrogateType, ref ctx, depth);
+        TypeDataModelGenerationStatus status = IncludeNestedType(surrogateType, ref ctx, requirements);
         if (status is TypeDataModelGenerationStatus.Success)
         {
             model = new SurrogateTypeDataModel
@@ -427,9 +427,9 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
     }
 
-    private TypeDataModelGenerationStatus MapFSharpOptionDataModel(FSharpOptionInfo optionInfo, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements depth, out TypeDataModel? model)
+    private TypeDataModelGenerationStatus MapFSharpOptionDataModel(FSharpOptionInfo optionInfo, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements requirements, out TypeDataModel? model)
     {
-        TypeDataModelGenerationStatus status = IncludeNestedType(optionInfo.ElementType, ref ctx, depth);
+        TypeDataModelGenerationStatus status = IncludeNestedType(optionInfo.ElementType, ref ctx, requirements);
         if (status is not TypeDataModelGenerationStatus.Success)
         {
             model = null;
