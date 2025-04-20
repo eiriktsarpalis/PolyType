@@ -121,18 +121,20 @@ public partial class TypeDataModelGenerator
                             m.Parameters.Length == 1 &&
                             SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, elementType));
                 }
-
-                INamedTypeSymbol hashSetOfT = KnownSymbols.HashSetOfT!.Construct(elementType);
-                if (namedType.IsAssignableFrom(hashSetOfT))
+                else
                 {
-                    // Handle ISet<T> and IReadOnlySet<T> types using HashSet<T>
-                    constructionStrategy = CollectionModelConstructionStrategy.Mutable;
-                    factoryMethod = hashSetOfT.Constructors.First(c => c.Parameters.IsEmpty);
-                    addElementMethod = hashSetOfT.GetMembers("Add")
-                        .OfType<IMethodSymbol>()
-                        .First(m =>
-                            m.Parameters.Length == 1 &&
-                            SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, elementType));
+                    INamedTypeSymbol hashSetOfT = KnownSymbols.HashSetOfT!.Construct(elementType);
+                    if (namedType.IsAssignableFrom(hashSetOfT))
+                    {
+                        // Handle ISet<T> and IReadOnlySet<T> types using HashSet<T>
+                        constructionStrategy = CollectionModelConstructionStrategy.Mutable;
+                        factoryMethod = hashSetOfT.Constructors.First(c => c.Parameters.IsEmpty);
+                        addElementMethod = hashSetOfT.GetMembers("Add")
+                            .OfType<IMethodSymbol>()
+                            .First(m =>
+                                m.Parameters.Length == 1 &&
+                                SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, elementType));
+                    }
                 }
             }
         }

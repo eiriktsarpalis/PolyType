@@ -22,5 +22,6 @@ public class AssociatedTypeAttributeAttribute : Attribute
     public AssociatedTypeAttributeAttribute(string parameterOrNamedArgumentName, TypeShapeRequirements requirements)
     {
         _ = parameterOrNamedArgumentName;
+        _ = requirements;
     }
 }

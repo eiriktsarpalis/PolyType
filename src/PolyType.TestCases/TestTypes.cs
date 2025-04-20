@@ -151,11 +151,11 @@ public static class TestTypes
         yield return TestCase.Create((IList)new List<object> { 1, 2, 3 }, p);
         yield return TestCase.Create((ICollection)new List<object> { 1, 2, 3 }, p);
         yield return TestCase.Create((IDictionary)new Dictionary<object, object> { [42] = 42 }, p);
-        yield return TestCase.Create((IEnumerable<int>)[1, 2, 3], p);
-        yield return TestCase.Create((ICollection<int>)[1, 2, 3], p);
-        yield return TestCase.Create((IList<int>)[1, 2, 3], p);
-        yield return TestCase.Create((IReadOnlyCollection<int>)[1, 2, 3], p);
-        yield return TestCase.Create((IReadOnlyList<int>)[1, 2, 3], p);
+        yield return TestCase.Create((IEnumerable<int>)[1, 2, 1, 3], p);
+        yield return TestCase.Create((ICollection<int>)[1, 2, 1, 3], p);
+        yield return TestCase.Create((IList<int>)[1, 2, 1, 3], p);
+        yield return TestCase.Create((IReadOnlyCollection<int>)[1, 2, 1, 3], p);
+        yield return TestCase.Create((IReadOnlyList<int>)[1, 2, 1, 3], p);
         yield return TestCase.Create((ISet<int>)new HashSet<int> { 1, 2, 3 }, p);
 #if NET
         yield return TestCase.Create((IReadOnlySet<int>)new HashSet<int> { 1, 2, 3 }, p);
@@ -163,36 +163,36 @@ public static class TestTypes
         yield return TestCase.Create((IDictionary<int, int>)new Dictionary<int, int> { [42] = 42 }, p);
         yield return TestCase.Create((IReadOnlyDictionary<int, int>)new Dictionary<int, int> { [42] = 42 }, p);
 
-        yield return TestCase.Create(new DerivedList { 1, 2, 3 });
+        yield return TestCase.Create(new DerivedList { 1, 2, 1, 3 });
         yield return TestCase.Create(new DerivedDictionary { ["key"] = "value" });
 
-        yield return TestCase.Create(new StructList<int> { 1, 2, 3 }, p);
+        yield return TestCase.Create(new StructList<int> { 1, 2, 1, 3 }, p);
         yield return TestCase.Create(new StructDictionary<string, string> { ["key"] = "value" }, p);
-        yield return TestCase.Create<CollectionWithBuilderAttribute>([1, 2, 3]);
-        yield return TestCase.Create((GenericCollectionWithBuilderAttribute<int>)[1, 2, 3], p);
-        yield return TestCase.Create(new CollectionWithEnumerableCtor([1, 2, 3]));
+        yield return TestCase.Create<CollectionWithBuilderAttribute>([1, 2, 1, 3]);
+        yield return TestCase.Create((GenericCollectionWithBuilderAttribute<int>)[1, 2, 1, 3], p);
+        yield return TestCase.Create(new CollectionWithEnumerableCtor([1, 2, 1, 3]));
         yield return TestCase.Create(new DictionaryWithEnumerableCtor([new("key", 42)]));
-        yield return TestCase.Create(new CollectionWithSpanCtor([1, 2, 3]), usesSpanConstructor: true);
+        yield return TestCase.Create(new CollectionWithSpanCtor([1, 2, 1, 3]), usesSpanConstructor: true);
         yield return TestCase.Create(new DictionaryWithSpanCtor([new("key", 42)]), usesSpanConstructor: true);
 
         yield return TestCase.Create(new Collection<int> { 1, 2, 3 }, p);
-        yield return TestCase.Create(new ObservableCollection<int> { 1, 2, 3 }, p);
-        yield return TestCase.Create(new MyKeyedCollection<int> { 1, 2, 3 }, p);
-        yield return TestCase.Create(new MyKeyedCollection<string> { "1", "2", "3" }, p);
-        yield return TestCase.Create(new ReadOnlyCollection<int>([1, 2, 3]), p);
+        yield return TestCase.Create(new ObservableCollection<int> { 1, 2, 1, 3 }, p);
+        yield return TestCase.Create(new MyKeyedCollection<int> { 1, 2, 1, 3 }, p);
+        yield return TestCase.Create(new MyKeyedCollection<string> { "1", "2", "1", "3" }, p);
+        yield return TestCase.Create(new ReadOnlyCollection<int>([1, 2, 1, 3]), p);
         yield return TestCase.Create(new ReadOnlyDictionary<int, int>(new Dictionary<int, int> { [1] = 1, [2] = 2 }), p);
 
         yield return TestCase.Create(new EnumerableAsObject { Value = 42 });
         yield return TestCase.Create(new DictionaryAsEnumerable { new("key", "value") });
         yield return TestCase.Create(new ObjectAsNone { Name = "me", Age = 7 });
 
-        yield return TestCase.Create(ImmutableArray.Create(1, 2, 3), p);
-        yield return TestCase.Create(ImmutableList.Create("1", "2", "3"), p);
+        yield return TestCase.Create(ImmutableArray.Create(1, 2, 1, 3), p);
+        yield return TestCase.Create(ImmutableList.Create("1", "2", "1", "3"), p);
         yield return TestCase.Create(ImmutableList.Create("1", "2", null), p);
-        yield return TestCase.Create(ImmutableQueue.Create(1, 2, 3), p);
-        yield return TestCase.Create(ImmutableStack.Create(1, 2, 3), isStack: true, provider: p);
-        yield return TestCase.Create(ImmutableHashSet.Create(1, 2, 3), p);
-        yield return TestCase.Create(ImmutableSortedSet.Create(1, 2, 3), p);
+        yield return TestCase.Create(ImmutableQueue.Create(1, 2, 1, 3), p);
+        yield return TestCase.Create(ImmutableStack.Create(1, 2, 1, 3), isStack: true, provider: p);
+        yield return TestCase.Create(ImmutableHashSet.Create(1, 2, 1, 3), p);
+        yield return TestCase.Create(ImmutableSortedSet.Create(1, 2, 1, 3), p);
         yield return TestCase.Create(ImmutableDictionary.CreateRange(new Dictionary<string, string> { ["key"] = "value" }), p);
         yield return TestCase.Create(ImmutableDictionary.CreateRange(new Dictionary<string, string?> { ["key"] = null }), p);
         yield return TestCase.Create(ImmutableSortedDictionary.CreateRange(new Dictionary<string, string> { ["key"] = "value" }), p);
