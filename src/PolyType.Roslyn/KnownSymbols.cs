@@ -9,11 +9,6 @@ namespace PolyType.Roslyn;
 public class KnownSymbols(Compilation compilation)
 {
     /// <summary>
-    /// The name of the property on TypeShapeAttribute that stores associated types.
-    /// </summary>
-    public const string TypeShapeAssociatedTypesPropertyName = "AssociatedTypes";
-
-    /// <summary>
     /// The compilation from which information is being queried.
     /// </summary>
     public Compilation Compilation { get; } = compilation;
@@ -188,7 +183,7 @@ public class KnownSymbols(Compilation compilation)
     private Option<INamedTypeSymbol?> _FSharpMap;
 
     /// <summary>
-    /// A "simple type" in this context defines a type that is either 
+    /// A "simple type" in this context defines a type that is either
     /// a primitive, string or represents an irreducible value such as Guid or DateTime.
     /// </summary>
     public bool IsSimpleType(ITypeSymbol type)

@@ -19,12 +19,14 @@ public interface IObjectTypeShape : ITypeShape
     /// Gets all available property/field shapes for the given type.
     /// </summary>
     /// <returns>An enumeration of all available property/field shapes.</returns>
+    /// <exception cref="NotImplementedException">Thrown on a partial shape that was not generated to include properties.</exception>
     IReadOnlyList<IPropertyShape> Properties { get; }
 
     /// <summary>
     /// Gets the constructor shape for the given type, if available.
     /// </summary>
     /// <returns>An <see cref="IConstructorShape"/> representation of the constructor.</returns>
+    /// <exception cref="NotImplementedException">Thrown on a partial shape that was not generated to include a constructor.</exception>
     IConstructorShape? Constructor { get; }
 }
 
