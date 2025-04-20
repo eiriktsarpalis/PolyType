@@ -6,8 +6,6 @@ namespace PolyType.SourceGenerator;
 
 internal sealed partial class SourceFormatter
 {
-    private const string ThrowPartialShapeMethodName = "ThrowPartialShape";
-
     private void FormatObjectTypeShapeFactory(SourceWriter writer, string methodName, ObjectShapeModel objectShapeModel)
     {
         string? propertiesFactoryMethodName = objectShapeModel.Properties.Length > 0 ? $"__CreateProperties_{objectShapeModel.SourceIdentifier}" : null;
