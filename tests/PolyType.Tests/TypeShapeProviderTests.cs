@@ -64,6 +64,11 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                     : TypeShapeKind.Enumerable;
             }
 
+            if (typeof(T).GetCompatibleGenericInterface(typeof(IAsyncEnumerable<>)) is not null)
+            {
+                return TypeShapeKind.Enumerable;
+            }
+
             if (typeof(T).IsMemoryType(out _, out _))
             {
                 return TypeShapeKind.Enumerable;
@@ -450,21 +455,31 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             {
                 Assert.Equal(enumerableImplementation.GetGenericArguments()[0], enumerableTypeType.ElementType.Type);
                 Assert.Equal(1, enumerableTypeType.Rank);
+                Assert.False(enumerableTypeType.IsAsyncEnumerable);
             }
             else if (typeof(T).IsArray)
             {
                 Assert.Equal(typeof(T).GetElementType(), enumerableTypeType.ElementType.Type);
                 Assert.Equal(typeof(T).GetArrayRank(), enumerableTypeType.Rank);
+                Assert.False(enumerableTypeType.IsAsyncEnumerable);
             }
             else if (typeof(IEnumerable).IsAssignableFrom(typeof(T)))
             {
                 Assert.Equal(typeof(object), enumerableTypeType.ElementType.Type);
                 Assert.Equal(1, enumerableTypeType.Rank);
+                Assert.False(enumerableTypeType.IsAsyncEnumerable);
+            }
+            else if (typeof(T).GetCompatibleGenericInterface(typeof(IAsyncEnumerable<>)) is { } asyncEnumerableImplementation)
+            {
+                Assert.Equal(asyncEnumerableImplementation.GetGenericArguments()[0], enumerableTypeType.ElementType.Type);
+                Assert.Equal(1, enumerableTypeType.Rank);
+                Assert.True(enumerableTypeType.IsAsyncEnumerable);
             }
             else if (typeof(T).IsMemoryType(out Type? elementType, out _))
             {
                 Assert.Equal(elementType, enumerableTypeType.ElementType.Type);
                 Assert.Equal(1, enumerableTypeType.Rank);
+                Assert.False(enumerableTypeType.IsAsyncEnumerable);
             }
             else
             {
@@ -472,7 +487,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             }
 
             var visitor = new EnumerableTestVisitor();
-            enumerableTypeType.Accept(visitor);
+            enumerableTypeType.Accept(visitor, state: testCase.Value);
         }
         else
         {
@@ -485,9 +500,18 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state)
         {
             TEnumerable enumerable;
-            RandomGenerator<TElement> elementGenerator = RandomGenerator.Create((ITypeShape<TElement>)enumerableShape.ElementType);
+            RandomGenerator<TElement> elementGenerator = RandomGenerator.Create(enumerableShape.ElementType);
+
             var getter = enumerableShape.GetGetEnumerable();
 
+            if (enumerableShape.IsAsyncEnumerable)
+            {
+                Type targetAsyncEnumerable = typeof(IAsyncEnumerable<>).MakeGenericType(enumerableShape.ElementType.Type);
+                Assert.True(targetAsyncEnumerable.IsAssignableFrom(enumerableShape.Type));
+                Assert.Throws<InvalidOperationException>(() => getter((TEnumerable)state!));
+                return null;
+            }
+            
             if (enumerableShape.ConstructionStrategy is CollectionConstructionStrategy.Mutable)
             {
                 var defaultCtor = enumerableShape.GetDefaultConstructor();

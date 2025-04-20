@@ -112,7 +112,7 @@ internal sealed class CborEnumerableConstructorEnumerableConverter<TEnumerable, 
     : CborImmutableEnumerableConverter<TEnumerable, TElement>(elementConverter, getEnumerable)
 {
     private protected override TEnumerable Construct(PooledList<TElement> buffer)
-        => constructor(buffer.ExchangeToArraySegment());
+        => constructor(buffer.ToArray());
 }
 
 internal sealed class CborSpanConstructorEnumerableConverter<TEnumerable, TElement>(

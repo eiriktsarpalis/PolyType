@@ -27,6 +27,16 @@ public interface IEnumerableTypeShape : ITypeShape
     /// Gets the rank of the enumerable, if a multidimensional array.
     /// </summary>
     int Rank { get; }
+
+    /// <summary>
+    /// Indicates whether the underlying type is an IAsyncEnumerable or not.
+    /// </summary>
+    /// <remarks>
+    /// Calling <see cref="IEnumerableTypeShape{TEnumerable, TElement}.GetGetEnumerable"/> on async enumerable instances
+    /// will result in an exception being thrown to prevent accidental sync-over-async. Users should manually cast
+    /// instances to IAsyncEnumerable and enumerate elements asynchronously.
+    /// </remarks>
+    bool IsAsyncEnumerable { get; }
 }
 
 /// <summary>

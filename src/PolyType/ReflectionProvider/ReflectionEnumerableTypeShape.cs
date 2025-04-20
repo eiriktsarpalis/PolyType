@@ -26,6 +26,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
 
     public virtual CollectionConstructionStrategy ConstructionStrategy => _constructionStrategy ??= DetermineConstructionStrategy();
     public virtual int Rank => 1;
+    public virtual bool IsAsyncEnumerable => false;
     public abstract Func<TEnumerable, IEnumerable<TElement>> GetGetEnumerable();
 
     public sealed override TypeShapeKind Kind => TypeShapeKind.Enumerable;
@@ -327,4 +328,14 @@ internal sealed class MemoryTypeShape<TElement>(ReflectionTypeShapeProvider prov
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Span;
     public override Func<Memory<TElement>, IEnumerable<TElement>> GetGetEnumerable() => static memory => MemoryMarshal.ToEnumerable((ReadOnlyMemory<TElement>)memory);
     public override SpanConstructor<TElement, Memory<TElement>> GetSpanConstructor() => static span => span.ToArray();
+}
+
+[RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
+[RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
+internal sealed class ReflectionAsyncEnumerableShape<TEnumerable, TElement>(ReflectionTypeShapeProvider provider)
+    : ReflectionEnumerableTypeShape<TEnumerable, TElement>(provider)
+{
+    public override bool IsAsyncEnumerable => true;
+    public override Func<TEnumerable, IEnumerable<TElement>> GetGetEnumerable() =>
+        static _ => throw new InvalidOperationException("Sync enumeration of IAsyncEnumerable instances is not supported.");
 }

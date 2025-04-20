@@ -1,8 +1,10 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using PolyType.Abstractions;
 
 namespace PolyType.Examples.Utilities;
 
@@ -154,4 +156,77 @@ internal static class Helpers
         }
 #endif
     }
+
+    /// <summary>
+    /// Gets an enumerable view that is potentially blocking if the source collection is an <see cref="IAsyncEnumerable{T}"/>.
+    /// </summary>
+    public static Func<TEnumerable, IEnumerable<TElement>> GetGetPotentiallyBlockingEnumerable<TEnumerable, TElement>(this IEnumerableTypeShape<TEnumerable, TElement> shape)
+    {
+        Debug.Assert(!shape.IsAsyncEnumerable || typeof(IAsyncEnumerable<TElement>).IsAssignableFrom(typeof(TEnumerable)));
+        return shape.IsAsyncEnumerable
+            ? (Func<TEnumerable, IEnumerable<TElement>>)(object)new Func<IAsyncEnumerable<TElement>, IEnumerable<TElement>>(iae => iae.ToBlockingEnumerable())
+            : shape.GetGetEnumerable();
+    }
+    
+#if !NET
+    private static IEnumerable<T> ToBlockingEnumerable<T>(this IAsyncEnumerable<T> source, CancellationToken cancellationToken = default)
+    {
+        IAsyncEnumerator<T> enumerator = source.GetAsyncEnumerator(cancellationToken);
+        // A ManualResetEventSlim variant that lets us reuse the same
+        // awaiter callback allocation across the entire enumeration.
+        ManualResetEventWithAwaiterSupport? mres = null;
+
+        try
+        {
+            while (true)
+            {
+#pragma warning disable CA2012 // Use ValueTasks correctly
+                ValueTask<bool> moveNextTask = enumerator.MoveNextAsync();
+#pragma warning restore CA2012 // Use ValueTasks correctly
+
+                if (!moveNextTask.IsCompleted)
+                {
+                    (mres ??= new()).Wait(moveNextTask.ConfigureAwait(false).GetAwaiter());
+                    Debug.Assert(moveNextTask.IsCompleted);
+                }
+
+                if (!moveNextTask.Result)
+                {
+                    yield break;
+                }
+
+                yield return enumerator.Current;
+            }
+        }
+        finally
+        {
+            ValueTask disposeTask = enumerator.DisposeAsync();
+
+            if (!disposeTask.IsCompleted)
+            {
+                (mres ?? new()).Wait(disposeTask.ConfigureAwait(false).GetAwaiter());
+                Debug.Assert(disposeTask.IsCompleted);
+            }
+
+            disposeTask.GetAwaiter().GetResult();
+        }
+    }
+
+    private sealed class ManualResetEventWithAwaiterSupport : ManualResetEventSlim
+    {
+        private readonly Action _onCompleted;
+
+        public ManualResetEventWithAwaiterSupport()
+        {
+            _onCompleted = Set;
+        }
+        
+        public void Wait<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
+        {
+            awaiter.UnsafeOnCompleted(_onCompleted);
+            Wait();
+            Reset();
+        }
+    }
+#endif
 }

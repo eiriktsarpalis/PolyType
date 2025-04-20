@@ -1,4 +1,5 @@
 ﻿using PolyType.Abstractions;
+using PolyType.Examples.Utilities;
 using PolyType.Utilities;
 
 namespace PolyType.Examples.Counter;
@@ -66,7 +67,7 @@ public static partial class Counter
 
         public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state)
         {
-            Func<TEnumerable, IEnumerable<TElement>> enumerableGetter = enumerableShape.GetGetEnumerable();
+            Func<TEnumerable, IEnumerable<TElement>> enumerableGetter = enumerableShape.GetGetPotentiallyBlockingEnumerable();
             Func<TElement, long> elementTypeCounter = GetOrAddCounter(enumerableShape.ElementType);
             return new Func<TEnumerable, long>(enumerable =>
             {
