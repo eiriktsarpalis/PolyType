@@ -167,14 +167,14 @@ public record MyPoco<T>(T Value)
 #### Associated types
 
 The `TypeShape` attribute can also be used to specify associated types for the target type.
-This provides a Reflection-free way to leap from one @PolyType.Abstractions.ITypeShape to an associated shape, and get all the functionality of the associated shape.
+In the context of source generated/AOT applications, this provides a Reflection-free way to leap from one @PolyType.Abstractions.ITypeShape to an associated shape, and get all the functionality of the associated shape.
 For example, serializers may need to jump from a type shape to its converter.
 
 [!code-csharp[](CSharpSamples/AssociatedTypes.cs#TypeShapeOneType)]
 
 Use the @PolyType.Abstractions.ITypeShape.GetAssociatedTypeShape*?displayProperty=nameWithType method to obtain the shape of an associated type.
 The @PolyType.SourceGenModel.SourceGenTypeShapeProvider implementation of this method requires that the associated types be pre-determined at compile time via attributes.
-The @PolyType.ReflectionProvider.ReflectionTypeShapeProvider does _not_ require these attributes.
+The @PolyType.ReflectionProvider.ReflectionTypeShapeProvider is guaranteed to work with all types and therefore does _not_ require these attributes.
 Thus, it can be valuable to test your associated types code with the source generation provider to ensure your code is AOT-compatible.
 
 An associated type must have at least `internal` visibility for its shape to be generated for use within its same assembly.
