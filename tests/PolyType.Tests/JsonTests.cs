@@ -4,6 +4,7 @@ using PolyType.Examples.JsonSerializer.Converters;
 using PolyType.Tests.FSharp;
 using System.Collections;
 using System.Reflection;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -13,7 +14,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
 {
     [Theory]
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
-    public void Roundtrip_Value<T>(TestCase<T> testCase)
+    public async Task Roundtrip_Value<T>(TestCase<T> testCase)
     {
         if (IsUnsupportedBySTJ(testCase))
         {
@@ -23,7 +24,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         JsonConverter<T> converter = GetConverterUnderTest(testCase);
 
         string json = converter.Serialize(testCase.Value);
-        Assert.Equal(ToJsonBaseline(testCase.Value), json);
+        Assert.Equal(await ToJsonBaseline(testCase.Value), json);
 
         if (!providerUnderTest.HasConstructor(testCase) && testCase.Value is not null)
         {
@@ -44,14 +45,14 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
                     deserializedValue = converter.Deserialize(converter.Serialize(deserializedValue));
                 }
                 
-                Assert.Equal(json, ToJsonBaseline(deserializedValue));
+                Assert.Equal(json, await ToJsonBaseline(deserializedValue));
             }
         }
     }
 
     [Theory]
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
-    public void Roundtrip_Property<T>(TestCase<T> testCase)
+    public async Task Roundtrip_Property<T>(TestCase<T> testCase)
     {
         if (providerUnderTest.Kind is ProviderKind.SourceGen)
         {
@@ -67,7 +68,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         PocoWithGenericProperty<T> poco = new() { Value = testCase.Value };
 
         string json = converter.Serialize(poco);
-        Assert.Equal(ToJsonBaseline(poco), json);
+        Assert.Equal(await ToJsonBaseline(poco), json);
 
         if (testCase.Value is not null && !providerUnderTest.HasConstructor(testCase))
         {
@@ -89,14 +90,14 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
                     deserializedValue = converter.Deserialize(converter.Serialize(deserializedValue));
                 }
                 
-                Assert.Equal(json, ToJsonBaseline(deserializedValue));
+                Assert.Equal(json, await ToJsonBaseline(deserializedValue));
             }
         }
     }
 
     [Theory]
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
-    public void Roundtrip_CollectionElement<T>(TestCase<T> testCase)
+    public async Task Roundtrip_CollectionElement<T>(TestCase<T> testCase)
     {
         if (providerUnderTest.Kind is ProviderKind.SourceGen)
         {
@@ -112,7 +113,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         var list = new List<T?> { testCase.Value, testCase.Value, testCase.Value };
 
         string json = converter.Serialize(list);
-        Assert.Equal(ToJsonBaseline(list), json);
+        Assert.Equal(await ToJsonBaseline(list), json);
 
         if (testCase.Value is not null && !providerUnderTest.HasConstructor(testCase))
         {
@@ -134,14 +135,14 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
                     deserializedValue = converter.Deserialize(converter.Serialize(deserializedValue));
                 }
                 
-                Assert.Equal(json, ToJsonBaseline(deserializedValue));
+                Assert.Equal(json, await ToJsonBaseline(deserializedValue));
             }
         }
     }
 
     [Theory]
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
-    public void Roundtrip_DictionaryEntry<T>(TestCase<T> testCase)
+    public async Task Roundtrip_DictionaryEntry<T>(TestCase<T> testCase)
     {
         if (providerUnderTest.Kind is ProviderKind.SourceGen)
         {
@@ -157,7 +158,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         var dict = new Dictionary<string, T?> { ["key1"] = testCase.Value, ["key2"] = testCase.Value, ["key3"] = testCase.Value };
 
         string json = converter.Serialize(dict);
-        Assert.Equal(ToJsonBaseline(dict), json);
+        Assert.Equal(await ToJsonBaseline(dict), json);
 
         if (testCase.Value is not null && !providerUnderTest.HasConstructor(testCase))
         {
@@ -179,7 +180,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
                     deserializedValue = converter.Deserialize(converter.Serialize(deserializedValue));
                 }
                 
-                Assert.Equal(json, ToJsonBaseline(deserializedValue));
+                Assert.Equal(json, await ToJsonBaseline(deserializedValue));
             }
         }
     }
@@ -395,7 +396,13 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         public T? Value { get; set; }
     }
 
-    protected static string ToJsonBaseline<T>(T? value) => System.Text.Json.JsonSerializer.Serialize(value, s_baselineOptions);
+    protected static async Task<string> ToJsonBaseline<T>(T? value)
+    {
+        MemoryStream stream = new();
+        await System.Text.Json.JsonSerializer.SerializeAsync(stream, value, s_baselineOptions);
+        return Encoding.UTF8.GetString(stream.GetBuffer(), 0, (int)stream.Length);
+    }
+    
     private static readonly JsonSerializerOptions s_baselineOptions = new()
     { 
         IncludeFields = true,

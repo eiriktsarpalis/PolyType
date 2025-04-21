@@ -89,4 +89,8 @@ public enum EnumerableKind
     /// An array of rank > 1.
     /// </summary>
     MultiDimensionalArrayOfT,
+    /// <summary>
+    /// An IAsyncEnumerable{T} type.
+    /// </summary>
+    AsyncEnumerableOfT,
 }

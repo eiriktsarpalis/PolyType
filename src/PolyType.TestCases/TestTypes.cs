@@ -147,9 +147,9 @@ public static class TestTypes
         yield return TestCase.Create(new ConcurrentStack<int>([1, 2, 3]), isStack: true, provider: p);
         yield return TestCase.Create(new ConcurrentDictionary<string, string> { ["key"] = "value" }, p);
 
-        yield return TestCase.Create((IEnumerable)new List<object> { 1, 2, 3 }, p);
-        yield return TestCase.Create((IList)new List<object> { 1, 2, 3 }, p);
-        yield return TestCase.Create((ICollection)new List<object> { 1, 2, 3 }, p);
+        yield return TestCase.Create((IEnumerable)new List<object> { 1, 2, 1, 3 }, p);
+        yield return TestCase.Create((IList)new List<object> { 1, 2, 1, 3 }, p);
+        yield return TestCase.Create((ICollection)new List<object> { 1, 2, 1, 3 }, p);
         yield return TestCase.Create((IDictionary)new Dictionary<object, object> { [42] = 42 }, p);
         yield return TestCase.Create((IEnumerable<int>)[1, 2, 1, 3], p);
         yield return TestCase.Create((ICollection<int>)[1, 2, 1, 3], p);
@@ -564,6 +564,9 @@ public static class TestTypes
         yield return TestCase.Create((GenericTree<string>)new GenericTree<string>.Node("str", new GenericTree<string>.Leaf(), new GenericTree<string>.Leaf()), additionalValues: [new GenericTree<string>.Leaf()], isUnion: true, provider: p);
         yield return TestCase.Create((GenericTree<int>)new GenericTree<int>.Node(42, new GenericTree<int>.Leaf(), new GenericTree<int>.Leaf()), additionalValues: [new GenericTree<int>.Leaf()], isUnion: true, provider: p);
 
+        yield return TestCase.Create(new AsyncEnumerableClass([1, 1, 2, 3, 5, 8]));
+        yield return TestCase.Create((IAsyncEnumerable<int>)new AsyncEnumerableClass([1, 1, 2, 3, 5, 8]), p);
+
         // IsRequired on attributes
         yield return TestCase.Create(new PropertyRequiredByAttribute { AttributeRequiredProperty = true });
         yield return TestCase.Create(new PropertyNotRequiredByAttribute { AttributeNotRequiredProperty = true });
@@ -583,7 +586,7 @@ public static class TestTypes
         yield return TestCase.Create(FSharpOption<string>.Some("str"), additionalValues: [FSharpOption<string>.None], provider: p);
         yield return TestCase.Create(FSharpValueOption<int>.Some(42), additionalValues: [FSharpValueOption<int>.None], provider: p);
         yield return TestCase.Create(FSharpValueOption<string>.Some("str"), additionalValues: [FSharpValueOption<string>.None], provider: p);
-        yield return TestCase.Create(ListModule.OfSeq([1, 2, 3]), p);
+        yield return TestCase.Create(ListModule.OfSeq([1, 2, 1, 3]), p);
         yield return TestCase.Create(SetModule.OfSeq([1, 2, 3]), p);
         yield return TestCase.Create(MapModule.OfSeq<string, int>([new("key1", 1), new("key2", 2)]), p);
         yield return TestCase.Create(FSharpRecordWithCollections.Create(), p);
@@ -2315,6 +2318,21 @@ public partial record CtorParameterNotRequiredByAttribute
     public bool P { get; }
 }
 
+[GenerateShape]
+public partial class AsyncEnumerableClass(IEnumerable<int> values) : IAsyncEnumerable<int>
+{
+    public IEnumerable<int> Values { get; } = values;
+
+    async IAsyncEnumerator<int> IAsyncEnumerable<int>.GetAsyncEnumerator(CancellationToken cancellationToken)
+    {
+        await Task.Yield();
+        foreach (int value in Values)
+        {
+            yield return value;
+        }
+    }
+}
+
 [GenerateShape<object>]
 [GenerateShape<bool>]
 [GenerateShape<char>]
@@ -2503,6 +2521,7 @@ public partial record CtorParameterNotRequiredByAttribute
 [GenerateShape<GenericDictionaryWithMarshaller<string, int>>]
 [GenerateShape<GenericTree<string>>]
 [GenerateShape<GenericTree<int>>]
+[GenerateShape<IAsyncEnumerable<int>>]
 [GenerateShape<FSharpRecord>]
 [GenerateShape<FSharpStructRecord>]
 [GenerateShape<GenericFSharpRecord<string>>]

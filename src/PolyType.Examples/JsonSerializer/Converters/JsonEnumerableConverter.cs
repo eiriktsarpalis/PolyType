@@ -14,7 +14,7 @@ internal class JsonEnumerableConverter<TEnumerable, TElement>(JsonConverter<TEle
 {
     private static readonly bool s_isIList = typeof(IList<TElement>).IsAssignableFrom(typeof(TEnumerable));
     private protected readonly JsonConverter<TElement> _elementConverter = elementConverter;
-    private readonly Func<TEnumerable, IEnumerable<TElement>> _getEnumerable = typeShape.GetGetEnumerable();
+    private readonly Func<TEnumerable, IEnumerable<TElement>> _getEnumerable = typeShape.GetGetPotentiallyBlockingEnumerable();
 
     public override TEnumerable? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
@@ -140,7 +140,7 @@ internal sealed class JsonEnumerableConstructorEnumerableConverter<TEnumerable, 
     : JsonImmutableEnumerableConverter<TEnumerable, TElement>(elementConverter, typeShape)
 {
     private protected override TEnumerable Construct(PooledList<TElement> buffer)
-        => enumerableConstructor(buffer.ExchangeToArraySegment());
+        => enumerableConstructor(buffer.ToArray());
 }
 
 internal sealed class JsonSpanConstructorEnumerableConverter<TEnumerable, TElement>(

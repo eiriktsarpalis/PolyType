@@ -19,12 +19,12 @@ public partial class TypeDataModelGenerator
         }
 
         int rank = 1;
-        EnumerableKind kind = EnumerableKind.None;
+        EnumerableKind kind;
         CollectionModelConstructionStrategy constructionStrategy = CollectionModelConstructionStrategy.None;
-        ITypeSymbol? elementType = null;
+        ITypeSymbol? elementType;
         IMethodSymbol? addElementMethod = null;
-        //INamedTypeSymbol? implementationType = null;
         IMethodSymbol? factoryMethod = null;
+        INamedTypeSymbol? asyncEnumerableOfT = null;
 
         if (type is IArrayTypeSymbol array)
         {
@@ -65,9 +65,11 @@ public partial class TypeDataModelGenerator
             kind = EnumerableKind.ReadOnlyMemoryOfT;
             elementType = namedType.TypeArguments[0];
         }
-        else if (type.GetCompatibleGenericBaseType(KnownSymbols.IEnumerableOfT) is { } enumerableOfT)
+        else if ((
+            type.GetCompatibleGenericBaseType(KnownSymbols.IEnumerableOfT) ?? 
+            (asyncEnumerableOfT = type.GetCompatibleGenericBaseType(KnownSymbols.IAsyncEnumerableOfT))) is { } enumerableOfT)
         {
-            kind = EnumerableKind.IEnumerableOfT;
+            kind = asyncEnumerableOfT is not null ? EnumerableKind.AsyncEnumerableOfT : EnumerableKind.IEnumerableOfT;
             elementType = enumerableOfT.TypeArguments[0];
 
             if (KnownSymbols.Compilation.TryGetCollectionBuilderAttribute(namedType, elementType, out IMethodSymbol? builderMethod, CancellationToken))

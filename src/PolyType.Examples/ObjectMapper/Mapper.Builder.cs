@@ -3,6 +3,7 @@ using PolyType.Utilities;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using PolyType.Examples.Utilities;
 
 namespace PolyType.Examples.ObjectMapper;
 
@@ -241,7 +242,8 @@ public static partial class Mapper
             public override object? VisitEnumerable<TTargetEnumerable, TTargetElement>(IEnumerableTypeShape<TTargetEnumerable, TTargetElement> enumerableShape, object? state)
             {
                 var sourceEnumerable = (IEnumerableTypeShape<TSourceEnumerable, TSourceElement>)state!;
-                var sourceGetEnumerable = sourceEnumerable.GetGetEnumerable();
+                var sourceGetEnumerable = sourceEnumerable.GetGetPotentiallyBlockingEnumerable();
+
                 var elementMapper = baseVisitor.GetOrAddMapper(sourceEnumerable.ElementType, enumerableShape.ElementType);
 
                 switch (enumerableShape.ConstructionStrategy)

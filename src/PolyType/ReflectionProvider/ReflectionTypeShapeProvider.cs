@@ -161,8 +161,6 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
     private IEnumerableTypeShape CreateEnumerableShape(Type type)
     {
-        Debug.Assert(typeof(IEnumerable).IsAssignableFrom(type) || type.IsMemoryType(out _, out _));
-
         if (type.IsArray)
         {
             Type elementType = type.GetElementType()!;
@@ -180,18 +178,23 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             }
         }
 
-        foreach (Type interfaceTy in type.GetAllInterfaces())
+        foreach (Type interfaceTy in type.GetAllInterfaces().Where(t => t.IsGenericType).OrderByDescending(t => t.Name))
         {
-            if (interfaceTy.IsGenericType)
-            {
-                Type genericInterfaceTypeDef = interfaceTy.GetGenericTypeDefinition();
+            // Sort by name so that IEnumerable takes precedence over IAsyncEnumerable
+            Type genericInterfaceTypeDef = interfaceTy.GetGenericTypeDefinition();
 
-                if (genericInterfaceTypeDef == typeof(IEnumerable<>))
-                {
-                    Type elementType = interfaceTy.GetGenericArguments()[0];
-                    Type enumerableTypeTy = typeof(ReflectionEnumerableTypeOfTShape<,>).MakeGenericType(type, elementType);
-                    return (IEnumerableTypeShape)Activator.CreateInstance(enumerableTypeTy, this)!;
-                }
+            if (genericInterfaceTypeDef == typeof(IEnumerable<>))
+            {
+                Type elementType = interfaceTy.GetGenericArguments()[0];
+                Type enumerableTypeTy = typeof(ReflectionEnumerableTypeOfTShape<,>).MakeGenericType(type, elementType);
+                return (IEnumerableTypeShape)Activator.CreateInstance(enumerableTypeTy, this)!;
+            }
+
+            if (genericInterfaceTypeDef.FullName == "System.Collections.Generic.IAsyncEnumerable`1")
+            {
+                Type elementType = interfaceTy.GetGenericArguments()[0];
+                Type enumerableTypeTy = typeof(ReflectionAsyncEnumerableShape<,>).MakeGenericType(type, elementType);
+                return (IEnumerableTypeShape)Activator.CreateInstance(enumerableTypeTy, this)!;
             }
         }
 
@@ -398,6 +401,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             return TypeShapeKind.Dictionary;
         }
 
+        bool foundAsyncEnumerable = false;
         foreach (Type interfaceTy in type.GetAllInterfaces())
         {
             if (interfaceTy.IsGenericType)
@@ -408,10 +412,15 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
                 {
                     return TypeShapeKind.Dictionary;
                 }
+
+                if (genericInterfaceTy.FullName == "System.Collections.Generic.IAsyncEnumerable`1")
+                {
+                    foundAsyncEnumerable = true;
+                }
             }
         }
 
-        if (typeof(IEnumerable).IsAssignableFrom(type) && type != typeof(string))
+        if (foundAsyncEnumerable || (typeof(IEnumerable).IsAssignableFrom(type) && type != typeof(string)))
         {
             return TypeShapeKind.Enumerable;
         }

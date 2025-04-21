@@ -145,7 +145,7 @@ internal sealed class XmlEnumerableConstructorDictionaryConverter<TDictionary, T
     where TKey : notnull
 {
     private protected override TDictionary Construct(PooledList<KeyValuePair<TKey, TValue>> buffer)
-        => constructor(buffer.ExchangeToArraySegment());
+        => constructor(buffer.ToArray());
 }
 
 internal sealed class XmlSpanConstructorDictionaryConverter<TDictionary, TKey, TValue>(

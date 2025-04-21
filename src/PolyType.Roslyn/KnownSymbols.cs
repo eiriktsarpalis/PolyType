@@ -67,6 +67,12 @@ public class KnownSymbols(Compilation compilation)
     /// </summary>
     public INamedTypeSymbol IEnumerable => _IEnumerable ??= Compilation.GetSpecialType(SpecialType.System_Collections_IEnumerable);
     private INamedTypeSymbol? _IEnumerable;
+    
+    /// <summary>
+    /// The type symbol for IAsyncEnumerable{T}.
+    /// </summary>
+    public INamedTypeSymbol? IAsyncEnumerableOfT => GetOrResolveType("System.Collections.Generic.IAsyncEnumerable`1", ref _IAsyncEnumerableOfT);
+    private Option<INamedTypeSymbol?> _IAsyncEnumerableOfT;
 
     /// <summary>
     /// The type symbol for <see cref="Span{T}"/>.

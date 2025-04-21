@@ -1,5 +1,6 @@
 ﻿using PolyType.Abstractions;
 using PolyType.Examples.CborSerializer.Converters;
+using PolyType.Examples.Utilities;
 
 namespace PolyType.Examples.CborSerializer;
 
@@ -83,7 +84,7 @@ public static partial class CborSerializer
         public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state)
         {
             CborConverter<TElement> elementConverter = GetOrAddConverter(enumerableShape.ElementType);
-            Func<TEnumerable, IEnumerable<TElement>> getEnumerable = enumerableShape.GetGetEnumerable();
+            Func<TEnumerable, IEnumerable<TElement>> getEnumerable = enumerableShape.GetGetPotentiallyBlockingEnumerable();
 
             return enumerableShape.ConstructionStrategy switch
             {
