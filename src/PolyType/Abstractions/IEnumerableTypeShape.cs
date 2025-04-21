@@ -29,7 +29,7 @@ public interface IEnumerableTypeShape : ITypeShape
     int Rank { get; }
 
     /// <summary>
-    /// Indicates whether the underlying type is an IAsyncEnumerable or not.
+    /// Indicates whether the underlying type is an IAsyncEnumerable.
     /// </summary>
     /// <remarks>
     /// Calling <see cref="IEnumerableTypeShape{TEnumerable, TElement}.GetGetEnumerable"/> on async enumerable instances
