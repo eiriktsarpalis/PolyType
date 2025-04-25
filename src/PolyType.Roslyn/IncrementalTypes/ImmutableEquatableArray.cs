@@ -42,6 +42,11 @@ public sealed class ImmutableEquatableArray<T> :
         _values = values;
     }
 
+    /// <summary>
+    /// Gets the underlying array as a <see cref="ReadOnlySpan{T}"/>.
+    /// </summary>
+    public ReadOnlySpan<T> AsSpan() => _values;
+
     /// <inheritdoc/>
     public bool Equals(ImmutableEquatableArray<T> other)
         => ReferenceEquals(this, other) || ((ReadOnlySpan<T>)_values).SequenceEqual(other._values);

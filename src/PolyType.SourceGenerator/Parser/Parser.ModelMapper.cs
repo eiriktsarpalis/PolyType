@@ -375,10 +375,21 @@ public sealed partial class Parser
             ? constructor.MemberInitializers.OrderByDescending(p => p.IsRequiredBySyntax ? 2 : p.IsRequiredByPolicy is true ? 1 : 0)
             // Do not include any member initializers in parameterless constructors.
             : [];
+        var parameters = constructor.Parameters.Select(p => MapParameter(objectModel, declaringTypeId, p, isFSharpUnionCase)).ToImmutableEquatableArray();
+
+        List<ParameterShapeModel> requiredParametersAndMembers = new(constructor.Parameters.Length + constructor.MemberInitializers.Length);
+        foreach (ParameterShapeModel parameter in parameters)
+        {
+            if (parameter.IsRequired)
+            {
+                requiredParametersAndMembers.Add(parameter);
+            }
+        }
 
         foreach (PropertyDataModel propertyModel in memberInitializers)
         {
             ParsePropertyShapeAttribute(propertyModel.PropertySymbol, out string propertyName, out _);
+            bool isRequired = propertyModel.IsRequiredByPolicy ?? propertyModel.IsRequiredBySyntax;
 
             var memberInitializer = new ParameterShapeModel
             {
@@ -390,7 +401,7 @@ public sealed partial class Parser
                 Name = propertyName,
                 UnderlyingMemberName = propertyModel.Name,
                 Position = position++,
-                IsRequired = propertyModel.IsRequiredByPolicy ?? propertyModel.IsRequiredBySyntax,
+                IsRequired = isRequired,
                 IsAccessible = propertyModel.IsSetterAccessible,
                 CanUseUnsafeAccessors = _knownSymbols.TargetFramework switch
                 {
@@ -409,6 +420,11 @@ public sealed partial class Parser
                 DefaultValueExpr = null,
             };
 
+            if (isRequired)
+            {
+                requiredParametersAndMembers.Add(memberInitializer);
+            }
+
             if (memberInitializer.Kind is ParameterKind.RequiredMember)
             {
                 // Member must be set using an object initializer expression
@@ -421,25 +437,29 @@ public sealed partial class Parser
             }
         }
 
+        static OptionalMemberFlagsType GetOptionalMembersFlagType(int? count) =>
+            count switch
+            {
+                0 or null => OptionalMemberFlagsType.None,
+                <= 8 => OptionalMemberFlagsType.Byte,
+                <= 16 => OptionalMemberFlagsType.UShort,
+                <= 32 => OptionalMemberFlagsType.UInt32,
+                <= 64 => OptionalMemberFlagsType.ULong,
+                _ => OptionalMemberFlagsType.BitArray,
+            };
+
         return new ConstructorShapeModel
         {
             DeclaringType = SymbolEqualityComparer.Default.Equals(constructor.DeclaringType, objectModel.Type)
                 ? declaringTypeId
                 : CreateTypeId(constructor.DeclaringType),
 
-            Parameters = constructor.Parameters.Select(p => MapParameter(objectModel, declaringTypeId, p, isFSharpUnionCase)).ToImmutableEquatableArray(),
+            Parameters = parameters,
             RequiredMembers = requiredMembers?.ToImmutableEquatableArray() ?? [],
+            RequiredParametersAndMembers = requiredParametersAndMembers.ToImmutableEquatableArray(),
+            RequiredMemberFlagsType = GetOptionalMembersFlagType(requiredParametersAndMembers.Count),
             OptionalMembers = optionalMembers?.ToImmutableEquatableArray() ?? [],
-            OptionalMemberFlagsType = (optionalMembers?.Count ?? 0) switch
-            {
-                0 => OptionalMemberFlagsType.None,
-                <= 8 => OptionalMemberFlagsType.Byte,
-                <= 16 => OptionalMemberFlagsType.UShort,
-                <= 32 => OptionalMemberFlagsType.UInt32,
-                <= 64 => OptionalMemberFlagsType.ULong,
-                _ => OptionalMemberFlagsType.BitArray,
-            },
-
+            OptionalMemberFlagsType = GetOptionalMembersFlagType(optionalMembers?.Count),
             StaticFactoryName = constructor.Constructor switch
             {
                 { IsStatic: true, MethodKind: MethodKind.PropertyGet } ctor => ctor.AssociatedSymbol!.GetFullyQualifiedName(),
@@ -540,6 +560,8 @@ public sealed partial class Parser
                 DeclaringType = typeId,
                 Parameters = [],
                 RequiredMembers = [],
+                RequiredParametersAndMembers = ImmutableEquatableArray<ParameterShapeModel>.Empty,
+                RequiredMemberFlagsType = OptionalMemberFlagsType.None,
                 OptionalMembers = [],
                 OptionalMemberFlagsType = OptionalMemberFlagsType.None,
                 StaticFactoryName = null,
@@ -558,6 +580,8 @@ public sealed partial class Parser
                 DeclaringType = typeId,
                 Parameters = tupleModel.Elements.Select((p, i) => MapTupleConstructorParameter(typeId, p, i)).ToImmutableEquatableArray(),
                 RequiredMembers = [],
+                RequiredParametersAndMembers = ImmutableEquatableArray<ParameterShapeModel>.Empty,
+                RequiredMemberFlagsType = OptionalMemberFlagsType.None,
                 OptionalMembers = [],
                 OptionalMemberFlagsType = OptionalMemberFlagsType.None,
                 StaticFactoryName = null,

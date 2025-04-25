@@ -253,7 +253,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
     {
         var converter = JsonSerializerTS.CreateConverter<CtorParameterRequiredByAttribute>(providerUnderTest.Provider);
 
-        converter.Deserialize("""{"p": true}""");
+        converter.Deserialize("""{"P": true}""");
 
         JsonException ex = Assert.Throws<JsonException>(() => converter.Deserialize("""{}"""));
         TestContext.Current.TestOutputHelper!.WriteLine(ex.Message);

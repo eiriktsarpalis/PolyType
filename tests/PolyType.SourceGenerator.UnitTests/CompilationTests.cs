@@ -286,6 +286,127 @@ public static class CompilationTests
     }
 
     [Fact]
+    public static void RequiredProperties2()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+            #nullable enable
+
+            [GenerateShape]
+            public partial class Foo
+            {
+                public required string? PropA { get; set; }
+                public required string? PropB { get; set; }
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void RequiredProperties40()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+            #nullable enable
+
+            [GenerateShape]
+            public partial class Foo
+            {
+                public required string? Prop1 { get; set; }
+                public required string? Prop2 { get; set; }
+                public required string? Prop3 { get; set; }
+                public required string? Prop4 { get; set; }
+                public required string? Prop5 { get; set; }
+                public required string? Prop6 { get; set; }
+                public required string? Prop7 { get; set; }
+                public required string? Prop8 { get; set; }
+                public required string? Prop9 { get; set; }
+                public required string? Prop10 { get; set; }
+                public required string? Prop11 { get; set; }
+                public required string? Prop12 { get; set; }
+                public required string? Prop13 { get; set; }
+                public required string? Prop14 { get; set; }
+                public required string? Prop15 { get; set; }
+                public required string? Prop16 { get; set; }
+                public required string? Prop17 { get; set; }
+                public required string? Prop18 { get; set; }
+                public required string? Prop19 { get; set; }
+                public required string? Prop20 { get; set; }
+                public required string? Prop21 { get; set; }
+                public required string? Prop22 { get; set; }
+                public required string? Prop23 { get; set; }
+                public required string? Prop24 { get; set; }
+                public required string? Prop25 { get; set; }
+                public required string? Prop26 { get; set; }
+                public required string? Prop27 { get; set; }
+                public required string? Prop28 { get; set; }
+                public required string? Prop29 { get; set; }
+                public required string? Prop30 { get; set; }
+                public required string? Prop31 { get; set; }
+                public required string? Prop32 { get; set; }
+                public required string? Prop33 { get; set; }
+                public required string? Prop34 { get; set; }
+                public required string? Prop35 { get; set; }
+                public required string? Prop36 { get; set; }
+                public required string? Prop37 { get; set; }
+                public required string? Prop38 { get; set; }
+                public required string? Prop39 { get; set; }
+                public required string? Prop40 { get; set; }
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void RecordWith42ConstructorParametersAndRequiredProperties()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+            using System;
+
+            [GenerateShape]
+            public partial record RecordWith42ConstructorParametersAndRequiredProperties(
+                string x01, int x02, bool x03, TimeSpan x04, DateTime x05, int x06, string x07,
+                string x08, int x09, bool x10, TimeSpan x11, DateTime x12, int x13, string x14,
+                string x15, int x16, bool x17, TimeSpan x18, DateTime x19, int x20, string x21,
+                string x22, int x23, bool x24, TimeSpan x25, DateTime x26, int x27, string x28,
+                string x29, int x30, bool x31, TimeSpan x32, DateTime x33, int x34, string x35,
+                string x36, int x37, bool x38, TimeSpan x39, [ParameterShape(IsRequired = false)] DateTime x40, [ParameterShape(IsRequired = true)] int x41 = 0, string x42 = "")
+            {
+                public required int requiredField;
+                public required string RequiredProperty { get; set; }
+            }
+            """);
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void CtorParameterRequiredByAttribute()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [GenerateShape]
+            public partial record CtorParameterRequiredByAttribute
+            {
+                public CtorParameterRequiredByAttribute([ParameterShape(IsRequired = true)] bool p = false)
+                {
+                    P = p;
+                }
+
+                public bool P { get; }
+            }
+            """);
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
     public static void MultiplePartialContextDeclarations_NoErrors()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
@@ -307,6 +428,24 @@ public static class CompilationTests
             
             [GenerateShape<string>]
             public partial class MyWitness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void PropertyNotRequiredByAttribute()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [GenerateShape]
+            public partial record PropertyNotRequiredByAttribute
+            {
+                [PropertyShape(IsRequired = false)]
+                public required bool AttributeNotRequiredProperty { get; set; }
+            }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);

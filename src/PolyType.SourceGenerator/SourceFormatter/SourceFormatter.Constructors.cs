@@ -2,6 +2,7 @@
 using PolyType.Roslyn;
 using PolyType.SourceGenerator.Helpers;
 using PolyType.SourceGenerator.Model;
+using System.Collections;
 using System.Diagnostics;
 using System.Text;
 
@@ -9,13 +10,14 @@ namespace PolyType.SourceGenerator;
 
 internal sealed partial class SourceFormatter
 {
-    private const string FlagsArgumentStateLabel = "Flags";
+    private const string RequiredFlagsArgumentStateLabel = "RequiredFlags";
+    private const string OptionalFlagsArgumentStateLabel = "OptionalFlags";
 
     private void FormatConstructorFactory(SourceWriter writer, string methodName, ObjectShapeModel type, ConstructorShapeModel constructor)
     {
         string constructorArgumentStateFQN = FormatConstructorArgumentStateFQN(type, constructor);
         string? constructorParameterFactoryName = constructor.TotalArity > 0 ? $"__CreateConstructorParameters_{type.SourceIdentifier}" : null;
-        
+
         writer.WriteLine($"private global::PolyType.Abstractions.IConstructorShape {methodName}()");
         writer.WriteLine('{');
         writer.Indentation++;
@@ -37,13 +39,13 @@ internal sealed partial class SourceFormatter
 
         writer.Indentation--;
         writer.WriteLine('}');
-        
+
         if (constructorParameterFactoryName != null)
         {
             writer.WriteLine();
             FormatParameterFactory(writer, type, constructorParameterFactoryName, constructor, constructorArgumentStateFQN);
         }
-        
+
         static string FormatAttributeProviderFunc(ObjectShapeModel type, ConstructorShapeModel constructor)
         {
             if (type.IsTupleType || constructor.IsStaticFactory)
@@ -64,38 +66,56 @@ internal sealed partial class SourceFormatter
             {
                 return "null";
             }
-            
-            string argumentCtorExpr = (constructor.Parameters.Length, constructor.RequiredMembers.Length, constructor.OptionalMemberFlagsType) switch
+
+            string argumentCtorExpr = (constructor.Parameters.Length, constructor.RequiredMembers.Length, constructor.RequiredMemberFlagsType, constructor.OptionalMemberFlagsType) switch
             {
-                (0, 0, OptionalMemberFlagsType.None) => "null!",
-                (1, 0, OptionalMemberFlagsType.None) => FormatDefaultValueExpr(constructor.Parameters[0]),
-                (0, 1, OptionalMemberFlagsType.None) => FormatDefaultValueExpr(constructor.RequiredMembers[0]),
-                (_, _, not OptionalMemberFlagsType.BitArray) when !constructor.Parameters.Any(p => p.HasDefaultValue) => $"default({constructorArgumentStateFQN})",
-                (_, _, OptionalMemberFlagsType.None) => 
+                (0, 0, OptionalMemberFlagsType.None, OptionalMemberFlagsType.None) => "null!",
+                (1, 0, OptionalMemberFlagsType.None, OptionalMemberFlagsType.None) => FormatDefaultValueExpr(constructor.Parameters[0]),
+                (0, 1, OptionalMemberFlagsType.None, OptionalMemberFlagsType.None) => FormatDefaultValueExpr(constructor.RequiredMembers[0]),
+                (_, _, not OptionalMemberFlagsType.BitArray, not OptionalMemberFlagsType.BitArray) when !constructor.Parameters.Any(p => p.HasDefaultValue) => $"default({constructorArgumentStateFQN})",
+                (_, _, OptionalMemberFlagsType.None, OptionalMemberFlagsType.None) =>
                     FormatTupleConstructor(
                         constructor.Parameters
                         .Concat(constructor.RequiredMembers)
                         .Select(FormatDefaultValueExpr)),
-                (_, _, OptionalMemberFlagsType flagType) =>
+                (_, _, OptionalMemberFlagsType requiredFlagType, OptionalMemberFlagsType optionalFlagType) =>
                     FormatTupleConstructor(
                         constructor.Parameters
                         .Concat(constructor.RequiredMembers)
                         .Concat(constructor.OptionalMembers)
                         .Select(FormatDefaultValueExpr)
-                        .Append(
-                            flagType is OptionalMemberFlagsType.BitArray 
-                            ? $"new({constructor.OptionalMembers.Length})"
-                            : "default")),
+                        .Append(FormatOptionalFlagsConstructor(requiredFlagType, constructor.RequiredParametersAndMembers.Length))
+                        .Append(FormatOptionalFlagsConstructor(optionalFlagType, constructor.OptionalMembers.Length))),
             };
 
             return $"static () => {argumentCtorExpr}";
-            static string FormatTupleConstructor(IEnumerable<string> elementValues)
-                => $"({string.Join(", ", elementValues)})";
+            static string FormatTupleConstructor(IEnumerable<string?> elementValues)
+                => $"({string.Join(", ", elementValues.Where(p => p is not null))})";
+            static string? FormatOptionalFlagsConstructor(OptionalMemberFlagsType flagsType, int count) => flagsType switch
+            {
+                OptionalMemberFlagsType.None => null,
+                OptionalMemberFlagsType.BitArray => $"new({count})",
+                _ => "default",
+            };
         }
 
         static string FormatAreRequiredParametersSet(ObjectShapeModel type, ConstructorShapeModel constructor, string constructorArgumentStateFQN)
         {
-            return "null";
+            string preamble = $"static (in {constructorArgumentStateFQN} state) => ";
+            switch (constructor.RequiredMemberFlagsType)
+            {
+                case OptionalMemberFlagsType.None:
+                    return $"{preamble}true";
+                case OptionalMemberFlagsType.BitArray:
+                    // TODO: Prefer HasAllSet on .NET where the API is available.
+                    //return $"{preamble}state.{RequiredFlagsArgumentStateLabel}.HasAllSet()";
+                    return $"{{ for (int i = 0; i < {preamble}state.{RequiredFlagsArgumentStateLabel}.Length; i++) {{ if (!state.{RequiredFlagsArgumentStateLabel}[i]) return false; }} return true; }}";
+                default:
+                    // A required bit is reserved for all constructor parameters (whether they have default values provided or not) and required members.
+                    // But we only actually require those bits to be 1 when the parameter is required by policy (which does not always correlate to not having a default value).
+                    ulong requiredBits = (ulong)Math.Pow(2, constructor.RequiredParametersAndMembers.Length) - 1;
+                    return $"{preamble}(state.{RequiredFlagsArgumentStateLabel} & 0x{requiredBits:X}) == 0x{requiredBits:X}";
+            }
         }
 
         static string FormatParameterizedCtor(ObjectShapeModel type, ConstructorShapeModel constructor, string constructorArgumentStateFQN)
@@ -104,7 +124,7 @@ internal sealed partial class SourceFormatter
             {
                 return "null";
             }
-            
+
             return $"static (ref {constructorArgumentStateFQN} state) => {FormatParameterizedCtorExpr(type, constructor, "state")}";
             static string FormatParameterizedCtorExpr(ObjectShapeModel type, ConstructorShapeModel constructor, string stateVar)
             {
@@ -150,7 +170,7 @@ internal sealed partial class SourceFormatter
                 {
                     0 => null,
                     _ when !constructor.IsAccessible => null, // Can't use member initializers with unsafe accessors
-                    1 when constructor.TotalArity == 1 => $$""" { {{constructor.RequiredMembers[0].UnderlyingMemberName}} = {{stateVar}} }""",
+                    1 when constructor.TotalArity == 1 && constructor.RequiredParametersAndMembers.Length == 0 => $$""" { {{constructor.RequiredMembers[0].UnderlyingMemberName}} = {{stateVar}} }""",
                     _ => $$""" { {{FormatInitializerBody()}} }""",
                 };
 
@@ -161,7 +181,7 @@ internal sealed partial class SourceFormatter
                     0 when constructor.StaticFactoryIsProperty => castPrefix + constructorName,
                     0 when memberInitializerBlock is null => $"{castPrefix}{constructorName}()",
                     0 => $"{castPrefix}{constructorName}{memberInitializerBlock}",
-                    1 when constructor.TotalArity == 1 => $"{castPrefix}{constructorName}({FormatCtorParameterExpr(constructor.Parameters[0], isSingleParameter: true)})",
+                    1 when constructor.TotalArity == 1 && constructor.RequiredParametersAndMembers.Length == 0 => $"{castPrefix}{constructorName}({FormatCtorParameterExpr(constructor.Parameters[0], isSingleParameter: true)})",
                     _ => $"{castPrefix}{constructorName}({FormatCtorArgumentsBody()}){memberInitializerBlock}",
                 };
 
@@ -175,7 +195,7 @@ internal sealed partial class SourceFormatter
                     ? FormatOptionalMemberAssignments()
                     : null;
 
-                return requiredMemberAssignments is null && optionalMemberAssignments is null 
+                return requiredMemberAssignments is null && optionalMemberAssignments is null
                     ? constructorExpr
                     : $$"""{ var obj = {{constructorExpr}}; {{requiredMemberAssignments}} {{optionalMemberAssignments}} return obj; }""";
 
@@ -189,9 +209,9 @@ internal sealed partial class SourceFormatter
                     int flagOffset = parameter.Position - constructor.Parameters.Length - constructor.RequiredMembers.Length;
                     Debug.Assert(flagOffset >= 0);
                     string conditionalExpr = constructor.OptionalMemberFlagsType is OptionalMemberFlagsType.BitArray
-                        ? $"{stateVar}.{FlagsArgumentStateLabel}[{flagOffset}]"
-                        : $"({stateVar}.{FlagsArgumentStateLabel} & {1 << flagOffset}) != 0";
-                    
+                        ? $"{stateVar}.{OptionalFlagsArgumentStateLabel}[{flagOffset}]"
+                        : $"({stateVar}.{OptionalFlagsArgumentStateLabel} & {1 << flagOffset}) != 0";
+
                     string assignmentBody = FormatMemberAssignment(parameter);
 
                     return $"if ({conditionalExpr}) {assignmentBody}";
@@ -237,7 +257,7 @@ internal sealed partial class SourceFormatter
                         RefKind.Out => "out ",
                         _ => ""
                     };
-                    
+
                     return isSingleParameter
                         ? $"{refPrefix}{stateVar}{(requiresSuppression ? "!" : "")}"
                         : $"{refPrefix}{stateVar}.Item{parameter.Position + 1}{(requiresSuppression ? "!" : "")}";
@@ -327,13 +347,28 @@ internal sealed partial class SourceFormatter
             static string FormatSetterBody(ConstructorShapeModel constructor, ParameterShapeModel parameter)
             {
                 // Suppress non-nullable Nullable<T> property setters (i.e. setters with [DisallowNull] annotation)
-                bool suppressSetter = parameter.ParameterTypeContainsNullabilityAnnotations || parameter is 
-                { 
+                bool suppressSetter = parameter.ParameterTypeContainsNullabilityAnnotations || parameter is
+                {
                     ParameterType.SpecialType: SpecialType.System_Nullable_T,
                     IsNonNullable: true,
                 };
-                
+
                 string assignValueExpr = constructor.TotalArity switch
+                {
+                    1 when constructor.RequiredParametersAndMembers.Length == 0 => $"state = value{(suppressSetter ? "!" : "")}",
+                    _ => $"state.Item{parameter.Position + 1} = value{(suppressSetter ? "!" : "")}",
+                };
+
+                if (constructor.RequiredParametersAndMembers.AsSpan().IndexOf(parameter) is int flagOffset && flagOffset >= 0)
+                {
+                    string setFlagExpr = constructor.RequiredMemberFlagsType is OptionalMemberFlagsType.BitArray
+                        ? $"state.{RequiredFlagsArgumentStateLabel}[{flagOffset}] = true"
+                        : $"state.{RequiredFlagsArgumentStateLabel} |= 0x{(1ul << flagOffset):X}";
+
+                    return $$"""{ {{assignValueExpr}}; {{setFlagExpr}}; }""";
+                }
+
+                assignValueExpr = constructor.TotalArity switch
                 {
                     1 when constructor.OptionalMembers.Length == 0 => $"state = value{(suppressSetter ? "!" : "")}",
                     _ => $"state.Item{parameter.Position + 1} = value{(suppressSetter ? "!" : "")}",
@@ -341,11 +376,11 @@ internal sealed partial class SourceFormatter
 
                 if (parameter.Kind is ParameterKind.OptionalMember)
                 {
-                    int flagOffset = parameter.Position - constructor.Parameters.Length - constructor.RequiredMembers.Length;
+                    flagOffset = parameter.Position - constructor.Parameters.Length - constructor.RequiredMembers.Length;
                     Debug.Assert(flagOffset >= 0);
                     string setFlagExpr = constructor.OptionalMemberFlagsType is OptionalMemberFlagsType.BitArray
-                        ? $"state.{FlagsArgumentStateLabel}[{flagOffset}] = true"
-                        : $"state.{FlagsArgumentStateLabel} |= {1 << flagOffset}";
+                        ? $"state.{OptionalFlagsArgumentStateLabel}[{flagOffset}] = true"
+                        : $"state.{OptionalFlagsArgumentStateLabel} |= 0x{(1ul << flagOffset):X}";
 
                     return $$"""{ {{assignValueExpr}}; {{setFlagExpr}}; }""";
                 }
@@ -381,6 +416,16 @@ internal sealed partial class SourceFormatter
         };
     }
 
+    private static string? FormatOptionalMemberFlagsType(OptionalMemberFlagsType type) => type switch
+    {
+        OptionalMemberFlagsType.Byte => "byte",
+        OptionalMemberFlagsType.UShort => "ushort",
+        OptionalMemberFlagsType.UInt32 => "uint",
+        OptionalMemberFlagsType.ULong => "ulong",
+        OptionalMemberFlagsType.BitArray => "global::System.Collections.BitArray",
+        _ => null,
+    };
+
     private static string FormatConstructorArgumentStateFQN(ObjectShapeModel type, ConstructorShapeModel constructorModel)
     {
         if (type.IsValueTupleType && constructorModel.TotalArity > 1)
@@ -389,37 +434,31 @@ internal sealed partial class SourceFormatter
             return constructorModel.DeclaringType.FullyQualifiedName;
         }
 
-        string? optionalParameterFlagTypeFQN = constructorModel.OptionalMemberFlagsType switch
-        {
-            OptionalMemberFlagsType.Byte => "byte",
-            OptionalMemberFlagsType.UShort => "ushort",
-            OptionalMemberFlagsType.UInt32 => "uint",
-            OptionalMemberFlagsType.ULong => "ulong",
-            OptionalMemberFlagsType.BitArray => "global::System.Collections.BitArray",
-            _ => null,
-        };
+        string? requiredParameterFlagTypeFQN = FormatOptionalMemberFlagsType(constructorModel.RequiredMemberFlagsType);
+        string? optionalParameterFlagTypeFQN = FormatOptionalMemberFlagsType(constructorModel.OptionalMemberFlagsType);
 
-        return (constructorModel.Parameters.Length, constructorModel.RequiredMembers.Length, optionalParameterFlagTypeFQN) switch
+        return (constructorModel.Parameters.Length, constructorModel.RequiredMembers.Length, requiredParameterFlagTypeFQN, optionalParameterFlagTypeFQN) switch
         {
-            (0, 0, null) => "object?",
-            (1, 0, null) => constructorModel.Parameters[0].ParameterType.FullyQualifiedName,
-            (0, 1, null) => constructorModel.RequiredMembers[0].ParameterType.FullyQualifiedName,
-            (_, _, null) => FormatTupleType(
+            (0, 0, null, null) => "object?",
+            (1, 0, null, null) => constructorModel.Parameters[0].ParameterType.FullyQualifiedName,
+            (0, 1, null, null) => constructorModel.RequiredMembers[0].ParameterType.FullyQualifiedName,
+            (_, _, null, null) => FormatTupleType(
                 constructorModel.Parameters
                 .Concat(constructorModel.RequiredMembers)
                 .Select(p => p.ParameterType.FullyQualifiedName)),
 
-            (_, _, { }) =>
+            (_, _, _, { }) or (_, _, { }, _) =>
                 FormatTupleType(
                     constructorModel.Parameters
                     .Concat(constructorModel.RequiredMembers)
                     .Concat(constructorModel.OptionalMembers)
                     .Select(p => p.ParameterType.FullyQualifiedName)
-                    .Append($"{optionalParameterFlagTypeFQN} {FlagsArgumentStateLabel}"))
+                    .Append(requiredParameterFlagTypeFQN is null ? null : $"{requiredParameterFlagTypeFQN} {RequiredFlagsArgumentStateLabel}")
+                    .Append(optionalParameterFlagTypeFQN is null ? null : $"{optionalParameterFlagTypeFQN} {OptionalFlagsArgumentStateLabel}"))
         };
 
-        static string FormatTupleType(IEnumerable<string> parameterTypes)
-            => $"({string.Join(", ", parameterTypes)})";
+        static string FormatTupleType(IEnumerable<string?> parameterTypes)
+            => $"({string.Join(", ", parameterTypes.Where(p => p is not null))})";
     }
 
     private static string GetConstructorAccessorName(ObjectShapeModel declaringType)
@@ -462,7 +501,7 @@ internal sealed partial class SourceFormatter
 
             static string FormatParameterType(ParameterShapeModel parameter)
             {
-                return parameter.RefKind is RefKind.None 
+                return parameter.RefKind is RefKind.None
                     ? $"typeof({parameter.ParameterType.FullyQualifiedName})"
                     : $"typeof({parameter.ParameterType.FullyQualifiedName}).MakeByRefType()";
             }
