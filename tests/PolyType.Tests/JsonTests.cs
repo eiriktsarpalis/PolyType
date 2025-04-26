@@ -3,6 +3,7 @@ using PolyType.Examples.JsonSerializer;
 using PolyType.Examples.JsonSerializer.Converters;
 using PolyType.Tests.FSharp;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;

@@ -14,6 +14,7 @@
     <PackageVersion Include="PolySharp" Version="1.15.0" />
     <PackageVersion Include="Nerdbank.GitVersioning" Version="3.6.146" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.1.118" />
+    <PackageVersion Include="Xunit.Combinatorial" Version="2.0.24" />
     <!-- Testing dependencies -->
     <PackageVersion Include="xunit.v3" Version="2.0.0" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.0.2" />
