@@ -113,6 +113,10 @@ internal sealed class MethodConstructorShapeInfo : IConstructorShapeInfo
     public MemberInitializerShapeInfo[] MemberInitializers { get; }
 
     public ICustomAttributeProvider? AttributeProvider => ConstructorMethod;
+
+    /// <summary>
+    /// Gets all constructor parameters and member initializers.
+    /// </summary>
     public IParameterShapeInfo[] Parameters { get; }
 }
 

@@ -396,6 +396,8 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
 
     public InFunc<TArgumentState, bool> CreateAreRequiredParametersSet<TArgumentState>(IConstructorShapeInfo ctorInfo)
     {
+        Debug.Assert(ctorInfo.Parameters.Length > 0);
+
         return new((in TArgumentState state) => true);
     }
 
