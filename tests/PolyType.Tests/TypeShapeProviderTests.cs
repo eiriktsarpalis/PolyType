@@ -719,6 +719,19 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             }
         }
     }
+
+    [Fact]
+    public void GetAreRequiredParametersSet_ThrowsForDefaultConstructorTypes()
+    {
+        IObjectTypeShape? shape = (IObjectTypeShape?)providerUnderTest.Provider.GetShape(typeof(StructWithDefaultCtor));
+        Assert.NotNull(shape);
+        Assert.Throws<InvalidOperationException>(() => shape.Constructor?.Accept(new GetAreRequiredParametersSetVisitor()));
+    }
+
+    private class GetAreRequiredParametersSetVisitor : TypeShapeVisitor
+    {
+        public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructor, object? state) => constructor.GetAreRequiredParametersSet();
+    }
 }
 
 public static class ReflectionExtensions

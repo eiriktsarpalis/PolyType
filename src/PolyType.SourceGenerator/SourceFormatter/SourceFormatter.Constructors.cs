@@ -101,6 +101,12 @@ internal sealed partial class SourceFormatter
 
         static string FormatAreRequiredParametersSet(ObjectShapeModel type, ConstructorShapeModel constructor, string constructorArgumentStateFQN)
         {
+            if (constructor.TotalArity == 0)
+            {
+                // We want to throw when the constructor shape has no argument state at all.
+                return "null";
+            }
+
             string preamble = $"static (in {constructorArgumentStateFQN} state) => ";
             switch (constructor.RequiredMemberFlagsType)
             {
