@@ -33,7 +33,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         else
         {
             T? deserializedValue = converter.Deserialize(json);
-            
+
             if (testCase.IsEquatable)
             {
                 Assert.Equal(testCase.Value, deserializedValue);
@@ -44,7 +44,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
                 {
                     deserializedValue = converter.Deserialize(converter.Serialize(deserializedValue));
                 }
-                
+
                 Assert.Equal(json, ToJsonBaseline(deserializedValue));
             }
         }
@@ -89,7 +89,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
                 {
                     deserializedValue = converter.Deserialize(converter.Serialize(deserializedValue));
                 }
-                
+
                 Assert.Equal(json, ToJsonBaseline(deserializedValue));
             }
         }
@@ -134,7 +134,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
                 {
                     deserializedValue = converter.Deserialize(converter.Serialize(deserializedValue));
                 }
-                
+
                 Assert.Equal(json, ToJsonBaseline(deserializedValue));
             }
         }
@@ -179,7 +179,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
                 {
                     deserializedValue = converter.Deserialize(converter.Serialize(deserializedValue));
                 }
-                
+
                 Assert.Equal(json, ToJsonBaseline(deserializedValue));
             }
         }
@@ -205,7 +205,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
     {
         var converter = JsonSerializerTS.CreateConverter<NullableStringRecord>(providerUnderTest.Provider);
         var valueWithNull = new NullableStringRecord(null);
-        
+
         string json = converter.Serialize(valueWithNull);
 
         Assert.Equal("""{"value":null}""", json);
@@ -215,7 +215,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
     public void Serialize_NullablePropertyWithNullJsonValue_WorksAsExpected()
     {
         var converter = JsonSerializerTS.CreateConverter<NullableStringRecord>(providerUnderTest.Provider);
-        
+
         NullableStringRecord? result = converter.Deserialize("""{"value":null}""");
 
         Assert.NotNull(result);
@@ -330,21 +330,21 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         yield return [TestCase.Create(
             new int[,] { { 1, 2, 3 }, { 4, 5, 6 } }, p),
             """[[1,2,3],[4,5,6]]"""];
-        
+
         yield return [TestCase.Create(
             new int[,,] // 3 x 2 x 2
             {
-                { { 1, 0 }, { 0, 1 } }, 
-                { { 1, 2 }, { 3, 4 } }, 
+                { { 1, 0 }, { 0, 1 } },
+                { { 1, 2 }, { 3, 4 } },
                 { { 1, 1 }, { 1, 1 } }
             }, p),
             """[[[1,0],[0,1]],[[1,2],[3,4]],[[1,1],[1,1]]]"""];
-        
+
         yield return [TestCase.Create(
             new int[,,] // 3 x 2 x 5
             {
-                { { 1, 0, 0, 0, 0 }, { 0, 1, 0, 0, 0 } }, 
-                { { 1, 2, 3, 4, 5 }, { 6, 7, 8, 9, 10 } }, 
+                { { 1, 0, 0, 0, 0 }, { 0, 1, 0, 0, 0 } },
+                { { 1, 2, 3, 4, 5 }, { 6, 7, 8, 9, 10 } },
                 { { 1, 1, 1, 1, 1 }, { 1, 1, 1, 1, 1 } }
             }, p),
             """[[[1,0,0,0,0],[0,1,0,0,0]],[[1,2,3,4,5],[6,7,8,9,10]],[[1,1,1,1,1],[1,1,1,1,1]]]"""];
@@ -412,7 +412,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         TypeWithStringSurrogate value = new("the actual value");
         string json = converter.Serialize(value);
         Assert.Equal(ExpectedJson, json);
-        
+
         TypeWithStringSurrogate? deserializedValue = converter.Deserialize(json);
         Assert.Equal(value, deserializedValue);
     }
@@ -430,16 +430,16 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
     }
 
     public class PocoWithGenericProperty<T>
-    { 
+    {
         public T? Value { get; set; }
     }
 
     protected static string ToJsonBaseline<T>(T? value) => System.Text.Json.JsonSerializer.Serialize(value, s_baselineOptions);
     private static readonly JsonSerializerOptions s_baselineOptions = new()
-    { 
+    {
         IncludeFields = true,
-        Converters = 
-        { 
+        Converters =
+        {
             new JsonStringEnumConverter(),
             new BigIntegerConverter(),
 #if NET8_0_OR_GREATER
@@ -451,7 +451,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
     private JsonConverter<T> GetConverterUnderTest<T>(TestCase<T> testCase) =>
         JsonSerializerTS.CreateConverter(providerUnderTest.ResolveShape(testCase));
 
-    private protected static bool IsUnsupportedBySTJ<T>(TestCase<T> value) => 
+    private protected static bool IsUnsupportedBySTJ<T>(TestCase<T> value) =>
         value.IsMultiDimensionalArray ||
         value.IsLongTuple ||
         value.HasRefConstructorParameters ||

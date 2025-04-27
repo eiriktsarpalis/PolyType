@@ -220,14 +220,16 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
             .Select(p => p.Type)
             .ToArray();
 
-        Type? flagType = GetMemberFlagType(ctorInfo, out _);
+        (Type? paramFlagType, Type? memberFlagType) = GetFlagType(ctorInfo, out _, out _);
 
-        return (allParameterTypes, flagType) switch
+        return (allParameterTypes, paramFlagType, memberFlagType) switch
         {
-            ([], _) => typeof(object), // use object for default ctors.
-            ([Type t], null) => t, // use the type itself for single-parameter ctors.
-            (_, null) => ReflectionHelpers.CreateValueTupleType(allParameterTypes), // use a value tuple for multiple parameters.
-            (_, { }) => ReflectionHelpers.CreateValueTupleType([.. allParameterTypes, flagType]) // use a value tuple that includes the flag type.
+            ([], _, _) => typeof(object), // use object for default ctors.
+            ([Type t], null, null) => t, // use the type itself for single-parameter ctors.
+            (_, null, null) => ReflectionHelpers.CreateValueTupleType(allParameterTypes), // use a value tuple for multiple parameters.
+            (_, { }, null) => ReflectionHelpers.CreateValueTupleType([.. allParameterTypes, paramFlagType]), // use a value tuple that includes the flag type.
+            (_, null, { }) => ReflectionHelpers.CreateValueTupleType([.. allParameterTypes, memberFlagType]), // use a value tuple that includes the flag type.
+            (_, { }, { }) => ReflectionHelpers.CreateValueTupleType([.. allParameterTypes, paramFlagType, memberFlagType]), // use a value tuple that includes both flag types.
         };
     }
 
@@ -240,7 +242,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
             Debug.Assert(typeof(TArgumentState) == ctorInfo.ConstructedType);
             return static () => default!;
         }
-        else if (ctorInfo.Parameters is [MethodParameterShapeInfo parameter])
+        else if (ctorInfo.Parameters is [MethodParameterShapeInfo { IsRequired: false } parameter])
         {
             Debug.Assert(typeof(TArgumentState) == parameter.Type);
             if (parameter.HasDefaultValue)
@@ -258,8 +260,8 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
             Debug.Assert(typeof(TArgumentState).IsValueTupleType());
             int arity = ReflectionHelpers.GetValueTupleArity<TArgumentState>();
 
-            Type? memberFlagType = GetMemberFlagType(ctorInfo, out int totalFlags);
-            if (memberFlagType != typeof(BitArray) && ctorInfo.Parameters.All(p => !p.HasDefaultValue))
+            (Type? paramFlagType, Type? memberFlagType) = GetFlagType(ctorInfo, out int totalParameterFlags, out int totalMemberFlags);
+            if (paramFlagType != typeof(BitArray) && memberFlagType != typeof(BitArray) && ctorInfo.Parameters.All(p => !p.HasDefaultValue))
             {
                 // Just return the default tuple instance
                 return static () => default!;
@@ -282,12 +284,27 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                 }
             }
 
+            if (paramFlagType != null)
+            {
+                if (paramFlagType == typeof(BitArray))
+                {
+                    // Load a new BitArray with capacity that equals all param initializers
+                    generator.Emit(OpCodes.Ldc_I4, totalMemberFlags);
+                    generator.Emit(OpCodes.Newobj, typeof(BitArray).GetConstructor([typeof(int)])!);
+                }
+                else
+                {
+                    Debug.Assert(paramFlagType == typeof(ulong));
+                    LdDefaultValue(generator, paramFlagType);
+                }
+            }
+
             if (memberFlagType != null)
             {
                 if (memberFlagType == typeof(BitArray))
                 {
                     // Load a new BitArray with capacity that equals all member initializers
-                    generator.Emit(OpCodes.Ldc_I4, totalFlags);
+                    generator.Emit(OpCodes.Ldc_I4, totalMemberFlags);
                     generator.Emit(OpCodes.Newobj, typeof(BitArray).GetConstructor([typeof(int)])!);
                 }
                 else
@@ -321,7 +338,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
     {
         Debug.Assert(ctorInfo.Parameters.Length > 0);
 
-        if (ctorInfo.Parameters is [MethodParameterShapeInfo])
+        if (ctorInfo.Parameters is [MethodParameterShapeInfo { IsRequired: false }])
         {
             Debug.Assert(parameterIndex == 0 && typeof(TArgumentState) == typeof(TParameter));
             return (Setter<TArgumentState, TParameter>)(object)new Setter<TParameter, TParameter>(static (ref TParameter state, TParameter value) => state = value);
@@ -341,25 +358,44 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
             generator.Emit(OpCodes.Ldarg_1);
             generator.Emit(OpCodes.Stfld, element);
 
-            if (ctorInfo.Parameters[parameterIndex] is MemberInitializerShapeInfo)
+            (Type? paramFlagType, Type? memberFlagType) = GetFlagType(ctorInfo, out int totalParamFlags, out int totalMemberFlags);
+            if (ctorInfo.Parameters[parameterIndex] is MemberInitializerShapeInfo && memberFlagType is not null)
             {
-                Type? memberFlagType = GetMemberFlagType(ctorInfo, out int totalFlags);
                 int initializerIndex = parameterIndex - ((MethodConstructorShapeInfo)ctorInfo).ConstructorParameters.Length;
+                int flagsStateIndex = ctorInfo.Parameters.Length;
+                if (paramFlagType is not null)
+                {
+                    flagsStateIndex++;
+                }
 
+                EmitHelper(memberFlagType, initializerIndex, flagsStateIndex);
+            }
+
+            if (ctorInfo.Parameters[parameterIndex] is MethodParameterShapeInfo && paramFlagType is not null)
+            {
+                EmitHelper(paramFlagType, parameterIndex, ctorInfo.Parameters.Length);
+            }
+
+            generator.Emit(OpCodes.Ret);
+
+            return CreateDelegate<Setter<TArgumentState, TParameter>>(dynamicMethod);
+
+            void EmitHelper(Type? flagType, int index, int flagsIndexInTuple)
+            {
                 generator.Emit(OpCodes.Ldarg_0);
                 LdRef(generator, tupleType);
-                FieldInfo flagsElement = LdNestedTuple(generator, tupleType, ctorInfo.Parameters.Length);
-                Debug.Assert(flagsElement.FieldType == memberFlagType);
+                FieldInfo flagsElement = LdNestedTuple(generator, tupleType, flagsIndexInTuple);
+                Debug.Assert(flagsElement.FieldType == flagType);
 
-                if (memberFlagType == typeof(ulong))
+                if (flagType == typeof(ulong))
                 {
-                    Debug.Assert(initializerIndex <= 64);
+                    Debug.Assert(index <= 64);
 
-                    // arg0.Flags |= 1L << initializerIndex;
+                    // arg0.Flags |= 1L << index;
                     generator.Emit(OpCodes.Ldflda, flagsElement);
                     generator.Emit(OpCodes.Dup);
                     generator.Emit(OpCodes.Ldind_I8);
-                    generator.Emit(OpCodes.Ldc_I8, 1L << initializerIndex);
+                    generator.Emit(OpCodes.Ldc_I8, 1L << index);
                     generator.Emit(OpCodes.Or);
                     generator.Emit(OpCodes.Stind_I8);
                 }
@@ -367,17 +403,13 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                 {
                     Debug.Assert(memberFlagType == typeof(BitArray));
 
-                    // arg0.Flags[initializerIndex] = true;
+                    // arg0.Flags[index] = true;
                     generator.Emit(OpCodes.Ldfld, flagsElement);
-                    generator.Emit(OpCodes.Ldc_I4, initializerIndex);
+                    generator.Emit(OpCodes.Ldc_I4, index);
                     generator.Emit(OpCodes.Ldc_I4_1);
                     generator.Emit(OpCodes.Callvirt, typeof(BitArray).GetMethod("set_Item", [typeof(int), typeof(bool)])!);
                 }
             }
-
-            generator.Emit(OpCodes.Ret);
-
-            return CreateDelegate<Setter<TArgumentState, TParameter>>(dynamicMethod);
         }
     }
 
@@ -398,6 +430,83 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
     {
         Debug.Assert(ctorInfo.Parameters.Length > 0);
 
+        if (ctorInfo is MethodConstructorShapeInfo methodCtor)
+        {
+            if (methodCtor.Parameters.Any(p => p.IsRequired))
+            {
+                DynamicMethod dynamicMethod = CreateDynamicMethod("AreRequiredParametersSet", typeof(bool), [typeof(TArgumentState).MakeByRefType()]);
+                ILGenerator generator = dynamicMethod.GetILGenerator();
+                var retFalse = generator.DefineLabel();
+
+                (Type? paramFlagsType, Type? memberFlagsType) = GetFlagType(ctorInfo, out _, out _);
+                if (paramFlagsType is not null)
+                {
+                    generator.Emit(OpCodes.Ldarg_0);
+                    FieldInfo flagsField = LdNestedTuple(generator, typeof(TArgumentState), methodCtor.Parameters.Length);
+                    generator.Emit(OpCodes.Ldfld, flagsField);
+                    EmitFlagsCheck(paramFlagsType, methodCtor.ConstructorParameters);
+                }
+
+                if (memberFlagsType is not null)
+                {
+                    generator.Emit(OpCodes.Ldarg_0);
+                    FieldInfo flagsField = LdNestedTuple(generator, typeof(TArgumentState), methodCtor.Parameters.Length + (paramFlagsType is not null ? 1 : 0));
+                    generator.Emit(OpCodes.Ldfld, flagsField);
+                    EmitFlagsCheck(memberFlagsType, methodCtor.MemberInitializers);
+                }
+
+                // return true
+                generator.Emit(OpCodes.Ldc_I4_1);
+                generator.Emit(OpCodes.Ret);
+
+                // return false;
+                generator.MarkLabel(retFalse);
+                generator.Emit(OpCodes.Ldc_I4_0);
+                generator.Emit(OpCodes.Ret);
+
+                return CreateDelegate<InFunc<TArgumentState, bool>>(dynamicMethod);
+
+                void EmitFlagsCheck(Type flagsType, IParameterShapeInfo[] parameters)
+                {
+                    if (flagsType == typeof(BitArray))
+                    {
+                        var localFlags = generator.DeclareLocal(flagsType);
+                        generator.Emit(OpCodes.Stloc, localFlags);
+
+                        for (int i = 0; i < parameters.Length; i++)
+                        {
+                            if (parameters[i].IsRequired)
+                            {
+                                // if (!state.flags[memberIndex]) return false;
+                                generator.Emit(OpCodes.Ldloc, localFlags);
+                                generator.Emit(OpCodes.Ldc_I4, i);
+                                generator.Emit(OpCodes.Callvirt, typeof(BitArray).GetMethod("get_Item", [typeof(int)])!);
+                                generator.Emit(OpCodes.Brfalse_S, retFalse);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Debug.Assert(flagsType == typeof(ulong));
+                        ulong requiredMask = 0;
+                        for (int i = 0; i < parameters.Length; i++)
+                        {
+                            if (parameters[i].IsRequired)
+                            {
+                                requiredMask |= 1ul << i;
+                            }
+                        }
+
+                        // if ((state.flags & mask) != mask) return false;
+                        generator.Emit(OpCodes.Ldc_I8, unchecked((long)requiredMask));
+                        generator.Emit(OpCodes.And);
+                        generator.Emit(OpCodes.Ldc_I8, unchecked((long)requiredMask));
+                        generator.Emit(OpCodes.Bne_Un_S, retFalse);
+                    }
+                }
+            }
+        }
+
         return new((in TArgumentState state) => true);
     }
 
@@ -410,7 +519,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
 
         if (ctorInfo is MethodConstructorShapeInfo methodCtor)
         {
-            if (methodCtor.Parameters is [MethodParameterShapeInfo parameter])
+            if (methodCtor.Parameters is [MethodParameterShapeInfo { IsRequired: false } parameter])
             {
                 DebugExt.Assert(argumentStateType == parameter.Type);
                 DebugExt.Assert(methodCtor.ConstructorMethod != null);
@@ -429,6 +538,8 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
             else
             {
                 Debug.Assert(argumentStateType.IsValueTupleType());
+                (string LogicalName, MemberInfo Member, MemberInfo[]? ParentMembers)[] fieldPaths = ReflectionHelpers.EnumerateTupleMemberPaths(argumentStateType).ToArray();
+                (Type? paramFlagType, Type? memberFlagType) = GetFlagType(ctorInfo, out _, out _);
 
                 if (methodCtor.MemberInitializers.Length == 0)
                 {
@@ -436,11 +547,9 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                     DebugExt.Assert(methodCtor.ConstructorMethod != null);
 
                     // return new TDeclaringType(state.Item1, state.Item2, ...);
-                    int i = 0;
-                    foreach (var elementPath in ReflectionHelpers.EnumerateTupleMemberPaths(argumentStateType))
+                    for (int i = 0; i < methodCtor.ConstructorParameters.Length; i++)
                     {
-                        bool isByRefParam = methodCtor.Parameters[i++].IsByRef;
-                        LdTupleElement(elementPath, isByRefParameter: isByRefParam);
+                        LdTupleElement(fieldPaths[i], isByRefParameter: methodCtor.ConstructorParameters[i].IsByRef);
                     }
 
                     EmitCall(generator, methodCtor.ConstructorMethod);
@@ -449,10 +558,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                 else
                 {
                     // Emit parameterized constructor + member initializers
-
-                    (string LogicalName, MemberInfo Member, MemberInfo[]? ParentMembers)[] fieldPaths = ReflectionHelpers.EnumerateTupleMemberPaths(argumentStateType).ToArray();
-                    Type? flagType = GetMemberFlagType(ctorInfo, out _);
-                    DebugExt.Assert(flagType != null);
+                    DebugExt.Assert(memberFlagType != null);
 
                     // var local = new TDeclaringType(state.Item1, state.Item2, ...);
                     LocalBuilder local = generator.DeclareLocal(declaringType);
@@ -484,7 +590,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                     {
                         // if (state.flags & (1L << memberIndex) != 0) local.member = state.ItemN;
                         generator.Emit(OpCodes.Ldarg_0);
-                        Label label = EmitMemberFlagCheck(generator, flagType, i);
+                        Label label = EmitMemberFlagCheck(generator, memberFlagType, i);
 
                         generator.Emit(declaringType.IsValueType ? OpCodes.Ldloca_S : OpCodes.Ldloc, local);
                         LdTupleElement(fieldPaths[i++], isByRefParameter: false);
@@ -499,7 +605,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                     Label EmitMemberFlagCheck(ILGenerator generator, Type flagType, int index)
                     {
                         int memberIndex = index - methodCtor.ConstructorParameters.Length;
-                        FieldInfo flagsField = LdNestedTuple(generator, argumentStateType, ctorInfo.Parameters.Length);
+                        FieldInfo flagsField = LdNestedTuple(generator, argumentStateType, ctorInfo.Parameters.Length + (paramFlagType is null ? 0 : 1));
                         Label label = generator.DefineLabel();
 
                         if (flagType == typeof(ulong))
@@ -762,16 +868,27 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
     /// Returns the type used to track the set state of optional property setters.
     /// Use UInt64 for up to 64 optional properties, otherwise use BitArray.
     /// </summary>
-    private static Type? GetMemberFlagType(IConstructorShapeInfo constructorShape, out int totalFlags)
+    private static (Type? Parameters, Type? Members) GetFlagType(IConstructorShapeInfo constructorShape, out int totalParameterFlags, out int totalMemberFlags)
     {
-        if (constructorShape is MethodConstructorShapeInfo { MemberInitializers: [_, ..] memberInitializers })
+        if (constructorShape is MethodConstructorShapeInfo methodCtor)
         {
-            totalFlags = memberInitializers.Length;
-            return totalFlags <= 64 ? typeof(ulong) : typeof(BitArray);
+            totalParameterFlags = methodCtor.ConstructorParameters.Any(p => p.IsRequired) ? methodCtor.ConstructorParameters.Length : 0;
+            totalMemberFlags = methodCtor.MemberInitializers.Length;
+        }
+        else
+        {
+            totalParameterFlags = 0;
+            totalMemberFlags = 0;
         }
 
-        totalFlags = 0;
-        return null;
+        return (GetTypeForFlagCount(totalParameterFlags), GetTypeForFlagCount(totalMemberFlags));
+
+        static Type? GetTypeForFlagCount(int flags) => flags switch
+        {
+            0 => null,
+            <= 64 => typeof(ulong),
+            _ => typeof(BitArray)
+        };
     }
 
     private static FieldInfo LdNestedTuple(ILGenerator generator, Type tupleType, int parameterIndex)
