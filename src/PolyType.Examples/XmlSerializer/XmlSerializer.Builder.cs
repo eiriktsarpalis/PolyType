@@ -1,4 +1,5 @@
 ﻿using PolyType.Abstractions;
+using PolyType.Examples.Utilities;
 using PolyType.Examples.XmlSerializer.Converters;
 using PolyType.Utilities;
 
@@ -74,7 +75,7 @@ public static partial class XmlSerializer
         public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state)
         {
             XmlConverter<TElement> elementConverter = GetOrAddConverter(enumerableShape.ElementType);
-            Func<TEnumerable, IEnumerable<TElement>> getEnumerable = enumerableShape.GetGetEnumerable();
+            Func<TEnumerable, IEnumerable<TElement>> getEnumerable = enumerableShape.GetGetPotentiallyBlockingEnumerable();
 
             return enumerableShape.ConstructionStrategy switch
             {

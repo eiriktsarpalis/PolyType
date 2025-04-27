@@ -19,12 +19,12 @@ public partial class TypeDataModelGenerator
         }
 
         int rank = 1;
-        EnumerableKind kind = EnumerableKind.None;
+        EnumerableKind kind;
         CollectionModelConstructionStrategy constructionStrategy = CollectionModelConstructionStrategy.None;
-        ITypeSymbol? elementType = null;
+        ITypeSymbol? elementType;
         IMethodSymbol? addElementMethod = null;
-        //INamedTypeSymbol? implementationType = null;
         IMethodSymbol? factoryMethod = null;
+        INamedTypeSymbol? asyncEnumerableOfT = null;
 
         if (type is IArrayTypeSymbol array)
         {
@@ -65,9 +65,11 @@ public partial class TypeDataModelGenerator
             kind = EnumerableKind.ReadOnlyMemoryOfT;
             elementType = namedType.TypeArguments[0];
         }
-        else if (type.GetCompatibleGenericBaseType(KnownSymbols.IEnumerableOfT) is { } enumerableOfT)
+        else if ((
+            type.GetCompatibleGenericBaseType(KnownSymbols.IEnumerableOfT) ?? 
+            (asyncEnumerableOfT = type.GetCompatibleGenericBaseType(KnownSymbols.IAsyncEnumerableOfT))) is { } enumerableOfT)
         {
-            kind = EnumerableKind.IEnumerableOfT;
+            kind = asyncEnumerableOfT is not null ? EnumerableKind.AsyncEnumerableOfT : EnumerableKind.IEnumerableOfT;
             elementType = enumerableOfT.TypeArguments[0];
 
             if (KnownSymbols.Compilation.TryGetCollectionBuilderAttribute(namedType, elementType, out IMethodSymbol? builderMethod, CancellationToken))
@@ -121,18 +123,20 @@ public partial class TypeDataModelGenerator
                             m.Parameters.Length == 1 &&
                             SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, elementType));
                 }
-
-                INamedTypeSymbol hashSetOfT = KnownSymbols.HashSetOfT!.Construct(elementType);
-                if (namedType.IsAssignableFrom(hashSetOfT))
+                else
                 {
-                    // Handle ISet<T> and IReadOnlySet<T> types using HashSet<T>
-                    constructionStrategy = CollectionModelConstructionStrategy.Mutable;
-                    factoryMethod = hashSetOfT.Constructors.First(c => c.Parameters.IsEmpty);
-                    addElementMethod = hashSetOfT.GetMembers("Add")
-                        .OfType<IMethodSymbol>()
-                        .First(m =>
-                            m.Parameters.Length == 1 &&
-                            SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, elementType));
+                    INamedTypeSymbol hashSetOfT = KnownSymbols.HashSetOfT!.Construct(elementType);
+                    if (namedType.IsAssignableFrom(hashSetOfT))
+                    {
+                        // Handle ISet<T> and IReadOnlySet<T> types using HashSet<T>
+                        constructionStrategy = CollectionModelConstructionStrategy.Mutable;
+                        factoryMethod = hashSetOfT.Constructors.First(c => c.Parameters.IsEmpty);
+                        addElementMethod = hashSetOfT.GetMembers("Add")
+                            .OfType<IMethodSymbol>()
+                            .First(m =>
+                                m.Parameters.Length == 1 &&
+                                SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, elementType));
+                    }
                 }
             }
         }
@@ -175,9 +179,10 @@ public partial class TypeDataModelGenerator
         model = new EnumerableDataModel
         {
             Type = type,
+            Depth = TypeShapeRequirements.Full,
             ElementType = elementType,
             EnumerableKind = kind,
-            DerivedTypes = IncludeDerivedTypes(type, ref ctx),
+            DerivedTypes = IncludeDerivedTypes(type, ref ctx, TypeShapeRequirements.Full),
             ConstructionStrategy = constructionStrategy,
             AddElementMethod = addElementMethod,
             FactoryMethod = factoryMethod,

@@ -3,6 +3,7 @@ using PolyType.Utilities;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using PolyType.Examples.Utilities;
 
 namespace PolyType.Examples.ObjectMapper;
 
@@ -34,7 +35,7 @@ public static partial class Mapper
                 case TypeShapeKind.Object:
                     var sourceObjectShape = (IObjectTypeShape<TSource>)sourceShape;
                     var targetObjectShape = (IObjectTypeShape<TTarget>)targetShape;
-                    
+
                     if (targetObjectShape.Constructor is null)
                     {
                         // If TTarget is not constructible, only map if TSource is a subtype of TTarget and has no properties.
@@ -42,7 +43,7 @@ public static partial class Mapper
                         {
                             return new Mapper<TSource, TSource>(source => source);
 
-                        }    
+                        }
 
                         ThrowCannotMapTypes(typeof(TSource), typeof(TTarget));
                     }
@@ -241,7 +242,8 @@ public static partial class Mapper
             public override object? VisitEnumerable<TTargetEnumerable, TTargetElement>(IEnumerableTypeShape<TTargetEnumerable, TTargetElement> enumerableShape, object? state)
             {
                 var sourceEnumerable = (IEnumerableTypeShape<TSourceEnumerable, TSourceElement>)state!;
-                var sourceGetEnumerable = sourceEnumerable.GetGetEnumerable();
+                var sourceGetEnumerable = sourceEnumerable.GetGetPotentiallyBlockingEnumerable();
+
                 var elementMapper = baseVisitor.GetOrAddMapper(sourceEnumerable.ElementType, enumerableShape.ElementType);
 
                 switch (enumerableShape.ConstructionStrategy)
@@ -292,7 +294,7 @@ public static partial class Mapper
                     default:
                         ThrowCannotMapTypes(typeof(TSourceEnumerable), typeof(TTargetEnumerable));
                         return null;
-                }       
+                }
             }
         }
 
@@ -378,6 +380,7 @@ public static partial class Mapper
         public object? Accept(TypeShapeVisitor visitor, object? state = null) => ((MapperTypeShapeVisitor)visitor).VisitMapper(source, target, state);
         public object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
         public Func<object>? GetAssociatedTypeFactory(Type relatedType) => throw new NotImplementedException();
+        public ITypeShape? GetAssociatedTypeShape(Type associatedType) => throw new NotImplementedException();
     }
 
     private abstract class MapperTypeShapeVisitor : TypeShapeVisitor

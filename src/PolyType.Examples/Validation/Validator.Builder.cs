@@ -1,6 +1,7 @@
 ﻿using PolyType.Abstractions;
 using PolyType.Utilities;
 using System.Diagnostics;
+using PolyType.Examples.Utilities;
 
 namespace PolyType.Examples.Validation;
 
@@ -117,7 +118,7 @@ public static partial class Validator
                 return null; // Nothing to validate for this type.
             }
 
-            Func<TEnumerable, IEnumerable<TElement>> getEnumerable = enumerableShape.GetGetEnumerable();
+            Func<TEnumerable, IEnumerable<TElement>> getEnumerable = enumerableShape.GetGetPotentiallyBlockingEnumerable();
             return new Validator<TEnumerable>((TEnumerable? enumerable, List<string> path, ref List<string>? errors) =>
             {
                 if (enumerable is null)

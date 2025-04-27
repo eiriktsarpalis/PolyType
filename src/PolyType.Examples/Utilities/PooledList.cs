@@ -22,7 +22,7 @@ public struct PooledList<T> : IDisposable
     }
 
     /// <summary>Gets the current element count of the list.</summary>
-    public readonly int Count { get; }
+    public readonly int Count => _count;
 
     /// <summary>Appends a value to the list.</summary>
     public void Add(T value)
@@ -65,13 +65,12 @@ public struct PooledList<T> : IDisposable
     /// <summary>Gets the current list contents as a span.</summary>
     public readonly ReadOnlySpan<T> AsSpan() => _values.AsSpan(0, _count);
 
-    /// <summary>Moves the current context as an array segment, removing the buffer from the list itself.</summary>
-    public ArraySegment<T> ExchangeToArraySegment()
+    /// <summary>Copies the contents of the list into a new array.</summary>
+    public readonly T[] ToArray()
     {
-        ArraySegment<T> segment = new(_values, 0, _count);
-        _values = [];
-        _count = 0;
-        return segment;
+        T[] array = new T[_count];
+        _values.AsSpan(0, _count).CopyTo(array);
+        return array;
     }
 
     /// <summary>Disposes of the list, returning any unused buffers to the pool.</summary>

@@ -16,23 +16,23 @@ internal sealed partial class SourceFormatter
             {
                 return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<{{objectShapeModel.Type.FullyQualifiedName}}>
                 {
-                    CreatePropertiesFunc = {{FormatNull(propertiesFactoryMethodName)}},
-                    CreateConstructorFunc = {{FormatNull(constructorFactoryMethodName)}},
+                    CreatePropertiesFunc = {{FormatNullOrThrowPartial(propertiesFactoryMethodName, !objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Properties))}},
+                    CreateConstructorFunc = {{FormatNullOrThrowPartial(constructorFactoryMethodName, !objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Constructor))}},
                     IsRecordType = {{FormatBool(objectShapeModel.IsRecordType)}},
                     IsTupleType = {{FormatBool(objectShapeModel.IsTupleType)}},
                     Provider = this,
-                    AssociatedTypeFactories = {{FormatAssociatedTypeFactory(objectShapeModel)}},
+                    AssociatedTypeShapes = {{FormatAssociatedTypeShapes(objectShapeModel)}},
                 };
             }
             """, trimNullAssignmentLines: true);
 
-        if (propertiesFactoryMethodName != null)
+        if (objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Properties) && propertiesFactoryMethodName != null)
         {
             writer.WriteLine();
             FormatPropertyFactory(writer, propertiesFactoryMethodName, objectShapeModel);
         }
 
-        if (constructorFactoryMethodName != null)
+        if (objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Constructor) && constructorFactoryMethodName != null)
         {
             writer.WriteLine();
             FormatConstructorFactory(writer, constructorFactoryMethodName, objectShapeModel, objectShapeModel.Constructor!);
@@ -41,18 +41,24 @@ internal sealed partial class SourceFormatter
         FormatMemberAccessors(writer, objectShapeModel);
     }
 
-    private static string FormatAssociatedTypeFactory(ObjectShapeModel objectShapeModel)
+    private static string FormatNullOrThrowPartial(string? stringExpr, bool missing)
+        => missing ? "() => throw new global::System.NotImplementedException(\"This shape is not fully implemented.\")" : FormatNull(stringExpr);
+
+    private string FormatAssociatedTypeShapes(ObjectShapeModel objectShapeModel)
     {
-        if (objectShapeModel.AssociatedTypes.Length == 0)
+        AssociatedTypeId[] associatedTypeShapes = [..
+            from associatedType in objectShapeModel.AssociatedTypes
+            select associatedType.Key];
+        if (associatedTypeShapes.Length == 0)
         {
             return "null";
         }
 
         StringBuilder builder = new();
         builder.Append("static associatedType => associatedType switch { ");
-        foreach (AssociatedTypeId associatedType in objectShapeModel.AssociatedTypes)
+        foreach (AssociatedTypeId associatedType in associatedTypeShapes)
         {
-            builder.Append($"\"{associatedType.Open}\" or \"{associatedType.Closed}\" => () => new {associatedType.CSharpTypeName}(), ");
+            builder.Append($"\"{associatedType.Open}\" or \"{associatedType.Closed}\" => {provider.ProviderDeclaration.Id.FullyQualifiedName}.{ProviderSingletonProperty}.{GetShapeModel(associatedType.ClosedTypeId).SourceIdentifier}, ");
         }
 
         builder.Append("_ => null }");

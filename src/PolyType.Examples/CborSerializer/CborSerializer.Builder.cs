@@ -1,5 +1,6 @@
 ﻿using PolyType.Abstractions;
 using PolyType.Examples.CborSerializer.Converters;
+using PolyType.Examples.Utilities;
 
 namespace PolyType.Examples.CborSerializer;
 
@@ -24,11 +25,13 @@ public static partial class CborSerializer
             if (converterAttribute is not null)
             {
                 Type converterType = converterAttribute.ConverterType;
-                Func<object>? factory = 
-                    typeShape.GetAssociatedTypeFactory(converterType)
-                    ?? throw new InvalidOperationException($"The type {typeof(T)} is missing its associated type factory for converter {converterType}.");
+                Func<object>? factory =
+                    (typeShape.GetAssociatedTypeShape(converterType) as IObjectTypeShape)?.GetDefaultConstructor()
+                    ?? throw new InvalidOperationException($"The type {typeof(T)} is missing its associated shape or default constructor for converter {converterType}.");
 
-                return (CborConverter<T>)factory();
+                var converter = (CborConverter<T>)factory();
+                converter.TypeShape = typeShape;
+                return converter;
             }
 
             // Otherwise, build a converter using the visitor.
@@ -81,7 +84,7 @@ public static partial class CborSerializer
         public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state)
         {
             CborConverter<TElement> elementConverter = GetOrAddConverter(enumerableShape.ElementType);
-            Func<TEnumerable, IEnumerable<TElement>> getEnumerable = enumerableShape.GetGetEnumerable();
+            Func<TEnumerable, IEnumerable<TElement>> getEnumerable = enumerableShape.GetGetPotentiallyBlockingEnumerable();
 
             return enumerableShape.ConstructionStrategy switch
             {

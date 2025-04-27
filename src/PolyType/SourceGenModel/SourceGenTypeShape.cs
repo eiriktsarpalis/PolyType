@@ -34,5 +34,5 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
     object? ITypeShape.Invoke(ITypeShapeFunc func, object? state) => func.Invoke(this, state);
 
     /// <inheritdoc/>
-    public virtual Func<object>? GetAssociatedTypeFactory(Type associatedType) => null;
+    public virtual ITypeShape? GetAssociatedTypeShape(Type associatedType) => null;
 }

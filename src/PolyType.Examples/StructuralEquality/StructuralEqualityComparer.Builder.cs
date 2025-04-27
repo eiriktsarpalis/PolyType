@@ -96,7 +96,7 @@ public static partial class StructuralEqualityComparer
             return new EnumerableEqualityComparer<TEnumerable, TElement>
             {
                 ElementComparer = GetOrAddEqualityComparer(enumerableShape.ElementType),
-                GetEnumerable = enumerableShape.GetGetEnumerable()
+                GetEnumerable = enumerableShape.GetGetPotentiallyBlockingEnumerable(),
             };
         }
 

@@ -85,7 +85,7 @@ public static partial class PrettyPrinter
 
         public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state)
         {
-            Func<TEnumerable, IEnumerable<TElement>> enumerableGetter = enumerableShape.GetGetEnumerable();
+            Func<TEnumerable, IEnumerable<TElement>> enumerableGetter = enumerableShape.GetGetPotentiallyBlockingEnumerable();
             PrettyPrinter<TElement> elementPrinter = GetOrAddPrettyPrinter(enumerableShape.ElementType);
             bool valuesArePrimitives = s_defaultPrinters.ContainsKey(typeof(TElement));
 

@@ -59,7 +59,7 @@ public static class CompilationTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [assembly: TypeShapeExtension(typeof(GenericClass<,>), AssociatedTypes = [typeof(GenericConverter<,>)])]
+            [assembly: TypeShapeExtension(typeof(GenericClass<,>), Requirements = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(GenericConverter<,>)])]
 
             public class GenericClass<T1, T2>;
             public class GenericConverter<T1, T2>;
@@ -79,9 +79,166 @@ public static class CompilationTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [TypeShape(AssociatedTypes = [typeof(GenericConverter<,>)])]
+            [AssociatedTypeShape(typeof(GenericConverter<,>))]
             public class GenericClass<T1, T2>;
             public class GenericConverter<T1, T2>;
+
+            [GenerateShape<GenericClass<int, string>>]
+            public partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    [Trait("AssociatedTypes", "true")]
+    public static void TypeShapeWithAssociatedShapes()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [AssociatedTypeShape(typeof(GenericHelper<,>))]
+            public class GenericClass<T1, T2>;
+            public class GenericHelper<T1, T2>;
+
+            [GenerateShape<GenericClass<int, string>>]
+            public partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    [Trait("AssociatedTypes", "true")]
+    public static void TypeShapeExtensionWithAssociatedShapes()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [assembly: TypeShapeExtension(typeof(GenericClass<,>), AssociatedTypes = [typeof(GenericHelper<,>)])]
+
+            public class GenericClass<T1, T2>;
+            public class GenericHelper<T1, T2>;
+
+            [GenerateShape<GenericClass<int, string>>]
+            public partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    [Trait("AssociatedTypes", "true")]
+    public static void TypeShapeExtensionWithAssociatedShapes_UnionFlags()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [assembly: TypeShapeExtension(typeof(GenericClass<,>), Requirements = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(GenericHelper<,>)])]
+            [assembly: TypeShapeExtension(typeof(GenericClass<,>), Requirements = TypeShapeRequirements.Properties, AssociatedTypes = [typeof(GenericHelper<,>)])]
+
+            public class GenericClass<T1, T2>;
+            public class GenericHelper<T1, T2> { public int Prop { get; set; } }
+
+            [GenerateShape<GenericClass<int, string>>]
+            public partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    [Trait("AssociatedTypes", "true")]
+    public static void UnionShapeDepthFlags_AssociatedTypeFirst()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [assembly: TypeShapeExtension(typeof(GenericClass<,>), Requirements = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(GenericHelper<,>)])]
+
+            public class GenericClass<T1, T2>;
+            public class GenericHelper<T1, T2> { public int Prop { get; set; } }
+
+            public record AnotherShapeReference(GenericHelper<int, string> helper);
+
+            [GenerateShape<GenericClass<int, string>>]
+            [GenerateShape<AnotherShapeReference>]
+            public partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    [Trait("AssociatedTypes", "true")]
+    public static void UnionShapeDepthFlags_FullShapeReferenceFirst()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [assembly: TypeShapeExtension(typeof(GenericClass<,>), Requirements = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(GenericHelper<,>)])]
+
+            public class GenericClass<T1, T2>;
+            public class GenericHelper<T1, T2> { public int Prop { get; set; } }
+
+            public record AnotherShapeReference(GenericHelper<int, string> helper);
+
+            [GenerateShape<AnotherShapeReference>]
+            [GenerateShape<GenericClass<int, string>>]
+            public partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    [Trait("AssociatedTypes", "true")]
+    public static void AssociatedTypeAttribute_Shapes()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System;
+            using PolyType;
+            using PolyType.Abstractions;
+
+            [AssociatedTypeAttribute(nameof(converterType), TypeShapeRequirements.Constructor)]
+            [AssociatedTypeAttribute(nameof(Shapes), TypeShapeRequirements.Full)]
+            [AttributeUsage(AttributeTargets.Class)]
+            public class CustomAttribute(Type converterType) : Attribute
+            {
+                public Type ConverterType => converterType;
+
+                public Type[] Shapes { get; set; } = [];
+            }
+
+            [Custom(typeof(GenericConverter<,>), Shapes = [typeof(GenericHelper<,>)])]
+            public class GenericClass<T1, T2>;
+            public class GenericConverter<T1, T2>;
+            public record class GenericHelper<T1, T2>(T1 Value);
+
+            [GenerateShape<GenericClass<int, string>>]
+            public partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    [Trait("AssociatedTypes", "true")]
+    public static void AssociatedTypeAttribute_RequirementsNone()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [AssociatedTypeShape(typeof(GenericHelper<,>), Requirements = TypeShapeRequirements.None)]
+            public class GenericClass<T1, T2>;
+            public class GenericHelper<T1, T2>;
 
             [GenerateShape<GenericClass<int, string>>]
             public partial class Witness;
@@ -98,7 +255,7 @@ public static class CompilationTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [TypeShape(AssociatedTypes = [typeof(GenericConverter<,>), typeof(GenericConverter<,>)])]
+            [AssociatedTypeShape(typeof(GenericConverter<,>), typeof(GenericConverter<,>))]
             public class GenericClass<T1, T2>;
             public class GenericConverter<T1, T2>;
 
@@ -119,7 +276,7 @@ public static class CompilationTests
 
             public partial class AssociatedTypesTests
             {
-                [TypeShape(AssociatedTypes = [typeof(GenericWrapper<>.GenericNested<>)])]
+                [AssociatedTypeShape(typeof(GenericWrapper<>.GenericNested<>))]
                 public class GenericClass<T1, T2>;
 
                 public class GenericWrapper<T1>
@@ -131,6 +288,41 @@ public static class CompilationTests
                 [GenerateShape<GenericClass<int, string>>]
                 public partial class Witness;
             }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    [Trait("AssociatedTypes", "true")]
+    public static void AssociatedTypeAttribute_Usage()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System;
+            using PolyType.Abstractions;
+
+            namespace PolyType.Tests;
+
+            [AssociatedTypeAttribute("Factories", TypeShapeRequirements.Constructor)]
+            [AssociatedTypeAttribute("Shapes", TypeShapeRequirements.Full)]
+            [AttributeUsage(AttributeTargets.Class)]
+            public class CustomAttribute : Attribute
+            {
+                public Type? Factory { get; set; }
+
+                public Type? Shape { get; set; }
+            }
+
+            [CustomAttribute(Factory = typeof(AnotherClass<>), Shape = typeof(YetAnotherClass<>))]
+            public class GenericClass<T>;
+
+            public class AnotherClass<T>;
+
+            public class YetAnotherClass<T>;
+
+            [GenerateShape<GenericClass<int>>]
+            public partial class Witness;
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -174,6 +366,38 @@ public static class CompilationTests
                 public int X09 { get; set; }
                 public int X10 { get; set; }
             }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void CtorWithNullableGenericParameterAndDefault()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            public record GenericClass<T>(T? Value = default);
+
+            [GenerateShape<GenericClass<int>>]
+            public partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void CtorWithNullableGenericParameterAndDefault_ValueConstrained()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            public record GenericClass<T>(T? Value = default) where T : struct;
+
+            [GenerateShape<GenericClass<int>>]
+            public partial class Witness;
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -422,10 +646,10 @@ public static class CompilationTests
                 }
             }
             #endif
-            
+
             [GenerateShape<int>]
             public partial class MyWitness;
-            
+
             [GenerateShape<string>]
             public partial class MyWitness;
             """);
@@ -458,7 +682,7 @@ public static class CompilationTests
         // Regression test for https://github.com/eiriktsarpalis/PolyType/issues/29
         Compilation compilation = CompilationHelpers.CreateCompilation("""
            using PolyType;
-           
+
            enum MyEnum { A, B, C }
 
            [GenerateShape<MyEnum>]
@@ -476,7 +700,7 @@ public static class CompilationTests
         CSharpParseOptions parseOptions = CompilationHelpers.CreateParseOptions(documentationMode: DocumentationMode.Diagnose);
         Compilation compilation = CompilationHelpers.CreateCompilation("""
            using PolyType;
-           
+
            /// <summary>My poco.</summary>
            public class MyPoco<T> { }
 
@@ -497,7 +721,7 @@ public static class CompilationTests
         CSharpParseOptions parseOptions = CompilationHelpers.CreateParseOptions(documentationMode: DocumentationMode.Diagnose);
         Compilation compilation = CompilationHelpers.CreateCompilation("""
            using PolyType;
-           
+
            /// <summary>My poco.</summary>
            [GenerateShape]
            public partial class MyPoco { }
@@ -752,7 +976,7 @@ public static class CompilationTests
            [GenerateShape<Hashtable>]
            [GenerateShape<CustomDictionary1>]
            partial class Witness;
-           
+
            class CustomDictionary1(IEnumerable<KeyValuePair<string, int>> inner) : Dictionary<string, int>(inner.ToDictionary(kv => kv.Key, kv => kv.Value));
            class CustomDictionary2(Dictionary<string, int> inner) : Dictionary<string, int>(inner);
            """);
@@ -766,9 +990,9 @@ public static class CompilationTests
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
-            
+
             #pragma warning disable CS0169
-           
+
             [GenerateShape]
             partial class MyPoco
             {
@@ -776,7 +1000,7 @@ public static class CompilationTests
                 private int PrivateField;
                 [PropertyShape]
                 private int PrivateProperty { get; set; }
-                
+
                 [ConstructorShape]
                 private MyPoco(int privateField, int privateProperty)
                 {
@@ -800,7 +1024,7 @@ public static class CompilationTests
 
             [GenerateShape]
             public partial record RecordWithNullableDefaultParams2(ulong? x1 = 10, float? x2 = 3.1f, double? x3 = 3.1d, decimal? x4 = -3.1415926m, string? x5 = "str", string? x6 = null, object? x7 = null);
-            
+
             [GenerateShape]
             public partial record RecordWithSpecialValueDefaultParams(
                 double d1 = double.PositiveInfinity, double d2 = double.NegativeInfinity, double d3 = double.NaN,
@@ -808,20 +1032,20 @@ public static class CompilationTests
                 float f1 = float.PositiveInfinity, float f2 = float.NegativeInfinity, float f3 = float.NaN,
                 float? fn1 = float.PositiveInfinity, float? fn2 = float.NegativeInfinity, float? fn3 = float.NaN,
                 string s = "\"😀葛🀄\r\n🤯𐐀𐐨\"", char c = '\'');
-            
+
             [Flags]
             public enum MyEnum { A = 1, B = 2, C = 4, D = 8, E = 16, F = 32, G = 64, H = 128 }
-            
+
             [GenerateShape]
             public partial record RecordWithEnumAndNullableParams(MyEnum flags1, MyEnum? flags2, MyEnum flags3 = MyEnum.A, MyEnum? flags4 = null);
-            
+
             [GenerateShape]
             public partial record RecordWithNullableDefaultEnum(MyEnum? flags = MyEnum.A | MyEnum.B);
-            
+
             [GenerateShape]
             public partial record LargeClassRecord(
                 int x0 = 0, int x1 = 1, int x2 = 2, int x3 = 3, int x4 = 4, int x5 = 5, int x6 = 5,
-                int x7 = 7, int x8 = 8, string x9 = "str", LargeClassRecord? nested = null);                                                                                                                      
+                int x7 = 7, int x8 = 8, string x9 = "str", LargeClassRecord? nested = null);
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -836,7 +1060,7 @@ public static class CompilationTests
             using System.Diagnostics.CodeAnalysis;
 
             #nullable enable
-            
+
             [GenerateShape]
             public partial class ClassWithNullabilityAttributes
             {
@@ -844,43 +1068,43 @@ public static class CompilationTests
                 private string? _allowNull = "str";
                 private string? _notNull = "str";
                 private string? _disallowNull = "str";
-            
+
                 public ClassWithNullabilityAttributes() { }
-            
+
                 public ClassWithNullabilityAttributes([AllowNull] string allowNull, [DisallowNull] string? disallowNull)
                 {
                     _allowNull = allowNull;
                     _disallowNull = disallowNull;
                 }
-            
+
                 [MaybeNull]
                 public string MaybeNullProperty
                 {
                     get => _maybeNull;
                     set => _maybeNull = value;
                 }
-            
+
                 [AllowNull]
                 public string AllowNullProperty
                 {
                     get => _allowNull ?? "str";
                     set => _allowNull = value;
                 }
-            
+
                 [NotNull]
                 public string? NotNullProperty
                 {
                     get => _notNull ?? "str";
                     set => _notNull = value;
                 }
-            
+
                 [DisallowNull]
                 public string? DisallowNullProperty
                 {
                     get => _disallowNull;
                     set => _disallowNull = value;
                 }
-            
+
                 [MaybeNull]
                 public string MaybeNullField = "str";
                 [AllowNull]
@@ -889,7 +1113,7 @@ public static class CompilationTests
                 public string? NotNullField = "str";
                 [DisallowNull]
                 public string? DisallowNullField = "str";
-            }                                                                                                         
+            }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);

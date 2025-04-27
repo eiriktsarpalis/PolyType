@@ -20,6 +20,11 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     public required int Rank { get; init; }
 
     /// <summary>
+    /// Indicates whether the underlying type is an IAsyncEnumerable or not.
+    /// </summary>
+    public required bool IsAsyncEnumerable { get; init; }
+
+    /// <summary>
     /// Gets the function that retrieves an enumerable from an instance of the collection.
     /// </summary>
     public required Func<TEnumerable, IEnumerable<TElement>> GetEnumerableFunc { get; init; }
