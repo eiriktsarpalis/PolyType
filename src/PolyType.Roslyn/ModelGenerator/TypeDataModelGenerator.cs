@@ -88,6 +88,21 @@ public partial class TypeDataModelGenerator
     /// <summary>
     /// Adds a new diagnostic to the <see cref="Diagnostics"/> property.
     /// </summary>
+    public void ReportDiagnostic(DiagnosticDescriptor descriptor, Location? location, IEnumerable<Location>? additionalLocations, params object?[] messageArgs)
+    {
+        if (location is not null && !KnownSymbols.Compilation.ContainsLocation(location))
+        {
+            // If the location is outside the current compilation,
+            // fall back to the default location for the generator.
+            location = DefaultLocation;
+        }
+
+        Diagnostics.Add(new EquatableDiagnostic(descriptor, location, messageArgs) { AdditionalLocations = additionalLocations });
+    }
+
+    /// <summary>
+    /// Adds a new diagnostic to the <see cref="Diagnostics"/> property.
+    /// </summary>
     public void ReportDiagnostic(DiagnosticDescriptor descriptor, Location? location, params object?[] messageArgs)
     {
         if (location is not null && !KnownSymbols.Compilation.ContainsLocation(location))

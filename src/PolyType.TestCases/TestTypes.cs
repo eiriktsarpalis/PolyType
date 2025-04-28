@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing;
 using System.Globalization;
 using System.Numerics;
 using System.Reflection;
@@ -83,6 +84,7 @@ public static class TestTypes
         yield return TestCase.Create(DateTime.MaxValue, p);
         yield return TestCase.Create(DateTimeOffset.MaxValue, p);
         yield return TestCase.Create(TimeSpan.MaxValue, p);
+        yield return TestCase.Create(new Point(2, 3), p);
 #if NET
         yield return TestCase.Create(Rune.GetRuneAt("🤯", 0), p);
         yield return TestCase.Create(Int128.MaxValue, p);
@@ -2387,6 +2389,7 @@ public partial class AsyncEnumerableClass(IEnumerable<int> values) : IAsyncEnume
 [GenerateShape<DateTimeOffset?>]
 [GenerateShape<TimeSpan?>]
 [GenerateShape<BigInteger?>]
+[GenerateShape<System.Drawing.Point>]
 [GenerateShape<BindingFlags?>]
 [GenerateShape<Uri>]
 [GenerateShape<Version>]

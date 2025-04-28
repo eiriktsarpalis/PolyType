@@ -22,6 +22,9 @@ public class TypeShapeExtensionAttribute(Type target) : Attribute
     /// </remarks>
     public Type Target => target;
 
+    /// <inheritdoc cref="TypeShapeAttribute.Marshaller"/>
+    public Type? Marshaller { get; init; }
+
     /// <summary>
     /// Gets the elements of the generated shape that are required at runtime.
     /// </summary>

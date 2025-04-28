@@ -42,15 +42,19 @@ public sealed partial class Parser : TypeDataModelGenerator
             return null;
         }
 
-        Dictionary<INamedTypeSymbol, TypeExtensionModel> typeShapeExtensions = DiscoverTypeShapeExtensions(knownSymbols, cancellationToken);
+        (Dictionary<INamedTypeSymbol, TypeExtensionModel> typeShapeExtensions, IReadOnlyList<EquatableDiagnostic> extensionDiagnostics) =
+            DiscoverTypeShapeExtensions(knownSymbols, cancellationToken);
         Parser parser = new(knownSymbols.Compilation.Assembly, typeShapeExtensions, knownSymbols, cancellationToken);
+        parser.Diagnostics.AddRange(extensionDiagnostics);
         TypeDeclarationModel shapeProviderDeclaration = CreateShapeProviderDeclaration(knownSymbols.Compilation);
         ImmutableEquatableArray<TypeDeclarationModel> generateShapeTypes = parser.IncludeTypesUsingGenerateShapeAttributes(generateShapeDeclarations);
         return parser.ExportTypeShapeProviderModel(shapeProviderDeclaration, generateShapeTypes);
     }
 
-    private static Dictionary<INamedTypeSymbol, TypeExtensionModel> DiscoverTypeShapeExtensions(PolyTypeKnownSymbols knownSymbols, CancellationToken cancellationToken)
+    private static (Dictionary<INamedTypeSymbol, TypeExtensionModel> extensions, IReadOnlyList<EquatableDiagnostic> diagnostics) DiscoverTypeShapeExtensions(PolyTypeKnownSymbols knownSymbols, CancellationToken cancellationToken)
     {
+        List<EquatableDiagnostic> diagnostics = new();
+
         // The compilation itself.
         ImmutableArray<TypeExtensionModel> typeShapeExtensions = DiscoverTypeShapeExtensionsInAssembly(knownSymbols.Compilation.Assembly);
 
@@ -65,7 +69,7 @@ public sealed partial class Parser : TypeDataModelGenerator
 
         // In combining extensions from multiple sources, we *could* apply a merge policy that the local compilation wins when there's a conflict.
         // Type extensions have some aspects that can be merged (e.g. associated types) and some that cannot be (e.g. Kind and Marshaller).
-        return typeShapeExtensions.ToDictionary<INamedTypeSymbol, TypeExtensionModel>(m => m.Target, SymbolEqualityComparer.Default);
+        return (typeShapeExtensions.ToDictionary<INamedTypeSymbol, TypeExtensionModel>(m => m.Target, SymbolEqualityComparer.Default), diagnostics);
 
         ImmutableArray<TypeExtensionModel> DiscoverTypeShapeExtensionsInAssembly(IAssemblySymbol assemblySymbol)
         {
@@ -97,22 +101,38 @@ public sealed partial class Parser : TypeDataModelGenerator
 
                     if (associatedTypeSymbols.Count > 0)
                     {
-                        if (!associatedTypes.TryGetValue(targetType, out TypeExtensionModel? existingRelatedTypes))
-                        {
-                            existingRelatedTypes = new TypeExtensionModel
-                            {
-                                Target = targetType,
-                                AssociatedTypes = ImmutableArray<AssociatedTypeModel>.Empty,
-                            };
-                        }
-
-                        existingRelatedTypes = existingRelatedTypes with
-                        {
-                            AssociatedTypes = existingRelatedTypes.AssociatedTypes.AddRange(associatedTypeSymbols),
-                        };
-
-                        associatedTypes[targetType] = existingRelatedTypes;
+                        MergeTypeExtension(new TypeExtensionModel { Target = targetType, AssociatedTypes = associatedTypeSymbols.ToImmutableArray() });
                     }
+                }
+
+                if (attribute.TryGetNamedArgument(PolyTypeKnownSymbols.TypeShapeExtensionAttributePropertyNames.Marshaller, out INamedTypeSymbol? marshaller) && marshaller is not null)
+                {
+                    MergeTypeExtension(new TypeExtensionModel { Target = targetType, Marshaller = marshaller });
+                }
+
+                TypeExtensionModel MergeTypeExtension(TypeExtensionModel extension)
+                {
+                    if (attribute.GetLocation() is Location location)
+                    {
+                        extension = extension with { Locations = extension.Locations.Add(location) };
+                    }
+
+                    if (!associatedTypes.TryGetValue(extension.Target, out TypeExtensionModel? existing))
+                    {
+                        return associatedTypes[extension.Target] = extension;
+                    }
+
+                    if (existing.Marshaller is not null && extension.Marshaller is not null && !SymbolEqualityComparer.Default.Equals(existing.Marshaller, extension.Marshaller))
+                    {
+                        diagnostics.Add(new EquatableDiagnostic(CannotMergeTypeExtension, attribute.GetLocation(), [extension.Target.GetFullyQualifiedName()]) { AdditionalLocations = existing.Locations });
+                    }
+
+                    return associatedTypes[extension.Target] = existing with
+                    {
+                        AssociatedTypes = existing.AssociatedTypes.AddRange(extension.AssociatedTypes),
+                        Marshaller = existing.Marshaller ?? extension.Marshaller,
+                        Locations = existing.Locations.AddRange(extension.Locations),
+                    };
                 }
             }
 
@@ -312,7 +332,12 @@ public sealed partial class Parser : TypeDataModelGenerator
         ParseTypeShapeAttribute(type, out TypeShapeKind? requestedTypeShapeKind, out ITypeSymbol? marshaller, out Location? typeShapeLocation);
         ParseCustomAssociatedTypeAttributes(type, out ImmutableArray<AssociatedTypeModel> customAssociatedTypes);
         ImmutableArray<AssociatedTypeModel> associatedTypeShapes = ParseAssociatedTypeShapeAttributes(type);
-        ImmutableArray<AssociatedTypeModel> typeExtensionAssociatedTypes = GetExtensionModel(type)?.AssociatedTypes ?? ImmutableArray<AssociatedTypeModel>.Empty;
+        TypeExtensionModel? typeExtensionModel = GetExtensionModel(type);
+        ImmutableArray<AssociatedTypeModel> typeExtensionAssociatedTypes = typeExtensionModel?.AssociatedTypes ?? ImmutableArray<AssociatedTypeModel>.Empty;
+        if (typeExtensionModel?.Marshaller is { } extensionMarshaller)
+        {
+            marshaller = extensionMarshaller;
+        }
 
         // Aggregate the associated types from all sources, and aggregate flags specified for the same type.
         associatedTypes =

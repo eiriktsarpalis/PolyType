@@ -838,4 +838,48 @@ public static class DiagnosticTests
         Assert.Equal((3, 1), diagnostic.Location.GetStartPosition());
         Assert.Equal((3, 36), diagnostic.Location.GetEndPosition());
     }
+
+    [Fact]
+    public static void IncompatibleTypeExtensions()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System.Drawing;
+            using PolyType;
+
+            [assembly: TypeShapeExtension(typeof(Point), Marshaller = typeof(PointMarshaller))]
+            [assembly: TypeShapeExtension(typeof(Point), Marshaller = typeof(PointMarshaller2))]
+
+            public class PointMarshaller : IMarshaller<Point, PointMarshaller.PointSurrogate>
+            {
+                public Point FromSurrogate(PointSurrogate surrogate) => new(surrogate.X - 1, surrogate.Y);
+
+                public PointSurrogate ToSurrogate(Point value) => new(value.X + 1, value.Y);
+
+                public record struct PointSurrogate(int X, int Y);
+            }
+
+            public class PointMarshaller2: IMarshaller<Point, PointMarshaller2.PointSurrogate>
+            {
+                public Point FromSurrogate(PointSurrogate surrogate) => new(surrogate.X - 1, surrogate.Y);
+
+                public PointSurrogate ToSurrogate(Point value) => new(value.X + 1, value.Y);
+
+                public record struct PointSurrogate(int X, int Y);
+            }
+
+            [GenerateShape<Point>]
+            partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("PT0018", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Equal((4, 11), diagnostic.Location.GetStartPosition());
+        Assert.Equal((4, 83), diagnostic.Location.GetEndPosition());
+        Location addlLocation = Assert.Single(diagnostic.AdditionalLocations);
+        Assert.Equal((3, 11), addlLocation.GetStartPosition());
+        Assert.Equal((3, 82), addlLocation.GetEndPosition());
+    }
 }

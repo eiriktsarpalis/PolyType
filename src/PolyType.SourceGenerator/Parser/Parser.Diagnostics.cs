@@ -126,4 +126,12 @@ public sealed partial class Parser
         category: "PolyType.SourceGenerator",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+
+    private static DiagnosticDescriptor CannotMergeTypeExtension { get; } = new DiagnosticDescriptor(
+        id: "PT0018",
+        title: "Incompatible type extensions.",
+        messageFormat: "The type '{0}' is extended multiple times in incompatible ways.",
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
 }

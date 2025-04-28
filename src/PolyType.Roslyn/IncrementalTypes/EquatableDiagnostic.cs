@@ -28,10 +28,15 @@ public readonly struct EquatableDiagnostic(
     public Location? Location { get; } = location?.GetLocationTrimmed();
 
     /// <summary>
+    /// Additional locations for the diagnostic.
+    /// </summary>
+    public IEnumerable<Location>? AdditionalLocations { get; init; }
+
+    /// <summary>
     /// Creates a new <see cref="Diagnostic"/> instance from the current instance.
     /// </summary>
     public Diagnostic CreateDiagnostic()
-        => Diagnostic.Create(Descriptor, Location, MessageArgs);
+        => Diagnostic.Create(Descriptor, Location, AdditionalLocations, MessageArgs);
 
     /// <inheritdoc/>
     public override readonly bool Equals(object? obj) => obj is EquatableDiagnostic info && Equals(info);
