@@ -88,7 +88,7 @@ public partial class TypeDataModelGenerator
     /// <summary>
     /// Adds a new diagnostic to the <see cref="Diagnostics"/> property.
     /// </summary>
-    public void ReportDiagnostic(DiagnosticDescriptor descriptor, Location? location, IEnumerable<Location>? additionalLocations, params object?[] messageArgs)
+    public void ReportDiagnostic(DiagnosticDescriptor descriptor, Location? location, Location[] additionalLocations, params object?[] messageArgs)
     {
         if (location is not null && !KnownSymbols.Compilation.ContainsLocation(location))
         {

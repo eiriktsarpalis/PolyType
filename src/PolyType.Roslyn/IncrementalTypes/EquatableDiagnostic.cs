@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using PolyType.Roslyn.Helpers;
+using System.Collections.Immutable;
 
 namespace PolyType.Roslyn;
 
@@ -30,7 +31,7 @@ public readonly struct EquatableDiagnostic(
     /// <summary>
     /// Additional locations for the diagnostic.
     /// </summary>
-    public IEnumerable<Location>? AdditionalLocations { get; init; }
+    public Location[] AdditionalLocations { get; init; } = [];
 
     /// <summary>
     /// Creates a new <see cref="Diagnostic"/> instance from the current instance.
@@ -46,7 +47,8 @@ public readonly struct EquatableDiagnostic(
     {
         return Descriptor.Equals(other.Descriptor) &&
             MessageArgs.SequenceEqual(other.MessageArgs) &&
-            Location == other.Location;
+            Location == other.Location &&
+            AdditionalLocations.SequenceEqual(other.AdditionalLocations);
     }
 
     /// <inheritdoc/>
@@ -56,6 +58,11 @@ public readonly struct EquatableDiagnostic(
         foreach (object? messageArg in MessageArgs)
         {
             hashCode = CommonHelpers.CombineHashCodes(hashCode, messageArg?.GetHashCode() ?? 0);
+        }
+
+        foreach (Location location in AdditionalLocations)
+        {
+            hashCode = CommonHelpers.CombineHashCodes(hashCode, location.GetHashCode());
         }
 
         hashCode = CommonHelpers.CombineHashCodes(hashCode, Location?.GetHashCode() ?? 0);
