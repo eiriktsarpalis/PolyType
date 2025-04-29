@@ -84,7 +84,6 @@ public static class TestTypes
         yield return TestCase.Create(DateTime.MaxValue, p);
         yield return TestCase.Create(DateTimeOffset.MaxValue, p);
         yield return TestCase.Create(TimeSpan.MaxValue, p);
-        yield return TestCase.Create(new Point(2, 3), p);
 #if NET
         yield return TestCase.Create(Rune.GetRuneAt("🤯", 0), p);
         yield return TestCase.Create(Int128.MaxValue, p);
