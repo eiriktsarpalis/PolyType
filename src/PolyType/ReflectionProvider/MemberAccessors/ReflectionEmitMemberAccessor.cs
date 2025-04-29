@@ -227,7 +227,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
             ([], _) => typeof(object), // use object for default ctors.
             ([Type t], null) => t, // use the type itself for single-parameter ctors.
             (_, null) => ReflectionHelpers.CreateValueTupleType(allParameterTypes), // use a value tuple for multiple parameters.
-            (_, { }) => ReflectionHelpers.CreateValueTupleType([.. allParameterTypes, flagType]) // use a value tuple that includes the flag type.
+            (_, { }) => ReflectionHelpers.CreateValueTupleType([.. allParameterTypes, flagType]), // use a value tuple that includes the flag type.
         };
     }
 

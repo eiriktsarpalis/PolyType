@@ -176,7 +176,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
             { Parameters: [] } => typeof(object),
             { Parameters: [MethodParameterShapeInfo param] } => param.Type,
             MethodConstructorShapeInfo { MemberInitializers.Length: > 0 } => typeof((object?[] ctorArgs, object[]? memberInitializerArgs, BitArray memberInitializerFlags)),
-            _ => typeof(object?[])
+            _ => typeof(object?[]),
         };
     }
 

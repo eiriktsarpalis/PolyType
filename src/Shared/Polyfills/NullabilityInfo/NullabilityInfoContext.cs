@@ -641,7 +641,7 @@ internal sealed class NullabilityInfoContext
         {
             1 => NullabilityState.NotNull,
             2 => NullabilityState.Nullable,
-            _ => NullabilityState.Unknown
+            _ => NullabilityState.Unknown,
         };
 
     private static bool IsValueTypeOrValueTypeByRef(Type type) =>
