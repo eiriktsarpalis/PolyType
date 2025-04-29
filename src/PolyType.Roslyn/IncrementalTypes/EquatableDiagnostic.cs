@@ -29,15 +29,10 @@ public readonly struct EquatableDiagnostic(
     public Location? Location { get; } = location?.GetLocationTrimmed();
 
     /// <summary>
-    /// Additional locations for the diagnostic.
-    /// </summary>
-    public Location[] AdditionalLocations { get; init; } = [];
-
-    /// <summary>
     /// Creates a new <see cref="Diagnostic"/> instance from the current instance.
     /// </summary>
     public Diagnostic CreateDiagnostic()
-        => Diagnostic.Create(Descriptor, Location, AdditionalLocations, MessageArgs);
+        => Diagnostic.Create(Descriptor, Location, MessageArgs);
 
     /// <inheritdoc/>
     public override readonly bool Equals(object? obj) => obj is EquatableDiagnostic info && Equals(info);
@@ -47,8 +42,7 @@ public readonly struct EquatableDiagnostic(
     {
         return Descriptor.Equals(other.Descriptor) &&
             MessageArgs.SequenceEqual(other.MessageArgs) &&
-            Location == other.Location &&
-            AdditionalLocations.SequenceEqual(other.AdditionalLocations);
+            Location == other.Location;
     }
 
     /// <inheritdoc/>
@@ -58,11 +52,6 @@ public readonly struct EquatableDiagnostic(
         foreach (object? messageArg in MessageArgs)
         {
             hashCode = CommonHelpers.CombineHashCodes(hashCode, messageArg?.GetHashCode() ?? 0);
-        }
-
-        foreach (Location location in AdditionalLocations)
-        {
-            hashCode = CommonHelpers.CombineHashCodes(hashCode, location.GetHashCode());
         }
 
         hashCode = CommonHelpers.CombineHashCodes(hashCode, Location?.GetHashCode() ?? 0);
