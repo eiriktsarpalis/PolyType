@@ -1,4 +1,6 @@
-﻿namespace PolyType.SourceGenerator.UnitTests;
+﻿using PolyType.SourceGenerator.Analyzers;
+
+namespace PolyType.SourceGenerator.UnitTests.Analyzers;
 
 using Microsoft.CodeAnalysis;
 using Xunit;
