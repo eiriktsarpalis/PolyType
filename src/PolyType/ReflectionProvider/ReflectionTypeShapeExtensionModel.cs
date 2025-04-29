@@ -30,7 +30,6 @@ internal readonly record struct ReflectionTypeShapeExtensionModel
     /// </remarks>
     internal ReflectionTypeShapeExtensionModel Merge(ReflectionTypeShapeExtensionModel other)
     {
-        // First one wins on conflicts.
         return this with
         {
             Marshaller = this.Marshaller ?? other.Marshaller,

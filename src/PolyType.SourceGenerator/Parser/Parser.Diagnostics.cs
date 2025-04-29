@@ -127,11 +127,11 @@ public sealed partial class Parser
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    private static DiagnosticDescriptor CannotMergeTypeExtension { get; } = new DiagnosticDescriptor(
+    internal static DiagnosticDescriptor ConflictingMarshallers { get; } = new DiagnosticDescriptor(
         id: "PT0018",
-        title: "Incompatible type extensions.",
-        messageFormat: "The type '{0}' is extended multiple times in incompatible ways.",
-        category: "PolyType.SourceGenerator",
+        title: "Multiple marshallers specified.",
+        messageFormat: "Multiple TypeShapeExtensionAttribute attributes specified for target type '{0}' with conflicting marshallers specified. At most one marshaller can be specified.",
+        category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 }

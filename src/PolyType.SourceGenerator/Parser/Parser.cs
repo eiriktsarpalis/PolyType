@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Emit;
 using PolyType.Roslyn;
 using PolyType.Roslyn.Helpers;
 using PolyType.SourceGenerator.Helpers;
@@ -54,26 +55,27 @@ public sealed partial class Parser : TypeDataModelGenerator
     private static (Dictionary<INamedTypeSymbol, TypeExtensionModel> extensions, IReadOnlyList<EquatableDiagnostic> diagnostics) DiscoverTypeShapeExtensions(PolyTypeKnownSymbols knownSymbols, CancellationToken cancellationToken)
     {
         List<EquatableDiagnostic> diagnostics = new();
+        Dictionary<INamedTypeSymbol, TypeExtensionModel> typeShapeExtensions = new(SymbolEqualityComparer.Default);
 
         // The compilation itself.
-        ImmutableArray<TypeExtensionModel> typeShapeExtensions = DiscoverTypeShapeExtensionsInAssembly(knownSymbols.Compilation.Assembly);
+        DiscoverTypeShapeExtensionsInAssembly(knownSymbols.Compilation.Assembly);
 
         // Full referenced assemblies.
         foreach (MetadataReference metadataReference in knownSymbols.Compilation.References)
         {
             if (knownSymbols.Compilation.GetAssemblyOrModuleSymbol(metadataReference) is IAssemblySymbol referencedAssembly)
             {
-                typeShapeExtensions = typeShapeExtensions.AddRange(DiscoverTypeShapeExtensionsInAssembly(referencedAssembly));
+                DiscoverTypeShapeExtensionsInAssembly(referencedAssembly);
             }
         }
 
-        // In combining extensions from multiple sources, we *could* apply a merge policy that the local compilation wins when there's a conflict.
-        // Type extensions have some aspects that can be merged (e.g. associated types) and some that cannot be (e.g. Kind and Marshaller).
-        return (typeShapeExtensions.ToDictionary<INamedTypeSymbol, TypeExtensionModel>(m => m.Target, SymbolEqualityComparer.Default), diagnostics);
+        // In combining extensions from multiple sources, type extensions may be merged.
+        // Non-mergeable details (e.g. the marshaler to use) will be resolved by preferring the first definition found.
+        // We always scan the compilation itself first, so the project always has the ability to resolve a conflict by defining the attribute directly.
+        return (typeShapeExtensions, diagnostics);
 
-        ImmutableArray<TypeExtensionModel> DiscoverTypeShapeExtensionsInAssembly(IAssemblySymbol assemblySymbol)
+        void DiscoverTypeShapeExtensionsInAssembly(IAssemblySymbol assemblySymbol)
         {
-            Dictionary<ITypeSymbol, TypeExtensionModel> associatedTypes = new(SymbolEqualityComparer.Default);
             foreach (AttributeData attribute in assemblySymbol.GetAttributes())
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -110,33 +112,23 @@ public sealed partial class Parser : TypeDataModelGenerator
                     MergeTypeExtension(new TypeExtensionModel { Target = targetType, Marshaller = marshaller });
                 }
 
-                TypeExtensionModel MergeTypeExtension(TypeExtensionModel extension)
+                void MergeTypeExtension(TypeExtensionModel extension)
                 {
                     if (attribute.GetLocation() is Location location)
                     {
                         extension = extension with { Locations = extension.Locations.Add(location) };
                     }
 
-                    if (!associatedTypes.TryGetValue(extension.Target, out TypeExtensionModel? existing))
-                    {
-                        return associatedTypes[extension.Target] = extension;
-                    }
-
-                    if (existing.Marshaller is not null && extension.Marshaller is not null && !SymbolEqualityComparer.Default.Equals(existing.Marshaller, extension.Marshaller))
-                    {
-                        diagnostics.Add(new EquatableDiagnostic(CannotMergeTypeExtension, attribute.GetLocation(), [extension.Target.GetFullyQualifiedName()]) { AdditionalLocations = existing.Locations });
-                    }
-
-                    return associatedTypes[extension.Target] = existing with
-                    {
-                        AssociatedTypes = existing.AssociatedTypes.AddRange(extension.AssociatedTypes),
-                        Marshaller = existing.Marshaller ?? extension.Marshaller,
-                        Locations = existing.Locations.AddRange(extension.Locations),
-                    };
+                    typeShapeExtensions[extension.Target] = typeShapeExtensions.TryGetValue(extension.Target, out TypeExtensionModel? existing)
+                        ? existing with
+                        {
+                            AssociatedTypes = existing.AssociatedTypes.AddRange(extension.AssociatedTypes),
+                            Marshaller = existing.Marshaller ?? extension.Marshaller,
+                            Locations = existing.Locations.AddRange(extension.Locations),
+                        }
+                        : extension;
                 }
             }
-
-            return associatedTypes.Values.ToImmutableArray();
         }
     }
 
