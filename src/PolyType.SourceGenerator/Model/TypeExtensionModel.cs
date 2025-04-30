@@ -17,5 +17,15 @@ public sealed record TypeExtensionModel
     /// <summary>
     /// An aggregate of all the associated types registered with the <see cref="Target"/>.
     /// </summary>
-    public required ImmutableArray<AssociatedTypeModel> AssociatedTypes { get; init; }
+    public ImmutableArray<AssociatedTypeModel> AssociatedTypes { get; init; } = ImmutableArray<AssociatedTypeModel>.Empty;
+
+    /// <summary>
+    /// Gets an optional marshaller type that can be used to convert the <see cref="Target"/> type to a surrogate type.
+    /// </summary>
+    public INamedTypeSymbol? Marshaller { get; init; }
+
+    /// <summary>
+    /// Gets the locations of the <see cref="TypeShapeExtensionAttribute"/> attributes that target the <see cref="Target"/> type.
+    /// </summary>
+    public ImmutableArray<Location> Locations { get; init; } = ImmutableArray<Location>.Empty;
 }

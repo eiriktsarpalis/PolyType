@@ -12,6 +12,7 @@ public sealed class PolyTypeKnownSymbols(Compilation compilation) : KnownSymbols
     {
         public const string Requirements = "Requirements";
         public const string AssociatedTypes = "AssociatedTypes";
+        public const string Marshaller = "Marshaller";
     }
 
     /// <summary>

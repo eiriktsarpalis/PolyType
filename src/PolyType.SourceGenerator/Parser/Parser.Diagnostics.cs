@@ -126,4 +126,12 @@ public sealed partial class Parser
         category: "PolyType.SourceGenerator",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+
+    internal static DiagnosticDescriptor ConflictingMarshallers { get; } = new DiagnosticDescriptor(
+        id: "PT0018",
+        title: "Multiple marshallers specified.",
+        messageFormat: "Multiple TypeShapeExtensionAttribute attributes specified for target type '{0}' with conflicting marshallers specified. At most one marshaller can be specified.",
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
 }

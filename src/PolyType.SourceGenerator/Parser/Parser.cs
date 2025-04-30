@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Emit;
 using PolyType.Roslyn;
 using PolyType.Roslyn.Helpers;
 using PolyType.SourceGenerator.Helpers;
@@ -42,34 +43,39 @@ public sealed partial class Parser : TypeDataModelGenerator
             return null;
         }
 
-        Dictionary<INamedTypeSymbol, TypeExtensionModel> typeShapeExtensions = DiscoverTypeShapeExtensions(knownSymbols, cancellationToken);
+        (Dictionary<INamedTypeSymbol, TypeExtensionModel> typeShapeExtensions, IReadOnlyList<EquatableDiagnostic> extensionDiagnostics) =
+            DiscoverTypeShapeExtensions(knownSymbols, cancellationToken);
         Parser parser = new(knownSymbols.Compilation.Assembly, typeShapeExtensions, knownSymbols, cancellationToken);
+        parser.Diagnostics.AddRange(extensionDiagnostics);
         TypeDeclarationModel shapeProviderDeclaration = CreateShapeProviderDeclaration(knownSymbols.Compilation);
         ImmutableEquatableArray<TypeDeclarationModel> generateShapeTypes = parser.IncludeTypesUsingGenerateShapeAttributes(generateShapeDeclarations);
         return parser.ExportTypeShapeProviderModel(shapeProviderDeclaration, generateShapeTypes);
     }
 
-    private static Dictionary<INamedTypeSymbol, TypeExtensionModel> DiscoverTypeShapeExtensions(PolyTypeKnownSymbols knownSymbols, CancellationToken cancellationToken)
+    private static (Dictionary<INamedTypeSymbol, TypeExtensionModel> extensions, IReadOnlyList<EquatableDiagnostic> diagnostics) DiscoverTypeShapeExtensions(PolyTypeKnownSymbols knownSymbols, CancellationToken cancellationToken)
     {
+        List<EquatableDiagnostic> diagnostics = new();
+        Dictionary<INamedTypeSymbol, TypeExtensionModel> typeShapeExtensions = new(SymbolEqualityComparer.Default);
+
         // The compilation itself.
-        ImmutableArray<TypeExtensionModel> typeShapeExtensions = DiscoverTypeShapeExtensionsInAssembly(knownSymbols.Compilation.Assembly);
+        DiscoverTypeShapeExtensionsInAssembly(knownSymbols.Compilation.Assembly);
 
         // Full referenced assemblies.
         foreach (MetadataReference metadataReference in knownSymbols.Compilation.References)
         {
             if (knownSymbols.Compilation.GetAssemblyOrModuleSymbol(metadataReference) is IAssemblySymbol referencedAssembly)
             {
-                typeShapeExtensions = typeShapeExtensions.AddRange(DiscoverTypeShapeExtensionsInAssembly(referencedAssembly));
+                DiscoverTypeShapeExtensionsInAssembly(referencedAssembly);
             }
         }
 
-        // In combining extensions from multiple sources, we *could* apply a merge policy that the local compilation wins when there's a conflict.
-        // Type extensions have some aspects that can be merged (e.g. associated types) and some that cannot be (e.g. Kind and Marshaller).
-        return typeShapeExtensions.ToDictionary<INamedTypeSymbol, TypeExtensionModel>(m => m.Target, SymbolEqualityComparer.Default);
+        // In combining extensions from multiple sources, type extensions may be merged.
+        // Non-mergeable details (e.g. the marshaler to use) will be resolved by preferring the first definition found.
+        // We always scan the compilation itself first, so the project always has the ability to resolve a conflict by defining the attribute directly.
+        return (typeShapeExtensions, diagnostics);
 
-        ImmutableArray<TypeExtensionModel> DiscoverTypeShapeExtensionsInAssembly(IAssemblySymbol assemblySymbol)
+        void DiscoverTypeShapeExtensionsInAssembly(IAssemblySymbol assemblySymbol)
         {
-            Dictionary<ITypeSymbol, TypeExtensionModel> associatedTypes = new(SymbolEqualityComparer.Default);
             foreach (AttributeData attribute in assemblySymbol.GetAttributes())
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -97,26 +103,32 @@ public sealed partial class Parser : TypeDataModelGenerator
 
                     if (associatedTypeSymbols.Count > 0)
                     {
-                        if (!associatedTypes.TryGetValue(targetType, out TypeExtensionModel? existingRelatedTypes))
-                        {
-                            existingRelatedTypes = new TypeExtensionModel
-                            {
-                                Target = targetType,
-                                AssociatedTypes = ImmutableArray<AssociatedTypeModel>.Empty,
-                            };
-                        }
-
-                        existingRelatedTypes = existingRelatedTypes with
-                        {
-                            AssociatedTypes = existingRelatedTypes.AssociatedTypes.AddRange(associatedTypeSymbols),
-                        };
-
-                        associatedTypes[targetType] = existingRelatedTypes;
+                        MergeTypeExtension(new TypeExtensionModel { Target = targetType, AssociatedTypes = associatedTypeSymbols.ToImmutableArray() });
                     }
                 }
-            }
 
-            return associatedTypes.Values.ToImmutableArray();
+                if (attribute.TryGetNamedArgument(PolyTypeKnownSymbols.TypeShapeExtensionAttributePropertyNames.Marshaller, out INamedTypeSymbol? marshaller) && marshaller is not null)
+                {
+                    MergeTypeExtension(new TypeExtensionModel { Target = targetType, Marshaller = marshaller });
+                }
+
+                void MergeTypeExtension(TypeExtensionModel extension)
+                {
+                    if (attribute.GetLocation() is Location location)
+                    {
+                        extension = extension with { Locations = extension.Locations.Add(location) };
+                    }
+
+                    typeShapeExtensions[extension.Target] = typeShapeExtensions.TryGetValue(extension.Target, out TypeExtensionModel? existing)
+                        ? existing with
+                        {
+                            AssociatedTypes = existing.AssociatedTypes.AddRange(extension.AssociatedTypes),
+                            Marshaller = existing.Marshaller ?? extension.Marshaller,
+                            Locations = existing.Locations.AddRange(extension.Locations),
+                        }
+                        : extension;
+                }
+            }
         }
     }
 
@@ -312,7 +324,12 @@ public sealed partial class Parser : TypeDataModelGenerator
         ParseTypeShapeAttribute(type, out TypeShapeKind? requestedTypeShapeKind, out ITypeSymbol? marshaller, out Location? typeShapeLocation);
         ParseCustomAssociatedTypeAttributes(type, out ImmutableArray<AssociatedTypeModel> customAssociatedTypes);
         ImmutableArray<AssociatedTypeModel> associatedTypeShapes = ParseAssociatedTypeShapeAttributes(type);
-        ImmutableArray<AssociatedTypeModel> typeExtensionAssociatedTypes = GetExtensionModel(type)?.AssociatedTypes ?? ImmutableArray<AssociatedTypeModel>.Empty;
+        TypeExtensionModel? typeExtensionModel = GetExtensionModel(type);
+        ImmutableArray<AssociatedTypeModel> typeExtensionAssociatedTypes = typeExtensionModel?.AssociatedTypes ?? ImmutableArray<AssociatedTypeModel>.Empty;
+        if (typeExtensionModel?.Marshaller is { } extensionMarshaller)
+        {
+            marshaller = extensionMarshaller;
+        }
 
         // Aggregate the associated types from all sources, and aggregate flags specified for the same type.
         associatedTypes =

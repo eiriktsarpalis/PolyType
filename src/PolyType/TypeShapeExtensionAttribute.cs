@@ -8,6 +8,12 @@ namespace PolyType;
 /// as if <see cref="TypeShapeAttribute"/> had been applied to the target type.
 /// </summary>
 /// <param name="target">The type to be extended.</param>
+/// <remarks>
+/// While this attribute may be applied to an assembly multiple times,
+/// and may even be specified for a given <paramref name="target"/> multiple times,
+/// the <see cref="Marshaller"/> property for a given <paramref name="target"/> must either be <see langword="null"/>
+/// or must agree with other non-<see langword="null" /> properties on the attribute.
+/// </remarks>
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
 public class TypeShapeExtensionAttribute(Type target) : Attribute
 {
@@ -21,6 +27,9 @@ public class TypeShapeExtensionAttribute(Type target) : Attribute
     /// directly to the target type.
     /// </remarks>
     public Type Target => target;
+
+    /// <inheritdoc cref="TypeShapeAttribute.Marshaller"/>
+    public Type? Marshaller { get; init; }
 
     /// <summary>
     /// Gets the elements of the generated shape that are required at runtime.

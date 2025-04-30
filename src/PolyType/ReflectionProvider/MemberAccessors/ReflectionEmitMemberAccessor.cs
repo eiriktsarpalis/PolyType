@@ -887,7 +887,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         {
             0 => null,
             <= 64 => typeof(ulong),
-            _ => typeof(BitArray)
+            _ => typeof(BitArray),
         };
     }
 

@@ -2,6 +2,7 @@
 using PolyType.ReflectionProvider.MemberAccessors;
 using System.Collections;
 using System.Collections.Concurrent;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -19,6 +20,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
     internal const string RequiresDynamicCodeMessage = "PolyType Reflection provider requires dynamic code.";
 
     private static readonly ConcurrentDictionary<ReflectionTypeShapeProviderOptions, ReflectionTypeShapeProvider> s_providers = new();
+    private static readonly Lazy<IReadOnlyDictionary<Type, ReflectionTypeShapeExtensionModel>> EmptyTypeShapeExtensions = new(() => new Dictionary<Type, ReflectionTypeShapeExtensionModel>());
 
     /// <summary>
     /// Gets the default provider instance using configuration supported by the current platform.
@@ -44,6 +46,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
     private readonly ConcurrentDictionary<Type, ITypeShape> _cache = new();
     private readonly Func<Type, ITypeShape> _typeShapeFactory;
+    private readonly Lazy<IReadOnlyDictionary<Type, ReflectionTypeShapeExtensionModel>> _typeShapeExtensions;
 
     private ReflectionTypeShapeProvider(ReflectionTypeShapeProviderOptions options)
     {
@@ -57,6 +60,9 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             ? new ReflectionEmitMemberAccessor()
             : new ReflectionMemberAccessor();
 
+        _typeShapeExtensions = options.TypeShapeExtensionAssemblies is []
+            ? EmptyTypeShapeExtensions
+            : new(() => DiscoverTypeShapeExtensions(options.TypeShapeExtensionAssemblies));
         _typeShapeFactory = type => CreateTypeShapeCore(type);
     }
 
@@ -100,14 +106,16 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             throw new ArgumentException("Type cannot be a generic parameter", nameof(type));
         }
 
-        return DetermineTypeKind(type, allowUnionShapes, out TypeShapeAttribute? typeShapeAttribute, out FSharpUnionInfo? fSharpUnionInfo) switch
+        _typeShapeExtensions.Value.TryGetValue(type, out ReflectionTypeShapeExtensionModel typeShapeExtension);
+
+        return DetermineTypeKind(type, allowUnionShapes, typeShapeExtension, out TypeShapeAttribute? typeShapeAttribute, out FSharpUnionInfo? fSharpUnionInfo) switch
         {
             TypeShapeKind.Enumerable => CreateEnumerableShape(type),
             TypeShapeKind.Dictionary => CreateDictionaryShape(type),
             TypeShapeKind.Enum => CreateEnumShape(type),
             TypeShapeKind.Optional => CreateOptionalShape(type, fSharpUnionInfo),
             TypeShapeKind.Object => CreateObjectShape(type, disableMemberResolution: false),
-            TypeShapeKind.Surrogate => CreateSurrogateShape(type, typeShapeAttribute),
+            TypeShapeKind.Surrogate => CreateSurrogateShape(type, typeShapeAttribute, typeShapeExtension),
             TypeShapeKind.Union => CreateUnionTypeShape(type, fSharpUnionInfo),
             TypeShapeKind.None or _ => CreateObjectShape(type, disableMemberResolution: true),
         };
@@ -119,9 +127,9 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         return (ITypeShape)Activator.CreateInstance(objectShapeTy, this, disableMemberResolution)!;
     }
 
-    private ITypeShape CreateSurrogateShape(Type type, TypeShapeAttribute? typeShapeAttribute)
+    private ITypeShape CreateSurrogateShape(Type type, TypeShapeAttribute? typeShapeAttribute, ReflectionTypeShapeExtensionModel typeShapeExtension)
     {
-        Type? marshallerType = typeShapeAttribute?.Marshaller;
+        Type? marshallerType = typeShapeAttribute?.Marshaller ?? typeShapeExtension.Marshaller;
         DebugExt.Assert(marshallerType != null);
 
         if (marshallerType.IsGenericTypeDefinition)
@@ -251,7 +259,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         return (IEnumTypeShape)Activator.CreateInstance(enumTypeTy, this)!;
     }
 
-    private IOptionalTypeShape CreateOptionalShape(Type optionalType, FSharpUnionInfo? fsharpUnionInfo )
+    private IOptionalTypeShape CreateOptionalShape(Type optionalType, FSharpUnionInfo? fsharpUnionInfo)
     {
         if (fsharpUnionInfo is not null)
         {
@@ -330,17 +338,34 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
                 throw new InvalidOperationException($"Polymorphic type '{unionType}' uses duplicate assignments for the name '{name}'.");
             }
 
-            derivedTypeInfos.Add(new (derivedType, name, tag, index, isTagSpecified));
+            derivedTypeInfos.Add(new(derivedType, name, tag, index, isTagSpecified));
         }
 
         Type unionTypeTy = typeof(ReflectionUnionTypeShape<>).MakeGenericType(unionType);
         return (IUnionTypeShape)Activator.CreateInstance(unionTypeTy, derivedTypeInfos.ToArray(), this)!;
     }
 
-    private static TypeShapeKind DetermineTypeKind(Type type, bool allowUnionShapes, out TypeShapeAttribute? typeShapeAttribute, out FSharpUnionInfo? fsharpUnionInfo)
+    private static Dictionary<Type, ReflectionTypeShapeExtensionModel> DiscoverTypeShapeExtensions(IReadOnlyList<Assembly> assemblies)
+    {
+        Dictionary<Type, ReflectionTypeShapeExtensionModel> typeShapeExtensions = new();
+        foreach (Assembly assembly in assemblies)
+        {
+            foreach (TypeShapeExtensionAttribute attribute in assembly.GetCustomAttributes<TypeShapeExtensionAttribute>())
+            {
+                ReflectionTypeShapeExtensionModel model = new(attribute);
+                typeShapeExtensions[attribute.Target] = typeShapeExtensions.TryGetValue(attribute.Target, out ReflectionTypeShapeExtensionModel existing)
+                    ? existing.Merge(model)
+                    : model;
+            }
+        }
+
+        return typeShapeExtensions;
+    }
+
+    private static TypeShapeKind DetermineTypeKind(Type type, bool allowUnionShapes, ReflectionTypeShapeExtensionModel typeShapeExtension, out TypeShapeAttribute? typeShapeAttribute, out FSharpUnionInfo? fsharpUnionInfo)
     {
         typeShapeAttribute = type.GetCustomAttribute<TypeShapeAttribute>();
-        TypeShapeKind builtInKind = DetermineBuiltInTypeKind(type, allowUnionShapes, typeShapeAttribute, out fsharpUnionInfo);
+        TypeShapeKind builtInKind = DetermineBuiltInTypeKind(type, allowUnionShapes, typeShapeAttribute, typeShapeExtension, out fsharpUnionInfo);
 
         if (typeShapeAttribute?.GetRequestedKind() is TypeShapeKind requestedKind && requestedKind != builtInKind)
         {
@@ -367,11 +392,11 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         return builtInKind;
     }
 
-    private static TypeShapeKind DetermineBuiltInTypeKind(Type type, bool allowUnionShapes, TypeShapeAttribute? typeShapeAttribute, out FSharpUnionInfo? fsharpUnionInfo)
+    private static TypeShapeKind DetermineBuiltInTypeKind(Type type, bool allowUnionShapes, TypeShapeAttribute? typeShapeAttribute, ReflectionTypeShapeExtensionModel? typeShapeExtension, out FSharpUnionInfo? fsharpUnionInfo)
     {
         fsharpUnionInfo = null;
 
-        if (typeShapeAttribute?.Marshaller is not null)
+        if (typeShapeAttribute?.Marshaller is not null || typeShapeExtension?.Marshaller is not null)
         {
             return TypeShapeKind.Surrogate;
         }

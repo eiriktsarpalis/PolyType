@@ -24,8 +24,14 @@ public interface IEnumerableTypeShape : ITypeShape
     CollectionConstructionStrategy ConstructionStrategy { get; }
 
     /// <summary>
-    /// Gets the rank of the enumerable, if a multidimensional array.
+    /// Gets the dimensionality of the collection type.
     /// </summary>
+    /// <value>
+    /// <see cref="IEnumerable{T}"/>, most collections and most arrays have a rank of 1.
+    /// </value>
+    /// <remarks>
+    /// Test for arrays by using <see cref="Type.IsArray"/> on <see cref="ITypeShape.Type"/>.
+    /// </remarks>
     int Rank { get; }
 
     /// <summary>
