@@ -78,6 +78,7 @@ public static class CompilationHelpers
             MetadataReference.CreateFromFile(typeof(System.Linq.Enumerable).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.Collections.Immutable.ImmutableArray).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(Microsoft.FSharp.Core.Unit).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(System.Drawing.Point).Assembly.Location),
 #if NET
             MetadataReference.CreateFromFile(typeof(LinkedList<>).Assembly.Location),
             MetadataReference.CreateFromFile(s_systemRuntimeAssembly.Location),

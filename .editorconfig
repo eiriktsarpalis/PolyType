@@ -54,8 +54,14 @@ dotnet_diagnostic.SA1308.severity = none
 # SA1203: Constants should appear before fields
 dotnet_diagnostic.SA1203.severity = none
 
+# SA1402: File may only contain a single type
+dotnet_diagnostic.SA1402.severity = silent
+
 # SA1405: Debug.Assert should provide message text
 dotnet_diagnostic.SA1405.severity = none
+
+# SA1414: Tuple types in signatures should have element names
+dotnet_diagnostic.SA1414.severity = silent
 
 # SA1009: Closing parenthesis should be spaced correctly
 dotnet_diagnostic.SA1009.severity = none
@@ -68,6 +74,9 @@ dotnet_diagnostic.SA1633.severity = none
 
 # SA1629: Documentation text should end with a period
 dotnet_diagnostic.SA1629.severity = none
+
+# SA1649: File name should match first type name
+dotnet_diagnostic.SA1649.severity = silent
 
 # SA1106: Code should not contain empty statements
 dotnet_diagnostic.SA1106.severity = none
@@ -140,6 +149,9 @@ dotnet_diagnostic.IDE0042.severity = none
 
 # SA1313: Parameter names should begin with lower-case letter
 dotnet_diagnostic.SA1313.severity = none
+
+# SA1316: Tuple element names should use correct casing
+dotnet_diagnostic.SA1316.severity = silent
 
 # IDE0290: Use primary constructor
 dotnet_diagnostic.IDE0290.severity = none

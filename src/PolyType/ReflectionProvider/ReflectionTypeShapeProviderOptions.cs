@@ -1,4 +1,6 @@
-﻿namespace PolyType.ReflectionProvider;
+﻿using System.Reflection;
+
+namespace PolyType.ReflectionProvider;
 
 /// <summary>
 /// Exposes configuration options for the reflection-based type shape provider.
@@ -17,4 +19,35 @@ public sealed record ReflectionTypeShapeProviderOptions
     /// Defaults to <c>true</c> if the runtime supports dynamic code generation.
     /// </remarks>
     public bool UseReflectionEmit { get; init; } = ReflectionHelpers.IsDynamicCodeSupported;
+
+    /// <summary>
+    /// Gets the list of assemblies to scan for <see cref="TypeShapeExtensionAttribute"/> attributes.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The content of this list will typically be made up of the calling assembly,
+    /// and from <see cref="Assembly.GetReferencedAssemblies()"/> invoked on the calling assembly.
+    /// </para>
+    /// <para>
+    /// Conflicts between <see cref="TypeShapeExtensionAttribute"/> attributes are resolved by taking the first of the conficting values.
+    /// It is therefore advisable to order this list so that the calling assembly appears first in the list.
+    /// The caller is then in a position to set all policies and resolve conflicts between other assemblies.
+    /// </para>
+    /// </remarks>
+    public IReadOnlyList<Assembly> TypeShapeExtensionAssemblies { get; init; } = [];
+
+    /// <inheritdoc/>
+    public bool Equals(ReflectionTypeShapeProviderOptions? other)
+    {
+        if (other is null)
+        {
+            return false;
+        }
+
+        return this.UseReflectionEmit == other.UseReflectionEmit
+            && this.TypeShapeExtensionAssemblies.SequenceEqual(other.TypeShapeExtensionAssemblies);
+    }
+
+    /// <inheritdoc/>
+    public override int GetHashCode() => unchecked((this.UseReflectionEmit ? 1 << 30 : 0) + this.TypeShapeExtensionAssemblies.Aggregate(0, (n, a) => a.GetHashCode()));
 }

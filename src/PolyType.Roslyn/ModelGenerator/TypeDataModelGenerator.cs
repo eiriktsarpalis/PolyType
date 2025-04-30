@@ -84,7 +84,6 @@ public partial class TypeDataModelGenerator
     /// Gets the list of equatable diagnostics that have been recorded by this model generator.
     /// </summary>
     public List<EquatableDiagnostic> Diagnostics => _diagnostics ??= [];
-
     /// <summary>
     /// Adds a new diagnostic to the <see cref="Diagnostics"/> property.
     /// </summary>
