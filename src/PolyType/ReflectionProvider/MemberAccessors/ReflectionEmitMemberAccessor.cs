@@ -737,6 +737,8 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
 
     private static DynamicMethod EmitConstructor(ConstructorInfo ctorInfo)
     {
+        // TODO correctly factor in the comparer here
+
         ParameterInfo[] parameters = ctorInfo.GetParameters();
         DynamicMethod dynamicMethod = CreateDynamicMethod("parameterizedCtor", ctorInfo.DeclaringType!, parameters.Select(p => p.ParameterType).ToArray());
         ILGenerator generator = dynamicMethod.GetILGenerator();

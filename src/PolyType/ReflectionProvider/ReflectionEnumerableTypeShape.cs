@@ -46,7 +46,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
         return _addDelegate ??= Provider.MemberAccessor.CreateEnumerableAddDelegate<TEnumerable, TElement>(_addMethod);
     }
 
-    public virtual Func<TEnumerable> GetDefaultConstructor()
+    public virtual Func<TEnumerable> GetDefaultConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null)
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
         {
@@ -57,12 +57,14 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
         return _defaultCtorDelegate ??= CreateDefaultConstructor();
         Func<TEnumerable> CreateDefaultConstructor()
         {
+            // TODO use options
+
             Debug.Assert(_defaultCtor != null);
             return Provider.MemberAccessor.CreateDefaultConstructor<TEnumerable>(new MethodConstructorShapeInfo(typeof(TEnumerable), _defaultCtor, parameters: []));
         }
     }
 
-    public virtual Func<IEnumerable<TElement>, TEnumerable> GetEnumerableConstructor()
+    public virtual Func<IEnumerable<TElement>, TEnumerable> GetEnumerableConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null)
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Enumerable)
         {
@@ -73,6 +75,8 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
         return _enumerableCtorDelegate ??= CreateEnumerableConstructor();
         Func<IEnumerable<TElement>, TEnumerable> CreateEnumerableConstructor()
         {
+            // TODO use options
+
             DebugExt.Assert(_enumerableCtor != null);
             return _enumerableCtor switch
             {
@@ -82,7 +86,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
         }
     }
 
-    public virtual SpanConstructor<TElement, TEnumerable> GetSpanConstructor()
+    public virtual SpanConstructor<TElement, TEnumerable> GetSpanConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null)
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Span)
         {
@@ -93,6 +97,8 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
         return _spanCtorDelegate ??= CreateSpanConstructor();
         SpanConstructor<TElement, TEnumerable> CreateSpanConstructor()
         {
+            // TODO use options
+
             if (_listCtor is ConstructorInfo listCtor)
             {
                 var listCtorDelegate = Provider.MemberAccessor.CreateFuncDelegate<List<TElement>, TEnumerable>(listCtor);
@@ -166,6 +172,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
             if (typeof(TEnumerable).IsAssignableFrom(typeof(HashSet<TElement>)))
             {
                 // Handle ISet<T> and IReadOnlySet<T> types using HashSet<T>
+                // TODO CreateHashSet takes a comparer as a second argument
                 MethodInfo? gm = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateHashSet), BindingFlags.Public | BindingFlags.Static);
                 _spanCtor = gm?.MakeGenericMethod(typeof(TElement));
                 return _spanCtor != null ? CollectionConstructionStrategy.Span : CollectionConstructionStrategy.None;
@@ -295,7 +302,7 @@ internal sealed class ReflectionArrayTypeShape<TElement>(ReflectionTypeShapeProv
 {
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Span;
     public override Func<TElement[], IEnumerable<TElement>> GetGetEnumerable() => static array => array;
-    public override SpanConstructor<TElement, TElement[]> GetSpanConstructor() => static span => span.ToArray();
+    public override SpanConstructor<TElement, TElement[]> GetSpanConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null) => static span => span.ToArray();
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
@@ -317,7 +324,7 @@ internal sealed class ReadOnlyMemoryTypeShape<TElement>(ReflectionTypeShapeProvi
 {
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Span;
     public override Func<ReadOnlyMemory<TElement>, IEnumerable<TElement>> GetGetEnumerable() => static memory => MemoryMarshal.ToEnumerable(memory);
-    public override SpanConstructor<TElement, ReadOnlyMemory<TElement>> GetSpanConstructor() => static span => span.ToArray();
+    public override SpanConstructor<TElement, ReadOnlyMemory<TElement>> GetSpanConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null) => static span => span.ToArray();
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
@@ -327,7 +334,7 @@ internal sealed class MemoryTypeShape<TElement>(ReflectionTypeShapeProvider prov
 {
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Span;
     public override Func<Memory<TElement>, IEnumerable<TElement>> GetGetEnumerable() => static memory => MemoryMarshal.ToEnumerable((ReadOnlyMemory<TElement>)memory);
-    public override SpanConstructor<TElement, Memory<TElement>> GetSpanConstructor() => static span => span.ToArray();
+    public override SpanConstructor<TElement, Memory<TElement>> GetSpanConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null) => static span => span.ToArray();
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
