@@ -735,10 +735,19 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
     public SpanConstructor<T, TResult> CreateSpanConstructorDelegate<T, TResult>(ConstructorInfo ctorInfo)
         => CreateDelegate<SpanConstructor<T, TResult>>(EmitConstructor(ctorInfo));
 
+    public SpanConstructor<TElement, TResult> CreateSpanConstructorDelegate<TElement, TCompare, TResult>(IEqualityComparer<TCompare> comparer, ConstructorInfo ctorInfo)
+    {
+        Func<ReadOnlySpan<TElement>, IEqualityComparer<TCompare>, SpanConstructor<TElement, TResult>> func
+            = CreateDelegate<Func<ReadOnlySpan<TElement>, IEqualityComparer<TCompare>, SpanConstructor<TElement, TResult>>>(EmitConstructor(ctorInfo));
+    }
+
+    public SpanConstructor<TElement, TResult> CreateSpanConstructorDelegate<TElement, TCompare, TResult>(ConstructorInfo ctorInfo, IEqualityComparer<TCompare> comparer)
+    {
+
+    }
+
     private static DynamicMethod EmitConstructor(ConstructorInfo ctorInfo)
     {
-        // TODO correctly factor in the comparer here
-
         ParameterInfo[] parameters = ctorInfo.GetParameters();
         DynamicMethod dynamicMethod = CreateDynamicMethod("parameterizedCtor", ctorInfo.DeclaringType!, parameters.Select(p => p.ParameterType).ToArray());
         ILGenerator generator = dynamicMethod.GetILGenerator();

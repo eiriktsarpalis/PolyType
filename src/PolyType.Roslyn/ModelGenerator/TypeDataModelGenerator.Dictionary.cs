@@ -19,6 +19,7 @@ public partial class TypeDataModelGenerator
 
         DictionaryKind kind = default;
         CollectionModelConstructionStrategy constructionStrategy = CollectionModelConstructionStrategy.None;
+        ImmutableArray<ImmutableArray<ConstructionParameterType>>.Builder parameterLists = ImmutableArray.CreateBuilder<ImmutableArray<ConstructionParameterType>>();
         IMethodSymbol? factoryMethod = null;
         ITypeSymbol? keyType = null;
         ITypeSymbol? valueType = null;
@@ -138,6 +139,7 @@ public partial class TypeDataModelGenerator
             DictionaryKind = kind,
             DerivedTypes = IncludeDerivedTypes(type, ref ctx, TypeShapeRequirements.Full),
             ConstructionStrategy = constructionStrategy,
+            ParameterLists = parameterLists.ToImmutable(),
             FactoryMethod = factoryMethod,
             AssociatedTypes = associatedTypes,
         };

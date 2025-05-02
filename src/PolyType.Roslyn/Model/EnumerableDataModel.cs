@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using System.Collections;
+using System.Collections.Immutable;
 
 namespace PolyType.Roslyn;
 
@@ -29,6 +30,8 @@ public sealed class EnumerableDataModel : TypeDataModel
     /// The preferred construction strategy for this collection type.
     /// </summary>
     public CollectionModelConstructionStrategy ConstructionStrategy { get; init; }
+
+    public required ImmutableArray<ImmutableArray<ConstructionParameterType>> ParameterLists { get; init; }
 
     /// <summary>
     /// Instance method used for appending an element to the collection.
@@ -93,4 +96,11 @@ public enum EnumerableKind
     /// An IAsyncEnumerable{T} type.
     /// </summary>
     AsyncEnumerableOfT,
+}
+
+public enum ConstructionParameterType
+{
+    IEnumerableOfT,
+    SpanOfT,
+    IEqualityComparerOfT,
 }

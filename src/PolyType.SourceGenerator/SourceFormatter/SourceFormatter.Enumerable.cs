@@ -1,5 +1,6 @@
 ﻿using PolyType.Roslyn;
 using PolyType.SourceGenerator.Model;
+using System.Collections.Immutable;
 
 namespace PolyType.SourceGenerator;
 
@@ -44,11 +45,28 @@ internal sealed partial class SourceFormatter
 
         static string FormatDefaultConstructorFunc(EnumerableShapeModel enumerableType)
         {
-            return enumerableType.ConstructionStrategy is CollectionConstructionStrategy.Mutable
-                ? $"static options => options is null" +
-                    $" ? () => new {enumerableType.ImplementationTypeFQN ?? enumerableType.Type.FullyQualifiedName}()" +
-                    $" : () => new {enumerableType.ImplementationTypeFQN ?? enumerableType.Type.FullyQualifiedName}()" // TODO use options
-                : "null";
+            if (enumerableType.ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
+            {
+                return "null";
+            }
+
+            string typeName = enumerableType.ImplementationTypeFQN ?? enumerableType.Type.FullyQualifiedName;
+            ImmutableArray<ConstructionParameterType> parametersWithComparer = enumerableType.ParameterLists.FirstOrDefault(list => list.Contains(ConstructionParameterType.IEqualityComparerOfT));
+
+            if (parametersWithComparer.IsDefault)
+            {
+                return $"static options => static () => new {typeName}()";
+            }
+
+            string optionArgsExpr = parametersWithComparer switch
+            {
+                [ConstructionParameterType.IEqualityComparerOfT] => "options.EqualityComparer",
+                _ => ""
+            };
+
+            return $"static options => options is null" +
+                $" ? () => new {typeName}()" +
+                $" : () => new {typeName}({optionArgsExpr})";
         }
 
         static string FormatAddElementFunc(EnumerableShapeModel enumerableType)
@@ -73,17 +91,31 @@ internal sealed partial class SourceFormatter
 
             string suppressSuffix = enumerableType.ElementTypeContainsNullableAnnotations ? "!" : "";
             string valuesExpr = enumerableType.CtorRequiresListConversion ? $"global::PolyType.SourceGenModel.CollectionHelpers.CreateList(values{suppressSuffix})" : $"values{suppressSuffix}";
+
+            if (enumerableType.Kind is EnumerableKind.ArrayOfT or EnumerableKind.ReadOnlyMemoryOfT or EnumerableKind.MemoryOfT)
+            {
+                return $"static options => static values => {valuesExpr}.ToArray()";
+            }
+
+            ImmutableArray<ConstructionParameterType> parametersWithComparer = enumerableType.ParameterLists.FirstOrDefault(
+                list => list.Contains(ConstructionParameterType.IEqualityComparerOfT) && list.Contains(ConstructionParameterType.SpanOfT));
+
+            string optionArgsExpr = parametersWithComparer switch
+            {
+                { IsDefault: true } => valuesExpr, // Assume a constructor that accepts span exists
+                [ConstructionParameterType.IEqualityComparerOfT, ConstructionParameterType.SpanOfT] => $"options.EqualityComparer, {valuesExpr}",
+                [ConstructionParameterType.SpanOfT, ConstructionParameterType.IEqualityComparerOfT] => $"{valuesExpr}, options.EqualityComparer",
+                _ => throw new InvalidOperationException("Unexpected parameter list."),
+            };
+
             return enumerableType switch
             {
-                { Kind: EnumerableKind.ArrayOfT or EnumerableKind.ReadOnlyMemoryOfT or EnumerableKind.MemoryOfT } => $"static options => options is null" +
-                    $" ? static values => {valuesExpr}.ToArray()" +
-                    $" : static values => {valuesExpr}.ToArray()", // TODO use options
                 { StaticFactoryMethod: string spanFactory } => $"static options => options is null" +
                     $" ? static values => {spanFactory}({valuesExpr})" +
-                    $" : static values => {spanFactory}({valuesExpr})", // TODO use options
+                    $" : static values => {spanFactory}({optionArgsExpr})",
                 _ => $"static options => options is null" +
                     $" ? static values => new {enumerableType.Type.FullyQualifiedName}({valuesExpr})" +
-                    $" : static values => new {enumerableType.Type.FullyQualifiedName}({valuesExpr})", // TODO use options
+                    $" : static values => new {enumerableType.Type.FullyQualifiedName}({optionArgsExpr})",
             };
         }
 
@@ -95,14 +127,27 @@ internal sealed partial class SourceFormatter
             }
 
             string suppressSuffix = enumerableType.ElementTypeContainsNullableAnnotations ? "!" : "";
+            string valuesExpr = $"values{suppressSuffix}";
+
+            ImmutableArray<ConstructionParameterType> parametersWithComparer = enumerableType.ParameterLists.FirstOrDefault(
+                list => list.Contains(ConstructionParameterType.IEqualityComparerOfT) && list.Contains(ConstructionParameterType.SpanOfT));
+
+            string optionArgsExpr = parametersWithComparer switch
+            {
+                { IsDefault: true } => valuesExpr, // Assume a constructor that accepts span exists
+                [ConstructionParameterType.IEqualityComparerOfT, ConstructionParameterType.SpanOfT] => $"options.EqualityComparer, {valuesExpr}",
+                [ConstructionParameterType.SpanOfT, ConstructionParameterType.IEqualityComparerOfT] => $"{valuesExpr}, options.EqualityComparer",
+                _ => throw new InvalidOperationException("Unexpected parameter list."),
+            };
+
             return enumerableType switch
             {
                 { StaticFactoryMethod: { } enumerableFactory } => $"static options => options is null" +
-                    $" ? static values => {enumerableFactory}(values{suppressSuffix})" +
-                    $" : static values => {enumerableFactory}(values{suppressSuffix})", // TODO use options
+                    $" ? static values => {enumerableFactory}({valuesExpr})" +
+                    $" : static values => {enumerableFactory}({optionArgsExpr})",
                 _ => $"static options => options is null" +
-                    $" ? static values => new {enumerableType.Type.FullyQualifiedName}(values{suppressSuffix})" +
-                    $" : static values => new {enumerableType.Type.FullyQualifiedName}(values{suppressSuffix})", // TODO use options
+                    $" ? static values => new {enumerableType.Type.FullyQualifiedName}({valuesExpr})" +
+                    $" : static values => new {enumerableType.Type.FullyQualifiedName}({optionArgsExpr})",
             };
         }
     }

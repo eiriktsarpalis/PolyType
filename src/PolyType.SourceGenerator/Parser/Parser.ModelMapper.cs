@@ -89,6 +89,7 @@ public sealed partial class Parser
                     enumerableModel.ConstructionStrategy is CollectionModelConstructionStrategy.List &&
                     !IsFactoryAcceptingIEnumerable(enumerableModel.FactoryMethod),
 
+                ParameterLists = enumerableModel.ParameterLists,
                 Kind = enumerableModel.EnumerableKind,
                 Rank = enumerableModel.Rank,
                 ElementTypeContainsNullableAnnotations = enumerableModel.ElementType.ContainsNullabilityAnnotations(),
@@ -124,6 +125,7 @@ public sealed partial class Parser
 
                 StaticFactoryMethod = dictionaryModel.FactoryMethod is { IsStatic: true } m ? m.GetFullyQualifiedName() : null,
                 IsTupleEnumerableFactory = dictionaryModel.ConstructionStrategy is CollectionModelConstructionStrategy.TupleEnumerable,
+                ParameterLists = dictionaryModel.ParameterLists,
                 Kind = dictionaryModel.DictionaryKind,
                 CtorRequiresDictionaryConversion =
                     dictionaryModel.ConstructionStrategy is CollectionModelConstructionStrategy.Dictionary &&

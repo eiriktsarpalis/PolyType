@@ -21,6 +21,7 @@ public partial class TypeDataModelGenerator
         int rank = 1;
         EnumerableKind kind;
         CollectionModelConstructionStrategy constructionStrategy = CollectionModelConstructionStrategy.None;
+        ImmutableArray<ImmutableArray<ConstructionParameterType>>.Builder parameterLists = ImmutableArray.CreateBuilder<ImmutableArray<ConstructionParameterType>>();
         ITypeSymbol? elementType;
         IMethodSymbol? addElementMethod = null;
         IMethodSymbol? factoryMethod = null;
@@ -84,6 +85,17 @@ public partial class TypeDataModelGenerator
                 constructionStrategy = CollectionModelConstructionStrategy.List;
                 factoryMethod = factory;
             }
+            else if (namedType.Constructors.FirstOrDefault(ctor =>
+                ctor.Parameters is [{ Type: INamedTypeSymbol parameterType }] &&
+                !ctor.IsStatic &&
+                SymbolEqualityComparer.Default.Equals(parameterType.ConstructedFrom, KnownSymbols.IEqualityComparerOfT) &&
+                IsAccessibleSymbol(ctor)) is { } ctor2 &&
+                TryGetAddMethod(type, elementType, out addElementMethod))
+            {
+                constructionStrategy = CollectionModelConstructionStrategy.Mutable;
+                parameterLists.Add(ImmutableArray.Create(ConstructionParameterType.IEqualityComparerOfT));
+                factoryMethod = ctor2;
+            }
             else if (namedType.Constructors.FirstOrDefault(ctor => ctor.Parameters.Length == 0 && !ctor.IsStatic && IsAccessibleSymbol(ctor)) is { } ctor &&
                 TryGetAddMethod(type, elementType, out addElementMethod))
             {
@@ -94,20 +106,20 @@ public partial class TypeDataModelGenerator
                 IsAccessibleSymbol(ctor) &&
                 ctor.Parameters is [{ Type: INamedTypeSymbol parameterType }] &&
                 SymbolEqualityComparer.Default.Equals(parameterType.ConstructedFrom, KnownSymbols.ReadOnlySpanOfT) &&
-                SymbolEqualityComparer.Default.Equals(parameterType.TypeArguments[0], elementType)) is IMethodSymbol ctor2)
+                SymbolEqualityComparer.Default.Equals(parameterType.TypeArguments[0], elementType)) is IMethodSymbol ctor3)
             {
                 constructionStrategy = CollectionModelConstructionStrategy.Span;
-                factoryMethod = ctor2;
+                factoryMethod = ctor3;
             }
             else if (namedType.Constructors.FirstOrDefault(ctor =>
                 IsAccessibleSymbol(ctor) &&
                 ctor.Parameters is [{ Type: INamedTypeSymbol { IsGenericType: true } parameterType }] &&
                 KnownSymbols.ListOfT?.GetCompatibleGenericBaseType(parameterType.ConstructedFrom) != null &&
-                SymbolEqualityComparer.Default.Equals(parameterType.TypeArguments[0], elementType)) is IMethodSymbol ctor3)
+                SymbolEqualityComparer.Default.Equals(parameterType.TypeArguments[0], elementType)) is IMethodSymbol ctor4)
             {
                 // Type exposes a constructor that accepts a subtype of List<T>
                 constructionStrategy = CollectionModelConstructionStrategy.List;
-                factoryMethod = ctor3;
+                factoryMethod = ctor4;
             }
             else if (namedType.TypeKind is TypeKind.Interface)
             {
@@ -184,6 +196,7 @@ public partial class TypeDataModelGenerator
             EnumerableKind = kind,
             DerivedTypes = IncludeDerivedTypes(type, ref ctx, TypeShapeRequirements.Full),
             ConstructionStrategy = constructionStrategy,
+            ParameterLists = parameterLists.ToImmutable(),
             AddElementMethod = addElementMethod,
             FactoryMethod = factoryMethod,
             Rank = rank,
