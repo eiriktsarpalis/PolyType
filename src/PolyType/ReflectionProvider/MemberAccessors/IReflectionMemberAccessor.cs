@@ -20,6 +20,8 @@ internal interface IReflectionMemberAccessor
 
     Func<T, TResult> CreateFuncDelegate<T, TResult>(ConstructorInfo ctorInfo);
     SpanConstructor<T, TResult> CreateSpanConstructorDelegate<T, TResult>(ConstructorInfo ctorInfo);
+    SpanConstructor<TElement, TResult> CreateSpanConstructorDelegate<TElement, TCompare, TResult>(IEqualityComparer<TCompare> comparer, ConstructorInfo ctorInfo);
+    SpanConstructor<TElement, TResult> CreateSpanConstructorDelegate<TElement, TCompare, TResult>(ConstructorInfo ctorInfo, IEqualityComparer<TCompare> comparer);
 
     Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeInfo[] derivedTypeInfos);
 }
