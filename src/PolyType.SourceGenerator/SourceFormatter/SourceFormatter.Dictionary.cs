@@ -1,5 +1,6 @@
 ﻿using PolyType.Roslyn;
 using PolyType.SourceGenerator.Model;
+using System.Collections.Immutable;
 
 namespace PolyType.SourceGenerator;
 
@@ -39,11 +40,28 @@ internal sealed partial class SourceFormatter
 
         static string FormatDefaultConstructorFunc(DictionaryShapeModel dictionaryType)
         {
-            return dictionaryType.ConstructionStrategy is CollectionConstructionStrategy.Mutable
-                ? $"static options => options is null" +
-                    $" ? () => new {dictionaryType.ImplementationTypeFQN ?? dictionaryType.Type.FullyQualifiedName}()" +
-                    $" : () => new {dictionaryType.ImplementationTypeFQN ?? dictionaryType.Type.FullyQualifiedName}()" // TODO use options
-                : "null";
+            if (dictionaryType.ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
+            {
+                return "null";
+            }
+
+            string typeName = dictionaryType.ImplementationTypeFQN ?? dictionaryType.Type.FullyQualifiedName;
+            ImmutableArray<ConstructionParameterType> parametersWithComparer = dictionaryType.ParameterLists.FirstOrDefault(list => list.Contains(ConstructionParameterType.IEqualityComparerOfT));
+
+            if (parametersWithComparer.IsDefault)
+            {
+                return $"static options => static () => new {typeName}()";
+            }
+
+            string args = parametersWithComparer switch
+            {
+                [ConstructionParameterType.IEqualityComparerOfT] => "options.EqualityComparer",
+                _ => ""
+            };
+
+            return $"static options => options is null" +
+                $" ? () => new {typeName}()" +
+                $" : () => new {typeName}({args})";
         }
 
         static string FormatAddKeyValuePairFunc(DictionaryShapeModel dictionaryType)
@@ -66,20 +84,39 @@ internal sealed partial class SourceFormatter
                 return "null";
             }
 
-            // TODO pass comparer when constructing -- need to work out how to handle argument ordering across collection types, and model this on DictionaryShapeModel
+            string valuesExpr = dictionaryType switch
+            {
+                { StaticFactoryMethod: string factory, IsTupleEnumerableFactory: true } => $"global::System.Linq.Enumerable.Select(values, kvp => new global::System.Tuple<{dictionaryType.KeyType.FullyQualifiedName},{dictionaryType.ValueType.FullyQualifiedName}>(kvp.Key, kvp.Value))",
+                { KeyValueTypesContainNullableAnnotations: true } => $"values!",
+                _ => $"values"
+            };
 
-            string suppressSuffix = dictionaryType.KeyValueTypesContainNullableAnnotations ? "!" : "";
+            ImmutableArray<ConstructionParameterType> parametersWithComparer = dictionaryType.ParameterLists.FirstOrDefault(list => list.Contains(ConstructionParameterType.IEqualityComparerOfT));
+
+            if (parametersWithComparer.IsDefault)
+            {
+                return dictionaryType switch
+                {
+                    { StaticFactoryMethod: string factory } => $"static options => static values => {factory}({valuesExpr})",
+                    _ => $"static options => static values => new {dictionaryType.Type.FullyQualifiedName}({valuesExpr})",
+                };
+            }
+
+            string optionArgsExpr = parametersWithComparer switch
+            {
+                [ConstructionParameterType.IEnumerableOfT, ConstructionParameterType.IEqualityComparerOfT] => $"{valuesExpr}, options.EqualityComparer",
+                [ConstructionParameterType.IEnumerableOfT] => valuesExpr,
+                _ => throw new InvalidOperationException("Unexpected parameter list."),
+            };
+
             return dictionaryType switch
             {
-                { StaticFactoryMethod: string factory, IsTupleEnumerableFactory: false } => $"static options => options is null" +
-                    $" ? static values => {factory}(values{suppressSuffix})" +
-                    $" : static values => {factory}(values{suppressSuffix})", // TODO use options
                 { StaticFactoryMethod: string factory } => $"static options => options is null" +
-                    $" ? static values => {factory}(global::System.Linq.Enumerable.Select(values, kvp => new global::System.Tuple<{dictionaryType.KeyType.FullyQualifiedName},{dictionaryType.ValueType.FullyQualifiedName}>(kvp.Key, kvp.Value)))" +
-                    $" : static values => {factory}(global::System.Linq.Enumerable.Select(values, kvp => new global::System.Tuple<{dictionaryType.KeyType.FullyQualifiedName},{dictionaryType.ValueType.FullyQualifiedName}>(kvp.Key, kvp.Value)))", // TODO use options
+                    $" ? static values => {factory}({valuesExpr})" +
+                    $" : static values => {factory}({optionArgsExpr})",
                 _ => $"static options => options is null" +
-                    $" ? static values => new {dictionaryType.Type.FullyQualifiedName}(values{suppressSuffix})" +
-                    $" : static values => new {dictionaryType.Type.FullyQualifiedName}(values{suppressSuffix})", // TODO use options
+                    $" ? static values => new {dictionaryType.Type.FullyQualifiedName}({valuesExpr})" +
+                    $" : static values => new {dictionaryType.Type.FullyQualifiedName}({optionArgsExpr}))",
             };
         }
 
@@ -91,16 +128,40 @@ internal sealed partial class SourceFormatter
             }
 
             string suppressSuffix = dictionaryType.KeyValueTypesContainNullableAnnotations ? "!" : "";
-            // TODO avoid conditional dereference of options in func where we know it's not null
-            string valuesExpr = dictionaryType.CtorRequiresDictionaryConversion ? $"global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionary(values{suppressSuffix}, options?.EqualityComparer)" : $"values{suppressSuffix}";
+            string valuesExpr = $"values{suppressSuffix}";
+
+            if (dictionaryType is { StaticFactoryMethod: string factory1, CtorRequiresDictionaryConversion: true })
+            {
+                return $"static options => options is null" +
+                    $" ? values => {factory1}(global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionary({valuesExpr}, keyComparer: null))" +
+                    $" : values => {factory1}(global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionary({valuesExpr}, keyComparer: options.EqualityComparer))";
+            }
+            else if (dictionaryType is { CtorRequiresDictionaryConversion: true })
+            {
+                return $"static options => options is null" +
+                    $" ? values => new {dictionaryType.Type.FullyQualifiedName}(global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionary({valuesExpr}, keyComparer: null))" +
+                    $" : values => new {dictionaryType.Type.FullyQualifiedName}(global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionary({valuesExpr}, keyComparer: options.EqualityComparer))";
+            }
+
+            ImmutableArray<ConstructionParameterType> parametersWithComparer = dictionaryType.ParameterLists.FirstOrDefault(
+                list => list.Contains(ConstructionParameterType.IEqualityComparerOfT) && list.Contains(ConstructionParameterType.SpanOfT));
+
+            string optionArgsExpr = parametersWithComparer switch
+            {
+                { IsDefault: true } => valuesExpr, // Assume a constructor that accepts span exists
+                [ConstructionParameterType.IEqualityComparerOfT, ConstructionParameterType.SpanOfT] => $"options.EqualityComparer, {valuesExpr}",
+                [ConstructionParameterType.SpanOfT, ConstructionParameterType.IEqualityComparerOfT] => $"{valuesExpr}, options.EqualityComparer",
+                _ => throw new InvalidOperationException("Unexpected parameter list."),
+            };
+
             return dictionaryType switch
             {
-                { StaticFactoryMethod: string factory } => $"static options => options is null" + 
-                    $" ? values => {factory}({valuesExpr})" +
-                    $" : values => {factory}({valuesExpr})", // TODO use options
+                { StaticFactoryMethod: string factory2 } => $"static options => options is null" + 
+                    $" ? values => {factory2}({valuesExpr})" +
+                    $" : values => {factory2}({optionArgsExpr})",
                 _ => $"static options => options is null" +
                     $" ? values => new {dictionaryType.Type.FullyQualifiedName}({valuesExpr})" +
-                    $" : values => new {dictionaryType.Type.FullyQualifiedName}({valuesExpr})", // TODO use options
+                    $" : values => new {dictionaryType.Type.FullyQualifiedName}({optionArgsExpr})",
             };
         }
     }

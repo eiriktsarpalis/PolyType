@@ -49,22 +49,22 @@ internal sealed partial class SourceFormatter
             }
 
             string typeName = enumerableType.ImplementationTypeFQN ?? enumerableType.Type.FullyQualifiedName;
-            ImmutableArray<EnumerableParameterType> parametersWithComparer = enumerableType.ParameterLists.FirstOrDefault(list => list.Contains(EnumerableParameterType.IEqualityComparerOfT));
+            ImmutableArray<ConstructionParameterType> parametersWithComparer = enumerableType.ParameterLists.FirstOrDefault(list => list.Contains(ConstructionParameterType.IEqualityComparerOfT));
 
             if (parametersWithComparer.IsDefault)
             {
                 return $"static options => static () => new {typeName}()";
             }
 
-            string args = parametersWithComparer switch
+            string optionArgsExpr = parametersWithComparer switch
             {
-                [EnumerableParameterType.IEqualityComparerOfT] => "options.EqualityComparer",
+                [ConstructionParameterType.IEqualityComparerOfT] => "options.EqualityComparer",
                 _ => ""
             };
 
             return $"static options => options is null" +
                 $" ? () => new {typeName}()" +
-                $" : () => new {typeName}({args})";
+                $" : () => new {typeName}({optionArgsExpr})";
         }
 
         static string FormatAddElementFunc(EnumerableShapeModel enumerableType)
@@ -95,14 +95,14 @@ internal sealed partial class SourceFormatter
                 return $"static options => static values => {valuesExpr}.ToArray()";
             }
 
-            ImmutableArray<EnumerableParameterType> parametersWithComparer = enumerableType.ParameterLists.FirstOrDefault(
-                list => list.Contains(EnumerableParameterType.IEqualityComparerOfT) && list.Contains(EnumerableParameterType.SpanOfT));
+            ImmutableArray<ConstructionParameterType> parametersWithComparer = enumerableType.ParameterLists.FirstOrDefault(
+                list => list.Contains(ConstructionParameterType.IEqualityComparerOfT) && list.Contains(ConstructionParameterType.SpanOfT));
 
-            string argsExpr = parametersWithComparer switch
+            string optionArgsExpr = parametersWithComparer switch
             {
                 { IsDefault: true } => valuesExpr, // Assume a constructor that accepts span exists
-                [EnumerableParameterType.IEqualityComparerOfT, EnumerableParameterType.SpanOfT] => $"options.EqualityComparer, {valuesExpr}",
-                [EnumerableParameterType.SpanOfT, EnumerableParameterType.IEqualityComparerOfT] => $"{valuesExpr}, options.EqualityComparer",
+                [ConstructionParameterType.IEqualityComparerOfT, ConstructionParameterType.SpanOfT] => $"options.EqualityComparer, {valuesExpr}",
+                [ConstructionParameterType.SpanOfT, ConstructionParameterType.IEqualityComparerOfT] => $"{valuesExpr}, options.EqualityComparer",
                 _ => throw new InvalidOperationException("Unexpected parameter list."),
             };
 
@@ -110,10 +110,10 @@ internal sealed partial class SourceFormatter
             {
                 { StaticFactoryMethod: string spanFactory } => $"static options => options is null" +
                     $" ? static values => {spanFactory}({valuesExpr})" +
-                    $" : static values => {spanFactory}({argsExpr})",
+                    $" : static values => {spanFactory}({optionArgsExpr})",
                 _ => $"static options => options is null" +
                     $" ? static values => new {enumerableType.Type.FullyQualifiedName}({valuesExpr})" +
-                    $" : static values => new {enumerableType.Type.FullyQualifiedName}({argsExpr})",
+                    $" : static values => new {enumerableType.Type.FullyQualifiedName}({optionArgsExpr})",
             };
         }
 
@@ -127,14 +127,14 @@ internal sealed partial class SourceFormatter
             string suppressSuffix = enumerableType.ElementTypeContainsNullableAnnotations ? "!" : "";
             string valuesExpr = $"values{suppressSuffix}";
 
-            ImmutableArray<EnumerableParameterType> parametersWithComparer = enumerableType.ParameterLists.FirstOrDefault(
-                list => list.Contains(EnumerableParameterType.IEqualityComparerOfT) && list.Contains(EnumerableParameterType.SpanOfT));
+            ImmutableArray<ConstructionParameterType> parametersWithComparer = enumerableType.ParameterLists.FirstOrDefault(
+                list => list.Contains(ConstructionParameterType.IEqualityComparerOfT) && list.Contains(ConstructionParameterType.SpanOfT));
 
-            string argsExpr = parametersWithComparer switch
+            string optionArgsExpr = parametersWithComparer switch
             {
                 { IsDefault: true } => valuesExpr, // Assume a constructor that accepts span exists
-                [EnumerableParameterType.IEqualityComparerOfT, EnumerableParameterType.SpanOfT] => $"options.EqualityComparer, {valuesExpr}",
-                [EnumerableParameterType.SpanOfT, EnumerableParameterType.IEqualityComparerOfT] => $"{valuesExpr}, options.EqualityComparer",
+                [ConstructionParameterType.IEqualityComparerOfT, ConstructionParameterType.SpanOfT] => $"options.EqualityComparer, {valuesExpr}",
+                [ConstructionParameterType.SpanOfT, ConstructionParameterType.IEqualityComparerOfT] => $"{valuesExpr}, options.EqualityComparer",
                 _ => throw new InvalidOperationException("Unexpected parameter list."),
             };
 
@@ -142,10 +142,10 @@ internal sealed partial class SourceFormatter
             {
                 { StaticFactoryMethod: { } enumerableFactory } => $"static options => options is null" +
                     $" ? static values => {enumerableFactory}({valuesExpr})" +
-                    $" : static values => {enumerableFactory}({argsExpr})",
+                    $" : static values => {enumerableFactory}({optionArgsExpr})",
                 _ => $"static options => options is null" +
                     $" ? static values => new {enumerableType.Type.FullyQualifiedName}({valuesExpr})" +
-                    $" : static values => new {enumerableType.Type.FullyQualifiedName}({argsExpr})",
+                    $" : static values => new {enumerableType.Type.FullyQualifiedName}({optionArgsExpr})",
             };
         }
     }

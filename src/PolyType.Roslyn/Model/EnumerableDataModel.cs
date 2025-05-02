@@ -31,7 +31,7 @@ public sealed class EnumerableDataModel : TypeDataModel
     /// </summary>
     public CollectionModelConstructionStrategy ConstructionStrategy { get; init; }
 
-    public required ImmutableArray<ImmutableArray<EnumerableParameterType>> ParameterLists { get; init; }
+    public required ImmutableArray<ImmutableArray<ConstructionParameterType>> ParameterLists { get; init; }
 
     /// <summary>
     /// Instance method used for appending an element to the collection.
@@ -94,7 +94,7 @@ public enum EnumerableKind
     MultiDimensionalArrayOfT,
 }
 
-public enum EnumerableParameterType
+public enum ConstructionParameterType
 {
     IEnumerableOfT,
     SpanOfT,

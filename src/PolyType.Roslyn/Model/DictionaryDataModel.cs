@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using System.Collections;
+using System.Collections.Immutable;
 
 namespace PolyType.Roslyn;
 
@@ -33,6 +34,8 @@ public sealed class DictionaryDataModel : TypeDataModel
     /// The preferred construction strategy for this collection type.
     /// </summary>
     public required CollectionModelConstructionStrategy ConstructionStrategy { get; init; }
+
+    public required ImmutableArray<ImmutableArray<ConstructionParameterType>> ParameterLists { get; init; }
 
     /// <summary>
     /// Constructor or static factory method whose shape is governed by <see cref="ConstructionStrategy"/>.

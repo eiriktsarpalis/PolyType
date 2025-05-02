@@ -21,7 +21,7 @@ public partial class TypeDataModelGenerator
         int rank = 1;
         EnumerableKind kind = EnumerableKind.None;
         CollectionModelConstructionStrategy constructionStrategy = CollectionModelConstructionStrategy.None;
-        ImmutableArray<ImmutableArray<EnumerableParameterType>>.Builder parameterLists = ImmutableArray.CreateBuilder<ImmutableArray<EnumerableParameterType>>();
+        ImmutableArray<ImmutableArray<ConstructionParameterType>>.Builder parameterLists = ImmutableArray.CreateBuilder<ImmutableArray<ConstructionParameterType>>();
         ITypeSymbol? elementType = null;
         IMethodSymbol? addElementMethod = null;
         //INamedTypeSymbol? implementationType = null;
@@ -91,7 +91,7 @@ public partial class TypeDataModelGenerator
                 TryGetAddMethod(type, elementType, out addElementMethod))
             {
                 constructionStrategy = CollectionModelConstructionStrategy.Mutable;
-                parameterLists.Add(ImmutableArray.Create(EnumerableParameterType.IEqualityComparerOfT));
+                parameterLists.Add(ImmutableArray.Create(ConstructionParameterType.IEqualityComparerOfT));
                 factoryMethod = ctor2;
             }
             else if (namedType.Constructors.FirstOrDefault(ctor => ctor.Parameters.Length == 0 && !ctor.IsStatic && IsAccessibleSymbol(ctor)) is { } ctor &&
