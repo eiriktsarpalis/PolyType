@@ -49,7 +49,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         return _addDelegate ??= Provider.MemberAccessor.CreateDictionaryAddDelegate<TDictionary, TKey, TValue>(_addMethod);
     }
 
-    public Func<TDictionary> GetDefaultConstructor(CollectionConstructionOptions<TKey>? collectionConstructionOptions)
+    public Func<TDictionary> GetDefaultConstructor(in CollectionConstructionOptions<TKey> collectionConstructionOptions)
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
         {
@@ -67,7 +67,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         }
     }
 
-    public Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> GetEnumerableConstructor(CollectionConstructionOptions<TKey>? collectionConstructionOptions)
+    public Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> GetEnumerableConstructor(in CollectionConstructionOptions<TKey> collectionConstructionOptions)
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Enumerable)
         {
@@ -95,7 +95,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         }
     }
 
-    public SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> GetSpanConstructor(CollectionConstructionOptions<TKey>? collectionConstructionOptions)
+    public SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> GetSpanConstructor(in CollectionConstructionOptions<TKey> collectionConstructionOptions)
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Span)
         {
@@ -103,37 +103,34 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
             static void Throw() => throw new InvalidOperationException("The current enumerable shape does not support span constructors.");
         }
 
+        CollectionConstructionOptions<TKey> collectionConstructionOptionsCopy = collectionConstructionOptions;
         return _spanCtorDelegate ??= CreateSpanConstructor();
         SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> CreateSpanConstructor()
         {
             if (_dictionaryCtor is ConstructorInfo dictionaryCtor)
             {
                 var dictionaryCtorDelegate = Provider.MemberAccessor.CreateFuncDelegate<Dictionary<TKey, TValue>, TDictionary>(dictionaryCtor);
-                return collectionConstructionOptions?.EqualityComparer is { } keyComparer
-                    ? span => dictionaryCtorDelegate(CollectionHelpers.CreateDictionary(span, keyComparer: keyComparer))
-                    : span => dictionaryCtorDelegate(CollectionHelpers.CreateDictionary(span, keyComparer: null));
+                return span => dictionaryCtorDelegate(CollectionHelpers.CreateDictionary(span, collectionConstructionOptionsCopy.EqualityComparer));
             }
 
             DebugExt.Assert(_spanCtor != null);
             if (_spanCtor is ConstructorInfo ctorInfo)
             {
-                var comparer = collectionConstructionOptions?.EqualityComparer;
+                var comparer = collectionConstructionOptionsCopy.EqualityComparer;
                 if (comparer is null)
                 {
                     return Provider.MemberAccessor.CreateSpanConstructorDelegate<KeyValuePair<TKey, TValue>, TDictionary>(ctorInfo);
                 }
 
-                // TODO check parameters & pass comparer?
                 return _parameterList switch
                 {
                     [DictionaryConstructionParameterType.SpanOfPair] => Provider.MemberAccessor.CreateSpanConstructorDelegate<KeyValuePair<TKey, TValue>, TDictionary>(ctorInfo),
                     [DictionaryConstructionParameterType.SpanOfPair, DictionaryConstructionParameterType.IEqualityComparerOfT] =>
-                        Provider.MemberAccessor.CreateSpanConstructorDelegate<KeyValuePair<TKey, TValue>, TDictionary>(ctorInfo, comparer),
+                        Provider.MemberAccessor.CreateSpanConstructorWithTrailingECDelegate<KeyValuePair<TKey, TValue>, TKey, TDictionary>(ctorInfo, comparer),
                     [DictionaryConstructionParameterType.IEqualityComparerOfT, DictionaryConstructionParameterType.SpanOfPair] =>
-                        Provider.MemberAccessor.CreateSpanConstructorDelegate<KeyValuePair<TKey, TValue>, TDictionary>(comparer, ctorInfo),
+                        Provider.MemberAccessor.CreateSpanConstructorWithLeadingECDelegate<KeyValuePair<TKey, TValue>, TKey, TDictionary>(ctorInfo, comparer),
                     _ => throw new InvalidOperationException("The current dictionary shape does not support span constructors."),
                 };
-                ////return Provider.MemberAccessor.CreateSpanConstructorDelegate<KeyValuePair<TKey, TValue>, TDictionary>(ctorInfo);
             }
 
             MethodInfo methodInfo = (MethodInfo)_spanCtor;
@@ -145,11 +142,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 return methodInfo.CreateDelegate<SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary>>();
             }
 
-            return _spanCtor switch
-            {
-                MethodInfo {  } methodInfo 
-                _ => ((MethodInfo)_spanCtor).CreateDelegate<SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary>>(),
-            };
+            throw new NotSupportedException();
         }
     }
 
@@ -265,6 +258,13 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
 
         return CollectionConstructionStrategy.None;
     }
+
+    private enum DictionaryConstructionParameterType
+    {
+        IEnumerableOfPair,
+        SpanOfPair,
+        IEqualityComparerOfT,
+    }
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
@@ -300,11 +300,4 @@ internal sealed class ReflectionNonGenericDictionaryShape<TDictionary>(Reflectio
     {
         return static obj => CollectionHelpers.AsReadOnlyDictionary(obj);
     }
-}
-
-file enum DictionaryConstructionParameterType
-{
-    IEnumerableOfPair,
-    SpanOfPair,
-    IEqualityComparerOfT,
 }

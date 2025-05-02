@@ -735,15 +735,19 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
     public SpanConstructor<T, TResult> CreateSpanConstructorDelegate<T, TResult>(ConstructorInfo ctorInfo)
         => CreateDelegate<SpanConstructor<T, TResult>>(EmitConstructor(ctorInfo));
 
-    public SpanConstructor<TElement, TResult> CreateSpanConstructorDelegate<TElement, TCompare, TResult>(IEqualityComparer<TCompare> comparer, ConstructorInfo ctorInfo)
+    private delegate TDeclaringType SpanECConstructor<TElement, TKey, TDeclaringType>(ReadOnlySpan<TElement> span, IEqualityComparer<TKey> comparer);
+    private delegate TDeclaringType ECSpanConstructor<TElement, TKey, TDeclaringType>(IEqualityComparer<TKey> comparer, ReadOnlySpan<TElement> span);
+
+    public SpanConstructor<TElement, TResult> CreateSpanConstructorWithLeadingECDelegate<TElement, TCompare, TResult>(ConstructorInfo ctorInfo, IEqualityComparer<TCompare> comparer)
     {
-        Func<ReadOnlySpan<TElement>, IEqualityComparer<TCompare>, SpanConstructor<TElement, TResult>> func
-            = CreateDelegate<Func<ReadOnlySpan<TElement>, IEqualityComparer<TCompare>, SpanConstructor<TElement, TResult>>>(EmitConstructor(ctorInfo));
+        var ctor = CreateDelegate<ECSpanConstructor<TElement, TCompare, TResult>>(EmitConstructor(ctorInfo));
+        return new(span => ctor(comparer, span));
     }
 
-    public SpanConstructor<TElement, TResult> CreateSpanConstructorDelegate<TElement, TCompare, TResult>(ConstructorInfo ctorInfo, IEqualityComparer<TCompare> comparer)
+    public SpanConstructor<TElement, TResult> CreateSpanConstructorWithTrailingECDelegate<TElement, TCompare, TResult>(ConstructorInfo ctorInfo, IEqualityComparer<TCompare> comparer)
     {
-
+        var ctor = CreateDelegate<SpanECConstructor<TElement, TCompare, TResult>>(EmitConstructor(ctorInfo));
+        return new(span => ctor(span, comparer));
     }
 
     private static DynamicMethod EmitConstructor(ConstructorInfo ctorInfo)

@@ -63,15 +63,15 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetGetDictionary()
         => GetDictionaryFunc;
 
-    Func<TDictionary> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetDefaultConstructor(CollectionConstructionOptions<TKey>? collectionConstructionOptions)
+    Func<TDictionary> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetDefaultConstructor(in CollectionConstructionOptions<TKey> collectionConstructionOptions)
         => DefaultConstructorFunc?.Invoke(collectionConstructionOptions) ?? throw new InvalidOperationException("Dictionary shape does not specify a default constructor.");
 
     Setter<TDictionary, KeyValuePair<TKey, TValue>> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetAddKeyValuePair()
         => AddKeyValuePairFunc ?? throw new InvalidOperationException("Dictionary shape does not specify an append delegate.");
 
-    Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetEnumerableConstructor(CollectionConstructionOptions<TKey>? collectionConstructionOptions)
+    Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetEnumerableConstructor(in CollectionConstructionOptions<TKey> collectionConstructionOptions)
         => EnumerableConstructorFunc?.Invoke(collectionConstructionOptions) ?? throw new InvalidOperationException("Dictionary shape does not specify an enumerable constructor.");
 
-    SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetSpanConstructor(CollectionConstructionOptions<TKey>? collectionConstructionOptions)
+    SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetSpanConstructor(in CollectionConstructionOptions<TKey> collectionConstructionOptions)
         => SpanConstructorFunc?.Invoke(collectionConstructionOptions) ?? throw new InvalidOperationException("Dictionary shape does not specify a span constructor.");
 }
