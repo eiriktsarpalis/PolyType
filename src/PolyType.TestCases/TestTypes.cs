@@ -1300,6 +1300,7 @@ public partial record RecordWithSpecialValueDefaultParams(
     double? dn1 = double.PositiveInfinity, double? dn2 = double.NegativeInfinity, double? dn3 = double.NaN,
     float f1 = float.PositiveInfinity, float f2 = float.NegativeInfinity, float f3 = float.NaN,
     float? fn1 = float.PositiveInfinity, float? fn2 = float.NegativeInfinity, float? fn3 = float.NaN,
+    Guid g1 = default, Guid? g2 = default, StructWithDefaultCtor s1 = default, StructWithDefaultCtor? s2 = default,
     string s = "\"😀葛🀄\r\n🤯𐐀𐐨\"", char c = '\'');
 
 [Flags]

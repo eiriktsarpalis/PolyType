@@ -465,6 +465,20 @@ internal static class ReflectionHelpers
         return propertyInfo;
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "Called conditionally on structs whose default ctor never gets trimmed.")]
+    public static object? GetDefaultValue(Type type)
+    {
+        if (!type.IsValueType || type.IsNullableStruct())
+        {
+            return null;
+        }
+#if NET
+        return RuntimeHelpers.GetUninitializedObject(type);
+#else
+        return System.Runtime.Serialization.FormatterServices.GetUninitializedObject(type);
+#endif
+    }
+
     public static bool TryGetDefaultValueNormalized(this ParameterInfo parameterInfo, out object? result)
     {
         if (!parameterInfo.HasDefaultValue)
@@ -474,35 +488,29 @@ internal static class ReflectionHelpers
         }
 
         Type parameterType = parameterInfo.ParameterType;
-        object? defaultValue = parameterInfo.DefaultValue;
+        result = parameterInfo.DefaultValue;
 
-        if (defaultValue is null)
+        if (result is null || result is DBNull)
         {
-            // ParameterInfo can report null defaults for value types, ignore such cases.
-            result = null;
-            return !parameterType.IsValueType || parameterType.IsNullableStruct();
+            result = GetDefaultValue(parameterInfo.ParameterType);
         }
-
-        DebugExt.Assert(defaultValue is not DBNull, "should have been caught by the HasDefaultValue check.");
-
-        if (parameterType.IsEnum)
+        else if (parameterType.IsEnum)
         {
-            defaultValue = Enum.ToObject(parameterType, defaultValue);
+            result = Enum.ToObject(parameterType, result);
         }
         else if (Nullable.GetUnderlyingType(parameterType) is { IsEnum: true } underlyingType)
         {
-            defaultValue = Enum.ToObject(underlyingType, defaultValue);
+            result = Enum.ToObject(underlyingType, result);
         }
         else if (parameterType == typeof(IntPtr))
         {
-            defaultValue = checked((IntPtr)Convert.ToInt64(defaultValue, CultureInfo.InvariantCulture));
+            result = checked((IntPtr)Convert.ToInt64(result, CultureInfo.InvariantCulture));
         }
         else if (parameterType == typeof(UIntPtr))
         {
-            defaultValue = checked((UIntPtr)Convert.ToUInt64(defaultValue, CultureInfo.InvariantCulture));
+            result = checked((UIntPtr)Convert.ToUInt64(result, CultureInfo.InvariantCulture));
         }
 
-        result = defaultValue;
         return true;
     }
 
