@@ -342,7 +342,9 @@ internal static class RoslynHelpers
     /// </summary>
     public static Location GetLocationTrimmed(this Location location)
     {
-        return Location.Create(location.SourceTree?.FilePath ?? string.Empty, location.SourceSpan, location.GetLineSpan().Span);
+        var lineSpan = location.GetLineSpan();
+
+        return Location.Create(lineSpan.Path ?? string.Empty, location.SourceSpan, lineSpan.Span);
     }
 
     public static ICollection<ITypeSymbol> GetSortedTypeHierarchy(this ITypeSymbol type)
