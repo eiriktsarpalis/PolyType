@@ -62,7 +62,7 @@ public static class CollectionHelpers
     /// <param name="span">The span containing the entries of the dictionary.</param>
     /// <param name="keyComparer">An optional key comparer for the returned dictionary.</param>
     /// <returns>A new dictionary containing the specified entries.</returns>
-    public static Dictionary<TKey, TValue> CreateDictionary<TKey, TValue>(ReadOnlySpan<KeyValuePair<TKey, TValue>> span, IEqualityComparer<TKey>? keyComparer)
+    public static Dictionary<TKey, TValue> CreateDictionary<TKey, TValue>(ReadOnlySpan<KeyValuePair<TKey, TValue>> span, IEqualityComparer<TKey>? keyComparer = null)
         where TKey : notnull
     {
         var dict = new Dictionary<TKey, TValue>(span.Length, keyComparer);

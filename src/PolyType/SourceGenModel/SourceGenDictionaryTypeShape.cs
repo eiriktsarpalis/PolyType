@@ -34,7 +34,7 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     /// <summary>
     /// Gets the function that constructs a default instance of the dictionary type.
     /// </summary>
-    public Func<CollectionConstructionOptions<TKey>?, Func<TDictionary>>? DefaultConstructorFunc { get; init; }
+    public InFunc<CollectionConstructionOptions<TKey>, Func<TDictionary>>? DefaultConstructorFunc { get; init; }
 
     /// <summary>
     /// Gets the function that adds a key-value pair to the dictionary.
@@ -44,12 +44,12 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     /// <summary>
     /// Gets the function that constructs a dictionary from an enumerable of key-value pairs.
     /// </summary>
-    public Func<CollectionConstructionOptions<TKey>?, Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>>? EnumerableConstructorFunc { get; init; }
+    public InFunc<CollectionConstructionOptions<TKey>, Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>>? EnumerableConstructorFunc { get; init; }
 
     /// <summary>
     /// Gets the function that constructs a dictionary from a span of key-value pairs.
     /// </summary>
-    public Func<CollectionConstructionOptions<TKey>?, SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary>>? SpanConstructorFunc { get; init; }
+    public InFunc<CollectionConstructionOptions<TKey>, SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary>>? SpanConstructorFunc { get; init; }
 
     /// <inheritdoc/>
     public override TypeShapeKind Kind => TypeShapeKind.Dictionary;

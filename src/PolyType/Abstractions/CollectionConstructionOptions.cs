@@ -7,7 +7,12 @@
 public readonly struct CollectionConstructionOptions<TKey>
 {
     /// <summary>
-    /// Gets an optional comparer for keys or elements in the collection.
+    /// Gets an optional equality comparer for the keys or elements in the collection.
     /// </summary>
     public IEqualityComparer<TKey>? EqualityComparer { get; init; }
+
+    /// <summary>
+    /// Gets an optional comparer for the keys or elements in the collection.
+    /// </summary>
+    public IComparer<TKey>? Comparer { get; init; }
 }

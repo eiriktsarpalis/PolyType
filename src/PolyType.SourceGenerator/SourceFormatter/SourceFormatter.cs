@@ -2,13 +2,15 @@
 using Microsoft.CodeAnalysis.CSharp;
 using PolyType.Roslyn;
 using PolyType.SourceGenerator.Model;
+using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace PolyType.SourceGenerator;
 
 internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
 {
-    public static string[] ReservedIdentifiers { get; } = [ProviderSingletonProperty,GetShapeMethodName];
+    public static string[] ReservedIdentifiers { get; } = [ProviderSingletonProperty, GetShapeMethodName];
 
     private const string InstanceBindingFlagsConstMember = "__BindingFlags_Instance_All";
     private const string InitializeMethodName = "__Init_Singleton";
@@ -93,12 +95,12 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
             """);
 #else
         writer.WriteLine("""
-            #nullable enable annotations
-            #nullable disable warnings
+#nullable enable annotations
+#nullable disable warnings
 
             """);
 #endif
-        
+
         if (typeDeclaration.Namespace is string @namespace)
         {
             writer.WriteLine($"namespace {@namespace}");
@@ -116,7 +118,7 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
 
     private static void EndFormatSourceFile(SourceWriter writer)
     {
-        while (writer.Indentation > 0) 
+        while (writer.Indentation > 0)
         {
             writer.Indentation--;
             writer.WriteLine('}');
@@ -128,4 +130,56 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
     private static string FormatBool(bool value) => value ? "true" : "false";
     private static string FormatNull(string? stringExpr) => stringExpr is null ? "null" : stringExpr;
     private static string FormatStringLiteral(string value) => SymbolDisplay.FormatLiteral(value, quote: true);
+
+    private static string GetCollectionConstructionOptionsTypeName(TypeId keyType)
+        => $"PolyType.Abstractions.CollectionConstructionOptions<{keyType}>";
+
+    private static string FormatCollectionInitializer(ImmutableArray<ImmutableArray<ConstructionParameterType>> parameterLists, TypeId keyType, string ctorOrFactoryFormat, string? valuesExpression)
+    {
+        string? args = valuesExpression;
+        string? comparer = null;
+        ImmutableArray<ConstructionParameterType> selectedParameterList = default;
+        foreach (ImmutableArray<ConstructionParameterType> parameterList in parameterLists)
+        {
+            // We only want to pass comparers to factories that also take some kind of values collection, unless the caller expects a mutable collection.
+            // That means we must reject anything that isn't exactly two parameters long for immutable, or one parameter for mutable.
+            if (parameterList.Length != (valuesExpression is null ? 1 : 2))
+            {
+                continue;
+            }
+
+            if (parameterList.Any(p => p is ConstructionParameterType.IEqualityComparerOfT))
+            {
+                comparer = "EqualityComparer";
+                selectedParameterList = parameterList;
+                break;
+            }
+
+            if (parameterList.Any(p => p == ConstructionParameterType.IComparerOfT))
+            {
+                comparer = "Comparer";
+                selectedParameterList = parameterList;
+                break;
+            }
+        }
+
+        const string comparerLocalName = "comparer";
+        if (comparer is not null)
+        {
+            args = selectedParameterList switch
+            {
+                [ConstructionParameterType.IEqualityComparerOfT or ConstructionParameterType.IComparerOfT, _] => $"{comparerLocalName}, {valuesExpression}",
+                [_, ConstructionParameterType.IEqualityComparerOfT or ConstructionParameterType.IComparerOfT] => $"{valuesExpression}, {comparerLocalName}",
+                [ConstructionParameterType.IEqualityComparerOfT or ConstructionParameterType.IComparerOfT] => comparerLocalName,
+                _ => throw new NotSupportedException(), // should be unreachable.
+            };
+        }
+
+        string optionsTypeName = GetCollectionConstructionOptionsTypeName(keyType);
+        string preamble = $"static (in {optionsTypeName} options) => ";
+        string valuesParameter = valuesExpression is null ? "()" : "values";
+        return comparer is null
+            ? $"{preamble}static {valuesParameter} => {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, valuesExpression)}" // Assume a constructor that accepts the values expression exists.
+            : $"{preamble}{{ if (options.{comparer} is null) {{ return static {valuesParameter} => {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, valuesExpression)}; }} else {{ var {comparerLocalName} = options.{comparer}; return {valuesParameter} => {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, args)}; }} }}";
+    }
 }

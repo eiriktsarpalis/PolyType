@@ -67,7 +67,7 @@ public partial class TypeDataModelGenerator
             elementType = namedType.TypeArguments[0];
         }
         else if ((
-            type.GetCompatibleGenericBaseType(KnownSymbols.IEnumerableOfT) ?? 
+            type.GetCompatibleGenericBaseType(KnownSymbols.IEnumerableOfT) ??
             (asyncEnumerableOfT = type.GetCompatibleGenericBaseType(KnownSymbols.IAsyncEnumerableOfT))) is { } enumerableOfT)
         {
             kind = asyncEnumerableOfT is not null ? EnumerableKind.AsyncEnumerableOfT : EnumerableKind.IEnumerableOfT;
@@ -223,7 +223,7 @@ public partial class TypeDataModelGenerator
             {
                 return KnownSymbols.Compilation.GetTypeByMetadataName("System.Collections.Immutable.ImmutableArray")
                     .GetMethodSymbol(method =>
-                        method is { IsStatic: true, IsGenericMethod: true, Name: "CreateRange", Parameters: [var param] } && 
+                        method is { IsStatic: true, IsGenericMethod: true, Name: "CreateRange", Parameters: [var param] } &&
                         param.Type.Name is "IEnumerable")
                     .MakeGenericMethod(namedType.TypeArguments[0]);
             }
@@ -232,7 +232,7 @@ public partial class TypeDataModelGenerator
             {
                 return KnownSymbols.Compilation.GetTypeByMetadataName("System.Collections.Immutable.ImmutableList")
                     .GetMethodSymbol(method =>
-                        method is { IsStatic: true, IsGenericMethod: true, Name: "CreateRange", Parameters: [var param] } && 
+                        method is { IsStatic: true, IsGenericMethod: true, Name: "CreateRange", Parameters: [var param] } &&
                         param.Type.Name is "IEnumerable")
                     .MakeGenericMethod(namedType.TypeArguments[0]);
             }
@@ -241,7 +241,7 @@ public partial class TypeDataModelGenerator
             {
                 return KnownSymbols.Compilation.GetTypeByMetadataName("System.Collections.Immutable.ImmutableQueue")
                     .GetMethodSymbol(method =>
-                        method is { IsStatic: true, IsGenericMethod: true, Name: "CreateRange", Parameters: [var param] } && 
+                        method is { IsStatic: true, IsGenericMethod: true, Name: "CreateRange", Parameters: [var param] } &&
                         param.Type.Name is "IEnumerable")
                     .MakeGenericMethod(namedType.TypeArguments[0]);
             }
@@ -250,7 +250,7 @@ public partial class TypeDataModelGenerator
             {
                 return KnownSymbols.Compilation.GetTypeByMetadataName("System.Collections.Immutable.ImmutableStack")
                     .GetMethodSymbol(method =>
-                        method is { IsStatic: true, IsGenericMethod: true, Name: "CreateRange", Parameters: [var param] } && 
+                        method is { IsStatic: true, IsGenericMethod: true, Name: "CreateRange", Parameters: [var param] } &&
                         param.Type.Name is "IEnumerable")
                     .MakeGenericMethod(namedType.TypeArguments[0]);
             }
@@ -259,7 +259,7 @@ public partial class TypeDataModelGenerator
             {
                 return KnownSymbols.Compilation.GetTypeByMetadataName("System.Collections.Immutable.ImmutableHashSet")
                     .GetMethodSymbol(method =>
-                        method is { IsStatic: true, IsGenericMethod: true, Name: "CreateRange", Parameters: [var param] } && 
+                        method is { IsStatic: true, IsGenericMethod: true, Name: "CreateRange", Parameters: [var param] } &&
                         param.Type.Name is "IEnumerable")
                     .MakeGenericMethod(namedType.TypeArguments[0]);
             }
@@ -268,16 +268,16 @@ public partial class TypeDataModelGenerator
             {
                 return KnownSymbols.Compilation.GetTypeByMetadataName("System.Collections.Immutable.ImmutableSortedSet")
                     .GetMethodSymbol(method =>
-                        method is { IsStatic: true, IsGenericMethod: true, Name: "CreateRange", Parameters: [var param] } && 
+                        method is { IsStatic: true, IsGenericMethod: true, Name: "CreateRange", Parameters: [var param] } &&
                         param.Type.Name is "IEnumerable")
                     .MakeGenericMethod(namedType.TypeArguments[0]);
             }
-            
+
             if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.FSharpList))
             {
                 return KnownSymbols.Compilation.GetTypeByMetadataName("Microsoft.FSharp.Collections.ListModule")
                     .GetMethodSymbol(method =>
-                        method is { IsStatic: true, IsGenericMethod: true, Name: "OfSeq", Parameters: [var param] } && 
+                        method is { IsStatic: true, IsGenericMethod: true, Name: "OfSeq", Parameters: [var param] } &&
                         param.Type.Name is "IEnumerable")
                     .MakeGenericMethod(namedType.TypeArguments[0]);
             }

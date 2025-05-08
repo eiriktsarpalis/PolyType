@@ -51,22 +51,7 @@ internal sealed partial class SourceFormatter
             }
 
             string typeName = enumerableType.ImplementationTypeFQN ?? enumerableType.Type.FullyQualifiedName;
-            ImmutableArray<ConstructionParameterType> parametersWithComparer = enumerableType.ParameterLists.FirstOrDefault(list => list.Contains(ConstructionParameterType.IEqualityComparerOfT));
-
-            if (parametersWithComparer.IsDefault)
-            {
-                return $"static options => static () => new {typeName}()";
-            }
-
-            string optionArgsExpr = parametersWithComparer switch
-            {
-                [ConstructionParameterType.IEqualityComparerOfT] => "options.EqualityComparer",
-                _ => ""
-            };
-
-            return $"static options => options is null" +
-                $" ? () => new {typeName}()" +
-                $" : () => new {typeName}({optionArgsExpr})";
+            return FormatCollectionInitializer(enumerableType.ParameterLists, enumerableType.ElementType, enumerableType.StaticFactoryMethod ?? $"new {typeName}({{0}})", null);
         }
 
         static string FormatAddElementFunc(EnumerableShapeModel enumerableType)
@@ -94,29 +79,11 @@ internal sealed partial class SourceFormatter
 
             if (enumerableType.Kind is EnumerableKind.ArrayOfT or EnumerableKind.ReadOnlyMemoryOfT or EnumerableKind.MemoryOfT)
             {
-                return $"static options => static values => {valuesExpr}.ToArray()";
+                string optionsTypeName = GetCollectionConstructionOptionsTypeName(enumerableType.ElementType);
+                return $"static (in {optionsTypeName} _) => static values => {valuesExpr}.ToArray()";
             }
 
-            ImmutableArray<ConstructionParameterType> parametersWithComparer = enumerableType.ParameterLists.FirstOrDefault(
-                list => list.Contains(ConstructionParameterType.IEqualityComparerOfT) && list.Contains(ConstructionParameterType.SpanOfT));
-
-            string optionArgsExpr = parametersWithComparer switch
-            {
-                { IsDefault: true } => valuesExpr, // Assume a constructor that accepts span exists
-                [ConstructionParameterType.IEqualityComparerOfT, ConstructionParameterType.SpanOfT] => $"options.EqualityComparer, {valuesExpr}",
-                [ConstructionParameterType.SpanOfT, ConstructionParameterType.IEqualityComparerOfT] => $"{valuesExpr}, options.EqualityComparer",
-                _ => throw new InvalidOperationException("Unexpected parameter list."),
-            };
-
-            return enumerableType switch
-            {
-                { StaticFactoryMethod: string spanFactory } => $"static options => options is null" +
-                    $" ? static values => {spanFactory}({valuesExpr})" +
-                    $" : static values => {spanFactory}({optionArgsExpr})",
-                _ => $"static options => options is null" +
-                    $" ? static values => new {enumerableType.Type.FullyQualifiedName}({valuesExpr})" +
-                    $" : static values => new {enumerableType.Type.FullyQualifiedName}({optionArgsExpr})",
-            };
+            return FormatCollectionInitializer(enumerableType, valuesExpr);
         }
 
         static string FormatEnumerableConstructorFunc(EnumerableShapeModel enumerableType)
@@ -128,28 +95,16 @@ internal sealed partial class SourceFormatter
 
             string suppressSuffix = enumerableType.ElementTypeContainsNullableAnnotations ? "!" : "";
             string valuesExpr = $"values{suppressSuffix}";
-
-            ImmutableArray<ConstructionParameterType> parametersWithComparer = enumerableType.ParameterLists.FirstOrDefault(
-                list => list.Contains(ConstructionParameterType.IEqualityComparerOfT) && list.Contains(ConstructionParameterType.SpanOfT));
-
-            string optionArgsExpr = parametersWithComparer switch
-            {
-                { IsDefault: true } => valuesExpr, // Assume a constructor that accepts span exists
-                [ConstructionParameterType.IEqualityComparerOfT, ConstructionParameterType.SpanOfT] => $"options.EqualityComparer, {valuesExpr}",
-                [ConstructionParameterType.SpanOfT, ConstructionParameterType.IEqualityComparerOfT] => $"{valuesExpr}, options.EqualityComparer",
-                _ => throw new InvalidOperationException("Unexpected parameter list."),
-            };
-
-            return enumerableType switch
-            {
-                { StaticFactoryMethod: { } enumerableFactory } => $"static options => options is null" +
-                    $" ? static values => {enumerableFactory}({valuesExpr})" +
-                    $" : static values => {enumerableFactory}({optionArgsExpr})",
-                _ => $"static options => options is null" +
-                    $" ? static values => new {enumerableType.Type.FullyQualifiedName}({valuesExpr})" +
-                    $" : static values => new {enumerableType.Type.FullyQualifiedName}({optionArgsExpr})",
-            };
+            return FormatCollectionInitializer(enumerableType, valuesExpr);
         }
+    }
+
+    private static string FormatCollectionInitializer(EnumerableShapeModel enumerableType, string valuesExpr)
+    {
+        string factory = enumerableType.StaticFactoryMethod is not null
+          ? $"{enumerableType.StaticFactoryMethod}({{0}})"
+          : $"new {enumerableType.Type.FullyQualifiedName}({{0}})";
+        return FormatCollectionInitializer(enumerableType.ParameterLists, enumerableType.ElementType, factory, valuesExpr);
     }
 
     private static string FormatCollectionConstructionStrategy(CollectionConstructionStrategy strategy)

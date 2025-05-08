@@ -103,4 +103,5 @@ public enum ConstructionParameterType
     IEnumerableOfT,
     SpanOfT,
     IEqualityComparerOfT,
+    IComparerOfT,
 }
