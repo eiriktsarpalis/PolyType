@@ -1,0 +1,319 @@
+﻿using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+
+namespace PolyType.Tests;
+
+[Trait("CustomComparers", "true")]
+public abstract partial class CollectionsWithComparersTests(ProviderUnderTest providerUnderTest)
+{
+    private static readonly KeyValuePair<int, bool>[] NonEmptyDictionary = [new KeyValuePair<int, bool>(3, true)];
+    private static readonly int[] NonEmptyEnumerable = [3, 5];
+
+    [Fact]
+    public void Dictionary()
+    {
+        this.AssertDefaultDictionary<Dictionary<int, bool>, int, bool>(new EvenOddEqualityComparer(), d => d.Comparer);
+        this.AssertEnumerableDictionary<Dictionary<int, bool>, int, bool>(NonEmptyDictionary, new EvenOddEqualityComparer(), d => d.Comparer);
+    }
+
+    [Fact]
+    public void SortedDictionary()
+    {
+        this.AssertDefaultDictionary<SortedDictionary<int, bool>, int, bool>(new ReverseComparer(), d => d.Comparer);
+        this.AssertEnumerableDictionary<SortedDictionary<int, bool>, int, bool>(NonEmptyDictionary, new ReverseComparer(), d => d.Comparer);
+    }
+
+    [Fact]
+    public void ImmutableDictionary() => this.AssertEnumerableDictionary<ImmutableDictionary<int, bool>, int, bool>(NonEmptyDictionary, new EvenOddEqualityComparer(), d => d.KeyComparer);
+
+    [Fact]
+    public void ImmutableSortedDictionary() => this.AssertEnumerableDictionary<ImmutableSortedDictionary<int, bool>, int, bool>(NonEmptyDictionary, new ReverseComparer(), d => d.KeyComparer);
+
+    [Fact]
+    public void HashSet() => this.AssertDefaultEnumerable<HashSet<int>, int>(new EvenOddEqualityComparer(), s => s.Comparer);
+
+    [Fact]
+    public void SortedSet()
+    {
+        this.AssertDefaultEnumerable<SortedSet<int>, int>(new ReverseComparer(), s => s.Comparer);
+        this.AssertEnumerableEnumerable<SortedSet<int>, int>(NonEmptyEnumerable, new ReverseComparer(), s => s.Comparer);
+    }
+
+    [Fact]
+    public void ImmutableHashSet()
+    {
+        this.AssertSpanEnumerable<ImmutableHashSet<int>, int>(NonEmptyEnumerable, new EvenOddEqualityComparer(), s => s.KeyComparer);
+        this.AssertEnumerableEnumerable<ImmutableHashSet<int>, int>(NonEmptyEnumerable, new EvenOddEqualityComparer(), s => s.KeyComparer);
+    }
+
+    [Fact]
+    public void ImmutableSortedSet()
+    {
+        this.AssertSpanEnumerable<ImmutableSortedSet<int>, int>(NonEmptyEnumerable, new ReverseComparer(), s => s.KeyComparer);
+        this.AssertEnumerableEnumerable<ImmutableSortedSet<int>, int>(NonEmptyEnumerable, new ReverseComparer(), s => s.KeyComparer);
+    }
+
+    private void AssertDefaultDictionary<T, K, V>(IComparer<K> comparer, Func<T, IComparer<K>> getComparer)
+        where K : notnull
+    {
+        T dict = this.CreateDefaultDictionary<T, K, V>(comparer);
+        Assert.Same(comparer, getComparer(dict));
+
+        dict = this.CreateDefaultDictionary<T, K, V>(comparer: null);
+        Assert.NotNull(getComparer(dict));
+    }
+
+    private void AssertDefaultDictionary<T, K, V>(IEqualityComparer<K> equalityComparer, Func<T, IEqualityComparer<K>> getComparer)
+        where K : notnull
+    {
+        T dict = this.CreateDefaultDictionary<T, K, V>(equalityComparer);
+        Assert.Same(equalityComparer, getComparer(dict));
+
+        dict = this.CreateDefaultDictionary<T, K, V>(equalityComparer: null);
+        Assert.NotNull(getComparer(dict));
+    }
+
+    private void AssertEnumerableDictionary<T, K, V>(IEnumerable<KeyValuePair<K, V>> values, IComparer<K> comparer, Func<T, IComparer<K>> getComparer)
+        where K : notnull
+        where T : IEnumerable<KeyValuePair<K, V>>
+    {
+        T dict = this.CreateEnumerableDictionary<T, K, V>(values, comparer);
+        Assert.Same(comparer, getComparer(dict));
+        Assert.Equal(values, dict);
+
+        dict = this.CreateEnumerableDictionary<T, K, V>(values, comparer: null);
+        Assert.NotNull(getComparer(dict));
+        Assert.Equal(values, dict);
+    }
+
+    private void AssertEnumerableDictionary<T, K, V>(IEnumerable<KeyValuePair<K, V>> values, IEqualityComparer<K> equalityComparer, Func<T, IEqualityComparer<K>> getComparer)
+        where K : notnull
+        where T : IEnumerable<KeyValuePair<K, V>>
+    {
+        T dict = this.CreateEnumerableDictionary<T, K, V>(values, equalityComparer);
+        Assert.Same(equalityComparer, getComparer(dict));
+        Assert.Equal(values, dict);
+
+        dict = this.CreateEnumerableDictionary<T, K, V>(values, equalityComparer: null);
+        Assert.NotNull(getComparer(dict));
+        Assert.Equal(values, dict);
+    }
+
+    private void AssertSpanDictionary<T, K, V>(ReadOnlySpan<KeyValuePair<K, V>> values, IComparer<K> comparer, Func<T, IComparer<K>> getComparer)
+        where K : notnull
+        where T : IEnumerable<KeyValuePair<K, V>>
+    {
+        T dict = this.CreateSpanDictionary<T, K, V>(values, comparer);
+        Assert.Same(comparer, getComparer(dict));
+        Assert.Equal(values.ToArray(), dict);
+
+        dict = this.CreateSpanDictionary<T, K, V>(values, comparer: null);
+        Assert.NotNull(getComparer(dict));
+        Assert.Equal(values.ToArray(), dict);
+    }
+
+    private void AssertSpanDictionary<T, K, V>(ReadOnlySpan<KeyValuePair<K, V>> values, IEqualityComparer<K> equalityComparer, Func<T, IEqualityComparer<K>> getComparer)
+        where K : notnull
+        where T : IEnumerable<KeyValuePair<K, V>>
+    {
+        T dict = this.CreateSpanDictionary<T, K, V>(values, equalityComparer);
+        Assert.Same(equalityComparer, getComparer(dict));
+        Assert.Equal(values.ToArray(), dict);
+
+        dict = this.CreateSpanDictionary<T, K, V>(values, equalityComparer: null);
+        Assert.NotNull(getComparer(dict));
+        Assert.Equal(values.ToArray(), dict);
+    }
+
+    private T CreateDefaultDictionary<T, K, V>(IComparer<K>? comparer)
+        where K : notnull
+    {
+        IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
+        return shape.GetDefaultConstructor(new() { Comparer = comparer })();
+    }
+
+    private T CreateDefaultDictionary<T, K, V>(IEqualityComparer<K>? equalityComparer)
+        where K : notnull
+    {
+        IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
+        return shape.GetDefaultConstructor(new() { EqualityComparer = equalityComparer })();
+    }
+
+    private T CreateEnumerableDictionary<T, K, V>(IEnumerable<KeyValuePair<K, V>> values, IComparer<K>? comparer)
+        where K : notnull
+    {
+        IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
+        return shape.GetEnumerableConstructor(new() { Comparer = comparer })(values);
+    }
+
+    private T CreateEnumerableDictionary<T, K, V>(IEnumerable<KeyValuePair<K, V>> values, IEqualityComparer<K>? equalityComparer)
+        where K : notnull
+    {
+        IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
+        return shape.GetEnumerableConstructor(new() { EqualityComparer = equalityComparer })(values);
+    }
+
+    private T CreateSpanDictionary<T, K, V>(ReadOnlySpan<KeyValuePair<K, V>> values, IComparer<K>? comparer)
+        where K : notnull
+    {
+        IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
+        return shape.GetSpanConstructor(new() { Comparer = comparer })(values);
+    }
+
+    private T CreateSpanDictionary<T, K, V>(ReadOnlySpan<KeyValuePair<K, V>> values, IEqualityComparer<K>? equalityComparer)
+        where K : notnull
+    {
+        IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
+        return shape.GetSpanConstructor(new() { EqualityComparer = equalityComparer })(values);
+    }
+
+    private IDictionaryTypeShape<T, K, V> GetDictionaryShape<T, K, V>()
+        where K : notnull
+    {
+        var shape = (IDictionaryTypeShape<T, K, V>?)providerUnderTest.Provider.GetShape(typeof(T));
+        Assert.NotNull(shape);
+        return shape;
+    }
+
+    private void AssertDefaultEnumerable<T, K>(IComparer<K> comparer, Func<T, IComparer<K>> getComparer)
+        where K : notnull
+    {
+        T dict = this.CreateDefaultEnumerable<T, K>(comparer);
+        Assert.Same(comparer, getComparer(dict));
+
+        dict = this.CreateDefaultEnumerable<T, K>(comparer: null);
+        Assert.NotNull(getComparer(dict));
+    }
+
+    private void AssertDefaultEnumerable<T, K>(IEqualityComparer<K> equalityComparer, Func<T, IEqualityComparer<K>> getComparer)
+        where K : notnull
+    {
+        T dict = this.CreateDefaultEnumerable<T, K>(equalityComparer);
+        Assert.Same(equalityComparer, getComparer(dict));
+
+        dict = this.CreateDefaultEnumerable<T, K>(equalityComparer: null);
+        Assert.NotNull(getComparer(dict));
+    }
+
+    private void AssertEnumerableEnumerable<T, K>(IEnumerable<K> values, IComparer<K> comparer, Func<T, IComparer<K>> getComparer)
+        where K : notnull
+        where T : IEnumerable<K>
+    {
+        T enumerable = this.CreateEnumerableEnumerable<T, K>(values, comparer);
+        Assert.Same(comparer, getComparer(enumerable));
+        Assert.Equal(values, enumerable);
+
+        enumerable = this.CreateEnumerableEnumerable<T, K>(values, comparer: null);
+        Assert.NotNull(getComparer(enumerable));
+        Assert.Equal(values, enumerable);
+    }
+
+    private void AssertEnumerableEnumerable<T, K>(IEnumerable<K> values, IEqualityComparer<K> equalityComparer, Func<T, IEqualityComparer<K>> getComparer)
+        where K : notnull
+        where T : IEnumerable<K>
+    {
+        T enumerable = this.CreateEnumerableEnumerable<T, K>(values, equalityComparer);
+        Assert.Same(equalityComparer, getComparer(enumerable));
+        Assert.Equal(values, enumerable);
+
+        enumerable = this.CreateEnumerableEnumerable<T, K>(values, equalityComparer: null);
+        Assert.NotNull(getComparer(enumerable));
+        Assert.Equal(values, enumerable);
+    }
+
+    private void AssertSpanEnumerable<T, K>(ReadOnlySpan<K> values, IComparer<K> comparer, Func<T, IComparer<K>> getComparer)
+        where K : notnull
+        where T : IEnumerable<K>
+    {
+        T enumerable = this.CreateSpanEnumerable<T, K>(values, comparer);
+        Assert.Same(comparer, getComparer(enumerable));
+        Assert.Equal(values.ToArray(), enumerable);
+
+        enumerable = this.CreateSpanEnumerable<T, K>(values, comparer: null);
+        Assert.NotNull(getComparer(enumerable));
+        Assert.Equal(values.ToArray(), enumerable);
+    }
+
+    private void AssertSpanEnumerable<T, K>(ReadOnlySpan<K> values, IEqualityComparer<K> equalityComparer, Func<T, IEqualityComparer<K>> getComparer)
+        where K : notnull
+        where T : IEnumerable<K>
+    {
+        T enumerable = this.CreateSpanEnumerable<T, K>(values, equalityComparer);
+        Assert.Same(equalityComparer, getComparer(enumerable));
+        Assert.Equal(values.ToArray(), enumerable);
+
+        enumerable = this.CreateSpanEnumerable<T, K>(values, equalityComparer: null);
+        Assert.NotNull(getComparer(enumerable));
+        Assert.Equal(values.ToArray(), enumerable);
+    }
+
+    private T CreateDefaultEnumerable<T, K>(IComparer<K>? comparer)
+    {
+        IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
+        return shape.GetDefaultConstructor(new() { Comparer = comparer })();
+    }
+
+    private T CreateDefaultEnumerable<T, K>(IEqualityComparer<K>? equalityComparer)
+    {
+        IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
+        return shape.GetDefaultConstructor(new() { EqualityComparer = equalityComparer })();
+    }
+
+    private T CreateEnumerableEnumerable<T, K>(IEnumerable<K> values, IComparer<K>? comparer)
+    {
+        IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
+        return shape.GetEnumerableConstructor(new() { Comparer = comparer })(values);
+    }
+
+    private T CreateEnumerableEnumerable<T, K>(IEnumerable<K> values, IEqualityComparer<K>? equalityComparer)
+    {
+        IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
+        return shape.GetEnumerableConstructor(new() { EqualityComparer = equalityComparer })(values);
+    }
+
+    private T CreateSpanEnumerable<T, K>(ReadOnlySpan<K> values, IComparer<K>? comparer)
+    {
+        IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
+        return shape.GetSpanConstructor(new() { Comparer = comparer })(values);
+    }
+
+    private T CreateSpanEnumerable<T, K>(ReadOnlySpan<K> values, IEqualityComparer<K>? equalityComparer)
+    {
+        IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
+        return shape.GetSpanConstructor(new() { EqualityComparer = equalityComparer })(values);
+    }
+
+    private IEnumerableTypeShape<T, K> GetEnumerableShape<T, K>()
+    {
+        var shape = (IEnumerableTypeShape<T, K>?)providerUnderTest.Provider.GetShape(typeof(T));
+        Assert.NotNull(shape);
+        return shape;
+    }
+
+    [GenerateShape<Dictionary<int, bool>>]
+    [GenerateShape<SortedDictionary<int, bool>>]
+    [GenerateShape<ImmutableDictionary<int, bool>>]
+    [GenerateShape<ImmutableSortedDictionary<int, bool>>]
+    [GenerateShape<HashSet<int>>]
+    [GenerateShape<SortedSet<int>>]
+    [GenerateShape<ImmutableHashSet<int>>]
+    [GenerateShape<ImmutableSortedSet<int>>]
+    partial class Witness;
+
+    private class ReverseComparer : IComparer<int>
+    {
+        public int Compare(int x, int y) => -Comparer<int>.Default.Compare(x, y);
+    }
+
+    private class EvenOddEqualityComparer : IEqualityComparer<int>
+    {
+        public bool Equals(int x, int y) => x % 2 == y % 2;
+
+        public int GetHashCode([DisallowNull] int obj) => obj % 2;
+    }
+
+    public sealed class Reflection() : CollectionsWithComparersTests(RefectionProviderUnderTest.NoEmit);
+    public sealed class ReflectionEmit() : CollectionsWithComparersTests(RefectionProviderUnderTest.Emit);
+    public sealed class SourceGen() : CollectionsWithComparersTests(new SourceGenProviderUnderTest(Witness.ShapeProvider));
+}
