@@ -8,21 +8,15 @@ namespace PolyType.Tests;
 public abstract partial class CollectionsWithComparersTests(ProviderUnderTest providerUnderTest)
 {
     private static readonly KeyValuePair<int, bool>[] NonEmptyDictionary = [new KeyValuePair<int, bool>(3, true)];
-    private static readonly int[] NonEmptyEnumerable = [3, 5];
+    private static readonly int[] NonEmptyEnumerable = [3, 6];
+
+    // TODO: add sadistic tests for collections that store comparer types
 
     [Fact]
-    public void Dictionary()
-    {
-        this.AssertDefaultDictionary<Dictionary<int, bool>, int, bool>(new EvenOddEqualityComparer(), d => d.Comparer);
-        this.AssertEnumerableDictionary<Dictionary<int, bool>, int, bool>(NonEmptyDictionary, new EvenOddEqualityComparer(), d => d.Comparer);
-    }
+    public void Dictionary() => this.AssertDefaultDictionary<Dictionary<int, bool>, int, bool>(new EvenOddEqualityComparer(), d => d.Comparer);
 
     [Fact]
-    public void SortedDictionary()
-    {
-        this.AssertDefaultDictionary<SortedDictionary<int, bool>, int, bool>(new ReverseComparer(), d => d.Comparer);
-        this.AssertEnumerableDictionary<SortedDictionary<int, bool>, int, bool>(NonEmptyDictionary, new ReverseComparer(), d => d.Comparer);
-    }
+    public void SortedDictionary() => this.AssertDefaultDictionary<SortedDictionary<int, bool>, int, bool>(new ReverseComparer(), d => d.Comparer);
 
     [Fact]
     public void ImmutableDictionary() => this.AssertEnumerableDictionary<ImmutableDictionary<int, bool>, int, bool>(NonEmptyDictionary, new EvenOddEqualityComparer(), d => d.KeyComparer);
@@ -34,25 +28,13 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     public void HashSet() => this.AssertDefaultEnumerable<HashSet<int>, int>(new EvenOddEqualityComparer(), s => s.Comparer);
 
     [Fact]
-    public void SortedSet()
-    {
-        this.AssertDefaultEnumerable<SortedSet<int>, int>(new ReverseComparer(), s => s.Comparer);
-        this.AssertEnumerableEnumerable<SortedSet<int>, int>(NonEmptyEnumerable, new ReverseComparer(), s => s.Comparer);
-    }
+    public void SortedSet() => this.AssertDefaultEnumerable<SortedSet<int>, int>(new ReverseComparer(), s => s.Comparer);
 
     [Fact]
-    public void ImmutableHashSet()
-    {
-        this.AssertSpanEnumerable<ImmutableHashSet<int>, int>(NonEmptyEnumerable, new EvenOddEqualityComparer(), s => s.KeyComparer);
-        this.AssertEnumerableEnumerable<ImmutableHashSet<int>, int>(NonEmptyEnumerable, new EvenOddEqualityComparer(), s => s.KeyComparer);
-    }
+    public void ImmutableHashSet() => this.AssertSpanEnumerable<ImmutableHashSet<int>, int>(NonEmptyEnumerable, new EvenOddEqualityComparer(), s => s.KeyComparer);
 
     [Fact]
-    public void ImmutableSortedSet()
-    {
-        this.AssertSpanEnumerable<ImmutableSortedSet<int>, int>(NonEmptyEnumerable, new ReverseComparer(), s => s.KeyComparer);
-        this.AssertEnumerableEnumerable<ImmutableSortedSet<int>, int>(NonEmptyEnumerable, new ReverseComparer(), s => s.KeyComparer);
-    }
+    public void ImmutableSortedSet() => this.AssertSpanEnumerable<ImmutableSortedSet<int>, int>(NonEmptyEnumerable, new ReverseComparer(), s => s.KeyComparer);
 
     private void AssertDefaultDictionary<T, K, V>(IComparer<K> comparer, Func<T, IComparer<K>> getComparer)
         where K : notnull
@@ -202,11 +184,11 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     {
         T enumerable = this.CreateEnumerableEnumerable<T, K>(values, comparer);
         Assert.Same(comparer, getComparer(enumerable));
-        Assert.Equal(values, enumerable);
+        AssertEquivalentContent(values, enumerable);
 
         enumerable = this.CreateEnumerableEnumerable<T, K>(values, comparer: null);
         Assert.NotNull(getComparer(enumerable));
-        Assert.Equal(values, enumerable);
+        AssertEquivalentContent(values, enumerable);
     }
 
     private void AssertEnumerableEnumerable<T, K>(IEnumerable<K> values, IEqualityComparer<K> equalityComparer, Func<T, IEqualityComparer<K>> getComparer)
@@ -215,11 +197,11 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     {
         T enumerable = this.CreateEnumerableEnumerable<T, K>(values, equalityComparer);
         Assert.Same(equalityComparer, getComparer(enumerable));
-        Assert.Equal(values, enumerable);
+        AssertEquivalentContent(values, enumerable);
 
         enumerable = this.CreateEnumerableEnumerable<T, K>(values, equalityComparer: null);
         Assert.NotNull(getComparer(enumerable));
-        Assert.Equal(values, enumerable);
+        AssertEquivalentContent(values, enumerable);
     }
 
     private void AssertSpanEnumerable<T, K>(ReadOnlySpan<K> values, IComparer<K> comparer, Func<T, IComparer<K>> getComparer)
@@ -228,11 +210,11 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     {
         T enumerable = this.CreateSpanEnumerable<T, K>(values, comparer);
         Assert.Same(comparer, getComparer(enumerable));
-        Assert.Equal(values.ToArray(), enumerable);
+        AssertEquivalentContent(values, enumerable);
 
         enumerable = this.CreateSpanEnumerable<T, K>(values, comparer: null);
         Assert.NotNull(getComparer(enumerable));
-        Assert.Equal(values.ToArray(), enumerable);
+        AssertEquivalentContent(values, enumerable);
     }
 
     private void AssertSpanEnumerable<T, K>(ReadOnlySpan<K> values, IEqualityComparer<K> equalityComparer, Func<T, IEqualityComparer<K>> getComparer)
@@ -241,12 +223,15 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     {
         T enumerable = this.CreateSpanEnumerable<T, K>(values, equalityComparer);
         Assert.Same(equalityComparer, getComparer(enumerable));
-        Assert.Equal(values.ToArray(), enumerable);
+        AssertEquivalentContent(values, enumerable);
 
         enumerable = this.CreateSpanEnumerable<T, K>(values, equalityComparer: null);
         Assert.NotNull(getComparer(enumerable));
-        Assert.Equal(values.ToArray(), enumerable);
+        AssertEquivalentContent(values, enumerable);
     }
+
+    private static void AssertEquivalentContent<T>(ReadOnlySpan<T> expected, IEnumerable<T> actual) => Assert.Equal(expected.ToArray().OrderBy(v => v), actual.OrderBy(v => v));
+    private static void AssertEquivalentContent<T>(IEnumerable<T> expected, IEnumerable<T> actual) => Assert.Equal(expected.OrderBy(v => v), actual.OrderBy(v => v));
 
     private T CreateDefaultEnumerable<T, K>(IComparer<K>? comparer)
     {

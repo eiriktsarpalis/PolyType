@@ -1071,6 +1071,21 @@ public static class CompilationTests
     }
 
     [Fact]
+    public static void ImmutableDictionary()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System.Collections.Immutable;
+            using PolyType;
+
+            [GenerateShape<ImmutableDictionary<string, int>>]
+            partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
     public static void SortedDictionary()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
@@ -1078,6 +1093,21 @@ public static class CompilationTests
             using PolyType;
 
             [GenerateShape<SortedDictionary<string, int>>]
+            partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void SortedSet()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System.Collections.Generic;
+            using PolyType;
+
+            [GenerateShape<SortedSet<int>>]
             partial class Witness;
             """);
 

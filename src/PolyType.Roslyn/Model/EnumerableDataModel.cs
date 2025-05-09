@@ -31,8 +31,6 @@ public sealed class EnumerableDataModel : TypeDataModel
     /// </summary>
     public CollectionModelConstructionStrategy ConstructionStrategy { get; init; }
 
-    public required ImmutableArray<ImmutableArray<ConstructionParameterType>> ParameterLists { get; init; }
-
     /// <summary>
     /// Instance method used for appending an element to the collection.
     /// Implies that the collection also has an accessible default constructor.
@@ -43,6 +41,12 @@ public sealed class EnumerableDataModel : TypeDataModel
     /// Constructor or static factory method whose shape is governed by <see cref="ConstructionStrategy"/>.
     /// </summary>
     public required IMethodSymbol? FactoryMethod { get; init; }
+
+    /// <summary>
+    /// Constructor or static factory method whose shape is governed by <see cref="ConstructionStrategy"/>
+    /// and declares either an <see cref="IEqualityComparer{T}"/> or <see cref="IComparer{T}"/> parameter.
+    /// </summary>
+    public required IMethodSymbol? FactoryMethodWithComparer { get; init; }
 
     /// <summary>
     /// If the enumerable is an array, the rank of the array.

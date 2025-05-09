@@ -134,46 +134,24 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
     private static string GetCollectionConstructionOptionsTypeName(TypeId keyType)
         => $"PolyType.Abstractions.CollectionConstructionOptions<{keyType}>";
 
-    private static string FormatCollectionInitializer(ImmutableArray<ImmutableArray<ConstructionParameterType>> parameterLists, TypeId keyType, string ctorOrFactoryFormat, string? valuesExpression)
+    private static string FormatCollectionInitializer(ConstructionWithComparer constructorComparer, TypeId keyType, string ctorOrFactoryFormat, string? valuesExpression)
     {
-        string? args = valuesExpression;
-        string? comparer = null;
-        ImmutableArray<ConstructionParameterType> selectedParameterList = default;
-        foreach (ImmutableArray<ConstructionParameterType> parameterList in parameterLists)
+        string? comparer = constructorComparer switch
         {
-            // We only want to pass comparers to factories that also take some kind of values collection, unless the caller expects a mutable collection.
-            // That means we must reject anything that isn't exactly two parameters long for immutable, or one parameter for mutable.
-            if (parameterList.Length != (valuesExpression is null ? 1 : 2))
-            {
-                continue;
-            }
-
-            if (parameterList.Any(p => p is ConstructionParameterType.IEqualityComparerOfT))
-            {
-                comparer = "EqualityComparer";
-                selectedParameterList = parameterList;
-                break;
-            }
-
-            if (parameterList.Any(p => p == ConstructionParameterType.IComparerOfT))
-            {
-                comparer = "Comparer";
-                selectedParameterList = parameterList;
-                break;
-            }
-        }
-
+            ConstructionWithComparer.None => null,
+            ConstructionWithComparer.Comparer or ConstructionWithComparer.ComparerValues or ConstructionWithComparer.ValuesComparer => "Comparer",
+            ConstructionWithComparer.EqualityComparer or ConstructionWithComparer.EqualityComparerValues or ConstructionWithComparer.ValuesEqualityComparer => "EqualityComparer",
+            _ => throw new NotSupportedException(),
+        };
         const string comparerLocalName = "comparer";
-        if (comparer is not null)
+        string? args = constructorComparer switch
         {
-            args = selectedParameterList switch
-            {
-                [ConstructionParameterType.IEqualityComparerOfT or ConstructionParameterType.IComparerOfT, _] => $"{comparerLocalName}, {valuesExpression}",
-                [_, ConstructionParameterType.IEqualityComparerOfT or ConstructionParameterType.IComparerOfT] => $"{valuesExpression}, {comparerLocalName}",
-                [ConstructionParameterType.IEqualityComparerOfT or ConstructionParameterType.IComparerOfT] => comparerLocalName,
-                _ => throw new NotSupportedException(), // should be unreachable.
-            };
-        }
+            ConstructionWithComparer.None => valuesExpression,
+            ConstructionWithComparer.Comparer or ConstructionWithComparer.EqualityComparer when valuesExpression is null => comparerLocalName,
+            ConstructionWithComparer.ComparerValues or ConstructionWithComparer.EqualityComparerValues => $"{comparerLocalName}, {valuesExpression}",
+            ConstructionWithComparer.ValuesComparer or ConstructionWithComparer.ValuesEqualityComparer => $"{valuesExpression}, {comparerLocalName}",
+            _ => throw new NotSupportedException(),
+        };
 
         string optionsTypeName = GetCollectionConstructionOptionsTypeName(keyType);
         string preamble = $"static (in {optionsTypeName} options) => ";

@@ -81,6 +81,12 @@ public class KnownSymbols(Compilation compilation)
     private Option<INamedTypeSymbol?> _IEqualityComparerOfT;
 
     /// <summary>
+    /// The type symbol for <see cref="IComparer{T}"/>.
+    /// </summary>
+    public INamedTypeSymbol? IComparerOfT => GetOrResolveType("System.Collections.Generic.IComparer`1", ref _IComparerOfT);
+    private Option<INamedTypeSymbol?> _IComparerOfT;
+
+    /// <summary>
     /// The type symbol for <see cref="Span{T}"/>.
     /// </summary>
     public INamedTypeSymbol? SpanOfT => GetOrResolveType("System.Span`1", ref _SpanOfT);

@@ -6,8 +6,6 @@ namespace PolyType.SourceGenerator;
 
 internal sealed partial class SourceFormatter
 {
-    private static readonly ImmutableArray<ImmutableArray<ConstructionParameterType>> SpanEqualityComparer = ImmutableArray.Create(ImmutableArray.Create(ConstructionParameterType.SpanOfT, ConstructionParameterType.IEqualityComparerOfT));
-
     private void FormatDictionaryTypeShapeFactory(SourceWriter writer, string methodName, DictionaryShapeModel dictionaryShapeModel)
     {
         writer.WriteLine($$"""
@@ -47,8 +45,7 @@ internal sealed partial class SourceFormatter
                 return "null";
             }
 
-            string typeName = dictionaryType.ImplementationTypeFQN ?? dictionaryType.Type.FullyQualifiedName;
-            return FormatCollectionInitializer(dictionaryType.ParameterLists, dictionaryType.KeyType, dictionaryType.StaticFactoryMethod ?? $"new {typeName}({{0}})", null);
+            return FormatCollectionInitializer(dictionaryType, null);
         }
 
         static string FormatAddKeyValuePairFunc(DictionaryShapeModel dictionaryType)
@@ -78,10 +75,7 @@ internal sealed partial class SourceFormatter
                 _ => $"values"
             };
 
-            string factory = dictionaryType.StaticFactoryMethod is not null
-                ? $"{dictionaryType.StaticFactoryMethod}({{0}})"
-                : $"new {dictionaryType.Type.FullyQualifiedName}({{0}})";
-            return FormatCollectionInitializer(dictionaryType.ParameterLists, dictionaryType.KeyType, factory, valuesExpression: valuesExpr);
+            return FormatCollectionInitializer(dictionaryType, valuesExpr);
         }
 
         static string FormatSpanConstructorFunc(DictionaryShapeModel dictionaryType)
@@ -94,15 +88,23 @@ internal sealed partial class SourceFormatter
             string suppressSuffix = dictionaryType.KeyValueTypesContainNullableAnnotations ? "!" : "";
             string valuesExpr = $"values{suppressSuffix}";
 
-            string factoryExpression = dictionaryType switch
+            if (dictionaryType.CtorRequiresDictionaryConversion)
             {
-                { StaticFactoryMethod: string factory, CtorRequiresDictionaryConversion: true } => $"{factory}(global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionary({{0}}))",
-                { CtorRequiresDictionaryConversion: true } => $"new {dictionaryType.Type.FullyQualifiedName}(global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionary({{0}}))",
-                { StaticFactoryMethod: string factory1 } => $"{factory1}({{0}})",
-                _ => $"new {dictionaryType.Type.FullyQualifiedName}({{0}})",
-            };
+                string fac = dictionaryType.StaticFactoryMethod is string factory
+                    ? $"{factory}(global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionary({{0}}))"
+                    : $"new {dictionaryType.Type.FullyQualifiedName}(global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionary({{0}}))";
+                return FormatCollectionInitializer(dictionaryType.ConstructionComparer, dictionaryType.KeyType, fac, valuesExpr);
+            }
 
-            return FormatCollectionInitializer(dictionaryType.CtorRequiresDictionaryConversion ? SpanEqualityComparer : dictionaryType.ParameterLists, dictionaryType.KeyType, factoryExpression, valuesExpression: valuesExpr);
+            return FormatCollectionInitializer(dictionaryType, valuesExpr);
         }
+    }
+
+    private static string FormatCollectionInitializer(DictionaryShapeModel dictionaryType, string? valuesExpr)
+    {
+        string factory = dictionaryType.StaticFactoryMethod is not null
+          ? $"{dictionaryType.StaticFactoryMethod}({{0}})"
+          : $"new {dictionaryType.ImplementationTypeFQN ?? dictionaryType.Type.FullyQualifiedName}({{0}})";
+        return FormatCollectionInitializer(dictionaryType.ConstructionComparer, dictionaryType.KeyType, factory, valuesExpr);
     }
 }
