@@ -101,13 +101,16 @@ public partial class TypeDataModelGenerator
 
             // .ctor(ReadOnlySpan<T>)
             if (factoryMethod is null &&
-                namedType.Constructors.FirstOrDefault(ctor => ctor is { Parameters: [{ Type: INamedTypeSymbol { IsGenericType: true } parameterType }] } &&
+                namedType.Constructors.FirstOrDefault(ctor => ctor is { Parameters: [{ Type: INamedTypeSymbol { IsGenericType: true } } parameter] } &&
                 IsAccessibleSymbol(ctor) &&
-                SymbolEqualityComparer.Default.Equals(parameterType.ConstructedFrom, KnownSymbols.ReadOnlySpanOfT) &&
-                SymbolEqualityComparer.Default.Equals(parameterType.TypeArguments[0], elementType)) is IMethodSymbol ctor3)
+                ClassifyConstructorParameter(parameter, elementType) == CollectionConstructorParameterType.Span) is IMethodSymbol ctor3)
             {
                 constructionStrategy = CollectionModelConstructionStrategy.Span;
                 factoryMethod = ctor3;
+
+                // Look for a constructor that also takes a comparer.
+                // .ctor(ReadOnlySpan<T>, I[Equality]Comparer<T>) or .ctor(I[Equality]Comparer<T>, ReadOnlySpan<T>)
+                factoryMethodWithComparer = namedType.Constructors.FirstOrDefault(ctor => IsAccessibleSymbol(ctor) && ctor is { Parameters: [{ } first, { } second] } && IsAcceptableConstructorPair(first, second, elementType, CollectionConstructorParameterType.Span));
             }
 
             // .ctor()
@@ -119,16 +122,22 @@ public partial class TypeDataModelGenerator
                 factoryMethod = ctor2;
             }
 
-            // .ctor(List<T>)
+            // .ctor(IEnumerable<T>)
             if (factoryMethod is null &&
-                namedType.Constructors.FirstOrDefault(ctor => ctor is { Parameters: [{ Type: INamedTypeSymbol { IsGenericType: true } parameterType }] } &&
-                IsAccessibleSymbol(ctor) &&
-                KnownSymbols.ListOfT?.GetCompatibleGenericBaseType(parameterType.ConstructedFrom) != null &&
-                SymbolEqualityComparer.Default.Equals(parameterType.TypeArguments[0], elementType)) is IMethodSymbol ctor4)
+                namedType.Constructors.FirstOrDefault(ctor =>
+                IsAccessibleSymbol(ctor)
+                && ctor is { Parameters: [{ Type: INamedTypeSymbol { IsGenericType: true } } onlyParameter] } && ClassifyConstructorParameter(onlyParameter, elementType) == CollectionConstructorParameterType.List) is IMethodSymbol ctor4)
             {
                 // Type exposes a constructor that accepts a subtype of List<T>
                 constructionStrategy = CollectionModelConstructionStrategy.List;
                 factoryMethod = ctor4;
+
+                // Look for a constructor that also takes a comparer.
+                // .ctor(IEnumerable<T>, I[Equality]Comparer<T>) or .ctor(I[Equality]Comparer<T>, IEnumerable<T>)
+                factoryMethodWithComparer = namedType.Constructors.FirstOrDefault(ctor
+                    => IsAccessibleSymbol(ctor)
+                    && ctor is { Parameters: [{ } first, { } second] }
+                    && IsAcceptableConstructorPair(first, second, elementType, CollectionConstructorParameterType.List));
             }
 
             // Only consider the CollectionBuilderAttribute if we don't already have a comparer factory.
@@ -147,6 +156,7 @@ public partial class TypeDataModelGenerator
                     // Handle IEnumerable<T>, ICollection<T>, IList<T>, IReadOnlyCollection<T> and IReadOnlyList<T> types using List<T>
                     constructionStrategy = CollectionModelConstructionStrategy.Mutable;
                     factoryMethod = listOfT.Constructors.First(c => c.Parameters.IsEmpty);
+                    // TODO: look for comparer
                     addElementMethod = listOfT.GetMembers("Add")
                         .OfType<IMethodSymbol>()
                         .First(m =>
@@ -181,6 +191,7 @@ public partial class TypeDataModelGenerator
             {
                 constructionStrategy = CollectionModelConstructionStrategy.Mutable;
                 factoryMethod = ctor;
+                // TODO: look for comparer
             }
             else if (type.IsAssignableFrom(KnownSymbols.IList))
             {
@@ -188,6 +199,7 @@ public partial class TypeDataModelGenerator
                 INamedTypeSymbol listOfObject = KnownSymbols.ListOfT!.Construct(elementType);
                 constructionStrategy = CollectionModelConstructionStrategy.Mutable;
                 factoryMethod = listOfObject.Constructors.First(c => c.Parameters.IsEmpty);
+                // TODO: look for comparer
                 addElementMethod = listOfObject.GetMembers("Add")
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m =>
@@ -311,4 +323,33 @@ public partial class TypeDataModelGenerator
             return default;
         }
     }
+
+    private CollectionConstructorParameterType ClassifyConstructorParameter(IParameterSymbol parameter, ITypeSymbol elementType)
+    {
+        if (parameter is { Type: INamedTypeSymbol { IsGenericType: true } parameterType }
+            && SymbolEqualityComparer.Default.Equals(parameterType.TypeArguments[0], elementType))
+        {
+            if (KnownSymbols.ListOfT?.GetCompatibleGenericBaseType(parameterType.ConstructedFrom) is not null)
+            {
+                return CollectionConstructorParameterType.List;
+            }
+
+            if (SymbolEqualityComparer.Default.Equals(parameterType.ConstructedFrom, KnownSymbols.ReadOnlySpanOfT))
+            {
+                return CollectionConstructorParameterType.Span;
+            }
+        }
+
+        if (parameter is { Type: INamedTypeSymbol { IsGenericType: true, Name: "IComparer" or "IEqualityComparer", ConstructedFrom: { } typeDefinition, TypeArguments: [ITypeSymbol typeArg] } }
+            && (SymbolEqualityComparer.Default.Equals(typeDefinition, KnownSymbols.IEqualityComparerOfT) || SymbolEqualityComparer.Default.Equals(typeDefinition, KnownSymbols.IComparerOfT))
+            && SymbolEqualityComparer.Default.Equals(typeArg, elementType))
+        {
+            return parameter.Type.Name == "IComparer" ? CollectionConstructorParameterType.Comparer : CollectionConstructorParameterType.EqualityComparer;
+        }
+
+        return CollectionConstructorParameterType.None;
+    }
+
+    private bool IsAcceptableConstructorPair(IParameterSymbol first, IParameterSymbol second, ITypeSymbol elementType, CollectionConstructorParameterType collectionType)
+        => IsAcceptableConstructorPair(ClassifyConstructorParameter(first, elementType), ClassifyConstructorParameter(second, elementType), collectionType);
 }

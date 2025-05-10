@@ -54,21 +54,28 @@ public partial class TypeDataModelGenerator
             constructionStrategy = CollectionModelConstructionStrategy.Mutable;
             factoryMethod = ctor;
 
-            factoryMethodWithComparer = namedType.Constructors.FirstOrDefault(ctor => ctor is { Parameters: [{ Type: INamedTypeSymbol { IsGenericType: true, Name: "IEqualityComparer" } }] } && IsAccessibleSymbol(ctor));
-            factoryMethodWithComparer ??= namedType.Constructors.FirstOrDefault(ctor => ctor is { Parameters: [{ Type: INamedTypeSymbol { IsGenericType: true, Name: "IComparer" } }] } && IsAccessibleSymbol(ctor));
+            // .ctor(I[Equality]Comparer<TKey>)
+            factoryMethodWithComparer = namedType.Constructors.FirstOrDefault(ctor
+                => ctor is { Parameters: [IParameterSymbol only] }
+                && IsAccessibleSymbol(ctor)
+                && ClassifyConstructorParameter(only, keyType, valueType) is CollectionConstructorParameterType.Comparer or CollectionConstructorParameterType.EqualityComparer);
         }
 
         // .ctor(ReadOnlySpan<KeyValuePair<K, V>>)
-        if (factoryMethod is null && namedType.Constructors.FirstOrDefault(ctor =>
-            IsAccessibleSymbol(ctor) &&
-            ctor is { Parameters: [{ Type: INamedTypeSymbol { IsGenericType: true, TypeArguments: [INamedTypeSymbol { IsGenericType: true, TypeArguments: [INamedTypeSymbol k, INamedTypeSymbol v] } elementType] } parameterType }] } &&
-            SymbolEqualityComparer.Default.Equals(parameterType.ConstructedFrom, KnownSymbols.ReadOnlySpanOfT) &&
-            SymbolEqualityComparer.Default.Equals(elementType.ConstructedFrom, KnownSymbols.KeyValuePairOfKV) &&
-            SymbolEqualityComparer.Default.Equals(k, keyType) &&
-            SymbolEqualityComparer.Default.Equals(v, valueType)) is IMethodSymbol ctor2)
+        if (factoryMethod is null &&
+            namedType.Constructors.FirstOrDefault(ctor
+                => IsAccessibleSymbol(ctor)
+                && ctor is { Parameters: [{ Type: { } parameterType }] }
+                && IsSpanOfKeyValuePair(parameterType, keyType, valueType)) is IMethodSymbol ctor2)
         {
             constructionStrategy = CollectionModelConstructionStrategy.Span;
             factoryMethod = ctor2;
+
+            // .ctor(ReadOnlySpan<KeyValuePair<K, V>>, I[Equality]Comparer<T>) or .ctor(I[Equality]Comparer<T>, ReadOnlySpan<KeyValuePair<K, V>>)
+            factoryMethodWithComparer = namedType.Constructors.FirstOrDefault(ctor
+                => IsAccessibleSymbol(ctor)
+                && ctor is { Parameters: [IParameterSymbol first, IParameterSymbol second] }
+                && IsAcceptableConstructorPair(first, second, keyType, valueType, CollectionConstructorParameterType.Span));
         }
 
         if (factoryMethod is null && namedType.Constructors.FirstOrDefault(ctor =>
@@ -102,6 +109,7 @@ public partial class TypeDataModelGenerator
         {
             constructionStrategy = CollectionModelConstructionStrategy.Dictionary;
             factoryMethod = ctor3;
+            // TODO: look for comparer
         }
 
         if (factoryMethod is null && GetImmutableDictionaryFactory(namedType) is (not null, _, _) factories)
@@ -117,6 +125,7 @@ public partial class TypeDataModelGenerator
                 INamedTypeSymbol dictOfTKeyTValue = KnownSymbols.DictionaryOfTKeyTValue!.Construct(keyType, valueType);
                 constructionStrategy = CollectionModelConstructionStrategy.Mutable;
                 factoryMethod = dictOfTKeyTValue.Constructors.FirstOrDefault(ctor => ctor.Parameters.IsEmpty);
+                // TODO: look for comparer
             }
             else if (SymbolEqualityComparer.Default.Equals(namedType, KnownSymbols.IDictionary))
             {
@@ -124,6 +133,7 @@ public partial class TypeDataModelGenerator
                 INamedTypeSymbol dictOfObject = KnownSymbols.DictionaryOfTKeyTValue!.Construct(keyType, valueType);
                 constructionStrategy = CollectionModelConstructionStrategy.Mutable;
                 factoryMethod = dictOfObject.Constructors.FirstOrDefault(ctor => ctor.Parameters.IsEmpty);
+                // TODO: look for comparer
             }
         }
 
@@ -204,4 +214,44 @@ public partial class TypeDataModelGenerator
             return default;
         }
     }
+
+    private CollectionConstructorParameterType ClassifyConstructorParameter(IParameterSymbol parameter, ITypeSymbol keyType, ITypeSymbol valueType)
+    {
+        if (parameter is { Type: INamedTypeSymbol { IsGenericType: true } parameterType }
+            && IsSpanOfKeyValuePair(parameterType, keyType, valueType))
+        {
+            if (KnownSymbols.ListOfT?.GetCompatibleGenericBaseType(parameterType.ConstructedFrom) is not null)
+            {
+                return CollectionConstructorParameterType.List;
+            }
+
+            if (SymbolEqualityComparer.Default.Equals(parameterType.ConstructedFrom, KnownSymbols.ReadOnlySpanOfT))
+            {
+                return CollectionConstructorParameterType.Span;
+            }
+        }
+
+        if (parameter is { Type: INamedTypeSymbol { IsGenericType: true, Name: "IComparer" or "IEqualityComparer", ConstructedFrom: { } typeDefinition, TypeArguments: [{ } typeArg] } }
+            && (SymbolEqualityComparer.Default.Equals(typeDefinition, KnownSymbols.IEqualityComparerOfT) || SymbolEqualityComparer.Default.Equals(typeDefinition, KnownSymbols.IComparerOfT))
+            && SymbolEqualityComparer.Default.Equals(typeArg, keyType))
+        {
+            return parameter.Type.Name == "IComparer" ? CollectionConstructorParameterType.Comparer : CollectionConstructorParameterType.EqualityComparer;
+        }
+
+        return CollectionConstructorParameterType.None;
+    }
+
+    private bool IsAcceptableConstructorPair(IParameterSymbol first, IParameterSymbol second, ITypeSymbol keyType, ITypeSymbol valueType, CollectionConstructorParameterType collectionType)
+        => IsAcceptableConstructorPair(ClassifyConstructorParameter(first, keyType, valueType), ClassifyConstructorParameter(second, keyType, valueType), collectionType);
+
+    private bool IsSpanOfKeyValuePair(ITypeSymbol target, ITypeSymbol key, ITypeSymbol value)
+        => target is INamedTypeSymbol { IsGenericType: true, TypeArguments: [ITypeSymbol typeArg], ConstructedFrom: INamedTypeSymbol typeDefinition }
+        && SymbolEqualityComparer.Default.Equals(typeDefinition, KnownSymbols.ReadOnlySpanOfT)
+        && IsKeyValuePair(typeArg, key, value);
+
+    private bool IsKeyValuePair(ITypeSymbol target, ITypeSymbol key, ITypeSymbol value)
+        => target is INamedTypeSymbol { IsGenericType: true, TypeArguments: [ITypeSymbol T1, ITypeSymbol T2], ConstructedFrom: INamedTypeSymbol typeDefinition }
+        && SymbolEqualityComparer.Default.Equals(typeDefinition, KnownSymbols.KeyValuePairOfKV)
+        && SymbolEqualityComparer.Default.Equals(T1, key)
+        && SymbolEqualityComparer.Default.Equals(T2, value);
 }

@@ -1233,4 +1233,82 @@ public static class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
+
+    [Fact]
+    public static void CustomCollection2()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System.Collections;
+            using System.Collections.Generic;
+            using PolyType;
+
+            [GenerateShape]
+            internal partial class EnumerableEnumerableEC(IEnumerable<int> values, IEqualityComparer<int>? eq) : IEnumerable<int>
+            {
+                public EnumerableEnumerableEC(IEnumerable<int> values) : this(values, null) { }
+
+                public IEqualityComparer<int> Comparer => eq ?? EqualityComparer<int>.Default;
+
+                public IEnumerator<int> GetEnumerator() => values.GetEnumerator();
+
+                IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void CustomCollection3()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System;
+            using System.Collections;
+            using System.Collections.Generic;
+            using System.Diagnostics.CodeAnalysis;
+            using PolyType;
+
+            [GenerateShape]
+            internal partial class DictionarySpan : IReadOnlyDictionary<int, bool>
+            {
+                private Dictionary<int, bool> inner;
+
+                internal DictionarySpan(ReadOnlySpan<KeyValuePair<int, bool>> span)
+                    : this(span, null)
+                {
+                }
+
+                internal DictionarySpan(ReadOnlySpan<KeyValuePair<int, bool>> span, IEqualityComparer<int>? ec)
+                {
+                    this.inner = new(ec);
+                    foreach (var item in span)
+                    {
+                        this.inner.Add(item.Key, item.Value);
+                    }
+                }
+
+                public IEqualityComparer<int> Comparer => inner.Comparer;
+
+                public bool this[int key] => throw new NotImplementedException();
+
+                public IEnumerable<int> Keys => throw new NotImplementedException();
+
+                public IEnumerable<bool> Values => throw new NotImplementedException();
+
+                public int Count => this.inner.Count;
+
+                public bool ContainsKey(int key) => throw new NotImplementedException();
+
+                public IEnumerator<KeyValuePair<int, bool>> GetEnumerator() => this.inner.GetEnumerator();
+
+                public bool TryGetValue(int key, [MaybeNullWhen(false)] out bool value) => throw new NotImplementedException();
+
+                IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
 }

@@ -1,4 +1,6 @@
-﻿using System.Collections.Immutable;
+﻿using PolyType.Examples.Utilities;
+using System.Collections;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
@@ -9,6 +11,8 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
 {
     private static readonly KeyValuePair<int, bool>[] NonEmptyDictionary = [new KeyValuePair<int, bool>(3, true)];
     private static readonly int[] NonEmptyEnumerable = [3, 6];
+
+    // TODO: Add test coverage for the comparer parameter being on either side of the collection parameter.
 
     [Fact]
     public void Dictionary() => this.AssertDefaultDictionary<Dictionary<int, bool>, int, bool>(new EvenOddEqualityComparer(), d => d.Comparer);
@@ -21,6 +25,12 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
 
     [Fact]
     public void ImmutableSortedDictionary() => this.AssertEnumerableDictionary<ImmutableSortedDictionary<int, bool>, int, bool>(NonEmptyDictionary, new ReverseComparer(), d => d.KeyComparer);
+
+    [Fact]
+    public void DictionaryBySpan() => this.AssertSpanDictionary<DictionarySpan, int, bool>(NonEmptyDictionary, new EvenOddEqualityComparer(), d => d.Comparer);
+
+    [Fact]
+    public void SortedDictionaryBySpan() => this.AssertSpanDictionary<SortedDictionarySpan, int, bool>(NonEmptyDictionary, new ReverseComparer(), d => d.Comparer);
 
     [Fact]
     public void HashSet() => this.AssertDefaultEnumerable<HashSet<int>, int>(new EvenOddEqualityComparer(), s => s.Comparer);
@@ -47,6 +57,12 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
 
     [Fact]
     public void ImmutableSortedSet() => this.AssertSpanEnumerable<ImmutableSortedSet<int>, int>(NonEmptyEnumerable, new ReverseComparer(), s => s.KeyComparer);
+
+    [Fact]
+    public void EnumerableByEnumerableEC() => this.AssertEnumerableEnumerable<EnumerableEnumerableEC, int>(NonEmptyEnumerable, new EvenOddEqualityComparer(), n => n.Comparer);
+
+    [Fact]
+    public void EnumerableByEnumerableC() => this.AssertEnumerableEnumerable<EnumerableEnumerableC, int>(NonEmptyEnumerable, new ReverseComparer(), n => n.Comparer);
 
     private void AssertDefaultDictionary<T, K, V>(IComparer<K> comparer, Func<T, IComparer<K>> getComparer)
         where K : notnull
@@ -317,6 +333,106 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         public bool Equals(IEqualityComparer<int>? x, IEqualityComparer<int>? y) => object.ReferenceEquals(x, y);
 
         public int GetHashCode([DisallowNull] IEqualityComparer<int> obj) => obj.GetHashCode();
+    }
+
+    [GenerateShape]
+    internal partial class EnumerableEnumerableEC(IEnumerable<int> values, IEqualityComparer<int>? eq) : IEnumerable<int>
+    {
+        public EnumerableEnumerableEC(IEnumerable<int> values) : this(values, null) { }
+
+        public IEqualityComparer<int> Comparer => eq ?? EqualityComparer<int>.Default;
+
+        public IEnumerator<int> GetEnumerator() => values.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+    }
+
+    [GenerateShape]
+    internal partial class EnumerableEnumerableC(IEnumerable<int> values, IComparer<int>? comparer) : IEnumerable<int>
+    {
+        public EnumerableEnumerableC(IEnumerable<int> values) : this(values, null) { }
+
+        public IComparer<int> Comparer => comparer ?? Comparer<int>.Default;
+
+        public IEnumerator<int> GetEnumerator() => values.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+    }
+
+    [GenerateShape]
+    internal partial class DictionarySpan : IReadOnlyDictionary<int, bool>
+    {
+        private Dictionary<int, bool> inner;
+
+        internal DictionarySpan(ReadOnlySpan<KeyValuePair<int, bool>> span)
+            : this(span, null)
+        {
+        }
+
+        internal DictionarySpan(ReadOnlySpan<KeyValuePair<int, bool>> span, IEqualityComparer<int>? ec)
+        {
+            this.inner = new(ec);
+            foreach (var item in span)
+            {
+                this.inner.Add(item.Key, item.Value);
+            }
+        }
+
+        public IEqualityComparer<int> Comparer => inner.Comparer;
+
+        public bool this[int key] => throw new NotImplementedException();
+
+        public IEnumerable<int> Keys => throw new NotImplementedException();
+
+        public IEnumerable<bool> Values => throw new NotImplementedException();
+
+        public int Count => this.inner.Count;
+
+        public bool ContainsKey(int key) => throw new NotImplementedException();
+
+        public IEnumerator<KeyValuePair<int, bool>> GetEnumerator() => this.inner.GetEnumerator();
+
+        public bool TryGetValue(int key, [MaybeNullWhen(false)] out bool value) => throw new NotImplementedException();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [GenerateShape]
+    internal partial class SortedDictionarySpan : IReadOnlyDictionary<int, bool>
+    {
+        private SortedDictionary<int, bool> inner;
+
+        internal SortedDictionarySpan(ReadOnlySpan<KeyValuePair<int, bool>> span)
+            : this(span, null)
+        {
+        }
+
+        internal SortedDictionarySpan(ReadOnlySpan<KeyValuePair<int, bool>> span, IComparer<int>? comparer)
+        {
+            this.inner = new(comparer);
+            foreach (var item in span)
+            {
+                this.inner.Add(item.Key, item.Value);
+            }
+        }
+
+        public IComparer<int> Comparer => inner.Comparer;
+
+        public bool this[int key] => throw new NotImplementedException();
+
+        public IEnumerable<int> Keys => throw new NotImplementedException();
+
+        public IEnumerable<bool> Values => throw new NotImplementedException();
+
+        public int Count => this.inner.Count;
+
+        public bool ContainsKey(int key) => throw new NotImplementedException();
+
+        public IEnumerator<KeyValuePair<int, bool>> GetEnumerator() => this.inner.GetEnumerator();
+
+        public bool TryGetValue(int key, [MaybeNullWhen(false)] out bool value) => throw new NotImplementedException();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
     public sealed class Reflection() : CollectionsWithComparersTests(RefectionProviderUnderTest.NoEmit);
