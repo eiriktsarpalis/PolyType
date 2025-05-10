@@ -12,8 +12,6 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     private static readonly KeyValuePair<int, bool>[] NonEmptyDictionary = [new KeyValuePair<int, bool>(3, true)];
     private static readonly int[] NonEmptyEnumerable = [3, 6];
 
-    // TODO: Add test coverage for the comparer parameter being on either side of the collection parameter.
-
     [Fact]
     public void Dictionary() => this.AssertDefaultDictionary<Dictionary<int, bool>, int, bool>(new EvenOddEqualityComparer(), d => d.Comparer);
 
