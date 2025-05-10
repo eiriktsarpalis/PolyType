@@ -735,6 +735,21 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
     public SpanConstructor<T, TResult> CreateSpanConstructorDelegate<T, TResult>(ConstructorInfo ctorInfo)
         => CreateDelegate<SpanConstructor<T, TResult>>(EmitConstructor(ctorInfo));
 
+    private delegate TDeclaringType SpanECConstructor<TElement, TKey, TDeclaringType>(ReadOnlySpan<TElement> span, IEqualityComparer<TKey> comparer);
+    private delegate TDeclaringType ECSpanConstructor<TElement, TKey, TDeclaringType>(IEqualityComparer<TKey> comparer, ReadOnlySpan<TElement> span);
+
+    public SpanConstructor<TElement, TResult> CreateSpanConstructorWithLeadingECDelegate<TElement, TCompare, TResult>(ConstructorInfo ctorInfo, IEqualityComparer<TCompare> comparer)
+    {
+        var ctor = CreateDelegate<ECSpanConstructor<TElement, TCompare, TResult>>(EmitConstructor(ctorInfo));
+        return new(span => ctor(comparer, span));
+    }
+
+    public SpanConstructor<TElement, TResult> CreateSpanConstructorWithTrailingECDelegate<TElement, TCompare, TResult>(ConstructorInfo ctorInfo, IEqualityComparer<TCompare> comparer)
+    {
+        var ctor = CreateDelegate<SpanECConstructor<TElement, TCompare, TResult>>(EmitConstructor(ctorInfo));
+        return new(span => ctor(span, comparer));
+    }
+
     private static DynamicMethod EmitConstructor(ConstructorInfo ctorInfo)
     {
         ParameterInfo[] parameters = ctorInfo.GetParameters();

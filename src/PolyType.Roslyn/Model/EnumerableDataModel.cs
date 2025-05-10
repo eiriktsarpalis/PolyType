@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using System.Collections;
+using System.Collections.Immutable;
 
 namespace PolyType.Roslyn;
 
@@ -40,6 +41,12 @@ public sealed class EnumerableDataModel : TypeDataModel
     /// Constructor or static factory method whose shape is governed by <see cref="ConstructionStrategy"/>.
     /// </summary>
     public required IMethodSymbol? FactoryMethod { get; init; }
+
+    /// <summary>
+    /// Constructor or static factory method whose shape is governed by <see cref="ConstructionStrategy"/>
+    /// and declares either an <see cref="IEqualityComparer{T}"/> or <see cref="IComparer{T}"/> parameter.
+    /// </summary>
+    public required IMethodSymbol? FactoryMethodWithComparer { get; init; }
 
     /// <summary>
     /// If the enumerable is an array, the rank of the array.
@@ -93,4 +100,12 @@ public enum EnumerableKind
     /// An IAsyncEnumerable{T} type.
     /// </summary>
     AsyncEnumerableOfT,
+}
+
+public enum ConstructionParameterType
+{
+    IEnumerableOfT,
+    SpanOfT,
+    IEqualityComparerOfT,
+    IComparerOfT,
 }

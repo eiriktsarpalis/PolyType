@@ -54,6 +54,22 @@ internal static class ReflectionHelpers
         return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>);
     }
 
+    //public static bool IsIEnumerable<T>(this Type type)
+    //{
+    //    return type.IsGenericType
+    //        && type.GetGenericTypeDefinition() == typeof(IEnumerable<>)
+    //        && type.GenericTypeArguments is [Type t]
+    //        && t == typeof(T);
+    //}
+
+    public static bool IsIEqualityComparer<T>(this Type type)
+    {
+        return type.IsGenericType
+            && type.GetGenericTypeDefinition() == typeof(IEqualityComparer<>)
+            && type.GenericTypeArguments is [Type t]
+            && t == typeof(T);
+    }
+
     public static void ResolveNullableAnnotation(this MemberInfo memberInfo, NullabilityInfoContext? ctx, out bool isGetterNonNullable, out bool isSetterNonNullable)
     {
         if (GetNullabilityInfo(memberInfo, ctx) is NullabilityInfo info)

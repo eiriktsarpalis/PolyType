@@ -30,6 +30,15 @@ public delegate void Setter<TDeclaringType, TPropertyType>(ref TDeclaringType ob
 public delegate TDeclaringType Constructor<TArgumentState, TDeclaringType>(ref TArgumentState state);
 
 /// <summary>
+/// Delegate representing a function that accepts a single input taken by reference, and produces a single output.
+/// </summary>
+/// <typeparam name="TInput">The input type to the function.</typeparam>
+/// <typeparam name="TResult">The output type of the function.</typeparam>
+/// <param name="input">The function input.</param>
+/// <returns>The function output.</returns>
+public delegate TResult InFunc<TInput, TResult>(in TInput input);
+
+/// <summary>
 /// Delegate representing a constructor that accepts a span of values.
 /// </summary>
 /// <typeparam name="T">The element type of the span parameters.</typeparam>

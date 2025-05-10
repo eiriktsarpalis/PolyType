@@ -17,6 +17,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     private MethodInfo? _addMethod;
     private MethodBase? _enumerableCtor;
     private MethodBase? _spanCtor;
+    private DictionaryConstructionParameterType[]? _parameterList;
     private ConstructorInfo? _dictionaryCtor;
     private bool _isFSharpMap;
 
@@ -48,7 +49,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         return _addDelegate ??= Provider.MemberAccessor.CreateDictionaryAddDelegate<TDictionary, TKey, TValue>(_addMethod);
     }
 
-    public Func<TDictionary> GetDefaultConstructor()
+    public Func<TDictionary> GetDefaultConstructor(in CollectionConstructionOptions<TKey> collectionConstructionOptions)
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
         {
@@ -59,12 +60,14 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         return _defaultCtorDelegate ??= CreateDefaultCtor();
         Func<TDictionary> CreateDefaultCtor()
         {
+            // TODO use options
+
             DebugExt.Assert(_defaultCtor != null);
             return Provider.MemberAccessor.CreateDefaultConstructor<TDictionary>(new MethodConstructorShapeInfo(typeof(TDictionary), _defaultCtor, parameters: []));
         }
     }
 
-    public Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> GetEnumerableConstructor()
+    public Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> GetEnumerableConstructor(in CollectionConstructionOptions<TKey> collectionConstructionOptions)
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Enumerable)
         {
@@ -75,6 +78,8 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         return _enumerableCtorDelegate ??= CreateEnumerableCtor();
         Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> CreateEnumerableCtor()
         {
+            // TODO use options
+
             DebugExt.Assert(_enumerableCtor != null);
             if (_isFSharpMap)
             {
@@ -90,7 +95,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         }
     }
 
-    public SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> GetSpanConstructor()
+    public SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> GetSpanConstructor(in CollectionConstructionOptions<TKey> collectionConstructionOptions)
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Span)
         {
@@ -98,21 +103,46 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
             static void Throw() => throw new InvalidOperationException("The current enumerable shape does not support span constructors.");
         }
 
+        CollectionConstructionOptions<TKey> collectionConstructionOptionsCopy = collectionConstructionOptions;
         return _spanCtorDelegate ??= CreateSpanConstructor();
         SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> CreateSpanConstructor()
         {
             if (_dictionaryCtor is ConstructorInfo dictionaryCtor)
             {
                 var dictionaryCtorDelegate = Provider.MemberAccessor.CreateFuncDelegate<Dictionary<TKey, TValue>, TDictionary>(dictionaryCtor);
-                return span => dictionaryCtorDelegate(CollectionHelpers.CreateDictionary(span));
+                return span => dictionaryCtorDelegate(CollectionHelpers.CreateDictionary(span, collectionConstructionOptionsCopy.EqualityComparer));
             }
 
             DebugExt.Assert(_spanCtor != null);
-            return _spanCtor switch
+            if (_spanCtor is ConstructorInfo ctorInfo)
             {
-                ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateSpanConstructorDelegate<KeyValuePair<TKey, TValue>, TDictionary>(ctorInfo),
-                _ => ((MethodInfo)_spanCtor).CreateDelegate<SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary>>(),
-            };
+                var comparer = collectionConstructionOptionsCopy.EqualityComparer;
+                if (comparer is null)
+                {
+                    return Provider.MemberAccessor.CreateSpanConstructorDelegate<KeyValuePair<TKey, TValue>, TDictionary>(ctorInfo);
+                }
+
+                return _parameterList switch
+                {
+                    [DictionaryConstructionParameterType.SpanOfPair] => Provider.MemberAccessor.CreateSpanConstructorDelegate<KeyValuePair<TKey, TValue>, TDictionary>(ctorInfo),
+                    [DictionaryConstructionParameterType.SpanOfPair, DictionaryConstructionParameterType.IEqualityComparerOfT] =>
+                        Provider.MemberAccessor.CreateSpanConstructorWithTrailingECDelegate<KeyValuePair<TKey, TValue>, TKey, TDictionary>(ctorInfo, comparer),
+                    [DictionaryConstructionParameterType.IEqualityComparerOfT, DictionaryConstructionParameterType.SpanOfPair] =>
+                        Provider.MemberAccessor.CreateSpanConstructorWithLeadingECDelegate<KeyValuePair<TKey, TValue>, TKey, TDictionary>(ctorInfo, comparer),
+                    _ => throw new InvalidOperationException("The current dictionary shape does not support span constructors."),
+                };
+            }
+
+            MethodInfo methodInfo = (MethodInfo)_spanCtor;
+            ParameterInfo[] parameters = methodInfo.GetParameters();
+
+            if (parameters.Length is 1)
+            {
+                // ReadOnlySpan<KeyValuePair<TKey, TValue>>
+                return methodInfo.CreateDelegate<SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary>>();
+            }
+
+            throw new NotSupportedException();
         }
     }
 
@@ -142,12 +172,14 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         {
             // Cannot invoke constructors with ROS parameters without Ref.Emit
             _spanCtor = spanCtor;
+            _parameterList = [DictionaryConstructionParameterType.SpanOfPair];
             return CollectionConstructionStrategy.Span;
         }
 
         if (typeof(TDictionary).GetConstructor([typeof(IEnumerable<KeyValuePair<TKey, TValue>>)]) is ConstructorInfo enumerableCtor)
         {
             _enumerableCtor = enumerableCtor;
+            _parameterList = [DictionaryConstructionParameterType.SpanOfPair];
             return CollectionConstructionStrategy.Enumerable;
         }
 
@@ -167,6 +199,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 // Handle IDictionary, IDictionary<TKey, TValue> and IReadOnlyDictionary<TKey, TValue> using Dictionary<TKey, TValue>
                 MethodInfo? gm = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateDictionary), BindingFlags.Public | BindingFlags.Static);
                 _spanCtor = gm?.MakeGenericMethod(typeof(TKey), typeof(TValue));
+                _parameterList = _spanCtor != null ? [DictionaryConstructionParameterType.SpanOfPair, DictionaryConstructionParameterType.IEqualityComparerOfT] : null;
                 return _spanCtor != null ? CollectionConstructionStrategy.Span : CollectionConstructionStrategy.None;
             }
 
@@ -176,6 +209,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 Debug.Assert(typeof(TKey) == typeof(object) && typeof(TValue) == typeof(object));
                 MethodInfo? gm = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateDictionary), BindingFlags.Public | BindingFlags.Static);
                 _spanCtor = gm?.MakeGenericMethod(typeof(object), typeof(object));
+                _parameterList = _spanCtor != null ? [DictionaryConstructionParameterType.SpanOfPair, DictionaryConstructionParameterType.IEqualityComparerOfT] : null;
                 return _spanCtor != null ? CollectionConstructionStrategy.Span : CollectionConstructionStrategy.None;
             }
 
@@ -187,9 +221,10 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
             Type? factoryType = typeof(TDictionary).Assembly.GetType("System.Collections.Immutable.ImmutableDictionary");
             _enumerableCtor = factoryType?.GetMethods(BindingFlags.Public | BindingFlags.Static)
                 .Where(m => m.Name is "CreateRange")
-                .Where(m => m.GetParameters() is [ParameterInfo p] && p.ParameterType.IsIEnumerable())
+                .Where(m => m.GetParameters() is [ParameterInfo p1, ParameterInfo p2] && p1.ParameterType.IsIEqualityComparer<TKey>() && p2.ParameterType.IsIEnumerable())
                 .Select(m => m.MakeGenericMethod(typeof(TKey), typeof(TValue)))
                 .FirstOrDefault();
+            _parameterList = _enumerableCtor != null ? [DictionaryConstructionParameterType.IEqualityComparerOfT, DictionaryConstructionParameterType.IEnumerableOfPair] : null;
 
             return _enumerableCtor != null ? CollectionConstructionStrategy.Enumerable : CollectionConstructionStrategy.None;
         }
@@ -199,9 +234,10 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
             Type? factoryType = typeof(TDictionary).Assembly.GetType("System.Collections.Immutable.ImmutableSortedDictionary");
             _enumerableCtor = factoryType?.GetMethods(BindingFlags.Public | BindingFlags.Static)
                 .Where(m => m.Name is "CreateRange")
-                .Where(m => m.GetParameters() is [ParameterInfo p] && p.ParameterType.IsIEnumerable())
+                .Where(m => m.GetParameters() is [ParameterInfo p1, ParameterInfo p2] && p1.ParameterType.IsIEqualityComparer<TKey>() && p2.ParameterType.IsIEnumerable())
                 .Select(m => m.MakeGenericMethod(typeof(TKey), typeof(TValue)))
                 .FirstOrDefault();
+            _parameterList = _enumerableCtor != null ? [DictionaryConstructionParameterType.IEqualityComparerOfT, DictionaryConstructionParameterType.IEnumerableOfPair] : null;
 
             return _enumerableCtor != null ? CollectionConstructionStrategy.Enumerable : CollectionConstructionStrategy.None;
         }
@@ -216,10 +252,18 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 .FirstOrDefault();
 
             _isFSharpMap = _enumerableCtor != null;
+            _parameterList = _enumerableCtor != null ? [DictionaryConstructionParameterType.IEnumerableOfPair] : null;
             return _enumerableCtor != null ? CollectionConstructionStrategy.Enumerable : CollectionConstructionStrategy.None;
         }
 
         return CollectionConstructionStrategy.None;
+    }
+
+    private enum DictionaryConstructionParameterType
+    {
+        IEnumerableOfPair,
+        SpanOfPair,
+        IEqualityComparerOfT,
     }
 }
 
