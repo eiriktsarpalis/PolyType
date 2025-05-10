@@ -10,8 +10,6 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     private static readonly KeyValuePair<int, bool>[] NonEmptyDictionary = [new KeyValuePair<int, bool>(3, true)];
     private static readonly int[] NonEmptyEnumerable = [3, 6];
 
-    // TODO: add sadistic tests for collections that store comparer types
-
     [Fact]
     public void Dictionary() => this.AssertDefaultDictionary<Dictionary<int, bool>, int, bool>(new EvenOddEqualityComparer(), d => d.Comparer);
 
@@ -26,6 +24,20 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
 
     [Fact]
     public void HashSet() => this.AssertDefaultEnumerable<HashSet<int>, int>(new EvenOddEqualityComparer(), s => s.Comparer);
+
+    [Fact]
+    public void HashSetOfEqualityComparers()
+    {
+        HashSet<IEqualityComparer<int>> set = this.CreateDefaultEnumerable<HashSet<IEqualityComparer<int>>, IEqualityComparer<int>>(new EqualityComparerOfEqualityComparers());
+        Assert.IsType<EqualityComparerOfEqualityComparers>(set.Comparer);
+    }
+
+    [Fact]
+    public void DictionaryOfEqualityComparers()
+    {
+        Dictionary<IEqualityComparer<int>, int> dict = this.CreateDefaultDictionary<Dictionary<IEqualityComparer<int>, int>, IEqualityComparer<int>, int>(new EqualityComparerOfEqualityComparers());
+        Assert.IsType<EqualityComparerOfEqualityComparers>(dict.Comparer);
+    }
 
     [Fact]
     public void SortedSet() => this.AssertDefaultEnumerable<SortedSet<int>, int>(new ReverseComparer(), s => s.Comparer);
@@ -284,6 +296,8 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     [GenerateShape<SortedSet<int>>]
     [GenerateShape<ImmutableHashSet<int>>]
     [GenerateShape<ImmutableSortedSet<int>>]
+    [GenerateShape<HashSet<IEqualityComparer<int>>>]
+    [GenerateShape<Dictionary<IEqualityComparer<int>, int>>]
     partial class Witness;
 
     private class ReverseComparer : IComparer<int>
@@ -296,6 +310,13 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         public bool Equals(int x, int y) => x % 2 == y % 2;
 
         public int GetHashCode([DisallowNull] int obj) => obj % 2;
+    }
+
+    private class EqualityComparerOfEqualityComparers : IEqualityComparer<IEqualityComparer<int>>
+    {
+        public bool Equals(IEqualityComparer<int>? x, IEqualityComparer<int>? y) => object.ReferenceEquals(x, y);
+
+        public int GetHashCode([DisallowNull] IEqualityComparer<int> obj) => obj.GetHashCode();
     }
 
     public sealed class Reflection() : CollectionsWithComparersTests(RefectionProviderUnderTest.NoEmit);
