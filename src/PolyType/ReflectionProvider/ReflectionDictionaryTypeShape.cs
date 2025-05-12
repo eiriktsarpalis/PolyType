@@ -29,6 +29,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     public sealed override TypeShapeKind Kind => TypeShapeKind.Dictionary;
     public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitDictionary(this, state);
 
+    public ComparerConstruction CustomComparerSupport => throw new NotImplementedException();
     public CollectionConstructionStrategy ConstructionStrategy => _constructionStrategy ??= DetermineConstructionStrategy();
     public ITypeShape<TKey> KeyType => Provider.GetShape<TKey>();
     public ITypeShape<TValue> ValueType => Provider.GetShape<TValue>();

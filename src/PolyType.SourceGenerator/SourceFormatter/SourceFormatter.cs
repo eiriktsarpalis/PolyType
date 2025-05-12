@@ -160,4 +160,17 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
             ? $"{preamble}static {valuesParameter} => {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, valuesExpression)}" // Assume a constructor that accepts the values expression exists.
             : $"{preamble}{{ if (options.{comparer} is null) {{ return static {valuesParameter} => {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, valuesExpression)}; }} else {{ var {comparerLocalName} = options.{comparer}; return {valuesParameter} => {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, args)}; }} }}";
     }
+
+    private static string FormatCustomComparerSupport(ConstructionWithComparer comparer)
+    {
+        string kind = comparer switch
+        {
+            ConstructionWithComparer.None => "None",
+            ConstructionWithComparer.Comparer or ConstructionWithComparer.ComparerValues or ConstructionWithComparer.ValuesComparer => "Comparer",
+            ConstructionWithComparer.EqualityComparer or ConstructionWithComparer.EqualityComparerValues or ConstructionWithComparer.ValuesEqualityComparer => "EqualityComparer",
+            _ => throw new NotSupportedException(),
+        };
+
+        return $"global::PolyType.Abstractions.ComparerConstruction.{kind}";
+    }
 }

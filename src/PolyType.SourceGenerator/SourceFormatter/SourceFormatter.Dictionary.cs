@@ -16,6 +16,7 @@ internal sealed partial class SourceFormatter
                     KeyType = {{GetShapeModel(dictionaryShapeModel.KeyType).SourceIdentifier}},
                     ValueType = {{GetShapeModel(dictionaryShapeModel.ValueType).SourceIdentifier}},
                     GetDictionaryFunc = {{FormatGetDictionaryFunc(dictionaryShapeModel)}},
+                    CustomComparerSupport = {{FormatCustomComparerSupport(dictionaryShapeModel.ConstructionComparer)}},
                     ConstructionStrategy = {{FormatCollectionConstructionStrategy(dictionaryShapeModel.ConstructionStrategy)}},
                     DefaultConstructorFunc = {{FormatDefaultConstructorFunc(dictionaryShapeModel)}},
                     AddKeyValuePairFunc = {{FormatAddKeyValuePairFunc(dictionaryShapeModel)}},

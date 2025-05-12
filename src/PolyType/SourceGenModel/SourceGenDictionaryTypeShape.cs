@@ -31,6 +31,9 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     /// </summary>
     public required CollectionConstructionStrategy ConstructionStrategy { get; init; }
 
+    /// <inheritdoc/>
+    public required ComparerConstruction CustomComparerSupport { get; init; }
+
     /// <summary>
     /// Gets the function that constructs a default instance of the dictionary type.
     /// </summary>

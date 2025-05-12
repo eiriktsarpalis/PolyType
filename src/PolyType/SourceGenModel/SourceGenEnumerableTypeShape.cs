@@ -29,6 +29,9 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     /// </summary>
     public required Func<TEnumerable, IEnumerable<TElement>> GetEnumerableFunc { get; init; }
 
+    /// <inheritdoc/>
+    public required ComparerConstruction CustomComparerSupport { get; init; }
+
     /// <summary>
     /// Gets the construction strategy for the collection.
     /// </summary>

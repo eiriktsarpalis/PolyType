@@ -138,6 +138,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         where K : notnull
     {
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
+        Assert.Equal(ComparerConstruction.Comparer, shape.CustomComparerSupport);
         return shape.GetDefaultConstructor(new() { Comparer = comparer })();
     }
 
@@ -145,6 +146,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         where K : notnull
     {
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
+        Assert.Equal(ComparerConstruction.EqualityComparer, shape.CustomComparerSupport);
         return shape.GetDefaultConstructor(new() { EqualityComparer = equalityComparer })();
     }
 
@@ -152,6 +154,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         where K : notnull
     {
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
+        Assert.Equal(ComparerConstruction.Comparer, shape.CustomComparerSupport);
         return shape.GetEnumerableConstructor(new() { Comparer = comparer })(values);
     }
 
@@ -159,6 +162,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         where K : notnull
     {
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
+        Assert.Equal(ComparerConstruction.EqualityComparer, shape.CustomComparerSupport);
         return shape.GetEnumerableConstructor(new() { EqualityComparer = equalityComparer })(values);
     }
 
@@ -166,6 +170,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         where K : notnull
     {
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
+        Assert.Equal(ComparerConstruction.Comparer, shape.CustomComparerSupport);
         return shape.GetSpanConstructor(new() { Comparer = comparer })(values);
     }
 
@@ -173,6 +178,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         where K : notnull
     {
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
+        Assert.Equal(ComparerConstruction.EqualityComparer, shape.CustomComparerSupport);
         return shape.GetSpanConstructor(new() { EqualityComparer = equalityComparer })(values);
     }
 
@@ -262,36 +268,42 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     private T CreateDefaultEnumerable<T, K>(IComparer<K>? comparer)
     {
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
+        Assert.Equal(ComparerConstruction.Comparer, shape.CustomComparerSupport);
         return shape.GetDefaultConstructor(new() { Comparer = comparer })();
     }
 
     private T CreateDefaultEnumerable<T, K>(IEqualityComparer<K>? equalityComparer)
     {
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
+        Assert.Equal(ComparerConstruction.EqualityComparer, shape.CustomComparerSupport);
         return shape.GetDefaultConstructor(new() { EqualityComparer = equalityComparer })();
     }
 
     private T CreateEnumerableEnumerable<T, K>(IEnumerable<K> values, IComparer<K>? comparer)
     {
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
+        Assert.Equal(ComparerConstruction.Comparer, shape.CustomComparerSupport);
         return shape.GetEnumerableConstructor(new() { Comparer = comparer })(values);
     }
 
     private T CreateEnumerableEnumerable<T, K>(IEnumerable<K> values, IEqualityComparer<K>? equalityComparer)
     {
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
+        Assert.Equal(ComparerConstruction.EqualityComparer, shape.CustomComparerSupport);
         return shape.GetEnumerableConstructor(new() { EqualityComparer = equalityComparer })(values);
     }
 
     private T CreateSpanEnumerable<T, K>(ReadOnlySpan<K> values, IComparer<K>? comparer)
     {
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
+        Assert.Equal(ComparerConstruction.Comparer, shape.CustomComparerSupport);
         return shape.GetSpanConstructor(new() { Comparer = comparer })(values);
     }
 
     private T CreateSpanEnumerable<T, K>(ReadOnlySpan<K> values, IEqualityComparer<K>? equalityComparer)
     {
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
+        Assert.Equal(ComparerConstruction.EqualityComparer, shape.CustomComparerSupport);
         return shape.GetSpanConstructor(new() { EqualityComparer = equalityComparer })(values);
     }
 

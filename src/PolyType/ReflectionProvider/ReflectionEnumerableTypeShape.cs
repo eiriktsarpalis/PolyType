@@ -24,6 +24,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
     private Func<IEnumerable<TElement>, TEnumerable>? _enumerableCtorDelegate;
     private SpanConstructor<TElement, TEnumerable>? _spanCtorDelegate;
 
+    public virtual ComparerConstruction CustomComparerSupport => throw new NotImplementedException();
     public virtual CollectionConstructionStrategy ConstructionStrategy => _constructionStrategy ??= DetermineConstructionStrategy();
     public virtual int Rank => 1;
     public virtual bool IsAsyncEnumerable => false;
@@ -300,6 +301,7 @@ internal sealed class ReflectionNonGenericEnumerableTypeShape<TEnumerable>(Refle
 internal sealed class ReflectionArrayTypeShape<TElement>(ReflectionTypeShapeProvider provider)
     : ReflectionEnumerableTypeShape<TElement[], TElement>(provider)
 {
+    public override ComparerConstruction CustomComparerSupport => ComparerConstruction.None;
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Span;
     public override Func<TElement[], IEnumerable<TElement>> GetGetEnumerable() => static array => array;
     public override SpanConstructor<TElement, TElement[]> GetSpanConstructor(in CollectionConstructionOptions<TElement> collectionConstructionOptions = default) => static span => span.ToArray();
@@ -311,6 +313,7 @@ internal sealed class MultiDimensionalArrayTypeShape<TEnumerable, TElement>(Refl
     : ReflectionEnumerableTypeShape<TEnumerable, TElement>(provider)
     where TEnumerable : IEnumerable
 {
+    public override ComparerConstruction CustomComparerSupport => ComparerConstruction.None;
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.None;
     public override int Rank => rank;
     public override Func<TEnumerable, IEnumerable<TElement>> GetGetEnumerable()
@@ -322,6 +325,7 @@ internal sealed class MultiDimensionalArrayTypeShape<TEnumerable, TElement>(Refl
 internal sealed class ReadOnlyMemoryTypeShape<TElement>(ReflectionTypeShapeProvider provider)
     : ReflectionEnumerableTypeShape<ReadOnlyMemory<TElement>, TElement>(provider)
 {
+    public override ComparerConstruction CustomComparerSupport => ComparerConstruction.None;
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Span;
     public override Func<ReadOnlyMemory<TElement>, IEnumerable<TElement>> GetGetEnumerable() => static memory => MemoryMarshal.ToEnumerable(memory);
     public override SpanConstructor<TElement, ReadOnlyMemory<TElement>> GetSpanConstructor(in CollectionConstructionOptions<TElement> collectionConstructionOptions = default) => static span => span.ToArray();
@@ -332,6 +336,7 @@ internal sealed class ReadOnlyMemoryTypeShape<TElement>(ReflectionTypeShapeProvi
 internal sealed class MemoryTypeShape<TElement>(ReflectionTypeShapeProvider provider)
     : ReflectionEnumerableTypeShape<Memory<TElement>, TElement>(provider)
 {
+    public override ComparerConstruction CustomComparerSupport => ComparerConstruction.None;
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Span;
     public override Func<Memory<TElement>, IEnumerable<TElement>> GetGetEnumerable() => static memory => MemoryMarshal.ToEnumerable((ReadOnlyMemory<TElement>)memory);
     public override SpanConstructor<TElement, Memory<TElement>> GetSpanConstructor(in CollectionConstructionOptions<TElement> collectionConstructionOptions = default) => static span => span.ToArray();
@@ -342,6 +347,7 @@ internal sealed class MemoryTypeShape<TElement>(ReflectionTypeShapeProvider prov
 internal sealed class ReflectionAsyncEnumerableShape<TEnumerable, TElement>(ReflectionTypeShapeProvider provider)
     : ReflectionEnumerableTypeShape<TEnumerable, TElement>(provider)
 {
+    public override ComparerConstruction CustomComparerSupport => ComparerConstruction.None;
     public override bool IsAsyncEnumerable => true;
     public override Func<TEnumerable, IEnumerable<TElement>> GetGetEnumerable() =>
         static _ => throw new InvalidOperationException("Sync enumeration of IAsyncEnumerable instances is not supported.");

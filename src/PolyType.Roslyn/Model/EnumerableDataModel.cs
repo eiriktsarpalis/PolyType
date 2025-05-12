@@ -101,11 +101,3 @@ public enum EnumerableKind
     /// </summary>
     AsyncEnumerableOfT,
 }
-
-public enum ConstructionParameterType
-{
-    IEnumerableOfT,
-    SpanOfT,
-    IEqualityComparerOfT,
-    IComparerOfT,
-}
