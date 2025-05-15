@@ -19,9 +19,12 @@ internal interface IReflectionMemberAccessor
     Constructor<TArgumentState, TDeclaringType> CreateParameterizedConstructor<TArgumentState, TDeclaringType>(IConstructorShapeInfo ctorInfo);
 
     Func<T, TResult> CreateFuncDelegate<T, TResult>(ConstructorInfo ctorInfo);
+    Func<T1, T2, TResult> CreateFuncDelegate<T1, T2, TResult>(ConstructorInfo ctorInfo);
     SpanConstructor<T, TResult> CreateSpanConstructorDelegate<T, TResult>(ConstructorInfo ctorInfo);
     SpanConstructor<TElement, TResult> CreateSpanConstructorWithLeadingECDelegate<TElement, TKey, TResult>(ConstructorInfo ctorInfo, IEqualityComparer<TKey> comparer);
     SpanConstructor<TElement, TResult> CreateSpanConstructorWithTrailingECDelegate<TElement, TKey, TResult>(ConstructorInfo ctorInfo, IEqualityComparer<TKey> comparer);
+    SpanConstructor<TElement, TResult> CreateSpanConstructorWithLeadingCDelegate<TElement, TKey, TResult>(ConstructorInfo ctorInfo, IComparer<TKey> comparer);
+    SpanConstructor<TElement, TResult> CreateSpanConstructorWithTrailingCDelegate<TElement, TKey, TResult>(ConstructorInfo ctorInfo, IComparer<TKey> comparer);
 
     Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeInfo[] derivedTypeInfos);
 }

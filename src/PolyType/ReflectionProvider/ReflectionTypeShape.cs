@@ -30,4 +30,33 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
 
         return provider.GetShape(closedType);
     }
+
+    protected static ConstructionWithComparer IsAcceptableConstructorPair(CollectionConstructorParameterType first, CollectionConstructorParameterType second, CollectionConstructorParameterType collectionType)
+    {
+        return (first, second) switch
+        {
+            (CollectionConstructorParameterType.IComparerOfT, CollectionConstructorParameterType.CollectionOfT) => ConstructionWithComparer.ComparerValues,
+            (CollectionConstructorParameterType.CollectionOfT, CollectionConstructorParameterType.IComparerOfT) => ConstructionWithComparer.ValuesComparer,
+            (CollectionConstructorParameterType.IEqualityComparerOfT, CollectionConstructorParameterType.CollectionOfT) => ConstructionWithComparer.EqualityComparerValues,
+            (CollectionConstructorParameterType.CollectionOfT, CollectionConstructorParameterType.IEqualityComparerOfT) => ConstructionWithComparer.ValuesEqualityComparer,
+            _ => ConstructionWithComparer.None,
+        };
+    }
+
+    protected static ComparerConstruction ToComparerConstruction(ConstructionWithComparer signature)
+        => signature switch
+        {
+            ConstructionWithComparer.Comparer or ConstructionWithComparer.ComparerValues or ConstructionWithComparer.ValuesComparer => ComparerConstruction.Comparer,
+            ConstructionWithComparer.EqualityComparer or ConstructionWithComparer.EqualityComparerValues or ConstructionWithComparer.ValuesEqualityComparer => ComparerConstruction.EqualityComparer,
+            ConstructionWithComparer.None => ComparerConstruction.None,
+            _ => throw new NotImplementedException(),
+        };
+
+    protected enum CollectionConstructorParameterType
+    {
+        Unrecognized,
+        CollectionOfT,
+        IEqualityComparerOfT,
+        IComparerOfT,
+    }
 }

@@ -76,6 +76,27 @@ public static class CollectionHelpers
     }
 
     /// <summary>
+    /// Creates a dictionary from a span of key/value pairs.
+    /// </summary>
+    /// <typeparam name="TKey">The key type of the dictionary.</typeparam>
+    /// <typeparam name="TValue">The value type of the dictionary.</typeparam>
+    /// <param name="span">The span containing the entries of the dictionary.</param>
+    /// <param name="keyComparer">An optional key comparer for the returned dictionary.</param>
+    /// <returns>A new dictionary containing the specified entries.</returns>
+    public static SortedDictionary<TKey, TValue> CreateSortedDictionary<TKey, TValue>(ReadOnlySpan<KeyValuePair<TKey, TValue>> span, IComparer<TKey>? keyComparer = null)
+        where TKey : notnull
+    {
+        var dict = new SortedDictionary<TKey, TValue>(keyComparer);
+        for (int i = 0; i < span.Length; i++)
+        {
+            KeyValuePair<TKey, TValue> kvp = span[i];
+            dict[kvp.Key] = kvp.Value; // NB duplicate keys have overwrite semantics.
+        }
+
+        return dict;
+    }
+
+    /// <summary>
     /// Creates a <see cref="IReadOnlyDictionary{TKey, TValue}"/> adapter for a <see cref="IDictionary{TKey, TValue}"/>.
     /// </summary>
     /// <typeparam name="TDictionary">The dictionary type to be wrapped.</typeparam>

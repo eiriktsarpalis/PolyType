@@ -12,6 +12,8 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     private static readonly KeyValuePair<int, bool>[] NonEmptyDictionary = [new KeyValuePair<int, bool>(3, true)];
     private static readonly int[] NonEmptyEnumerable = [3, 6];
 
+    // TODO: sourcegen seems to work with internal collection constructors while reflection providers require public constructors. We should reconcile that difference.
+
     [Fact]
     public void Dictionary() => this.AssertDefaultDictionary<Dictionary<int, bool>, int, bool>(new EvenOddEqualityComparer(), d => d.Comparer);
 
@@ -177,6 +179,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     private T CreateSpanDictionary<T, K, V>(ReadOnlySpan<KeyValuePair<K, V>> values, IEqualityComparer<K>? equalityComparer)
         where K : notnull
     {
+        Assert.SkipWhen(providerUnderTest is RefectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span dictionaries.");
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
         Assert.Equal(ComparerConstruction.EqualityComparer, shape.CustomComparerSupport);
         return shape.GetSpanConstructor(new() { EqualityComparer = equalityComparer })(values);
@@ -374,12 +377,12 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     {
         private Dictionary<int, bool> inner;
 
-        internal DictionarySpan(ReadOnlySpan<KeyValuePair<int, bool>> span)
+        public DictionarySpan(ReadOnlySpan<KeyValuePair<int, bool>> span)
             : this(span, null)
         {
         }
 
-        internal DictionarySpan(ReadOnlySpan<KeyValuePair<int, bool>> span, IEqualityComparer<int>? ec)
+        public DictionarySpan(ReadOnlySpan<KeyValuePair<int, bool>> span, IEqualityComparer<int>? ec)
         {
             this.inner = new(ec);
             foreach (var item in span)
@@ -412,12 +415,12 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     {
         private SortedDictionary<int, bool> inner;
 
-        internal SortedDictionarySpan(ReadOnlySpan<KeyValuePair<int, bool>> span)
+        public SortedDictionarySpan(ReadOnlySpan<KeyValuePair<int, bool>> span)
             : this(span, null)
         {
         }
 
-        internal SortedDictionarySpan(ReadOnlySpan<KeyValuePair<int, bool>> span, IComparer<int>? comparer)
+        public SortedDictionarySpan(ReadOnlySpan<KeyValuePair<int, bool>> span, IComparer<int>? comparer)
         {
             this.inner = new(comparer);
             foreach (var item in span)
