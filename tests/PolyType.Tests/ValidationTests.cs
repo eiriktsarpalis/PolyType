@@ -109,6 +109,6 @@ public abstract partial class ValidationTests(ProviderUnderTest providerUnderTes
     public partial class ModelProvider;
 }
 
-public sealed class ValidationTests_Reflection() : ValidationTests(RefectionProviderUnderTest.NoEmit);
-public sealed class ValidationTests_ReflectionEmit() : ValidationTests(RefectionProviderUnderTest.Emit);
+public sealed class ValidationTests_Reflection() : ValidationTests(ReflectionProviderUnderTest.NoEmit);
+public sealed class ValidationTests_ReflectionEmit() : ValidationTests(ReflectionProviderUnderTest.Emit);
 public sealed class ValidationTests_SourceGen() : ValidationTests(SourceGenProviderUnderTest.Default);

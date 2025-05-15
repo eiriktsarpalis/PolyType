@@ -451,6 +451,6 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         value.Value is DerivedClassWithVirtualProperties; // https://github.com/dotnet/runtime/issues/96996
 }
 
-public sealed class JsonTests_Reflection() : JsonTests(RefectionProviderUnderTest.NoEmit);
-public sealed class JsonTests_ReflectionEmit() : JsonTests(RefectionProviderUnderTest.Emit);
+public sealed class JsonTests_Reflection() : JsonTests(ReflectionProviderUnderTest.NoEmit);
+public sealed class JsonTests_ReflectionEmit() : JsonTests(ReflectionProviderUnderTest.Emit);
 public sealed class JsonTests_SourceGen() : JsonTests(SourceGenProviderUnderTest.Default);

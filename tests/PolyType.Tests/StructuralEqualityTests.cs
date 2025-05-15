@@ -99,6 +99,6 @@ public abstract partial class StructuralEqualityTests(ProviderUnderTest provider
         StructuralEqualityComparer.Create<T>(providerUnderTest.Provider);
 }
 
-public sealed class StructuralEqualityTests_Reflection() : StructuralEqualityTests(RefectionProviderUnderTest.NoEmit);
-public sealed class StructuralEqualityTests_ReflectionEmit() : StructuralEqualityTests(RefectionProviderUnderTest.Emit);
+public sealed class StructuralEqualityTests_Reflection() : StructuralEqualityTests(ReflectionProviderUnderTest.NoEmit);
+public sealed class StructuralEqualityTests_ReflectionEmit() : StructuralEqualityTests(ReflectionProviderUnderTest.Emit);
 public sealed class StructuralEqualityTests_SourceGen() : StructuralEqualityTests(SourceGenProviderUnderTest.Default);

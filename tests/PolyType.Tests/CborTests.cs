@@ -109,6 +109,6 @@ public abstract partial class CborTests(ProviderUnderTest providerUnderTest)
         CborSerializer.CreateConverter(providerUnderTest.ResolveShape(testCase));
 }
 
-public sealed class CborTests_Reflection() : CborTests(RefectionProviderUnderTest.NoEmit);
-public sealed class CborTests_ReflectionEmit() : CborTests(RefectionProviderUnderTest.Emit);
+public sealed class CborTests_Reflection() : CborTests(ReflectionProviderUnderTest.NoEmit);
+public sealed class CborTests_ReflectionEmit() : CborTests(ReflectionProviderUnderTest.Emit);
 public sealed class CborTests_SourceGen() : CborTests(SourceGenProviderUnderTest.Default);

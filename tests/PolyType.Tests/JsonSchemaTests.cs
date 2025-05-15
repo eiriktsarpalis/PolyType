@@ -138,6 +138,6 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
     }
 }
 
-public sealed class JsonSchemaTests_Reflection() : JsonSchemaTests(RefectionProviderUnderTest.NoEmit);
-public sealed class JsonSchemaTests_ReflectionEmit() : JsonSchemaTests(RefectionProviderUnderTest.Emit);
+public sealed class JsonSchemaTests_Reflection() : JsonSchemaTests(ReflectionProviderUnderTest.NoEmit);
+public sealed class JsonSchemaTests_ReflectionEmit() : JsonSchemaTests(ReflectionProviderUnderTest.Emit);
 public sealed class JsonSchemaTests_SourceGen() : JsonSchemaTests(SourceGenProviderUnderTest.Default);

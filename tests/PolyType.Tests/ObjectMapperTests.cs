@@ -84,6 +84,6 @@ public abstract class ObjectMapperTests(ProviderUnderTest providerUnderTest)
     }
 }
 
-public sealed class MapperTests_Reflection() : ObjectMapperTests(RefectionProviderUnderTest.NoEmit);
-public sealed class MapperTests_ReflectionEmit() : ObjectMapperTests(RefectionProviderUnderTest.Emit);
+public sealed class MapperTests_Reflection() : ObjectMapperTests(ReflectionProviderUnderTest.NoEmit);
+public sealed class MapperTests_ReflectionEmit() : ObjectMapperTests(ReflectionProviderUnderTest.Emit);
 public sealed class MapperTests_SourceGen() : ObjectMapperTests(SourceGenProviderUnderTest.Default);

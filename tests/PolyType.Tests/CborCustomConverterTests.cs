@@ -83,7 +83,7 @@ public abstract partial class CborCustomConverterTests(ProviderUnderTest provide
     private CborConverter<T> GetConverterUnderTest<T>() =>
         CborSerializer.CreateConverter((ITypeShape<T>?)providerUnderTest.Provider.GetShape(typeof(T)) ?? throw new InvalidOperationException("Shape missing."));
 
-    public sealed class Reflection() : CborCustomConverterTests(RefectionProviderUnderTest.NoEmit);
-    public sealed class ReflectionEmit() : CborCustomConverterTests(RefectionProviderUnderTest.Emit);
+    public sealed class Reflection() : CborCustomConverterTests(ReflectionProviderUnderTest.NoEmit);
+    public sealed class ReflectionEmit() : CborCustomConverterTests(ReflectionProviderUnderTest.Emit);
     public sealed class SourceGen() : CborCustomConverterTests(new SourceGenProviderUnderTest(Witness.ShapeProvider));
 }
