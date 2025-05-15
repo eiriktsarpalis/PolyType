@@ -171,6 +171,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     private T CreateSpanDictionary<T, K, V>(ReadOnlySpan<KeyValuePair<K, V>> values, IComparer<K>? comparer)
         where K : notnull
     {
+        Assert.SkipWhen(providerUnderTest is RefectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span dictionaries.");
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
         Assert.Equal(ComparerConstruction.Comparer, shape.CustomComparerSupport);
         return shape.GetSpanConstructor(new() { Comparer = comparer })(values);
