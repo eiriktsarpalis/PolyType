@@ -48,6 +48,6 @@ public abstract partial class CounterTests(ProviderUnderTest providerUnderTest)
     protected Func<T?, long> GetCounterUnderTest<T>(TestCase<T> testCase) => Counter.Create(providerUnderTest.ResolveShape(testCase));
 }
 
-public sealed class CounterTests_Reflection() : CounterTests(RefectionProviderUnderTest.NoEmit);
-public sealed class CounterTests_ReflectionEmit() : CounterTests(RefectionProviderUnderTest.Emit);
+public sealed class CounterTests_Reflection() : CounterTests(ReflectionProviderUnderTest.NoEmit);
+public sealed class CounterTests_ReflectionEmit() : CounterTests(ReflectionProviderUnderTest.Emit);
 public sealed class CounterTests_SourceGen() : CounterTests(SourceGenProviderUnderTest.Default);

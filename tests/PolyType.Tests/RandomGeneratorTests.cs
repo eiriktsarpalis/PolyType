@@ -32,6 +32,6 @@ public abstract class RandomGeneratorTests(ProviderUnderTest providerUnderTest)
     }
 }
 
-public sealed class RandomGeneratorTests_Reflection() : RandomGeneratorTests(RefectionProviderUnderTest.NoEmit);
-public sealed class RandomGeneratorTests_ReflectionEmit() : RandomGeneratorTests(RefectionProviderUnderTest.Emit);
+public sealed class RandomGeneratorTests_Reflection() : RandomGeneratorTests(ReflectionProviderUnderTest.NoEmit);
+public sealed class RandomGeneratorTests_ReflectionEmit() : RandomGeneratorTests(ReflectionProviderUnderTest.Emit);
 public sealed class RandomGeneratorTests_SourceGen() : RandomGeneratorTests(SourceGenProviderUnderTest.Default);

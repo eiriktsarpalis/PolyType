@@ -304,7 +304,7 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
         public Type[] Types { get; init; } = [];
     }
 
-    public sealed class Reflection() : AssociatedTypesTests(RefectionProviderUnderTest.NoEmit, partialShapesSupported: false);
-    public sealed class ReflectionEmit() : AssociatedTypesTests(RefectionProviderUnderTest.Emit, partialShapesSupported: false);
+    public sealed class Reflection() : AssociatedTypesTests(ReflectionProviderUnderTest.NoEmit, partialShapesSupported: false);
+    public sealed class ReflectionEmit() : AssociatedTypesTests(ReflectionProviderUnderTest.Emit, partialShapesSupported: false);
     public sealed class SourceGen() : AssociatedTypesTests(new SourceGenProviderUnderTest(Witness.ShapeProvider), partialShapesSupported: true);
 }

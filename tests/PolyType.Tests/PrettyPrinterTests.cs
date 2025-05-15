@@ -121,6 +121,6 @@ public abstract class PrettyPrinterTests(ProviderUnderTest providerUnderTest)
     private static readonly Regex s_newLineRegex = new("\r?\n", RegexOptions.Compiled);
 }
 
-public sealed class PrettyPrinterTests_Reflection() : PrettyPrinterTests(RefectionProviderUnderTest.NoEmit);
-public sealed class PrettyPrinterTests_ReflectionEmit() : PrettyPrinterTests(RefectionProviderUnderTest.Emit);
+public sealed class PrettyPrinterTests_Reflection() : PrettyPrinterTests(ReflectionProviderUnderTest.NoEmit);
+public sealed class PrettyPrinterTests_ReflectionEmit() : PrettyPrinterTests(ReflectionProviderUnderTest.Emit);
 public sealed class PrettyPrinterTests_SourceGen() : PrettyPrinterTests(SourceGenProviderUnderTest.Default);

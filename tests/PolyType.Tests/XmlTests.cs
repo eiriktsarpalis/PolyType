@@ -119,6 +119,6 @@ public abstract class XmlTests(ProviderUnderTest providerUnderTest)
         XmlSerializer.CreateConverter(providerUnderTest.ResolveShape(testCase));
 }
 
-public sealed class XmlTests_Reflection() : XmlTests(RefectionProviderUnderTest.NoEmit);
-public sealed class XmlTests_ReflectionEmit() : XmlTests(RefectionProviderUnderTest.Emit);
+public sealed class XmlTests_Reflection() : XmlTests(ReflectionProviderUnderTest.NoEmit);
+public sealed class XmlTests_ReflectionEmit() : XmlTests(ReflectionProviderUnderTest.Emit);
 public sealed class XmlTests_SourceGen() : XmlTests(SourceGenProviderUnderTest.Default);

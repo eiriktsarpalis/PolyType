@@ -57,6 +57,6 @@ public abstract class ConfigurationBinderTests(ProviderUnderTest providerUnderTe
     }
 }
 
-public sealed class ConfigurationBinderTests_Reflection() : ConfigurationBinderTests(RefectionProviderUnderTest.NoEmit);
-public sealed class ConfigurationBinderTests_ReflectionEmit() : ConfigurationBinderTests(RefectionProviderUnderTest.Emit);
+public sealed class ConfigurationBinderTests_Reflection() : ConfigurationBinderTests(ReflectionProviderUnderTest.NoEmit);
+public sealed class ConfigurationBinderTests_ReflectionEmit() : ConfigurationBinderTests(ReflectionProviderUnderTest.Emit);
 public sealed class ConfigurationBinderTests_SourceGen() : ConfigurationBinderTests(SourceGenProviderUnderTest.Default);

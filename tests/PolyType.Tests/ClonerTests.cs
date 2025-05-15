@@ -47,6 +47,6 @@ public abstract class ClonerTests(ProviderUnderTest providerUnderTest)
     }
 }
 
-public sealed class ClonerTests_Reflection() : ClonerTests(RefectionProviderUnderTest.NoEmit);
-public sealed class ClonerTests_ReflectionEmit() : ClonerTests(RefectionProviderUnderTest.Emit);
+public sealed class ClonerTests_Reflection() : ClonerTests(ReflectionProviderUnderTest.NoEmit);
+public sealed class ClonerTests_ReflectionEmit() : ClonerTests(ReflectionProviderUnderTest.Emit);
 public sealed class ClonerTests_SourceGen() : ClonerTests(SourceGenProviderUnderTest.Default);
