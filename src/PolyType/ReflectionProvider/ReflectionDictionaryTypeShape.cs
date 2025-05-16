@@ -24,7 +24,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     private ConstructorInfo? _dictionaryCtor;
     private ConstructorInfo? _dictionaryCtorWithComparer;
     private bool _isFSharpMap;
-    private ConstructionWithComparer? _constructionStyle;
+    private ConstructionWithComparer? _constructionComparer;
 
     private Setter<TDictionary, KeyValuePair<TKey, TValue>>? _addDelegate;
     private Func<TDictionary>? _defaultCtorDelegate;
@@ -38,12 +38,12 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     {
         get
         {
-            if (_constructionStyle is null)
+            if (_constructionComparer is null)
             {
                 DetermineConstructionStrategy();
             }
 
-            return ToComparerConstruction(_constructionStyle.Value);
+            return ToComparerConstruction(_constructionComparer.Value);
         }
     }
 
@@ -87,12 +87,12 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
             static void Throw() => throw new InvalidOperationException("The current dictionary shape does not support mutation.");
         }
 
-        DebugExt.Assert(_defaultCtor != null);
-
         // We'll use a shared delegate when no comparer applies.
         object? relevantComparer = GetRelevantComparer(collectionConstructionOptions);
         if (relevantComparer is null || _defaultCtorWithComparer is null)
         {
+            DebugExt.Assert(_defaultCtor != null);
+
             return _defaultCtorDelegate ??= CreateDefaultCtor();
             Func<TDictionary> CreateDefaultCtor()
             {
@@ -139,11 +139,9 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         }
         else
         {
-            DebugExt.Assert(_enumerableCtorWithComparer != null);
-
             // TODO: what about F# support?
             // TODO: cache the intermediate delegate that we build here.
-            switch (_constructionStyle)
+            switch (_constructionComparer)
             {
                 case ConstructionWithComparer.ValuesEqualityComparer:
                     Func<IEnumerable<KeyValuePair<TKey, TValue>>, IEqualityComparer<TKey>, TDictionary> del = _enumerableCtorWithComparer switch
@@ -238,10 +236,9 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 }
             }
 
-            DebugExt.Assert(_spanCtorWithComparer != null);
-            if (_spanCtorWithComparer is ConstructorInfo ctorInfoWithComparer)
+            return _spanCtorWithComparer switch
             {
-                return _constructionStyle switch
+                ConstructorInfo ctorInfoWithComparer => _constructionComparer switch
                 {
                     ConstructionWithComparer.None => Provider.MemberAccessor.CreateSpanConstructorDelegate<KeyValuePair<TKey, TValue>, TDictionary>(ctorInfoWithComparer),
                     ConstructionWithComparer.ValuesEqualityComparer => Provider.MemberAccessor.CreateSpanConstructorWithTrailingECDelegate<KeyValuePair<TKey, TValue>, TKey, TDictionary>(ctorInfoWithComparer, (IEqualityComparer<TKey>)relevantComparer),
@@ -249,30 +246,17 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                     ConstructionWithComparer.ValuesComparer => Provider.MemberAccessor.CreateSpanConstructorWithTrailingCDelegate<KeyValuePair<TKey, TValue>, TKey, TDictionary>(ctorInfoWithComparer, (IComparer<TKey>)relevantComparer),
                     ConstructionWithComparer.ComparerValues => Provider.MemberAccessor.CreateSpanConstructorWithLeadingCDelegate<KeyValuePair<TKey, TValue>, TKey, TDictionary>(ctorInfoWithComparer, (IComparer<TKey>)relevantComparer),
                     _ => throw new InvalidOperationException("The current dictionary shape does not support span constructors."),
-                };
-            }
-
-            MethodInfo methodInfo = (MethodInfo)_spanCtorWithComparer;
-            ParameterInfo[] parameters = methodInfo.GetParameters();
-
-            if (parameters.Length is 2)
-            {
-                // ReadOnlySpan<KeyValuePair<TKey, TValue>>, I[Equality]Comparer<TKey>
-                throw new NotImplementedException();
-                return methodInfo.CreateDelegate<SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary>>();
-            }
-
-            throw new NotSupportedException();
+                },
+                MethodInfo ctorInfoWithComparer => throw new NotImplementedException(),
+                _ => throw new NotSupportedException(),
+            };
         }
     }
 
-    [MemberNotNull(nameof(_constructionStyle), nameof(_constructionStrategy))]
+    [MemberNotNull(nameof(_constructionComparer), nameof(_constructionStrategy))]
     private void DetermineConstructionStrategy()
     {
         // TODO resolve CollectionBuilderAttribute once added for Dictionary types
-
-        Type comparerType = typeof(IComparer<>).MakeGenericType(typeof(TKey));
-        Type equalityComparerType = typeof(IEqualityComparer<>).MakeGenericType(typeof(TKey));
 
         if (typeof(TDictionary).GetConstructor([]) is ConstructorInfo defaultCtor)
         {
@@ -288,7 +272,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
             {
                 _defaultCtor = defaultCtor;
                 _addMethod = addMethod;
-                (_constructionStyle, _defaultCtorWithComparer) = FindComparerConstructorOverload(defaultCtor);
+                (_constructionComparer, _defaultCtorWithComparer) = FindComparerConstructorOverload(defaultCtor);
                 _constructionStrategy = CollectionConstructionStrategy.Mutable;
                 return;
             }
@@ -298,7 +282,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         {
             // Cannot invoke constructors with ROS parameters without Ref.Emit
             _spanCtor = spanCtor;
-            (_constructionStyle, _spanCtorWithComparer) = FindComparerConstructorOverload(spanCtor);
+            (_constructionComparer, _spanCtorWithComparer) = FindComparerConstructorOverload(spanCtor);
             _constructionStrategy = CollectionConstructionStrategy.Span;
             return;
         }
@@ -306,7 +290,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         if (typeof(TDictionary).GetConstructor([typeof(IEnumerable<KeyValuePair<TKey, TValue>>)]) is ConstructorInfo enumerableCtor)
         {
             _enumerableCtor = enumerableCtor;
-            (_constructionStyle, _enumerableCtor) = FindComparerConstructorOverload(enumerableCtor);
+            (_constructionComparer, _enumerableCtor) = FindComparerConstructorOverload(enumerableCtor);
             _constructionStrategy = CollectionConstructionStrategy.Enumerable;
             return;
         }
@@ -317,7 +301,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         {
             // Handle types with ctors accepting IDictionary or IReadOnlyDictionary such as ReadOnlyDictionary<TKey, TValue>
             _dictionaryCtor = dictionaryCtor;
-            (_constructionStyle, _dictionaryCtorWithComparer) = FindComparerConstructorOverload(dictionaryCtor);
+            (_constructionComparer, _dictionaryCtorWithComparer) = FindComparerConstructorOverload(dictionaryCtor);
             _constructionStrategy = CollectionConstructionStrategy.Span;
             return;
         }
@@ -329,7 +313,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 // Handle IDictionary, IDictionary<TKey, TValue> and IReadOnlyDictionary<TKey, TValue> using Dictionary<TKey, TValue>
                 MethodInfo? gm = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateDictionary), BindingFlags.Public | BindingFlags.Static);
                 _spanCtor = gm?.MakeGenericMethod(typeof(TKey), typeof(TValue));
-                (_constructionStyle, _spanCtorWithComparer) = FindComparerConstructionOverload(_spanCtor);
+                (_constructionComparer, _spanCtorWithComparer) = FindComparerConstructionOverload(_spanCtor);
                 _constructionStrategy = _spanCtor != null ? CollectionConstructionStrategy.Span : CollectionConstructionStrategy.None;
                 return;
             }
@@ -340,12 +324,12 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 Debug.Assert(typeof(TKey) == typeof(object) && typeof(TValue) == typeof(object));
                 MethodInfo? gm = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateDictionary), BindingFlags.Public | BindingFlags.Static);
                 _spanCtor = gm?.MakeGenericMethod(typeof(object), typeof(object));
-                (_constructionStyle, _spanCtorWithComparer) = FindComparerConstructionOverload(_spanCtor);
+                (_constructionComparer, _spanCtorWithComparer) = FindComparerConstructionOverload(_spanCtor);
                 _constructionStrategy = _spanCtor != null ? CollectionConstructionStrategy.Span : CollectionConstructionStrategy.None;
                 return;
             }
 
-            _constructionStyle = ConstructionWithComparer.None;
+            _constructionComparer = ConstructionWithComparer.None;
             _constructionStrategy = CollectionConstructionStrategy.None;
             return;
         }
@@ -359,7 +343,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 .Select(m => m.MakeGenericMethod(typeof(TKey), typeof(TValue)))
                 .FirstOrDefault();
 
-            (_constructionStyle, _enumerableCtorWithComparer) = FindComparerConstructionOverload(_enumerableCtor);
+            (_constructionComparer, _enumerableCtorWithComparer) = FindComparerConstructionOverload(_enumerableCtor);
             _constructionStrategy = _enumerableCtor != null ? CollectionConstructionStrategy.Enumerable : CollectionConstructionStrategy.None;
             return;
         }
@@ -373,7 +357,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 .Select(m => m.MakeGenericMethod(typeof(TKey), typeof(TValue)))
                 .FirstOrDefault();
 
-            (_constructionStyle, _enumerableCtorWithComparer) = FindComparerConstructionOverload(_enumerableCtor);
+            (_constructionComparer, _enumerableCtorWithComparer) = FindComparerConstructionOverload(_enumerableCtor);
             _constructionStrategy = _enumerableCtor != null ? CollectionConstructionStrategy.Enumerable : CollectionConstructionStrategy.None;
             return;
         }
@@ -388,12 +372,12 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 .FirstOrDefault();
 
             _isFSharpMap = _enumerableCtor != null;
-            (_constructionStyle, _enumerableCtorWithComparer) = FindComparerConstructionOverload(_enumerableCtor);
+            (_constructionComparer, _enumerableCtorWithComparer) = FindComparerConstructionOverload(_enumerableCtor);
             _constructionStrategy = _enumerableCtor != null ? CollectionConstructionStrategy.Enumerable : CollectionConstructionStrategy.None;
             return;
         }
 
-        _constructionStyle = ConstructionWithComparer.None;
+        _constructionComparer = ConstructionWithComparer.None;
         _constructionStrategy = CollectionConstructionStrategy.None;
         return;
 
@@ -402,87 +386,9 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
             var (comparer, overload) = FindComparerConstructionOverload(nonComparerOverload);
             return (comparer, (ConstructorInfo?)overload);
         }
-
-        (ConstructionWithComparer, MethodBase?) FindComparerConstructionOverload(MethodBase? nonComparerOverload)
-        {
-            if (nonComparerOverload is null)
-            {
-                return default;
-            }
-
-            switch (nonComparerOverload.GetParameters())
-            {
-                case []:
-                    foreach (MethodBase overload in EnumerateOverloads())
-                    {
-                        if (overload.GetParameters() is not [ParameterInfo onlyParameter])
-                        {
-                            continue;
-                        }
-
-                        switch (ToComparerConstruction(onlyParameter))
-                        {
-                            case ComparerConstruction.Comparer:
-                                return (ConstructionWithComparer.Comparer, overload);
-                            case ComparerConstruction.EqualityComparer:
-                                return (ConstructionWithComparer.EqualityComparer, overload);
-                        }
-                    }
-
-                    break;
-                case [{ ParameterType: Type collectionType }]:
-                    foreach (MethodBase overload in EnumerateOverloads())
-                    {
-                        if (overload.GetParameters() is not [ParameterInfo first, ParameterInfo second])
-                        {
-                            continue;
-                        }
-
-                        ConstructionWithComparer comparerType = IsAcceptableConstructorPair(first, second, CollectionConstructorParameterType.CollectionOfT);
-                        if (comparerType != ConstructionWithComparer.None)
-                        {
-                            return (comparerType, overload);
-                        }
-                    }
-
-                    break;
-            }
-
-            return (ConstructionWithComparer.None, null);
-
-            IEnumerable<MethodBase> EnumerateOverloads()
-            {
-                if (nonComparerOverload is ConstructorInfo { DeclaringType: not null })
-                {
-                    foreach (ConstructorInfo ctor in nonComparerOverload.DeclaringType.GetConstructors())
-                    {
-                        yield return ctor;
-                    }
-                }
-                else if (nonComparerOverload is MethodInfo { DeclaringType: { } declaringType } nonComparerMethod)
-                {
-                    foreach (MethodInfo method in declaringType.GetMethods(BindingFlags.Public | BindingFlags.Static))
-                    {
-                        if (method.Name != nonComparerMethod.Name || nonComparerMethod.IsGenericMethod ^ method.IsGenericMethod)
-                        {
-                            continue;
-                        }
-
-                        yield return method.IsGenericMethod ? method.MakeGenericMethod(nonComparerMethod.GetGenericArguments()) : method;
-                    }
-                }
-            }
-
-            ComparerConstruction ToComparerConstruction(ParameterInfo parameter) => ClassifyConstructorParameter(parameter) switch
-            {
-                CollectionConstructorParameterType.IComparerOfT => ComparerConstruction.Comparer,
-                CollectionConstructorParameterType.IEqualityComparerOfT => ComparerConstruction.EqualityComparer,
-                _ => ComparerConstruction.None,
-            };
-        }
     }
 
-    private CollectionConstructorParameterType ClassifyConstructorParameter(ParameterInfo parameter)
+    protected override CollectionConstructorParameterType ClassifyConstructorParameter(ParameterInfo parameter)
     {
         if (parameter.ParameterType is { IsGenericType: true, GenericTypeArguments: [Type typeArg] } p && p.GetGenericTypeDefinition() == typeof(IComparer<>) && typeArg == typeof(TKey))
         {
@@ -503,16 +409,8 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         return CollectionConstructorParameterType.Unrecognized;
     }
 
-    private ConstructionWithComparer IsAcceptableConstructorPair(ParameterInfo first, ParameterInfo second, CollectionConstructorParameterType collectionType)
-        => IsAcceptableConstructorPair(ClassifyConstructorParameter(first), ClassifyConstructorParameter(second), collectionType);
-
     private object? GetRelevantComparer(in CollectionConstructionOptions<TKey> collectionConstructionOptions)
-        => this.CustomComparerSupport switch
-        {
-            ComparerConstruction.Comparer => collectionConstructionOptions.Comparer,
-            ComparerConstruction.EqualityComparer => collectionConstructionOptions.EqualityComparer,
-            _ => null,
-        };
+        => this.GetRelevantComparer(collectionConstructionOptions, CustomComparerSupport);
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]

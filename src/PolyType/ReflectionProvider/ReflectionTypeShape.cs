@@ -42,7 +42,6 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
             _ => ConstructionWithComparer.None,
         };
     }
-
     protected static ComparerConstruction ToComparerConstruction(ConstructionWithComparer signature)
         => signature switch
         {
@@ -51,6 +50,103 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
             ConstructionWithComparer.None => ComparerConstruction.None,
             _ => throw new NotImplementedException(),
         };
+
+    protected (ConstructionWithComparer, ConstructorInfo?) FindComparerConstructorOverload(ConstructorInfo? nonComparerOverload)
+    {
+        var (comparer, overload) = FindComparerConstructionOverload(nonComparerOverload);
+        return (comparer, (ConstructorInfo?)overload);
+    }
+
+    protected ConstructionWithComparer IsAcceptableConstructorPair(ParameterInfo first, ParameterInfo second, CollectionConstructorParameterType collectionType)
+        => IsAcceptableConstructorPair(ClassifyConstructorParameter(first), ClassifyConstructorParameter(second), collectionType);
+
+    protected (ConstructionWithComparer, MethodBase?) FindComparerConstructionOverload(MethodBase? nonComparerOverload)
+    {
+        if (nonComparerOverload is null)
+        {
+            return default;
+        }
+
+        switch (nonComparerOverload.GetParameters())
+        {
+            case []:
+                foreach (MethodBase overload in EnumerateOverloads())
+                {
+                    if (overload.GetParameters() is not [ParameterInfo onlyParameter])
+                    {
+                        continue;
+                    }
+
+                    switch (ToComparerConstruction(onlyParameter))
+                    {
+                        case ComparerConstruction.Comparer:
+                            return (ConstructionWithComparer.Comparer, overload);
+                        case ComparerConstruction.EqualityComparer:
+                            return (ConstructionWithComparer.EqualityComparer, overload);
+                    }
+                }
+
+                break;
+            case [{ ParameterType: Type collectionType }]:
+                foreach (MethodBase overload in EnumerateOverloads())
+                {
+                    if (overload.GetParameters() is not [ParameterInfo first, ParameterInfo second])
+                    {
+                        continue;
+                    }
+
+                    ConstructionWithComparer comparerType = IsAcceptableConstructorPair(first, second, CollectionConstructorParameterType.CollectionOfT);
+                    if (comparerType != ConstructionWithComparer.None)
+                    {
+                        return (comparerType, overload);
+                    }
+                }
+
+                break;
+        }
+
+        return (ConstructionWithComparer.None, null);
+
+        IEnumerable<MethodBase> EnumerateOverloads()
+        {
+            if (nonComparerOverload is ConstructorInfo { DeclaringType: not null })
+            {
+                foreach (ConstructorInfo ctor in nonComparerOverload.DeclaringType.GetConstructors())
+                {
+                    yield return ctor;
+                }
+            }
+            else if (nonComparerOverload is MethodInfo { DeclaringType: { } declaringType } nonComparerMethod)
+            {
+                foreach (MethodInfo method in declaringType.GetMethods(BindingFlags.Public | BindingFlags.Static))
+                {
+                    if (method.Name != nonComparerMethod.Name || nonComparerMethod.IsGenericMethod ^ method.IsGenericMethod)
+                    {
+                        continue;
+                    }
+
+                    yield return method.IsGenericMethod ? method.MakeGenericMethod(nonComparerMethod.GetGenericArguments()) : method;
+                }
+            }
+        }
+    }
+
+    protected object? GetRelevantComparer<TKey>(in CollectionConstructionOptions<TKey> collectionConstructionOptions, ComparerConstruction customComparerConstruction)
+        => customComparerConstruction switch
+        {
+            ComparerConstruction.Comparer => collectionConstructionOptions.Comparer,
+            ComparerConstruction.EqualityComparer => collectionConstructionOptions.EqualityComparer,
+            _ => null,
+        };
+
+    protected ComparerConstruction ToComparerConstruction(ParameterInfo parameter) => ClassifyConstructorParameter(parameter) switch
+    {
+        CollectionConstructorParameterType.IComparerOfT => ComparerConstruction.Comparer,
+        CollectionConstructorParameterType.IEqualityComparerOfT => ComparerConstruction.EqualityComparer,
+        _ => ComparerConstruction.None,
+    };
+
+    protected virtual CollectionConstructorParameterType ClassifyConstructorParameter(ParameterInfo parameter) => throw new NotImplementedException();
 
     protected enum CollectionConstructorParameterType
     {

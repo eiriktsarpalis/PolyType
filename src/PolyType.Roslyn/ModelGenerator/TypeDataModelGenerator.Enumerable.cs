@@ -250,35 +250,7 @@ public partial class TypeDataModelGenerator
 
         (IMethodSymbol? Factory, IMethodSymbol? FactoryWithComparer, CollectionModelConstructionStrategy Strategy) GetImmutableCollectionFactory(INamedTypeSymbol namedType)
         {
-            INamedTypeSymbol? typeSymbol;
             IMethodSymbol? factory, factoryWithComparer;
-
-            (IMethodSymbol? Factory, IMethodSymbol? FactoryWithComparer, CollectionModelConstructionStrategy Strategy) FindCreateRangeMethods(string typeName, bool? equalityComparer = null)
-            {
-                typeSymbol = KnownSymbols.Compilation.GetTypeByMetadataName(typeName);
-
-                // First try for the Span-based factory methods.
-                CollectionModelConstructionStrategy strategy = CollectionModelConstructionStrategy.Span;
-                factory = typeSymbol.GetMethodSymbol(method => method is { IsStatic: true, IsGenericMethod: true, Name: "Create", Parameters: [{ Type.Name: "ReadOnlySpan" }] })
-                    .MakeGenericMethod(namedType.TypeArguments[0]);
-                factoryWithComparer = equalityComparer is not null
-                    ? typeSymbol.GetMethodSymbol(method => method is { IsStatic: true, IsGenericMethod: true, Name: "Create", Parameters: [{ Type.Name: string tn }, { Type.Name: "ReadOnlySpan" }] } && tn == (equalityComparer.Value ? "IEqualityComparer" : "IComparer"))
-                        .MakeGenericMethod(namedType.TypeArguments[0])
-                    : null;
-
-                if (factory is null)
-                {
-                    strategy = CollectionModelConstructionStrategy.List;
-                    factory = typeSymbol.GetMethodSymbol(method => method is { IsStatic: true, IsGenericMethod: true, Name: "CreateRange", Parameters: [{ Type.Name: "IEnumerable" }] })
-                        .MakeGenericMethod(namedType.TypeArguments[0]);
-                    factoryWithComparer = equalityComparer is not null
-                        ? typeSymbol.GetMethodSymbol(method => method is { IsStatic: true, IsGenericMethod: true, Name: "CreateRange", Parameters: [{ Type.Name: string tn }, { Type.Name: "IEnumerable" }] } && tn == (equalityComparer.Value ? "IEqualityComparer" : "IComparer"))
-                            .MakeGenericMethod(namedType.TypeArguments[0])
-                        : null;
-                }
-
-                return (factory, factoryWithComparer, strategy);
-            }
 
             if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.ImmutableArray))
             {
@@ -321,6 +293,33 @@ public partial class TypeDataModelGenerator
             }
 
             return default;
+
+            (IMethodSymbol? Factory, IMethodSymbol? FactoryWithComparer, CollectionModelConstructionStrategy Strategy) FindCreateRangeMethods(string typeName, bool? equalityComparer = null)
+            {
+                INamedTypeSymbol? typeSymbol = KnownSymbols.Compilation.GetTypeByMetadataName(typeName);
+
+                // First try for the Span-based factory methods.
+                CollectionModelConstructionStrategy strategy = CollectionModelConstructionStrategy.Span;
+                factory = typeSymbol.GetMethodSymbol(method => method is { IsStatic: true, IsGenericMethod: true, Name: "Create", Parameters: [{ Type.Name: "ReadOnlySpan" }] })
+                    .MakeGenericMethod(namedType.TypeArguments[0]);
+                factoryWithComparer = equalityComparer is not null
+                    ? typeSymbol.GetMethodSymbol(method => method is { IsStatic: true, IsGenericMethod: true, Name: "Create", Parameters: [{ Type.Name: string tn }, { Type.Name: "ReadOnlySpan" }] } && tn == (equalityComparer.Value ? "IEqualityComparer" : "IComparer"))
+                        .MakeGenericMethod(namedType.TypeArguments[0])
+                    : null;
+
+                if (factory is null)
+                {
+                    strategy = CollectionModelConstructionStrategy.List;
+                    factory = typeSymbol.GetMethodSymbol(method => method is { IsStatic: true, IsGenericMethod: true, Name: "CreateRange", Parameters: [{ Type.Name: "IEnumerable" }] })
+                        .MakeGenericMethod(namedType.TypeArguments[0]);
+                    factoryWithComparer = equalityComparer is not null
+                        ? typeSymbol.GetMethodSymbol(method => method is { IsStatic: true, IsGenericMethod: true, Name: "CreateRange", Parameters: [{ Type.Name: string tn }, { Type.Name: "IEnumerable" }] } && tn == (equalityComparer.Value ? "IEqualityComparer" : "IComparer"))
+                            .MakeGenericMethod(namedType.TypeArguments[0])
+                        : null;
+                }
+
+                return (factory, factoryWithComparer, strategy);
+            }
         }
     }
 
