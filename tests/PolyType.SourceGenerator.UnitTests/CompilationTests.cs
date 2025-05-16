@@ -1266,7 +1266,6 @@ public static class CompilationTests
             using System;
             using System.Collections;
             using System.Collections.Generic;
-            using System.Diagnostics.CodeAnalysis;
             using PolyType;
 
             [GenerateShape]
@@ -1302,7 +1301,7 @@ public static class CompilationTests
 
                 public IEnumerator<KeyValuePair<int, bool>> GetEnumerator() => this.inner.GetEnumerator();
 
-                public bool TryGetValue(int key, [MaybeNullWhen(false)] out bool value) => throw new NotImplementedException();
+                public bool TryGetValue(int key, out bool value) => throw new NotImplementedException();
 
                 IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
             }

@@ -61,10 +61,24 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     public void SortedSet() => this.AssertDefaultEnumerable<SortedSet<int>, int>(new ReverseComparer(), s => s.Comparer);
 
     [Fact]
-    public void ImmutableHashSet() => this.AssertSpanEnumerable<ImmutableHashSet<int>, int>(NonEmptyEnumerable, new EvenOddEqualityComparer(), s => s.KeyComparer);
+    public void ImmutableHashSet()
+    {
+#if NET
+        this.AssertSpanEnumerable<ImmutableHashSet<int>, int>(NonEmptyEnumerable, new EvenOddEqualityComparer(), s => s.KeyComparer);
+#else
+        this.AssertEnumerableEnumerable<ImmutableHashSet<int>, int>(NonEmptyEnumerable, new EvenOddEqualityComparer(), s => s.KeyComparer);
+#endif
+    }
 
     [Fact]
-    public void ImmutableSortedSet() => this.AssertSpanEnumerable<ImmutableSortedSet<int>, int>(NonEmptyEnumerable, new ReverseComparer(), s => s.KeyComparer);
+    public void ImmutableSortedSet()
+    {
+#if NET
+        this.AssertSpanEnumerable<ImmutableSortedSet<int>, int>(NonEmptyEnumerable, new ReverseComparer(), s => s.KeyComparer);
+#else
+        this.AssertEnumerableEnumerable<ImmutableSortedSet<int>, int>(NonEmptyEnumerable, new ReverseComparer(), s => s.KeyComparer);
+#endif
+    }
 
     [Fact]
     public void EnumerableByEnumerableEC() => this.AssertEnumerableEnumerable<EnumerableEnumerableEC, int>(NonEmptyEnumerable, new EvenOddEqualityComparer(), n => n.Comparer);

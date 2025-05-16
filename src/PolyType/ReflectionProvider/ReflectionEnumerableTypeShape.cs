@@ -421,16 +421,18 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                     ?.MakeGenericMethod(typeof(TElement));
                 (_constructionComparer, _spanCtorWithComparer) = FindComparerConstructionOverload(_spanCtor);
 
-                if (_spanCtor is null)
+                if (_spanCtor is not null)
                 {
-                    _constructionStrategy = CollectionConstructionStrategy.Enumerable;
-                    _enumerableCtor = factoryType?.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                        .FirstOrDefault(m => m.Name is "CreateRange" && m.GetParameters() is [ParameterInfo p] && p.ParameterType.IsIEnumerable())
-                        ?.MakeGenericMethod(typeof(TElement));
-                    (_constructionComparer, _enumerableCtorWithComparer) = FindComparerConstructionOverload(_listCtor);
+                    return true;
                 }
 
-                return _spanCtor is not null;
+                _constructionStrategy = CollectionConstructionStrategy.Enumerable;
+                _enumerableCtor = factoryType?.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                    .FirstOrDefault(m => m.Name is "CreateRange" && m.GetParameters() is [ParameterInfo p] && p.ParameterType.IsIEnumerable())
+                    ?.MakeGenericMethod(typeof(TElement));
+                (_constructionComparer, _enumerableCtorWithComparer) = FindComparerConstructionOverload(_enumerableCtor);
+
+                return _enumerableCtor is not null;
             }
         }
     }
