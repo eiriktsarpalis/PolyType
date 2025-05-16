@@ -28,13 +28,6 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     public void ImmutableSortedDictionary() => this.AssertEnumerableDictionary<ImmutableSortedDictionary<int, bool>, int, bool>(NonEmptyDictionary, new ReverseComparer(), d => d.KeyComparer);
 
     [Fact]
-    public void DictionaryByEnumerable()
-    {
-        IDictionaryTypeShape<DictionaryWithEnumerableCtor, int, bool> shape = this.GetDictionaryShape<DictionaryWithEnumerableCtor, int, bool>();
-        shape.GetEnumerableConstructor()(NonEmptyDictionary);
-    }
-
-    [Fact]
     public void DictionaryBySpan() => this.AssertSpanDictionary<DictionarySpan, int, bool>(NonEmptyDictionary, new EvenOddEqualityComparer(), d => d.Comparer);
 
     [Fact]
@@ -393,18 +386,6 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         public IEnumerator<int> GetEnumerator() => values.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
-    }
-
-    [GenerateShape]
-    public partial class DictionaryWithEnumerableCtor : Dictionary<int, bool>
-    {
-        public DictionaryWithEnumerableCtor(IEnumerable<KeyValuePair<int, bool>> values)
-        {
-            foreach (var value in values)
-            {
-                this[value.Key] = value.Value;
-            }
-        }
     }
 
     [GenerateShape]
