@@ -286,7 +286,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         if (typeof(TDictionary).GetConstructor([typeof(IEnumerable<KeyValuePair<TKey, TValue>>)]) is ConstructorInfo enumerableCtor)
         {
             _enumerableCtor = enumerableCtor;
-            (_constructionComparer, _enumerableCtor) = FindComparerConstructorOverload(enumerableCtor);
+            (_constructionComparer, _enumerableCtorWithComparer) = FindComparerConstructorOverload(enumerableCtor);
             _constructionStrategy = CollectionConstructionStrategy.Enumerable;
             return;
         }
