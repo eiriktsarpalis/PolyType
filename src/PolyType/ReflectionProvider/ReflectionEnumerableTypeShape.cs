@@ -325,8 +325,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
             if (typeof(TEnumerable).IsAssignableFrom(typeof(HashSet<TElement>)))
             {
                 // Handle ISet<T> and IReadOnlySet<T> types using HashSet<T>
-                // TODO CreateHashSet takes a comparer as a second argument
-                MethodInfo? gm = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateHashSet), BindingFlags.Public | BindingFlags.Static);
+                MethodInfo? gm = typeof(CollectionHelpers).GetMethods(BindingFlags.Public | BindingFlags.Static).First(m => m.Name == nameof(CollectionHelpers.CreateHashSet) && m.GetParameters().Length == 1);
                 _spanCtor = gm?.MakeGenericMethod(typeof(TElement));
                 _constructionStrategy = _spanCtor != null ? CollectionConstructionStrategy.Span : CollectionConstructionStrategy.None;
                 (_constructionComparer, _spanCtorWithComparer) = FindComparerConstructionOverload(_spanCtor);

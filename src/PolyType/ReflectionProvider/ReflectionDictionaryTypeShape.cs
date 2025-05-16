@@ -206,16 +206,12 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                     return span => dictionaryCtorDelegate(CollectionHelpers.CreateDictionary(span, null));
                 }
 
-                DebugExt.Assert(_spanCtor != null);
-                if (_spanCtor is ConstructorInfo ctorInfo)
+                return _spanCtor switch
                 {
-                    return Provider.MemberAccessor.CreateSpanConstructorDelegate<KeyValuePair<TKey, TValue>, TDictionary>(ctorInfo);
-                }
-
-                MethodInfo methodInfo = (MethodInfo)_spanCtor;
-
-                // ReadOnlySpan<KeyValuePair<TKey, TValue>>
-                return methodInfo.CreateDelegate<SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary>>();
+                    ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateSpanConstructorDelegate<KeyValuePair<TKey, TValue>, TDictionary>(ctorInfo),
+                    MethodInfo methodInfo => methodInfo.CreateDelegate<SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary>>(),
+                    _ => throw new NotSupportedException(),
+                };
             }
         }
         else
@@ -311,7 +307,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
             if (typeof(TDictionary).IsAssignableFrom(typeof(Dictionary<TKey, TValue>)))
             {
                 // Handle IDictionary, IDictionary<TKey, TValue> and IReadOnlyDictionary<TKey, TValue> using Dictionary<TKey, TValue>
-                MethodInfo? gm = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateDictionary), BindingFlags.Public | BindingFlags.Static);
+                MethodInfo? gm = typeof(CollectionHelpers).GetMethods(BindingFlags.Public | BindingFlags.Static).First(m => m.Name == nameof(CollectionHelpers.CreateDictionary) && m.GetParameters().Length == 1);
                 _spanCtor = gm?.MakeGenericMethod(typeof(TKey), typeof(TValue));
                 (_constructionComparer, _spanCtorWithComparer) = FindComparerConstructionOverload(_spanCtor);
                 _constructionStrategy = _spanCtor != null ? CollectionConstructionStrategy.Span : CollectionConstructionStrategy.None;
@@ -322,7 +318,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
             {
                 // Handle IDictionary using Dictionary<object, object>
                 Debug.Assert(typeof(TKey) == typeof(object) && typeof(TValue) == typeof(object));
-                MethodInfo? gm = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateDictionary), BindingFlags.Public | BindingFlags.Static);
+                MethodInfo? gm = typeof(CollectionHelpers).GetMethods(BindingFlags.Public | BindingFlags.Static).First(m => m.Name == nameof(CollectionHelpers.CreateDictionary) && m.GetParameters().Length == 1);
                 _spanCtor = gm?.MakeGenericMethod(typeof(object), typeof(object));
                 (_constructionComparer, _spanCtorWithComparer) = FindComparerConstructionOverload(_spanCtor);
                 _constructionStrategy = _spanCtor != null ? CollectionConstructionStrategy.Span : CollectionConstructionStrategy.None;

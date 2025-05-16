@@ -30,6 +30,9 @@ public static class CollectionHelpers
         return list;
     }
 
+    /// <inheritdoc cref="CreateHashSet{T}(ReadOnlySpan{T}, IEqualityComparer{T}?)"/>
+    public static HashSet<T> CreateHashSet<T>(ReadOnlySpan<T> span) => CreateHashSet<T>(span, null);
+
     /// <summary>
     /// Creates a set from a <see cref="ReadOnlySpan{T}"/>.
     /// </summary>
@@ -53,6 +56,11 @@ public static class CollectionHelpers
 
         return set;
     }
+
+    /// <inheritdoc cref="CreateDictionary{TKey, TValue}(ReadOnlySpan{KeyValuePair{TKey, TValue}}, IEqualityComparer{TKey}?)"/>
+    public static Dictionary<TKey, TValue> CreateDictionary<TKey, TValue>(ReadOnlySpan<KeyValuePair<TKey, TValue>> span)
+        where TKey : notnull
+        => CreateDictionary(span, null);
 
     /// <summary>
     /// Creates a dictionary from a span of key/value pairs.
