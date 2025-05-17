@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace PolyType.Tests;
@@ -18,6 +19,7 @@ internal static class AvoidCrashingOnDebugAsserts
         Trace.Listeners.Add(new ThrowListener());
     }
 
+    [ExcludeFromCodeCoverage]
     private class ThrowListener : TraceListener
     {
         public override void Fail(string? message)

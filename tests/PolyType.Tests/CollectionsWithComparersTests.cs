@@ -51,6 +51,8 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     [Fact]
     public void SortedSet() => this.AssertDefaultEnumerable<SortedSet<int>, int>(new ReverseComparer(), s => s.Comparer);
 
+    // REVISIT: This test is skipped for no-emit Reflection because it uses Span, which isn't supported by that provider.
+    //          Consider adding an array/list construction strategy for better support.
     [Fact]
     public void ImmutableHashSet()
     {
@@ -61,6 +63,8 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
 #endif
     }
 
+    // REVISIT: This test is skipped for no-emit Reflection because it uses Span, which isn't supported by that provider.
+    //          Consider adding an array/list construction strategy for better support.
     [Fact]
     public void ImmutableSortedSet()
     {
@@ -75,7 +79,48 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     public void EnumerableByEnumerableEC() => this.AssertEnumerableEnumerable<EnumerableEnumerableEC, int>(NonEmptyEnumerable, new EvenOddEqualityComparer(), n => n.Comparer);
 
     [Fact]
+    public void EnumerableByECEnumerable() => this.AssertEnumerableEnumerable<EnumerableECEnumerable, int>(NonEmptyEnumerable, new EvenOddEqualityComparer(), n => n.Comparer);
+
+    [Fact]
     public void EnumerableByEnumerableC() => this.AssertEnumerableEnumerable<EnumerableEnumerableC, int>(NonEmptyEnumerable, new ReverseComparer(), n => n.Comparer);
+
+    [Fact]
+    public void EnumerableByCEnumerable() => this.AssertEnumerableEnumerable<EnumerableCEnumerable, int>(NonEmptyEnumerable, new ReverseComparer(), n => n.Comparer);
+
+    // REVISIT: This test is skipped for no-emit Reflection because it uses Span, which isn't supported by that provider.
+    //          Consider adding an array/list construction strategy for better support.
+    [Fact]
+    public void EnumerableByECList() => this.AssertSpanEnumerable<EnumerableECList, int>(NonEmptyEnumerable, new EvenOddEqualityComparer(), l => l.Comparer);
+
+    // REVISIT: This test is skipped for no-emit Reflection because it uses Span, which isn't supported by that provider.
+    //          Consider adding an array/list construction strategy for better support.
+    [Fact]
+    public void EnumerableByCList() => this.AssertSpanEnumerable<EnumerableCList, int>(NonEmptyEnumerable, new ReverseComparer(), l => l.Comparer);
+
+    // REVISIT: This test is skipped for no-emit Reflection because it uses Span, which isn't supported by that provider.
+    //          Consider adding an array/list construction strategy for better support.
+    [Fact]
+    public void EnumerableByListEC() => this.AssertSpanEnumerable<EnumerableListEC, int>(NonEmptyEnumerable, new EvenOddEqualityComparer(), l => l.Comparer);
+
+    // REVISIT: This test is skipped for no-emit Reflection because it uses Span, which isn't supported by that provider.
+    //          Consider adding an array/list construction strategy for better support.
+    [Fact]
+    public void EnumerableByListC() => this.AssertSpanEnumerable<EnumerableListC, int>(NonEmptyEnumerable, new ReverseComparer(), l => l.Comparer);
+
+    [Fact]
+    public void EnumerableByECSpan() => this.AssertSpanEnumerable<EnumerableECSpan, int>(NonEmptyEnumerable, new EvenOddEqualityComparer(), l => l.Comparer);
+
+    [Fact]
+    public void EnumerableByCSpan() => this.AssertSpanEnumerable<EnumerableCSpan, int>(NonEmptyEnumerable, new ReverseComparer(), l => l.Comparer);
+
+    [Fact]
+    public void NoComparerCollections()
+    {
+        Assert.Equal(ComparerConstruction.None, this.GetEnumerableShape<ReadOnlyMemory<int>, int>().CustomComparerSupport);
+        Assert.Equal(ComparerConstruction.None, this.GetEnumerableShape<Memory<int>, int>().CustomComparerSupport);
+        Assert.Equal(ComparerConstruction.None, this.GetEnumerableShape<int[], int>().CustomComparerSupport);
+        Assert.Equal(ComparerConstruction.None, this.GetEnumerableShape<int[,], int>().CustomComparerSupport);
+    }
 
     private void AssertDefaultDictionary<T, K, V>(IComparer<K> comparer, Func<T, IComparer<K>> getComparer)
         where K : notnull
@@ -184,7 +229,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     private T CreateSpanDictionary<T, K, V>(ReadOnlySpan<KeyValuePair<K, V>> values, IComparer<K>? comparer)
         where K : notnull
     {
-        Assert.SkipWhen(providerUnderTest is ReflectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span dictionaries.");
+        Assert.SkipWhen(providerUnderTest is ReflectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span collections.");
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
         Assert.Equal(ComparerConstruction.Comparer, shape.CustomComparerSupport);
         return shape.GetSpanConstructor(new() { Comparer = comparer })(values);
@@ -193,7 +238,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     private T CreateSpanDictionary<T, K, V>(ReadOnlySpan<KeyValuePair<K, V>> values, IEqualityComparer<K>? equalityComparer)
         where K : notnull
     {
-        Assert.SkipWhen(providerUnderTest is ReflectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span dictionaries.");
+        Assert.SkipWhen(providerUnderTest is ReflectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span collections.");
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
         Assert.Equal(ComparerConstruction.EqualityComparer, shape.CustomComparerSupport);
         return shape.GetSpanConstructor(new() { EqualityComparer = equalityComparer })(values);
@@ -286,6 +331,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     {
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
         Assert.Equal(ComparerConstruction.Comparer, shape.CustomComparerSupport);
+        Assert.Equal(CollectionConstructionStrategy.Mutable, shape.ConstructionStrategy);
         return shape.GetDefaultConstructor(new() { Comparer = comparer })();
     }
 
@@ -293,12 +339,14 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     {
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
         Assert.Equal(ComparerConstruction.EqualityComparer, shape.CustomComparerSupport);
+        Assert.Equal(CollectionConstructionStrategy.Mutable, shape.ConstructionStrategy);
         return shape.GetDefaultConstructor(new() { EqualityComparer = equalityComparer })();
     }
 
     private T CreateEnumerableEnumerable<T, K>(IEnumerable<K> values, IComparer<K>? comparer)
     {
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
+        Assert.Equal(CollectionConstructionStrategy.Enumerable, shape.ConstructionStrategy);
         Assert.Equal(ComparerConstruction.Comparer, shape.CustomComparerSupport);
         return shape.GetEnumerableConstructor(new() { Comparer = comparer })(values);
     }
@@ -306,20 +354,25 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     private T CreateEnumerableEnumerable<T, K>(IEnumerable<K> values, IEqualityComparer<K>? equalityComparer)
     {
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
+        Assert.Equal(CollectionConstructionStrategy.Enumerable, shape.ConstructionStrategy);
         Assert.Equal(ComparerConstruction.EqualityComparer, shape.CustomComparerSupport);
         return shape.GetEnumerableConstructor(new() { EqualityComparer = equalityComparer })(values);
     }
 
     private T CreateSpanEnumerable<T, K>(ReadOnlySpan<K> values, IComparer<K>? comparer)
     {
+        Assert.SkipWhen(providerUnderTest is ReflectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span collections.");
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
+        Assert.Equal(CollectionConstructionStrategy.Span, shape.ConstructionStrategy);
         Assert.Equal(ComparerConstruction.Comparer, shape.CustomComparerSupport);
         return shape.GetSpanConstructor(new() { Comparer = comparer })(values);
     }
 
     private T CreateSpanEnumerable<T, K>(ReadOnlySpan<K> values, IEqualityComparer<K>? equalityComparer)
     {
+        Assert.SkipWhen(providerUnderTest is ReflectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span collections.");
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
+        Assert.Equal(CollectionConstructionStrategy.Span, shape.ConstructionStrategy);
         Assert.Equal(ComparerConstruction.EqualityComparer, shape.CustomComparerSupport);
         return shape.GetSpanConstructor(new() { EqualityComparer = equalityComparer })(values);
     }
@@ -341,6 +394,10 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     [GenerateShape<ImmutableSortedSet<int>>]
     [GenerateShape<HashSet<IEqualityComparer<int>>>]
     [GenerateShape<Dictionary<IEqualityComparer<int>, int>>]
+    [GenerateShape<ReadOnlyMemory<int>>]
+    [GenerateShape<Memory<int>>]
+    [GenerateShape<int[]>]
+    [GenerateShape<int[,]>]
     partial class Witness;
 
     private class ReverseComparer : IComparer<int>
@@ -348,6 +405,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         public int Compare(int x, int y) => -Comparer<int>.Default.Compare(x, y);
     }
 
+    [ExcludeFromCodeCoverage]
     private class EvenOddEqualityComparer : IEqualityComparer<int>
     {
         public bool Equals(int x, int y) => x % 2 == y % 2;
@@ -355,6 +413,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         public int GetHashCode([DisallowNull] int obj) => obj % 2;
     }
 
+    [ExcludeFromCodeCoverage]
     private class EqualityComparerOfEqualityComparers : IEqualityComparer<IEqualityComparer<int>>
     {
         public bool Equals(IEqualityComparer<int>? x, IEqualityComparer<int>? y) => object.ReferenceEquals(x, y);
@@ -362,7 +421,19 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         public int GetHashCode([DisallowNull] IEqualityComparer<int> obj) => obj.GetHashCode();
     }
 
-    [GenerateShape]
+    [GenerateShape, ExcludeFromCodeCoverage]
+    internal partial class EnumerableECEnumerable(IEqualityComparer<int>? eq, IEnumerable<int> values) : IEnumerable<int>
+    {
+        public EnumerableECEnumerable(IEnumerable<int> values) : this(null, values) { }
+
+        public IEqualityComparer<int> Comparer => eq ?? EqualityComparer<int>.Default;
+
+        public IEnumerator<int> GetEnumerator() => values.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+    }
+
+    [GenerateShape, ExcludeFromCodeCoverage]
     internal partial class EnumerableEnumerableEC(IEnumerable<int> values, IEqualityComparer<int>? eq) : IEnumerable<int>
     {
         public EnumerableEnumerableEC(IEnumerable<int> values) : this(values, null) { }
@@ -374,7 +445,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
     }
 
-    [GenerateShape]
+    [GenerateShape, ExcludeFromCodeCoverage]
     internal partial class EnumerableEnumerableC(IEnumerable<int> values, IComparer<int>? comparer) : IEnumerable<int>
     {
         public EnumerableEnumerableC(IEnumerable<int> values) : this(values, null) { }
@@ -386,7 +457,109 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
     }
 
-    [GenerateShape]
+    [GenerateShape, ExcludeFromCodeCoverage]
+    internal partial class EnumerableCEnumerable(IComparer<int>? comparer, IEnumerable<int> values) : IEnumerable<int>
+    {
+        public EnumerableCEnumerable(IEnumerable<int> values) : this(null, values) { }
+
+        public IComparer<int> Comparer => comparer ?? Comparer<int>.Default;
+
+        public IEnumerator<int> GetEnumerator() => values.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+    }
+
+    [GenerateShape, ExcludeFromCodeCoverage]
+    internal partial class EnumerableECList(IEqualityComparer<int>? comparer, IList<int> values) : IEnumerable<int>
+    {
+        public EnumerableECList(IList<int> values) : this(null, values) { }
+
+        public IEqualityComparer<int> Comparer => comparer ?? EqualityComparer<int>.Default;
+
+        public IEnumerator<int> GetEnumerator() => values.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [GenerateShape, ExcludeFromCodeCoverage]
+    internal partial class EnumerableCList(IComparer<int>? comparer, IList<int> values) : IEnumerable<int>
+    {
+        public EnumerableCList(IList<int> values) : this(null, values) { }
+
+        public IComparer<int> Comparer => comparer ?? Comparer<int>.Default;
+
+        public IEnumerator<int> GetEnumerator() => values.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [GenerateShape, ExcludeFromCodeCoverage]
+    internal partial class EnumerableListEC(IList<int> values, IEqualityComparer<int>? comparer) : IEnumerable<int>
+    {
+        public EnumerableListEC(IList<int> values) : this(values, null) { }
+
+        public IEqualityComparer<int> Comparer => comparer ?? EqualityComparer<int>.Default;
+
+        public IEnumerator<int> GetEnumerator() => values.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [GenerateShape, ExcludeFromCodeCoverage]
+    internal partial class EnumerableListC(IList<int> values, IComparer<int>? comparer) : IEnumerable<int>
+    {
+        public EnumerableListC(IList<int> values) : this(values, null) { }
+
+        public IComparer<int> Comparer => comparer ?? Comparer<int>.Default;
+
+        public IEnumerator<int> GetEnumerator() => values.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [GenerateShape, ExcludeFromCodeCoverage]
+    internal partial class EnumerableECSpan : IEnumerable<int>
+    {
+        private readonly IEqualityComparer<int> comparer;
+        private readonly List<int> values;
+
+        public EnumerableECSpan(IEqualityComparer<int>? comparer, ReadOnlySpan<int> values)
+        {
+            this.comparer = comparer ?? EqualityComparer<int>.Default;
+            this.values = [.. values];
+        }
+
+        public EnumerableECSpan(ReadOnlySpan<int> values) : this(null, values) { }
+
+        public IEqualityComparer<int> Comparer => comparer;
+
+        public IEnumerator<int> GetEnumerator() => values.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [GenerateShape, ExcludeFromCodeCoverage]
+    internal partial class EnumerableCSpan : IEnumerable<int>
+    {
+        private readonly IComparer<int> comparer;
+        private readonly List<int> values;
+
+        public EnumerableCSpan(IComparer<int>? comparer, ReadOnlySpan<int> values)
+        {
+            this.comparer = comparer ?? Comparer<int>.Default;
+            this.values = [.. values];
+        }
+
+        public EnumerableCSpan(ReadOnlySpan<int> values) : this(null, values) { }
+
+        public IComparer<int> Comparer => comparer;
+
+        public IEnumerator<int> GetEnumerator() => values.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [GenerateShape, ExcludeFromCodeCoverage]
     internal partial class DictionarySpan : IReadOnlyDictionary<int, bool>
     {
         private Dictionary<int, bool> inner;
@@ -424,7 +597,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
-    [GenerateShape]
+    [GenerateShape, ExcludeFromCodeCoverage]
     internal partial class SortedDictionarySpan : IReadOnlyDictionary<int, bool>
     {
         private SortedDictionary<int, bool> inner;
