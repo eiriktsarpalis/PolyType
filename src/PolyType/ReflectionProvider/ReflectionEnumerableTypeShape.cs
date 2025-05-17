@@ -30,6 +30,8 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
     private Func<TEnumerable>? _defaultCtorDelegate;
     private Func<IEnumerable<TElement>, TEnumerable>? _enumerableCtorDelegate;
     private SpanConstructor<TElement, TEnumerable>? _spanCtorDelegate;
+    private Func<List<TElement>, IEqualityComparer<TElement>, TEnumerable>? _listCtorEqualityComparerDelegate;
+    private Func<List<TElement>, IComparer<TElement>, TEnumerable>? _listCtorComparerDelegate;
 
     public virtual ComparerConstruction CustomComparerSupport
     {
@@ -198,17 +200,16 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
         }
         else
         {
-            // TODO: cache the intermediate delegate that we build here.
             if (_listCtorWithComparer is ConstructorInfo listCtorWithComparer)
             {
                 switch (relevantComparer)
                 {
                     case IEqualityComparer<TElement> equalityComparer:
-                        var listCtorDelegate = Provider.MemberAccessor.CreateFuncDelegate<List<TElement>, IEqualityComparer<TElement>, TEnumerable>(listCtorWithComparer);
-                        return span => listCtorDelegate(CollectionHelpers.CreateList(span), equalityComparer);
+                        _listCtorEqualityComparerDelegate ??= Provider.MemberAccessor.CreateFuncDelegate<List<TElement>, IEqualityComparer<TElement>, TEnumerable>(listCtorWithComparer);
+                        return span => _listCtorEqualityComparerDelegate(CollectionHelpers.CreateList(span), equalityComparer);
                     case IComparer<TElement> comparer:
-                        var sortedDictionaryCtorDelegate = Provider.MemberAccessor.CreateFuncDelegate<List<TElement>, IComparer<TElement>, TEnumerable>(listCtorWithComparer);
-                        return span => sortedDictionaryCtorDelegate(CollectionHelpers.CreateList(span), comparer);
+                        _listCtorComparerDelegate ??= Provider.MemberAccessor.CreateFuncDelegate<List<TElement>, IComparer<TElement>, TEnumerable>(listCtorWithComparer);
+                        return span => _listCtorComparerDelegate(CollectionHelpers.CreateList(span), comparer);
                     default:
                         throw new NotSupportedException();
                 }

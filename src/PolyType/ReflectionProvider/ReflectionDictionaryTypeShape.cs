@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Reflection;
 
 namespace PolyType.ReflectionProvider;
@@ -30,8 +31,16 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
 
     private Setter<TDictionary, KeyValuePair<TKey, TValue>>? _addDelegate;
     private Func<TDictionary>? _defaultCtorDelegate;
+    private Func<IEqualityComparer<TKey>, TDictionary>? _defaultCtorWithEqualityComparerDelegate;
+    private Func<IComparer<TKey>, TDictionary>? _defaultCtorWithComparerDelegate;
     private Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>? _enumerableCtorDelegate;
     private SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary>? _spanCtorDelegate;
+    private Func<IEnumerable<KeyValuePair<TKey, TValue>>, IEqualityComparer<TKey>, TDictionary>? _enumerableCtorValuesEqualityComparerDelegate;
+    private Func<IEqualityComparer<TKey>, IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>? _enumerableCtorEqualityComparerValuesDelegate;
+    private Func<IEnumerable<KeyValuePair<TKey, TValue>>, IComparer<TKey>, TDictionary>? _enumerableCtorValuesComparerDelegate;
+    private Func<IComparer<TKey>, IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>? _enumerableCtorComparerValuesDelegate;
+    private Func<Dictionary<TKey, TValue>, IEqualityComparer<TKey>, TDictionary>? _spanCtorEqualityComparer;
+    private Func<SortedDictionary<TKey, TValue>, IComparer<TKey>, TDictionary>? _spanCtorComparer;
 
     public sealed override TypeShapeKind Kind => TypeShapeKind.Dictionary;
     public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitDictionary(this, state);
@@ -103,9 +112,17 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         }
         else
         {
-            // TODO: Use Ref.Emit when appropriate.
-            object?[] args = [relevantComparer];
-            return () => (TDictionary)_defaultCtorWithComparer.Invoke(args);
+            switch (relevantComparer)
+            {
+                case IEqualityComparer<TKey> ec:
+                    _defaultCtorWithEqualityComparerDelegate ??= Provider.MemberAccessor.CreateFuncDelegate<IEqualityComparer<TKey>, TDictionary>(_defaultCtorWithComparer);
+                    return () => _defaultCtorWithEqualityComparerDelegate(ec);
+                case IComparer<TKey> c:
+                    _defaultCtorWithComparerDelegate ??= Provider.MemberAccessor.CreateFuncDelegate<IComparer<TKey>, TDictionary>(_defaultCtorWithComparer);
+                    return () => _defaultCtorWithComparerDelegate(c);
+                default:
+                    throw new NotSupportedException();
+            }
         }
     }
 
@@ -142,45 +159,44 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         else
         {
             // TODO: what about F# support?
-            // TODO: cache the intermediate delegate that we build here.
             switch (_constructionComparer)
             {
                 case ConstructionWithComparer.ValuesEqualityComparer:
-                    Func<IEnumerable<KeyValuePair<TKey, TValue>>, IEqualityComparer<TKey>, TDictionary> del = _enumerableCtorWithComparer switch
+                    _enumerableCtorValuesEqualityComparerDelegate ??= _enumerableCtorWithComparer switch
                     {
                         ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateFuncDelegate<IEnumerable<KeyValuePair<TKey, TValue>>, IEqualityComparer<TKey>, TDictionary>(ctorInfo),
                         MethodInfo methodInfo => methodInfo.CreateDelegate<Func<IEnumerable<KeyValuePair<TKey, TValue>>, IEqualityComparer<TKey>, TDictionary>>(),
                         _ => throw new NotSupportedException(),
                     };
 
-                    return values => del(values, (IEqualityComparer<TKey>)relevantComparer);
+                    return values => _enumerableCtorValuesEqualityComparerDelegate(values, (IEqualityComparer<TKey>)relevantComparer);
                 case ConstructionWithComparer.EqualityComparerValues:
-                    Func<IEqualityComparer<TKey>, IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> del4 = _enumerableCtorWithComparer switch
+                    _enumerableCtorEqualityComparerValuesDelegate ??= _enumerableCtorWithComparer switch
                     {
                         ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateFuncDelegate<IEqualityComparer<TKey>, IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>(ctorInfo),
                         MethodInfo methodInfo => methodInfo.CreateDelegate<Func<IEqualityComparer<TKey>, IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>>(),
                         _ => throw new NotSupportedException(),
                     };
 
-                    return values => del4((IEqualityComparer<TKey>)relevantComparer, values);
+                    return values => _enumerableCtorEqualityComparerValuesDelegate((IEqualityComparer<TKey>)relevantComparer, values);
                 case ConstructionWithComparer.ValuesComparer:
-                    Func<IEnumerable<KeyValuePair<TKey, TValue>>, IComparer<TKey>, TDictionary> del2 = _enumerableCtorWithComparer switch
+                    _enumerableCtorValuesComparerDelegate ??= _enumerableCtorWithComparer switch
                     {
                         ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateFuncDelegate<IEnumerable<KeyValuePair<TKey, TValue>>, IComparer<TKey>, TDictionary>(ctorInfo),
                         MethodInfo methodInfo => methodInfo.CreateDelegate<Func<IEnumerable<KeyValuePair<TKey, TValue>>, IComparer<TKey>, TDictionary>>(),
                         _ => throw new NotSupportedException(),
                     };
 
-                    return values => del2(values, (IComparer<TKey>)relevantComparer);
+                    return values => _enumerableCtorValuesComparerDelegate(values, (IComparer<TKey>)relevantComparer);
                 case ConstructionWithComparer.ComparerValues:
-                    Func<IComparer<TKey>, IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> del3 = _enumerableCtorWithComparer switch
+                    _enumerableCtorComparerValuesDelegate ??= _enumerableCtorWithComparer switch
                     {
                         ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateFuncDelegate<IComparer<TKey>, IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>(ctorInfo),
                         MethodInfo methodInfo => methodInfo.CreateDelegate<Func<IComparer<TKey>, IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>>(),
                         _ => throw new NotSupportedException(),
                     };
 
-                    return values => del3((IComparer<TKey>)relevantComparer, values);
+                    return values => _enumerableCtorComparerValuesDelegate((IComparer<TKey>)relevantComparer, values);
                 default:
                     throw new NotSupportedException();
             }
@@ -218,17 +234,16 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         }
         else
         {
-            // TODO: cache the intermediate delegate that we build here.
             if (_dictionaryCtorWithComparer is ConstructorInfo dictionaryCtorWithComparer)
             {
                 switch (relevantComparer)
                 {
                     case IEqualityComparer<TKey> equalityComparer:
-                        var dictionaryCtorDelegate = Provider.MemberAccessor.CreateFuncDelegate<Dictionary<TKey, TValue>, IEqualityComparer<TKey>, TDictionary>(dictionaryCtorWithComparer);
-                        return span => dictionaryCtorDelegate(CollectionHelpers.CreateDictionary(span, equalityComparer), equalityComparer);
+                        _spanCtorEqualityComparer ??= Provider.MemberAccessor.CreateFuncDelegate<Dictionary<TKey, TValue>, IEqualityComparer<TKey>, TDictionary>(dictionaryCtorWithComparer);
+                        return span => _spanCtorEqualityComparer(CollectionHelpers.CreateDictionary(span, equalityComparer), equalityComparer);
                     case IComparer<TKey> comparer:
-                        var sortedDictionaryCtorDelegate = Provider.MemberAccessor.CreateFuncDelegate<SortedDictionary<TKey, TValue>, IComparer<TKey>, TDictionary>(dictionaryCtorWithComparer);
-                        return span => sortedDictionaryCtorDelegate(CollectionHelpers.CreateSortedDictionary(span, comparer), comparer);
+                        _spanCtorComparer ??= Provider.MemberAccessor.CreateFuncDelegate<SortedDictionary<TKey, TValue>, IComparer<TKey>, TDictionary>(dictionaryCtorWithComparer);
+                        return span => _spanCtorComparer(CollectionHelpers.CreateSortedDictionary(span, comparer), comparer);
                     default:
                         throw new NotSupportedException();
                 }
