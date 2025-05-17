@@ -406,7 +406,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     }
 
     private object? GetRelevantComparer(in CollectionConstructionOptions<TKey> collectionConstructionOptions)
-        => this.GetRelevantComparer(collectionConstructionOptions, CustomComparerSupport);
+        => GetRelevantComparer(collectionConstructionOptions, CustomComparerSupport);
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]

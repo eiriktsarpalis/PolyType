@@ -42,6 +42,7 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
             _ => ConstructionWithComparer.None,
         };
     }
+
     protected static ComparerConstruction ToComparerConstruction(ConstructionWithComparer signature)
         => signature switch
         {
@@ -49,6 +50,14 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
             ConstructionWithComparer.EqualityComparer or ConstructionWithComparer.EqualityComparerValues or ConstructionWithComparer.ValuesEqualityComparer => ComparerConstruction.EqualityComparer,
             ConstructionWithComparer.None => ComparerConstruction.None,
             _ => throw new NotImplementedException(),
+        };
+
+    protected static object? GetRelevantComparer<TKey>(in CollectionConstructionOptions<TKey> collectionConstructionOptions, ComparerConstruction customComparerConstruction)
+        => customComparerConstruction switch
+        {
+            ComparerConstruction.Comparer => collectionConstructionOptions.Comparer,
+            ComparerConstruction.EqualityComparer => collectionConstructionOptions.EqualityComparer,
+            _ => null,
         };
 
     protected (ConstructionWithComparer, ConstructorInfo?) FindComparerConstructorOverload(ConstructorInfo? nonComparerOverload)
@@ -131,14 +140,6 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
         }
     }
 
-    protected object? GetRelevantComparer<TKey>(in CollectionConstructionOptions<TKey> collectionConstructionOptions, ComparerConstruction customComparerConstruction)
-        => customComparerConstruction switch
-        {
-            ComparerConstruction.Comparer => collectionConstructionOptions.Comparer,
-            ComparerConstruction.EqualityComparer => collectionConstructionOptions.EqualityComparer,
-            _ => null,
-        };
-
     protected ComparerConstruction ToComparerConstruction(ParameterInfo parameter) => ClassifyConstructorParameter(parameter) switch
     {
         CollectionConstructorParameterType.IComparerOfT => ComparerConstruction.Comparer,
@@ -150,9 +151,24 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
 
     protected enum CollectionConstructorParameterType
     {
+        /// <summary>
+        /// The parameter isn't a recognized type.
+        /// </summary>
         Unrecognized,
+
+        /// <summary>
+        /// The parameter serves as some type of collection.
+        /// </summary>
         CollectionOfT,
+
+        /// <summary>
+        /// The parameter is an <see cref="IEqualityComparer{T}"/>.
+        /// </summary>
         IEqualityComparerOfT,
+
+        /// <summary>
+        /// The parameter is an <see cref="IComparer{T}"/>.
+        /// </summary>
         IComparerOfT,
     }
 }
