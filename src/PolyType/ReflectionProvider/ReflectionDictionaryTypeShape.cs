@@ -158,7 +158,6 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         }
         else
         {
-            // TODO: what about F# support?
             switch (_constructionComparer)
             {
                 case ConstructionWithComparer.ValuesEqualityComparer:
