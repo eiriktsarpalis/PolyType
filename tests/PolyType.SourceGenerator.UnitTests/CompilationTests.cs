@@ -1310,4 +1310,24 @@ public static class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
+
+    [Fact]
+    public static void CollectionWithInternalConstructor()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System.Collections.Generic;
+            using PolyType;
+            
+            [GenerateShape]
+            public partial class ListOfIntWithInternalConstructor : List<int>
+            {
+                internal ListOfIntWithInternalConstructor()
+                {
+                }
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
 }

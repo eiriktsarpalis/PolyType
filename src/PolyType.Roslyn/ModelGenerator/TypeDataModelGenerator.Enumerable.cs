@@ -89,9 +89,8 @@ public partial class TypeDataModelGenerator
 
             // .ctor(IComparer<T>)
             if (factoryMethodWithComparer is null &&
-                namedType.Constructors.FirstOrDefault(ctor => ctor is { Parameters: [{ Type: INamedTypeSymbol { IsGenericType: true } parameterType }] } &&
-                (SymbolEqualityComparer.Default.Equals(parameterType.ConstructedFrom, KnownSymbols.IEqualityComparerOfT) || SymbolEqualityComparer.Default.Equals(parameterType.ConstructedFrom, KnownSymbols.IComparerOfT)) &&
-                IsAccessibleSymbol(ctor)) is { } ctor &&
+                namedType.Constructors.FirstOrDefault(ctor => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ Type: INamedTypeSymbol { IsGenericType: true } parameterType }] } &&
+                (SymbolEqualityComparer.Default.Equals(parameterType.ConstructedFrom, KnownSymbols.IEqualityComparerOfT) || SymbolEqualityComparer.Default.Equals(parameterType.ConstructedFrom, KnownSymbols.IComparerOfT))) is { } ctor &&
                 TryGetAddMethod(type, elementType, out addElementMethod))
             {
                 constructionStrategy = CollectionModelConstructionStrategy.Mutable;
@@ -100,8 +99,7 @@ public partial class TypeDataModelGenerator
 
             // .ctor(ReadOnlySpan<T>)
             if (factoryMethod is null &&
-                namedType.Constructors.FirstOrDefault(ctor => ctor is { Parameters: [{ Type: INamedTypeSymbol { IsGenericType: true } } parameter] } &&
-                IsAccessibleSymbol(ctor) &&
+                namedType.Constructors.FirstOrDefault(ctor => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ Type: INamedTypeSymbol { IsGenericType: true } } parameter] } &&
                 ClassifyConstructorParameter(parameter, elementType) == CollectionConstructorParameterType.Span) is IMethodSymbol ctor3)
             {
                 constructionStrategy = CollectionModelConstructionStrategy.Span;
@@ -109,12 +107,12 @@ public partial class TypeDataModelGenerator
 
                 // Look for a constructor that also takes a comparer.
                 // .ctor(ReadOnlySpan<T>, I[Equality]Comparer<T>) or .ctor(I[Equality]Comparer<T>, ReadOnlySpan<T>)
-                factoryMethodWithComparer = namedType.Constructors.FirstOrDefault(ctor => IsAccessibleSymbol(ctor) && ctor is { Parameters: [{ } first, { } second] } && IsAcceptableConstructorPair(first, second, elementType, CollectionConstructorParameterType.Span));
+                factoryMethodWithComparer = namedType.Constructors.FirstOrDefault(ctor => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ } first, { } second] } && IsAcceptableConstructorPair(first, second, elementType, CollectionConstructorParameterType.Span));
             }
 
             // .ctor()
             if (factoryMethod is null &&
-                namedType.Constructors.FirstOrDefault(ctor => ctor is { IsStatic: false, Parameters: [] } && IsAccessibleSymbol(ctor)) is { } ctor2 &&
+                namedType.Constructors.FirstOrDefault(ctor => ctor is { DeclaredAccessibility: Accessibility.Public, IsStatic: false, Parameters: [] }) is { } ctor2 &&
                 TryGetAddMethod(type, elementType, out addElementMethod))
             {
                 constructionStrategy = CollectionModelConstructionStrategy.Mutable;
@@ -124,8 +122,7 @@ public partial class TypeDataModelGenerator
             // .ctor(IEnumerable<T>)
             if (factoryMethod is null &&
                 namedType.Constructors.FirstOrDefault(ctor =>
-                IsAccessibleSymbol(ctor)
-                && ctor is { Parameters: [{ Type: INamedTypeSymbol { IsGenericType: true } } onlyParameter] } && ClassifyConstructorParameter(onlyParameter, elementType) == CollectionConstructorParameterType.List) is IMethodSymbol ctor4)
+                ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ Type: INamedTypeSymbol { IsGenericType: true } } onlyParameter] } && ClassifyConstructorParameter(onlyParameter, elementType) == CollectionConstructorParameterType.List) is IMethodSymbol ctor4)
             {
                 // Type exposes a constructor that accepts a subtype of List<T>
                 constructionStrategy = CollectionModelConstructionStrategy.List;
@@ -134,8 +131,7 @@ public partial class TypeDataModelGenerator
                 // Look for a constructor that also takes a comparer.
                 // .ctor(IEnumerable<T>, I[Equality]Comparer<T>) or .ctor(I[Equality]Comparer<T>, IEnumerable<T>)
                 factoryMethodWithComparer = namedType.Constructors.FirstOrDefault(ctor
-                    => IsAccessibleSymbol(ctor)
-                    && ctor is { Parameters: [{ } first, { } second] }
+                    => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ } first, { } second] }
                     && IsAcceptableConstructorPair(first, second, elementType, CollectionConstructorParameterType.List));
             }
 
@@ -154,7 +150,7 @@ public partial class TypeDataModelGenerator
                 {
                     // Handle IEnumerable<T>, ICollection<T>, IList<T>, IReadOnlyCollection<T> and IReadOnlyList<T> types using List<T>
                     constructionStrategy = CollectionModelConstructionStrategy.Mutable;
-                    factoryMethod = listOfT.Constructors.First(c => c.Parameters.IsEmpty);
+                    factoryMethod = listOfT.Constructors.First(c => c is { DeclaredAccessibility: Accessibility.Public, Parameters: [] });
                     // TODO: look for comparer
                     addElementMethod = listOfT.GetMembers("Add")
                         .OfType<IMethodSymbol>()
@@ -169,8 +165,8 @@ public partial class TypeDataModelGenerator
                     {
                         // Handle ISet<T> and IReadOnlySet<T> types using HashSet<T>
                         constructionStrategy = CollectionModelConstructionStrategy.Mutable;
-                        factoryMethod = hashSetOfT.Constructors.First(c => c.Parameters.IsEmpty);
-                        factoryMethodWithComparer = hashSetOfT.Constructors.First(c => c.Parameters is [{ Type.Name: "IEqualityComparer" }]);
+                        factoryMethod = hashSetOfT.Constructors.First(c => c is { DeclaredAccessibility: Accessibility.Public, Parameters: [] });
+                        factoryMethodWithComparer = hashSetOfT.Constructors.First(c => c is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ Type.Name: "IEqualityComparer" }] });
                         addElementMethod = hashSetOfT.GetMembers("Add")
                             .OfType<IMethodSymbol>()
                             .First(m =>
@@ -185,7 +181,7 @@ public partial class TypeDataModelGenerator
             elementType = KnownSymbols.Compilation.ObjectType;
             kind = EnumerableKind.IEnumerable;
 
-            if (namedType.Constructors.FirstOrDefault(ctor => ctor.Parameters.Length == 0 && !ctor.IsStatic && IsAccessibleSymbol(ctor)) is { } ctor &&
+            if (namedType.Constructors.FirstOrDefault(ctor => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [] } && !ctor.IsStatic) is { } ctor &&
                 TryGetAddMethod(type, elementType, out addElementMethod))
             {
                 constructionStrategy = CollectionModelConstructionStrategy.Mutable;
@@ -202,8 +198,8 @@ public partial class TypeDataModelGenerator
                 addElementMethod = listOfObject.GetMembers("Add")
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m =>
-                        m.Parameters.Length == 1 &&
-                        SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, elementType));
+                        m is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ Type: ITypeSymbol paramType }] } &&
+                        SymbolEqualityComparer.Default.Equals(paramType, elementType));
             }
         }
         else
@@ -240,9 +236,8 @@ public partial class TypeDataModelGenerator
             result = type.GetAllMembers()
                 .OfType<IMethodSymbol>()
                 .FirstOrDefault(method =>
-                    method is { IsStatic: false, Name: "Add" or "Enqueue" or "Push", Parameters: [{ Type: ITypeSymbol parameterType }] } &&
-                    SymbolEqualityComparer.Default.Equals(method.Parameters[0].Type, elementType) &&
-                    IsAccessibleSymbol(method));
+                    method is { DeclaredAccessibility: Accessibility.Public, IsStatic: false, Name: "Add" or "Enqueue" or "Push", Parameters: [{ Type: ITypeSymbol parameterType }] } &&
+                    SymbolEqualityComparer.Default.Equals(method.Parameters[0].Type, elementType));
 
             return result != null;
         }

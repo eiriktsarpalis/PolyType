@@ -48,7 +48,7 @@ public partial class TypeDataModelGenerator
         }
 
         // .ctor()
-        if (namedType.Constructors.FirstOrDefault(ctor => ctor is { Parameters: [], IsStatic: false } && IsAccessibleSymbol(ctor)) is { } ctor &&
+        if (namedType.Constructors.FirstOrDefault(ctor => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [], IsStatic: false }) is { } ctor &&
             ContainsSettableIndexer(type, keyType, valueType))
         {
             constructionStrategy = CollectionModelConstructionStrategy.Mutable;
@@ -56,16 +56,14 @@ public partial class TypeDataModelGenerator
 
             // .ctor(I[Equality]Comparer<TKey>)
             factoryMethodWithComparer = namedType.Constructors.FirstOrDefault(ctor
-                => ctor is { Parameters: [IParameterSymbol only] }
-                && IsAccessibleSymbol(ctor)
+                => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [IParameterSymbol only] }
                 && ClassifyConstructorParameter(only, keyType, valueType) is CollectionConstructorParameterType.Comparer or CollectionConstructorParameterType.EqualityComparer);
         }
 
         // .ctor(ReadOnlySpan<KeyValuePair<K, V>>)
         if (factoryMethod is null &&
             namedType.Constructors.FirstOrDefault(ctor
-                => IsAccessibleSymbol(ctor)
-                && ctor is { Parameters: [{ Type: { } parameterType }] }
+                => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ Type: { } parameterType }] }
                 && IsSpanOfKeyValuePair(parameterType, keyType, valueType)) is IMethodSymbol ctor2)
         {
             constructionStrategy = CollectionModelConstructionStrategy.Span;
@@ -73,15 +71,13 @@ public partial class TypeDataModelGenerator
 
             // .ctor(ReadOnlySpan<KeyValuePair<K, V>>, I[Equality]Comparer<T>) or .ctor(I[Equality]Comparer<T>, ReadOnlySpan<KeyValuePair<K, V>>)
             factoryMethodWithComparer = namedType.Constructors.FirstOrDefault(ctor
-                => IsAccessibleSymbol(ctor)
-                && ctor is { Parameters: [IParameterSymbol first, IParameterSymbol second] }
+                => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [IParameterSymbol first, IParameterSymbol second] }
                 && IsAcceptableConstructorPair(first, second, keyType, valueType, CollectionConstructorParameterType.Span));
         }
 
         if (factoryMethod is null && namedType.Constructors.FirstOrDefault(ctor =>
         {
-            if (IsAccessibleSymbol(ctor) &&
-                ctor.Parameters is [{ Type: INamedTypeSymbol { IsGenericType: true } parameterType }] &&
+            if (ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ Type: INamedTypeSymbol { IsGenericType: true } parameterType }] } &&
                 KnownSymbols.DictionaryOfTKeyTValue?.GetCompatibleGenericBaseType(parameterType.ConstructedFrom) != null)
             {
                 // Constructor accepts a single parameter that is Dictionary<,> or an interface that Dictionary<,> implements.
@@ -124,7 +120,7 @@ public partial class TypeDataModelGenerator
                 // Handle IDictionary<TKey, TValue> and IReadOnlyDictionary<TKey, TValue> using Dictionary<TKey, TValue>
                 INamedTypeSymbol dictOfTKeyTValue = KnownSymbols.DictionaryOfTKeyTValue!.Construct(keyType, valueType);
                 constructionStrategy = CollectionModelConstructionStrategy.Mutable;
-                factoryMethod = dictOfTKeyTValue.Constructors.FirstOrDefault(ctor => ctor.Parameters.IsEmpty);
+                factoryMethod = dictOfTKeyTValue.Constructors.FirstOrDefault(ctor => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [] });
                 // TODO: look for comparer
             }
             else if (SymbolEqualityComparer.Default.Equals(namedType, KnownSymbols.IDictionary))
@@ -132,7 +128,7 @@ public partial class TypeDataModelGenerator
                 // Handle IDictionary using Dictionary<object, object>
                 INamedTypeSymbol dictOfObject = KnownSymbols.DictionaryOfTKeyTValue!.Construct(keyType, valueType);
                 constructionStrategy = CollectionModelConstructionStrategy.Mutable;
-                factoryMethod = dictOfObject.Constructors.FirstOrDefault(ctor => ctor.Parameters.IsEmpty);
+                factoryMethod = dictOfObject.Constructors.FirstOrDefault(ctor => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [] });
                 // TODO: look for comparer
             }
         }
