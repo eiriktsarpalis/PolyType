@@ -12,6 +12,7 @@ namespace PolyType.ReflectionProvider;
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(ReflectionTypeShapeProvider provider) : ReflectionTypeShape<TEnumerable>(provider), IEnumerableTypeShape<TEnumerable, TElement>
 {
+    private readonly object _syncObject = new();
     private CollectionConstructionStrategy? _constructionStrategy;
     private ConstructionWithComparer? _constructionComparer;
     private ConstructorInfo? _defaultCtor;
@@ -23,6 +24,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
     private MethodBase? _spanCtorWithComparer;
     private ConstructorInfo? _listCtor;
     private ConstructorInfo? _listCtorWithComparer;
+    private bool _discoveryComplete;
 
     private Setter<TEnumerable, TElement>? _addDelegate;
     private Func<TEnumerable>? _defaultCtorDelegate;
@@ -33,11 +35,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
     {
         get
         {
-            if (_constructionComparer is null)
-            {
-                DetermineConstructionStrategy();
-            }
-
+            DetermineConstructionStrategy();
             return ToComparerConstruction(_constructionComparer.Value);
         }
     }
@@ -46,11 +44,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
     {
         get
         {
-            if (_constructionStrategy is null)
-            {
-                DetermineConstructionStrategy();
-            }
-
+            DetermineConstructionStrategy();
             return _constructionStrategy.Value;
         }
     }
@@ -193,11 +187,12 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                     return span => listCtorDelegate(CollectionHelpers.CreateList(span));
                 }
 
-                DebugExt.Assert(_spanCtor != null);
                 return _spanCtor switch
                 {
                     ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateSpanConstructorDelegate<TElement, TEnumerable>(ctorInfo),
-                    _ => ((MethodInfo)_spanCtor).CreateDelegate<SpanConstructor<TElement, TEnumerable>>(),
+                    MethodInfo methodInfo => methodInfo.CreateDelegate<SpanConstructor<TElement, TEnumerable>>(),
+                    null => throw new NotSupportedException("We have an unexpectedly null span constructor."),
+                    _ => throw new NotSupportedException(),
                 };
             }
         }
@@ -263,176 +258,197 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
     [MemberNotNull(nameof(_constructionComparer), nameof(_constructionStrategy))]
     private void DetermineConstructionStrategy()
     {
-        // TODO: verify that the type checks happen in the same order with the same policy as sourcegen.
-
-        if (typeof(TEnumerable).GetConstructor([]) is ConstructorInfo defaultCtor)
+        // There are many fields that are initialized by this method.
+        // We actually initialize them sometimes multiple times along the way.
+        // For thread-safety, we need to ensure that we do not recognize halfway initialized as fully initialized.
+        // _discoveryComplete should be sufficient, but the compiler wants to see that we initialized the two fields
+        // that we guarantee by attribute are initialized, so we check for null there too, though it's superfluous.
+        if (!_discoveryComplete || _constructionComparer is null || _constructionStrategy is null)
         {
-            foreach (MethodInfo methodInfo in typeof(TEnumerable).GetMethods(BindingFlags.Public | BindingFlags.Instance))
+            lock (_syncObject)
             {
-                if (methodInfo.Name is "Add" or "Enqueue" or "Push" &&
-                    methodInfo.GetParameters() is [ParameterInfo parameter] &&
-                    parameter.ParameterType == typeof(TElement))
+                if (!_discoveryComplete || _constructionComparer is null || _constructionStrategy is null)
                 {
-                    _defaultCtor = defaultCtor;
-                    _addMethod = methodInfo;
-                    (_constructionComparer, _defaultCtorWithComparer) = FindComparerConstructorOverload(defaultCtor);
-                    _constructionStrategy = CollectionConstructionStrategy.Mutable;
+                    Helper();
+                    _discoveryComplete = true;
+                }
+            }
+        }
+
+        [MemberNotNull(nameof(_constructionComparer), nameof(_constructionStrategy))]
+        void Helper()
+        {
+            // TODO: verify that the type checks happen in the same order with the same policy as sourcegen.
+
+            if (typeof(TEnumerable).GetConstructor([]) is ConstructorInfo defaultCtor)
+            {
+                foreach (MethodInfo methodInfo in typeof(TEnumerable).GetMethods(BindingFlags.Public | BindingFlags.Instance))
+                {
+                    if (methodInfo.Name is "Add" or "Enqueue" or "Push" &&
+                        methodInfo.GetParameters() is [ParameterInfo parameter] &&
+                        parameter.ParameterType == typeof(TElement))
+                    {
+                        _defaultCtor = defaultCtor;
+                        _addMethod = methodInfo;
+                        (_constructionComparer, _defaultCtorWithComparer) = FindComparerConstructorOverload(defaultCtor);
+                        _constructionStrategy = CollectionConstructionStrategy.Mutable;
+                        return;
+                    }
+                }
+            }
+
+            if (Provider.Options.UseReflectionEmit && typeof(TEnumerable).GetConstructor([typeof(ReadOnlySpan<TElement>)]) is ConstructorInfo spanCtor)
+            {
+                // Cannot invoke constructors with ROS parameters without Ref.Emit
+                _spanCtor = spanCtor;
+                _constructionStrategy = CollectionConstructionStrategy.Span;
+                (_constructionComparer, _spanCtorWithComparer) = FindComparerConstructorOverload(spanCtor);
+                return;
+            }
+
+            if (typeof(TEnumerable).GetConstructor([typeof(IEnumerable<TElement>)]) is ConstructorInfo enumerableCtor)
+            {
+                _enumerableCtor = enumerableCtor;
+                _constructionStrategy = CollectionConstructionStrategy.Enumerable;
+                (_constructionComparer, _enumerableCtorWithComparer) = FindComparerConstructorOverload(enumerableCtor);
+                return;
+            }
+
+            if (typeof(TEnumerable).GetConstructors()
+                .FirstOrDefault(ctor => ctor.GetParameters() is [{ ParameterType: { IsGenericType: true } paramTy }] && paramTy.IsAssignableFrom(typeof(List<TElement>)))
+                is ConstructorInfo listCtor)
+            {
+                // Handle types accepting IList<T> or IReadOnlyList<T> such as ReadOnlyCollection<T>
+                _listCtor = listCtor;
+                _constructionStrategy = CollectionConstructionStrategy.Span;
+                (_constructionComparer, _listCtorWithComparer) = FindComparerConstructorOverload(listCtor);
+                return;
+            }
+
+            if (typeof(TEnumerable).IsInterface)
+            {
+                if (typeof(TEnumerable).IsAssignableFrom(typeof(List<TElement>)))
+                {
+                    // Handle IEnumerable<T>, ICollection<T>, IList<T>, IReadOnlyCollection<T> and IReadOnlyList<T> types using List<T>
+                    MethodInfo? gm = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateList), BindingFlags.Public | BindingFlags.Static);
+                    _spanCtor = gm?.MakeGenericMethod(typeof(TElement));
+                    _constructionStrategy = _spanCtor != null ? CollectionConstructionStrategy.Span : CollectionConstructionStrategy.None;
+                    (_constructionComparer, _spanCtorWithComparer) = FindComparerConstructionOverload(_spanCtor);
+                    return;
+                }
+
+                if (typeof(TEnumerable).IsAssignableFrom(typeof(HashSet<TElement>)))
+                {
+                    // Handle ISet<T> and IReadOnlySet<T> types using HashSet<T>
+                    MethodInfo? gm = typeof(CollectionHelpers).GetMethods(BindingFlags.Public | BindingFlags.Static).First(m => m.Name == nameof(CollectionHelpers.CreateHashSet) && m.GetParameters().Length == 1);
+                    _spanCtor = gm?.MakeGenericMethod(typeof(TElement));
+                    _constructionStrategy = _spanCtor != null ? CollectionConstructionStrategy.Span : CollectionConstructionStrategy.None;
+                    (_constructionComparer, _spanCtorWithComparer) = FindComparerConstructionOverload(_spanCtor);
+                    return;
+                }
+
+                if (typeof(TEnumerable).IsAssignableFrom(typeof(IList)))
+                {
+                    // Handle IList, ICollection and IEnumerable interfaces using List<object?>
+                    MethodInfo? gm = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateList), BindingFlags.Public | BindingFlags.Static);
+                    _spanCtor = gm?.MakeGenericMethod(typeof(object));
+                    _constructionStrategy = _spanCtor != null ? CollectionConstructionStrategy.Span : CollectionConstructionStrategy.None;
+                    (_constructionComparer, _spanCtorWithComparer) = FindComparerConstructionOverload(_spanCtor);
                     return;
                 }
             }
-        }
 
-        if (Provider.Options.UseReflectionEmit && typeof(TEnumerable).GetConstructor([typeof(ReadOnlySpan<TElement>)]) is ConstructorInfo spanCtor)
-        {
-            // Cannot invoke constructors with ROS parameters without Ref.Emit
-            _spanCtor = spanCtor;
-            _constructionStrategy = CollectionConstructionStrategy.Span;
-            (_constructionComparer, _spanCtorWithComparer) = FindComparerConstructorOverload(spanCtor);
-            return;
-        }
-
-        if (typeof(TEnumerable).GetConstructor([typeof(IEnumerable<TElement>)]) is ConstructorInfo enumerableCtor)
-        {
-            _enumerableCtor = enumerableCtor;
-            _constructionStrategy = CollectionConstructionStrategy.Enumerable;
-            (_constructionComparer, _enumerableCtorWithComparer) = FindComparerConstructorOverload(enumerableCtor);
-            return;
-        }
-
-        if (typeof(TEnumerable).GetConstructors()
-            .FirstOrDefault(ctor => ctor.GetParameters() is [{ ParameterType: { IsGenericType: true } paramTy }] && paramTy.IsAssignableFrom(typeof(List<TElement>)))
-            is ConstructorInfo listCtor)
-        {
-            // Handle types accepting IList<T> or IReadOnlyList<T> such as ReadOnlyCollection<T>
-            _listCtor = listCtor;
-            _constructionStrategy = CollectionConstructionStrategy.Span;
-            (_constructionComparer, _listCtorWithComparer) = FindComparerConstructorOverload(listCtor);
-            return;
-        }
-
-        if (typeof(TEnumerable).IsInterface)
-        {
-            if (typeof(TEnumerable).IsAssignableFrom(typeof(List<TElement>)))
+            if (TryGetImmutableCollectionFactory())
             {
-                // Handle IEnumerable<T>, ICollection<T>, IList<T>, IReadOnlyCollection<T> and IReadOnlyList<T> types using List<T>
-                MethodInfo? gm = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateList), BindingFlags.Public | BindingFlags.Static);
-                _spanCtor = gm?.MakeGenericMethod(typeof(TElement));
-                _constructionStrategy = _spanCtor != null ? CollectionConstructionStrategy.Span : CollectionConstructionStrategy.None;
-                (_constructionComparer, _spanCtorWithComparer) = FindComparerConstructionOverload(_spanCtor);
                 return;
             }
 
-            if (typeof(TEnumerable).IsAssignableFrom(typeof(HashSet<TElement>)))
+            if (typeof(TEnumerable) is { Name: "FSharpList`1", Namespace: "Microsoft.FSharp.Collections" })
             {
-                // Handle ISet<T> and IReadOnlySet<T> types using HashSet<T>
-                MethodInfo? gm = typeof(CollectionHelpers).GetMethods(BindingFlags.Public | BindingFlags.Static).First(m => m.Name == nameof(CollectionHelpers.CreateHashSet) && m.GetParameters().Length == 1);
-                _spanCtor = gm?.MakeGenericMethod(typeof(TElement));
-                _constructionStrategy = _spanCtor != null ? CollectionConstructionStrategy.Span : CollectionConstructionStrategy.None;
-                (_constructionComparer, _spanCtorWithComparer) = FindComparerConstructionOverload(_spanCtor);
+                Type? module = typeof(TEnumerable).Assembly.GetType("Microsoft.FSharp.Collections.ListModule");
+                _enumerableCtor = module?.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                    .Where(m => m.Name is "OfSeq")
+                    .Where(m => m.GetParameters() is [ParameterInfo p] && p.ParameterType.IsIEnumerable())
+                    .Select(m => m.MakeGenericMethod(typeof(TElement)))
+                    .FirstOrDefault();
+
+                _constructionStrategy = _enumerableCtor != null ? CollectionConstructionStrategy.Enumerable : CollectionConstructionStrategy.None;
+                (_constructionComparer, _enumerableCtorWithComparer) = FindComparerConstructionOverload(_enumerableCtor);
                 return;
             }
 
-            if (typeof(TEnumerable).IsAssignableFrom(typeof(IList)))
+            // move this later in priority order so it doesn't skip comparer options when they exist.
+            if (typeof(TEnumerable).TryGetCollectionBuilderAttribute(typeof(TElement), out MethodInfo? builderMethod))
             {
-                // Handle IList, ICollection and IEnumerable interfaces using List<object?>
-                MethodInfo? gm = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateList), BindingFlags.Public | BindingFlags.Static);
-                _spanCtor = gm?.MakeGenericMethod(typeof(object));
-                _constructionStrategy = _spanCtor != null ? CollectionConstructionStrategy.Span : CollectionConstructionStrategy.None;
-                (_constructionComparer, _spanCtorWithComparer) = FindComparerConstructionOverload(_spanCtor);
+                _spanCtor = builderMethod;
+                _constructionStrategy = CollectionConstructionStrategy.Span;
+                _constructionComparer = ConstructionWithComparer.None;
                 return;
             }
-        }
 
-        if (TryGetImmutableCollectionFactory())
-        {
-            return;
-        }
-
-        if (typeof(TEnumerable) is { Name: "FSharpList`1", Namespace: "Microsoft.FSharp.Collections" })
-        {
-            Type? module = typeof(TEnumerable).Assembly.GetType("Microsoft.FSharp.Collections.ListModule");
-            _enumerableCtor = module?.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .Where(m => m.Name is "OfSeq")
-                .Where(m => m.GetParameters() is [ParameterInfo p] && p.ParameterType.IsIEnumerable())
-                .Select(m => m.MakeGenericMethod(typeof(TElement)))
-                .FirstOrDefault();
-
-            _constructionStrategy = _enumerableCtor != null ? CollectionConstructionStrategy.Enumerable : CollectionConstructionStrategy.None;
-            (_constructionComparer, _enumerableCtorWithComparer) = FindComparerConstructionOverload(_enumerableCtor);
-            return;
-        }
-
-        // move this later in priority order so it doesn't skip comparer options when they exist.
-        if (typeof(TEnumerable).TryGetCollectionBuilderAttribute(typeof(TElement), out MethodInfo? builderMethod))
-        {
-            _spanCtor = builderMethod;
-            _constructionStrategy = CollectionConstructionStrategy.Span;
+            _constructionStrategy = CollectionConstructionStrategy.None;
             _constructionComparer = ConstructionWithComparer.None;
-            return;
-        }
-
-        _constructionStrategy = CollectionConstructionStrategy.None;
-        _constructionComparer = ConstructionWithComparer.None;
-
-        [MemberNotNullWhen(true, nameof(_constructionStrategy), nameof(_constructionComparer))]
-        bool TryGetImmutableCollectionFactory()
-        {
-            if (typeof(TEnumerable) is { Name: "ImmutableArray`1", Namespace: "System.Collections.Immutable" })
-            {
-                return FindCreateRangeMethods("System.Collections.Immutable.ImmutableArray");
-            }
-
-            if (typeof(TEnumerable) is { Name: "ImmutableList`1", Namespace: "System.Collections.Immutable" })
-            {
-                return FindCreateRangeMethods("System.Collections.Immutable.ImmutableList");
-            }
-
-            if (typeof(TEnumerable) is { Name: "ImmutableQueue`1", Namespace: "System.Collections.Immutable" })
-            {
-                return FindCreateRangeMethods("System.Collections.Immutable.ImmutableQueue");
-            }
-
-            if (typeof(TEnumerable) is { Name: "ImmutableStack`1", Namespace: "System.Collections.Immutable" })
-            {
-                return FindCreateRangeMethods("System.Collections.Immutable.ImmutableStack");
-            }
-
-            if (typeof(TEnumerable) is { Name: "ImmutableHashSet`1", Namespace: "System.Collections.Immutable" })
-            {
-                return FindCreateRangeMethods("System.Collections.Immutable.ImmutableHashSet");
-            }
-
-            if (typeof(TEnumerable) is { Name: "ImmutableSortedSet`1", Namespace: "System.Collections.Immutable" })
-            {
-                return FindCreateRangeMethods("System.Collections.Immutable.ImmutableSortedSet");
-            }
-
-            return false;
 
             [MemberNotNullWhen(true, nameof(_constructionStrategy), nameof(_constructionComparer))]
-            bool FindCreateRangeMethods(string typeName, bool? equalityComparer = null)
+            bool TryGetImmutableCollectionFactory()
             {
-                Type? factoryType = typeof(TEnumerable).Assembly.GetType(typeName);
-
-                // First try for the Span-based factory methods.
-                _constructionStrategy = CollectionConstructionStrategy.Span;
-                _spanCtor = factoryType?.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                    .FirstOrDefault(m => m.Name is "Create" && m.GetParameters() is [{ ParameterType: { IsGenericType: true, Name: "ReadOnlySpan`1", Namespace: "System", GenericTypeArguments: [Type { IsGenericParameter: true }] } }])
-                    ?.MakeGenericMethod(typeof(TElement));
-                (_constructionComparer, _spanCtorWithComparer) = FindComparerConstructionOverload(_spanCtor);
-
-                if (_spanCtor is not null)
+                if (typeof(TEnumerable) is { Name: "ImmutableArray`1", Namespace: "System.Collections.Immutable" })
                 {
-                    return true;
+                    return FindCreateRangeMethods("System.Collections.Immutable.ImmutableArray");
                 }
 
-                _constructionStrategy = CollectionConstructionStrategy.Enumerable;
-                _enumerableCtor = factoryType?.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                    .FirstOrDefault(m => m.Name is "CreateRange" && m.GetParameters() is [ParameterInfo p] && p.ParameterType.IsIEnumerable())
-                    ?.MakeGenericMethod(typeof(TElement));
-                (_constructionComparer, _enumerableCtorWithComparer) = FindComparerConstructionOverload(_enumerableCtor);
+                if (typeof(TEnumerable) is { Name: "ImmutableList`1", Namespace: "System.Collections.Immutable" })
+                {
+                    return FindCreateRangeMethods("System.Collections.Immutable.ImmutableList");
+                }
 
-                return _enumerableCtor is not null;
+                if (typeof(TEnumerable) is { Name: "ImmutableQueue`1", Namespace: "System.Collections.Immutable" })
+                {
+                    return FindCreateRangeMethods("System.Collections.Immutable.ImmutableQueue");
+                }
+
+                if (typeof(TEnumerable) is { Name: "ImmutableStack`1", Namespace: "System.Collections.Immutable" })
+                {
+                    return FindCreateRangeMethods("System.Collections.Immutable.ImmutableStack");
+                }
+
+                if (typeof(TEnumerable) is { Name: "ImmutableHashSet`1", Namespace: "System.Collections.Immutable" })
+                {
+                    return FindCreateRangeMethods("System.Collections.Immutable.ImmutableHashSet");
+                }
+
+                if (typeof(TEnumerable) is { Name: "ImmutableSortedSet`1", Namespace: "System.Collections.Immutable" })
+                {
+                    return FindCreateRangeMethods("System.Collections.Immutable.ImmutableSortedSet");
+                }
+
+                return false;
+
+                [MemberNotNullWhen(true, nameof(_constructionStrategy), nameof(_constructionComparer))]
+                bool FindCreateRangeMethods(string typeName, bool? equalityComparer = null)
+                {
+                    Type? factoryType = typeof(TEnumerable).Assembly.GetType(typeName);
+
+                    // First try for the Span-based factory methods.
+                    _constructionStrategy = CollectionConstructionStrategy.Span;
+                    _spanCtor = factoryType?.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                        .FirstOrDefault(m => m.Name is "Create" && m.GetParameters() is [{ ParameterType: { IsGenericType: true, Name: "ReadOnlySpan`1", Namespace: "System", GenericTypeArguments: [Type { IsGenericParameter: true }] } }])
+                        ?.MakeGenericMethod(typeof(TElement));
+                    (_constructionComparer, _spanCtorWithComparer) = FindComparerConstructionOverload(_spanCtor);
+
+                    if (_spanCtor is not null)
+                    {
+                        return true;
+                    }
+
+                    _constructionStrategy = CollectionConstructionStrategy.Enumerable;
+                    _enumerableCtor = factoryType?.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                        .FirstOrDefault(m => m.Name is "CreateRange" && m.GetParameters() is [ParameterInfo p] && p.ParameterType.IsIEnumerable())
+                        ?.MakeGenericMethod(typeof(TElement));
+                    (_constructionComparer, _enumerableCtorWithComparer) = FindComparerConstructionOverload(_enumerableCtor);
+
+                    return _enumerableCtor is not null;
+                }
             }
         }
     }
