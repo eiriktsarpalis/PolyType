@@ -105,7 +105,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                     f.SetValue(boxedObj, value);
                     obj = (TDeclaringType)boxedObj;
                 }
-                : (ref TDeclaringType obj, TPropertyType value) => f.SetValueDirect(__makeref(obj), value!);
+            : (ref TDeclaringType obj, TPropertyType value) => f.SetValueDirect(__makeref(obj), value!);
         }
 
         Debug.Assert(typeof(TDeclaringType).IsNestedTupleRepresentation());
@@ -370,7 +370,34 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
     public Func<T, TResult> CreateFuncDelegate<T, TResult>(ConstructorInfo ctorInfo)
         => value => (TResult)ctorInfo.Invoke([value]);
 
+    public Func<T1, T2, TResult> CreateFuncDelegate<T1, T2, TResult>(ConstructorInfo ctorInfo)
+        => (arg1, arg2) => (TResult)ctorInfo.Invoke([arg1, arg2]);
+
     public SpanConstructor<T, TResult> CreateSpanConstructorDelegate<T, TResult>(ConstructorInfo ctorInfo)
+    {
+        Debug.Fail("Should not be called if not using Reflection.Emit");
+        throw new NotSupportedException();
+    }
+
+    public SpanConstructor<TElement, TResult> CreateSpanConstructorWithLeadingECDelegate<TElement, TKey, TResult>(ConstructorInfo ctorInfo, IEqualityComparer<TKey> comparer)
+    {
+        Debug.Fail("Should not be called if not using Reflection.Emit");
+        throw new NotSupportedException();
+    }
+
+    public SpanConstructor<TElement, TResult> CreateSpanConstructorWithTrailingECDelegate<TElement, TKey, TResult>(ConstructorInfo ctorInfo, IEqualityComparer<TKey> comparer)
+    {
+        Debug.Fail("Should not be called if not using Reflection.Emit");
+        throw new NotSupportedException();
+    }
+
+    public SpanConstructor<TElement, TResult> CreateSpanConstructorWithLeadingCDelegate<TElement, TKey, TResult>(ConstructorInfo ctorInfo, IComparer<TKey> comparer)
+    {
+        Debug.Fail("Should not be called if not using Reflection.Emit");
+        throw new NotSupportedException();
+    }
+
+    public SpanConstructor<TElement, TResult> CreateSpanConstructorWithTrailingCDelegate<TElement, TKey, TResult>(ConstructorInfo ctorInfo, IComparer<TKey> comparer)
     {
         Debug.Fail("Should not be called if not using Reflection.Emit");
         throw new NotSupportedException();

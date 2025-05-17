@@ -314,6 +314,14 @@ public partial class TypeDataModelGenerator
           type.SpecialType is not SpecialType.System_Void && !type.ContainsGenericParameters();
     }
 
+    private static bool IsAcceptableConstructorPair(CollectionConstructorParameterType first, CollectionConstructorParameterType second, CollectionConstructorParameterType collectionType)
+    {
+        // Exactly one of the parameters must be a collection type.
+        // Exactly one of the parameters must be either comparer type.
+        return (first == collectionType ^ second == collectionType)
+            && (first is CollectionConstructorParameterType.Comparer or CollectionConstructorParameterType.EqualityComparer ^ second is CollectionConstructorParameterType.Comparer or CollectionConstructorParameterType.EqualityComparer);
+    }
+
     private ImmutableArray<DerivedTypeModel> IncludeDerivedTypes(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements requirements)
     {
         // 1. Resolve the shapes for all derived types.
@@ -356,5 +364,14 @@ public partial class TypeDataModelGenerator
 
             return derivedTypes;
         }
+    }
+
+    private enum CollectionConstructorParameterType
+    {
+        None,
+        List,
+        Span,
+        Comparer,
+        EqualityComparer,
     }
 }
