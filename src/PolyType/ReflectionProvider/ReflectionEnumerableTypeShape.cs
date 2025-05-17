@@ -32,6 +32,8 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
     private SpanConstructor<TElement, TEnumerable>? _spanCtorDelegate;
     private Func<List<TElement>, IEqualityComparer<TElement>, TEnumerable>? _listCtorEqualityComparerDelegate;
     private Func<List<TElement>, IComparer<TElement>, TEnumerable>? _listCtorComparerDelegate;
+    private Func<IEqualityComparer<TElement>, TEnumerable>? _defaultCtorWithEqualityComparerDelegate;
+    private Func<IComparer<TElement>, TEnumerable>? _defaultCtorWithComparerDelegate;
 
     public virtual ComparerConstruction CustomComparerSupport
     {
@@ -93,9 +95,17 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
         }
         else
         {
-            // TODO: Use Ref.Emit when appropriate.
-            object?[] args = [relevantComparer];
-            return () => (TEnumerable)_defaultCtorWithComparer.Invoke(args);
+            switch (relevantComparer)
+            {
+                case IEqualityComparer<TElement> ec:
+                    _defaultCtorWithEqualityComparerDelegate ??= Provider.MemberAccessor.CreateFuncDelegate<IEqualityComparer<TElement>, TEnumerable>(_defaultCtorWithComparer);
+                    return () => _defaultCtorWithEqualityComparerDelegate(ec);
+                case IComparer<TElement> c:
+                    _defaultCtorWithComparerDelegate ??= Provider.MemberAccessor.CreateFuncDelegate<IComparer<TElement>, TEnumerable>(_defaultCtorWithComparer);
+                    return () => _defaultCtorWithComparerDelegate(c);
+                default:
+                    throw new NotSupportedException();
+            }
         }
     }
 
