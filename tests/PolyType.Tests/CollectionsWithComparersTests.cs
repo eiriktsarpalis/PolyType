@@ -186,7 +186,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     private T CreateSpanDictionary<T, K, V>(ReadOnlySpan<KeyValuePair<K, V>> values, IComparer<K>? comparer)
         where K : notnull
     {
-        Assert.SkipWhen(providerUnderTest is RefectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span dictionaries.");
+        Assert.SkipWhen(providerUnderTest is ReflectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span dictionaries.");
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
         Assert.Equal(ComparerConstruction.Comparer, shape.CustomComparerSupport);
         return shape.GetSpanConstructor(new() { Comparer = comparer })(values);
@@ -195,7 +195,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     private T CreateSpanDictionary<T, K, V>(ReadOnlySpan<KeyValuePair<K, V>> values, IEqualityComparer<K>? equalityComparer)
         where K : notnull
     {
-        Assert.SkipWhen(providerUnderTest is RefectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span dictionaries.");
+        Assert.SkipWhen(providerUnderTest is ReflectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span dictionaries.");
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
         Assert.Equal(ComparerConstruction.EqualityComparer, shape.CustomComparerSupport);
         return shape.GetSpanConstructor(new() { EqualityComparer = equalityComparer })(values);
@@ -464,7 +464,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
-    public sealed class Reflection() : CollectionsWithComparersTests(RefectionProviderUnderTest.NoEmit);
-    public sealed class ReflectionEmit() : CollectionsWithComparersTests(RefectionProviderUnderTest.Emit);
+    public sealed class Reflection() : CollectionsWithComparersTests(ReflectionProviderUnderTest.NoEmit);
+    public sealed class ReflectionEmit() : CollectionsWithComparersTests(ReflectionProviderUnderTest.Emit);
     public sealed class SourceGen() : CollectionsWithComparersTests(new SourceGenProviderUnderTest(Witness.ShapeProvider));
 }
