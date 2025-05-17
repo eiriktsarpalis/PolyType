@@ -105,7 +105,6 @@ public partial class TypeDataModelGenerator
         {
             constructionStrategy = CollectionModelConstructionStrategy.Dictionary;
             factoryMethod = ctor3;
-            // TODO: look for comparer
         }
 
         if (factoryMethod is null && GetImmutableDictionaryFactory(namedType) is (not null, _, _) factories)
@@ -121,7 +120,6 @@ public partial class TypeDataModelGenerator
                 INamedTypeSymbol dictOfTKeyTValue = KnownSymbols.DictionaryOfTKeyTValue!.Construct(keyType, valueType);
                 constructionStrategy = CollectionModelConstructionStrategy.Mutable;
                 factoryMethod = dictOfTKeyTValue.Constructors.FirstOrDefault(ctor => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [] });
-                // TODO: look for comparer
             }
             else if (SymbolEqualityComparer.Default.Equals(namedType, KnownSymbols.IDictionary))
             {
@@ -129,7 +127,6 @@ public partial class TypeDataModelGenerator
                 INamedTypeSymbol dictOfObject = KnownSymbols.DictionaryOfTKeyTValue!.Construct(keyType, valueType);
                 constructionStrategy = CollectionModelConstructionStrategy.Mutable;
                 factoryMethod = dictOfObject.Constructors.FirstOrDefault(ctor => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [] });
-                // TODO: look for comparer
             }
         }
 

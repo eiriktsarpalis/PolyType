@@ -151,7 +151,6 @@ public partial class TypeDataModelGenerator
                     // Handle IEnumerable<T>, ICollection<T>, IList<T>, IReadOnlyCollection<T> and IReadOnlyList<T> types using List<T>
                     constructionStrategy = CollectionModelConstructionStrategy.Mutable;
                     factoryMethod = listOfT.Constructors.First(c => c is { DeclaredAccessibility: Accessibility.Public, Parameters: [] });
-                    // TODO: look for comparer
                     addElementMethod = listOfT.GetMembers("Add")
                         .OfType<IMethodSymbol>()
                         .First(m =>
@@ -186,7 +185,6 @@ public partial class TypeDataModelGenerator
             {
                 constructionStrategy = CollectionModelConstructionStrategy.Mutable;
                 factoryMethod = ctor;
-                // TODO: look for comparer
             }
             else if (type.IsAssignableFrom(KnownSymbols.IList))
             {
@@ -194,7 +192,6 @@ public partial class TypeDataModelGenerator
                 INamedTypeSymbol listOfObject = KnownSymbols.ListOfT!.Construct(elementType);
                 constructionStrategy = CollectionModelConstructionStrategy.Mutable;
                 factoryMethod = listOfObject.Constructors.First(c => c.Parameters.IsEmpty);
-                // TODO: look for comparer
                 addElementMethod = listOfObject.GetMembers("Add")
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m =>
