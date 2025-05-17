@@ -13,8 +13,6 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     private static readonly KeyValuePair<int, bool>[] NonEmptyDictionary = [new KeyValuePair<int, bool>(3, true)];
     private static readonly int[] NonEmptyEnumerable = [3, 6];
 
-    // TODO: sourcegen seems to work with internal collection constructors while reflection providers require public constructors. We should reconcile that difference.
-
     [Fact]
     public void Dictionary() => this.AssertDefaultDictionary<Dictionary<int, bool>, int, bool>(new EvenOddEqualityComparer(), d => d.Comparer);
 
