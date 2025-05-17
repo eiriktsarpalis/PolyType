@@ -79,7 +79,6 @@ public partial class TypeDataModelGenerator
             // an EqualityComparer<T> may only be available via the 'mutable' APIs.
             // Since we can only define one construction strategy, the 'mutable' strategy would win in that case.
 
-
             // Immutable collections' various factory methods.
             // Must be run before mutable collection checks since ImmutableArray
             // also has a default constructor and an Add method.

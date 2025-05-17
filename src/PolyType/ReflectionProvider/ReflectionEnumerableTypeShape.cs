@@ -289,7 +289,10 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
         [MemberNotNull(nameof(_constructionComparer), nameof(_constructionStrategy))]
         void Helper()
         {
-            // TODO: verify that the type checks happen in the same order with the same policy as sourcegen.
+            if (TryGetImmutableCollectionFactory())
+            {
+                return;
+            }
 
             if (typeof(TEnumerable).GetConstructor([]) is ConstructorInfo defaultCtor)
             {
@@ -367,11 +370,6 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                     (_constructionComparer, _spanCtorWithComparer) = FindComparerConstructionOverload(_spanCtor);
                     return;
                 }
-            }
-
-            if (TryGetImmutableCollectionFactory())
-            {
-                return;
             }
 
             if (typeof(TEnumerable) is { Name: "FSharpList`1", Namespace: "Microsoft.FSharp.Collections" })
