@@ -89,7 +89,16 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
         object? relevantComparer = GetRelevantComparer(collectionConstructionOptions);
         if (relevantComparer is null || _defaultCtorWithComparer is null)
         {
-            return _defaultCtorDelegate ??= CreateDefaultConstructor();
+            if (_defaultCtorDelegate is { } defaultCtorDelegate)
+            {
+                return defaultCtorDelegate;
+            }
+
+            lock (_syncObject)
+            {
+                return _defaultCtorDelegate ??= CreateDefaultConstructor();
+            }
+
             Func<TEnumerable> CreateDefaultConstructor()
             {
                 Debug.Assert(_defaultCtor != null);
@@ -125,7 +134,16 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
         if (relevantComparer is null || _enumerableCtorWithComparer is null)
         {
             DebugExt.Assert(_enumerableCtor != null);
-            return _enumerableCtorDelegate ??= CreateEnumerableConstructor();
+            if (_enumerableCtorDelegate is { } enumerableCtorDelegate)
+            {
+                return enumerableCtorDelegate;
+            }
+
+            lock (_syncObject)
+            {
+                return _enumerableCtorDelegate ??= CreateEnumerableConstructor();
+            }
+
             Func<IEnumerable<TElement>, TEnumerable> CreateEnumerableConstructor()
             {
                 return _enumerableCtor switch
@@ -193,7 +211,16 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
         object? relevantComparer = GetRelevantComparer(collectionConstructionOptions);
         if (relevantComparer is null || (_spanCtorWithComparer is null && _listCtorWithComparer is null))
         {
-            return _spanCtorDelegate ??= CreateSpanConstructor();
+            if (_spanCtorDelegate is { } spanCtorDelegate)
+            {
+                return spanCtorDelegate;
+            }
+
+            lock (_syncObject)
+            {
+                return _spanCtorDelegate ??= CreateSpanConstructor();
+            }
+
             SpanConstructor<TElement, TEnumerable> CreateSpanConstructor()
             {
                 if (_listCtor is ConstructorInfo listCtor)
