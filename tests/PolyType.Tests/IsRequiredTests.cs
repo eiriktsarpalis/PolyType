@@ -220,7 +220,7 @@ public abstract partial class IsRequiredTests(ProviderUnderTest providerUnderTes
     [GenerateShape<HasRequiredProperty>]
     internal partial class Witness;
 
-    public sealed class Reflection() : IsRequiredTests(RefectionProviderUnderTest.NoEmit);
-    public sealed class ReflectionEmit() : IsRequiredTests(RefectionProviderUnderTest.Emit);
+    public sealed class Reflection() : IsRequiredTests(ReflectionProviderUnderTest.NoEmit);
+    public sealed class ReflectionEmit() : IsRequiredTests(ReflectionProviderUnderTest.Emit);
     public sealed class SourceGen() : IsRequiredTests(new SourceGenProviderUnderTest(Witness.ShapeProvider));
 }

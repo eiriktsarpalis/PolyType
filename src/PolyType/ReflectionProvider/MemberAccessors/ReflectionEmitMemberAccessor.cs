@@ -929,6 +929,14 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                 generator.Emit(OpCodes.Newobj, ctor);
                 break;
 
+            case ValueType when value.Equals(ReflectionHelpers.GetDefaultValue(type)):
+                // Struct argument set to `default` value
+                LocalBuilder localStruct = generator.DeclareLocal(type);
+                generator.Emit(OpCodes.Ldloca_S, localStruct.LocalIndex);
+                generator.Emit(OpCodes.Initobj, type);
+                generator.Emit(OpCodes.Ldloc, localStruct.LocalIndex);
+                break;
+
             default:
                 throw new NotImplementedException($"Default parameter support for {value.GetType()}");
         }

@@ -786,8 +786,8 @@ public static class ReflectionExtensions
     }
 }
 
-public sealed class TypeShapeProviderTests_Reflection() : TypeShapeProviderTests(RefectionProviderUnderTest.NoEmit);
-public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderTests(RefectionProviderUnderTest.Emit)
+public sealed class TypeShapeProviderTests_Reflection() : TypeShapeProviderTests(ReflectionProviderUnderTest.NoEmit);
+public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderTests(ReflectionProviderUnderTest.Emit)
 {
     [Fact]
     public void ReflectionTypeShapeProvider_Default_UsesReflectionEmit()

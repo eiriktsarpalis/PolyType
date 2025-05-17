@@ -49,12 +49,12 @@ public sealed class SourceGenProviderUnderTest(SourceGenTypeShapeProvider source
     public override ITypeShape ResolveShape(ITestCase testCase) => testCase.DefaultShape;
 }
 
-public sealed class RefectionProviderUnderTest(ReflectionTypeShapeProviderOptions options) : ProviderUnderTest
+public sealed class ReflectionProviderUnderTest(ReflectionTypeShapeProviderOptions options) : ProviderUnderTest
 {
     private static readonly ImmutableArray<Assembly> TypeShapeExtensionAssemblies = ImmutableArray.Create(typeof(TestCase).Assembly);
 
-    public static RefectionProviderUnderTest Emit { get; } = new(new() { UseReflectionEmit = true, TypeShapeExtensionAssemblies = TypeShapeExtensionAssemblies });
-    public static RefectionProviderUnderTest NoEmit { get; } = new(new() { UseReflectionEmit = false, TypeShapeExtensionAssemblies = TypeShapeExtensionAssemblies });
+    public static ReflectionProviderUnderTest Emit { get; } = new(new() { UseReflectionEmit = true, TypeShapeExtensionAssemblies = TypeShapeExtensionAssemblies });
+    public static ReflectionProviderUnderTest NoEmit { get; } = new(new() { UseReflectionEmit = false, TypeShapeExtensionAssemblies = TypeShapeExtensionAssemblies });
 
     public override ITypeShapeProvider Provider { get; } = ReflectionTypeShapeProvider.Create(options);
     public override ProviderKind Kind => options.UseReflectionEmit ? ProviderKind.ReflectionEmit : ProviderKind.ReflectionNoEmit;
