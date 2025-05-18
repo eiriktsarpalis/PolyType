@@ -137,6 +137,7 @@ public static class TestTypes
         yield return TestCase.Create((HashSet<string>)["apple", "orange", "banana"], p);
         yield return TestCase.Create((SortedSet<string>)["apple", "orange", "banana"], p);
         yield return TestCase.Create(new SortedDictionary<string, int> { ["key1"] = 42, ["key2"] = -1 }, provider: p);
+        yield return TestCase.Create(new SortedList<int, string> { [42] = "forty-two", [32] = "thirty-two" }, provider: p);
 
         yield return TestCase.Create(new Hashtable { ["key1"] = 42 }, additionalValues: [[]], provider: p);
         yield return TestCase.Create(new ArrayList { 1, 2, 3 }, additionalValues: [[]], provider: p);
@@ -2414,6 +2415,7 @@ public partial class AsyncEnumerableClass(IEnumerable<int> values) : IAsyncEnume
 [GenerateShape<Dictionary<string, SimpleRecord>>]
 [GenerateShape<SortedSet<string>>]
 [GenerateShape<SortedDictionary<string, int>>]
+[GenerateShape<SortedList<int, string>>]
 [GenerateShape<ConcurrentStack<int>>]
 [GenerateShape<ConcurrentQueue<int>>]
 [GenerateShape<ConcurrentDictionary<string, string>>]
