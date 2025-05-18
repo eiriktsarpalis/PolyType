@@ -16,15 +16,13 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
     private Constructor<TArgumentState, TDeclaringType>? _parameterizedConstructor;
     private Func<TDeclaringType>? _defaultConstructor;
 
-    public IObjectTypeShape<TDeclaringType> DeclaringType { get; } = declaringType;
-    public ICustomAttributeProvider? AttributeProvider => ctorInfo.AttributeProvider;
-    public bool IsPublic => ctorInfo.IsPublic;
-    IObjectTypeShape IConstructorShape.DeclaringType => DeclaringType;
-    object? IConstructorShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitConstructor(this, state);
+    public override IObjectTypeShape<TDeclaringType> DeclaringType => declaringType;
+    public override ICustomAttributeProvider? AttributeProvider => ctorInfo.AttributeProvider;
+    public override bool IsPublic => ctorInfo.IsPublic;
 
-    public IReadOnlyList<IParameterShape> Parameters => _parameters ??= GetParameters().AsReadOnlyList();
+    public override IReadOnlyList<IParameterShape> Parameters => _parameters ??= GetParameters().AsReadOnlyList();
 
-    public Func<TArgumentState> GetArgumentStateConstructor()
+    public override Func<TArgumentState> GetArgumentStateConstructor()
     {
         if (Parameters is [])
         {
@@ -35,7 +33,7 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
         return _argumentStateConstructor ??= provider.MemberAccessor.CreateConstructorArgumentStateCtor<TArgumentState>(ctorInfo);
     }
 
-    public Constructor<TArgumentState, TDeclaringType> GetParameterizedConstructor()
+    public override Constructor<TArgumentState, TDeclaringType> GetParameterizedConstructor()
     {
         if (Parameters is [])
         {
@@ -46,7 +44,7 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
         return _parameterizedConstructor ??= provider.MemberAccessor.CreateParameterizedConstructor<TArgumentState, TDeclaringType>(ctorInfo);
     }
 
-    public Func<TDeclaringType> GetDefaultConstructor()
+    public override Func<TDeclaringType> GetDefaultConstructor()
     {
         if (Parameters is not [])
         {

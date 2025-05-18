@@ -10,15 +10,23 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TArgumentState">The mutable argument state for the constructor.</typeparam>
 public sealed class SourceGenConstructorShape<TDeclaringType, TArgumentState> : IConstructorShape<TDeclaringType, TArgumentState>
 {
-    /// <summary>
-    /// Gets a value indicating whether the constructor is public.
-    /// </summary>
-    public required bool IsPublic { get; init; }
+    private IReadOnlyList<IParameterShape>? _parameters;
+
+    /// <inheritdoc />
+    public override bool IsPublic => IsPublicSetter;
 
     /// <summary>
-    /// Gets the shape of the declaring type.
+    /// Sets a value indicating whether the constructor is public.
     /// </summary>
-    public required IObjectTypeShape<TDeclaringType> DeclaringType { get; init; }
+    public required bool IsPublicSetter { private get; init; }
+
+    /// <inheritdoc />
+    public override IObjectTypeShape<TDeclaringType> DeclaringType => DeclaringTypeSetter;
+
+    /// <summary>
+    /// Sets the shape of the declaring type.
+    /// </summary>
+    public required IObjectTypeShape<TDeclaringType> DeclaringTypeSetter { private get; init; }
 
     /// <summary>
     /// Gets the number of parameters the constructor takes.
@@ -50,19 +58,21 @@ public sealed class SourceGenConstructorShape<TDeclaringType, TArgumentState> : 
     /// </summary>
     public Constructor<TArgumentState, TDeclaringType>? ParameterizedConstructorFunc { get; init; }
 
-    IReadOnlyList<IParameterShape> IConstructorShape.Parameters => _parameters ??= (GetParametersFunc?.Invoke()).AsReadOnlyList();
-    private IReadOnlyList<IParameterShape>? _parameters;
+    /// <inheritdoc />
+    public override IReadOnlyList<IParameterShape> Parameters => _parameters ??= (GetParametersFunc?.Invoke()).AsReadOnlyList();
 
-    Func<TDeclaringType> IConstructorShape<TDeclaringType, TArgumentState>.GetDefaultConstructor()
+    /// <inheritdoc />
+    public override Func<TDeclaringType> GetDefaultConstructor()
         => DefaultConstructorFunc ?? throw new InvalidOperationException("Constructor shape does not specify a default constructor.");
 
-    Func<TArgumentState> IConstructorShape<TDeclaringType, TArgumentState>.GetArgumentStateConstructor()
-        => ArgumentStateConstructorFunc ?? throw new InvalidOperationException("Constructor shape does not specify a parameterized constructor.");
+    /// <inheritdoc />
+    public override Func<TArgumentState> GetArgumentStateConstructor()
+         => ArgumentStateConstructorFunc ?? throw new InvalidOperationException("Constructor shape does not specify a parameterized constructor.");
 
-    Constructor<TArgumentState, TDeclaringType> IConstructorShape<TDeclaringType, TArgumentState>.GetParameterizedConstructor()
+    /// <inheritdoc />
+    public override Constructor<TArgumentState, TDeclaringType> GetParameterizedConstructor()
         => ParameterizedConstructorFunc ?? throw new InvalidOperationException("Constructor shape does not specify a parameterized constructor.");
 
-    object? IConstructorShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitConstructor(this, state);
-    ICustomAttributeProvider? IConstructorShape.AttributeProvider => AttributeProviderFunc?.Invoke();
-    IObjectTypeShape IConstructorShape.DeclaringType => DeclaringType;
+    /// <inheritdoc />
+    public override ICustomAttributeProvider? AttributeProvider => AttributeProviderFunc?.Invoke();
 }

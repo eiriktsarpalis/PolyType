@@ -23,14 +23,14 @@ internal sealed partial class SourceFormatter
         writer.WriteLine($$"""
             return new global::PolyType.SourceGenModel.SourceGenConstructorShape<{{type.Type.FullyQualifiedName}}, {{constructorArgumentStateFQN}}>
             {
-                DeclaringType = (global::PolyType.Abstractions.IObjectTypeShape<{{type.Type.FullyQualifiedName}}>){{type.SourceIdentifier}},
+                DeclaringTypeSetter = (global::PolyType.Abstractions.IObjectTypeShape<{{type.Type.FullyQualifiedName}}>){{type.SourceIdentifier}},
                 ParameterCount = {{constructor.TotalArity}},
                 GetParametersFunc = {{FormatNull(constructorParameterFactoryName)}},
                 DefaultConstructorFunc = {{FormatDefaultCtor(type, constructor)}},
                 ArgumentStateConstructorFunc = {{FormatArgumentStateCtor(constructor, constructorArgumentStateFQN)}},
                 ParameterizedConstructorFunc = {{FormatParameterizedCtor(type, constructor, constructorArgumentStateFQN)}},
                 AttributeProviderFunc = {{FormatAttributeProviderFunc(type, constructor)}},
-                IsPublic = {{FormatBool(constructor.IsPublic)}},
+                IsPublicSetter = {{FormatBool(constructor.IsPublic)}},
             };
             """, trimNullAssignmentLines: true);
 
