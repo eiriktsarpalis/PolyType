@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
+using System.Dynamic;
 using System.Globalization;
 using System.Numerics;
 using System.Reflection;
@@ -602,6 +603,11 @@ public static class TestTypes
         yield return TestCase.Create(FSharpSingleCaseStructUnion.NewCase(42), isUnion: true, provider: p);
         yield return TestCase.Create(GenericFSharpStructUnion<string>.NewA("str"), additionalValues: [GenericFSharpStructUnion<string>.B, GenericFSharpStructUnion<string>.NewC(42)], isUnion: true, provider: p);
         yield return TestCase.Create(FSharpExpr.True, additionalValues: [FSharpExpr.False, FSharpExpr.Y], isUnion: true, provider: p);
+
+        ExpandoObject expando = new();
+        IDictionary<string, object?> expandoDict = expando;
+        expandoDict["hi"] = 3;
+        yield return TestCase.Create(expando, p);
     }
 }
 
@@ -2060,7 +2066,7 @@ public partial class TypeWithRecordSurrogate(int value1, string value2)
 }
 
 [TypeShape(Marshaller = typeof(EnumMarshaller))]
-public enum EnumWithRecordSurrogate { A, B, C  }
+public enum EnumWithRecordSurrogate { A, B, C }
 public record EnumSurrogate(int Value);
 public sealed class EnumMarshaller : IMarshaller<EnumWithRecordSurrogate, EnumSurrogate>
 {
@@ -2553,4 +2559,5 @@ public partial class AsyncEnumerableClass(IEnumerable<int> values) : IAsyncEnume
 [GenerateShape<GenericFSharpStructUnion<string>>]
 [GenerateShape<FSharpResult<string, int>>]
 [GenerateShape<FSharpExpr>]
+[GenerateShape<ExpandoObject>]
 public partial class Witness;

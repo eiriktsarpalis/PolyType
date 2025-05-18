@@ -77,6 +77,8 @@ public static class CompilationHelpers
             MetadataReference.CreateFromFile(GetAssemblyFromSharedFrameworkDirectory(IsMonoRuntime ? "Facades/netstandard.dll" : "netstandard.dll")),
             MetadataReference.CreateFromFile(typeof(System.Linq.Enumerable).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.Collections.Immutable.ImmutableArray).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(System.Dynamic.ExpandoObject).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(System.ComponentModel.INotifyPropertyChanged).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(Microsoft.FSharp.Core.Unit).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.Drawing.Point).Assembly.Location),
 #if NET

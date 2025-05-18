@@ -491,6 +491,20 @@ public static class CompilationTests
     }
 
     [Fact]
+    public static void ExpandoObject()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [GenerateShape<System.Dynamic.ExpandoObject>]
+            partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
     public static void IsRequiredProperty()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
