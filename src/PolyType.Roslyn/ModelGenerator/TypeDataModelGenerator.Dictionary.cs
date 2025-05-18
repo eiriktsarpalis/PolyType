@@ -105,6 +105,8 @@ public partial class TypeDataModelGenerator
         {
             constructionStrategy = CollectionModelConstructionStrategy.Dictionary;
             factoryMethod = ctor3;
+            factoryMethodWithComparer = namedType.Constructors.FirstOrDefault(ctor =>
+                ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ } first, { } second] } && IsAcceptableConstructorPair(first, second, keyType, valueType, CollectionConstructorParameterType.List));
         }
 
         if (factoryMethod is null && GetImmutableDictionaryFactory(namedType) is (not null, _, _) factories)
@@ -210,6 +212,7 @@ public partial class TypeDataModelGenerator
 
     private CollectionConstructorParameterType ClassifyConstructorParameter(IParameterSymbol parameter, ITypeSymbol keyType, ITypeSymbol valueType)
     {
+        // ReadOnlySpan<KeyValuePair<TKey, TValue>>
         if (parameter is { Type: INamedTypeSymbol { IsGenericType: true } parameterType }
             && IsSpanOfKeyValuePair(parameterType, keyType, valueType))
         {
@@ -224,6 +227,17 @@ public partial class TypeDataModelGenerator
             }
         }
 
+        // IEnumerable<KeyValuePair<TKey, TValue>>
+        if (parameter is { Type: INamedTypeSymbol { TypeArguments: [INamedTypeSymbol { TypeArguments: [{ } first, { } second] } kvp] } namedType } &&
+            SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.IEnumerableOfT) &&
+            SymbolEqualityComparer.Default.Equals(kvp.ConstructedFrom, KnownSymbols.KeyValuePairOfKV) &&
+            SymbolEqualityComparer.Default.Equals(first, keyType) &&
+            SymbolEqualityComparer.Default.Equals(second, valueType))
+        {
+            return CollectionConstructorParameterType.List;
+        }
+
+        // I[Equality]Comparer<T>
         if (parameter is { Type: INamedTypeSymbol { IsGenericType: true, Name: "IComparer" or "IEqualityComparer", ConstructedFrom: { } typeDefinition, TypeArguments: [{ } typeArg] } }
             && (SymbolEqualityComparer.Default.Equals(typeDefinition, KnownSymbols.IEqualityComparerOfT) || SymbolEqualityComparer.Default.Equals(typeDefinition, KnownSymbols.IComparerOfT))
             && SymbolEqualityComparer.Default.Equals(typeArg, keyType))

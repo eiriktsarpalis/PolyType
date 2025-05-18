@@ -32,6 +32,12 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     public void SortedDictionaryBySpan() => this.AssertSpanDictionary<SortedDictionarySpan, int, bool>(NonEmptyDictionary, new ReverseComparer(), d => d.Comparer);
 
     [Fact]
+    public void DictionaryValuesThenComparer() => this.AssertEnumerableDictionary<DictionaryValuesEC, int, bool>(NonEmptyDictionary, new EvenOddEqualityComparer(), d => d.Comparer);
+
+    [Fact]
+    public void SortedDictionaryValuesThenComparer() => this.AssertEnumerableDictionary<SortedDictionaryValuesC, int, bool>(NonEmptyDictionary, new ReverseComparer(), d => d.Comparer);
+
+    [Fact]
     public void HashSet() => this.AssertDefaultEnumerable<HashSet<int>, int>(new EvenOddEqualityComparer(), s => s.Comparer);
 
     [Fact]
@@ -595,6 +601,34 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         public bool TryGetValue(int key, [MaybeNullWhen(false)] out bool value) => throw new NotImplementedException();
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [GenerateShape, ExcludeFromCodeCoverage]
+    internal partial class DictionaryValuesEC : Dictionary<int, bool>
+    {
+        public DictionaryValuesEC(IEnumerable<KeyValuePair<int, bool>> enumerable)
+            : this(enumerable, null)
+        {
+        }
+
+        public DictionaryValuesEC(IEnumerable<KeyValuePair<int, bool>> enumerable, IEqualityComparer<int>? ec)
+            : base(enumerable.ToDictionary(kv => kv.Key, kv => kv.Value), ec)
+        {
+        }
+    }
+
+    [GenerateShape, ExcludeFromCodeCoverage]
+    internal partial class SortedDictionaryValuesC : SortedDictionary<int, bool>
+    {
+        public SortedDictionaryValuesC(IEnumerable<KeyValuePair<int, bool>> enumerable)
+            : this(enumerable, null)
+        {
+        }
+
+        public SortedDictionaryValuesC(IEnumerable<KeyValuePair<int, bool>> enumerable, IComparer<int>? comparer)
+            : base(enumerable.ToDictionary(kv => kv.Key, kv => kv.Value), comparer)
+        {
+        }
     }
 
     [GenerateShape, ExcludeFromCodeCoverage]
