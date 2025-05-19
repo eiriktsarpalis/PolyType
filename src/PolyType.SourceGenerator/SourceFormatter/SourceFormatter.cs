@@ -161,7 +161,7 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
             : $"{preamble}{{ if (options.{comparer} is null) {{ return static {valuesParameter} => {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, valuesExpression)}; }} else {{ var {comparerLocalName} = options.{comparer}; return {valuesParameter} => {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, args)}; }} }}";
     }
 
-    private static string FormatCustomComparerSupport(ConstructionWithComparer comparer)
+    private static string FormatComparerOptions(ConstructionWithComparer comparer)
     {
         string kind = comparer switch
         {
@@ -171,6 +171,6 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
             _ => throw new NotSupportedException(),
         };
 
-        return $"global::PolyType.Abstractions.ComparerConstruction.{kind}";
+        return $"global::PolyType.Abstractions.CollectionComparerOptions.{kind}";
     }
 }

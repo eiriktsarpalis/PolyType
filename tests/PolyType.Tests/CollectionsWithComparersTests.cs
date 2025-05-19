@@ -122,10 +122,10 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     [Fact]
     public void NoComparerCollections()
     {
-        Assert.Equal(ComparerConstruction.None, this.GetEnumerableShape<ReadOnlyMemory<int>, int>().CustomComparerSupport);
-        Assert.Equal(ComparerConstruction.None, this.GetEnumerableShape<Memory<int>, int>().CustomComparerSupport);
-        Assert.Equal(ComparerConstruction.None, this.GetEnumerableShape<int[], int>().CustomComparerSupport);
-        Assert.Equal(ComparerConstruction.None, this.GetEnumerableShape<int[,], int>().CustomComparerSupport);
+        Assert.Equal(CollectionComparerOptions.None, this.GetEnumerableShape<ReadOnlyMemory<int>, int>().ComparerOptions);
+        Assert.Equal(CollectionComparerOptions.None, this.GetEnumerableShape<Memory<int>, int>().ComparerOptions);
+        Assert.Equal(CollectionComparerOptions.None, this.GetEnumerableShape<int[], int>().ComparerOptions);
+        Assert.Equal(CollectionComparerOptions.None, this.GetEnumerableShape<int[,], int>().ComparerOptions);
     }
 
     private void AssertDefaultDictionary<T, K, V>(IComparer<K> comparer, Func<T, IComparer<K>> getComparer)
@@ -204,7 +204,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         where K : notnull
     {
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
-        Assert.Equal(ComparerConstruction.Comparer, shape.CustomComparerSupport);
+        Assert.Equal(CollectionComparerOptions.Comparer, shape.ComparerOptions);
         return shape.GetDefaultConstructor(new() { Comparer = comparer })();
     }
 
@@ -212,7 +212,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         where K : notnull
     {
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
-        Assert.Equal(ComparerConstruction.EqualityComparer, shape.CustomComparerSupport);
+        Assert.Equal(CollectionComparerOptions.EqualityComparer, shape.ComparerOptions);
         return shape.GetDefaultConstructor(new() { EqualityComparer = equalityComparer })();
     }
 
@@ -220,7 +220,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         where K : notnull
     {
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
-        Assert.Equal(ComparerConstruction.Comparer, shape.CustomComparerSupport);
+        Assert.Equal(CollectionComparerOptions.Comparer, shape.ComparerOptions);
         return shape.GetEnumerableConstructor(new() { Comparer = comparer })(values);
     }
 
@@ -228,7 +228,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         where K : notnull
     {
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
-        Assert.Equal(ComparerConstruction.EqualityComparer, shape.CustomComparerSupport);
+        Assert.Equal(CollectionComparerOptions.EqualityComparer, shape.ComparerOptions);
         return shape.GetEnumerableConstructor(new() { EqualityComparer = equalityComparer })(values);
     }
 
@@ -237,7 +237,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     {
         Assert.SkipWhen(providerUnderTest is ReflectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span collections.");
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
-        Assert.Equal(ComparerConstruction.Comparer, shape.CustomComparerSupport);
+        Assert.Equal(CollectionComparerOptions.Comparer, shape.ComparerOptions);
         return shape.GetSpanConstructor(new() { Comparer = comparer })(values);
     }
 
@@ -246,7 +246,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     {
         Assert.SkipWhen(providerUnderTest is ReflectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span collections.");
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
-        Assert.Equal(ComparerConstruction.EqualityComparer, shape.CustomComparerSupport);
+        Assert.Equal(CollectionComparerOptions.EqualityComparer, shape.ComparerOptions);
         return shape.GetSpanConstructor(new() { EqualityComparer = equalityComparer })(values);
     }
 
@@ -336,7 +336,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     private T CreateDefaultEnumerable<T, K>(IComparer<K>? comparer)
     {
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
-        Assert.Equal(ComparerConstruction.Comparer, shape.CustomComparerSupport);
+        Assert.Equal(CollectionComparerOptions.Comparer, shape.ComparerOptions);
         Assert.Equal(CollectionConstructionStrategy.Mutable, shape.ConstructionStrategy);
         return shape.GetDefaultConstructor(new() { Comparer = comparer })();
     }
@@ -344,7 +344,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     private T CreateDefaultEnumerable<T, K>(IEqualityComparer<K>? equalityComparer)
     {
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
-        Assert.Equal(ComparerConstruction.EqualityComparer, shape.CustomComparerSupport);
+        Assert.Equal(CollectionComparerOptions.EqualityComparer, shape.ComparerOptions);
         Assert.Equal(CollectionConstructionStrategy.Mutable, shape.ConstructionStrategy);
         return shape.GetDefaultConstructor(new() { EqualityComparer = equalityComparer })();
     }
@@ -353,7 +353,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     {
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
         Assert.Equal(CollectionConstructionStrategy.Enumerable, shape.ConstructionStrategy);
-        Assert.Equal(ComparerConstruction.Comparer, shape.CustomComparerSupport);
+        Assert.Equal(CollectionComparerOptions.Comparer, shape.ComparerOptions);
         return shape.GetEnumerableConstructor(new() { Comparer = comparer })(values);
     }
 
@@ -361,7 +361,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     {
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
         Assert.Equal(CollectionConstructionStrategy.Enumerable, shape.ConstructionStrategy);
-        Assert.Equal(ComparerConstruction.EqualityComparer, shape.CustomComparerSupport);
+        Assert.Equal(CollectionComparerOptions.EqualityComparer, shape.ComparerOptions);
         return shape.GetEnumerableConstructor(new() { EqualityComparer = equalityComparer })(values);
     }
 
@@ -370,7 +370,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         Assert.SkipWhen(providerUnderTest is ReflectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span collections.");
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
         Assert.Equal(CollectionConstructionStrategy.Span, shape.ConstructionStrategy);
-        Assert.Equal(ComparerConstruction.Comparer, shape.CustomComparerSupport);
+        Assert.Equal(CollectionComparerOptions.Comparer, shape.ComparerOptions);
         return shape.GetSpanConstructor(new() { Comparer = comparer })(values);
     }
 
@@ -379,7 +379,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         Assert.SkipWhen(providerUnderTest is ReflectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span collections.");
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
         Assert.Equal(CollectionConstructionStrategy.Span, shape.ConstructionStrategy);
-        Assert.Equal(ComparerConstruction.EqualityComparer, shape.CustomComparerSupport);
+        Assert.Equal(CollectionComparerOptions.EqualityComparer, shape.ComparerOptions);
         return shape.GetSpanConstructor(new() { EqualityComparer = equalityComparer })(values);
     }
 

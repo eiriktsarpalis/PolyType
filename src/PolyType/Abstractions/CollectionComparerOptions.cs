@@ -3,7 +3,7 @@
 /// <summary>
 /// The kinds of comparers that may be supplied to a collection's constructor.
 /// </summary>
-public enum ComparerConstruction
+public enum CollectionComparerOptions
 {
     /// <summary>
     /// The collection has no recognizable support for custom comparers.

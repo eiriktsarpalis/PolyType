@@ -35,7 +35,7 @@ public interface IDictionaryTypeShape : ITypeShape
     /// <summary>
     /// Gets the kind of custom comparer (if any) that this collection may be initialized with.
     /// </summary>
-    ComparerConstruction CustomComparerSupport { get; }
+    CollectionComparerOptions ComparerOptions { get; }
 }
 
 /// <summary>
@@ -79,7 +79,7 @@ public interface IDictionaryTypeShape<TDictionary, TKey, TValue> : ITypeShape<TD
     /// <summary>
     /// Creates a delegate wrapping a parameterless constructor of a mutable collection.
     /// </summary>
-    /// <param name="collectionConstructionOptions">Options that control how the collection is constructed. Use <see cref="IDictionaryTypeShape.CustomComparerSupport" /> to predict which properties may be worth initializing.</param>
+    /// <param name="collectionConstructionOptions">Options that control how the collection is constructed. Use <see cref="IDictionaryTypeShape.ComparerOptions" /> to predict which properties may be worth initializing.</param>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Mutable"/>.</exception>
     /// <returns>A delegate wrapping a default constructor.</returns>
     Func<TDictionary> GetDefaultConstructor(in CollectionConstructionOptions<TKey> collectionConstructionOptions = default);
@@ -94,7 +94,7 @@ public interface IDictionaryTypeShape<TDictionary, TKey, TValue> : ITypeShape<TD
     /// <summary>
     /// Creates a constructor delegate for creating a collection from a span.
     /// </summary>
-    /// <param name="collectionConstructionOptions">Options that control how the collection is constructed. Use <see cref="IDictionaryTypeShape.CustomComparerSupport" /> to predict which properties may be worth initializing.</param>
+    /// <param name="collectionConstructionOptions">Options that control how the collection is constructed. Use <see cref="IDictionaryTypeShape.ComparerOptions" /> to predict which properties may be worth initializing.</param>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Span"/>.</exception>
     /// <returns>A delegate constructing a collection from a span of values.</returns>
     SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> GetSpanConstructor(in CollectionConstructionOptions<TKey> collectionConstructionOptions = default);
@@ -102,7 +102,7 @@ public interface IDictionaryTypeShape<TDictionary, TKey, TValue> : ITypeShape<TD
     /// <summary>
     /// Creates a constructor delegate for creating a collection from an enumerable.
     /// </summary>
-    /// <param name="collectionConstructionOptions">Optional options that control how the collection is constructed. Use <see cref="IDictionaryTypeShape.CustomComparerSupport" /> to predict which properties may be worth initializing.</param>
+    /// <param name="collectionConstructionOptions">Optional options that control how the collection is constructed. Use <see cref="IDictionaryTypeShape.ComparerOptions" /> to predict which properties may be worth initializing.</param>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Enumerable"/>.</exception>
     /// <returns>A delegate constructing a collection from an enumerable of values.</returns>
     Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> GetEnumerableConstructor(in CollectionConstructionOptions<TKey> collectionConstructionOptions = default);

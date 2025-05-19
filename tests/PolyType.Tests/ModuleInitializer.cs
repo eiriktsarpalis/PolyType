@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿#if !MONO
+
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
@@ -41,3 +43,5 @@ internal static class AvoidCrashingOnDebugAsserts
         }
     }
 }
+
+#endif

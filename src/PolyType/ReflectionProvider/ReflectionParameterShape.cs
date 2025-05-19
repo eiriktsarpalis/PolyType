@@ -43,14 +43,14 @@ internal sealed class ReflectionParameterShape<TArgumentState, TParameter> : IPa
 
     public Setter<TArgumentState, TParameter> GetSetter()
     {
-        if (_setter is { } setter)
-        {
-            return setter;
-        }
+        return _setter ?? Helper();
 
-        lock (_syncObject)
+        Setter<TArgumentState, TParameter> Helper()
         {
-            return _setter ??= _provider.MemberAccessor.CreateConstructorArgumentStateSetter<TArgumentState, TParameter>(_ctorInfo, Position);
+            lock (_syncObject)
+            {
+                return _setter ??= _provider.MemberAccessor.CreateConstructorArgumentStateSetter<TArgumentState, TParameter>(_ctorInfo, Position);
+            }
         }
     }
 }

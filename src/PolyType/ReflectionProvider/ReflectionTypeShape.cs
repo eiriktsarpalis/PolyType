@@ -43,20 +43,20 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
         };
     }
 
-    protected static ComparerConstruction ToComparerConstruction(ConstructionWithComparer signature)
+    protected static CollectionComparerOptions ToComparerConstruction(ConstructionWithComparer signature)
         => signature switch
         {
-            ConstructionWithComparer.Comparer or ConstructionWithComparer.ComparerValues or ConstructionWithComparer.ValuesComparer => ComparerConstruction.Comparer,
-            ConstructionWithComparer.EqualityComparer or ConstructionWithComparer.EqualityComparerValues or ConstructionWithComparer.ValuesEqualityComparer => ComparerConstruction.EqualityComparer,
-            ConstructionWithComparer.None => ComparerConstruction.None,
+            ConstructionWithComparer.Comparer or ConstructionWithComparer.ComparerValues or ConstructionWithComparer.ValuesComparer => CollectionComparerOptions.Comparer,
+            ConstructionWithComparer.EqualityComparer or ConstructionWithComparer.EqualityComparerValues or ConstructionWithComparer.ValuesEqualityComparer => CollectionComparerOptions.EqualityComparer,
+            ConstructionWithComparer.None => CollectionComparerOptions.None,
             _ => throw new NotImplementedException(),
         };
 
-    protected static object? GetRelevantComparer<TKey>(in CollectionConstructionOptions<TKey> collectionConstructionOptions, ComparerConstruction customComparerConstruction)
+    protected static object? GetRelevantComparer<TKey>(in CollectionConstructionOptions<TKey> collectionConstructionOptions, CollectionComparerOptions customComparerConstruction)
         => customComparerConstruction switch
         {
-            ComparerConstruction.Comparer => collectionConstructionOptions.Comparer,
-            ComparerConstruction.EqualityComparer => collectionConstructionOptions.EqualityComparer,
+            CollectionComparerOptions.Comparer => collectionConstructionOptions.Comparer,
+            CollectionComparerOptions.EqualityComparer => collectionConstructionOptions.EqualityComparer,
             _ => null,
         };
 
@@ -88,9 +88,9 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
 
                     switch (ToComparerConstruction(onlyParameter))
                     {
-                        case ComparerConstruction.Comparer:
+                        case CollectionComparerOptions.Comparer:
                             return (ConstructionWithComparer.Comparer, overload);
-                        case ComparerConstruction.EqualityComparer:
+                        case CollectionComparerOptions.EqualityComparer:
                             return (ConstructionWithComparer.EqualityComparer, overload);
                     }
                 }
@@ -140,11 +140,11 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
         }
     }
 
-    protected ComparerConstruction ToComparerConstruction(ParameterInfo parameter) => ClassifyConstructorParameter(parameter) switch
+    protected CollectionComparerOptions ToComparerConstruction(ParameterInfo parameter) => ClassifyConstructorParameter(parameter) switch
     {
-        CollectionConstructorParameterType.IComparerOfT => ComparerConstruction.Comparer,
-        CollectionConstructorParameterType.IEqualityComparerOfT => ComparerConstruction.EqualityComparer,
-        _ => ComparerConstruction.None,
+        CollectionConstructorParameterType.IComparerOfT => CollectionComparerOptions.Comparer,
+        CollectionConstructorParameterType.IEqualityComparerOfT => CollectionComparerOptions.EqualityComparer,
+        _ => CollectionComparerOptions.None,
     };
 
     protected virtual CollectionConstructorParameterType ClassifyConstructorParameter(ParameterInfo parameter) => throw new NotImplementedException();

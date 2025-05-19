@@ -45,7 +45,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     public sealed override TypeShapeKind Kind => TypeShapeKind.Dictionary;
     public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitDictionary(this, state);
 
-    public ComparerConstruction CustomComparerSupport
+    public CollectionComparerOptions ComparerOptions
     {
         get
         {
@@ -443,7 +443,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     }
 
     private object? GetRelevantComparer(in CollectionConstructionOptions<TKey> collectionConstructionOptions)
-        => GetRelevantComparer(collectionConstructionOptions, CustomComparerSupport);
+        => GetRelevantComparer(collectionConstructionOptions, ComparerOptions);
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]

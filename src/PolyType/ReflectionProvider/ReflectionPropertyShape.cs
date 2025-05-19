@@ -75,14 +75,14 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
             static void Throw() => throw new InvalidOperationException("The current property shape does not define a getter.");
         }
 
-        if (_getter is { } getter)
-        {
-            return getter;
-        }
+        return _getter ?? Helper();
 
-        lock (_syncObject)
+        Getter<TDeclaringType, TPropertyType> Helper()
         {
-            return _getter ??= _provider.MemberAccessor.CreateGetter<TDeclaringType, TPropertyType>(_memberInfo, _parentMembers);
+            lock (_syncObject)
+            {
+                return _getter ??= _provider.MemberAccessor.CreateGetter<TDeclaringType, TPropertyType>(_memberInfo, _parentMembers);
+            }
         }
     }
 
@@ -94,14 +94,14 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
             static void Throw() => throw new InvalidOperationException("The current property shape does not define a setter.");
         }
 
-        if (_setter is { } setter)
-        {
-            return setter;
-        }
+        return _setter ?? Helper();
 
-        lock (_syncObject)
+        Setter<TDeclaringType, TPropertyType> Helper()
         {
-            return _setter ??= _provider.MemberAccessor.CreateSetter<TDeclaringType, TPropertyType>(_memberInfo, _parentMembers);
+            lock (_syncObject)
+            {
+                return _setter ??= _provider.MemberAccessor.CreateSetter<TDeclaringType, TPropertyType>(_memberInfo, _parentMembers);
+            }
         }
     }
 }
