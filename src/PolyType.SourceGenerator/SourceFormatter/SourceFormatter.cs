@@ -154,11 +154,11 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
         };
 
         string optionsTypeName = GetCollectionConstructionOptionsTypeName(keyType);
-        string preamble = $"static (in {optionsTypeName} options) => ";
+        string preamble = $"static options => ";
         string valuesParameter = valuesExpression is null ? "()" : "values";
         return comparer is null
             ? $"{preamble}static {valuesParameter} => {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, valuesExpression)}" // Assume a constructor that accepts the values expression exists.
-            : $"{preamble}{{ if (options.{comparer} is null) {{ return static {valuesParameter} => {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, valuesExpression)}; }} else {{ var {comparerLocalName} = options.{comparer}; return {valuesParameter} => {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, args)}; }} }}";
+            : $"{preamble}{{ if (options?.{comparer} is null) {{ return static {valuesParameter} => {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, valuesExpression)}; }} else {{ var {comparerLocalName} = options.{comparer}; return {valuesParameter} => {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, args)}; }} }}";
     }
 
     private static string FormatComparerOptions(ConstructionWithComparer comparer)

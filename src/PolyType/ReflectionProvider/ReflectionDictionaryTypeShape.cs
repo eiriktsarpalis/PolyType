@@ -90,7 +90,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         return _addDelegate ??= Provider.MemberAccessor.CreateDictionaryAddDelegate<TDictionary, TKey, TValue>(_addMethod);
     }
 
-    public Func<TDictionary> GetDefaultConstructor(in CollectionConstructionOptions<TKey> collectionConstructionOptions)
+    public Func<TDictionary> GetDefaultConstructor(CollectionConstructionOptions<TKey>? collectionConstructionOptions)
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
         {
@@ -126,7 +126,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         }
     }
 
-    public Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> GetEnumerableConstructor(in CollectionConstructionOptions<TKey> collectionConstructionOptions)
+    public Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> GetEnumerableConstructor(CollectionConstructionOptions<TKey>? collectionConstructionOptions)
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Enumerable)
         {
@@ -202,7 +202,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         }
     }
 
-    public SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> GetSpanConstructor(in CollectionConstructionOptions<TKey> collectionConstructionOptions)
+    public SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> GetSpanConstructor(CollectionConstructionOptions<TKey>? collectionConstructionOptions)
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Span)
         {
@@ -442,7 +442,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         return CollectionConstructorParameterType.Unrecognized;
     }
 
-    private object? GetRelevantComparer(in CollectionConstructionOptions<TKey> collectionConstructionOptions)
+    private object? GetRelevantComparer(CollectionConstructionOptions<TKey>? collectionConstructionOptions)
         => GetRelevantComparer(collectionConstructionOptions, ComparerOptions);
 }
 

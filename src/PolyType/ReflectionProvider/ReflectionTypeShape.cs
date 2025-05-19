@@ -52,11 +52,11 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
             _ => throw new NotImplementedException(),
         };
 
-    protected static object? GetRelevantComparer<TKey>(in CollectionConstructionOptions<TKey> collectionConstructionOptions, CollectionComparerOptions customComparerConstruction)
+    protected static object? GetRelevantComparer<TKey>(CollectionConstructionOptions<TKey>? collectionConstructionOptions, CollectionComparerOptions customComparerConstruction)
         => customComparerConstruction switch
         {
-            CollectionComparerOptions.Comparer => collectionConstructionOptions.Comparer,
-            CollectionComparerOptions.EqualityComparer => collectionConstructionOptions.EqualityComparer,
+            CollectionComparerOptions.Comparer => collectionConstructionOptions?.Comparer,
+            CollectionComparerOptions.EqualityComparer => collectionConstructionOptions?.EqualityComparer,
             _ => null,
         };
 
