@@ -77,7 +77,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
         return _addDelegate ??= Provider.MemberAccessor.CreateEnumerableAddDelegate<TEnumerable, TElement>(_addMethod);
     }
 
-    public virtual Func<TEnumerable> GetDefaultConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = default)
+    public virtual Func<TEnumerable> GetDefaultConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null)
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
         {
@@ -121,7 +121,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
         }
     }
 
-    public virtual Func<IEnumerable<TElement>, TEnumerable> GetEnumerableConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = default)
+    public virtual Func<IEnumerable<TElement>, TEnumerable> GetEnumerableConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null)
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Enumerable)
         {
@@ -199,7 +199,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
         }
     }
 
-    public virtual SpanConstructor<TElement, TEnumerable> GetSpanConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = default)
+    public virtual SpanConstructor<TElement, TEnumerable> GetSpanConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null)
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Span)
         {
@@ -528,7 +528,7 @@ internal sealed class ReflectionArrayTypeShape<TElement>(ReflectionTypeShapeProv
     public override CollectionComparerOptions ComparerOptions => CollectionComparerOptions.None;
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Span;
     public override Func<TElement[], IEnumerable<TElement>> GetGetEnumerable() => static array => array;
-    public override SpanConstructor<TElement, TElement[]> GetSpanConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = default) => static span => span.ToArray();
+    public override SpanConstructor<TElement, TElement[]> GetSpanConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null) => static span => span.ToArray();
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
@@ -552,7 +552,7 @@ internal sealed class ReadOnlyMemoryTypeShape<TElement>(ReflectionTypeShapeProvi
     public override CollectionComparerOptions ComparerOptions => CollectionComparerOptions.None;
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Span;
     public override Func<ReadOnlyMemory<TElement>, IEnumerable<TElement>> GetGetEnumerable() => static memory => MemoryMarshal.ToEnumerable(memory);
-    public override SpanConstructor<TElement, ReadOnlyMemory<TElement>> GetSpanConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = default) => static span => span.ToArray();
+    public override SpanConstructor<TElement, ReadOnlyMemory<TElement>> GetSpanConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null) => static span => span.ToArray();
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
@@ -563,7 +563,7 @@ internal sealed class MemoryTypeShape<TElement>(ReflectionTypeShapeProvider prov
     public override CollectionComparerOptions ComparerOptions => CollectionComparerOptions.None;
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Span;
     public override Func<Memory<TElement>, IEnumerable<TElement>> GetGetEnumerable() => static memory => MemoryMarshal.ToEnumerable((ReadOnlyMemory<TElement>)memory);
-    public override SpanConstructor<TElement, Memory<TElement>> GetSpanConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = default) => static span => span.ToArray();
+    public override SpanConstructor<TElement, Memory<TElement>> GetSpanConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null) => static span => span.ToArray();
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
@@ -576,3 +576,8 @@ internal sealed class ReflectionAsyncEnumerableShape<TEnumerable, TElement>(Refl
     public override Func<TEnumerable, IEnumerable<TElement>> GetGetEnumerable() =>
         static _ => throw new InvalidOperationException("Sync enumeration of IAsyncEnumerable instances is not supported.");
 }
+
+internal delegate TDeclaringType SpanECConstructor<TElement, TKey, TDeclaringType>(ReadOnlySpan<TElement> values, IEqualityComparer<TKey> comparer);
+internal delegate TDeclaringType SpanCConstructor<TElement, TKey, TDeclaringType>(ReadOnlySpan<TElement> values, IComparer<TKey> comparer);
+internal delegate TDeclaringType ECSpanConstructor<TElement, TKey, TDeclaringType>(IEqualityComparer<TKey> comparer, ReadOnlySpan<TElement> values);
+internal delegate TDeclaringType CSpanConstructor<TElement, TKey, TDeclaringType>(IComparer<TKey> comparer, ReadOnlySpan<TElement> values);

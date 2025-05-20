@@ -47,8 +47,3 @@ public delegate TDeclaringType SpanConstructor<T, TDeclaringType>(ReadOnlySpan<T
 /// <param name="value">The value potentially contained in <paramref name="optional"/>.</param>
 /// <returns><see langword="true"/> if the <paramref name="optional"/> contains a value, or <see langword="false"/> if it does not.</returns>
 public delegate bool OptionDeconstructor<TOptional, TElement>(TOptional? optional, [MaybeNullWhen(false)] out TElement value);
-
-internal delegate TDeclaringType SpanECConstructor<TElement, TKey, TDeclaringType>(ReadOnlySpan<TElement> values, IEqualityComparer<TKey> comparer);
-internal delegate TDeclaringType SpanCConstructor<TElement, TKey, TDeclaringType>(ReadOnlySpan<TElement> values, IComparer<TKey> comparer);
-internal delegate TDeclaringType ECSpanConstructor<TElement, TKey, TDeclaringType>(IEqualityComparer<TKey> comparer, ReadOnlySpan<TElement> values);
-internal delegate TDeclaringType CSpanConstructor<TElement, TKey, TDeclaringType>(IComparer<TKey> comparer, ReadOnlySpan<TElement> values);
