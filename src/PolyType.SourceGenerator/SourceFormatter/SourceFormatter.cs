@@ -2,13 +2,15 @@
 using Microsoft.CodeAnalysis.CSharp;
 using PolyType.Roslyn;
 using PolyType.SourceGenerator.Model;
+using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace PolyType.SourceGenerator;
 
 internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
 {
-    public static string[] ReservedIdentifiers { get; } = [ProviderSingletonProperty,GetShapeMethodName];
+    public static string[] ReservedIdentifiers { get; } = [ProviderSingletonProperty, GetShapeMethodName];
 
     private const string InstanceBindingFlagsConstMember = "__BindingFlags_Instance_All";
     private const string InitializeMethodName = "__Init_Singleton";
@@ -98,7 +100,7 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
 
             """);
 #endif
-        
+
         if (typeDeclaration.Namespace is string @namespace)
         {
             writer.WriteLine($"namespace {@namespace}");
@@ -116,7 +118,7 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
 
     private static void EndFormatSourceFile(SourceWriter writer)
     {
-        while (writer.Indentation > 0) 
+        while (writer.Indentation > 0)
         {
             writer.Indentation--;
             writer.WriteLine('}');
@@ -128,4 +130,47 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
     private static string FormatBool(bool value) => value ? "true" : "false";
     private static string FormatNull(string? stringExpr) => stringExpr is null ? "null" : stringExpr;
     private static string FormatStringLiteral(string value) => SymbolDisplay.FormatLiteral(value, quote: true);
+
+    private static string GetCollectionConstructionOptionsTypeName(TypeId keyType)
+        => $"PolyType.Abstractions.CollectionConstructionOptions<{keyType}>";
+
+    private static string FormatCollectionInitializer(ConstructionWithComparer constructorComparer, TypeId keyType, string ctorOrFactoryFormat, string? valuesExpression)
+    {
+        string? comparer = constructorComparer switch
+        {
+            ConstructionWithComparer.None => null,
+            ConstructionWithComparer.Comparer or ConstructionWithComparer.ComparerValues or ConstructionWithComparer.ValuesComparer => "Comparer",
+            ConstructionWithComparer.EqualityComparer or ConstructionWithComparer.EqualityComparerValues or ConstructionWithComparer.ValuesEqualityComparer => "EqualityComparer",
+            _ => throw new NotSupportedException(),
+        };
+        const string comparerLocalName = "comparer";
+        string? args = constructorComparer switch
+        {
+            ConstructionWithComparer.None => valuesExpression,
+            ConstructionWithComparer.Comparer or ConstructionWithComparer.EqualityComparer when valuesExpression is null => comparerLocalName,
+            ConstructionWithComparer.ComparerValues or ConstructionWithComparer.EqualityComparerValues => $"{comparerLocalName}, {valuesExpression}",
+            ConstructionWithComparer.ValuesComparer or ConstructionWithComparer.ValuesEqualityComparer => $"{valuesExpression}, {comparerLocalName}",
+            _ => throw new NotSupportedException(),
+        };
+
+        string optionsTypeName = GetCollectionConstructionOptionsTypeName(keyType);
+        string preamble = $"static options => ";
+        string valuesParameter = valuesExpression is null ? "()" : "values";
+        return comparer is null
+            ? $"{preamble}static {valuesParameter} => {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, valuesExpression)}" // Assume a constructor that accepts the values expression exists.
+            : $"{preamble}{{ if (options?.{comparer} is null) {{ return static {valuesParameter} => {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, valuesExpression)}; }} else {{ var {comparerLocalName} = options.{comparer}; return {valuesParameter} => {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, args)}; }} }}";
+    }
+
+    private static string FormatComparerOptions(ConstructionWithComparer comparer)
+    {
+        string kind = comparer switch
+        {
+            ConstructionWithComparer.None => "None",
+            ConstructionWithComparer.Comparer or ConstructionWithComparer.ComparerValues or ConstructionWithComparer.ValuesComparer => "Comparer",
+            ConstructionWithComparer.EqualityComparer or ConstructionWithComparer.EqualityComparerValues or ConstructionWithComparer.ValuesEqualityComparer => "EqualityComparer",
+            _ => throw new NotSupportedException(),
+        };
+
+        return $"global::PolyType.Abstractions.CollectionComparerOptions.{kind}";
+    }
 }

@@ -1,5 +1,6 @@
 ﻿using PolyType.Roslyn;
 using PolyType.SourceGenerator.Model;
+using System.Collections.Immutable;
 
 namespace PolyType.SourceGenerator;
 
@@ -17,6 +18,7 @@ internal sealed partial class SourceFormatter
                     DefaultConstructorFunc = {{FormatDefaultConstructorFunc(enumerableShapeModel)}},
                     EnumerableConstructorFunc = {{FormatEnumerableConstructorFunc(enumerableShapeModel)}},
                     SpanConstructorFunc = {{FormatSpanConstructorFunc(enumerableShapeModel)}},
+                    ComparerOptions = {{FormatComparerOptions(enumerableShapeModel.ConstructionComparer)}},
                     GetEnumerableFunc = {{FormatGetEnumerableFunc(enumerableShapeModel)}},
                     AddElementFunc = {{FormatAddElementFunc(enumerableShapeModel)}},
                     IsAsyncEnumerable = {{FormatBool(enumerableShapeModel.Kind is EnumerableKind.AsyncEnumerableOfT)}},
@@ -44,9 +46,13 @@ internal sealed partial class SourceFormatter
 
         static string FormatDefaultConstructorFunc(EnumerableShapeModel enumerableType)
         {
-            return enumerableType.ConstructionStrategy is CollectionConstructionStrategy.Mutable
-                ? $"static () => new {enumerableType.ImplementationTypeFQN ?? enumerableType.Type.FullyQualifiedName}()"
-                : "null";
+            if (enumerableType.ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
+            {
+                return "null";
+            }
+
+            string typeName = enumerableType.ImplementationTypeFQN ?? enumerableType.Type.FullyQualifiedName;
+            return FormatCollectionInitializer(enumerableType.ConstructionComparer, enumerableType.ElementType, enumerableType.StaticFactoryMethod ?? $"new {typeName}({{0}})", null);
         }
 
         static string FormatAddElementFunc(EnumerableShapeModel enumerableType)
@@ -71,12 +77,14 @@ internal sealed partial class SourceFormatter
 
             string suppressSuffix = enumerableType.ElementTypeContainsNullableAnnotations ? "!" : "";
             string valuesExpr = enumerableType.CtorRequiresListConversion ? $"global::PolyType.SourceGenModel.CollectionHelpers.CreateList(values{suppressSuffix})" : $"values{suppressSuffix}";
-            return enumerableType switch
+
+            if (enumerableType.Kind is EnumerableKind.ArrayOfT or EnumerableKind.ReadOnlyMemoryOfT or EnumerableKind.MemoryOfT)
             {
-                { Kind: EnumerableKind.ArrayOfT or EnumerableKind.ReadOnlyMemoryOfT or EnumerableKind.MemoryOfT } => $"static values => {valuesExpr}.ToArray()",
-                { StaticFactoryMethod: string spanFactory } => $"static values => {spanFactory}({valuesExpr})",
-                _ => $"static values => new {enumerableType.Type.FullyQualifiedName}({valuesExpr})",
-            };
+                string optionsTypeName = GetCollectionConstructionOptionsTypeName(enumerableType.ElementType);
+                return $"static _ => static values => {valuesExpr}.ToArray()";
+            }
+
+            return FormatCollectionInitializer(enumerableType, valuesExpr);
         }
 
         static string FormatEnumerableConstructorFunc(EnumerableShapeModel enumerableType)
@@ -87,12 +95,17 @@ internal sealed partial class SourceFormatter
             }
 
             string suppressSuffix = enumerableType.ElementTypeContainsNullableAnnotations ? "!" : "";
-            return enumerableType switch
-            {
-                { StaticFactoryMethod: { } enumerableFactory } => $"static values => {enumerableFactory}(values{suppressSuffix})",
-                _ => $"static values => new {enumerableType.Type.FullyQualifiedName}(values{suppressSuffix})",
-            };
+            string valuesExpr = $"values{suppressSuffix}";
+            return FormatCollectionInitializer(enumerableType, valuesExpr);
         }
+    }
+
+    private static string FormatCollectionInitializer(EnumerableShapeModel enumerableType, string valuesExpr)
+    {
+        string factory = enumerableType.StaticFactoryMethod is not null
+          ? $"{enumerableType.StaticFactoryMethod}({{0}})"
+          : $"new {enumerableType.Type.FullyQualifiedName}({{0}})";
+        return FormatCollectionInitializer(enumerableType.ConstructionComparer, enumerableType.ElementType, factory, valuesExpr);
     }
 
     private static string FormatCollectionConstructionStrategy(CollectionConstructionStrategy strategy)

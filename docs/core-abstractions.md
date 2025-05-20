@@ -583,14 +583,14 @@ public partial interface IEnumerableTypeShape<TEnumerable, TElement>
     CollectionConstructionStrategy ConstructionStrategy { get; }
 
     // Implemented by CollectionConstructionStrategy.Mutable types
-    Func<TEnumerable> GetDefaultConstructor();
+    Func<TEnumerable> GetDefaultConstructor(in CollectionConstructionOptions<TElement> collectionConstructionOptions = default);
     Setter<TEnumerable, TElement> GetAddElement();
 
     // Implemented by CollectionConstructionStrategy.Span types
-    SpanConstructor<TElement, TEnumerable> GetSpanConstructor();
+    SpanConstructor<TElement, TEnumerable> GetSpanConstructor(in CollectionConstructionOptions<TElement> collectionConstructionOptions = default);
 
     // Implemented by CollectionConstructionStrategy.Enumerable types
-    Func<IEnumerable<TElement>, TEnumerable> GetEnumerableConstructor();
+    Func<IEnumerable<TElement>, TEnumerable> GetEnumerableConstructor(in CollectionConstructionOptions<TElement> collectionConstructionOptions = default);
 }
 
 public delegate TEnumerable SpanConstructor<TElement, TEnumerable>(ReadOnlySpan<TElement> span);
@@ -642,5 +642,10 @@ class EmptyConstructorVisitor : TypeShapeVisitor
     }
 }
 ```
+
+The constructor-returning methods on the enumerable and dictionary shapes take an optional <xref:PolyType.Abstractions.CollectionConstructionOptions`1> value.
+This struct can specify an @System.Collections.Generic.IEqualityComparer`1 or @System.Collections.Generic.IComparer`1 to be provided when constructing the collection to override the default comparer.
+This can be useful for keyed collections (i.e. sorted or hashed) when you're performing a structural copy or deserializing untrusted data and need to use a secure hash algorithm.
+
 
 This concludes the tutorial for the core PolyType programming model. For more detailed examples, please refer to the [`PolyType.Examples`](https://github.com/eiriktsarpalis/PolyType/tree/main/src/PolyType.Examples) project folder.

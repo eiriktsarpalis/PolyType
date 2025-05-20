@@ -1039,4 +1039,275 @@ public static class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
+
+    [Fact]
+    public static void HashSet()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System.Collections.Generic;
+            using PolyType;
+
+            [GenerateShape<HashSet<string>>]
+            partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void Dictionary()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System.Collections.Generic;
+            using PolyType;
+
+            [GenerateShape<Dictionary<string, int>>]
+            partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void ImmutableDictionary()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System.Collections.Immutable;
+            using PolyType;
+
+            [GenerateShape<ImmutableDictionary<string, int>>]
+            partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void SortedDictionary()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System.Collections.Generic;
+            using PolyType;
+
+            [GenerateShape<SortedDictionary<string, int>>]
+            partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void SortedSet()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System.Collections.Generic;
+            using PolyType;
+
+            [GenerateShape<SortedSet<int>>]
+            partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void ReadOnlyDictionary()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System.Collections.ObjectModel;
+            using PolyType;
+
+            [GenerateShape<ReadOnlyDictionary<int, int>>]
+            partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void DictionaryWithSpanCtor()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System;
+            using System.Collections.Generic;
+            using PolyType;
+
+            [GenerateShape]
+            public partial class DictionaryWithSpanCtor : Dictionary<string, int>
+            {
+                public DictionaryWithSpanCtor(ReadOnlySpan<KeyValuePair<string, int>> values)
+                {
+                    foreach (var value in values)
+                    {
+                        this[value.Key] = value.Value;
+                    }
+                }
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void CollectionWithSpanCtor()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System;
+            using System.Collections.Generic;
+            using PolyType;
+
+            [GenerateShape]
+            public partial class CollectionWithSpanCtor : List<int>
+            {
+                public CollectionWithSpanCtor(ReadOnlySpan<int> values)
+                {
+                    foreach (var value in values)
+                    {
+                        Add(value);
+                    }
+                }
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void MemoryOfInt()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System;
+            using PolyType;
+
+            [GenerateShape<Memory<int>>]
+            partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void ImmutableQueueOfInt()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System.Collections.Immutable;
+            using PolyType;
+
+            [GenerateShape<ImmutableQueue<int>>]
+            partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void CustomCollection()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System.Collections;
+            using System.Collections.Generic;
+            using System.Linq;
+            using PolyType;
+
+            public class CollectionWithNullableElement<T>(IEnumerable<(T?, int)> values) : IEnumerable<(T?, int)>
+            {
+                private readonly (T?, int)[] _values = values.ToArray();
+                public IEnumerator<(T?, int)> GetEnumerator() => ((IEnumerable<(T?, int)>)_values).GetEnumerator();
+                IEnumerator IEnumerable.GetEnumerator() => _values.GetEnumerator();
+            }
+
+            [GenerateShape<CollectionWithNullableElement<int>>]
+            partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void CustomCollection2()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System.Collections;
+            using System.Collections.Generic;
+            using PolyType;
+
+            [GenerateShape]
+            internal partial class EnumerableEnumerableEC(IEnumerable<int> values, IEqualityComparer<int>? eq) : IEnumerable<int>
+            {
+                public EnumerableEnumerableEC(IEnumerable<int> values) : this(values, null) { }
+
+                public IEqualityComparer<int> Comparer => eq ?? EqualityComparer<int>.Default;
+
+                public IEnumerator<int> GetEnumerator() => values.GetEnumerator();
+
+                IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void CustomCollection3()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System;
+            using System.Collections;
+            using System.Collections.Generic;
+            using PolyType;
+
+            [GenerateShape]
+            internal partial class DictionarySpan : IReadOnlyDictionary<int, bool>
+            {
+                private Dictionary<int, bool> inner;
+
+                internal DictionarySpan(ReadOnlySpan<KeyValuePair<int, bool>> span)
+                    : this(span, null)
+                {
+                }
+
+                internal DictionarySpan(ReadOnlySpan<KeyValuePair<int, bool>> span, IEqualityComparer<int>? ec)
+                {
+                    this.inner = new(ec);
+                    foreach (var item in span)
+                    {
+                        this.inner.Add(item.Key, item.Value);
+                    }
+                }
+
+                public IEqualityComparer<int> Comparer => inner.Comparer;
+
+                public bool this[int key] => throw new NotImplementedException();
+
+                public IEnumerable<int> Keys => throw new NotImplementedException();
+
+                public IEnumerable<bool> Values => throw new NotImplementedException();
+
+                public int Count => this.inner.Count;
+
+                public bool ContainsKey(int key) => throw new NotImplementedException();
+
+                public IEnumerator<KeyValuePair<int, bool>> GetEnumerator() => this.inner.GetEnumerator();
+
+                public bool TryGetValue(int key, out bool value) => throw new NotImplementedException();
+
+                IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
 }

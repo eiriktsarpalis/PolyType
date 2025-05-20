@@ -85,6 +85,8 @@ public sealed partial class Parser
                     : null,
 
                 StaticFactoryMethod = enumerableModel.FactoryMethod is { IsStatic: true } m ? m.GetFullyQualifiedName() : null,
+                StaticFactoryWithComparerMethod = enumerableModel.FactoryMethodWithComparer is { IsStatic: true } m2 ? m2.GetFullyQualifiedName() : null,
+                ConstructionComparer = AnalyzeComparerConstruction(enumerableModel.FactoryMethodWithComparer),
                 CtorRequiresListConversion =
                     enumerableModel.ConstructionStrategy is CollectionModelConstructionStrategy.List &&
                     !IsFactoryAcceptingIEnumerable(enumerableModel.FactoryMethod),
@@ -104,6 +106,7 @@ public sealed partial class Parser
                 ConstructionStrategy = dictionaryModel.ConstructionStrategy switch
                 {
                     CollectionModelConstructionStrategy.Mutable => CollectionConstructionStrategy.Mutable,
+                    CollectionModelConstructionStrategy.List => CollectionConstructionStrategy.Enumerable,
                     CollectionModelConstructionStrategy.Span => CollectionConstructionStrategy.Span,
                     CollectionModelConstructionStrategy.Dictionary =>
                         IsFactoryAcceptingIEnumerable(dictionaryModel.FactoryMethod)
@@ -123,6 +126,8 @@ public sealed partial class Parser
                     : null,
 
                 StaticFactoryMethod = dictionaryModel.FactoryMethod is { IsStatic: true } m ? m.GetFullyQualifiedName() : null,
+                StaticFactoryWithComparerMethod = dictionaryModel.FactoryMethodWithComparer is { IsStatic: true } m2 ? m2.GetFullyQualifiedName() : null,
+                ConstructionComparer = AnalyzeComparerConstruction(dictionaryModel.FactoryMethodWithComparer),
                 IsTupleEnumerableFactory = dictionaryModel.ConstructionStrategy is CollectionModelConstructionStrategy.TupleEnumerable,
                 Kind = dictionaryModel.DictionaryKind,
                 CtorRequiresDictionaryConversion =
@@ -221,6 +226,18 @@ public sealed partial class Parser
             return method?.Parameters is [{ Type: INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Collections_Generic_IEnumerable_T } }];
         }
     }
+
+    private static ConstructionWithComparer AnalyzeComparerConstruction(IMethodSymbol? factoryMethodWithComparer) => factoryMethodWithComparer?.Parameters switch
+    {
+        null => ConstructionWithComparer.None,
+        [{ Type.Name: "IComparer" }] => ConstructionWithComparer.Comparer,
+        [{ Type.Name: "IEqualityComparer" }] => ConstructionWithComparer.EqualityComparer,
+        [_, { Type.Name: "IComparer" }] => ConstructionWithComparer.ValuesComparer,
+        [_, { Type.Name: "IEqualityComparer" }] => ConstructionWithComparer.ValuesEqualityComparer,
+        [{ Type.Name: "IComparer" }, _] => ConstructionWithComparer.ComparerValues,
+        [{ Type.Name: "IEqualityComparer" }, _] => ConstructionWithComparer.EqualityComparerValues,
+        _ => throw new NotSupportedException(),
+    };
 
     private TypeExtensionModel? GetExtensionModel(ITypeSymbol symbol)
     {

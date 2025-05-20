@@ -30,19 +30,23 @@ public static class CollectionHelpers
         return list;
     }
 
+    /// <inheritdoc cref="CreateHashSet{T}(ReadOnlySpan{T}, IEqualityComparer{T}?)"/>
+    public static HashSet<T> CreateHashSet<T>(ReadOnlySpan<T> span) => CreateHashSet<T>(span, null);
+
     /// <summary>
     /// Creates a set from a <see cref="ReadOnlySpan{T}"/>.
     /// </summary>
     /// <typeparam name="T">The element type of the set.</typeparam>
     /// <param name="span">The span containing the elements of the set.</param>
+    /// <param name="comparer">An optional comparer for the returned set.</param>
     /// <returns>A new set containing the specified elements.</returns>
-    public static HashSet<T> CreateHashSet<T>(ReadOnlySpan<T> span)
+    public static HashSet<T> CreateHashSet<T>(ReadOnlySpan<T> span, IEqualityComparer<T>? comparer)
     {
         HashSet<T> set =
 #if NET
-            new(span.Length);
+            new(span.Length, comparer);
 #else
-            new();
+            new(comparer);
 #endif
 
         for (int i = 0; i < span.Length; i++)
@@ -53,17 +57,44 @@ public static class CollectionHelpers
         return set;
     }
 
+    /// <inheritdoc cref="CreateDictionary{TKey, TValue}(ReadOnlySpan{KeyValuePair{TKey, TValue}}, IEqualityComparer{TKey}?)"/>
+    public static Dictionary<TKey, TValue> CreateDictionary<TKey, TValue>(ReadOnlySpan<KeyValuePair<TKey, TValue>> span)
+        where TKey : notnull
+        => CreateDictionary(span, null);
+
     /// <summary>
     /// Creates a dictionary from a span of key/value pairs.
     /// </summary>
     /// <typeparam name="TKey">The key type of the dictionary.</typeparam>
     /// <typeparam name="TValue">The value type of the dictionary.</typeparam>
     /// <param name="span">The span containing the entries of the dictionary.</param>
+    /// <param name="keyComparer">An optional key comparer for the returned dictionary.</param>
     /// <returns>A new dictionary containing the specified entries.</returns>
-    public static Dictionary<TKey, TValue> CreateDictionary<TKey, TValue>(ReadOnlySpan<KeyValuePair<TKey, TValue>> span)
+    public static Dictionary<TKey, TValue> CreateDictionary<TKey, TValue>(ReadOnlySpan<KeyValuePair<TKey, TValue>> span, IEqualityComparer<TKey>? keyComparer = null)
         where TKey : notnull
     {
-        var dict = new Dictionary<TKey, TValue>(span.Length);
+        var dict = new Dictionary<TKey, TValue>(span.Length, keyComparer);
+        for (int i = 0; i < span.Length; i++)
+        {
+            KeyValuePair<TKey, TValue> kvp = span[i];
+            dict[kvp.Key] = kvp.Value; // NB duplicate keys have overwrite semantics.
+        }
+
+        return dict;
+    }
+
+    /// <summary>
+    /// Creates a dictionary from a span of key/value pairs.
+    /// </summary>
+    /// <typeparam name="TKey">The key type of the dictionary.</typeparam>
+    /// <typeparam name="TValue">The value type of the dictionary.</typeparam>
+    /// <param name="span">The span containing the entries of the dictionary.</param>
+    /// <param name="keyComparer">An optional key comparer for the returned dictionary.</param>
+    /// <returns>A new dictionary containing the specified entries.</returns>
+    public static SortedDictionary<TKey, TValue> CreateSortedDictionary<TKey, TValue>(ReadOnlySpan<KeyValuePair<TKey, TValue>> span, IComparer<TKey>? keyComparer = null)
+        where TKey : notnull
+    {
+        var dict = new SortedDictionary<TKey, TValue>(keyComparer);
         for (int i = 0; i < span.Length; i++)
         {
             KeyValuePair<TKey, TValue> kvp = span[i];

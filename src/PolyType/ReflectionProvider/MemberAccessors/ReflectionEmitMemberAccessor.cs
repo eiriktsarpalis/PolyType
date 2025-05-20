@@ -732,8 +732,40 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
     public Func<T, TResult> CreateFuncDelegate<T, TResult>(ConstructorInfo ctorInfo)
         => CreateDelegate<Func<T, TResult>>(EmitConstructor(ctorInfo));
 
+    public Func<T1, T2, TResult> CreateFuncDelegate<T1, T2, TResult>(ConstructorInfo ctorInfo)
+        => CreateDelegate<Func<T1, T2, TResult>>(EmitConstructor(ctorInfo));
+
     public SpanConstructor<T, TResult> CreateSpanConstructorDelegate<T, TResult>(ConstructorInfo ctorInfo)
         => CreateDelegate<SpanConstructor<T, TResult>>(EmitConstructor(ctorInfo));
+
+    private delegate TDeclaringType SpanECConstructor<TElement, TKey, TDeclaringType>(ReadOnlySpan<TElement> span, IEqualityComparer<TKey> comparer);
+    private delegate TDeclaringType ECSpanConstructor<TElement, TKey, TDeclaringType>(IEqualityComparer<TKey> comparer, ReadOnlySpan<TElement> span);
+    private delegate TDeclaringType SpanCConstructor<TElement, TKey, TDeclaringType>(ReadOnlySpan<TElement> span, IComparer<TKey> comparer);
+    private delegate TDeclaringType CSpanConstructor<TElement, TKey, TDeclaringType>(IComparer<TKey> comparer, ReadOnlySpan<TElement> span);
+
+    public SpanConstructor<TElement, TResult> CreateSpanConstructorWithLeadingECDelegate<TElement, TCompare, TResult>(ConstructorInfo ctorInfo, IEqualityComparer<TCompare> comparer)
+    {
+        var ctor = CreateDelegate<ECSpanConstructor<TElement, TCompare, TResult>>(EmitConstructor(ctorInfo));
+        return new(span => ctor(comparer, span));
+    }
+
+    public SpanConstructor<TElement, TResult> CreateSpanConstructorWithTrailingECDelegate<TElement, TCompare, TResult>(ConstructorInfo ctorInfo, IEqualityComparer<TCompare> comparer)
+    {
+        var ctor = CreateDelegate<SpanECConstructor<TElement, TCompare, TResult>>(EmitConstructor(ctorInfo));
+        return new(span => ctor(span, comparer));
+    }
+
+    public SpanConstructor<TElement, TResult> CreateSpanConstructorWithLeadingCDelegate<TElement, TCompare, TResult>(ConstructorInfo ctorInfo, IComparer<TCompare> comparer)
+    {
+        var ctor = CreateDelegate<CSpanConstructor<TElement, TCompare, TResult>>(EmitConstructor(ctorInfo));
+        return new(span => ctor(comparer, span));
+    }
+
+    public SpanConstructor<TElement, TResult> CreateSpanConstructorWithTrailingCDelegate<TElement, TCompare, TResult>(ConstructorInfo ctorInfo, IComparer<TCompare> comparer)
+    {
+        var ctor = CreateDelegate<SpanCConstructor<TElement, TCompare, TResult>>(EmitConstructor(ctorInfo));
+        return new(span => ctor(span, comparer));
+    }
 
     private static DynamicMethod EmitConstructor(ConstructorInfo ctorInfo)
     {
