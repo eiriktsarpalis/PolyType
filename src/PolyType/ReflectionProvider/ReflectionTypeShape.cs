@@ -60,6 +60,27 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
             _ => null,
         };
 
+    protected static Func<object, SpanConstructor<TElement, TResult>> CreateSpanMethodDelegate<TElement, TCompare, TResult>(MethodInfo methodInfo, ConstructionWithComparer signatureStyle)
+    {
+        switch (signatureStyle)
+        {
+            case ConstructionWithComparer.ValuesEqualityComparer:
+                var ctor = methodInfo.CreateDelegate<SpanECConstructor<TElement, TCompare, TResult>>();
+                return comparer => values => ctor(values, (IEqualityComparer<TCompare>)comparer);
+            case ConstructionWithComparer.EqualityComparerValues:
+                var ctor2 = methodInfo.CreateDelegate<ECSpanConstructor<TElement, TCompare, TResult>>();
+                return comparer => values => ctor2((IEqualityComparer<TCompare>)comparer, values);
+            case ConstructionWithComparer.ValuesComparer:
+                var ctor3 = methodInfo.CreateDelegate<SpanCConstructor<TElement, TCompare, TResult>>();
+                return comparer => values => ctor3(values, (IComparer<TCompare>)comparer);
+            case ConstructionWithComparer.ComparerValues:
+                var ctor4 = methodInfo.CreateDelegate<CSpanConstructor<TElement, TCompare, TResult>>();
+                return comparer => values => ctor4((IComparer<TCompare>)comparer, values);
+            default:
+                throw new NotSupportedException();
+        }
+    }
+
     protected (ConstructionWithComparer, ConstructorInfo?) FindComparerConstructorOverload(ConstructorInfo? nonComparerOverload)
     {
         var (comparer, overload) = FindComparerConstructionOverload(nonComparerOverload);

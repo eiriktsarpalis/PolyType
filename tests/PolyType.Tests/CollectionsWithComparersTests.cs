@@ -17,6 +17,9 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     public void Dictionary() => this.AssertDefaultDictionary<Dictionary<int, bool>, int, bool>(new EvenOddEqualityComparer(), d => d.Comparer);
 
     [Fact]
+    public void IDictionary() => this.AssertDefaultDictionary<IDictionary<int, bool>, int, bool>(new EvenOddEqualityComparer(), d => ((Dictionary<int, bool>)d).Comparer);
+
+    [Fact]
     public void SortedDictionary() => this.AssertDefaultDictionary<SortedDictionary<int, bool>, int, bool>(new ReverseComparer(), d => d.Comparer);
 
     [Fact]
@@ -238,6 +241,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         Assert.SkipWhen(providerUnderTest is ReflectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span collections.");
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
         Assert.Equal(CollectionComparerOptions.Comparer, shape.ComparerOptions);
+        Assert.Equal(CollectionConstructionStrategy.Span, shape.ConstructionStrategy);
         return shape.GetSpanConstructor(new() { Comparer = comparer })(values);
     }
 
@@ -247,6 +251,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         Assert.SkipWhen(providerUnderTest is ReflectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span collections.");
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
         Assert.Equal(CollectionComparerOptions.EqualityComparer, shape.ComparerOptions);
+        Assert.Equal(CollectionConstructionStrategy.Span, shape.ConstructionStrategy);
         return shape.GetSpanConstructor(new() { EqualityComparer = equalityComparer })(values);
     }
 
@@ -391,6 +396,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     }
 
     [GenerateShape<Dictionary<int, bool>>]
+    [GenerateShape<IDictionary<int, bool>>]
     [GenerateShape<SortedDictionary<int, bool>>]
     [GenerateShape<ImmutableDictionary<int, bool>>]
     [GenerateShape<ImmutableSortedDictionary<int, bool>>]

@@ -21,10 +21,20 @@ internal interface IReflectionMemberAccessor
     Func<T, TResult> CreateFuncDelegate<T, TResult>(ConstructorInfo ctorInfo);
     Func<T1, T2, TResult> CreateFuncDelegate<T1, T2, TResult>(ConstructorInfo ctorInfo);
     SpanConstructor<T, TResult> CreateSpanConstructorDelegate<T, TResult>(ConstructorInfo ctorInfo);
-    SpanConstructor<TElement, TResult> CreateSpanConstructorWithLeadingECDelegate<TElement, TKey, TResult>(ConstructorInfo ctorInfo, IEqualityComparer<TKey> comparer);
-    SpanConstructor<TElement, TResult> CreateSpanConstructorWithTrailingECDelegate<TElement, TKey, TResult>(ConstructorInfo ctorInfo, IEqualityComparer<TKey> comparer);
-    SpanConstructor<TElement, TResult> CreateSpanConstructorWithLeadingCDelegate<TElement, TKey, TResult>(ConstructorInfo ctorInfo, IComparer<TKey> comparer);
-    SpanConstructor<TElement, TResult> CreateSpanConstructorWithTrailingCDelegate<TElement, TKey, TResult>(ConstructorInfo ctorInfo, IComparer<TKey> comparer);
+
+    /// <summary>
+    /// Creates a delegate that takes a comparer and returns a keyed collection constructor delegate.
+    /// </summary>
+    /// <typeparam name="TElement">The type of element stored in the collection.</typeparam>
+    /// <typeparam name="TCompare">The type of the key in the collection.</typeparam>
+    /// <typeparam name="TResult">The type of collection.</typeparam>
+    /// <param name="ctorInfo">The collection constructor that takes two parameters.</param>
+    /// <param name="signatureStyle">The signature of the constructor, indicating which type of comparer is taken and the parameter order.</param>
+    /// <returns>
+    /// The delegate that constructs delegates. The argument to this delegate should be an instance of <see cref="IEqualityComparer{T}"/> or <see cref="IComparer{T}"/>,
+    /// in accordance with <paramref name="signatureStyle"/>.
+    /// </returns>
+    Func<object, SpanConstructor<TElement, TResult>> CreateSpanConstructorDelegate<TElement, TCompare, TResult>(ConstructorInfo ctorInfo, ConstructionWithComparer signatureStyle);
 
     Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeInfo[] derivedTypeInfos);
 }

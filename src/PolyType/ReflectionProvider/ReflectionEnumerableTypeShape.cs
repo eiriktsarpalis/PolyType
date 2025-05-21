@@ -1,7 +1,6 @@
 ﻿using PolyType.Abstractions;
 using PolyType.SourceGenModel;
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -31,12 +30,14 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
     private Func<TEnumerable>? _defaultCtorDelegate;
     private Func<IEnumerable<TElement>, TEnumerable>? _enumerableCtorDelegate;
     private SpanConstructor<TElement, TEnumerable>? _spanCtorDelegate;
+
     private Func<List<TElement>, IEqualityComparer<TElement>, TEnumerable>? _listCtorValuesEqualityComparerDelegate;
     private Func<List<TElement>, IComparer<TElement>, TEnumerable>? _listCtorValuesComparerDelegate;
     private Func<IEqualityComparer<TElement>, List<TElement>, TEnumerable>? _listCtorEqualityComparerValuesDelegate;
     private Func<IComparer<TElement>, List<TElement>, TEnumerable>? _listCtorComparerValuesDelegate;
     private Func<IEqualityComparer<TElement>, TEnumerable>? _defaultCtorWithEqualityComparerDelegate;
     private Func<IComparer<TElement>, TEnumerable>? _defaultCtorWithComparerDelegate;
+    private Func<object, SpanConstructor<TElement, TEnumerable>>? _spanCtorDelegateFromComparerDelegate;
 
     public virtual CollectionComparerOptions ComparerOptions
     {
@@ -259,26 +260,15 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                 }
             }
 
-            return _spanCtorWithComparer switch
+            DebugExt.Assert(_constructionComparer is not null);
+            _spanCtorDelegateFromComparerDelegate ??= _spanCtorWithComparer switch
             {
-                ConstructorInfo ctorInfoWithComparer => _constructionComparer switch
-                {
-                    ConstructionWithComparer.ValuesEqualityComparer => Provider.MemberAccessor.CreateSpanConstructorWithTrailingECDelegate<TElement, TElement, TEnumerable>(ctorInfoWithComparer, (IEqualityComparer<TElement>)relevantComparer),
-                    ConstructionWithComparer.EqualityComparerValues => Provider.MemberAccessor.CreateSpanConstructorWithLeadingECDelegate<TElement, TElement, TEnumerable>(ctorInfoWithComparer, (IEqualityComparer<TElement>)relevantComparer),
-                    ConstructionWithComparer.ValuesComparer => Provider.MemberAccessor.CreateSpanConstructorWithTrailingCDelegate<TElement, TElement, TEnumerable>(ctorInfoWithComparer, (IComparer<TElement>)relevantComparer),
-                    ConstructionWithComparer.ComparerValues => Provider.MemberAccessor.CreateSpanConstructorWithLeadingCDelegate<TElement, TElement, TEnumerable>(ctorInfoWithComparer, (IComparer<TElement>)relevantComparer),
-                    _ => throw new InvalidOperationException("The current dictionary shape does not support span constructors."),
-                },
-                MethodInfo ctorInfoWithComparer => _constructionComparer switch
-                {
-                    ConstructionWithComparer.ValuesEqualityComparer => values => ctorInfoWithComparer.CreateDelegate<SpanECConstructor<TElement, TElement, TEnumerable>>()(values, (IEqualityComparer<TElement>)relevantComparer),
-                    ConstructionWithComparer.EqualityComparerValues => values => ctorInfoWithComparer.CreateDelegate<ECSpanConstructor<TElement, TElement, TEnumerable>>()((IEqualityComparer<TElement>)relevantComparer, values),
-                    ConstructionWithComparer.ValuesComparer => values => ctorInfoWithComparer.CreateDelegate<SpanCConstructor<TElement, TElement, TEnumerable>>()(values, (IComparer<TElement>)relevantComparer),
-                    ConstructionWithComparer.ComparerValues => values => ctorInfoWithComparer.CreateDelegate<CSpanConstructor<TElement, TElement, TEnumerable>>()((IComparer<TElement>)relevantComparer, values),
-                    _ => throw new InvalidOperationException("The current dictionary shape does not support span constructors."),
-                },
+                ConstructorInfo ctorInfoWithComparer => Provider.MemberAccessor.CreateSpanConstructorDelegate<TElement, TElement, TEnumerable>(ctorInfoWithComparer, _constructionComparer.Value),
+                MethodInfo ctorInfoWithComparer => CreateSpanMethodDelegate<TElement, TElement, TEnumerable>(ctorInfoWithComparer, _constructionComparer.Value),
                 _ => throw new NotSupportedException(),
             };
+
+            return _spanCtorDelegateFromComparerDelegate(relevantComparer);
         }
     }
 
