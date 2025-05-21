@@ -379,25 +379,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         throw new NotSupportedException();
     }
 
-    public SpanConstructor<TElement, TResult> CreateSpanConstructorWithLeadingECDelegate<TElement, TKey, TResult>(ConstructorInfo ctorInfo, IEqualityComparer<TKey> comparer)
-    {
-        Debug.Fail("Should not be called if not using Reflection.Emit");
-        throw new NotSupportedException();
-    }
-
-    public SpanConstructor<TElement, TResult> CreateSpanConstructorWithTrailingECDelegate<TElement, TKey, TResult>(ConstructorInfo ctorInfo, IEqualityComparer<TKey> comparer)
-    {
-        Debug.Fail("Should not be called if not using Reflection.Emit");
-        throw new NotSupportedException();
-    }
-
-    public SpanConstructor<TElement, TResult> CreateSpanConstructorWithLeadingCDelegate<TElement, TKey, TResult>(ConstructorInfo ctorInfo, IComparer<TKey> comparer)
-    {
-        Debug.Fail("Should not be called if not using Reflection.Emit");
-        throw new NotSupportedException();
-    }
-
-    public SpanConstructor<TElement, TResult> CreateSpanConstructorWithTrailingCDelegate<TElement, TKey, TResult>(ConstructorInfo ctorInfo, IComparer<TKey> comparer)
+    public Func<object, SpanConstructor<TElement, TResult>> CreateSpanConstructorDelegate<TElement, TCompare, TResult>(ConstructorInfo ctorInfo, ConstructionWithComparer signatureStyle)
     {
         Debug.Fail("Should not be called if not using Reflection.Emit");
         throw new NotSupportedException();

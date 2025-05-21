@@ -122,6 +122,8 @@ public partial class TypeDataModelGenerator
                 INamedTypeSymbol dictOfTKeyTValue = KnownSymbols.DictionaryOfTKeyTValue!.Construct(keyType, valueType);
                 constructionStrategy = CollectionModelConstructionStrategy.Mutable;
                 factoryMethod = dictOfTKeyTValue.Constructors.FirstOrDefault(ctor => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [] });
+                factoryMethodWithComparer = dictOfTKeyTValue.Constructors.FirstOrDefault(ctor =>
+                    ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ } only] } && ClassifyConstructorParameter(only, keyType, valueType) is CollectionConstructorParameterType.Comparer or CollectionConstructorParameterType.EqualityComparer);
             }
             else if (SymbolEqualityComparer.Default.Equals(namedType, KnownSymbols.IDictionary))
             {
