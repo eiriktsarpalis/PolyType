@@ -44,28 +44,6 @@ internal sealed partial class SourceFormatter
     private static string FormatNullOrThrowPartial(string? stringExpr, bool missing)
         => missing ? "() => throw new global::System.NotImplementedException(\"This shape is not fully implemented.\")" : FormatNull(stringExpr);
 
-    private string FormatAssociatedTypeShapes(ObjectShapeModel objectShapeModel)
-    {
-        AssociatedTypeId[] associatedTypeShapes = [..
-            from associatedType in objectShapeModel.AssociatedTypes
-            select associatedType.Key];
-        if (associatedTypeShapes.Length == 0)
-        {
-            return "null";
-        }
-
-        StringBuilder builder = new();
-        builder.Append("static associatedType => associatedType switch { ");
-        foreach (AssociatedTypeId associatedType in associatedTypeShapes)
-        {
-            builder.Append($"\"{associatedType.Open}\" or \"{associatedType.Closed}\" => {provider.ProviderDeclaration.Id.FullyQualifiedName}.{ProviderSingletonProperty}.{GetShapeModel(associatedType.ClosedTypeId).SourceIdentifier}, ");
-        }
-
-        builder.Append("_ => null }");
-
-        return builder.ToString();
-    }
-
     private static void FormatMemberAccessors(SourceWriter writer, ObjectShapeModel objectShapeModel)
     {
         foreach (PropertyShapeModel property in objectShapeModel.Properties)

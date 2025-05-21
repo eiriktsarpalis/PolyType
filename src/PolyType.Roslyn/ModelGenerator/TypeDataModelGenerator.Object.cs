@@ -97,7 +97,6 @@ public partial class TypeDataModelGenerator
         ImmutableArray<PropertyDataModel> properties = requirements.HasFlag(TypeShapeRequirements.Properties) ? MapProperties(namedType, ref ctx) : ImmutableArray<PropertyDataModel>.Empty;
         ImmutableArray<ConstructorDataModel> constructors = requirements.HasFlag(TypeShapeRequirements.Constructor) ? MapConstructors(namedType, properties, ref ctx) : ImmutableArray<ConstructorDataModel>.Empty;
         ImmutableArray<DerivedTypeModel> derivedTypes = IncludeDerivedTypes(type, ref ctx, requirements);
-        IncludeAssociatedShapes(type, associatedTypes, ref ctx);
 
         model = new ObjectDataModel
         {

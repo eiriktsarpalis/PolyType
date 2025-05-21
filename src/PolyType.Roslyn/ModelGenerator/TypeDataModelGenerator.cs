@@ -201,6 +201,7 @@ public partial class TypeDataModelGenerator
     {
         TypeDataModelGenerationStatus status;
 
+        IncludeAssociatedShapes(type, associatedTypes, ref ctx);
         switch (requestedKind)
         {
             // If the configuration specifies an explicit kind, try to resolve that or fall back to no shape.

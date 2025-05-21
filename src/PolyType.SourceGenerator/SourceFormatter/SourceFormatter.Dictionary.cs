@@ -22,6 +22,7 @@ internal sealed partial class SourceFormatter
                     AddKeyValuePairFunc = {{FormatAddKeyValuePairFunc(dictionaryShapeModel)}},
                     EnumerableConstructorFunc = {{FormatEnumerableConstructorFunc(dictionaryShapeModel)}},
                     SpanConstructorFunc = {{FormatSpanConstructorFunc(dictionaryShapeModel)}},
+                    AssociatedTypeShapes = {{FormatAssociatedTypeShapes(dictionaryShapeModel)}},
                     Provider = this,
                 };
             }

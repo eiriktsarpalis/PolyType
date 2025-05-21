@@ -1,5 +1,6 @@
 ﻿using PolyType;
 using PolyType.Tests;
+using System.ComponentModel;
 using Xunit.Internal;
 
 [assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), Requirements = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(AssociatedTypesTests.GenericDataTypeVerifier<,>)])]
@@ -9,6 +10,10 @@ using Xunit.Internal;
 // This pair is for testing the union of depth flags for a given shape.
 [assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), Requirements = TypeShapeRequirements.Properties, AssociatedTypes = [typeof(AssociatedTypesTests.ExtraShape2<,>)])]
 [assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), Requirements = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(AssociatedTypesTests.ExtraShape2<,>)])]
+
+// This tests generating of associated types from enumerable types.
+[assembly: TypeShapeExtension(typeof(IEnumerable<>), AssociatedTypes = [typeof(AssociatedTypesTests.GenericWrapper<>)])]
+[assembly: TypeShapeExtension(typeof(Dictionary<,>), AssociatedTypes = [typeof(AssociatedTypesTests.GenericWrapper<>.GenericNested<>)])]
 
 namespace PolyType.Tests;
 
@@ -210,6 +215,28 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
         Assert.NotNull(associatedShape);
     }
 
+    [Fact]
+    public void Enumerables_HaveAssociatedTypes()
+    {
+        Assert.NotNull(providerUnderTest.Provider.GetShape(typeof(GenericWrapper<SpecialKey>)));
+        ITypeShape? shape = providerUnderTest.Provider.GetShape(typeof(IEnumerable<SpecialKey>));
+        Assert.NotNull(shape);
+        ITypeShape? associatedShape = shape.GetAssociatedTypeShape(typeof(GenericWrapper<>));
+        Assert.NotNull(associatedShape);
+        Assert.Equal(typeof(GenericWrapper<SpecialKey>), associatedShape.Type);
+    }
+
+    [Fact]
+    public void Dictionaries_HaveAssociatedTypes()
+    {
+        Assert.NotNull(providerUnderTest.Provider.GetShape(typeof(GenericWrapper<SpecialKey>.GenericNested<string>)));
+        ITypeShape? shape = providerUnderTest.Provider.GetShape(typeof(Dictionary<SpecialKey, string>));
+        Assert.NotNull(shape);
+        ITypeShape? associatedShape = shape.GetAssociatedTypeShape(typeof(GenericWrapper<>.GenericNested<>));
+        Assert.NotNull(associatedShape);
+        Assert.Equal(typeof(GenericWrapper<SpecialKey>.GenericNested<string>), associatedShape.Type);
+    }
+
     private static Func<object>? GetAssociatedTypeFactory(ITypeShape typeShape, Type associatedType)
         => (typeShape.GetAssociatedTypeShape(associatedType) as IObjectTypeShape)?.GetDefaultConstructor();
 
@@ -281,6 +308,8 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
 
     [GenerateShape<GenericDataType<int, string>>]
     [GenerateShape<GenericDataTypeFullAndPartialPaths<int, string>>]
+    [GenerateShape<IEnumerable<SpecialKey>>]
+    [GenerateShape<Dictionary<SpecialKey, string>>]
     internal partial class Witness;
 
     [GenerateShape]
@@ -303,6 +332,8 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     {
         public Type[] Types { get; init; } = [];
     }
+
+    internal class SpecialKey;
 
     public sealed class Reflection() : AssociatedTypesTests(ReflectionProviderUnderTest.NoEmit, partialShapesSupported: false);
     public sealed class ReflectionEmit() : AssociatedTypesTests(ReflectionProviderUnderTest.Emit, partialShapesSupported: false);

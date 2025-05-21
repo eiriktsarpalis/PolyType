@@ -5,6 +5,7 @@ using PolyType.SourceGenerator.Model;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
+using System.Text;
 
 namespace PolyType.SourceGenerator;
 
@@ -172,5 +173,27 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
         };
 
         return $"global::PolyType.Abstractions.CollectionComparerOptions.{kind}";
+    }
+
+    private string FormatAssociatedTypeShapes(TypeShapeModel objectShapeModel)
+    {
+        AssociatedTypeId[] associatedTypeShapes = [..
+            from associatedType in objectShapeModel.AssociatedTypes
+            select associatedType.Key];
+        if (associatedTypeShapes.Length == 0)
+        {
+            return "null";
+        }
+
+        StringBuilder builder = new();
+        builder.Append("static associatedType => associatedType switch { ");
+        foreach (AssociatedTypeId associatedType in associatedTypeShapes)
+        {
+            builder.Append($"\"{associatedType.Open}\" or \"{associatedType.Closed}\" => {provider.ProviderDeclaration.Id.FullyQualifiedName}.{ProviderSingletonProperty}.{GetShapeModel(associatedType.ClosedTypeId).SourceIdentifier}, ");
+        }
+
+        builder.Append("_ => null }");
+
+        return builder.ToString();
     }
 }
