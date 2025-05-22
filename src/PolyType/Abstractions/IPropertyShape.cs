@@ -91,29 +91,63 @@ public interface IPropertyShape
 /// </summary>
 /// <typeparam name="TDeclaringType">The declaring type of the underlying property.</typeparam>
 /// <typeparam name="TPropertyType">The property type of the underlying property.</typeparam>
-public interface IPropertyShape<TDeclaringType, TPropertyType> : IPropertyShape
+public abstract class IPropertyShape<TDeclaringType, TPropertyType> : IPropertyShape
 {
     /// <summary>
     /// Gets the shape of the declaring type.
     /// </summary>
-    new IObjectTypeShape<TDeclaringType> DeclaringType { get; }
+    public abstract IObjectTypeShape<TDeclaringType> DeclaringType { get; }
 
     /// <summary>
     /// Gets the shape of the property type.
     /// </summary>
-    new ITypeShape<TPropertyType> PropertyType { get; }
+    public abstract ITypeShape<TPropertyType> PropertyType { get; }
+
+    /// <inheritdoc/>
+    public abstract string Name { get; }
+
+    /// <inheritdoc/>
+    public abstract ICustomAttributeProvider? AttributeProvider { get; }
+
+    /// <inheritdoc/>
+    public abstract bool HasGetter { get; }
+
+    /// <inheritdoc/>
+    public abstract bool HasSetter { get; }
+
+    /// <inheritdoc/>
+    public abstract bool IsField { get; }
+
+    /// <inheritdoc/>
+    public abstract bool IsGetterPublic { get; }
+
+    /// <inheritdoc/>
+    public abstract bool IsSetterPublic { get; }
+
+    /// <inheritdoc/>
+    public abstract bool IsGetterNonNullable { get; }
+
+    /// <inheritdoc/>
+    public abstract bool IsSetterNonNullable { get; }
+
+    IObjectTypeShape IPropertyShape.DeclaringType => DeclaringType;
+
+    ITypeShape IPropertyShape.PropertyType => PropertyType;
+
+    /// <inheritdoc/>
+    public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitProperty(this, state);
 
     /// <summary>
     /// Creates a getter delegate for the property, if applicable.
     /// </summary>
     /// <exception cref="InvalidOperationException">The property has no accessible getter.</exception>
     /// <returns>A getter delegate for the property.</returns>
-    Getter<TDeclaringType, TPropertyType> GetGetter();
+    public abstract Getter<TDeclaringType, TPropertyType> GetGetter();
 
     /// <summary>
     /// Creates a setter delegate for the property, if applicable.
     /// </summary>
     /// <exception cref="InvalidOperationException">The property has no accessible setter.</exception>
     /// <returns>A setter delegate for the property.</returns>
-    Setter<TDeclaringType, TPropertyType> GetSetter();
+    public abstract Setter<TDeclaringType, TPropertyType> GetSetter();
 }

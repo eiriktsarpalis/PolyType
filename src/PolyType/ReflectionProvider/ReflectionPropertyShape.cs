@@ -49,25 +49,21 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
         IsSetterNonNullable = HasSetter && shapeInfo.IsSetterNonNullable;
     }
 
-    public string Name { get; }
-    public ICustomAttributeProvider AttributeProvider { get; }
-    public IObjectTypeShape<TDeclaringType> DeclaringType { get; }
-    public ITypeShape<TPropertyType> PropertyType => _provider.GetShape<TPropertyType>();
+    public override string Name { get; }
+    public override ICustomAttributeProvider AttributeProvider { get; }
+    public override IObjectTypeShape<TDeclaringType> DeclaringType { get; }
+    public override ITypeShape<TPropertyType> PropertyType => _provider.GetShape<TPropertyType>();
 
-    public bool IsField { get; }
-    public bool IsGetterPublic { get; }
-    public bool IsSetterPublic { get; }
-    public bool IsGetterNonNullable { get; }
-    public bool IsSetterNonNullable { get; }
+    public override bool IsField { get; }
+    public override bool IsGetterPublic { get; }
+    public override bool IsSetterPublic { get; }
+    public override bool IsGetterNonNullable { get; }
+    public override bool IsSetterNonNullable { get; }
 
-    public bool HasGetter { get; }
-    public bool HasSetter { get; }
+    public override bool HasGetter { get; }
+    public override bool HasSetter { get; }
 
-    IObjectTypeShape IPropertyShape.DeclaringType => DeclaringType;
-    ITypeShape IPropertyShape.PropertyType => PropertyType;
-    object? IPropertyShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitProperty(this, state);
-
-    public Getter<TDeclaringType, TPropertyType> GetGetter()
+    public override Getter<TDeclaringType, TPropertyType> GetGetter()
     {
         if (!HasGetter)
         {
@@ -86,7 +82,7 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
         }
     }
 
-    public Setter<TDeclaringType, TPropertyType> GetSetter()
+    public override Setter<TDeclaringType, TPropertyType> GetSetter()
     {
         if (!HasSetter)
         {

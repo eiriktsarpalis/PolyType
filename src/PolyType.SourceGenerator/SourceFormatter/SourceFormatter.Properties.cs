@@ -39,17 +39,17 @@ internal sealed partial class SourceFormatter
             writer.WriteLine($$"""
                 new global::PolyType.SourceGenModel.SourceGenPropertyShape<{{type.Type.FullyQualifiedName}}, {{property.PropertyType.FullyQualifiedName}}>
                 {
-                    Name = {{FormatStringLiteral(property.Name)}},
-                    DeclaringType = (global::PolyType.Abstractions.IObjectTypeShape<{{type.Type.FullyQualifiedName}}>){{type.SourceIdentifier}},
-                    PropertyType = {{GetShapeModel(property.PropertyType).SourceIdentifier}},
+                    NameSetter = {{FormatStringLiteral(property.Name)}},
+                    DeclaringTypeSetter = (global::PolyType.Abstractions.IObjectTypeShape<{{type.Type.FullyQualifiedName}}>){{type.SourceIdentifier}},
+                    PropertyTypeSetter = {{GetShapeModel(property.PropertyType).SourceIdentifier}},
                     Getter = {{(property.EmitGetter ? $"static (ref {type.Type.FullyQualifiedName} obj) => {FormatGetterBody("obj", type, property)}{(suppressGetter ? "!" : "")}" : "null")}},
                     Setter = {{(property.EmitSetter ? $"static (ref {type.Type.FullyQualifiedName} obj, {property.PropertyType.FullyQualifiedName} value) => {FormatSetterBody("obj", "value" + (suppressSetter ? "!" : ""), type, property)}" : "null")}},
                     AttributeProviderFunc = {{FormatAttributeProviderFunc(type, property)}},
-                    IsField = {{FormatBool(property.IsField)}},
-                    IsGetterPublic = {{FormatBool(property.IsGetterPublic)}},
-                    IsSetterPublic = {{FormatBool(property.IsSetterPublic)}},
-                    IsGetterNonNullable = {{FormatBool(property.IsGetterNonNullable)}},
-                    IsSetterNonNullable = {{FormatBool(property.IsSetterNonNullable)}},
+                    IsFieldSetter = {{FormatBool(property.IsField)}},
+                    IsGetterPublicSetter = {{FormatBool(property.IsGetterPublic)}},
+                    IsSetterPublicSetter = {{FormatBool(property.IsSetterPublic)}},
+                    IsGetterNonNullableSetter = {{FormatBool(property.IsGetterNonNullable)}},
+                    IsSetterNonNullableSetter = {{FormatBool(property.IsSetterNonNullable)}},
                 },
                 """, trimNullAssignmentLines: true);
 

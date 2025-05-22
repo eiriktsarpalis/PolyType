@@ -11,24 +11,33 @@ namespace PolyType.SourceGenModel;
 public sealed class SourceGenPropertyShape<TDeclaringType, TPropertyType> : IPropertyShape<TDeclaringType, TPropertyType>
 {
     /// <summary>
-    /// Gets the name of the property.
-    /// </summary>
-    public required string Name { get; init; }
-
-    /// <summary>
     /// Gets the custom attribute provider for the property.
     /// </summary>
     public Func<ICustomAttributeProvider?>? AttributeProviderFunc { get; init; }
 
     /// <summary>
+    /// Gets the name of the property.
+    /// </summary>
+    public required string NameSetter { private get; init; }
+
+    /// <inheritdoc/>
+    public override string Name => NameSetter;
+
+    /// <summary>
     /// Gets the shape of the declaring type.
     /// </summary>
-    public required IObjectTypeShape<TDeclaringType> DeclaringType { get; init; }
+    public required IObjectTypeShape<TDeclaringType> DeclaringTypeSetter { private get; init; }
+
+    /// <inheritdoc/>
+    public override IObjectTypeShape<TDeclaringType> DeclaringType => DeclaringTypeSetter;
 
     /// <summary>
     /// Gets the shape of the property type.
     /// </summary>
-    public required ITypeShape<TPropertyType> PropertyType { get; init; }
+    public required ITypeShape<TPropertyType> PropertyTypeSetter { private get; init; }
+
+    /// <inheritdoc/>
+    public override ITypeShape<TPropertyType> PropertyType => PropertyTypeSetter;
 
     /// <summary>
     /// Gets the getter delegate for the property.
@@ -43,38 +52,57 @@ public sealed class SourceGenPropertyShape<TDeclaringType, TPropertyType> : IPro
     /// <summary>
     /// Gets a value indicating whether the getter is declared public.
     /// </summary>
-    public required bool IsGetterPublic { get; init; }
+    public required bool IsGetterPublicSetter { get; init; }
+
+    /// <inheritdoc/>
+    public override bool IsGetterPublic => IsGetterPublicSetter;
 
     /// <summary>
     /// Gets a value indicating whether the setter is declared public.
     /// </summary>
-    public required bool IsSetterPublic { get; init; }
+    public required bool IsSetterPublicSetter { get; init; }
+
+    /// <inheritdoc/>
+    public override bool IsSetterPublic => IsSetterPublicSetter;
 
     /// <summary>
     /// Gets a value indicating whether the getter is non-nullable.
     /// </summary>
-    public required bool IsGetterNonNullable { get; init; }
+    public required bool IsGetterNonNullableSetter { get; init; }
+
+    /// <inheritdoc/>
+    public override bool IsGetterNonNullable => IsGetterNonNullableSetter;
 
     /// <summary>
     /// Gets a value indicating whether the setter is non-nullable.
     /// </summary>
-    public required bool IsSetterNonNullable { get; init; }
+    public required bool IsSetterNonNullableSetter { get; init; }
+
+    /// <inheritdoc/>
+    public override bool IsSetterNonNullable => IsSetterNonNullableSetter;
 
     /// <summary>
     /// Gets a value indicating whether the shape represents a field.
     /// </summary>
-    public bool IsField { get; init; }
+    public bool IsFieldSetter { get; init; }
 
-    Getter<TDeclaringType, TPropertyType> IPropertyShape<TDeclaringType, TPropertyType>.GetGetter()
+    /// <inheritdoc/>
+    public override bool IsField => IsFieldSetter;
+
+    /// <inheritdoc/>
+    public override Getter<TDeclaringType, TPropertyType> GetGetter()
         => Getter is { } getter ? getter : throw new InvalidOperationException("Property shape does not specify a getter.");
 
-    Setter<TDeclaringType, TPropertyType> IPropertyShape<TDeclaringType, TPropertyType>.GetSetter()
+    /// <inheritdoc/>
+    public override Setter<TDeclaringType, TPropertyType> GetSetter()
         => Setter is { } setter ? setter : throw new InvalidOperationException("Property shape does not specify a setter.");
 
-    ITypeShape IPropertyShape.PropertyType => PropertyType;
-    IObjectTypeShape IPropertyShape.DeclaringType => DeclaringType;
-    bool IPropertyShape.HasGetter => Getter is not null;
-    bool IPropertyShape.HasSetter => Setter is not null;
-    ICustomAttributeProvider? IPropertyShape.AttributeProvider => AttributeProviderFunc?.Invoke();
-    object? IPropertyShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitProperty(this, state);
+    /// <inheritdoc/>
+    public override bool HasGetter => Getter is not null;
+
+    /// <inheritdoc/>
+    public override bool HasSetter => Setter is not null;
+
+    /// <inheritdoc/>
+    public override ICustomAttributeProvider? AttributeProvider => AttributeProviderFunc?.Invoke();
 }
