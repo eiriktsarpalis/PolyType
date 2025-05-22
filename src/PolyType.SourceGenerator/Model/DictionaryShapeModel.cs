@@ -16,4 +16,5 @@ public sealed record DictionaryShapeModel : TypeShapeModel
     public required bool IsTupleEnumerableFactory { get; init; }
     public required bool CtorRequiresDictionaryConversion { get; init; }
     public required bool KeyValueTypesContainNullableAnnotations { get; init; }
+    public required bool IndexerIsExplicitInterfaceImplementation { get; init; }
 }

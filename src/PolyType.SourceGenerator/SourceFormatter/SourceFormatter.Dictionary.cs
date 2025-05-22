@@ -8,6 +8,13 @@ internal sealed partial class SourceFormatter
 {
     private void FormatDictionaryTypeShapeFactory(SourceWriter writer, string methodName, DictionaryShapeModel dictionaryShapeModel)
     {
+        bool requiresCS8631Suppression = dictionaryShapeModel.KeyValueTypesContainNullableAnnotations && dictionaryShapeModel.Kind is DictionaryKind.IDictionaryOfKV;
+        if (requiresCS8631Suppression)
+        {
+            // Need to emit a call to CollectionHelpers.AsReadOnlyDictionary<TDictionary, TKey, TValue>(...) which creates a nullability warning on the type parameters
+            writer.WriteLine("#pragma warning disable CS8631 // Nullability of type argument doesn't match constraint type.", disableIndentation: true);
+        }
+
         writer.WriteLine($$"""
             private global::PolyType.Abstractions.ITypeShape<{{dictionaryShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
             {
@@ -27,6 +34,11 @@ internal sealed partial class SourceFormatter
                 };
             }
             """, trimNullAssignmentLines: true);
+
+        if (requiresCS8631Suppression)
+        {             
+            writer.WriteLine("#pragma warning restore CS8631 // Nullability of type argument doesn't match constraint type.", disableIndentation: true);
+        }
 
         static string FormatGetDictionaryFunc(DictionaryShapeModel dictionaryType)
         {
@@ -55,10 +67,14 @@ internal sealed partial class SourceFormatter
             string suppressSuffix = dictionaryType.KeyValueTypesContainNullableAnnotations ? "!" : "";
             return dictionaryType switch
             {
-                { ConstructionStrategy: CollectionConstructionStrategy.Mutable, ImplementationTypeFQN: null }
+                { ConstructionStrategy: CollectionConstructionStrategy.Mutable, ImplementationTypeFQN: null, IndexerIsExplicitInterfaceImplementation: false }
                     => $"static (ref {dictionaryType.Type.FullyQualifiedName} dict, global::System.Collections.Generic.KeyValuePair<{dictionaryType.KeyType.FullyQualifiedName}, {dictionaryType.ValueType.FullyQualifiedName}> kvp) => dict[kvp.Key{suppressSuffix}] = kvp.Value{suppressSuffix}",
                 { ConstructionStrategy: CollectionConstructionStrategy.Mutable, ImplementationTypeFQN: { } implementationTypeFQN }
                     => $"static (ref {dictionaryType.Type.FullyQualifiedName} dict, global::System.Collections.Generic.KeyValuePair<{dictionaryType.KeyType.FullyQualifiedName}, {dictionaryType.ValueType.FullyQualifiedName}> kvp) => (({implementationTypeFQN})dict)[kvp.Key{suppressSuffix}] = kvp.Value{suppressSuffix}",
+                { ConstructionStrategy: CollectionConstructionStrategy.Mutable, IndexerIsExplicitInterfaceImplementation: true, Kind: DictionaryKind.IDictionary }
+                    => $"static (ref {dictionaryType.Type.FullyQualifiedName} dict, global::System.Collections.Generic.KeyValuePair<{dictionaryType.KeyType.FullyQualifiedName}, {dictionaryType.ValueType.FullyQualifiedName}> kvp) => ((global::System.Collections.IDictionary)dict{suppressSuffix})[kvp.Key{suppressSuffix}] = kvp.Value{suppressSuffix}",
+                { ConstructionStrategy: CollectionConstructionStrategy.Mutable, IndexerIsExplicitInterfaceImplementation: true, Kind: DictionaryKind.IDictionaryOfKV }
+                    => $"static (ref {dictionaryType.Type.FullyQualifiedName} dict, global::System.Collections.Generic.KeyValuePair<{dictionaryType.KeyType.FullyQualifiedName}, {dictionaryType.ValueType.FullyQualifiedName}> kvp) => ((global::System.Collections.Generic.IDictionary<{dictionaryType.KeyType.FullyQualifiedName}, {dictionaryType.ValueType.FullyQualifiedName}>)dict{suppressSuffix})[kvp.Key{suppressSuffix}] = kvp.Value{suppressSuffix}",
                 _ => "null",
             };
         }

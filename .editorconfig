@@ -188,3 +188,6 @@ dotnet_diagnostic.CA1510.severity = none # incompatible with multitargeting proj
 
 # SA1134: Attributes should not share line
 dotnet_diagnostic.SA1134.severity = none
+
+# CA1010: Generic interface should also be implemented
+dotnet_diagnostic.CA1010.severity = none

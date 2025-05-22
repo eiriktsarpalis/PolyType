@@ -312,6 +312,21 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                     .OrderByDescending(m => m.Name) // Prefer set_Item over Add
                     .FirstOrDefault();
 
+                if (!typeof(TDictionary).IsValueType)
+                {
+                    // If no indexer was found, check for potential explicit interface implementations.
+                    // Only do so if the type is not a value type, since this would force boxing otherwise.
+                    if (addMethod is null && typeof(IDictionary<TKey, TValue>).IsAssignableFrom(dictionaryType))
+                    {
+                        addMethod = typeof(IDictionary<TKey, TValue>).GetMethod("set_Item", BindingFlags.Public | BindingFlags.Instance);
+                    }
+
+                    if (addMethod is null && typeof(IDictionary).IsAssignableFrom(dictionaryType) && typeof(TKey) == typeof(object))
+                    {
+                        addMethod = typeof(IDictionary).GetMethod("set_Item", BindingFlags.Public | BindingFlags.Instance);
+                    }
+                }
+
                 if (addMethod != null)
                 {
                     _defaultCtor = defaultCtor;

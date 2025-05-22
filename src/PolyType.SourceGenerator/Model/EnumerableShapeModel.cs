@@ -16,4 +16,5 @@ public sealed record EnumerableShapeModel : TypeShapeModel
     public required string? StaticFactoryWithComparerMethod { get; init; }
     public required bool CtorRequiresListConversion { get; init; }
     public required bool ElementTypeContainsNullableAnnotations { get; init; }
+    public required bool AddMethodIsExplicitInterfaceImplementation { get; init; }
 }
