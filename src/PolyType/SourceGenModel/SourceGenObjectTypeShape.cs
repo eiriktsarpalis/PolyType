@@ -8,18 +8,8 @@ namespace PolyType.SourceGenModel;
 /// Source generator model for object type shapes.
 /// </summary>
 /// <typeparam name="TObject">The type whose shape is described.</typeparam>
-public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObject>, IObjectTypeShape<TObject>
+public sealed class SourceGenObjectTypeShape<TObject>(SourceGenTypeShapeProvider provider) : IObjectTypeShape<TObject>(provider)
 {
-    /// <summary>
-    /// Gets a value indicating whether the type represents a record.
-    /// </summary>
-    public required bool IsRecordType { get; init; }
-
-    /// <summary>
-    /// Gets a value indicating whether the type represents a tuple.
-    /// </summary>
-    public required bool IsTupleType { get; init; }
-
     /// <summary>
     /// Gets the factory method for creating property shapes.
     /// </summary>
@@ -30,16 +20,33 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
     /// </summary>
     public Func<IConstructorShape>? CreateConstructorFunc { get; init; }
 
-    /// <inheritdoc/>
-    public override TypeShapeKind Kind => TypeShapeKind.Object;
+    /// <summary>
+    /// Gets a value indicating whether the type represents a record.
+    /// </summary>
+    public required bool IsRecordTypeSetter { get; init; }
 
     /// <inheritdoc/>
-    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);
+    public override bool IsRecordType => IsRecordTypeSetter;
 
-    IReadOnlyList<IPropertyShape> IObjectTypeShape.Properties => _properties ??= (CreatePropertiesFunc?.Invoke()).AsReadOnlyList();
+    /// <summary>
+    /// Gets a value indicating whether the type represents a tuple.
+    /// </summary>
+    public required bool IsTupleTypeSetter { get; init; }
+
+    /// <inheritdoc/>
+    public override bool IsTupleType => IsTupleTypeSetter;
+
+    /// <summary>
+    /// Gets the shape of an associated type, by its name.
+    /// </summary>
+    public Func<string, ITypeShape?>? AssociatedTypeShapes { get; init; }
+
+    /// <inheritdoc/>
+    public override IReadOnlyList<IPropertyShape> Properties => _properties ??= (CreatePropertiesFunc?.Invoke()).AsReadOnlyList();
     private IReadOnlyList<IPropertyShape>? _properties;
 
-    IConstructorShape? IObjectTypeShape.Constructor
+    /// <inheritdoc/>
+    public override IConstructorShape? Constructor
     {
         get
         {
@@ -55,4 +62,7 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
 
     private bool _isConstructorResolved;
     private IConstructorShape? _constructor;
+
+    /// <inheritdoc/>
+    public override ITypeShape? GetAssociatedTypeShape(Type associatedType) => InternalTypeShapeExtensions.GetAssociatedTypeShape(this, AssociatedTypeShapes, associatedType);
 }

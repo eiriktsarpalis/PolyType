@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace PolyType.Abstractions;
 
 /// <summary>
@@ -34,4 +36,38 @@ public interface IObjectTypeShape : ITypeShape
 /// Provides a strongly typed shape model for a .NET object.
 /// </summary>
 /// <typeparam name="T">The type of .NET object.</typeparam>
-public interface IObjectTypeShape<T> : ITypeShape<T>, IObjectTypeShape;
+public abstract class IObjectTypeShape<T>(ITypeShapeProvider provider) : ITypeShape<T>, IObjectTypeShape
+{
+    /// <inheritdoc/>
+    public abstract bool IsRecordType { get; }
+
+    /// <inheritdoc/>
+    public abstract bool IsTupleType { get; }
+
+    /// <inheritdoc/>
+    public abstract IReadOnlyList<IPropertyShape> Properties { get; }
+
+    /// <inheritdoc/>
+    public abstract IConstructorShape? Constructor { get; }
+
+    /// <inheritdoc/>
+    public Type Type => typeof(T);
+
+    /// <inheritdoc/>
+    public TypeShapeKind Kind => TypeShapeKind.Object;
+
+    /// <inheritdoc/>
+    public ITypeShapeProvider Provider => provider;
+
+    /// <inheritdoc/>
+    public virtual ICustomAttributeProvider? AttributeProvider => typeof(T);
+
+    /// <inheritdoc/>
+    public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);
+
+    /// <inheritdoc/>
+    public abstract ITypeShape? GetAssociatedTypeShape(Type associatedType);
+
+    /// <inheritdoc/>
+    public object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
+}

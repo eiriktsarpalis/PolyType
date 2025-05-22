@@ -14,13 +14,12 @@ internal sealed partial class SourceFormatter
         writer.WriteLine($$"""
             private global::PolyType.Abstractions.ITypeShape<{{objectShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
             {
-                return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<{{objectShapeModel.Type.FullyQualifiedName}}>
+                return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<{{objectShapeModel.Type.FullyQualifiedName}}>(this)
                 {
                     CreatePropertiesFunc = {{FormatNullOrThrowPartial(propertiesFactoryMethodName, !objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Properties))}},
                     CreateConstructorFunc = {{FormatNullOrThrowPartial(constructorFactoryMethodName, !objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Constructor))}},
-                    IsRecordType = {{FormatBool(objectShapeModel.IsRecordType)}},
-                    IsTupleType = {{FormatBool(objectShapeModel.IsTupleType)}},
-                    Provider = this,
+                    IsRecordTypeSetter = {{FormatBool(objectShapeModel.IsRecordType)}},
+                    IsTupleTypeSetter = {{FormatBool(objectShapeModel.IsTupleType)}},
                     AssociatedTypeShapes = {{FormatAssociatedTypeShapes(objectShapeModel)}},
                 };
             }

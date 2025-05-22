@@ -7,18 +7,15 @@ namespace PolyType.ReflectionProvider;
 
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
-internal abstract class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider provider) : ReflectionTypeShape<T>(provider), IObjectTypeShape<T>
+internal abstract class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider provider) : IObjectTypeShape<T>(provider)
 {
-    public sealed override TypeShapeKind Kind => TypeShapeKind.Object;
-    public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);
+    public override bool IsRecordType => false;
+    public override bool IsTupleType => false;
 
-    public virtual bool IsRecordType => false;
-    public virtual bool IsTupleType => false;
-
-    public IReadOnlyList<IPropertyShape> Properties => _properties ??= GetProperties().AsReadOnlyList();
+    public override IReadOnlyList<IPropertyShape> Properties => _properties ??= GetProperties().AsReadOnlyList();
     private IReadOnlyList<IPropertyShape>? _properties;
 
-    public IConstructorShape? Constructor
+    public override IConstructorShape? Constructor
     {
         get
         {
@@ -37,12 +34,16 @@ internal abstract class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider
 
     protected abstract IEnumerable<IPropertyShape> GetProperties();
     protected abstract IConstructorShape? GetConstructor();
+
+    public override ITypeShape? GetAssociatedTypeShape(Type associatedType) => InternalTypeShapeExtensions.GetAssociatedTypeShape(this, associatedType);
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider provider, bool disableMemberResolution) : ReflectionObjectTypeShape<T>(provider)
 {
+    private new ReflectionTypeShapeProvider Provider => (ReflectionTypeShapeProvider)base.Provider;
+
     public override bool IsRecordType => _isRecord ??= typeof(T).IsRecordType();
     private bool? _isRecord;
 

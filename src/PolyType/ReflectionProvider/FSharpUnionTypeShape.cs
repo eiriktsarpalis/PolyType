@@ -67,6 +67,8 @@ internal sealed class FSharpUnionCaseShape<TUnionCase, TUnion>(FSharpUnionCaseIn
 internal sealed class FSharpUnionCaseTypeShape<TUnionCase>(FSharpUnionCaseInfo? unionCaseInfo, ReflectionTypeShapeProvider provider)
     : ReflectionObjectTypeShape<TUnionCase>(provider)
 {
+    private new ReflectionTypeShapeProvider Provider => (ReflectionTypeShapeProvider)base.Provider;
+
     protected override IConstructorShape? GetConstructor()
     {
         if (unionCaseInfo is null)
