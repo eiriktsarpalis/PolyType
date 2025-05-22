@@ -135,6 +135,12 @@ public class KnownSymbols(Compilation compilation)
     private Option<INamedTypeSymbol?> _DictionaryOfTKeyTValue;
 
     /// <summary>
+    /// The type symbol for <see cref="ICollection{T}"/>.
+    /// </summary>
+    public INamedTypeSymbol? ICollectionOfT => GetOrResolveType("System.Collections.Generic.ICollection`1", ref _ICollectionOfT);
+    private Option<INamedTypeSymbol?> _ICollectionOfT;
+
+    /// <summary>
     /// The type symbol for <see cref="System.Collections.IList"/>.
     /// </summary>
     public INamedTypeSymbol? IList => GetOrResolveType("System.Collections.IList", ref _IList);

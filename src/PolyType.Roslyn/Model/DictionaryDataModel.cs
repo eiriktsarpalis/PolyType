@@ -45,6 +45,11 @@ public sealed class DictionaryDataModel : TypeDataModel
     /// and declares either an <see cref="IEqualityComparer{T}"/> or <see cref="IComparer{T}"/> parameter.
     /// </summary>
     public required IMethodSymbol? FactoryMethodWithComparer { get; init; }
+
+    /// <summary>
+    /// <see langword="true"/> if the dictionary type only exposes an indexer via an explicit interface implementation of either <see cref="IDictionary{TKey, TValue}"/> or <see cref="IDictionary"/>.
+    /// </summary>
+    public required bool IndexerIsExplicitInterfaceImplementation { get; init; }
 }
 
 /// <summary>

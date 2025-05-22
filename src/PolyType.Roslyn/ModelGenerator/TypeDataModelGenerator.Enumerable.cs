@@ -26,6 +26,7 @@ public partial class TypeDataModelGenerator
         IMethodSymbol? factoryMethod = null;
         IMethodSymbol? factoryMethodWithComparer = null;
         INamedTypeSymbol? asyncEnumerableOfT = null;
+        bool addMethodIsExplicitInterfaceImplementation = false;
 
         if (type is IArrayTypeSymbol array)
         {
@@ -91,7 +92,7 @@ public partial class TypeDataModelGenerator
             if (factoryMethodWithComparer is null &&
                 namedType.Constructors.FirstOrDefault(ctor => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ Type: INamedTypeSymbol { IsGenericType: true } parameterType }] } &&
                 (SymbolEqualityComparer.Default.Equals(parameterType.ConstructedFrom, KnownSymbols.IEqualityComparerOfT) || SymbolEqualityComparer.Default.Equals(parameterType.ConstructedFrom, KnownSymbols.IComparerOfT))) is { } ctor &&
-                TryGetAddMethod(type, elementType, out addElementMethod))
+                TryGetAddMethod(type, elementType, out addElementMethod, out addMethodIsExplicitInterfaceImplementation))
             {
                 constructionStrategy = CollectionModelConstructionStrategy.Mutable;
                 factoryMethodWithComparer = ctor;
@@ -113,7 +114,7 @@ public partial class TypeDataModelGenerator
             // .ctor()
             if (factoryMethod is null &&
                 namedType.Constructors.FirstOrDefault(ctor => ctor is { DeclaredAccessibility: Accessibility.Public, IsStatic: false, Parameters: [] }) is { } ctor2 &&
-                TryGetAddMethod(type, elementType, out addElementMethod))
+                TryGetAddMethod(type, elementType, out addElementMethod, out addMethodIsExplicitInterfaceImplementation))
             {
                 constructionStrategy = CollectionModelConstructionStrategy.Mutable;
                 factoryMethod = ctor2;
@@ -181,7 +182,7 @@ public partial class TypeDataModelGenerator
             kind = EnumerableKind.IEnumerable;
 
             if (namedType.Constructors.FirstOrDefault(ctor => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [] } && !ctor.IsStatic) is { } ctor &&
-                TryGetAddMethod(type, elementType, out addElementMethod))
+                TryGetAddMethod(type, elementType, out addElementMethod, out addMethodIsExplicitInterfaceImplementation))
             {
                 constructionStrategy = CollectionModelConstructionStrategy.Mutable;
                 factoryMethod = ctor;
@@ -222,21 +223,50 @@ public partial class TypeDataModelGenerator
             AddElementMethod = addElementMethod,
             FactoryMethod = factoryMethod,
             FactoryMethodWithComparer = factoryMethodWithComparer,
-            Rank = rank,
             AssociatedTypes = associatedTypes,
+            Rank = rank,
+            AddMethodIsExplicitInterfaceImplementation = addMethodIsExplicitInterfaceImplementation,
         };
 
         return true;
 
-        bool TryGetAddMethod(ITypeSymbol type, ITypeSymbol elementType, [NotNullWhen(true)] out IMethodSymbol? result)
+        bool TryGetAddMethod(ITypeSymbol type, ITypeSymbol elementType, [NotNullWhen(true)] out IMethodSymbol? result, out bool isExplicitImplementation)
         {
+            isExplicitImplementation = false;
             result = type.GetAllMembers()
                 .OfType<IMethodSymbol>()
                 .FirstOrDefault(method =>
                     method is { DeclaredAccessibility: Accessibility.Public, IsStatic: false, Name: "Add" or "Enqueue" or "Push", Parameters: [{ Type: ITypeSymbol parameterType }] } &&
                     SymbolEqualityComparer.Default.Equals(method.Parameters[0].Type, elementType));
 
-            return result != null;
+            if (!type.IsValueType)
+            {
+                // For reference types, allow using explicit interface implementations of known Add methods.
+                if (result is null && type.GetCompatibleGenericBaseType(KnownSymbols.ICollectionOfT) is { } iCollectionOfT)
+                {
+                
+                    result = iCollectionOfT.GetMembers("Add")
+                        .OfType<IMethodSymbol>()
+                        .FirstOrDefault(m =>
+                            m is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ Type: ITypeSymbol paramType }] } &&
+                            SymbolEqualityComparer.Default.Equals(paramType, elementType));
+
+                    isExplicitImplementation = result is not null;
+                }
+            
+                if (result is null && KnownSymbols.IList.IsAssignableFrom(type))
+                {
+                    result = KnownSymbols.IList.GetMembers("Add")
+                        .OfType<IMethodSymbol>()
+                        .FirstOrDefault(m =>
+                            m is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ Type: ITypeSymbol paramType }] } &&
+                            SymbolEqualityComparer.Default.Equals(paramType, elementType));
+
+                    isExplicitImplementation = result is not null;
+                }
+            }
+
+            return result is not null;
         }
 
         (IMethodSymbol? Factory, IMethodSymbol? FactoryWithComparer, CollectionModelConstructionStrategy Strategy) GetImmutableCollectionFactory(INamedTypeSymbol namedType)

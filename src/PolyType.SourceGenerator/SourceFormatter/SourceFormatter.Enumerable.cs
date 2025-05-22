@@ -61,10 +61,14 @@ internal sealed partial class SourceFormatter
             string suppressSuffix = enumerableType.ElementTypeContainsNullableAnnotations ? "!" : "";
             return enumerableType switch
             {
-                { AddElementMethod: { } addMethod, ImplementationTypeFQN: null } =>
+                { AddElementMethod: { } addMethod, ImplementationTypeFQN: null, AddMethodIsExplicitInterfaceImplementation: false } =>
                     $"static (ref {enumerableType.Type.FullyQualifiedName} obj, {enumerableType.ElementType.FullyQualifiedName} value) => obj.{addMethod}(value{suppressSuffix})",
                 { AddElementMethod: { } addMethod, ImplementationTypeFQN: { } implTypeFQN } =>
                     $"static (ref {enumerableType.Type.FullyQualifiedName} obj, {enumerableType.ElementType.FullyQualifiedName} value) => (({implTypeFQN})obj).{addMethod}(value{suppressSuffix})",
+                { AddElementMethod: { } addMethod, AddMethodIsExplicitInterfaceImplementation: true, Kind: EnumerableKind.IEnumerableOfT } =>
+                    $"static (ref {enumerableType.Type.FullyQualifiedName} obj, {enumerableType.ElementType.FullyQualifiedName} value) => ((global::System.Collections.Generic.ICollection<{enumerableType.ElementType.FullyQualifiedName}>)obj{suppressSuffix}).{addMethod}(value{suppressSuffix})",
+                { AddElementMethod: { } addMethod, AddMethodIsExplicitInterfaceImplementation: true, Kind: EnumerableKind.IEnumerable } =>
+                    $"static (ref {enumerableType.Type.FullyQualifiedName} obj, {enumerableType.ElementType.FullyQualifiedName} value) => ((global::System.Collections.IList)obj{suppressSuffix}).{addMethod}(value{suppressSuffix})",
                 _ => "null",
             };
         }

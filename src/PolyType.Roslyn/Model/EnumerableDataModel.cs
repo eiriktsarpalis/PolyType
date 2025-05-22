@@ -52,6 +52,11 @@ public sealed class EnumerableDataModel : TypeDataModel
     /// If the enumerable is an array, the rank of the array.
     /// </summary>
     public required int Rank { get; init; }
+
+    /// <summary>
+    /// <see langword="true"/> if the enumerable type only exposes an add method via an explicit interface implementation of either <see cref="ICollection{T}"/> or <see cref="ICollection"/>.
+    /// </summary>
+    public required bool AddMethodIsExplicitInterfaceImplementation { get; init; }
 }
 
 /// <summary>

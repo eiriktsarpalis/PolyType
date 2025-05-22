@@ -67,10 +67,14 @@ internal sealed partial class SourceFormatter
             string suppressSuffix = dictionaryType.KeyValueTypesContainNullableAnnotations ? "!" : "";
             return dictionaryType switch
             {
-                { ConstructionStrategy: CollectionConstructionStrategy.Mutable, ImplementationTypeFQN: null }
+                { ConstructionStrategy: CollectionConstructionStrategy.Mutable, ImplementationTypeFQN: null, IndexerIsExplicitInterfaceImplementation: false }
                     => $"static (ref {dictionaryType.Type.FullyQualifiedName} dict, global::System.Collections.Generic.KeyValuePair<{dictionaryType.KeyType.FullyQualifiedName}, {dictionaryType.ValueType.FullyQualifiedName}> kvp) => dict[kvp.Key{suppressSuffix}] = kvp.Value{suppressSuffix}",
                 { ConstructionStrategy: CollectionConstructionStrategy.Mutable, ImplementationTypeFQN: { } implementationTypeFQN }
                     => $"static (ref {dictionaryType.Type.FullyQualifiedName} dict, global::System.Collections.Generic.KeyValuePair<{dictionaryType.KeyType.FullyQualifiedName}, {dictionaryType.ValueType.FullyQualifiedName}> kvp) => (({implementationTypeFQN})dict)[kvp.Key{suppressSuffix}] = kvp.Value{suppressSuffix}",
+                { ConstructionStrategy: CollectionConstructionStrategy.Mutable, IndexerIsExplicitInterfaceImplementation: true, Kind: DictionaryKind.IDictionary }
+                    => $"static (ref {dictionaryType.Type.FullyQualifiedName} dict, global::System.Collections.Generic.KeyValuePair<{dictionaryType.KeyType.FullyQualifiedName}, {dictionaryType.ValueType.FullyQualifiedName}> kvp) => ((global::System.Collections.IDictionary)dict{suppressSuffix})[kvp.Key{suppressSuffix}] = kvp.Value{suppressSuffix}",
+                { ConstructionStrategy: CollectionConstructionStrategy.Mutable, IndexerIsExplicitInterfaceImplementation: true, Kind: DictionaryKind.IDictionaryOfKV }
+                    => $"static (ref {dictionaryType.Type.FullyQualifiedName} dict, global::System.Collections.Generic.KeyValuePair<{dictionaryType.KeyType.FullyQualifiedName}, {dictionaryType.ValueType.FullyQualifiedName}> kvp) => ((global::System.Collections.Generic.IDictionary<{dictionaryType.KeyType.FullyQualifiedName}, {dictionaryType.ValueType.FullyQualifiedName}>)dict{suppressSuffix})[kvp.Key{suppressSuffix}] = kvp.Value{suppressSuffix}",
                 _ => "null",
             };
         }

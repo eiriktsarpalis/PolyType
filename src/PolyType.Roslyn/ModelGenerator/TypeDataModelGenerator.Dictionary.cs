@@ -23,6 +23,7 @@ public partial class TypeDataModelGenerator
         IMethodSymbol? factoryMethodWithComparer = null;
         ITypeSymbol? keyType = null;
         ITypeSymbol? valueType = null;
+        bool indexerIsExplicitImplementation = false;
 
         if (type.GetCompatibleGenericBaseType(KnownSymbols.IReadOnlyDictionaryOfTKeyTValue) is { } genericReadOnlyIDictInstance)
         {
@@ -49,7 +50,7 @@ public partial class TypeDataModelGenerator
 
         // .ctor()
         if (namedType.Constructors.FirstOrDefault(ctor => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [], IsStatic: false }) is { } ctor &&
-            ContainsSettableIndexer(type, keyType, valueType))
+            ContainsSettableIndexer(type, keyType, valueType, out indexerIsExplicitImplementation))
         {
             constructionStrategy = CollectionModelConstructionStrategy.Mutable;
             factoryMethod = ctor;
@@ -153,19 +154,30 @@ public partial class TypeDataModelGenerator
             FactoryMethod = factoryMethod,
             FactoryMethodWithComparer = factoryMethodWithComparer,
             AssociatedTypes = associatedTypes,
+            IndexerIsExplicitInterfaceImplementation = indexerIsExplicitImplementation,
         };
 
         return true;
 
-        bool ContainsSettableIndexer(ITypeSymbol type, ITypeSymbol keyType, ITypeSymbol valueType)
+        bool ContainsSettableIndexer(ITypeSymbol type, ITypeSymbol keyType, ITypeSymbol valueType, out bool isExplicitInterfaceImplementation)
         {
-            return type.GetAllMembers()
+            bool hasSettableIndexer = type.GetAllMembers()
                 .OfType<IPropertySymbol>()
                 .Any(prop =>
                     prop is { IsStatic: false, IsIndexer: true, Parameters.Length: 1, SetMethod: not null } &&
                     SymbolEqualityComparer.Default.Equals(prop.Parameters[0].Type, keyType) &&
                     SymbolEqualityComparer.Default.Equals(prop.Type, valueType) &&
                     IsAccessibleSymbol(prop));
+
+            if (!hasSettableIndexer && !type.IsValueType && kind is DictionaryKind.IDictionaryOfKV or DictionaryKind.IDictionary)
+            {
+                // For reference types, allow using explicit interface implementations of the indexer.
+                isExplicitInterfaceImplementation = true;
+                return true;
+            }
+
+            isExplicitInterfaceImplementation = false;
+            return hasSettableIndexer;
         }
 
         (IMethodSymbol? Factory, IMethodSymbol? FactoryWithComparer, CollectionModelConstructionStrategy Strategy) GetImmutableDictionaryFactory(INamedTypeSymbol namedType)
