@@ -14,12 +14,11 @@ internal sealed partial class SourceFormatter
         writer.WriteLine($$"""
             private global::PolyType.Abstractions.ITypeShape<{{unionShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
             {
-                return new global::PolyType.SourceGenModel.SourceGenUnionTypeShape<{{unionShapeModel.Type.FullyQualifiedName}}>
+                return new global::PolyType.SourceGenModel.SourceGenUnionTypeShape<{{unionShapeModel.Type.FullyQualifiedName}}>(this)
                 {
-                    BaseType = {{unionShapeModel.UnderlyingModel.SourceIdentifier}},
+                    BaseTypeSetter = {{unionShapeModel.UnderlyingModel.SourceIdentifier}},
                     CreateUnionCasesFunc = {{createUnionCasesMethodName}},
                     GetUnionCaseIndexFunc = {{getUnionCaseIndexMethod}},
-                    Provider = this,
                 };
             }
             """);

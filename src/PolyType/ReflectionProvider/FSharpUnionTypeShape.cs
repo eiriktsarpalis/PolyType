@@ -8,19 +8,17 @@ namespace PolyType.ReflectionProvider;
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 internal sealed class FSharpUnionTypeShape<TUnion>(FSharpUnionInfo unionInfo, ReflectionTypeShapeProvider provider)
-    : ReflectionTypeShape<TUnion>(provider), IUnionTypeShape<TUnion>
+    : IUnionTypeShape<TUnion>(provider)
 {
-    public override TypeShapeKind Kind => TypeShapeKind.Union;
-    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnion(this, state);
-    public ITypeShape<TUnion> BaseType { get; } = new FSharpUnionCaseTypeShape<TUnion>(null, provider);
+    public override ITypeShape<TUnion> BaseType { get; } = new FSharpUnionCaseTypeShape<TUnion>(null, provider);
 
-    public IReadOnlyList<IUnionCaseShape> UnionCases => _unionCases ??= CreateUnionCaseShapes().AsReadOnlyList();
+    public override IReadOnlyList<IUnionCaseShape> UnionCases => _unionCases ??= CreateUnionCaseShapes().AsReadOnlyList();
     private IReadOnlyList<IUnionCaseShape>? _unionCases;
 
-    public Getter<TUnion, int> GetGetUnionCaseIndex() => _unionCaseIndexReader ??= CreateUnionCaseIndex();
+    public override Getter<TUnion, int> GetGetUnionCaseIndex() => _unionCaseIndexReader ??= CreateUnionCaseIndex();
     private Getter<TUnion, int>? _unionCaseIndexReader;
 
-    ITypeShape IUnionTypeShape.BaseType => BaseType;
+    public override ITypeShape? GetAssociatedTypeShape(Type associatedType) => InternalTypeShapeExtensions.GetAssociatedTypeShape(this, associatedType);
 
     private Getter<TUnion, int> CreateUnionCaseIndex()
     {
@@ -31,7 +29,7 @@ internal sealed class FSharpUnionTypeShape<TUnion>(FSharpUnionInfo unionInfo, Re
                 return (ref TUnion value) => func(value);
 
             case PropertyInfo tagReaderProperty:
-                return Provider.MemberAccessor.CreateGetter<TUnion, int>(tagReaderProperty, null);
+                return provider.MemberAccessor.CreateGetter<TUnion, int>(tagReaderProperty, null);
 
             default:
                 Debug.Fail("Invalid tag reader member");
