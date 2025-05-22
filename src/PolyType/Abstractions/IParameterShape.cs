@@ -126,7 +126,7 @@ public abstract class IParameterShape<TArgumentState, TParameterType> : IParamet
     /// </summary>
     public abstract TParameterType? DefaultValue { get; }
 
-    object? IParameterShape.DefaultValue => DefaultValue;
+    object? IParameterShape.DefaultValue => HasDefaultValue ? DefaultValue : null;
 
     /// <inheritdoc/>
     public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitParameter(this, state);
