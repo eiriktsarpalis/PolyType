@@ -11,20 +11,19 @@ internal sealed partial class SourceFormatter
         writer.WriteLine($$"""
             private global::PolyType.Abstractions.ITypeShape<{{enumerableShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
             {
-                return new global::PolyType.SourceGenModel.SourceGenEnumerableTypeShape<{{enumerableShapeModel.Type.FullyQualifiedName}}, {{enumerableShapeModel.ElementType.FullyQualifiedName}}>
+                return new global::PolyType.SourceGenModel.SourceGenEnumerableTypeShape<{{enumerableShapeModel.Type.FullyQualifiedName}}, {{enumerableShapeModel.ElementType.FullyQualifiedName}}>(this)
                 {
-                    ElementType = {{GetShapeModel(enumerableShapeModel.ElementType).SourceIdentifier}},
-                    ConstructionStrategy = {{FormatCollectionConstructionStrategy(enumerableShapeModel.ConstructionStrategy)}},
+                    ElementTypeSetter = {{GetShapeModel(enumerableShapeModel.ElementType).SourceIdentifier}},
+                    ConstructionStrategySetter = {{FormatCollectionConstructionStrategy(enumerableShapeModel.ConstructionStrategy)}},
                     DefaultConstructorFunc = {{FormatDefaultConstructorFunc(enumerableShapeModel)}},
                     EnumerableConstructorFunc = {{FormatEnumerableConstructorFunc(enumerableShapeModel)}},
                     SpanConstructorFunc = {{FormatSpanConstructorFunc(enumerableShapeModel)}},
-                    ComparerOptions = {{FormatComparerOptions(enumerableShapeModel.ConstructionComparer)}},
+                    ComparerOptionsSetter = {{FormatComparerOptions(enumerableShapeModel.ConstructionComparer)}},
                     GetEnumerableFunc = {{FormatGetEnumerableFunc(enumerableShapeModel)}},
                     AddElementFunc = {{FormatAddElementFunc(enumerableShapeModel)}},
-                    IsAsyncEnumerable = {{FormatBool(enumerableShapeModel.Kind is EnumerableKind.AsyncEnumerableOfT)}},
-                    Rank = {{enumerableShapeModel.Rank}},
+                    IsAsyncEnumerableSetter = {{FormatBool(enumerableShapeModel.Kind is EnumerableKind.AsyncEnumerableOfT)}},
+                    RankSetter = {{enumerableShapeModel.Rank}},
                     AssociatedTypeShapes = {{FormatAssociatedTypeShapes(enumerableShapeModel)}},
-                    Provider = this,
                };
             }
             """, trimNullAssignmentLines: true);

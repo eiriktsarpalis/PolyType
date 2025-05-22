@@ -7,35 +7,50 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TEnumerable">The type of the enumerable collection.</typeparam>
 /// <typeparam name="TElement">The element type of the collection.</typeparam>
-public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : SourceGenTypeShape<TEnumerable>, IEnumerableTypeShape<TEnumerable, TElement>
+public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement>(SourceGenTypeShapeProvider provider) : IEnumerableTypeShape<TEnumerable, TElement>(provider)
 {
-    /// <summary>
-    /// Gets the shape of the element type.
-    /// </summary>
-    public required ITypeShape<TElement> ElementType { get; init; }
-
-    /// <summary>
-    /// Gets the rank of the enumerable collection.
-    /// </summary>
-    public required int Rank { get; init; }
-
-    /// <summary>
-    /// Indicates whether the underlying type is an IAsyncEnumerable or not.
-    /// </summary>
-    public required bool IsAsyncEnumerable { get; init; }
-
     /// <summary>
     /// Gets the function that retrieves an enumerable from an instance of the collection.
     /// </summary>
     public required Func<TEnumerable, IEnumerable<TElement>> GetEnumerableFunc { get; init; }
 
+    /// <summary>
+    /// Gets the shape of the element type.
+    /// </summary>
+    public required ITypeShape<TElement> ElementTypeSetter { private get; init; }
+
     /// <inheritdoc/>
-    public required CollectionComparerOptions ComparerOptions { get; init; }
+    public override ITypeShape<TElement> ElementType => ElementTypeSetter;
+
+    /// <summary>
+    /// Gets the rank of the enumerable collection.
+    /// </summary>
+    public required int RankSetter { private get; init; }
+
+    /// <inheritdoc/>
+    public override int Rank => RankSetter;
+
+    /// <summary>
+    /// Indicates whether the underlying type is an IAsyncEnumerable or not.
+    /// </summary>
+    public required bool IsAsyncEnumerableSetter { private get; init; }
+
+    /// <inheritdoc/>
+    public override bool IsAsyncEnumerable => IsAsyncEnumerableSetter;
+
+    /// <inheritdoc cref="ComparerOptions"/>
+    public required CollectionComparerOptions ComparerOptionsSetter { private get; init; }
+
+    /// <inheritdoc/>
+    public override CollectionComparerOptions ComparerOptions => ComparerOptionsSetter;
 
     /// <summary>
     /// Gets the construction strategy for the collection.
     /// </summary>
-    public required CollectionConstructionStrategy ConstructionStrategy { get; init; }
+    public required CollectionConstructionStrategy ConstructionStrategySetter { private get; init; }
+
+    /// <inheritdoc/>
+    public override CollectionConstructionStrategy ConstructionStrategy => ConstructionStrategySetter;
 
     /// <summary>
     /// Gets the function that constructs a default instance of the collection.
@@ -57,26 +72,31 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     /// </summary>
     public Func<CollectionConstructionOptions<TElement>?, SpanConstructor<TElement, TEnumerable>>? SpanConstructorFunc { get; init; }
 
-    /// <inheritdoc/>
-    public override TypeShapeKind Kind => TypeShapeKind.Enumerable;
+    /// <summary>
+    /// Gets the shape of an associated type, by its name.
+    /// </summary>
+    public Func<string, ITypeShape?>? AssociatedTypeShapes { get; init; }
 
     /// <inheritdoc/>
-    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnumerable(this, state);
-
-    ITypeShape IEnumerableTypeShape.ElementType => ElementType;
-
-    Func<TEnumerable, IEnumerable<TElement>> IEnumerableTypeShape<TEnumerable, TElement>.GetGetEnumerable()
+    public override Func<TEnumerable, IEnumerable<TElement>> GetGetEnumerable()
         => GetEnumerableFunc;
 
-    Func<TEnumerable> IEnumerableTypeShape<TEnumerable, TElement>.GetDefaultConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions)
+    /// <inheritdoc/>
+    public override Func<TEnumerable> GetDefaultConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions)
         => DefaultConstructorFunc?.Invoke(collectionConstructionOptions) ?? throw new InvalidOperationException("Enumerable shape does not specify a default constructor.");
 
-    Setter<TEnumerable, TElement> IEnumerableTypeShape<TEnumerable, TElement>.GetAddElement()
+    /// <inheritdoc/>
+    public override Setter<TEnumerable, TElement> GetAddElement()
         => AddElementFunc ?? throw new InvalidOperationException("Enumerable shape does not specify an append delegate.");
 
-    Func<IEnumerable<TElement>, TEnumerable> IEnumerableTypeShape<TEnumerable, TElement>.GetEnumerableConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions)
+    /// <inheritdoc/>
+    public override Func<IEnumerable<TElement>, TEnumerable> GetEnumerableConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions)
         => EnumerableConstructorFunc?.Invoke(collectionConstructionOptions) ?? throw new InvalidOperationException("Enumerable shape does not specify an enumerable constructor.");
 
-    SpanConstructor<TElement, TEnumerable> IEnumerableTypeShape<TEnumerable, TElement>.GetSpanConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions)
+    /// <inheritdoc/>
+    public override SpanConstructor<TElement, TEnumerable> GetSpanConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions)
         => SpanConstructorFunc?.Invoke(collectionConstructionOptions) ?? throw new InvalidOperationException("Enumerable shape does not specify a span constructor.");
+
+    /// <inheritdoc/>
+    public override ITypeShape? GetAssociatedTypeShape(Type associatedType) => InternalTypeShapeExtensions.GetAssociatedTypeShape(this, AssociatedTypeShapes, associatedType);
 }

@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Reflection;
 
 namespace PolyType.Abstractions;
 
@@ -60,15 +61,41 @@ public interface IEnumerableTypeShape : ITypeShape
 ///
 /// For non-generic collections, <typeparamref name="TElement"/> is instantiated to <see cref="object"/>.
 /// </remarks>
-public interface IEnumerableTypeShape<TEnumerable, TElement> : ITypeShape<TEnumerable>, IEnumerableTypeShape
+public abstract class IEnumerableTypeShape<TEnumerable, TElement>(ITypeShapeProvider provider) : ITypeShape<TEnumerable>, IEnumerableTypeShape
 {
+    ITypeShape IEnumerableTypeShape.ElementType => ElementType;
+
     /// <summary>
     /// Gets the shape of the underlying element type.
     /// </summary>
     /// <remarks>
     /// For non-generic <see cref="IEnumerable"/> this returns the shape for <see cref="object"/>.
     /// </remarks>
-    new ITypeShape<TElement> ElementType { get; }
+    public virtual ITypeShape<TElement> ElementType => provider.Resolve<TElement>();
+
+    /// <inheritdoc/>
+    public Type Type => typeof(TEnumerable);
+
+    /// <inheritdoc/>
+    public TypeShapeKind Kind => TypeShapeKind.Enumerable;
+
+    /// <inheritdoc/>
+    public ITypeShapeProvider Provider => provider;
+
+    /// <inheritdoc/>
+    public virtual ICustomAttributeProvider? AttributeProvider => typeof(TEnumerable);
+
+    /// <inheritdoc/>
+    public abstract CollectionConstructionStrategy ConstructionStrategy { get; }
+
+    /// <inheritdoc/>
+    public abstract CollectionComparerOptions ComparerOptions { get; }
+
+    /// <inheritdoc/>
+    public abstract int Rank { get; }
+
+    /// <inheritdoc/>
+    public virtual bool IsAsyncEnumerable => false;
 
     /// <summary>
     /// Creates a delegate used for getting an <see cref="IEnumerable{TElement}"/>
@@ -78,7 +105,7 @@ public interface IEnumerableTypeShape<TEnumerable, TElement> : ITypeShape<TEnume
     /// A delegate accepting a <typeparamref name="TEnumerable"/> and
     /// returning an <see cref="IEnumerable{TElement}"/> view of the instance.
     /// </returns>
-    Func<TEnumerable, IEnumerable<TElement>> GetGetEnumerable();
+    public abstract Func<TEnumerable, IEnumerable<TElement>> GetGetEnumerable();
 
     /// <summary>
     /// Creates a delegate wrapping a parameterless constructor of a mutable collection.
@@ -86,14 +113,14 @@ public interface IEnumerableTypeShape<TEnumerable, TElement> : ITypeShape<TEnume
     /// <param name="collectionConstructionOptions">Options that control how the collection is constructed. Use <see cref="IEnumerableTypeShape.ComparerOptions" /> to predict which properties may be worth initializing.</param>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Mutable"/>.</exception>
     /// <returns>A delegate wrapping a default constructor.</returns>
-    Func<TEnumerable> GetDefaultConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null);
+    public abstract Func<TEnumerable> GetDefaultConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null);
 
     /// <summary>
     /// Creates a setter delegate used for appending a <typeparamref name="TElement"/> to a mutable collection.
     /// </summary>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Mutable"/>.</exception>
     /// <returns>A setter delegate used for appending elements to a mutable collection.</returns>
-    Setter<TEnumerable, TElement> GetAddElement();
+    public abstract Setter<TEnumerable, TElement> GetAddElement();
 
     /// <summary>
     /// Creates a constructor delegate for creating a collection from a span.
@@ -101,7 +128,7 @@ public interface IEnumerableTypeShape<TEnumerable, TElement> : ITypeShape<TEnume
     /// <param name="collectionConstructionOptions">Options that control how the collection is constructed. Use <see cref="IEnumerableTypeShape.ComparerOptions" /> to predict which properties may be worth initializing.</param>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Span"/>.</exception>
     /// <returns>A delegate constructing a collection from a span of values.</returns>
-    SpanConstructor<TElement, TEnumerable> GetSpanConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null);
+    public abstract SpanConstructor<TElement, TEnumerable> GetSpanConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null);
 
     /// <summary>
     /// Creates a constructor delegate for creating a collection from an enumerable.
@@ -109,5 +136,14 @@ public interface IEnumerableTypeShape<TEnumerable, TElement> : ITypeShape<TEnume
     /// <param name="collectionConstructionOptions">Options that control how the collection is constructed. Use <see cref="IEnumerableTypeShape.ComparerOptions" /> to predict which properties may be worth initializing.</param>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Enumerable"/>.</exception>
     /// <returns>A delegate constructing a collection from an enumerable of values.</returns>
-    Func<IEnumerable<TElement>, TEnumerable> GetEnumerableConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null);
+    public abstract Func<IEnumerable<TElement>, TEnumerable> GetEnumerableConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null);
+
+    /// <inheritdoc/>
+    public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnumerable(this, state);
+
+    /// <inheritdoc/>
+    public object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
+
+    /// <inheritdoc/>
+    public abstract ITypeShape? GetAssociatedTypeShape(Type associatedType);
 }
