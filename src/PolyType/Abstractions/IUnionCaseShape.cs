@@ -56,11 +56,28 @@ public interface IUnionCaseShape
 /// </summary>
 /// <typeparam name="TUnionCase">The type of the union case.</typeparam>
 /// <typeparam name="TUnion">The type of the underlying union.</typeparam>
-public interface IUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShape
+public abstract class IUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShape
     where TUnionCase : TUnion
 {
     /// <summary>
     /// Gets the underlying type shape of the union case.
     /// </summary>
-    new ITypeShape<TUnionCase> Type { get; }
+    public abstract ITypeShape<TUnionCase> Type { get; }
+
+    /// <inheritdoc/>
+    public abstract string Name { get; }
+
+    /// <inheritdoc/>
+    public abstract int Tag { get; }
+
+    /// <inheritdoc/>
+    public abstract bool IsTagSpecified { get; }
+
+    /// <inheritdoc/>
+    public abstract int Index { get; }
+
+    ITypeShape IUnionCaseShape.Type => Type;
+
+    /// <inheritdoc/>
+    public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnionCase(this, state);
 }

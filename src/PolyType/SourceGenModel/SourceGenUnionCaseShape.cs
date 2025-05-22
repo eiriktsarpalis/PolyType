@@ -13,26 +13,38 @@ public sealed class SourceGenUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShap
     /// <summary>
     /// Gets the underlying type shape of the union case.
     /// </summary>
-    public required ITypeShape<TUnionCase> Type { get; init; }
+    public required ITypeShape<TUnionCase> TypeSetter { get; init; }
+
+    /// <inheritdoc/>
+    public override ITypeShape<TUnionCase> Type => TypeSetter;
 
     /// <summary>
     /// Gets the unique string identifier for the current union case.
     /// </summary>
-    public required string Name { get; init; }
+    public required string NameSetter { get; init; }
+
+    /// <inheritdoc/>
+    public override string Name => NameSetter;
 
     /// <summary>
     /// Gets the unique integer identifier for the current union case.
     /// </summary>
-    public required int Tag { get; init; }
+    public required int TagSetter { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsTagSpecified { get; init; }
+    public override int Tag => TagSetter;
+
+    /// <inheritdoc cref="IsTagSpecified"/>
+    public required bool IsTagSpecifiedSetter { get; init; }
+
+    /// <inheritdoc/>
+    public override bool IsTagSpecified => IsTagSpecifiedSetter;
 
     /// <summary>
     /// Gets the unique index corresponding to the current union case.
     /// </summary>
-    public required int Index { get; init; }
+    public required int IndexSetter { get; init; }
 
-    ITypeShape IUnionCaseShape.Type => Type;
-    object? IUnionCaseShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitUnionCase(this, state);
+    /// <inheritdoc/>
+    public override int Index => IndexSetter;
 }

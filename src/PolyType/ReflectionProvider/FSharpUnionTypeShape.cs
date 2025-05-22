@@ -53,13 +53,11 @@ internal sealed class FSharpUnionCaseShape<TUnionCase, TUnion>(FSharpUnionCaseIn
     : IUnionCaseShape<TUnionCase, TUnion>
     where TUnionCase : TUnion
 {
-    public ITypeShape<TUnionCase> Type { get; } = new FSharpUnionCaseTypeShape<TUnionCase>(unionCaseInfo, provider);
-    public string Name => unionCaseInfo.Name;
-    public int Tag => unionCaseInfo.Tag;
-    public bool IsTagSpecified => false; // F# tags are inferred from the union case ordering
-    public int Index => unionCaseInfo.Tag;
-    ITypeShape IUnionCaseShape.Type => Type;
-    public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnionCase(this, state);
+    public override ITypeShape<TUnionCase> Type { get; } = new FSharpUnionCaseTypeShape<TUnionCase>(unionCaseInfo, provider);
+    public override string Name => unionCaseInfo.Name;
+    public override int Tag => unionCaseInfo.Tag;
+    public override bool IsTagSpecified => false; // F# tags are inferred from the union case ordering
+    public override int Index => unionCaseInfo.Tag;
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]

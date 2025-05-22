@@ -42,11 +42,11 @@ internal sealed partial class SourceFormatter
             writer.WriteLine($$"""
                 new global::PolyType.SourceGenModel.SourceGenUnionCaseShape<{{unionCase.TypeModel.Type.FullyQualifiedName}}, {{unionShapeModel.Type.FullyQualifiedName}}>
                 {
-                    Type = {{unionCase.TypeModel.SourceIdentifier}},
-                    Name = "{{unionCase.Name}}",
-                    Tag = {{unionCase.Tag}},
-                    IsTagSpecified = false,
-                    Index = {{unionCase.Tag}},
+                    TypeSetter = {{unionCase.TypeModel.SourceIdentifier}},
+                    NameSetter = "{{unionCase.Name}}",
+                    TagSetter = {{unionCase.Tag}},
+                    IsTagSpecifiedSetter = false,
+                    IndexSetter = {{unionCase.Tag}},
                 },
                 """);
         }
