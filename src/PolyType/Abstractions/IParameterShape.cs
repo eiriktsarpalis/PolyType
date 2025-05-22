@@ -88,22 +88,53 @@ public interface IParameterShape
 /// </summary>
 /// <typeparam name="TArgumentState">The state type used for aggregating method arguments.</typeparam>
 /// <typeparam name="TParameterType">The type of the underlying method parameter.</typeparam>
-public interface IParameterShape<TArgumentState, TParameterType> : IParameterShape
+public abstract class IParameterShape<TArgumentState, TParameterType> : IParameterShape
 {
+    /// <inheritdoc/>
+    public abstract int Position { get; }
+
+    /// <inheritdoc/>
+    public abstract string Name { get; }
+
+    /// <inheritdoc/>
+    public abstract ParameterKind Kind { get; }
+
+    /// <inheritdoc/>
+    public abstract bool HasDefaultValue { get; }
+
+    /// <inheritdoc/>
+    public abstract bool IsRequired { get; }
+
+    /// <inheritdoc/>
+    public abstract bool IsNonNullable { get; }
+
+    /// <inheritdoc/>
+    public abstract bool IsPublic { get; }
+
+    /// <inheritdoc/>
+    public abstract ICustomAttributeProvider? AttributeProvider { get; }
+
     /// <summary>
     /// Gets the shape of the method parameter type.
     /// </summary>
-    new ITypeShape<TParameterType> ParameterType { get; }
+    public abstract ITypeShape<TParameterType> ParameterType { get; }
+
+    ITypeShape IParameterShape.ParameterType => ParameterType;
 
     /// <summary>
     /// Gets the default value specified by the parameter, if applicable.
     /// </summary>
-    new TParameterType? DefaultValue { get; }
+    public abstract TParameterType? DefaultValue { get; }
+
+    object? IParameterShape.DefaultValue => DefaultValue;
+
+    /// <inheritdoc/>
+    public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitParameter(this, state);
 
     /// <summary>
     /// Creates a setter delegate for configuring a state object
     /// with a value for the current argument.
     /// </summary>
     /// <returns>A <see cref="Setter{TDeclaringType, TPropertyType}"/> delegate.</returns>
-    Setter<TArgumentState, TParameterType> GetSetter();
+    public abstract Setter<TArgumentState, TParameterType> GetSetter();
 }

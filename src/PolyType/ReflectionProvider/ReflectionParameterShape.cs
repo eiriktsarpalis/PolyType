@@ -26,22 +26,18 @@ internal sealed class ReflectionParameterShape<TArgumentState, TParameter> : IPa
         _provider = provider;
     }
 
-    public ITypeShape<TParameter> ParameterType => _provider.GetShape<TParameter>();
+    public override ITypeShape<TParameter> ParameterType => _provider.Resolve<TParameter>();
+    public override int Position { get; }
+    public override string Name => _parameterInfo.Name;
+    public override ParameterKind Kind => _parameterInfo.Kind;
+    public override bool HasDefaultValue => _parameterInfo.HasDefaultValue;
+    public override bool IsRequired => _parameterInfo.IsRequired;
+    public override bool IsNonNullable => _parameterInfo.IsNonNullable;
+    public override bool IsPublic => _parameterInfo.IsPublic;
+    public override TParameter? DefaultValue => (TParameter?)_parameterInfo.DefaultValue;
+    public override ICustomAttributeProvider? AttributeProvider => _parameterInfo.AttributeProvider;
 
-    public int Position { get; }
-    public string Name => _parameterInfo.Name;
-    public ParameterKind Kind => _parameterInfo.Kind;
-    public bool HasDefaultValue => _parameterInfo.HasDefaultValue;
-    public bool IsRequired => _parameterInfo.IsRequired;
-    public bool IsNonNullable => _parameterInfo.IsNonNullable;
-    public bool IsPublic => _parameterInfo.IsPublic;
-    public TParameter? DefaultValue => (TParameter?)_parameterInfo.DefaultValue;
-    object? IParameterShape.DefaultValue => _parameterInfo.DefaultValue;
-    public ICustomAttributeProvider? AttributeProvider => _parameterInfo.AttributeProvider;
-    ITypeShape IParameterShape.ParameterType => ParameterType;
-    object? IParameterShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitParameter(this, state);
-
-    public Setter<TArgumentState, TParameter> GetSetter()
+    public override Setter<TArgumentState, TParameter> GetSetter()
     {
         return _setter ?? Helper();
 

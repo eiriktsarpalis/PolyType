@@ -13,37 +13,58 @@ public sealed class SourceGenParameterShape<TArgumentState, TParameter> : IParam
     /// <summary>
     /// Gets the position of the parameter in the constructor signature.
     /// </summary>
-    public required int Position { get; init; }
+    public required int PositionSetter { private get; init; }
+
+    /// <inheritdoc/>
+    public override int Position => PositionSetter;
 
     /// <summary>
     /// Gets the name of the parameter.
     /// </summary>
-    public required string Name { get; init; }
+    public required string NameSetter { private get; init; }
+
+    /// <inheritdoc/>
+    public override string Name => NameSetter;
 
     /// <summary>
     /// Gets the kind of the parameter.
     /// </summary>
-    public required ParameterKind Kind { get; init; }
+    public required ParameterKind KindSetter { private get; init; }
+
+    /// <inheritdoc/>
+    public override ParameterKind Kind => KindSetter;
 
     /// <summary>
     /// Gets a value indicating whether the parameter is required.
     /// </summary>
-    public required bool IsRequired { get; init; }
+    public required bool IsRequiredSetter { private get; init; }
+
+    /// <inheritdoc/>
+    public override bool IsRequired => IsRequiredSetter;
 
     /// <summary>
     /// Gets a value indicating whether the parameter is non-nullable.
     /// </summary>
-    public required bool IsNonNullable { get; init; }
+    public required bool IsNonNullableSetter { private get; init; }
+
+    /// <inheritdoc/>
+    public override bool IsNonNullable => IsNonNullableSetter;
 
     /// <summary>
     /// Gets a value indicating whether the parameter is declared public.
     /// </summary>
-    public required bool IsPublic { get; init; }
+    public required bool IsPublicSetter { private get; init; }
+
+    /// <inheritdoc/>
+    public override bool IsPublic => IsPublicSetter;
 
     /// <summary>
     /// Gets the type shape of the parameter.
     /// </summary>
-    public required ITypeShape<TParameter> ParameterType { get; init; }
+    public required ITypeShape<TParameter> ParameterTypeSetter { get; init; }
+
+    /// <inheritdoc/>
+    public override ITypeShape<TParameter> ParameterType => ParameterTypeSetter;
 
     /// <summary>
     /// Gets the setter for the parameter.
@@ -58,16 +79,22 @@ public sealed class SourceGenParameterShape<TArgumentState, TParameter> : IParam
     /// <summary>
     /// Gets a value indicating whether the parameter has a default value.
     /// </summary>
-    public bool HasDefaultValue { get; init; }
+    public bool HasDefaultValueSetter { get; init; }
+
+    /// <inheritdoc/>
+    public override bool HasDefaultValue => HasDefaultValueSetter;
 
     /// <summary>
     /// Gets the default value of the parameter.
     /// </summary>
-    public TParameter? DefaultValue { get; init; }
+    public TParameter? DefaultValueSetter { get; init; }
 
-    object? IParameterShape.DefaultValue => HasDefaultValue ? DefaultValue : null;
-    ITypeShape IParameterShape.ParameterType => ParameterType;
-    ICustomAttributeProvider? IParameterShape.AttributeProvider => AttributeProviderFunc?.Invoke();
-    object? IParameterShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitParameter(this, state);
-    Setter<TArgumentState, TParameter> IParameterShape<TArgumentState, TParameter>.GetSetter() => Setter;
+    /// <inheritdoc/>
+    public override TParameter? DefaultValue => DefaultValueSetter;
+
+    /// <inheritdoc/>
+    public override ICustomAttributeProvider? AttributeProvider => AttributeProviderFunc?.Invoke();
+
+    /// <inheritdoc/>
+    public override Setter<TArgumentState, TParameter> GetSetter() => Setter;
 }
