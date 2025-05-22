@@ -88,7 +88,7 @@ public interface IParameterShape
 /// </summary>
 /// <typeparam name="TArgumentState">The state type used for aggregating method arguments.</typeparam>
 /// <typeparam name="TParameterType">The type of the underlying method parameter.</typeparam>
-public abstract class IParameterShape<TArgumentState, TParameterType> : IParameterShape
+public abstract class IParameterShape<TArgumentState, TParameterType>(ITypeShapeProvider provider) : IParameterShape
 {
     /// <inheritdoc/>
     public abstract int Position { get; }
@@ -117,7 +117,7 @@ public abstract class IParameterShape<TArgumentState, TParameterType> : IParamet
     /// <summary>
     /// Gets the shape of the method parameter type.
     /// </summary>
-    public abstract ITypeShape<TParameterType> ParameterType { get; }
+    public virtual ITypeShape<TParameterType> ParameterType => provider.Resolve<TParameterType>();
 
     ITypeShape IParameterShape.ParameterType => ParameterType;
 

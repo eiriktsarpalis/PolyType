@@ -91,12 +91,12 @@ public interface IPropertyShape
 /// </summary>
 /// <typeparam name="TDeclaringType">The declaring type of the underlying property.</typeparam>
 /// <typeparam name="TPropertyType">The property type of the underlying property.</typeparam>
-public abstract class IPropertyShape<TDeclaringType, TPropertyType> : IPropertyShape
+public abstract class IPropertyShape<TDeclaringType, TPropertyType>(ITypeShapeProvider provider) : IPropertyShape
 {
     /// <summary>
     /// Gets the shape of the declaring type.
     /// </summary>
-    public abstract IObjectTypeShape<TDeclaringType> DeclaringType { get; }
+    public virtual IObjectTypeShape<TDeclaringType> DeclaringType => (IObjectTypeShape<TDeclaringType>)provider.Resolve<TDeclaringType>();
 
     /// <summary>
     /// Gets the shape of the property type.

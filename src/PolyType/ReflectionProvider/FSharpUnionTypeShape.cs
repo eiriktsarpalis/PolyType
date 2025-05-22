@@ -50,7 +50,7 @@ internal sealed class FSharpUnionTypeShape<TUnion>(FSharpUnionInfo unionInfo, Re
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 internal sealed class FSharpUnionCaseShape<TUnionCase, TUnion>(FSharpUnionCaseInfo unionCaseInfo, ReflectionTypeShapeProvider provider)
-    : IUnionCaseShape<TUnionCase, TUnion>
+    : IUnionCaseShape<TUnionCase, TUnion>(provider)
     where TUnionCase : TUnion
 {
     public override ITypeShape<TUnionCase> Type { get; } = new FSharpUnionCaseTypeShape<TUnionCase>(unionCaseInfo, provider);

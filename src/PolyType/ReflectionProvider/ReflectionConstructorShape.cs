@@ -9,7 +9,7 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
     ReflectionTypeShapeProvider provider,
     IObjectTypeShape<TDeclaringType> declaringType,
     IConstructorShapeInfo ctorInfo) :
-    IConstructorShape<TDeclaringType, TArgumentState>
+    IConstructorShape<TDeclaringType, TArgumentState>(provider)
 {
     private IReadOnlyList<IParameterShape>? _parameters;
     private Func<TArgumentState>? _argumentStateConstructor;

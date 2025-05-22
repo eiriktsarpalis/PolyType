@@ -21,7 +21,7 @@ internal sealed partial class SourceFormatter
         writer.Indentation++;
 
         writer.WriteLine($$"""
-            return new global::PolyType.SourceGenModel.SourceGenConstructorShape<{{type.Type.FullyQualifiedName}}, {{constructorArgumentStateFQN}}>
+            return new global::PolyType.SourceGenModel.SourceGenConstructorShape<{{type.Type.FullyQualifiedName}}, {{constructorArgumentStateFQN}}>(this)
             {
                 DeclaringTypeSetter = (global::PolyType.Abstractions.IObjectTypeShape<{{type.Type.FullyQualifiedName}}>){{type.SourceIdentifier}},
                 ParameterCount = {{constructor.TotalArity}},
@@ -279,7 +279,7 @@ internal sealed partial class SourceFormatter
             }
 
             writer.WriteLine($$"""
-                new global::PolyType.SourceGenModel.SourceGenParameterShape<{{constructorArgumentStateFQN}}, {{parameter.ParameterType.FullyQualifiedName}}>
+                new global::PolyType.SourceGenModel.SourceGenParameterShape<{{constructorArgumentStateFQN}}, {{parameter.ParameterType.FullyQualifiedName}}>(this)
                 {
                     PositionSetter = {{parameter.Position}},
                     NameSetter = {{FormatStringLiteral(parameter.Name)}},

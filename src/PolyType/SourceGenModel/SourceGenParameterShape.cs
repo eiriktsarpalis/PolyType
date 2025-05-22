@@ -8,7 +8,7 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TArgumentState">The mutable constructor argument state type.</typeparam>
 /// <typeparam name="TParameter">The constructor parameter type.</typeparam>
-public sealed class SourceGenParameterShape<TArgumentState, TParameter> : IParameterShape<TArgumentState, TParameter>
+public sealed class SourceGenParameterShape<TArgumentState, TParameter>(ITypeShapeProvider provider) : IParameterShape<TArgumentState, TParameter>(provider)
 {
     /// <summary>
     /// Gets the position of the parameter in the constructor signature.

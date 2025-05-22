@@ -37,7 +37,7 @@ internal sealed partial class SourceFormatter
             };
 
             writer.WriteLine($$"""
-                new global::PolyType.SourceGenModel.SourceGenPropertyShape<{{type.Type.FullyQualifiedName}}, {{property.PropertyType.FullyQualifiedName}}>
+                new global::PolyType.SourceGenModel.SourceGenPropertyShape<{{type.Type.FullyQualifiedName}}, {{property.PropertyType.FullyQualifiedName}}>(this)
                 {
                     NameSetter = {{FormatStringLiteral(property.Name)}},
                     DeclaringTypeSetter = (global::PolyType.Abstractions.IObjectTypeShape<{{type.Type.FullyQualifiedName}}>){{type.SourceIdentifier}},

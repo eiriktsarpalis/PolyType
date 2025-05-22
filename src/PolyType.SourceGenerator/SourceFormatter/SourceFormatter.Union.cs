@@ -53,7 +53,7 @@ internal sealed partial class SourceFormatter
             Debug.Assert(unionCase.Index == i);
             TypeShapeModel unionCaseType = unionCase.IsBaseType ? unionShapeModel.UnderlyingModel : GetShapeModel(unionCase.Type);
             writer.WriteLine($$"""
-                new global::PolyType.SourceGenModel.SourceGenUnionCaseShape<{{unionCase.Type.FullyQualifiedName}}, {{unionShapeModel.Type.FullyQualifiedName}}>
+                new global::PolyType.SourceGenModel.SourceGenUnionCaseShape<{{unionCase.Type.FullyQualifiedName}}, {{unionShapeModel.Type.FullyQualifiedName}}>(this)
                 {
                     TypeSetter = {{unionCaseType.SourceIdentifier}},
                     NameSetter = {{FormatStringLiteral(unionCase.Name)}},

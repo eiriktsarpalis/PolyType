@@ -45,7 +45,7 @@ public interface IConstructorShape
 /// </summary>
 /// <typeparam name="TDeclaringType">The declaring type of the underlying constructor.</typeparam>
 /// <typeparam name="TArgumentState">The state type used for aggregating constructor arguments.</typeparam>
-public abstract class IConstructorShape<TDeclaringType, TArgumentState> : IConstructorShape
+public abstract class IConstructorShape<TDeclaringType, TArgumentState>(ITypeShapeProvider provider) : IConstructorShape
 {
     /// <inheritdoc/>
     public abstract bool IsPublic { get; }
@@ -59,7 +59,7 @@ public abstract class IConstructorShape<TDeclaringType, TArgumentState> : IConst
     /// <summary>
     /// Gets the shape of the declaring type for the constructor.
     /// </summary>
-    public abstract IObjectTypeShape<TDeclaringType> DeclaringType { get; }
+    public virtual IObjectTypeShape<TDeclaringType> DeclaringType => (IObjectTypeShape<TDeclaringType>)provider.Resolve<TDeclaringType>();
 
     IObjectTypeShape IConstructorShape.DeclaringType => DeclaringType;
 

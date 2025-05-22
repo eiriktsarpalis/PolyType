@@ -8,7 +8,7 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TDeclaringType">The type being constructed.</typeparam>
 /// <typeparam name="TArgumentState">The mutable argument state for the constructor.</typeparam>
-public sealed class SourceGenConstructorShape<TDeclaringType, TArgumentState> : IConstructorShape<TDeclaringType, TArgumentState>
+public sealed class SourceGenConstructorShape<TDeclaringType, TArgumentState>(ITypeShapeProvider provider) : IConstructorShape<TDeclaringType, TArgumentState>(provider)
 {
     private IReadOnlyList<IParameterShape>? _parameters;
 

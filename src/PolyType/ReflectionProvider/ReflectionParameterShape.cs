@@ -17,6 +17,7 @@ internal sealed class ReflectionParameterShape<TArgumentState, TParameter> : IPa
         IConstructorShapeInfo ctorInfo,
         IParameterShapeInfo parameterInfo,
         int position)
+        : base(provider)
     {
         Debug.Assert(position < ctorInfo.Parameters.Length);
 
@@ -26,7 +27,6 @@ internal sealed class ReflectionParameterShape<TArgumentState, TParameter> : IPa
         _provider = provider;
     }
 
-    public override ITypeShape<TParameter> ParameterType => _provider.Resolve<TParameter>();
     public override int Position { get; }
     public override string Name => _parameterInfo.Name;
     public override ParameterKind Kind => _parameterInfo.Kind;

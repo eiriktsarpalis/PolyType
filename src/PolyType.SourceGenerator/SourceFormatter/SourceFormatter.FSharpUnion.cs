@@ -40,7 +40,7 @@ internal sealed partial class SourceFormatter
             }
 
             writer.WriteLine($$"""
-                new global::PolyType.SourceGenModel.SourceGenUnionCaseShape<{{unionCase.TypeModel.Type.FullyQualifiedName}}, {{unionShapeModel.Type.FullyQualifiedName}}>
+                new global::PolyType.SourceGenModel.SourceGenUnionCaseShape<{{unionCase.TypeModel.Type.FullyQualifiedName}}, {{unionShapeModel.Type.FullyQualifiedName}}>(this)
                 {
                     TypeSetter = {{unionCase.TypeModel.SourceIdentifier}},
                     NameSetter = "{{unionCase.Name}}",

@@ -15,6 +15,7 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
     private Setter<TDeclaringType, TPropertyType>? _setter;
 
     public ReflectionPropertyShape(ReflectionTypeShapeProvider provider, IObjectTypeShape<TDeclaringType> declaringType, PropertyShapeInfo shapeInfo)
+        : base(provider)
     {
         Debug.Assert(shapeInfo.MemberInfo.DeclaringType!.IsAssignableFrom(typeof(TDeclaringType)) || shapeInfo.ParentMembers is not null);
         Debug.Assert(shapeInfo.MemberInfo is PropertyInfo or FieldInfo);

@@ -7,7 +7,7 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TUnionCase">The type of the current union case.</typeparam>
 /// <typeparam name="TUnion">The type of the base union type.</typeparam>
-public sealed class SourceGenUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShape<TUnionCase, TUnion>
+public sealed class SourceGenUnionCaseShape<TUnionCase, TUnion>(ITypeShapeProvider provider) : IUnionCaseShape<TUnionCase, TUnion>(provider)
     where TUnionCase : TUnion
 {
     /// <summary>

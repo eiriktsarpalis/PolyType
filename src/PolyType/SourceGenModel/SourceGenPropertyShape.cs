@@ -8,7 +8,7 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TDeclaringType">The declaring type of the property.</typeparam>
 /// <typeparam name="TPropertyType">The type of the property value.</typeparam>
-public sealed class SourceGenPropertyShape<TDeclaringType, TPropertyType> : IPropertyShape<TDeclaringType, TPropertyType>
+public sealed class SourceGenPropertyShape<TDeclaringType, TPropertyType>(ITypeShapeProvider provider) : IPropertyShape<TDeclaringType, TPropertyType>(provider)
 {
     /// <summary>
     /// Gets the custom attribute provider for the property.

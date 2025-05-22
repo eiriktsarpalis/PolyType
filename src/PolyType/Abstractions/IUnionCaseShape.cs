@@ -56,13 +56,13 @@ public interface IUnionCaseShape
 /// </summary>
 /// <typeparam name="TUnionCase">The type of the union case.</typeparam>
 /// <typeparam name="TUnion">The type of the underlying union.</typeparam>
-public abstract class IUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShape
+public abstract class IUnionCaseShape<TUnionCase, TUnion>(ITypeShapeProvider provider) : IUnionCaseShape
     where TUnionCase : TUnion
 {
     /// <summary>
     /// Gets the underlying type shape of the union case.
     /// </summary>
-    public abstract ITypeShape<TUnionCase> Type { get; }
+    public virtual ITypeShape<TUnionCase> Type => provider.Resolve<TUnionCase>();
 
     /// <inheritdoc/>
     public abstract string Name { get; }
