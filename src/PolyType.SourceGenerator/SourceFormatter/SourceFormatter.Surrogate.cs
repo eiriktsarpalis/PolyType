@@ -10,11 +10,10 @@ internal sealed partial class SourceFormatter
         writer.WriteLine($$"""
            private global::PolyType.Abstractions.ITypeShape<{{surrogateShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
            {
-               return new global::PolyType.SourceGenModel.SourceGenSurrogateTypeShape<{{surrogateShapeModel.Type.FullyQualifiedName}}, {{surrogateShapeModel.SurrogateType.FullyQualifiedName}}>
+               return new global::PolyType.SourceGenModel.SourceGenSurrogateTypeShape<{{surrogateShapeModel.Type.FullyQualifiedName}}, {{surrogateShapeModel.SurrogateType.FullyQualifiedName}}>(this)
                {
-                   Marshaller = new {{surrogateShapeModel.MarshallerType.FullyQualifiedName}}(),
-                   SurrogateType = {{GetShapeModel(surrogateShapeModel.SurrogateType).SourceIdentifier}},
-                   Provider = this,
+                   MarshallerSetter = new {{surrogateShapeModel.MarshallerType.FullyQualifiedName}}(),
+                   SurrogateTypeSetter = {{GetShapeModel(surrogateShapeModel.SurrogateType).SourceIdentifier}},
                };
            }
            """);

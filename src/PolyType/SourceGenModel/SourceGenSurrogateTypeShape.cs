@@ -7,23 +7,29 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="T">The type that the shape describes.</typeparam>
 /// <typeparam name="TSurrogate">The surrogate type used by the shape.</typeparam>
-public sealed class SourceGenSurrogateTypeShape<T, TSurrogate> : SourceGenTypeShape<T>, ISurrogateTypeShape<T, TSurrogate>
+public sealed class SourceGenSurrogateTypeShape<T, TSurrogate>(SourceGenTypeShapeProvider provider) : ISurrogateTypeShape<T, TSurrogate>(provider)
 {
     /// <summary>
     /// Gets the marshaller to <typeparamref name="TSurrogate"/>.
     /// </summary>
-    public required IMarshaller<T, TSurrogate> Marshaller { get; init; }
+    public required IMarshaller<T, TSurrogate> MarshallerSetter { get; init; }
+
+    /// <inheritdoc/>
+    public override IMarshaller<T, TSurrogate> Marshaller => MarshallerSetter;
 
     /// <summary>
     /// Gets the shape of the surrogate type.
     /// </summary>
-    public required ITypeShape<TSurrogate> SurrogateType { get; init; }
+    public required ITypeShape<TSurrogate> SurrogateTypeSetter { get; init; }
 
     /// <inheritdoc/>
-    public override TypeShapeKind Kind => TypeShapeKind.Surrogate;
+    public override ITypeShape<TSurrogate> SurrogateType => SurrogateTypeSetter;
+
+    /// <summary>
+    /// Gets the shape of an associated type, by its name.
+    /// </summary>
+    public Func<string, ITypeShape?>? AssociatedTypeShapes { get; init; }
 
     /// <inheritdoc/>
-    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitSurrogate(this, state);
-
-    ITypeShape ISurrogateTypeShape.SurrogateType => SurrogateType;
+    public override ITypeShape? GetAssociatedTypeShape(Type associatedType) => InternalTypeShapeExtensions.GetAssociatedTypeShape(this, AssociatedTypeShapes, associatedType);
 }

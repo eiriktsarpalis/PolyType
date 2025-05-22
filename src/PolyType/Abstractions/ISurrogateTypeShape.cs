@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace PolyType.Abstractions;
 
 /// <summary>
@@ -16,15 +18,38 @@ public interface ISurrogateTypeShape : ITypeShape
 /// </summary>
 /// <typeparam name="T">The type the shape describes.</typeparam>
 /// <typeparam name="TSurrogate">The surrogate type being specified by the shape.</typeparam>
-public interface ISurrogateTypeShape<T, TSurrogate> : ITypeShape<T>, ISurrogateTypeShape
+public abstract class ISurrogateTypeShape<T, TSurrogate>(ITypeShapeProvider provider) : ITypeShape<T>, ISurrogateTypeShape
 {
     /// <summary>
     /// Gets the bidirectional mapper between <typeparamref name="T"/> and <typeparamref name="TSurrogate"/>.
     /// </summary>
-    IMarshaller<T, TSurrogate> Marshaller { get; }
+    public abstract IMarshaller<T, TSurrogate> Marshaller { get; }
 
     /// <summary>
     /// Gets the shape of the element type of the nullable.
     /// </summary>
-    new ITypeShape<TSurrogate> SurrogateType { get; }
+    public virtual ITypeShape<TSurrogate> SurrogateType => Provider.Resolve<TSurrogate>();
+
+    /// <inheritdoc/>
+    public Type Type => typeof(T);
+
+    /// <inheritdoc/>
+    public TypeShapeKind Kind => TypeShapeKind.Surrogate;
+
+    /// <inheritdoc/>
+    public ITypeShapeProvider Provider => provider;
+
+    /// <inheritdoc/>
+    public virtual ICustomAttributeProvider? AttributeProvider => typeof(T);
+
+    ITypeShape ISurrogateTypeShape.SurrogateType => SurrogateType;
+
+    /// <inheritdoc/>
+    public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitSurrogate(this, state);
+
+    /// <inheritdoc/>
+    public abstract ITypeShape? GetAssociatedTypeShape(Type associatedType);
+
+    /// <inheritdoc/>
+    public object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
 }

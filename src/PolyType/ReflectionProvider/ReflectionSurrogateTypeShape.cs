@@ -8,11 +8,9 @@ namespace PolyType.ReflectionProvider;
 internal sealed class ReflectionSurrogateTypeShape<T, TSurrogate>(
     IMarshaller<T, TSurrogate> marshaller,
     ReflectionTypeShapeProvider provider)
-    : ReflectionTypeShape<T>(provider), ISurrogateTypeShape<T, TSurrogate>
+    : ISurrogateTypeShape<T, TSurrogate>(provider)
 {
-    public override TypeShapeKind Kind => TypeShapeKind.Surrogate;
-    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitSurrogate(this, state);
-    public IMarshaller<T, TSurrogate> Marshaller => marshaller;
-    public ITypeShape<TSurrogate> SurrogateType => Provider.GetShape<TSurrogate>();
-    ITypeShape ISurrogateTypeShape.SurrogateType => SurrogateType;
+    public override IMarshaller<T, TSurrogate> Marshaller => marshaller;
+
+    public override ITypeShape? GetAssociatedTypeShape(Type associatedType) => InternalTypeShapeExtensions.GetAssociatedTypeShape(this, associatedType);
 }
