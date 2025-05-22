@@ -5,11 +5,9 @@ namespace PolyType.ReflectionProvider;
 
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
-internal sealed class ReflectionEnumTypeShape<TEnum, TUnderlying>(ReflectionTypeShapeProvider provider) : ReflectionTypeShape<TEnum>(provider), IEnumTypeShape<TEnum, TUnderlying>
+internal sealed class ReflectionEnumTypeShape<TEnum, TUnderlying>(ReflectionTypeShapeProvider provider) : IEnumTypeShape<TEnum, TUnderlying>(provider)
     where TEnum : struct, Enum
 {
-    public override TypeShapeKind Kind => TypeShapeKind.Enum;
-    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnum(this, state);
-    public ITypeShape<TUnderlying> UnderlyingType => Provider.GetShape<TUnderlying>();
-    ITypeShape IEnumTypeShape.UnderlyingType => UnderlyingType;
+    /// <inheritdoc/>
+    public override ITypeShape? GetAssociatedTypeShape(Type associatedType) => null;
 }

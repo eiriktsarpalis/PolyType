@@ -10,10 +10,9 @@ internal sealed partial class SourceFormatter
         writer.WriteLine($$"""
             private global::PolyType.Abstractions.ITypeShape<{{enumShapeType.Type.FullyQualifiedName}}> {{methodName}}()
             {
-                return new global::PolyType.SourceGenModel.SourceGenEnumTypeShape<{{enumShapeType.Type.FullyQualifiedName}}, {{enumShapeType.UnderlyingType.FullyQualifiedName}}>
+                return new global::PolyType.SourceGenModel.SourceGenEnumTypeShape<{{enumShapeType.Type.FullyQualifiedName}}, {{enumShapeType.UnderlyingType.FullyQualifiedName}}>(this)
                 {
-                    UnderlyingType = {{GetShapeModel(enumShapeType.UnderlyingType).SourceIdentifier}},
-                    Provider = this,
+                    UnderlyingTypeSetter = {{GetShapeModel(enumShapeType.UnderlyingType).SourceIdentifier}},
                 };
             }
             """);
