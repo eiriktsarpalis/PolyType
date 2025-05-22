@@ -11,19 +11,18 @@ internal sealed partial class SourceFormatter
         writer.WriteLine($$"""
             private global::PolyType.Abstractions.ITypeShape<{{dictionaryShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
             {
-                return new global::PolyType.SourceGenModel.SourceGenDictionaryTypeShape<{{dictionaryShapeModel.Type.FullyQualifiedName}}, {{dictionaryShapeModel.KeyType.FullyQualifiedName}}, {{dictionaryShapeModel.ValueType.FullyQualifiedName}}>
+                return new global::PolyType.SourceGenModel.SourceGenDictionaryTypeShape<{{dictionaryShapeModel.Type.FullyQualifiedName}}, {{dictionaryShapeModel.KeyType.FullyQualifiedName}}, {{dictionaryShapeModel.ValueType.FullyQualifiedName}}>(this)
                 {
-                    KeyType = {{GetShapeModel(dictionaryShapeModel.KeyType).SourceIdentifier}},
-                    ValueType = {{GetShapeModel(dictionaryShapeModel.ValueType).SourceIdentifier}},
+                    KeyTypeSetter = {{GetShapeModel(dictionaryShapeModel.KeyType).SourceIdentifier}},
+                    ValueTypeSetter = {{GetShapeModel(dictionaryShapeModel.ValueType).SourceIdentifier}},
                     GetDictionaryFunc = {{FormatGetDictionaryFunc(dictionaryShapeModel)}},
-                    ComparerOptions = {{FormatComparerOptions(dictionaryShapeModel.ConstructionComparer)}},
-                    ConstructionStrategy = {{FormatCollectionConstructionStrategy(dictionaryShapeModel.ConstructionStrategy)}},
+                    ComparerOptionsSetter = {{FormatComparerOptions(dictionaryShapeModel.ConstructionComparer)}},
+                    ConstructionStrategySetter = {{FormatCollectionConstructionStrategy(dictionaryShapeModel.ConstructionStrategy)}},
                     DefaultConstructorFunc = {{FormatDefaultConstructorFunc(dictionaryShapeModel)}},
                     AddKeyValuePairFunc = {{FormatAddKeyValuePairFunc(dictionaryShapeModel)}},
                     EnumerableConstructorFunc = {{FormatEnumerableConstructorFunc(dictionaryShapeModel)}},
                     SpanConstructorFunc = {{FormatSpanConstructorFunc(dictionaryShapeModel)}},
                     AssociatedTypeShapes = {{FormatAssociatedTypeShapes(dictionaryShapeModel)}},
-                    Provider = this,
                 };
             }
             """, trimNullAssignmentLines: true);
