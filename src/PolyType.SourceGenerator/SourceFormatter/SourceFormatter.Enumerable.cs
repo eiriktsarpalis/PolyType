@@ -23,6 +23,7 @@ internal sealed partial class SourceFormatter
                     AddElementFunc = {{FormatAddElementFunc(enumerableShapeModel)}},
                     IsAsyncEnumerable = {{FormatBool(enumerableShapeModel.Kind is EnumerableKind.AsyncEnumerableOfT)}},
                     Rank = {{enumerableShapeModel.Rank}},
+                    AssociatedTypeShapes = {{FormatAssociatedTypeShapes(enumerableShapeModel)}},
                     Provider = this,
                };
             }
