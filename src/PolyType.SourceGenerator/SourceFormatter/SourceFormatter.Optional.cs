@@ -12,13 +12,12 @@ internal sealed partial class SourceFormatter
         writer.WriteLine($$"""
             private global::PolyType.Abstractions.ITypeShape<{{optionalShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
             {
-                return new global::PolyType.SourceGenModel.SourceGenOptionalTypeShape<{{optionalShapeModel.Type.FullyQualifiedName}}, {{optionalShapeModel.ElementType.FullyQualifiedName}}>
+                return new global::PolyType.SourceGenModel.SourceGenOptionalTypeShape<{{optionalShapeModel.Type.FullyQualifiedName}}, {{optionalShapeModel.ElementType.FullyQualifiedName}}>(this)
                 {
-                    ElementType = {{GetShapeModel(optionalShapeModel.ElementType).SourceIdentifier}},
+                    ElementTypeSetter = {{GetShapeModel(optionalShapeModel.ElementType).SourceIdentifier}},
                     NoneConstructor = {{FormatNoneCtor()}},
                     SomeConstructor = {{FormatSomeCtor()}},
                     Deconstructor = {{FormatDeconstructor()}},
-                    Provider = this,
                 };
             }
             """);

@@ -8,22 +8,18 @@ namespace PolyType.ReflectionProvider;
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 internal sealed class FSharpOptionTypeShape<TOptional, TElement>(FSharpUnionInfo unionInfo, ReflectionTypeShapeProvider provider)
-    : ReflectionTypeShape<TOptional>(provider), IOptionalTypeShape<TOptional, TElement>
+    : IOptionalTypeShape<TOptional, TElement>(provider)
     where TOptional : IEquatable<TOptional>
 {
-    public override TypeShapeKind Kind => TypeShapeKind.Optional;
-    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitOptional(this, state);
+    internal new ReflectionTypeShapeProvider Provider => (ReflectionTypeShapeProvider)base.Provider;
 
-    public ITypeShape<TElement> ElementType => Provider.GetShape<TElement>();
-    ITypeShape IOptionalTypeShape.ElementType => ElementType;
-
-    public Func<TOptional> GetNoneConstructor() => _noneConstructor ??= unionInfo.UnionCases[0].Constructor.CreateDelegate<Func<TOptional>>();
+    public override Func<TOptional> GetNoneConstructor() => _noneConstructor ??= unionInfo.UnionCases[0].Constructor.CreateDelegate<Func<TOptional>>();
     private Func<TOptional>? _noneConstructor;
 
-    public Func<TElement, TOptional> GetSomeConstructor() => _someConstructor ??= unionInfo.UnionCases[1].Constructor.CreateDelegate<Func<TElement, TOptional>>();
+    public override Func<TElement, TOptional> GetSomeConstructor() => _someConstructor ??= unionInfo.UnionCases[1].Constructor.CreateDelegate<Func<TElement, TOptional>>();
     private Func<TElement, TOptional>? _someConstructor;
 
-    public OptionDeconstructor<TOptional, TElement> GetDeconstructor()
+    public override OptionDeconstructor<TOptional, TElement> GetDeconstructor()
     {
         PropertyInfo valueGetterProp = unionInfo.UnionCases[1].Properties[0];
         var valueGetter = Provider.MemberAccessor.CreateGetter<TOptional, TElement>(valueGetterProp, null);
@@ -41,4 +37,5 @@ internal sealed class FSharpOptionTypeShape<TOptional, TElement>(FSharpUnionInfo
         };
     }
 
+    public override ITypeShape? GetAssociatedTypeShape(Type associatedType) => InternalTypeShapeExtensions.GetAssociatedTypeShape(this, associatedType);
 }

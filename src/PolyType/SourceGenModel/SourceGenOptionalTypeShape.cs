@@ -7,12 +7,15 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TOptional">The optional type described by the shape.</typeparam>
 /// <typeparam name="TElement">The type of the value encapsulated by the option type.</typeparam>
-public sealed class SourceGenOptionalTypeShape<TOptional, TElement> : SourceGenTypeShape<TOptional>, IOptionalTypeShape<TOptional, TElement>
+public sealed class SourceGenOptionalTypeShape<TOptional, TElement>(ITypeShapeProvider provider) : IOptionalTypeShape<TOptional, TElement>(provider)
 {
     /// <summary>
     /// Gets the shape of the element type.
     /// </summary>
-    public required ITypeShape<TElement> ElementType { get; init; }
+    public required ITypeShape<TElement> ElementTypeSetter { private get; init; }
+
+    /// <inheritdoc/>
+    public override ITypeShape<TElement> ElementType => this.ElementTypeSetter;
 
     /// <summary>
     /// Gets a constructor for creating empty instances of <typeparamref name="TOptional"/>.
@@ -29,14 +32,20 @@ public sealed class SourceGenOptionalTypeShape<TOptional, TElement> : SourceGenT
     /// </summary>
     public required OptionDeconstructor<TOptional, TElement> Deconstructor { get; init; }
 
-    /// <inheritdoc/>
-    public override TypeShapeKind Kind => TypeShapeKind.Optional;
+    /// <summary>
+    /// Gets the shape of an associated type, by its name.
+    /// </summary>
+    public Func<string, ITypeShape?>? AssociatedTypeShapes { get; init; }
 
     /// <inheritdoc/>
-    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitOptional(this, state);
+    public override Func<TOptional> GetNoneConstructor() => NoneConstructor;
 
-    Func<TOptional> IOptionalTypeShape<TOptional, TElement>.GetNoneConstructor() => NoneConstructor;
-    Func<TElement, TOptional> IOptionalTypeShape<TOptional, TElement>.GetSomeConstructor() => SomeConstructor;
-    OptionDeconstructor<TOptional, TElement> IOptionalTypeShape<TOptional, TElement>.GetDeconstructor() => Deconstructor;
-    ITypeShape IOptionalTypeShape.ElementType => ElementType;
+    /// <inheritdoc/>
+    public override Func<TElement, TOptional> GetSomeConstructor() => SomeConstructor;
+
+    /// <inheritdoc/>
+    public override OptionDeconstructor<TOptional, TElement> GetDeconstructor() => Deconstructor;
+
+    /// <inheritdoc/>
+    public override ITypeShape? GetAssociatedTypeShape(Type associatedType) => InternalTypeShapeExtensions.GetAssociatedTypeShape(this, AssociatedTypeShapes, associatedType);
 }
