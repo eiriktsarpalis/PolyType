@@ -5,6 +5,7 @@ namespace PolyType.Abstractions;
 /// <summary>
 /// Provides a strongly typed shape model for a given .NET constructor.
 /// </summary>
+[InternalImplementationsOnly]
 public interface IConstructorShape
 {
     /// <summary>
@@ -45,6 +46,7 @@ public interface IConstructorShape
 /// </summary>
 /// <typeparam name="TDeclaringType">The declaring type of the underlying constructor.</typeparam>
 /// <typeparam name="TArgumentState">The state type used for aggregating constructor arguments.</typeparam>
+[InternalImplementationsOnly]
 public interface IConstructorShape<TDeclaringType, TArgumentState> : IConstructorShape
 {
     /// <summary>

@@ -3,6 +3,7 @@ namespace PolyType.Abstractions;
 /// <summary>
 /// Provides a strongly typed shape model for a .NET type that employs a surrogate type.
 /// </summary>
+[InternalImplementationsOnly]
 public interface ISurrogateTypeShape : ITypeShape
 {
     /// <summary>
@@ -16,6 +17,7 @@ public interface ISurrogateTypeShape : ITypeShape
 /// </summary>
 /// <typeparam name="T">The type the shape describes.</typeparam>
 /// <typeparam name="TSurrogate">The surrogate type being specified by the shape.</typeparam>
+[InternalImplementationsOnly]
 public interface ISurrogateTypeShape<T, TSurrogate> : ITypeShape<T>, ISurrogateTypeShape
 {
     /// <summary>

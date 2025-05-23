@@ -164,6 +164,7 @@ public class AggregatingTypeShapeProviderTests
     }
 
     [ExcludeFromCodeCoverage]
+    [SuppressMessage("Usage", "PT0019:No external shape implementations.", Justification = "Our own tests")]
     private class MockTypeShape<T> : ITypeShape<T>
     {
         public Type Type => throw new NotImplementedException();

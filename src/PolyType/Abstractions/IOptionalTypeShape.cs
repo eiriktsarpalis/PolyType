@@ -6,6 +6,7 @@
 /// <remarks>
 /// Examples of optional types include <see cref="Nullable{T}"/> or the F# option types.
 /// </remarks>
+[InternalImplementationsOnly]
 public interface IOptionalTypeShape : ITypeShape
 {
     /// <summary>
@@ -22,6 +23,7 @@ public interface IOptionalTypeShape : ITypeShape
 /// <remarks>
 /// Examples of optional types include <see cref="Nullable{T}"/> or the F# option types.
 /// </remarks>
+[InternalImplementationsOnly]
 public interface IOptionalTypeShape<TOptional, TElement> : ITypeShape<TOptional>, IOptionalTypeShape
 {
     /// <summary>

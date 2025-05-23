@@ -3,6 +3,7 @@
 /// <summary>
 /// Provides a strongly typed shape model for a union case in a discriminated union type.
 /// </summary>
+[InternalImplementationsOnly]
 public interface IUnionCaseShape
 {
     /// <summary>
@@ -56,6 +57,7 @@ public interface IUnionCaseShape
 /// </summary>
 /// <typeparam name="TUnionCase">The type of the union case.</typeparam>
 /// <typeparam name="TUnion">The type of the underlying union.</typeparam>
+[InternalImplementationsOnly]
 public interface IUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShape
     where TUnionCase : TUnion
 {

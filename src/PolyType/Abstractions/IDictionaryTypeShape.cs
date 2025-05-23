@@ -9,6 +9,7 @@ namespace PolyType.Abstractions;
 /// Typically covers types implementing interfaces such as <see cref="IDictionary{TKey, TValue}"/>,
 /// <see cref="IReadOnlyDictionary{TKey, TValue}"/> or <see cref="IDictionary"/>.
 /// </remarks>
+[InternalImplementationsOnly]
 public interface IDictionaryTypeShape : ITypeShape
 {
     /// <summary>
@@ -48,6 +49,7 @@ public interface IDictionaryTypeShape : ITypeShape
 /// Typically covers types implementing interfaces such as <see cref="IDictionary{TKey, TValue}"/>,
 /// <see cref="IReadOnlyDictionary{TKey, TValue}"/> or <see cref="IDictionary"/>.
 /// </remarks>
+[InternalImplementationsOnly]
 public interface IDictionaryTypeShape<TDictionary, TKey, TValue> : ITypeShape<TDictionary>, IDictionaryTypeShape
     where TKey : notnull
 {
