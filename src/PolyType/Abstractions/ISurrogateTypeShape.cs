@@ -5,12 +5,36 @@ namespace PolyType.Abstractions;
 /// <summary>
 /// Provides a strongly typed shape model for a .NET type that employs a surrogate type.
 /// </summary>
-public interface ISurrogateTypeShape : ITypeShape
+public abstract class ISurrogateTypeShape(ITypeShapeProvider provider) : ITypeShape
 {
+    /// <inheritdoc/>
+    public ITypeShapeProvider Provider => provider;
+
     /// <summary>
     /// Gets the shape of the surrogate type.
     /// </summary>
-    ITypeShape SurrogateType { get; }
+    public ITypeShape SurrogateType => SurrogateTypeNonGeneric;
+
+    /// <inheritdoc cref="SurrogateType"/>
+    protected abstract ITypeShape SurrogateTypeNonGeneric { get; }
+
+    /// <inheritdoc/>
+    public TypeShapeKind Kind => TypeShapeKind.Surrogate;
+
+    /// <inheritdoc/>
+    public abstract Type Type { get; }
+
+    /// <inheritdoc/>
+    public virtual ICustomAttributeProvider? AttributeProvider => Type;
+
+    /// <inheritdoc/>
+    public abstract object? Accept(TypeShapeVisitor visitor, object? state = null);
+
+    /// <inheritdoc/>
+    public abstract object? Invoke(ITypeShapeFunc func, object? state = null);
+
+    /// <inheritdoc/>
+    public abstract ITypeShape? GetAssociatedTypeShape(Type associatedType);
 }
 
 /// <summary>
@@ -18,7 +42,7 @@ public interface ISurrogateTypeShape : ITypeShape
 /// </summary>
 /// <typeparam name="T">The type the shape describes.</typeparam>
 /// <typeparam name="TSurrogate">The surrogate type being specified by the shape.</typeparam>
-public abstract class ISurrogateTypeShape<T, TSurrogate>(ITypeShapeProvider provider) : ITypeShape<T>, ISurrogateTypeShape
+public abstract class ISurrogateTypeShape<T, TSurrogate>(ITypeShapeProvider provider) : ISurrogateTypeShape(provider), ITypeShape<T>
 {
     /// <summary>
     /// Gets the bidirectional mapper between <typeparamref name="T"/> and <typeparamref name="TSurrogate"/>.
@@ -28,28 +52,17 @@ public abstract class ISurrogateTypeShape<T, TSurrogate>(ITypeShapeProvider prov
     /// <summary>
     /// Gets the shape of the element type of the nullable.
     /// </summary>
-    public virtual ITypeShape<TSurrogate> SurrogateType => Provider.Resolve<TSurrogate>();
+    public new virtual ITypeShape<TSurrogate> SurrogateType => Provider.Resolve<TSurrogate>();
 
     /// <inheritdoc/>
-    public Type Type => typeof(T);
+    protected override ITypeShape SurrogateTypeNonGeneric => SurrogateType;
 
     /// <inheritdoc/>
-    public TypeShapeKind Kind => TypeShapeKind.Surrogate;
+    public override Type Type => typeof(T);
 
     /// <inheritdoc/>
-    public ITypeShapeProvider Provider => provider;
+    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitSurrogate(this, state);
 
     /// <inheritdoc/>
-    public virtual ICustomAttributeProvider? AttributeProvider => typeof(T);
-
-    ITypeShape ISurrogateTypeShape.SurrogateType => SurrogateType;
-
-    /// <inheritdoc/>
-    public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitSurrogate(this, state);
-
-    /// <inheritdoc/>
-    public abstract ITypeShape? GetAssociatedTypeShape(Type associatedType);
-
-    /// <inheritdoc/>
-    public object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
+    public override object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
 }

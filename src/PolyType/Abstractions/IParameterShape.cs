@@ -7,37 +7,45 @@ namespace PolyType.Abstractions;
 /// Provides a strongly typed shape model for a given .NET method parameter,
 /// representing either an actual parameter or a member initializer.
 /// </summary>
-public interface IParameterShape
+public abstract class IParameterShape(ITypeShapeProvider provider)
 {
+    /// <summary>
+    /// Gets the type shape provider that created this object.
+    /// </summary>
+    public ITypeShapeProvider Provider => provider;
+
     /// <summary>
     /// Gets the 0-indexed position of the current method parameter.
     /// </summary>
-    int Position { get; }
+    public abstract int Position { get; }
 
     /// <summary>
     /// Gets the shape of the method parameter type.
     /// </summary>
-    ITypeShape ParameterType { get; }
+    public ITypeShape ParameterType => ParameterTypeNonGeneric;
 
     /// <summary>
     /// Gets the name of the method parameter.
     /// </summary>
-    string Name { get; }
+    public abstract string Name { get; }
 
     /// <summary>
     /// Gets specifies the kind of the current parameter.
     /// </summary>
-    ParameterKind Kind { get; }
+    public abstract ParameterKind Kind { get; }
 
     /// <summary>
     /// Gets a value indicating whether the parameter has a default value.
     /// </summary>
-    bool HasDefaultValue { get; }
+    public abstract bool HasDefaultValue { get; }
 
     /// <summary>
     /// Gets the default value specified by the parameter, if applicable.
     /// </summary>
-    object? DefaultValue { get; }
+    public object? DefaultValue => HasDefaultValue ? this.DefaultValueNonGeneric : null;
+
+    /// <inheritdoc cref="DefaultValue"/>
+    protected abstract object? DefaultValueNonGeneric { get; }
 
     /// <summary>
     /// Gets a value indicating whether a value is required for the current parameter.
@@ -49,7 +57,7 @@ public interface IParameterShape
     /// This value will switch to the value set by <see cref="PropertyShapeAttribute.IsRequired"/>
     /// or <see cref="ParameterShapeAttribute.IsRequired"/> (successively) if they are set.
     /// </remarks>
-    bool IsRequired { get; }
+    public abstract bool IsRequired { get; }
 
     /// <summary>
     /// Gets a value indicating whether the parameter requires non-null values.
@@ -61,17 +69,20 @@ public interface IParameterShape
     /// Conversely, it could return <see langword="false"/> if a non-nullable parameter
     /// has been annotated with <see cref="AllowNullAttribute"/>.
     /// </remarks>
-    bool IsNonNullable { get; }
+    public abstract bool IsNonNullable { get; }
 
     /// <summary>
     /// Gets a value indicating whether the parameter is a public property or field initializer.
     /// </summary>
-    bool IsPublic { get; }
+    public abstract bool IsPublic { get; }
 
     /// <summary>
     /// Gets the provider used for parameter-level attribute resolution.
     /// </summary>
-    ICustomAttributeProvider? AttributeProvider { get; }
+    public abstract ICustomAttributeProvider? AttributeProvider { get; }
+
+    /// <inheritdoc cref="ParameterType"/>
+    protected abstract ITypeShape ParameterTypeNonGeneric { get; }
 
     /// <summary>
     /// Accepts an <see cref="TypeShapeVisitor"/> for strongly-typed traversal.
@@ -79,7 +90,7 @@ public interface IParameterShape
     /// <param name="visitor">The visitor to accept.</param>
     /// <param name="state">The state parameter to pass to the underlying visitor.</param>
     /// <returns>The <see cref="object"/> result returned by the visitor.</returns>
-    object? Accept(TypeShapeVisitor visitor, object? state = null);
+    public abstract object? Accept(TypeShapeVisitor visitor, object? state = null);
 }
 
 /// <summary>
@@ -88,48 +99,24 @@ public interface IParameterShape
 /// </summary>
 /// <typeparam name="TArgumentState">The state type used for aggregating method arguments.</typeparam>
 /// <typeparam name="TParameterType">The type of the underlying method parameter.</typeparam>
-public abstract class IParameterShape<TArgumentState, TParameterType>(ITypeShapeProvider provider) : IParameterShape
+public abstract class IParameterShape<TArgumentState, TParameterType>(ITypeShapeProvider provider) : IParameterShape(provider)
 {
-    /// <inheritdoc/>
-    public abstract int Position { get; }
-
-    /// <inheritdoc/>
-    public abstract string Name { get; }
-
-    /// <inheritdoc/>
-    public abstract ParameterKind Kind { get; }
-
-    /// <inheritdoc/>
-    public abstract bool HasDefaultValue { get; }
-
-    /// <inheritdoc/>
-    public abstract bool IsRequired { get; }
-
-    /// <inheritdoc/>
-    public abstract bool IsNonNullable { get; }
-
-    /// <inheritdoc/>
-    public abstract bool IsPublic { get; }
-
-    /// <inheritdoc/>
-    public abstract ICustomAttributeProvider? AttributeProvider { get; }
-
     /// <summary>
     /// Gets the shape of the method parameter type.
     /// </summary>
-    public virtual ITypeShape<TParameterType> ParameterType => provider.Resolve<TParameterType>();
-
-    ITypeShape IParameterShape.ParameterType => ParameterType;
-
-    /// <summary>
-    /// Gets the default value specified by the parameter, if applicable.
-    /// </summary>
-    public abstract TParameterType? DefaultValue { get; }
-
-    object? IParameterShape.DefaultValue => HasDefaultValue ? DefaultValue : null;
+    public new virtual ITypeShape<TParameterType> ParameterType => Provider.Resolve<TParameterType>();
 
     /// <inheritdoc/>
-    public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitParameter(this, state);
+    protected override ITypeShape ParameterTypeNonGeneric => this.ParameterType;
+
+    /// <inheritdoc cref="IParameterShape.DefaultValue"/>
+    public new abstract TParameterType? DefaultValue { get; }
+
+    /// <inheritdoc/>
+    protected override object? DefaultValueNonGeneric => DefaultValue;
+
+    /// <inheritdoc/>
+    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitParameter(this, state);
 
     /// <summary>
     /// Creates a setter delegate for configuring a state object

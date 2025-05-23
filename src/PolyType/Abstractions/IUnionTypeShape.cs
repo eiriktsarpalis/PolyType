@@ -9,20 +9,46 @@ namespace PolyType.Abstractions;
 /// Typically reserved for classes or interfaces that specify derived types via the <see cref="DerivedTypeShapeAttribute"/>
 /// but can also include F# discriminated unions.
 /// </remarks>
-public interface IUnionTypeShape : ITypeShape
+public abstract class IUnionTypeShape(ITypeShapeProvider provider) : ITypeShape
 {
+    /// <summary>
+    /// Gets the type shape provider that created this object.
+    /// </summary>
+    public ITypeShapeProvider Provider => provider;
+
+    /// <inheritdoc/>
+    public TypeShapeKind Kind => TypeShapeKind.Union;
+
     /// <summary>
     /// Gets the underlying type shape of the union base type.
     /// </summary>
     /// <remarks>
     /// Typically used as the fallback case for values not matching any of the union cases.
     /// </remarks>
-    ITypeShape BaseType { get; }
+    public ITypeShape BaseType => BaseTypeNonGeneric;
+
+    /// <inheritdoc/>
+    public abstract Type Type { get; }
+
+    /// <inheritdoc/>
+    public virtual ICustomAttributeProvider? AttributeProvider => Type;
 
     /// <summary>
     /// Gets the list of all registered union case shapes.
     /// </summary>
-    IReadOnlyList<IUnionCaseShape> UnionCases { get; }
+    public abstract IReadOnlyList<IUnionCaseShape> UnionCases { get; }
+
+    /// <inheritdoc cref="BaseType"/>
+    protected abstract ITypeShape BaseTypeNonGeneric { get; }
+
+    /// <inheritdoc/>
+    public abstract object? Accept(TypeShapeVisitor visitor, object? state = null);
+
+    /// <inheritdoc/>
+    public abstract ITypeShape? GetAssociatedTypeShape(Type associatedType);
+
+    /// <inheritdoc/>
+    public abstract object? Invoke(ITypeShapeFunc func, object? state = null);
 }
 
 /// <summary>
@@ -33,32 +59,21 @@ public interface IUnionTypeShape : ITypeShape
 /// Typically reserved for classes or interfaces that specify derived types via the <see cref="DerivedTypeShapeAttribute"/>
 /// but can also include F# discriminated unions.
 /// </remarks>
-public abstract class IUnionTypeShape<TUnion>(ITypeShapeProvider provider) : ITypeShape<TUnion>, IUnionTypeShape
+public abstract class IUnionTypeShape<TUnion>(ITypeShapeProvider provider) : IUnionTypeShape(provider), ITypeShape<TUnion>
 {
-    ITypeShape IUnionTypeShape.BaseType => this.BaseType;
-
     /// <summary>
     /// Gets the underlying type shape of the union base type.
     /// </summary>
     /// <remarks>
     /// Typically used as the fallback case for values not matching any of the union cases.
     /// </remarks>
-    public abstract ITypeShape<TUnion> BaseType { get; }
+    public new abstract ITypeShape<TUnion> BaseType { get; }
 
     /// <inheritdoc/>
-    public Type Type => typeof(TUnion);
+    public override Type Type => typeof(TUnion);
 
     /// <inheritdoc/>
-    public TypeShapeKind Kind => TypeShapeKind.Union;
-
-    /// <inheritdoc/>
-    public ITypeShapeProvider Provider => provider;
-
-    /// <inheritdoc/>
-    public virtual ICustomAttributeProvider? AttributeProvider => typeof(TUnion);
-
-    /// <inheritdoc/>
-    public abstract IReadOnlyList<IUnionCaseShape> UnionCases { get; }
+    protected override ITypeShape BaseTypeNonGeneric => BaseType;
 
     /// <summary>
     /// Creates a delegate that computes the union case index for a given value.
@@ -71,11 +86,8 @@ public abstract class IUnionTypeShape<TUnion>(ITypeShapeProvider provider) : ITy
     public abstract Getter<TUnion, int> GetGetUnionCaseIndex();
 
     /// <inheritdoc/>
-    public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnion(this, state);
+    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnion(this, state);
 
     /// <inheritdoc/>
-    public object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
-
-    /// <inheritdoc/>
-    public abstract ITypeShape? GetAssociatedTypeShape(Type associatedType);
+    public override object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
 }

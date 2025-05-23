@@ -10,7 +10,7 @@ namespace PolyType.Abstractions;
 /// Typically covers types implementing interfaces such as <see cref="IDictionary{TKey, TValue}"/>,
 /// <see cref="IReadOnlyDictionary{TKey, TValue}"/> or <see cref="IDictionary"/>.
 /// </remarks>
-public interface IDictionaryTypeShape : ITypeShape
+public abstract class IDictionaryTypeShape(ITypeShapeProvider provider) : ITypeShape
 {
     /// <summary>
     /// Gets the shape of the underlying key type.
@@ -18,7 +18,7 @@ public interface IDictionaryTypeShape : ITypeShape
     /// <remarks>
     /// For non-generic dictionaries this returns the shape for <see cref="object"/>.
     /// </remarks>
-    ITypeShape KeyType { get; }
+    public ITypeShape KeyType => KeyTypeNonGeneric;
 
     /// <summary>
     /// Gets the shape of the underlying value type.
@@ -26,17 +26,44 @@ public interface IDictionaryTypeShape : ITypeShape
     /// <remarks>
     /// For non-generic dictionaries this returns the shape for <see cref="object"/>.
     /// </remarks>
-    ITypeShape ValueType { get; }
+    public ITypeShape ValueType => ValueTypeNonGeneric;
 
     /// <summary>
     /// Gets the construction strategy for the given collection.
     /// </summary>
-    CollectionConstructionStrategy ConstructionStrategy { get; }
+    public abstract CollectionConstructionStrategy ConstructionStrategy { get; }
 
     /// <summary>
     /// Gets the kind of custom comparer (if any) that this collection may be initialized with.
     /// </summary>
-    CollectionComparerOptions ComparerOptions { get; }
+    public abstract CollectionComparerOptions ComparerOptions { get; }
+
+    /// <inheritdoc/>
+    public abstract Type Type { get; }
+
+    /// <inheritdoc/>
+    public TypeShapeKind Kind => TypeShapeKind.Dictionary;
+
+    /// <inheritdoc/>
+    public ITypeShapeProvider Provider => provider;
+
+    /// <inheritdoc/>
+    public virtual ICustomAttributeProvider? AttributeProvider => Type;
+
+    /// <inheritdoc cref="KeyType"/>
+    protected abstract ITypeShape KeyTypeNonGeneric { get; }
+
+    /// <inheritdoc cref="ValueType"/>
+    protected abstract ITypeShape ValueTypeNonGeneric { get; }
+
+    /// <inheritdoc/>
+    public abstract object? Accept(TypeShapeVisitor visitor, object? state = null);
+
+    /// <inheritdoc/>
+    public abstract ITypeShape? GetAssociatedTypeShape(Type associatedType);
+
+    /// <inheritdoc/>
+    public abstract object? Invoke(ITypeShapeFunc func, object? state = null);
 }
 
 /// <summary>
@@ -49,20 +76,16 @@ public interface IDictionaryTypeShape : ITypeShape
 /// Typically covers types implementing interfaces such as <see cref="IDictionary{TKey, TValue}"/>,
 /// <see cref="IReadOnlyDictionary{TKey, TValue}"/> or <see cref="IDictionary"/>.
 /// </remarks>
-public abstract class IDictionaryTypeShape<TDictionary, TKey, TValue>(ITypeShapeProvider provider) : ITypeShape<TDictionary>, IDictionaryTypeShape
+public abstract class IDictionaryTypeShape<TDictionary, TKey, TValue>(ITypeShapeProvider provider) : IDictionaryTypeShape(provider), ITypeShape<TDictionary>
     where TKey : notnull
 {
-    ITypeShape IDictionaryTypeShape.KeyType => KeyType;
-
-    ITypeShape IDictionaryTypeShape.ValueType => ValueType;
-
     /// <summary>
     /// Gets the shape of the underlying key type.
     /// </summary>
     /// <remarks>
     /// For non-generic dictionaries this returns the shape for <see cref="object"/>.
     /// </remarks>
-    public virtual ITypeShape<TKey> KeyType => provider.Resolve<TKey>();
+    public new virtual ITypeShape<TKey> KeyType => Provider.Resolve<TKey>();
 
     /// <summary>
     /// Gets the shape of the underlying value type.
@@ -70,25 +93,16 @@ public abstract class IDictionaryTypeShape<TDictionary, TKey, TValue>(ITypeShape
     /// <remarks>
     /// For non-generic dictionaries this returns the shape for <see cref="object"/>.
     /// </remarks>
-    public virtual ITypeShape<TValue> ValueType => provider.Resolve<TValue>();
+    public new virtual ITypeShape<TValue> ValueType => Provider.Resolve<TValue>();
 
     /// <inheritdoc/>
-    public Type Type => typeof(TDictionary);
+    public override Type Type => typeof(TDictionary);
 
     /// <inheritdoc/>
-    public TypeShapeKind Kind => TypeShapeKind.Dictionary;
+    protected override ITypeShape KeyTypeNonGeneric => KeyType;
 
     /// <inheritdoc/>
-    public ITypeShapeProvider Provider => provider;
-
-    /// <inheritdoc/>
-    public virtual ICustomAttributeProvider? AttributeProvider => typeof(TDictionary);
-
-    /// <inheritdoc/>
-    public abstract CollectionConstructionStrategy ConstructionStrategy { get; }
-
-    /// <inheritdoc/>
-    public abstract CollectionComparerOptions ComparerOptions { get; }
+    protected override ITypeShape ValueTypeNonGeneric => ValueType;
 
     /// <summary>
     /// Creates a delegate used for getting a <see cref="IReadOnlyDictionary{TKey, TValue}"/> view of the dictionary.
@@ -131,11 +145,8 @@ public abstract class IDictionaryTypeShape<TDictionary, TKey, TValue>(ITypeShape
     public abstract Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> GetEnumerableConstructor(CollectionConstructionOptions<TKey>? collectionConstructionOptions = null);
 
     /// <inheritdoc/>
-    public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitDictionary(this, state);
+    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitDictionary(this, state);
 
     /// <inheritdoc/>
-    public object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
-
-    /// <inheritdoc/>
-    public abstract ITypeShape? GetAssociatedTypeShape(Type associatedType);
+    public override object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
 }

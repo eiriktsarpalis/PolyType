@@ -8,12 +8,36 @@ namespace PolyType.Abstractions;
 /// <remarks>
 /// Examples of optional types include <see cref="Nullable{T}"/> or the F# option types.
 /// </remarks>
-public interface IOptionalTypeShape : ITypeShape
+public abstract class IOptionalTypeShape(ITypeShapeProvider provider) : ITypeShape
 {
     /// <summary>
     /// Gets the shape of underlying value type.
     /// </summary>
-    ITypeShape ElementType { get; }
+    public ITypeShape ElementType => ElementTypeNonGeneric;
+
+    /// <inheritdoc/>
+    public TypeShapeKind Kind => TypeShapeKind.Optional;
+
+    /// <inheritdoc/>
+    public ITypeShapeProvider Provider => provider;
+
+    /// <inheritdoc/>
+    public virtual ICustomAttributeProvider? AttributeProvider => Type;
+
+    /// <inheritdoc/>
+    public abstract Type Type { get; }
+
+    /// <inheritdoc cref="ElementType"/>
+    protected abstract ITypeShape ElementTypeNonGeneric { get; }
+
+    /// <inheritdoc/>
+    public abstract object? Accept(TypeShapeVisitor visitor, object? state = null);
+
+    /// <inheritdoc/>
+    public abstract ITypeShape? GetAssociatedTypeShape(Type associatedType);
+
+    /// <inheritdoc/>
+    public abstract object? Invoke(ITypeShapeFunc func, object? state = null);
 }
 
 /// <summary>
@@ -24,26 +48,18 @@ public interface IOptionalTypeShape : ITypeShape
 /// <remarks>
 /// Examples of optional types include <see cref="Nullable{T}"/> or the F# option types.
 /// </remarks>
-public abstract class IOptionalTypeShape<TOptional, TElement>(ITypeShapeProvider provider) : ITypeShape<TOptional>, IOptionalTypeShape
+public abstract class IOptionalTypeShape<TOptional, TElement>(ITypeShapeProvider provider) : IOptionalTypeShape(provider), ITypeShape<TOptional>
 {
-    ITypeShape IOptionalTypeShape.ElementType => this.ElementType;
-
     /// <summary>
     /// Gets the shape of the underlying value type.
     /// </summary>
-    public virtual ITypeShape<TElement> ElementType => Provider.Resolve<TElement>();
+    public new virtual ITypeShape<TElement> ElementType => Provider.Resolve<TElement>();
 
     /// <inheritdoc/>
-    public Type Type => typeof(TOptional);
+    public override Type Type => typeof(TOptional);
 
     /// <inheritdoc/>
-    public TypeShapeKind Kind => TypeShapeKind.Optional;
-
-    /// <inheritdoc/>
-    public ITypeShapeProvider Provider => provider;
-
-    /// <inheritdoc/>
-    public virtual ICustomAttributeProvider? AttributeProvider => typeof(TOptional);
+    protected override ITypeShape ElementTypeNonGeneric => ElementType;
 
     /// <summary>
     /// Gets a constructor for creating empty (aka 'None') instances of <typeparamref name="TOptional"/>.
@@ -64,11 +80,8 @@ public abstract class IOptionalTypeShape<TOptional, TElement>(ITypeShapeProvider
     public abstract OptionDeconstructor<TOptional, TElement> GetDeconstructor();
 
     /// <inheritdoc/>
-    public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitOptional(this, state);
+    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitOptional(this, state);
 
     /// <inheritdoc/>
-    public object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
-
-    /// <inheritdoc/>
-    public abstract ITypeShape? GetAssociatedTypeShape(Type associatedType);
+    public override object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
 }

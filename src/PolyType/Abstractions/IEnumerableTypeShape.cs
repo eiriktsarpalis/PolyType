@@ -9,7 +9,7 @@ namespace PolyType.Abstractions;
 /// <remarks>
 /// Typically covers all types implementing <see cref="IEnumerable{T}"/> or <see cref="IEnumerable"/>.
 /// </remarks>
-public interface IEnumerableTypeShape : ITypeShape
+public abstract class IEnumerableTypeShape(ITypeShapeProvider provider) : ITypeShape
 {
     /// <summary>
     /// Gets the shape of the underlying element type.
@@ -17,17 +17,17 @@ public interface IEnumerableTypeShape : ITypeShape
     /// <remarks>
     /// For non-generic <see cref="IEnumerable"/> this returns the shape for <see cref="object"/>.
     /// </remarks>
-    ITypeShape ElementType { get; }
+    public ITypeShape ElementType => ElementTypeNonGeneric;
 
     /// <summary>
     /// Gets the construction strategy for the given collection.
     /// </summary>
-    CollectionConstructionStrategy ConstructionStrategy { get; }
+    public abstract CollectionConstructionStrategy ConstructionStrategy { get; }
 
     /// <summary>
     /// Gets the kind of custom comparer (if any) that this collection may be initialized with.
     /// </summary>
-    CollectionComparerOptions ComparerOptions { get; }
+    public abstract CollectionComparerOptions ComparerOptions { get; }
 
     /// <summary>
     /// Gets the dimensionality of the collection type.
@@ -38,7 +38,7 @@ public interface IEnumerableTypeShape : ITypeShape
     /// <remarks>
     /// Test for arrays by using <see cref="Type.IsArray"/> on <see cref="ITypeShape.Type"/>.
     /// </remarks>
-    int Rank { get; }
+    public abstract int Rank { get; }
 
     /// <summary>
     /// Indicates whether the underlying type is an IAsyncEnumerable.
@@ -48,7 +48,31 @@ public interface IEnumerableTypeShape : ITypeShape
     /// will result in an exception being thrown to prevent accidental sync-over-async. Users should manually cast
     /// instances to IAsyncEnumerable and enumerate elements asynchronously.
     /// </remarks>
-    bool IsAsyncEnumerable { get; }
+    public virtual bool IsAsyncEnumerable => false;
+
+    /// <inheritdoc/>
+    public abstract Type Type { get; }
+
+    /// <inheritdoc/>
+    public TypeShapeKind Kind => TypeShapeKind.Enumerable;
+
+    /// <inheritdoc/>
+    public ITypeShapeProvider Provider => provider;
+
+    /// <inheritdoc/>
+    public virtual ICustomAttributeProvider? AttributeProvider => Type;
+
+    /// <inheritdoc cref="ElementType"/>
+    protected abstract ITypeShape ElementTypeNonGeneric { get; }
+
+    /// <inheritdoc/>
+    public abstract object? Accept(TypeShapeVisitor visitor, object? state = null);
+
+    /// <inheritdoc/>
+    public abstract ITypeShape? GetAssociatedTypeShape(Type associatedType);
+
+    /// <inheritdoc/>
+    public abstract object? Invoke(ITypeShapeFunc func, object? state = null);
 }
 
 /// <summary>
@@ -61,41 +85,21 @@ public interface IEnumerableTypeShape : ITypeShape
 ///
 /// For non-generic collections, <typeparamref name="TElement"/> is instantiated to <see cref="object"/>.
 /// </remarks>
-public abstract class IEnumerableTypeShape<TEnumerable, TElement>(ITypeShapeProvider provider) : ITypeShape<TEnumerable>, IEnumerableTypeShape
+public abstract class IEnumerableTypeShape<TEnumerable, TElement>(ITypeShapeProvider provider) : IEnumerableTypeShape(provider), ITypeShape<TEnumerable>
 {
-    ITypeShape IEnumerableTypeShape.ElementType => ElementType;
-
     /// <summary>
     /// Gets the shape of the underlying element type.
     /// </summary>
     /// <remarks>
     /// For non-generic <see cref="IEnumerable"/> this returns the shape for <see cref="object"/>.
     /// </remarks>
-    public virtual ITypeShape<TElement> ElementType => provider.Resolve<TElement>();
+    public new virtual ITypeShape<TElement> ElementType => Provider.Resolve<TElement>();
 
     /// <inheritdoc/>
-    public Type Type => typeof(TEnumerable);
+    public override Type Type => typeof(TEnumerable);
 
     /// <inheritdoc/>
-    public TypeShapeKind Kind => TypeShapeKind.Enumerable;
-
-    /// <inheritdoc/>
-    public ITypeShapeProvider Provider => provider;
-
-    /// <inheritdoc/>
-    public virtual ICustomAttributeProvider? AttributeProvider => typeof(TEnumerable);
-
-    /// <inheritdoc/>
-    public abstract CollectionConstructionStrategy ConstructionStrategy { get; }
-
-    /// <inheritdoc/>
-    public abstract CollectionComparerOptions ComparerOptions { get; }
-
-    /// <inheritdoc/>
-    public abstract int Rank { get; }
-
-    /// <inheritdoc/>
-    public virtual bool IsAsyncEnumerable => false;
+    protected override ITypeShape ElementTypeNonGeneric => this.ElementType;
 
     /// <summary>
     /// Creates a delegate used for getting an <see cref="IEnumerable{TElement}"/>
@@ -139,11 +143,8 @@ public abstract class IEnumerableTypeShape<TEnumerable, TElement>(ITypeShapeProv
     public abstract Func<IEnumerable<TElement>, TEnumerable> GetEnumerableConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null);
 
     /// <inheritdoc/>
-    public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnumerable(this, state);
+    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnumerable(this, state);
 
     /// <inheritdoc/>
-    public object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
-
-    /// <inheritdoc/>
-    public abstract ITypeShape? GetAssociatedTypeShape(Type associatedType);
+    public override object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
 }

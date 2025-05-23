@@ -5,22 +5,22 @@ namespace PolyType.Abstractions;
 /// <summary>
 /// Provides a strongly typed shape model for a given .NET constructor.
 /// </summary>
-public interface IConstructorShape
+public abstract class IConstructorShape
 {
     /// <summary>
     /// Gets the shape of the declaring type for the constructor.
     /// </summary>
-    IObjectTypeShape DeclaringType { get; }
+    public IObjectTypeShape DeclaringType => DeclaringTypeNonGeneric;
 
     /// <summary>
     /// Gets a value indicating whether the constructor is declared public.
     /// </summary>
-    bool IsPublic { get; }
+    public abstract bool IsPublic { get; }
 
     /// <summary>
     /// Gets the provider used for method-level attribute resolution.
     /// </summary>
-    ICustomAttributeProvider? AttributeProvider { get; }
+    public abstract ICustomAttributeProvider? AttributeProvider { get; }
 
     /// <summary>
     /// Gets the shapes of the parameters accepted by the constructor.
@@ -29,7 +29,10 @@ public interface IConstructorShape
     /// Includes all formal parameters of the underlying constructor,
     /// as well as any member that can be specified in a member initializer expression.
     /// </remarks>
-    IReadOnlyList<IParameterShape> Parameters { get; }
+    public abstract IReadOnlyList<IParameterShape> Parameters { get; }
+
+    /// <inheritdoc cref="DeclaringType"/>
+    protected abstract IObjectTypeShape DeclaringTypeNonGeneric { get; }
 
     /// <summary>
     /// Accepts an <see cref="TypeShapeVisitor"/> for strongly-typed traversal.
@@ -37,7 +40,7 @@ public interface IConstructorShape
     /// <param name="visitor">The visitor to accept.</param>
     /// <param name="state">The state parameter to pass to the underlying visitor.</param>
     /// <returns>The <see cref="object"/> result returned by the visitor.</returns>
-    object? Accept(TypeShapeVisitor visitor, object? state = null);
+    public abstract object? Accept(TypeShapeVisitor visitor, object? state = null);
 }
 
 /// <summary>
@@ -47,24 +50,16 @@ public interface IConstructorShape
 /// <typeparam name="TArgumentState">The state type used for aggregating constructor arguments.</typeparam>
 public abstract class IConstructorShape<TDeclaringType, TArgumentState>(ITypeShapeProvider provider) : IConstructorShape
 {
-    /// <inheritdoc/>
-    public abstract bool IsPublic { get; }
-
-    /// <inheritdoc/>
-    public abstract ICustomAttributeProvider? AttributeProvider { get; }
-
-    /// <inheritdoc/>
-    public abstract IReadOnlyList<IParameterShape> Parameters { get; }
-
     /// <summary>
     /// Gets the shape of the declaring type for the constructor.
     /// </summary>
-    public virtual IObjectTypeShape<TDeclaringType> DeclaringType => (IObjectTypeShape<TDeclaringType>)provider.Resolve<TDeclaringType>();
-
-    IObjectTypeShape IConstructorShape.DeclaringType => DeclaringType;
+    public new virtual IObjectTypeShape<TDeclaringType> DeclaringType => (IObjectTypeShape<TDeclaringType>)provider.Resolve<TDeclaringType>();
 
     /// <inheritdoc/>
-    public virtual object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitConstructor(this, state);
+    protected override IObjectTypeShape DeclaringTypeNonGeneric => this.DeclaringType;
+
+    /// <inheritdoc/>
+    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitConstructor(this, state);
 
     /// <summary>
     /// Creates a delegate wrapping a parameterless constructor, if applicable.
