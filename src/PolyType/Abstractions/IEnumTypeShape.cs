@@ -3,6 +3,7 @@
 /// <summary>
 /// Provides a strongly typed shape model for a .NET enum.
 /// </summary>
+[InternalImplementationsOnly]
 public interface IEnumTypeShape : ITypeShape
 {
     /// <summary>
@@ -16,6 +17,7 @@ public interface IEnumTypeShape : ITypeShape
 /// </summary>
 /// <typeparam name="TEnum">The type of .NET enum.</typeparam>
 /// <typeparam name="TUnderlying">The underlying type used to represent the enum.</typeparam>
+[InternalImplementationsOnly]
 public interface IEnumTypeShape<TEnum, TUnderlying> : ITypeShape<TEnum>, IEnumTypeShape
     where TEnum : struct, Enum
 {

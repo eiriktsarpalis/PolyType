@@ -6,6 +6,7 @@ namespace PolyType.Abstractions;
 /// <summary>
 /// Provides a strongly typed shape model for a given .NET instance property or field.
 /// </summary>
+[InternalImplementationsOnly]
 public interface IPropertyShape
 {
     /// <summary>
@@ -91,6 +92,7 @@ public interface IPropertyShape
 /// </summary>
 /// <typeparam name="TDeclaringType">The declaring type of the underlying property.</typeparam>
 /// <typeparam name="TPropertyType">The property type of the underlying property.</typeparam>
+[InternalImplementationsOnly]
 public interface IPropertyShape<TDeclaringType, TPropertyType> : IPropertyShape
 {
     /// <summary>

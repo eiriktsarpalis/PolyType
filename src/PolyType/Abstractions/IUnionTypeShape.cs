@@ -7,6 +7,7 @@
 /// Typically reserved for classes or interfaces that specify derived types via the <see cref="DerivedTypeShapeAttribute"/>
 /// but can also include F# discriminated unions.
 /// </remarks>
+[InternalImplementationsOnly]
 public interface IUnionTypeShape : ITypeShape
 {
     /// <summary>
@@ -31,6 +32,7 @@ public interface IUnionTypeShape : ITypeShape
 /// Typically reserved for classes or interfaces that specify derived types via the <see cref="DerivedTypeShapeAttribute"/>
 /// but can also include F# discriminated unions.
 /// </remarks>
+[InternalImplementationsOnly]
 public interface IUnionTypeShape<TUnion> : ITypeShape<TUnion>, IUnionTypeShape
 {
     /// <summary>

@@ -7,6 +7,7 @@ namespace PolyType.Abstractions;
 /// Provides a strongly typed shape model for a given .NET method parameter,
 /// representing either an actual parameter or a member initializer.
 /// </summary>
+[InternalImplementationsOnly]
 public interface IParameterShape
 {
     /// <summary>
@@ -88,6 +89,7 @@ public interface IParameterShape
 /// </summary>
 /// <typeparam name="TArgumentState">The state type used for aggregating method arguments.</typeparam>
 /// <typeparam name="TParameterType">The type of the underlying method parameter.</typeparam>
+[InternalImplementationsOnly]
 public interface IParameterShape<TArgumentState, TParameterType> : IParameterShape
 {
     /// <summary>

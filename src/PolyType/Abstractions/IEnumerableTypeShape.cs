@@ -8,6 +8,7 @@ namespace PolyType.Abstractions;
 /// <remarks>
 /// Typically covers all types implementing <see cref="IEnumerable{T}"/> or <see cref="IEnumerable"/>.
 /// </remarks>
+[InternalImplementationsOnly]
 public interface IEnumerableTypeShape : ITypeShape
 {
     /// <summary>
@@ -60,6 +61,7 @@ public interface IEnumerableTypeShape : ITypeShape
 ///
 /// For non-generic collections, <typeparamref name="TElement"/> is instantiated to <see cref="object"/>.
 /// </remarks>
+[InternalImplementationsOnly]
 public interface IEnumerableTypeShape<TEnumerable, TElement> : ITypeShape<TEnumerable>, IEnumerableTypeShape
 {
     /// <summary>

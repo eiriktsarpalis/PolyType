@@ -3,6 +3,7 @@ namespace PolyType.Abstractions;
 /// <summary>
 /// Provides a strongly typed shape model for a .NET object.
 /// </summary>
+[InternalImplementationsOnly]
 public interface IObjectTypeShape : ITypeShape
 {
     /// <summary>
@@ -34,4 +35,5 @@ public interface IObjectTypeShape : ITypeShape
 /// Provides a strongly typed shape model for a .NET object.
 /// </summary>
 /// <typeparam name="T">The type of .NET object.</typeparam>
+[InternalImplementationsOnly]
 public interface IObjectTypeShape<T> : ITypeShape<T>, IObjectTypeShape;

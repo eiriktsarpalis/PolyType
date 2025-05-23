@@ -134,4 +134,12 @@ public sealed partial class Parser
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+
+    internal static DiagnosticDescriptor UnsanctionedShape { get; } = new DiagnosticDescriptor(
+        id: "PT0019",
+        title: "No external shape implementations.",
+        messageFormat: "The type \"{0}\" implements \"{1}\", which is a reserved interface that should only be implemented by PolyType itself.",
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
 }
