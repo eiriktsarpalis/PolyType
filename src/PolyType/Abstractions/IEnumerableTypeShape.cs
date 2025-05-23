@@ -143,8 +143,8 @@ public abstract class IEnumerableTypeShape<TEnumerable, TElement>(ITypeShapeProv
     public abstract Func<IEnumerable<TElement>, TEnumerable> GetEnumerableConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null);
 
     /// <inheritdoc/>
-    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnumerable(this, state);
+    public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnumerable(this, state);
 
     /// <inheritdoc/>
-    public override object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
+    public sealed override object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
 }

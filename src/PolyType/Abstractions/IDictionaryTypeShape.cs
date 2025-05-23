@@ -145,8 +145,8 @@ public abstract class IDictionaryTypeShape<TDictionary, TKey, TValue>(ITypeShape
     public abstract Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> GetEnumerableConstructor(CollectionConstructionOptions<TKey>? collectionConstructionOptions = null);
 
     /// <inheritdoc/>
-    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitDictionary(this, state);
+    public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitDictionary(this, state);
 
     /// <inheritdoc/>
-    public override object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
+    public sealed override object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
 }

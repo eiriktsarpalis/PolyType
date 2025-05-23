@@ -121,7 +121,7 @@ public abstract class IPropertyShape<TDeclaringType, TPropertyType>(ITypeShapePr
     protected override IObjectTypeShape DeclaringTypeNonGeneric => DeclaringType;
 
     /// <inheritdoc/>
-    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitProperty(this, state);
+    public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitProperty(this, state);
 
     /// <summary>
     /// Creates a getter delegate for the property, if applicable.

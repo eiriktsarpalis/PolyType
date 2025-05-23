@@ -80,8 +80,8 @@ public abstract class IOptionalTypeShape<TOptional, TElement>(ITypeShapeProvider
     public abstract OptionDeconstructor<TOptional, TElement> GetDeconstructor();
 
     /// <inheritdoc/>
-    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitOptional(this, state);
+    public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitOptional(this, state);
 
     /// <inheritdoc/>
-    public override object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
+    public sealed override object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
 }

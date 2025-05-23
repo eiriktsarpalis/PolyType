@@ -59,7 +59,7 @@ public abstract class IConstructorShape<TDeclaringType, TArgumentState>(ITypeSha
     protected override IObjectTypeShape DeclaringTypeNonGeneric => this.DeclaringType;
 
     /// <inheritdoc/>
-    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitConstructor(this, state);
+    public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitConstructor(this, state);
 
     /// <summary>
     /// Creates a delegate wrapping a parameterless constructor, if applicable.

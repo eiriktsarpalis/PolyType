@@ -86,8 +86,8 @@ public abstract class IUnionTypeShape<TUnion>(ITypeShapeProvider provider) : IUn
     public abstract Getter<TUnion, int> GetGetUnionCaseIndex();
 
     /// <inheritdoc/>
-    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnion(this, state);
+    public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnion(this, state);
 
     /// <inheritdoc/>
-    public override object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
+    public sealed override object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
 }

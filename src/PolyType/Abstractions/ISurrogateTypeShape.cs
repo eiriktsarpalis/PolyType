@@ -61,8 +61,8 @@ public abstract class ISurrogateTypeShape<T, TSurrogate>(ITypeShapeProvider prov
     public override Type Type => typeof(T);
 
     /// <inheritdoc/>
-    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitSurrogate(this, state);
+    public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitSurrogate(this, state);
 
     /// <inheritdoc/>
-    public override object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
+    public sealed override object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
 }

@@ -57,8 +57,8 @@ public abstract class IEnumTypeShape<TEnum, TUnderlying>(ITypeShapeProvider prov
     protected override ITypeShape UnderlyingTypeNonGeneric => UnderlyingType;
 
     /// <inheritdoc/>
-    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnum(this, state);
+    public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnum(this, state);
 
     /// <inheritdoc/>
-    public override object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
+    public sealed override object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
 }

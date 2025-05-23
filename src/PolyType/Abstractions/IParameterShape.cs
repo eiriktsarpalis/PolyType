@@ -116,7 +116,7 @@ public abstract class IParameterShape<TArgumentState, TParameterType>(ITypeShape
     protected override object? DefaultValueNonGeneric => DefaultValue;
 
     /// <inheritdoc/>
-    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitParameter(this, state);
+    public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitParameter(this, state);
 
     /// <summary>
     /// Creates a setter delegate for configuring a state object

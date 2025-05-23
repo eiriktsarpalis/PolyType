@@ -76,5 +76,5 @@ public abstract class IUnionCaseShape<TUnionCase, TUnion>(ITypeShapeProvider pro
     protected override ITypeShape TypeNonGeneric => Type;
 
     /// <inheritdoc/>
-    public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnionCase(this, state);
+    public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnionCase(this, state);
 }
