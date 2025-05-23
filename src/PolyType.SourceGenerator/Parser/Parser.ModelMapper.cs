@@ -94,6 +94,7 @@ public sealed partial class Parser
                 Kind = enumerableModel.EnumerableKind,
                 Rank = enumerableModel.Rank,
                 ElementTypeContainsNullableAnnotations = enumerableModel.ElementType.ContainsNullabilityAnnotations(),
+                AddMethodIsExplicitInterfaceImplementation = enumerableModel.AddMethodIsExplicitInterfaceImplementation,
                 AssociatedTypes = associatedTypes,
             },
 
@@ -136,6 +137,7 @@ public sealed partial class Parser
                 KeyValueTypesContainNullableAnnotations =
                     dictionaryModel.KeyType.ContainsNullabilityAnnotations() ||
                     dictionaryModel.ValueType.ContainsNullabilityAnnotations(),
+                IndexerIsExplicitInterfaceImplementation = dictionaryModel.IndexerIsExplicitInterfaceImplementation,
                 AssociatedTypes = associatedTypes,
             },
 

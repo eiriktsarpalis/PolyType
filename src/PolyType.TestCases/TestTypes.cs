@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
+using System.Dynamic;
 using System.Globalization;
 using System.Numerics;
 using System.Reflection;
@@ -164,12 +165,19 @@ public static class TestTypes
 #endif
         yield return TestCase.Create((IDictionary<int, int>)new Dictionary<int, int> { [42] = 42 }, p);
         yield return TestCase.Create((IReadOnlyDictionary<int, int>)new Dictionary<int, int> { [42] = 42 }, p);
+        yield return TestCase.Create(CreateExpandoObject([new("x", 1), new("y", "str")]), p);
 
         yield return TestCase.Create(new DerivedList { 1, 2, 1, 3 });
         yield return TestCase.Create(new DerivedDictionary { ["key"] = "value" });
 
         yield return TestCase.Create(new StructList<int> { 1, 2, 1, 3 }, p);
         yield return TestCase.Create(new StructDictionary<string, string> { ["key"] = "value" }, p);
+        yield return TestCase.Create(ExplicitlyImplementedList<int>.Create([1, 2, 1, 3]), p);
+        yield return TestCase.Create(ExplicitlyImplementedDictionary<string, string>.Create([new("key", "value")]), p);
+        yield return TestCase.Create(ExplicitlyImplementedIList.Create([null, false, 42, "value"]));
+        yield return TestCase.Create(ExplicitlyImplementedIDictionary.Create([new("key", "value")]));
+        yield return TestCase.Create(ExplicitlyImplementedIList.Create([null, true, 42, "string"]));
+        yield return TestCase.Create(ExplicitlyImplementedIDictionary.Create([new("key", 42)]));
         yield return TestCase.Create<CollectionWithBuilderAttribute>([1, 2, 1, 3]);
         yield return TestCase.Create((GenericCollectionWithBuilderAttribute<int>)[1, 2, 1, 3], p);
         yield return TestCase.Create(new CollectionWithEnumerableCtor([1, 2, 1, 3]));
@@ -603,6 +611,17 @@ public static class TestTypes
         yield return TestCase.Create(GenericFSharpStructUnion<string>.NewA("str"), additionalValues: [GenericFSharpStructUnion<string>.B, GenericFSharpStructUnion<string>.NewC(42)], isUnion: true, provider: p);
         yield return TestCase.Create(FSharpExpr.True, additionalValues: [FSharpExpr.False, FSharpExpr.Y], isUnion: true, provider: p);
     }
+
+    private static ExpandoObject CreateExpandoObject(IEnumerable<KeyValuePair<string, object?>> values)
+    {
+        ExpandoObject obj = new();
+        IDictionary<string, object?> dictView = obj;
+        foreach (var kvp in values)
+        {
+            dictView[kvp.Key] = kvp.Value;
+        }
+        return obj;
+    }
 }
 
 [GenerateShape]
@@ -651,6 +670,133 @@ public readonly struct StructDictionary<TKey, TValue> : IDictionary<TKey, TValue
     public bool TryGetValue(TKey key, out TValue value) => _dictionary.TryGetValue(key, out value!);
     public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => _dictionary.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => _dictionary.GetEnumerator();
+}
+
+public class ExplicitlyImplementedList<T> : IList<T>
+{
+    public static ExplicitlyImplementedList<T> Create(IEnumerable<T> values)
+    {
+        ExplicitlyImplementedList<T> list = new();
+        list._values.AddRange(values);
+        return list;
+    }
+
+    private readonly List<T> _values;
+    public ExplicitlyImplementedList() => _values = new();
+    T IList<T>.this[int index] { get => _values[index]; set => _values[index] = value; }
+    int ICollection<T>.Count => _values.Count;
+    bool ICollection<T>.IsReadOnly => false;
+    void ICollection<T>.Add(T item) => _values.Add(item);
+    void ICollection<T>.Clear() => _values.Clear();
+    bool ICollection<T>.Contains(T item) => _values.Contains(item);
+    void ICollection<T>.CopyTo(T[] array, int arrayIndex) => _values.CopyTo(array, arrayIndex);
+    int IList<T>.IndexOf(T item) => _values.IndexOf(item);
+    void IList<T>.Insert(int index, T item) => _values.Insert(index, item);
+    bool ICollection<T>.Remove(T item) => _values.Remove(item);
+    void IList<T>.RemoveAt(int index) => _values.RemoveAt(index);
+    IEnumerator<T> IEnumerable<T>.GetEnumerator() => _values.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => _values.GetEnumerator();
+}
+
+public sealed class ExplicitlyImplementedDictionary<TKey, TValue> : IDictionary<TKey, TValue>
+    where TKey : notnull
+{
+    public static ExplicitlyImplementedDictionary<TKey, TValue> Create(IEnumerable<KeyValuePair<TKey, TValue>> values)
+    {
+        ExplicitlyImplementedDictionary<TKey, TValue> dictionary = new();
+        foreach (var kvp in values)
+        {
+            dictionary._dictionary.Add(kvp.Key, kvp.Value);
+        }
+        return dictionary;
+    }
+
+    private readonly Dictionary<TKey, TValue> _dictionary;
+    public ExplicitlyImplementedDictionary() => _dictionary = new();
+    TValue IDictionary<TKey, TValue>.this[TKey key] { get => _dictionary[key]; set => _dictionary[key] = value; }
+    ICollection<TKey> IDictionary<TKey, TValue>.Keys => _dictionary.Keys;
+    ICollection<TValue> IDictionary<TKey, TValue>.Values => _dictionary.Values;
+    int ICollection<KeyValuePair<TKey, TValue>>.Count => _dictionary.Count;
+    bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly => false;
+    void IDictionary<TKey, TValue>.Add(TKey key, TValue value) => _dictionary.Add(key, value);
+    void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> item) => _dictionary.Add(item.Key, item.Value);
+    void ICollection<KeyValuePair<TKey, TValue>>.Clear() => _dictionary.Clear();
+    bool ICollection<KeyValuePair<TKey, TValue>>.Contains(KeyValuePair<TKey, TValue> item) => _dictionary.Contains(item);
+    bool IDictionary<TKey, TValue>.ContainsKey(TKey key) => _dictionary.ContainsKey(key);
+    void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) => ((IDictionary<TKey, TValue>)_dictionary).CopyTo(array, arrayIndex);
+    bool IDictionary<TKey, TValue>.Remove(TKey key) => _dictionary.Remove(key);
+    bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> item) => ((IDictionary<TKey, TValue>)_dictionary).Remove(item);
+    bool IDictionary<TKey, TValue>.TryGetValue(TKey key, out TValue value) => _dictionary.TryGetValue(key, out value!);
+    IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() => _dictionary.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => _dictionary.GetEnumerator();
+}
+
+[GenerateShape]
+public sealed partial class ExplicitlyImplementedIList : IList
+{
+    public static ExplicitlyImplementedIList Create(IEnumerable<object?> values)
+    {
+        ExplicitlyImplementedIList list = new();
+        foreach (var value in values)
+        {
+            list._values.Add(value);
+        }
+        return list;
+    }
+    private readonly List<object?> _values;
+    public ExplicitlyImplementedIList() => _values = new();
+    object? IList.this[int index] { get => _values[index]; set => _values[index] = value; }
+    int ICollection.Count => _values.Count;
+    bool IList.IsFixedSize => false;
+    bool IList.IsReadOnly => false;
+    bool ICollection.IsSynchronized => false;
+    object ICollection.SyncRoot => _values;
+    int IList.Add(object? value)
+    {
+        _values.Add(value);
+        return _values.Count - 1;
+    }
+
+    IEnumerator IEnumerable.GetEnumerator() => _values.GetEnumerator();
+    void IList.Clear() => _values.Clear();
+    bool IList.Contains(object? value) => throw new NotImplementedException();
+    void ICollection.CopyTo(Array array, int index) => throw new NotImplementedException();
+    int IList.IndexOf(object? value) => throw new NotImplementedException();
+    void IList.Insert(int index, object? value) => throw new NotImplementedException();
+    void IList.Remove(object? value) => throw new NotImplementedException();
+    void IList.RemoveAt(int index) => throw new NotImplementedException();
+}
+
+[GenerateShape]
+public sealed partial class ExplicitlyImplementedIDictionary : IDictionary
+{
+    public static ExplicitlyImplementedIDictionary Create(IEnumerable<KeyValuePair<object, object?>> values)
+    {
+        ExplicitlyImplementedIDictionary dictionary = new();
+        foreach (var kvp in values)
+        {
+            dictionary._dictionary.Add(kvp.Key, kvp.Value);
+        }
+        return dictionary;
+    }
+
+    private readonly Dictionary<object, object?> _dictionary;
+    public ExplicitlyImplementedIDictionary() => _dictionary = new();
+    object? IDictionary.this[object key] { get => _dictionary[key]; set => _dictionary[key] = value; }
+    void IDictionary.Add(object key, object? value) => _dictionary.Add(key, value);
+    IEnumerator IEnumerable.GetEnumerator() => _dictionary.GetEnumerator();
+    IDictionaryEnumerator IDictionary.GetEnumerator() => ((IDictionary)_dictionary).GetEnumerator();
+    void IDictionary.Clear() => _dictionary.Clear();
+    int ICollection.Count => _dictionary.Count;
+    bool IDictionary.IsFixedSize => throw new NotImplementedException();
+    bool IDictionary.IsReadOnly => throw new NotImplementedException();
+    bool ICollection.IsSynchronized => throw new NotImplementedException();
+    object ICollection.SyncRoot => throw new NotImplementedException();
+    ICollection IDictionary.Keys => throw new NotImplementedException();
+    ICollection IDictionary.Values => throw new NotImplementedException();
+    bool IDictionary.Contains(object? key) => throw new NotImplementedException();
+    void ICollection.CopyTo(Array array, int index) => throw new NotImplementedException();
+    void IDictionary.Remove(object? key) => throw new NotImplementedException();
 }
 
 [GenerateShape]
@@ -2060,7 +2206,7 @@ public partial class TypeWithRecordSurrogate(int value1, string value2)
 }
 
 [TypeShape(Marshaller = typeof(EnumMarshaller))]
-public enum EnumWithRecordSurrogate { A, B, C  }
+public enum EnumWithRecordSurrogate { A, B, C }
 public record EnumSurrogate(int Value);
 public sealed class EnumMarshaller : IMarshaller<EnumWithRecordSurrogate, EnumSurrogate>
 {
@@ -2424,6 +2570,8 @@ public partial class AsyncEnumerableClass(IEnumerable<int> values) : IAsyncEnume
 [GenerateShape<ArrayList>]
 [GenerateShape<StructList<int>>]
 [GenerateShape<StructDictionary<string, string>>]
+[GenerateShape<ExplicitlyImplementedList<int>>]
+[GenerateShape<ExplicitlyImplementedDictionary<string, string>>]
 [GenerateShape<GenericRecord<int>>]
 [GenerateShape<GenericRecord<string>>]
 [GenerateShape<GenericRecord<GenericRecord<bool>>>]
@@ -2553,4 +2701,5 @@ public partial class AsyncEnumerableClass(IEnumerable<int> values) : IAsyncEnume
 [GenerateShape<GenericFSharpStructUnion<string>>]
 [GenerateShape<FSharpResult<string, int>>]
 [GenerateShape<FSharpExpr>]
+[GenerateShape<ExpandoObject>]
 public partial class Witness;

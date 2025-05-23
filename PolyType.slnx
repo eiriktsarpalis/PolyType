@@ -1,0 +1,56 @@
+<Solution>
+  <Folder Name="/.github/" />
+  <Folder Name="/.github/workflows/">
+    <File Path=".github/workflows/build.yml" />
+    <File Path=".github/workflows/markdown-link-check.yml" />
+    <File Path=".github/workflows/release.yml" />
+    <File Path=".github/workflows/update-docs.yml" />
+  </Folder>
+  <Folder Name="/applications/">
+    <Project Path="applications/ConfigurationBinder.AOT/ConfigurationBinder.AOT.csproj" />
+    <Project Path="applications/ObjectMapper.AOT/ObjectMapper.AOT.csproj" />
+    <Project Path="applications/RandomGeneratorApp.AOT/RandomGeneratorApp.AOT.csproj" />
+    <Project Path="applications/SerializationApp.AOT/SerializationApp.AOT.csproj" />
+    <Project Path="applications/SerializationApp.Reflection/SerializationApp.Reflection.csproj" />
+    <Project Path="applications/ValidationApp.AOT/ValidationApp.AOT.csproj" />
+  </Folder>
+  <Folder Name="/docs/">
+    <File Path="docs/core-abstractions.md" />
+    <File Path="docs/docfx.json" />
+    <File Path="docs/index.md" />
+    <File Path="docs/shape-providers.md" />
+    <File Path="docs/toc.yml" />
+    <Project Path="docs/CSharpSamples/CSharpSamples.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".dockerignore" />
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="Dockerfile" />
+    <File Path="exclusion.dic" />
+    <File Path="global.json" />
+    <File Path="key.snk" />
+    <File Path="LICENSE" />
+    <File Path="Makefile" />
+    <File Path="nuget.config" />
+    <File Path="README.md" />
+    <File Path="version.json" />
+  </Folder>
+  <Folder Name="/src/">
+    <File Path="src/Directory.Build.props" />
+    <Project Path="src/PolyType.Examples/PolyType.Examples.csproj" />
+    <Project Path="src/PolyType.Roslyn/PolyType.Roslyn.csproj" />
+    <Project Path="src/PolyType.SourceGenerator/PolyType.SourceGenerator.csproj" />
+    <Project Path="src/PolyType.TestCases.FSharp/PolyType.TestCases.FSharp.fsproj" />
+    <Project Path="src/PolyType.TestCases/PolyType.TestCases.csproj" />
+    <Project Path="src/PolyType/PolyType.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PolyType.Benchmarks/PolyType.Benchmarks.csproj" />
+    <Project Path="tests/PolyType.Roslyn.Tests/PolyType.Roslyn.Tests.csproj" />
+    <Project Path="tests/PolyType.SourceGenerator.UnitTests/PolyType.SourceGenerator.UnitTests.csproj" />
+    <Project Path="tests/PolyType.Tests/PolyType.Tests.csproj" />
+  </Folder>
+</Solution>

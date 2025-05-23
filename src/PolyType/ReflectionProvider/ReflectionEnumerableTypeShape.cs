@@ -316,18 +316,40 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
 
             if (typeof(TEnumerable).GetConstructor([]) is ConstructorInfo defaultCtor)
             {
+                MethodInfo? addMethod = null;
                 foreach (MethodInfo methodInfo in typeof(TEnumerable).GetMethods(BindingFlags.Public | BindingFlags.Instance))
                 {
                     if (methodInfo.Name is "Add" or "Enqueue" or "Push" &&
                         methodInfo.GetParameters() is [ParameterInfo parameter] &&
                         parameter.ParameterType == typeof(TElement))
                     {
-                        _defaultCtor = defaultCtor;
-                        _addMethod = methodInfo;
-                        (_constructionComparer, _defaultCtorWithComparer) = this.FindComparerConstructorOverload(defaultCtor);
-                        _constructionStrategy = CollectionConstructionStrategy.Mutable;
-                        return;
+                        addMethod = methodInfo;
+                        break;
                     }
+                }
+
+                if (!typeof(TEnumerable).IsValueType)
+                {
+                    // If no Add method was found, check for potential explicit interface implementations.
+                    // Only do so if the type is not a value type, since this would force boxing otherwise.
+                    if (addMethod is null && typeof(ICollection<TElement>).IsAssignableFrom(typeof(TEnumerable)))
+                    {
+                        addMethod = typeof(ICollection<TElement>).GetMethod(nameof(ICollection<TElement>.Add));
+                    }
+
+                    if (addMethod is null && typeof(IList).IsAssignableFrom(typeof(TEnumerable)) && typeof(TElement) == typeof(object))
+                    {
+                        addMethod = typeof(IList).GetMethod(nameof(IList.Add));
+                    }
+                }
+
+                if (addMethod is not null)
+                {
+                    _defaultCtor = defaultCtor;
+                    _addMethod = addMethod;
+                    (_constructionComparer, _defaultCtorWithComparer) = this.FindComparerConstructorOverload(defaultCtor);
+                    _constructionStrategy = CollectionConstructionStrategy.Mutable;
+                    return;
                 }
             }
 
