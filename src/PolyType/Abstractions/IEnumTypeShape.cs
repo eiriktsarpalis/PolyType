@@ -48,7 +48,7 @@ public abstract class IEnumTypeShape<TEnum, TUnderlying>(ITypeShapeProvider prov
     /// <summary>
     /// Gets the shape of the underlying type used to represent the enum.
     /// </summary>
-    public new virtual ITypeShape<TUnderlying> UnderlyingType => Provider.Resolve<TUnderlying>();
+    public new abstract ITypeShape<TUnderlying> UnderlyingType { get; }
 
     /// <inheritdoc/>
     public override Type Type => typeof(TEnum);

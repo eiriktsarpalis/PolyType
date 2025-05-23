@@ -9,5 +9,8 @@ internal sealed class ReflectionEnumTypeShape<TEnum, TUnderlying>(ReflectionType
     where TEnum : struct, Enum
 {
     /// <inheritdoc/>
+    public override ITypeShape<TUnderlying> UnderlyingType => Provider.Resolve<TUnderlying>();
+
+    /// <inheritdoc/>
     public override ITypeShape? GetAssociatedTypeShape(Type associatedType) => null;
 }
