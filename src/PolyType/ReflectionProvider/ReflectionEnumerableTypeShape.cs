@@ -24,6 +24,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
     private MethodBase? _spanCtorWithComparer;
     private ConstructorInfo? _listCtor;
     private ConstructorInfo? _listCtorWithComparer;
+    private bool _isFrozenSet;
     private bool _discoveryComplete;
 
     private Setter<TEnumerable, TElement>? _addDelegate;
@@ -149,8 +150,16 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                     return _enumerableCtorDelegate = _enumerableCtor switch
                     {
                         ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateFuncDelegate<IEnumerable<TElement>, TEnumerable>(ctorInfo),
+                        MethodInfo enumerableFactory when _isFrozenSet => CreateFrozenSetDelegate(enumerableFactory),
                         _ => ((MethodInfo)_enumerableCtor).CreateDelegate<Func<IEnumerable<TElement>, TEnumerable>>(),
                     };
+
+                    static Func<IEnumerable<TElement>, TEnumerable> CreateFrozenSetDelegate(MethodInfo enumerableFactory)
+                    {
+                        // FrozenSet only exposes one factory overload accepting IEqualityComparer
+                        var factoryDelegate = enumerableFactory.CreateDelegate<Func<IEnumerable<TElement>, IEqualityComparer<TElement>?, TEnumerable>>();
+                        return values => factoryDelegate(values, null);
+                    }
                 }
             }
         }
@@ -475,6 +484,28 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                 if (typeof(TEnumerable) is { Name: "ImmutableSortedSet`1", Namespace: "System.Collections.Immutable" })
                 {
                     return FindCreateRangeMethods("System.Collections.Immutable.ImmutableSortedSet");
+                }
+
+                if (typeof(TEnumerable) is { Name: "FrozenSet`1", Namespace: "System.Collections.Frozen" })
+                {
+                    Type? factoryType = typeof(TEnumerable).Assembly.GetType("System.Collections.Frozen.FrozenSet");
+                    _enumerableCtor = factoryType?.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                        .Where(m => m.Name is "ToFrozenSet")
+                        .Where(m =>
+                            m.GetParameters() is [ParameterInfo p1, ParameterInfo p2] &&
+                            p1.ParameterType.IsIEnumerable() &&
+                            p2.ParameterType is { IsGenericType: true } p2Type && p2Type.GetGenericTypeDefinition() == typeof(IEqualityComparer<>))
+                        .Select(m => m.MakeGenericMethod(typeof(TElement)))
+                        .FirstOrDefault();
+
+                    if (_enumerableCtor != null)
+                    {
+                        _enumerableCtorWithComparer = _enumerableCtor;
+                        _constructionComparer = ConstructionWithComparer.ValuesEqualityComparer;
+                        _constructionStrategy = CollectionConstructionStrategy.Enumerable;
+                        _isFrozenSet = true;
+                        return true;
+                    }
                 }
 
                 return false;

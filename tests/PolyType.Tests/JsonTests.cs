@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using PolyType.ReflectionProvider;
 
 namespace PolyType.Tests;
 
@@ -448,6 +449,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         value.CustomKind is not null ||
         value.UsesMarshaller ||
         value.IsUnion && (!typeof(T).GetCustomAttributes<JsonDerivedTypeAttribute>().Any() || value.IsAbstract) ||
+        (ReflectionHelpers.IsMonoRuntime && value.Value is IDiamondInterface) ||
         value.Value is DerivedClassWithVirtualProperties; // https://github.com/dotnet/runtime/issues/96996
 }
 

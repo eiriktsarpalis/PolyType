@@ -209,6 +209,16 @@ public partial class TypeDataModelGenerator
                     .MakeGenericMethod(namedType.TypeArguments[0], namedType.TypeArguments[1]);
                 return (factory, factoryWithComparer, CollectionModelConstructionStrategy.List);
             }
+            
+            if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.FrozenDictionary))
+            {
+                factoryWithComparer = factory = KnownSymbols.Compilation.GetTypeByMetadataName("System.Collections.Frozen.FrozenDictionary")
+                    .GetMethodSymbol(method => 
+                        method is { IsStatic: true, IsGenericMethod: true, Name: "ToFrozenDictionary", Parameters: [{ Type.Name: "IEnumerable" }, { Type.Name: "IEqualityComparer"}] })
+                    .MakeGenericMethod(namedType.TypeArguments[0], namedType.TypeArguments[1]);
+
+                return (factory, factoryWithComparer, CollectionModelConstructionStrategy.List);
+            }
 
             if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.FSharpMap))
             {

@@ -117,7 +117,7 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
                 }
 
                 break;
-            case [{ ParameterType: Type collectionType }]:
+            case [_]:
                 foreach (MethodBase overload in EnumerateOverloads())
                 {
                     if (overload.GetParameters() is not [ParameterInfo first, ParameterInfo second])
@@ -141,7 +141,7 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
         {
             if (nonComparerOverload is ConstructorInfo { DeclaringType: not null })
             {
-                foreach (ConstructorInfo ctor in nonComparerOverload.DeclaringType.GetConstructors())
+                foreach (ConstructorInfo ctor in nonComparerOverload.DeclaringType!.GetConstructors())
                 {
                     yield return ctor;
                 }

@@ -23,6 +23,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     private MethodBase? _spanCtorWithComparer;
     private ConstructorInfo? _dictionaryCtor;
     private ConstructorInfo? _dictionaryCtorWithComparer;
+    private bool _isFrozenDictionary;
     private bool _isFSharpMap;
     private ConstructionWithComparer? _constructionComparer;
     private bool _discoveryComplete;
@@ -148,6 +149,14 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 {
                     var mapOfSeqDelegate = ((MethodInfo)_enumerableCtor).CreateDelegate<Func<IEnumerable<Tuple<TKey, TValue>>, TDictionary>>();
                     return kvps => mapOfSeqDelegate(kvps.Select(kvp => new Tuple<TKey, TValue>(kvp.Key, kvp.Value)));
+                }
+
+                if (_isFrozenDictionary)
+                {
+                    // FrozenDictionary only exposes a constructor accepting an IEqualityComparer<TKey> as a second parameter.
+                    Debug.Assert(_enumerableCtorWithComparer is MethodInfo);
+                    var ctorWithComparer = ((MethodInfo)_enumerableCtorWithComparer!).CreateDelegate<Func<IEnumerable<KeyValuePair<TKey, TValue>>, IEqualityComparer<TKey>?, TDictionary>>();
+                    return kvps => ctorWithComparer(kvps, null);
                 }
 
                 return _enumerableCtor switch
@@ -391,6 +400,28 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 (_constructionComparer, _enumerableCtorWithComparer) = FindComparerConstructionOverload(_enumerableCtor);
                 _constructionStrategy = _enumerableCtor != null ? CollectionConstructionStrategy.Enumerable : CollectionConstructionStrategy.None;
                 return;
+            }
+
+            if (dictionaryType is { Name: "FrozenDictionary`2", Namespace: "System.Collections.Frozen" })
+            {
+                Type? factoryType = dictionaryType.Assembly.GetType("System.Collections.Frozen.FrozenDictionary");
+                _enumerableCtor = factoryType?.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                    .Where(m => m.Name is "ToFrozenDictionary")
+                    .Where(m =>
+                        m.GetParameters() is [ParameterInfo p1, ParameterInfo p2] &&
+                        p1.ParameterType.IsIEnumerable() &&
+                        p2.ParameterType is { IsGenericType: true } p2Type && p2Type.GetGenericTypeDefinition() == typeof(IEqualityComparer<>))
+                    .Select(m => m.MakeGenericMethod(typeof(TKey), typeof(TValue)))
+                    .FirstOrDefault();
+
+                if (_enumerableCtor != null)
+                {
+                    _enumerableCtorWithComparer = _enumerableCtor;
+                    _constructionComparer = ConstructionWithComparer.ValuesEqualityComparer;
+                    _constructionStrategy = CollectionConstructionStrategy.Enumerable;
+                    _isFrozenDictionary = true;
+                    return;
+                }
             }
 
             if (dictionaryType is { Name: "FSharpMap`2", Namespace: "Microsoft.FSharp.Collections" })
