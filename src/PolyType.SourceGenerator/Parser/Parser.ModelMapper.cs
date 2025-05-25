@@ -225,7 +225,7 @@ public sealed partial class Parser
 
         static bool IsFactoryAcceptingIEnumerable(IMethodSymbol? method)
         {
-            return method?.Parameters is [{ Type: INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Collections_Generic_IEnumerable_T } }];
+            return method?.Parameters.Any(p => p is { Type: INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Collections_Generic_IEnumerable_T }}) ?? false;
         }
     }
 

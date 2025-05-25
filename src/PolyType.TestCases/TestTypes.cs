@@ -3,10 +3,10 @@ using Microsoft.FSharp.Core;
 using PolyType.Tests.FSharp;
 using System.Collections;
 using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Drawing;
 using System.Dynamic;
 using System.Globalization;
 using System.Numerics;
@@ -206,6 +206,8 @@ public static class TestTypes
         yield return TestCase.Create(ImmutableDictionary.CreateRange(new Dictionary<string, string> { ["key"] = "value" }), p);
         yield return TestCase.Create(ImmutableDictionary.CreateRange(new Dictionary<string, string?> { ["key"] = null }), p);
         yield return TestCase.Create(ImmutableSortedDictionary.CreateRange(new Dictionary<string, string> { ["key"] = "value" }), p);
+        yield return TestCase.Create(Enumerable.Range(1, 5).Select(i => i.ToString(CultureInfo.InvariantCulture)).ToFrozenDictionary(i => i, i => i), p);
+        yield return TestCase.Create(Enumerable.Range(1, 5).ToFrozenSet(), p);
 
         yield return TestCase.Create(new PocoWithListAndDictionaryProps(@string: "myString")
         {
@@ -2592,6 +2594,8 @@ public partial class AsyncEnumerableClass(IEnumerable<int> values) : IAsyncEnume
 [GenerateShape<ImmutableSortedSet<int>>]
 [GenerateShape<ImmutableDictionary<string, string>>]
 [GenerateShape<ImmutableSortedDictionary<string, string>>]
+[GenerateShape<FrozenDictionary<string, string>>]
+[GenerateShape<FrozenSet<int>>]
 [GenerateShape<IEnumerable>]
 [GenerateShape<IList>]
 [GenerateShape<ICollection>]

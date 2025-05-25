@@ -193,6 +193,18 @@ public class KnownSymbols(Compilation compilation)
     /// </summary>
     public INamedTypeSymbol? ImmutableSortedDictionary => GetOrResolveType("System.Collections.Immutable.ImmutableSortedDictionary`2", ref _ImmutableSortedDictionary);
     private Option<INamedTypeSymbol?> _ImmutableSortedDictionary;
+    
+    /// <summary>
+    /// The type symbol for FrozenDictionary.
+    /// </summary>
+    public INamedTypeSymbol? FrozenDictionary => GetOrResolveType("System.Collections.Frozen.FrozenDictionary`2", ref _FrozenDictionary);
+    private Option<INamedTypeSymbol?> _FrozenDictionary;
+    
+    /// <summary>
+    /// The type symbol for FrozenSet.
+    /// </summary>
+    public INamedTypeSymbol? FrozenSet => GetOrResolveType("System.Collections.Frozen.FrozenSet`1", ref _FrozenSet);
+    private Option<INamedTypeSymbol?> _FrozenSet;
 
     /// <summary>
     /// The type symbol for the F# list type.

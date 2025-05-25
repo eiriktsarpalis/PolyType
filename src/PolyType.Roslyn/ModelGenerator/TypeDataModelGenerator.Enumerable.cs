@@ -302,13 +302,22 @@ public partial class TypeDataModelGenerator
             {
                 return FindCreateRangeMethods("System.Collections.Immutable.ImmutableSortedSet", false);
             }
+            
+            if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.FrozenSet))
+            {
+                factory = KnownSymbols.Compilation.GetTypeByMetadataName("System.Collections.Frozen.FrozenSet")
+                    .GetMethodSymbol(method =>
+                        method is { IsStatic: true, IsGenericMethod: true, Name: "ToFrozenSet", Parameters: [{ Type.Name: "IEnumerable" }, { Type.Name: "IEqualityComparer" }] })
+                    .MakeGenericMethod(namedType.TypeArguments[0]);
+                
+                return (factory, factory, CollectionModelConstructionStrategy.List);
+            }
 
             if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.FSharpList))
             {
                 factory = KnownSymbols.Compilation.GetTypeByMetadataName("Microsoft.FSharp.Collections.ListModule")
                     .GetMethodSymbol(method =>
-                        method is { IsStatic: true, IsGenericMethod: true, Name: "OfSeq", Parameters: [var param] } &&
-                        param.Type.Name is "IEnumerable")
+                        method is { IsStatic: true, IsGenericMethod: true, Name: "OfSeq", Parameters: [{ Type.Name: "IEnumerable" }] })
                     .MakeGenericMethod(namedType.TypeArguments[0]);
                 return (factory, null, CollectionModelConstructionStrategy.List);
             }

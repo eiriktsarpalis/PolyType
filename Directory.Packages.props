@@ -16,22 +16,22 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="4.8.0" />
     <!-- Build Infra & Packaging -->
     <PackageVersion Include="PolySharp" Version="1.15.0" />
-    <PackageVersion Include="Nerdbank.GitVersioning" Version="3.6.146" />
+    <PackageVersion Include="Nerdbank.GitVersioning" Version="3.7.115" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
     <!-- Testing dependencies -->
-    <PackageVersion Include="xunit.assert" Version="2.3.0" />
-    <PackageVersion Include="xunit.v3" Version="2.0.0" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="3.0.2" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
-    <PackageVersion Include="BenchmarkDotNet" Version="0.14.0" />
-    <!-- Use a pre .NET 8 build of S.C.Immutable that doesn't support literals. -->
-    <PackageVersion Include="System.Collections.Immutable" Version="7.0.0" />
-    <PackageVersion Include="System.Formats.Cbor" Version="8.0.0" />
-    <PackageVersion Include="System.Text.Json" Version="8.0.5" />
+    <PackageVersion Include="xunit.assert" Version="2.9.3" />
+    <PackageVersion Include="xunit.v3" Version="2.0.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.0" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.5" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="9.0.5" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.0" />
+    <PackageVersion Include="BenchmarkDotNet" Version="0.15.0" />
+    <!-- Earliest version of the library supporting literals and frozen collections -->
+    <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
+    <PackageVersion Include="System.Formats.Cbor" Version="9.0.5" />
+    <PackageVersion Include="System.Text.Json" Version="9.0.5" />
     <PackageVersion Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
-    <PackageVersion Include="JsonSchema.Net" Version="7.2.3" />
-    <PackageVersion Include="FSharp.Core" Version="8.0.401" />
+    <PackageVersion Include="JsonSchema.Net" Version="7.3.4" />
+    <PackageVersion Include="FSharp.Core" Version="9.0.300" />
   </ItemGroup>
 </Project>

@@ -65,11 +65,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     [Fact]
     public void ImmutableHashSet()
     {
-#if NET
         this.AssertSpanEnumerable<ImmutableHashSet<int>, int>(NonEmptyEnumerable, new EvenOddEqualityComparer(), s => s.KeyComparer);
-#else
-        this.AssertEnumerableEnumerable<ImmutableHashSet<int>, int>(NonEmptyEnumerable, new EvenOddEqualityComparer(), s => s.KeyComparer);
-#endif
     }
 
     // REVISIT: This test is skipped for no-emit Reflection because it uses Span, which isn't supported by that provider.
@@ -77,11 +73,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     [Fact]
     public void ImmutableSortedSet()
     {
-#if NET
         this.AssertSpanEnumerable<ImmutableSortedSet<int>, int>(NonEmptyEnumerable, new ReverseComparer(), s => s.KeyComparer);
-#else
-        this.AssertEnumerableEnumerable<ImmutableSortedSet<int>, int>(NonEmptyEnumerable, new ReverseComparer(), s => s.KeyComparer);
-#endif
     }
 
     [Fact]
