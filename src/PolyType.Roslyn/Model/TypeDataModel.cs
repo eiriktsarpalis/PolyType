@@ -26,7 +26,7 @@ public class TypeDataModel
     /// <summary>
     /// The collection of associated types specified via TypeShapeAttribute.AssociatedTypes.
     /// </summary>
-    public ImmutableArray<AssociatedTypeModel> AssociatedTypes { get; init; } = ImmutableArray<AssociatedTypeModel>.Empty;
+    public ImmutableArray<AssociatedTypeModel> AssociatedTypes { get; set; } = ImmutableArray<AssociatedTypeModel>.Empty;
 
     /// <summary>
     /// Determines the type of <see cref="TypeDataModel"/> being used.

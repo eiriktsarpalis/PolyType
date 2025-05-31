@@ -166,6 +166,46 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
         AssertPartialShape(() => associatedShape.Properties);
     }
 
+    /// <summary>
+    /// Verifies that a property on <see cref="CustomTypeWithCustomConvertedMember"/>
+    /// with <see cref="MyConverterAttribute"/> applied will establish an associated type
+    /// between <see cref="GenericWrapper{T1}"/> and <see cref="GenericConverter{T}"/>
+    /// where <c>T</c> is <see cref="SpecialKey2"/>.
+    /// </summary>
+    [Fact]
+    public void AssociatedTypeAttribute_OnProperty()
+    {
+        // Assert that the associated type is available on its own.
+        IObjectTypeShape? associatedShape = (IObjectTypeShape<GenericConverter<SpecialKey2>>?)providerUnderTest.Provider.GetShape(typeof(GenericConverter<SpecialKey2>));
+        Assert.NotNull(associatedShape);
+
+        // Assert that it is available as an associated type of the original.
+        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericWrapper<SpecialKey2>));
+        Assert.NotNull(typeShape);
+        associatedShape = (IObjectTypeShape<GenericConverter<SpecialKey2>>?)typeShape.GetAssociatedTypeShape(typeof(GenericConverter<>));
+        Assert.NotNull(associatedShape);
+    }
+
+    /// <summary>
+    /// Verifies that a field on <see cref="CustomTypeWithCustomConvertedMember"/>
+    /// with <see cref="MyConverterAttribute"/> applied will establish an associated type
+    /// between <see cref="GenericWrapper{T1}"/> and <see cref="GenericConverter{T}"/>
+    /// where <c>T</c> is <see cref="SpecialKey3"/>.
+    /// </summary>
+    [Fact]
+    public void AssociatedTypeAttribute_OnField()
+    {
+        // Assert that the associated type is available on its own.
+        IObjectTypeShape? associatedShape = (IObjectTypeShape<GenericConverter<SpecialKey3>>?)providerUnderTest.Provider.GetShape(typeof(GenericConverter<SpecialKey3>));
+        Assert.NotNull(associatedShape);
+
+        // Assert that it is available as an associated type of the original.
+        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericWrapper<SpecialKey3>));
+        Assert.NotNull(typeShape);
+        associatedShape = (IObjectTypeShape<GenericConverter<SpecialKey3>>?)typeShape.GetAssociatedTypeShape(typeof(GenericConverter<>));
+        Assert.NotNull(associatedShape);
+    }
+
     [Fact]
     public void TypeShapeExtension_AssociatedShape()
     {
@@ -306,6 +346,8 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
         public class GenericNested<T2>;
     }
 
+    public class GenericConverter<T>;
+
     [GenerateShape<GenericDataType<int, string>>]
     [GenerateShape<GenericDataTypeFullAndPartialPaths<int, string>>]
     [GenerateShape<IEnumerable<SpecialKey>>]
@@ -316,6 +358,16 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     [MyConverter(typeof(CustomTypeConverter))]
     [MyConverterNamedArg(Types = [typeof(CustomTypeConverter1), typeof(CustomTypeConverter2)])]
     internal partial class CustomTypeWithCustomConverter;
+
+    [GenerateShape]
+    internal partial class CustomTypeWithCustomConvertedMember
+    {
+        [MyConverter(typeof(GenericConverter<>))]
+        public GenericWrapper<SpecialKey2>? MyProperty { get; set; }
+
+        [MyConverter(typeof(GenericConverter<>))]
+        public GenericWrapper<SpecialKey3>? MyField;
+    }
 
     public class CustomTypeConverter { public string? MyProperty { get; set; } }
     public class CustomTypeConverter1 { public string? MyProperty { get; set; } }
@@ -334,6 +386,8 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     }
 
     internal class SpecialKey;
+    internal class SpecialKey2;
+    internal class SpecialKey3;
 
     public sealed class Reflection() : AssociatedTypesTests(ReflectionProviderUnderTest.NoEmit, partialShapesSupported: false);
     public sealed class ReflectionEmit() : AssociatedTypesTests(ReflectionProviderUnderTest.Emit, partialShapesSupported: false);

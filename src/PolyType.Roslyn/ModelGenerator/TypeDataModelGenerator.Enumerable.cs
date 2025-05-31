@@ -7,7 +7,7 @@ namespace PolyType.Roslyn;
 
 public partial class TypeDataModelGenerator
 {
-    private bool TryMapEnumerable(ITypeSymbol type, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
+    private bool TryMapEnumerable(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
     {
         model = null;
         status = default;
@@ -223,7 +223,6 @@ public partial class TypeDataModelGenerator
             AddElementMethod = addElementMethod,
             FactoryMethod = factoryMethod,
             FactoryMethodWithComparer = factoryMethodWithComparer,
-            AssociatedTypes = associatedTypes,
             Rank = rank,
             AddMethodIsExplicitInterfaceImplementation = addMethodIsExplicitInterfaceImplementation,
         };

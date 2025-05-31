@@ -12,6 +12,7 @@ public partial class TypeDataModelGenerator
 {
     private ImmutableDictionary<ITypeSymbol, TypeDataModel> _generatedModels;
     private List<EquatableDiagnostic>? _diagnostics;
+    private ImmutableDictionary<ITypeSymbol, ImmutableArray<AssociatedTypeModel>> _associatedTypes;
 
     /// <summary>
     /// Creates a new <see cref="TypeDataModelGenerator"/> instance.
@@ -25,6 +26,7 @@ public partial class TypeDataModelGenerator
         KnownSymbols = knownSymbols;
         CancellationToken = cancellationToken;
         _generatedModels = ImmutableDictionary.Create<ITypeSymbol, TypeDataModel>(SymbolComparer);
+        _associatedTypes = ImmutableDictionary.Create<ITypeSymbol, ImmutableArray<AssociatedTypeModel>>(SymbolComparer);
     }
 
     /// <summary>
@@ -51,6 +53,11 @@ public partial class TypeDataModelGenerator
     /// Full generated models, keyed by their type symbol.
     /// </summary>
     public ImmutableDictionary<ITypeSymbol, TypeDataModel> GeneratedModels => _generatedModels;
+
+    /// <summary>
+    /// Gets the associated types, indexed by their originating types.
+    /// </summary>
+    public ImmutableDictionary<ITypeSymbol, ImmutableArray<AssociatedTypeModel>> AssociatedTypes => _associatedTypes;
 
     /// <summary>
     /// The <see cref="SymbolEqualityComparer"/> used to identify type symbols.
@@ -206,42 +213,42 @@ public partial class TypeDataModelGenerator
         {
             // If the configuration specifies an explicit kind, try to resolve that or fall back to no shape.
             case TypeDataKind.Enum:
-                if (TryMapEnum(type, associatedTypes, ref ctx, out model, out status))
+                if (TryMapEnum(type, ref ctx, out model, out status))
                 {
                     return status;
                 }
                 goto None;
 
             case TypeDataKind.Optional:
-                if (TryMapOptional(type, associatedTypes, ref ctx, requirements, out model, out status))
+                if (TryMapOptional(type, ref ctx, requirements, out model, out status))
                 {
                     return status;
                 }
                 goto None;
 
             case TypeDataKind.Dictionary:
-                if (TryMapDictionary(type, associatedTypes, ref ctx, out model, out status))
+                if (TryMapDictionary(type, ref ctx, out model, out status))
                 {
                     return status;
                 }
                 goto None;
 
             case TypeDataKind.Enumerable:
-                if (TryMapEnumerable(type, associatedTypes, ref ctx, out model, out status))
+                if (TryMapEnumerable(type, ref ctx, out model, out status))
                 {
                     return status;
                 }
                 goto None;
 
             case TypeDataKind.Tuple:
-                if (TryMapTuple(type, associatedTypes, ref ctx, out model, out status))
+                if (TryMapTuple(type, ref ctx, out model, out status))
                 {
                     return status;
                 }
                 goto None;
 
             case TypeDataKind.Object:
-                if (TryMapObject(type, associatedTypes, ref ctx, requirements, out model, out status))
+                if (TryMapObject(type, ref ctx, requirements, out model, out status))
                 {
                     return status;
                 }
@@ -251,34 +258,34 @@ public partial class TypeDataModelGenerator
                 goto None;
         }
 
-        if (TryMapEnum(type, associatedTypes, ref ctx, out model, out status))
+        if (TryMapEnum(type, ref ctx, out model, out status))
         {
             return status;
         }
 
-        if (TryMapOptional(type, associatedTypes, ref ctx, requirements, out model, out status))
+        if (TryMapOptional(type, ref ctx, requirements, out model, out status))
         {
             return status;
         }
 
         // Important: Dictionary resolution goes before Enumerable
         // since Dictionary also implements IEnumerable
-        if (TryMapDictionary(type, associatedTypes, ref ctx, out model, out status))
+        if (TryMapDictionary(type, ref ctx, out model, out status))
         {
             return status;
         }
 
-        if (TryMapEnumerable(type, associatedTypes, ref ctx, out model, out status))
+        if (TryMapEnumerable(type, ref ctx, out model, out status))
         {
             return status;
         }
 
-        if (TryMapTuple(type, associatedTypes, ref ctx, out model, out status))
+        if (TryMapTuple(type, ref ctx, out model, out status))
         {
             return status;
         }
 
-        if (TryMapObject(type, associatedTypes, ref ctx, requirements, out model, out status))
+        if (TryMapObject(type, ref ctx, requirements, out model, out status))
         {
             return status;
         }
@@ -313,6 +320,18 @@ public partial class TypeDataModelGenerator
     {
         return type.TypeKind is not (TypeKind.Pointer or TypeKind.Error) &&
           type.SpecialType is not SpecialType.System_Void && !type.ContainsGenericParameters();
+    }
+
+    /// <summary>
+    /// Gets the associated types for a given type, as specified by 3rd party custom attributes.
+    /// </summary>
+    /// <param name="symbol">The type (or property or field with a type of interest) whose associated types are sought.</param>
+    /// <param name="associatedTypes">The associated types for the given <paramref name="symbol"/>.</param>
+    protected virtual void ParseCustomAssociatedTypeAttributes(
+        ISymbol symbol,
+        out ImmutableArray<AssociatedTypeModel> associatedTypes)
+    {
+        associatedTypes = [];
     }
 
     private static bool IsAcceptableConstructorPair(CollectionConstructorParameterType first, CollectionConstructorParameterType second, CollectionConstructorParameterType collectionType)

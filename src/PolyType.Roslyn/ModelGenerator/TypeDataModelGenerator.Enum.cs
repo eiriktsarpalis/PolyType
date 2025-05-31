@@ -6,7 +6,7 @@ namespace PolyType.Roslyn;
 
 public partial class TypeDataModelGenerator
 {
-    private bool TryMapEnum(ITypeSymbol type, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
+    private bool TryMapEnum(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
     {
         if (type.TypeKind is not TypeKind.Enum)
         {
@@ -24,7 +24,6 @@ public partial class TypeDataModelGenerator
             Type = type,
             Depth = TypeShapeRequirements.Full,
             UnderlyingType = underlyingType,
-            AssociatedTypes = associatedTypes,
         };
         
         return true;

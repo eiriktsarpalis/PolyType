@@ -617,17 +617,12 @@ public sealed partial class Parser
 
     private readonly Dictionary<INamedTypeSymbol, CustomAttributeAssociatedTypeProvider> customAttributes = new(SymbolEqualityComparer.Default);
 
-    /// <summary>
-    /// Gets the associated types for a given type, as specified by 3rd party custom attributes.
-    /// </summary>
-    /// <param name="typeSymbol">The type whose associated types are sought.</param>
-    /// <param name="associatedTypes">The associated types for the given <paramref name="typeSymbol"/>.</param>
-    private void ParseCustomAssociatedTypeAttributes(
-        ITypeSymbol typeSymbol,
+    protected override void ParseCustomAssociatedTypeAttributes(
+        ISymbol symbol,
         out ImmutableArray<AssociatedTypeModel> associatedTypes)
     {
         associatedTypes = ImmutableArray<AssociatedTypeModel>.Empty;
-        foreach (AttributeData att in typeSymbol.GetAttributes())
+        foreach (AttributeData att in symbol.GetAttributes())
         {
             if (att.AttributeClass is null)
             {
@@ -681,13 +676,13 @@ public sealed partial class Parser
                         {
                             if (argValue.Value is INamedTypeSymbol namedType)
                             {
-                                yield return new AssociatedTypeModel(namedType, typeSymbol.ContainingAssembly, location, requirements);
+                                yield return new AssociatedTypeModel(namedType, symbol.ContainingAssembly, location, requirements);
                             }
                         }
                     }
                     else if (arg.Value is INamedTypeSymbol namedType)
                     {
-                        yield return new AssociatedTypeModel(namedType, typeSymbol.ContainingAssembly, location, requirements);
+                        yield return new AssociatedTypeModel(namedType, symbol.ContainingAssembly, location, requirements);
                     }
                 }
             }
