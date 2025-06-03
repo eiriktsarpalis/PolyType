@@ -431,7 +431,6 @@ public sealed partial class Parser : TypeDataModelGenerator
                 Depth = TypeShapeRequirements.Full,
                 SurrogateType = surrogateType,
                 MarshallerType = namedMarshaller,
-                AssociatedTypes = associatedTypes,
             };
         }
 
@@ -705,6 +704,8 @@ public sealed partial class Parser : TypeDataModelGenerator
 
         foreach (KeyValuePair<ITypeSymbol, TypeDataModel> entry in GeneratedModels)
         {
+            entry.Value.AssociatedTypes = AssociatedTypes.GetValueOrDefault(entry.Key, []);
+
             TypeId typeId = CreateTypeId(entry.Value.Type);
             if (results.ContainsKey(typeId))
             {

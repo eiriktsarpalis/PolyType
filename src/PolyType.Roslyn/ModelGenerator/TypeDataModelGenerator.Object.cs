@@ -81,7 +81,7 @@ public partial class TypeDataModelGenerator
     /// <inheritdoc cref="IsRequiredByPolicy(IPropertySymbol)"/>
     protected virtual bool? IsRequiredByPolicy(IFieldSymbol member) => null;
 
-    private bool TryMapObject(ITypeSymbol type, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements requirements, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
+    private bool TryMapObject(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements requirements, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
     {
         status = default;
         model = null;
@@ -106,7 +106,6 @@ public partial class TypeDataModelGenerator
             Constructors = constructors,
             Properties = properties,
             DerivedTypes = derivedTypes,
-            AssociatedTypes = associatedTypes,
         };
 
         return true;
@@ -114,6 +113,10 @@ public partial class TypeDataModelGenerator
 
     private void IncludeAssociatedShapes(ITypeSymbol type, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx)
     {
+        _associatedTypes = _associatedTypes.SetItem(
+            type,
+            [.. _associatedTypes.GetValueOrDefault(type, []), .. associatedTypes]);
+
         foreach (AssociatedTypeModel associatedType in associatedTypes)
         {
             INamedTypeSymbol? closedAssociatedType = associatedType.AssociatedType.IsUnboundGenericType
@@ -148,6 +151,9 @@ public partial class TypeDataModelGenerator
                 {
                     PropertyDataModel propertyModel = MapProperty(ps, includeGetter, includeSetter);
                     properties.Add(propertyModel);
+
+                    ParseCustomAssociatedTypeAttributes(member, out ImmutableArray<AssociatedTypeModel> customAssociatedTypes);
+                    IncludeAssociatedShapes(ps.Type, customAssociatedTypes, ref ctx);
                 }
                 else if (
                     member is IFieldSymbol { IsStatic: false, IsConst: false } fs &&
@@ -156,6 +162,9 @@ public partial class TypeDataModelGenerator
                 {
                     PropertyDataModel fieldModel = MapField(fs);
                     properties.Add(fieldModel);
+
+                    ParseCustomAssociatedTypeAttributes(member, out ImmutableArray<AssociatedTypeModel> customAssociatedTypes);
+                    IncludeAssociatedShapes(fs.Type, customAssociatedTypes, ref ctx);
                 }
 
                 bool IsOverriddenOrShadowed(ISymbol member) => !membersInScope.Add(member.Name);
