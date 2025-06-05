@@ -11,6 +11,7 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
     IConstructorShapeInfo ctorInfo) :
     IConstructorShape<TDeclaringType, TArgumentState>
 {
+    private readonly object _syncObject = new();
     private IReadOnlyList<IParameterShape>? _parameters;
     private Func<TArgumentState>? _argumentStateConstructor;
     private Constructor<TArgumentState, TDeclaringType>? _parameterizedConstructor;
@@ -22,7 +23,21 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
     IObjectTypeShape IConstructorShape.DeclaringType => DeclaringType;
     object? IConstructorShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitConstructor(this, state);
 
-    public IReadOnlyList<IParameterShape> Parameters => _parameters ??= GetParameters().AsReadOnlyList();
+    public IReadOnlyList<IParameterShape> Parameters
+    {
+        get
+        {
+            if (_parameters is null)
+            {
+                lock (_syncObject)
+                {
+                    return _parameters ??= GetParameters().AsReadOnlyList();
+                }
+            }
+
+            return _parameters;
+        }
+    }
 
     public Func<TArgumentState> GetArgumentStateConstructor()
     {
@@ -32,7 +47,15 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
             static void Throw() => throw new InvalidOperationException("The current constructor shape is not parameterized.");
         }
 
-        return _argumentStateConstructor ??= provider.MemberAccessor.CreateConstructorArgumentStateCtor<TArgumentState>(ctorInfo);
+        if (_argumentStateConstructor is null)
+        {
+            lock (_syncObject)
+            {
+                return _argumentStateConstructor ??= provider.MemberAccessor.CreateConstructorArgumentStateCtor<TArgumentState>(ctorInfo);
+            }
+        }
+
+        return _argumentStateConstructor;
     }
 
     public Constructor<TArgumentState, TDeclaringType> GetParameterizedConstructor()
@@ -43,7 +66,15 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
             static void Throw() => throw new InvalidOperationException("The current constructor shape is not parameterized.");
         }
 
-        return _parameterizedConstructor ??= provider.MemberAccessor.CreateParameterizedConstructor<TArgumentState, TDeclaringType>(ctorInfo);
+        if (_parameterizedConstructor is null)
+        {
+            lock (_syncObject)
+            {
+                return _parameterizedConstructor ??= provider.MemberAccessor.CreateParameterizedConstructor<TArgumentState, TDeclaringType>(ctorInfo);
+            }
+        }
+
+        return _parameterizedConstructor;
     }
 
     public Func<TDeclaringType> GetDefaultConstructor()
@@ -54,7 +85,15 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
             static void Throw() => throw new InvalidOperationException("The current constructor shape is not parameterless.");
         }
 
-        return _defaultConstructor ??= provider.MemberAccessor.CreateDefaultConstructor<TDeclaringType>(ctorInfo);
+        if (_defaultConstructor is null)
+        {
+            lock (_syncObject)
+            {
+                return _defaultConstructor ??= provider.MemberAccessor.CreateDefaultConstructor<TDeclaringType>(ctorInfo);
+            }
+        }
+
+        return _defaultConstructor;
     }
 
     private IEnumerable<IParameterShape> GetParameters()
@@ -91,7 +130,7 @@ internal sealed class MethodConstructorShapeInfo : IConstructorShapeInfo
         ConstructorParameters = parameters;
 
         MemberInitializers = memberInitializers ?? [];
-        Parameters = [ ..ConstructorParameters, ..MemberInitializers ];
+        Parameters = [.. ConstructorParameters, .. MemberInitializers];
     }
 
     public Type ConstructedType { get; }

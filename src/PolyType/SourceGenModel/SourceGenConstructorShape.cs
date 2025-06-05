@@ -10,6 +10,8 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TArgumentState">The mutable argument state for the constructor.</typeparam>
 public sealed class SourceGenConstructorShape<TDeclaringType, TArgumentState> : IConstructorShape<TDeclaringType, TArgumentState>
 {
+    private readonly object _syncObject = new();
+
     /// <summary>
     /// Gets a value indicating whether the constructor is public.
     /// </summary>
@@ -50,7 +52,22 @@ public sealed class SourceGenConstructorShape<TDeclaringType, TArgumentState> : 
     /// </summary>
     public Constructor<TArgumentState, TDeclaringType>? ParameterizedConstructorFunc { get; init; }
 
-    IReadOnlyList<IParameterShape> IConstructorShape.Parameters => _parameters ??= (GetParametersFunc?.Invoke()).AsReadOnlyList();
+    IReadOnlyList<IParameterShape> IConstructorShape.Parameters
+    {
+        get
+        {
+            if (_parameters is null)
+            {
+                lock (_syncObject)
+                {
+                    return _parameters ??= (GetParametersFunc?.Invoke()).AsReadOnlyList();
+                }
+            }
+
+            return _parameters;
+        }
+    }
+
     private IReadOnlyList<IParameterShape>? _parameters;
 
     Func<TDeclaringType> IConstructorShape<TDeclaringType, TArgumentState>.GetDefaultConstructor()
