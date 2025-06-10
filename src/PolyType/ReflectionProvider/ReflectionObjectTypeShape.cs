@@ -9,13 +9,30 @@ namespace PolyType.ReflectionProvider;
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 internal abstract class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider provider) : ReflectionTypeShape<T>(provider), IObjectTypeShape<T>
 {
+    private readonly object _syncObject = new();
+
     public sealed override TypeShapeKind Kind => TypeShapeKind.Object;
     public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);
 
     public virtual bool IsRecordType => false;
     public virtual bool IsTupleType => false;
 
-    public IReadOnlyList<IPropertyShape> Properties => _properties ??= GetProperties().AsReadOnlyList();
+    public IReadOnlyList<IPropertyShape> Properties
+    {
+        get
+        {
+            if (_properties is null)
+            {
+                lock (_syncObject)
+                {
+                    return _properties ??= GetProperties().AsReadOnlyList();
+                }
+            }
+
+            return _properties;
+        }
+    }
+
     private IReadOnlyList<IPropertyShape>? _properties;
 
     public IConstructorShape? Constructor
@@ -24,8 +41,15 @@ internal abstract class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider
         {
             if (!_isConstructorResolved)
             {
-                _constructor = GetConstructor();
-                Volatile.Write(ref _isConstructorResolved, true);
+                lock (_syncObject)
+                {
+                    if (!_isConstructorResolved)
+                    {
+                        _constructor = GetConstructor();
+                        Thread.MemoryBarrier(); // Ensure that the constructor is fully initialized before setting the flag.
+                        _isConstructorResolved = true;
+                    }
+                }
             }
 
             return _constructor;
@@ -43,13 +67,60 @@ internal abstract class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider provider, bool disableMemberResolution) : ReflectionObjectTypeShape<T>(provider)
 {
-    public override bool IsRecordType => _isRecord ??= typeof(T).IsRecordType();
+    private readonly object _syncObject = new();
+
+    public override bool IsRecordType
+    {
+        get
+        {
+            if (_isRecord is null)
+            {
+                lock (_syncObject)
+                {
+                    return _isRecord ??= typeof(T).IsRecordType();
+                }
+            }
+
+            return _isRecord.Value;
+        }
+    }
+
     private bool? _isRecord;
 
-    public override bool IsTupleType => _isTuple ??= typeof(T).IsTupleType();
+    public override bool IsTupleType
+    {
+        get
+        {
+            if (_isTuple is null)
+            {
+                lock (_syncObject)
+                {
+                    return _isTuple ??= typeof(T).IsTupleType();
+                }
+            }
+
+            return _isTuple.Value;
+        }
+    }
+
     private bool? _isTuple;
 
-    public bool IsSimpleType => _isSimpleType ??= DetermineIsSimpleType(typeof(T));
+    public bool IsSimpleType
+    {
+        get
+        {
+            if (_isSimpleType is null)
+            {
+                lock (_syncObject)
+                {
+                    return _isSimpleType ??= DetermineIsSimpleType(typeof(T));
+                }
+            }
+
+            return _isSimpleType.Value;
+        }
+    }
+
     private bool? _isSimpleType;
 
     protected override IConstructorShape? GetConstructor()
