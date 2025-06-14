@@ -25,4 +25,14 @@ public interface IEnumTypeShape<TEnum, TUnderlying> : ITypeShape<TEnum>, IEnumTy
     /// Gets the shape of the underlying type used to represent the enum.
     /// </summary>
     new ITypeShape<TUnderlying> UnderlyingType { get; }
+
+    /// <summary>
+    /// Gets the names and values for each enum member.
+    /// </summary>
+    /// <devremarks>
+    /// We use <typeparamref name="TUnderlying"/> instead of <typeparamref name="TEnum"/>
+    /// to avoid needlessly closing generic types around unique value types (which swell the size of trimmed apps)
+    /// when the caller can easily cast between enum and underlying types.
+    /// </devremarks>
+    IReadOnlyDictionary<string, TUnderlying> Members { get; }
 }
