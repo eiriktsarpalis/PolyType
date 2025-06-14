@@ -9,6 +9,7 @@ namespace PolyType.ReflectionProvider;
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 internal sealed class ReflectionEnumTypeShape<TEnum, TUnderlying>(ReflectionTypeShapeProvider provider) : ReflectionTypeShape<TEnum>(provider), IEnumTypeShape<TEnum, TUnderlying>
     where TEnum : struct, Enum
+    where TUnderlying : unmanaged
 {
     private readonly object _syncObject = new object();
     private IReadOnlyDictionary<string, TUnderlying>? _members;

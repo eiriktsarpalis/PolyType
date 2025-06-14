@@ -20,6 +20,7 @@ public interface IEnumTypeShape : ITypeShape
 [InternalImplementationsOnly]
 public interface IEnumTypeShape<TEnum, TUnderlying> : ITypeShape<TEnum>, IEnumTypeShape
     where TEnum : struct, Enum
+    where TUnderlying : unmanaged
 {
     /// <summary>
     /// Gets the shape of the underlying type used to represent the enum.

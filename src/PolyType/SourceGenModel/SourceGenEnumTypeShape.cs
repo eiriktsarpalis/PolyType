@@ -9,6 +9,7 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TUnderlying">The type of the underlying type of the enum.</typeparam>
 public sealed class SourceGenEnumTypeShape<TEnum, TUnderlying> : SourceGenTypeShape<TEnum>, IEnumTypeShape<TEnum, TUnderlying>
     where TEnum : struct, Enum
+    where TUnderlying : unmanaged
 {
     /// <summary>
     /// Gets the shape of the underlying type of the enum.
