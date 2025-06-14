@@ -1324,4 +1324,27 @@ public static class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
+
+    [Fact]
+    public static void EnumWithCustomNames()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            internal enum MyEnum
+            {
+                [EnumMemberShape(Name = "A2")]
+                A = 1,
+                B,
+                [EnumMemberShape(Name = "E2")]
+                E,
+            }
+
+            [GenerateShape<MyEnum>]
+            internal partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
 }

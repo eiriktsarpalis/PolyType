@@ -14,6 +14,10 @@ internal sealed partial class SourceFormatter
                 {
                     UnderlyingType = {{GetShapeModel(enumShapeType.UnderlyingType).SourceIdentifier}},
                     Provider = this,
+                    Members = new global::System.Collections.Generic.Dictionary<string, {{enumShapeType.UnderlyingType.FullyQualifiedName}}>({{enumShapeType.Members.Count}}, global::System.StringComparer.Ordinal)
+                    {
+                        {{string.Join("\n            ", enumShapeType.Members.Select(member => $"[\"{member.Key}\"] = {member.Value},"))}}
+                    }
                 };
             }
             """);
