@@ -19,6 +19,9 @@ public sealed class SourceGenEnumTypeShape<TEnum, TUnderlying> : SourceGenTypeSh
     public override TypeShapeKind Kind => TypeShapeKind.Enum;
 
     /// <inheritdoc/>
+    public required IReadOnlyDictionary<string, TUnderlying> Members { get; init; }
+
+    /// <inheritdoc/>
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnum(this, state);
 
     ITypeShape IEnumTypeShape.UnderlyingType => UnderlyingType;

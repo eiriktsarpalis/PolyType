@@ -23,6 +23,11 @@ public sealed class PolyTypeKnownSymbols(Compilation compilation) : KnownSymbols
         public const string Requirements = "Requirements";
     }
 
+    public static class EnumMemberShapeAttributePropertyNames
+    {
+        public const string Name = "Name";
+    }
+
     public INamedTypeSymbol? GenerateShapeAttribute => GetOrResolveType("PolyType.GenerateShapeAttribute", ref _GenerateShapeAttribute);
     private Option<INamedTypeSymbol?> _GenerateShapeAttribute;
 
@@ -43,6 +48,9 @@ public sealed class PolyTypeKnownSymbols(Compilation compilation) : KnownSymbols
 
     public INamedTypeSymbol? PropertyShapeAttribute => GetOrResolveType("PolyType.PropertyShapeAttribute", ref _PropertyShapeAttribute);
     private Option<INamedTypeSymbol?> _PropertyShapeAttribute;
+
+    public INamedTypeSymbol? EnumMemberShapeAttribute => GetOrResolveType("PolyType.EnumMemberShapeAttribute", ref _EnumMemberShapeAttribute);
+    private Option<INamedTypeSymbol?> _EnumMemberShapeAttribute;
 
     public INamedTypeSymbol? ConstructorShapeAttribute => GetOrResolveType("PolyType.ConstructorShapeAttribute", ref _ConstructorShapeAttribute);
     private Option<INamedTypeSymbol?> _ConstructorShapeAttribute;
