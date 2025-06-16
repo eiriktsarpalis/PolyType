@@ -12,24 +12,30 @@ internal sealed class ReflectionEnumTypeShape<TEnum, TUnderlying>(ReflectionType
     where TUnderlying : unmanaged
 {
     private readonly object _syncObject = new object();
-    private IReadOnlyDictionary<string, TUnderlying>? _members;
+    private Dictionary<string, TUnderlying>? _members;
 
     public override TypeShapeKind Kind => TypeShapeKind.Enum;
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnum(this, state);
     public ITypeShape<TUnderlying> UnderlyingType => Provider.GetShape<TUnderlying>();
     ITypeShape IEnumTypeShape.UnderlyingType => UnderlyingType;
-    public IReadOnlyDictionary<string, TUnderlying> Members => _members ??= InitializeMembers();
-
-    private IReadOnlyDictionary<string, TUnderlying> InitializeMembers()
+    public IReadOnlyDictionary<string, TUnderlying> Members
     {
-        lock (_syncObject)
+        get
         {
             if (_members is not null)
             {
                 return _members;
             }
-        }
 
+            lock (_syncObject)
+            {
+                return _members ??= InitializeMembers();
+            }
+        }
+    }
+
+    private static Dictionary<string, TUnderlying> InitializeMembers()
+    {
         FieldInfo[] fields = typeof(TEnum).GetFields(BindingFlags.Public | BindingFlags.Static);
         Dictionary<string, TUnderlying> members = new(fields.Length, StringComparer.Ordinal);
         foreach (FieldInfo field in fields)
