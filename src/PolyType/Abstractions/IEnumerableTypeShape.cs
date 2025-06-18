@@ -85,10 +85,9 @@ public interface IEnumerableTypeShape<TEnumerable, TElement> : ITypeShape<TEnume
     /// <summary>
     /// Creates a delegate wrapping a parameterless constructor of a mutable collection.
     /// </summary>
-    /// <param name="collectionConstructionOptions">Options that control how the collection is constructed. Use <see cref="IEnumerableTypeShape.ComparerOptions" /> to predict which properties may be worth initializing.</param>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Mutable"/>.</exception>
     /// <returns>A delegate wrapping a default constructor.</returns>
-    Func<TEnumerable> GetDefaultConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null);
+    DefaultCollectionConstructor<TElement, TEnumerable> GetDefaultConstructor();
 
     /// <summary>
     /// Creates a setter delegate used for appending a <typeparamref name="TElement"/> to a mutable collection.
@@ -100,16 +99,14 @@ public interface IEnumerableTypeShape<TEnumerable, TElement> : ITypeShape<TEnume
     /// <summary>
     /// Creates a constructor delegate for creating a collection from a span.
     /// </summary>
-    /// <param name="collectionConstructionOptions">Options that control how the collection is constructed. Use <see cref="IEnumerableTypeShape.ComparerOptions" /> to predict which properties may be worth initializing.</param>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Span"/>.</exception>
     /// <returns>A delegate constructing a collection from a span of values.</returns>
-    SpanConstructor<TElement, TEnumerable> GetSpanConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null);
+    SpanConstructor<TElement, TEnumerable> GetSpanConstructor();
 
     /// <summary>
     /// Creates a constructor delegate for creating a collection from an enumerable.
     /// </summary>
-    /// <param name="collectionConstructionOptions">Options that control how the collection is constructed. Use <see cref="IEnumerableTypeShape.ComparerOptions" /> to predict which properties may be worth initializing.</param>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Enumerable"/>.</exception>
     /// <returns>A delegate constructing a collection from an enumerable of values.</returns>
-    Func<IEnumerable<TElement>, TEnumerable> GetEnumerableConstructor(CollectionConstructionOptions<TElement>? collectionConstructionOptions = null);
+    EnumerableCollectionConstructor<TElement, TEnumerable> GetEnumerableConstructor();
 }

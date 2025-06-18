@@ -35,8 +35,13 @@ public delegate TDeclaringType Constructor<TArgumentState, TDeclaringType>(ref T
 /// <typeparam name="T">The element type of the span parameters.</typeparam>
 /// <typeparam name="TDeclaringType">The type of the value produced by the constructor.</typeparam>
 /// <param name="values">The span of values used to create the instance.</param>
+/// <param name="options">An optional set of parameters used to create the collection.</param>
 /// <returns>A newly constructed instance using the specified values.</returns>
-public delegate TDeclaringType SpanConstructor<T, TDeclaringType>(ReadOnlySpan<T> values);
+public delegate TDeclaringType SpanConstructor<T, TDeclaringType>(ReadOnlySpan<T> values, in CollectionConstructionOptions<T>? options = null);
+
+public delegate TDeclaringType DefaultCollectionConstructor<T, TDeclaringType>(in CollectionConstructionOptions<T>? options = null);
+
+public delegate TDeclaringType EnumerableCollectionConstructor<T, TDeclaringType>(IEnumerable<T> elements, in CollectionConstructionOptions<T>? options = null);
 
 /// <summary>
 /// Delegate deconstructing an optional type.
