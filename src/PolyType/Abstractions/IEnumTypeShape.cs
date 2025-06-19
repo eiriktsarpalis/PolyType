@@ -30,6 +30,9 @@ public interface IEnumTypeShape<TEnum, TUnderlying> : ITypeShape<TEnum>, IEnumTy
     /// <summary>
     /// Gets the names and values for each enum member.
     /// </summary>
+    /// <remarks>
+    /// The dictionary uses <see cref="StringComparer.Ordinal" /> as its key comparer.
+    /// </remarks>
     /// <devremarks>
     /// We use <typeparamref name="TUnderlying"/> instead of <typeparamref name="TEnum"/>
     /// to avoid needlessly closing generic types around unique value types (which swell the size of trimmed apps)
