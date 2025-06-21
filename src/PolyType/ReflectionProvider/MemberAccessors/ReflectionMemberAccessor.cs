@@ -379,10 +379,15 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         throw new NotSupportedException();
     }
 
-    public SpanConstructor<TKey, TElement, TResult> CreateSpanConstructorDelegate<TElement, TKey, TResult>(ConstructorInfo ctorInfo, ConstructionWithComparer signatureStyle)
+    public SpanConstructor<TKey, TElement, TResult> CreateSpanConstructorDelegate<TKey, TElement, TResult>(ConstructorInfo ctorInfo, ConstructionWithComparer signatureStyle)
     {
         Debug.Fail("Should not be called if not using Reflection.Emit");
         throw new NotSupportedException();
+    }
+
+    public MutableCollectionConstructor<TKey, TDeclaringType> CreateMutableCollectionConstructor<TKey, TDeclaringType>(IConstructorShapeInfo ctorInfo)
+    {
+        throw new NotImplementedException();
     }
 
     public Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeInfo[] derivedTypeInfos)

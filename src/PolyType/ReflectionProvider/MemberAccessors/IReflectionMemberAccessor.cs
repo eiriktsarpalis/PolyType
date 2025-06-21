@@ -20,21 +20,21 @@ internal interface IReflectionMemberAccessor
 
     Func<T, TResult> CreateFuncDelegate<T, TResult>(ConstructorInfo ctorInfo);
     Func<T1, T2, TResult> CreateFuncDelegate<T1, T2, TResult>(ConstructorInfo ctorInfo);
-    SpanConstructor<TKey, TElement, TResult> CreateSpanConstructorDelegate<TKey, TElement, TResult>(ConstructorInfo ctorInfo);
+    SpanConstructor<TKey, TElement, TCollection> CreateSpanConstructorDelegate<TKey, TElement, TCollection>(ConstructorInfo ctorInfo);
 
     /// <summary>
     /// Creates a keyed collection constructor delegate.
     /// </summary>
-    /// <typeparam name="TElement">The type of element stored in the collection.</typeparam>
     /// <typeparam name="TKey">The type of the key in the collection.</typeparam>
-    /// <typeparam name="TResult">The type of collection.</typeparam>
+    /// <typeparam name="TElement">The type of element stored in the collection.</typeparam>
+    /// <typeparam name="TCollection">The type of collection.</typeparam>
     /// <param name="ctorInfo">The collection constructor that takes two parameters.</param>
     /// <param name="signatureStyle">The signature of the constructor, indicating which type of comparer is taken and the parameter order.</param>
     /// <returns>
     /// The delegate that constructs delegates. The argument to this delegate should be an instance of <see cref="IEqualityComparer{T}"/> or <see cref="IComparer{T}"/>,
     /// in accordance with <paramref name="signatureStyle"/>.
     /// </returns>
-    SpanConstructor<TKey, TElement, TResult> CreateSpanConstructorDelegate<TElement, TKey, TResult>(ConstructorInfo ctorInfo, ConstructionWithComparer signatureStyle);
+    SpanConstructor<TKey, TElement, TCollection> CreateSpanConstructorDelegate<TKey, TElement, TCollection>(ConstructorInfo ctorInfo, ConstructionWithComparer signatureStyle);
 
     MutableCollectionConstructor<TKey, TDeclaringType> CreateMutableCollectionConstructor<TKey, TDeclaringType>(IConstructorShapeInfo ctorInfo);
 

@@ -107,7 +107,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                 }
 
                 Debug.Assert(_defaultCtor != null);
-                return _defaultCtorDelegate = Provider.MemberAccessor.CreateDefaultConstructor<TEnumerable, TElement>(new MethodConstructorShapeInfo(typeof(TEnumerable), _defaultCtor, parameters: []));
+                return _defaultCtorDelegate = Provider.MemberAccessor.CreateMutableCollectionConstructor<TElement, TEnumerable>(new MethodConstructorShapeInfo(typeof(TEnumerable), _defaultCtor, parameters: []));
             }
         }
     }
@@ -132,19 +132,20 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                     return enumerableCtorDelegate;
                 }
 
-                return _enumerableCtorDelegate = _enumerableCtor switch
-                {
-                    ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateFuncDelegate<IEnumerable<TElement>, TEnumerable>(ctorInfo),
-                    MethodInfo enumerableFactory when _isFrozenSet => CreateFrozenSetDelegate(enumerableFactory),
-                    _ => ((MethodInfo)_enumerableCtor).CreateDelegate<EnumerableCollectionConstructor<TElement, TElement, TEnumerable>>(),
-                };
+                throw new NotImplementedException();
+                ////return _enumerableCtorDelegate = _enumerableCtor switch
+                ////{
+                ////    ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateFuncDelegate<IEnumerable<TElement>, TEnumerable>(ctorInfo),
+                ////    MethodInfo enumerableFactory when _isFrozenSet => CreateFrozenSetDelegate(enumerableFactory),
+                ////    _ => ((MethodInfo)_enumerableCtor).CreateDelegate<EnumerableCollectionConstructor<TElement, TElement, TEnumerable>>(),
+                ////};
 
-                static Func<IEnumerable<TElement>, TEnumerable> CreateFrozenSetDelegate(MethodInfo enumerableFactory)
-                {
-                    // FrozenSet only exposes one factory overload accepting IEqualityComparer
-                    var factoryDelegate = enumerableFactory.CreateDelegate<Func<IEnumerable<TElement>, IEqualityComparer<TElement>?, TEnumerable>>();
-                    return values => factoryDelegate(values, null);
-                }
+                ////static EnumerableCollectionConstructor<TElement, TElement, TEnumerable> CreateFrozenSetDelegate(MethodInfo enumerableFactory)
+                ////{
+                ////    // FrozenSet only exposes one factory overload accepting IEqualityComparer
+                ////    var factoryDelegate = enumerableFactory.CreateDelegate<Func<IEnumerable<TElement>, IEqualityComparer<TElement>?, TEnumerable>>();
+                ////    return values => factoryDelegate(values, null);
+                ////}
             }
         }
     }
@@ -161,29 +162,29 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
 
         SpanConstructor<TElement, TElement, TEnumerable> CreateSpanConstructor()
         {
-            lock (_syncObject)
-            {
-                if (_spanCtorDelegate is { } spanCtorDelegate)
-                {
-                    return spanCtorDelegate;
-                }
+            throw new NotImplementedException();
+            ////lock (_syncObject)
+            ////{
+            ////    if (_spanCtorDelegate is { } spanCtorDelegate)
+            ////    {
+            ////        return spanCtorDelegate;
+            ////    }
 
-                if (_listCtor is ConstructorInfo listCtor)
-                {
-                    var listCtorDelegate = Provider.MemberAccessor.CreateFuncDelegate<List<TElement>, TEnumerable>(listCtor);
-                    return _spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => listCtorDelegate(CollectionHelpers.CreateList(span));
-                }
+            ////    if (_listCtor is ConstructorInfo listCtor)
+            ////    {
+            ////        var listCtorDelegate = Provider.MemberAccessor.CreateFuncDelegate<List<TElement>, TEnumerable>(listCtor);
+            ////        return _spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => listCtorDelegate(CollectionHelpers.CreateList(span));
+            ////    }
 
-                return _spanCtorDelegate = _spanCtor switch
-                {
-                    ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateSpanConstructorDelegate<TElement, TEnumerable>(ctorInfo),
-                    MethodInfo methodInfo => methodInfo.CreateDelegate<SpanConstructor<TElement, TElement, TEnumerable>>(),
-                    _ => throw new NotSupportedException($"_spanCtor is {_spanCtor}."),
-                };
-            }
+            ////    return _spanCtorDelegate = _spanCtor switch
+            ////    {
+            ////        ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateSpanConstructorDelegate<TElement, TEnumerable>(ctorInfo),
+            ////        MethodInfo methodInfo => methodInfo.CreateDelegate<SpanConstructor<TElement, TElement, TEnumerable>>(),
+            ////        _ => throw new NotSupportedException($"_spanCtor is {_spanCtor}."),
+            ////    };
+            ////}
         }
     }
-
 
     protected override CollectionConstructorParameterType ClassifyConstructorParameter(ParameterInfo parameter)
     {
@@ -524,7 +525,7 @@ internal sealed class ReflectionAsyncEnumerableShape<TEnumerable, TElement>(Refl
         static _ => throw new InvalidOperationException("Sync enumeration of IAsyncEnumerable instances is not supported.");
 }
 
-internal delegate TDeclaringType SpanECConstructor<TElement, TKey, TDeclaringType>(ReadOnlySpan<TElement> values, IEqualityComparer<TKey>? comparer);
-internal delegate TDeclaringType SpanCConstructor<TElement, TKey, TDeclaringType>(ReadOnlySpan<TElement> values, IComparer<TKey>? comparer);
-internal delegate TDeclaringType ECSpanConstructor<TElement, TKey, TDeclaringType>(IEqualityComparer<TKey>? comparer, ReadOnlySpan<TElement> values);
-internal delegate TDeclaringType CSpanConstructor<TElement, TKey, TDeclaringType>(IComparer<TKey>? comparer, ReadOnlySpan<TElement> values);
+internal delegate TDeclaringType SpanECConstructor<TKey, TElement, TDeclaringType>(ReadOnlySpan<TElement> values, IEqualityComparer<TKey>? comparer);
+internal delegate TDeclaringType SpanCConstructor<TKey, TElement, TDeclaringType>(ReadOnlySpan<TElement> values, IComparer<TKey>? comparer);
+internal delegate TDeclaringType ECSpanConstructor<TKey, TElement, TDeclaringType>(IEqualityComparer<TKey>? comparer, ReadOnlySpan<TElement> values);
+internal delegate TDeclaringType CSpanConstructor<TKey, TElement, TDeclaringType>(IComparer<TKey>? comparer, ReadOnlySpan<TElement> values);
