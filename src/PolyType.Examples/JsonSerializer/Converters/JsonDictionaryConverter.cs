@@ -1,8 +1,9 @@
-﻿using PolyType.Abstractions;
-using PolyType.Examples.Utilities;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Xml.Linq;
+using PolyType.Abstractions;
+using PolyType.Examples.Utilities;
 
 namespace PolyType.Examples.JsonSerializer.Converters;
 
@@ -35,7 +36,7 @@ internal class JsonDictionaryConverter<TDictionary, TKey, TValue>(
             writer.WriteNullValue();
             return;
         }
-        
+
         writer.WriteStartObject();
         WriteProperties(writer, value, options);
         writer.WriteEndObject();
@@ -84,7 +85,7 @@ internal sealed class JsonMutableDictionaryConverter<TDictionary, TKey, TValue>(
     JsonConverter<TKey> keyConverter,
     JsonConverter<TValue> valueConverter,
     IDictionaryTypeShape<TDictionary, TKey, TValue> shape,
-    Func<TDictionary> createObject,
+    MutableCollectionConstructor<TKey, TDictionary> createObject,
     Setter<TDictionary, KeyValuePair<TKey, TValue>> addDelegate) : JsonDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, shape)
     where TKey : notnull
 {
@@ -173,7 +174,7 @@ internal sealed class JsonEnumerableConstructorDictionaryConverter<TDictionary, 
     JsonConverter<TKey> keyConverter,
     JsonConverter<TValue> valueConverter,
     IDictionaryTypeShape<TDictionary, TKey, TValue> shape,
-    Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> constructor)
+    EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> constructor)
     : JsonImmutableDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, shape)
     where TKey : notnull
 {
@@ -185,7 +186,7 @@ internal sealed class JsonSpanConstructorDictionaryConverter<TDictionary, TKey, 
     JsonConverter<TKey> keyConverter,
     JsonConverter<TValue> valueConverter,
     IDictionaryTypeShape<TDictionary, TKey, TValue> shape,
-    SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> constructor)
+    SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> constructor)
     : JsonImmutableDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, shape)
     where TKey : notnull
 {

@@ -35,7 +35,7 @@ internal class XmlEnumerableConverter<TEnumerable, TElement>(
 internal sealed class XmlMutableEnumerableConverter<TEnumerable, TElement>(
     XmlConverter<TElement> elementConverter,
     Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
-    Func<TEnumerable> createObject,
+    MutableCollectionConstructor<TElement, TEnumerable> createObject,
     Setter<TEnumerable, TElement> addDelegate)
     : XmlEnumerableConverter<TEnumerable, TElement>(elementConverter, getEnumerable)
 {
@@ -120,7 +120,7 @@ internal abstract class XmlImmutableEnumerableConverter<TEnumerable, TElement>(
 internal sealed class XmlEnumerableConstructorEnumerableConverter<TEnumerable, TElement>(
     XmlConverter<TElement> elementConverter,
     Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
-    Func<IEnumerable<TElement>, TEnumerable> enumerableConstructor)
+    EnumerableCollectionConstructor<TElement, TElement, TEnumerable> enumerableConstructor)
     : XmlImmutableEnumerableConverter<TEnumerable, TElement>(elementConverter, getEnumerable)
 {
     private protected override TEnumerable Construct(PooledList<TElement> buffer)
@@ -130,7 +130,7 @@ internal sealed class XmlEnumerableConstructorEnumerableConverter<TEnumerable, T
 internal sealed class XmlSpanConstructorEnumerableConverter<TEnumerable, TElement>(
     XmlConverter<TElement> elementConverter,
     Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
-    SpanConstructor<TElement, TEnumerable> spanConstructor)
+    SpanConstructor<TElement, TElement, TEnumerable> spanConstructor)
     : XmlImmutableEnumerableConverter<TEnumerable, TElement>(elementConverter, getEnumerable)
 {
     private protected override TEnumerable Construct(PooledList<TElement> buffer)

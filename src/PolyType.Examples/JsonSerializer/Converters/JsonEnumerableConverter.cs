@@ -72,7 +72,7 @@ internal class JsonEnumerableConverter<TEnumerable, TElement>(JsonConverter<TEle
 internal sealed class JsonMutableEnumerableConverter<TEnumerable, TElement>(
     JsonConverter<TElement> elementConverter,
     IEnumerableTypeShape<TEnumerable, TElement> typeShape,
-    Func<TEnumerable> createObject,
+    MutableCollectionConstructor<TElement, TEnumerable> createObject,
     Setter<TEnumerable, TElement> addDelegate) : JsonEnumerableConverter<TEnumerable, TElement>(elementConverter, typeShape)
 {
     private readonly Setter<TEnumerable, TElement> _addDelegate = addDelegate;
@@ -136,7 +136,7 @@ internal abstract class JsonImmutableEnumerableConverter<TEnumerable, TElement>(
 internal sealed class JsonEnumerableConstructorEnumerableConverter<TEnumerable, TElement>(
     JsonConverter<TElement> elementConverter,
     IEnumerableTypeShape<TEnumerable, TElement> typeShape,
-    Func<IEnumerable<TElement>, TEnumerable> enumerableConstructor) 
+    EnumerableCollectionConstructor<TElement, TElement, TEnumerable> enumerableConstructor) 
     : JsonImmutableEnumerableConverter<TEnumerable, TElement>(elementConverter, typeShape)
 {
     private protected override TEnumerable Construct(PooledList<TElement> buffer)
@@ -146,7 +146,7 @@ internal sealed class JsonEnumerableConstructorEnumerableConverter<TEnumerable, 
 internal sealed class JsonSpanConstructorEnumerableConverter<TEnumerable, TElement>(
     JsonConverter<TElement> elementConverter,
     IEnumerableTypeShape<TEnumerable, TElement> typeShape,
-    SpanConstructor<TElement, TEnumerable> spanConstructor) 
+    SpanConstructor<TElement, TElement, TEnumerable> spanConstructor) 
     : JsonImmutableEnumerableConverter<TEnumerable, TElement>(elementConverter, typeShape)
 {
     private protected override TEnumerable Construct(PooledList<TElement> buffer)
