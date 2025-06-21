@@ -40,7 +40,7 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     /// <summary>
     /// Gets the function that constructs a default instance of the collection.
     /// </summary>
-    public MutableCollectionConstructor<TElement, TEnumerable>? DefaultConstructorFunc { get; init; }
+    public MutableCollectionConstructor<TElement, TEnumerable>? MutableConstructorFunc { get; init; }
 
     /// <summary>
     /// Gets the function that adds an element to the collection.
@@ -68,8 +68,8 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     Func<TEnumerable, IEnumerable<TElement>> IEnumerableTypeShape<TEnumerable, TElement>.GetGetEnumerable()
         => GetEnumerableFunc;
 
-    MutableCollectionConstructor<TElement, TEnumerable> IEnumerableTypeShape<TEnumerable, TElement>.GetDefaultConstructor()
-        => DefaultConstructorFunc ?? throw new InvalidOperationException("Enumerable shape does not specify a default constructor.");
+    MutableCollectionConstructor<TElement, TEnumerable> IEnumerableTypeShape<TEnumerable, TElement>.GetMutableConstructor()
+        => MutableConstructorFunc ?? throw new InvalidOperationException("Enumerable shape does not specify a default constructor.");
 
     Setter<TEnumerable, TElement> IEnumerableTypeShape<TEnumerable, TElement>.GetAddElement()
         => AddElementFunc ?? throw new InvalidOperationException("Enumerable shape does not specify an append delegate.");

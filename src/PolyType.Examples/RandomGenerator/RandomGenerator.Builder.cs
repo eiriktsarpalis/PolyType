@@ -164,7 +164,7 @@ public partial class RandomGenerator
             switch (enumerableShape.ConstructionStrategy)
             {
                 case CollectionConstructionStrategy.Mutable:
-                    Func<TEnumerable> defaultCtor = enumerableShape.GetDefaultConstructor();
+                    Func<TEnumerable> defaultCtor = enumerableShape.GetMutableConstructor();
                     Setter<TEnumerable, TElement> addElementFunc = enumerableShape.GetAddElement();
                     return new RandomGenerator<TEnumerable>((Random random, int size) =>
                     {
@@ -240,7 +240,7 @@ public partial class RandomGenerator
             switch (dictionaryShape.ConstructionStrategy)
             {
                 case CollectionConstructionStrategy.Mutable:
-                    Func<TDictionary> defaultCtorFunc = dictionaryShape.GetDefaultConstructor();
+                    Func<TDictionary> defaultCtorFunc = dictionaryShape.GetMutableConstructor();
                     Setter<TDictionary, KeyValuePair<TKey, TValue>> addKeyValuePairFunc = dictionaryShape.GetAddKeyValuePair();
                     return new RandomGenerator<TDictionary>((Random random, int size) =>
                     {

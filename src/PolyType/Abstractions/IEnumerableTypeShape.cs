@@ -86,8 +86,8 @@ public interface IEnumerableTypeShape<TEnumerable, TElement> : ITypeShape<TEnume
     /// Creates a delegate wrapping a parameterless constructor of a mutable collection.
     /// </summary>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Mutable"/>.</exception>
-    /// <returns>A delegate wrapping a default constructor.</returns>
-    MutableCollectionConstructor<TElement, TEnumerable> GetDefaultConstructor();
+    /// <returns>A delegate wrapping a constructor that takes no elements.</returns>
+    MutableCollectionConstructor<TElement, TEnumerable> GetMutableConstructor();
 
     /// <summary>
     /// Creates a setter delegate used for appending a <typeparamref name="TElement"/> to a mutable collection.

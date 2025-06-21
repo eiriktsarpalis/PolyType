@@ -82,8 +82,8 @@ public interface IDictionaryTypeShape<TDictionary, TKey, TValue> : ITypeShape<TD
     /// Creates a delegate wrapping a parameterless constructor of a mutable collection.
     /// </summary>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Mutable"/>.</exception>
-    /// <returns>A delegate wrapping a default constructor.</returns>
-    MutableCollectionConstructor<TKey, TDictionary> GetDefaultConstructor();
+    /// <returns>A delegate wrapping a constructor that takes no elements.</returns>
+    MutableCollectionConstructor<TKey, TDictionary> GetMutableConstructor();
 
     /// <summary>
     /// Creates a setter delegate used for appending a <see cref="KeyValuePair{TKey, TValue}"/> to a mutable dictionary.

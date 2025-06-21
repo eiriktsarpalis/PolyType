@@ -1,4 +1,6 @@
-﻿namespace PolyType.Abstractions;
+﻿using System.Globalization;
+
+namespace PolyType.Abstractions;
 
 /// <summary>
 /// The construction strategy use for a given <see cref="IEnumerableTypeShape"/> or <see cref="IDictionaryTypeShape"/>.
@@ -17,7 +19,7 @@ public enum CollectionConstructionStrategy
     Mutable = 1,
 
     /// <summary>
-    /// Constructed using a <see cref="SpanConstructor{T, TDeclaringType}"/> delegate.
+    /// Constructed using a <see cref="SpanConstructor{TKey, TElement, TDeclaringType}"/> delegate.
     /// </summary>
     Span = 2,
 

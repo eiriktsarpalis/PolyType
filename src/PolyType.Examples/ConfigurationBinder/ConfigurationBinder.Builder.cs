@@ -120,7 +120,7 @@ public static partial class ConfigurationBinderTS
             switch (enumerableShape.ConstructionStrategy)
             {
                 case CollectionConstructionStrategy.Mutable:
-                    Func<TEnumerable> defaultCtor = enumerableShape.GetDefaultConstructor();
+                    Func<TEnumerable> defaultCtor = enumerableShape.GetMutableConstructor();
                     Setter<TEnumerable, TElement> addElement = enumerableShape.GetAddElement();
                     return new Func<IConfiguration, TEnumerable?>(configuration =>
                     {
@@ -195,7 +195,7 @@ public static partial class ConfigurationBinderTS
             switch (dictionaryShape.ConstructionStrategy)
             {
                 case CollectionConstructionStrategy.Mutable:
-                    Func<TDictionary> defaultCtor = dictionaryShape.GetDefaultConstructor();
+                    Func<TDictionary> defaultCtor = dictionaryShape.GetMutableConstructor();
                     Setter<TDictionary, KeyValuePair<TKey, TValue>> addEntry = dictionaryShape.GetAddKeyValuePair();
                     return new Func<IConfiguration, TDictionary?>(configuration =>
                     {

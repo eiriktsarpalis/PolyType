@@ -101,7 +101,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         return _addDelegate;
     }
 
-    public MutableCollectionConstructor<TKey, TDictionary> GetDefaultConstructor()
+    public MutableCollectionConstructor<TKey, TDictionary> GetMutableConstructor()
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
         {

@@ -37,7 +37,7 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     /// <summary>
     /// Gets the function that constructs a default instance of the dictionary type.
     /// </summary>
-    public MutableCollectionConstructor<TKey, TDictionary>? DefaultConstructorFunc { get; init; }
+    public MutableCollectionConstructor<TKey, TDictionary>? MutableConstructorFunc { get; init; }
 
     /// <summary>
     /// Gets the function that adds a key-value pair to the dictionary.
@@ -66,8 +66,8 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetGetDictionary()
         => GetDictionaryFunc;
 
-    MutableCollectionConstructor<TKey, TDictionary> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetDefaultConstructor()
-        => DefaultConstructorFunc ?? throw new InvalidOperationException("Dictionary shape does not specify a default constructor.");
+    MutableCollectionConstructor<TKey, TDictionary> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetMutableConstructor()
+        => MutableConstructorFunc ?? throw new InvalidOperationException("Dictionary shape does not specify a default constructor.");
 
     Setter<TDictionary, KeyValuePair<TKey, TValue>> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetAddKeyValuePair()
         => AddKeyValuePairFunc ?? throw new InvalidOperationException("Dictionary shape does not specify an append delegate.");

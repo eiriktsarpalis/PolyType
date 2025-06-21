@@ -25,7 +25,7 @@ internal sealed partial class SourceFormatter
                     GetDictionaryFunc = {{FormatGetDictionaryFunc(dictionaryShapeModel)}},
                     ComparerOptions = {{FormatComparerOptions(dictionaryShapeModel.ConstructionComparer)}},
                     ConstructionStrategy = {{FormatCollectionConstructionStrategy(dictionaryShapeModel.ConstructionStrategy)}},
-                    DefaultConstructorFunc = {{FormatDefaultConstructorFunc(dictionaryShapeModel)}},
+                    MutableConstructorFunc = {{FormatDefaultConstructorFunc(dictionaryShapeModel)}},
                     AddKeyValuePairFunc = {{FormatAddKeyValuePairFunc(dictionaryShapeModel)}},
                     EnumerableConstructorFunc = {{FormatEnumerableConstructorFunc(dictionaryShapeModel)}},
                     SpanConstructorFunc = {{FormatSpanConstructorFunc(dictionaryShapeModel)}},
@@ -36,7 +36,7 @@ internal sealed partial class SourceFormatter
             """, trimNullAssignmentLines: true);
 
         if (requiresCS8631Suppression)
-        {             
+        {
             writer.WriteLine("#pragma warning restore CS8631 // Nullability of type argument doesn't match constraint type.", disableIndentation: true);
         }
 
@@ -79,6 +79,9 @@ internal sealed partial class SourceFormatter
             };
         }
 
+        static string FormatKeyValueTypeName(DictionaryShapeModel dictionaryType)
+            => $"global::System.Collections.Generic.KeyValuePair<{dictionaryType.KeyType}, {dictionaryType.ValueType}>";
+
         static string FormatEnumerableConstructorFunc(DictionaryShapeModel dictionaryType)
         {
             if (dictionaryType.ConstructionStrategy is not CollectionConstructionStrategy.Enumerable)
@@ -93,7 +96,7 @@ internal sealed partial class SourceFormatter
                 _ => $"values"
             };
 
-            return FormatCollectionInitializer(dictionaryType, valuesExpr);
+            return FormatCollectionInitializer(dictionaryType, ($"global::System.Collections.Generic.IEnumerable<{FormatKeyValueTypeName(dictionaryType)}>", valuesExpr));
         }
 
         static string FormatSpanConstructorFunc(DictionaryShapeModel dictionaryType)
@@ -103,6 +106,7 @@ internal sealed partial class SourceFormatter
                 return "null";
             }
 
+            string valuesType = $"global::System.ReadOnlySpan<{FormatKeyValueTypeName(dictionaryType)}>";
             string suppressSuffix = dictionaryType.KeyValueTypesContainNullableAnnotations ? "!" : "";
             string valuesExpr = $"values{suppressSuffix}";
 
@@ -111,18 +115,18 @@ internal sealed partial class SourceFormatter
                 string fac = dictionaryType.StaticFactoryMethod is string factory
                     ? $"{factory}(global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionary({{0}}))"
                     : $"new {dictionaryType.Type.FullyQualifiedName}(global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionary({{0}}))";
-                return FormatCollectionInitializer(dictionaryType.ConstructionComparer, dictionaryType.KeyType, fac, valuesExpr);
+                return FormatCollectionInitializer(dictionaryType.ConstructionComparer, dictionaryType.KeyType, fac, (valuesType, valuesExpr));
             }
 
-            return FormatCollectionInitializer(dictionaryType, valuesExpr);
+            return FormatCollectionInitializer(dictionaryType, (valuesType, valuesExpr));
         }
     }
 
-    private static string FormatCollectionInitializer(DictionaryShapeModel dictionaryType, string? valuesExpr)
+    private static string FormatCollectionInitializer(DictionaryShapeModel dictionaryType, (string Type, string Expression)? values)
     {
         string factory = dictionaryType.StaticFactoryMethod is not null
           ? $"{dictionaryType.StaticFactoryMethod}({{0}})"
           : $"new {dictionaryType.ImplementationTypeFQN ?? dictionaryType.Type.FullyQualifiedName}({{0}})";
-        return FormatCollectionInitializer(dictionaryType.ConstructionComparer, dictionaryType.KeyType, factory, valuesExpr);
+        return FormatCollectionInitializer(dictionaryType.ConstructionComparer, dictionaryType.KeyType, factory, values);
     }
 }

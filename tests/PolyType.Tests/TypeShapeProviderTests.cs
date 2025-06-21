@@ -383,9 +383,9 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
 
             if (dictionaryShape.ConstructionStrategy is CollectionConstructionStrategy.Mutable)
             {
-                var defaultCtor = dictionaryShape.GetDefaultConstructor();
+                var defaultCtor = dictionaryShape.GetMutableConstructor();
                 var adder = dictionaryShape.GetAddKeyValuePair();
-                Assert.Same(dictionaryShape.GetDefaultConstructor(), dictionaryShape.GetDefaultConstructor());
+                Assert.Same(dictionaryShape.GetMutableConstructor(), dictionaryShape.GetMutableConstructor());
                 Assert.Same(dictionaryShape.GetAddKeyValuePair(), dictionaryShape.GetAddKeyValuePair());
 
                 dictionary = defaultCtor();
@@ -397,7 +397,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             }
             else
             {
-                Assert.Throws<InvalidOperationException>(() => dictionaryShape.GetDefaultConstructor());
+                Assert.Throws<InvalidOperationException>(() => dictionaryShape.GetMutableConstructor());
                 Assert.Throws<InvalidOperationException>(() => dictionaryShape.GetAddKeyValuePair());
             }
 
@@ -514,9 +514,9 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             
             if (enumerableShape.ConstructionStrategy is CollectionConstructionStrategy.Mutable)
             {
-                var defaultCtor = enumerableShape.GetDefaultConstructor();
+                var defaultCtor = enumerableShape.GetMutableConstructor();
                 var adder = enumerableShape.GetAddElement();
-                Assert.Same(enumerableShape.GetDefaultConstructor(), enumerableShape.GetDefaultConstructor());
+                Assert.Same(enumerableShape.GetMutableConstructor(), enumerableShape.GetMutableConstructor());
                 Assert.Same(enumerableShape.GetAddElement(), enumerableShape.GetAddElement());
 
                 enumerable = defaultCtor();
@@ -528,7 +528,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             }
             else
             {
-                Assert.Throws<InvalidOperationException>(() => enumerableShape.GetDefaultConstructor());
+                Assert.Throws<InvalidOperationException>(() => enumerableShape.GetMutableConstructor());
                 Assert.Throws<InvalidOperationException>(() => enumerableShape.GetAddElement());
             }
 
