@@ -373,13 +373,13 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
     public Func<T1, T2, TResult> CreateFuncDelegate<T1, T2, TResult>(ConstructorInfo ctorInfo)
         => (arg1, arg2) => (TResult)ctorInfo.Invoke([arg1, arg2]);
 
-    public SpanConstructor<T, TResult> CreateSpanConstructorDelegate<T, TResult>(ConstructorInfo ctorInfo)
+    public SpanConstructor<TKey, TElement, TResult> CreateSpanConstructorDelegate<TKey, TElement, TResult>(ConstructorInfo ctorInfo)
     {
         Debug.Fail("Should not be called if not using Reflection.Emit");
         throw new NotSupportedException();
     }
 
-    public Func<object, SpanConstructor<TElement, TResult>> CreateSpanConstructorDelegate<TElement, TCompare, TResult>(ConstructorInfo ctorInfo, ConstructionWithComparer signatureStyle)
+    public SpanConstructor<TKey, TElement, TResult> CreateSpanConstructorDelegate<TElement, TKey, TResult>(ConstructorInfo ctorInfo, ConstructionWithComparer signatureStyle)
     {
         Debug.Fail("Should not be called if not using Reflection.Emit");
         throw new NotSupportedException();

@@ -95,41 +95,19 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
             static void Throw() => throw new InvalidOperationException("The current enumerable shape does not support default constructors.");
         }
 
-        // We'll use a shared delegate when no comparer applies.
-        object? relevantComparer = GetRelevantComparer(collectionConstructionOptions);
-        if (relevantComparer is null || _defaultCtorWithComparer is null)
-        {
-            return _defaultCtorDelegate ?? CreateDefaultConstructor();
+        return _defaultCtorDelegate ?? CreateDefaultConstructor();
 
-            MutableCollectionConstructor<TElement, TEnumerable> CreateDefaultConstructor()
-            {
-                lock (_syncObject)
-                {
-                    if (_defaultCtorDelegate is { } defaultCtorDelegate)
-                    {
-                        return defaultCtorDelegate;
-                    }
-
-                    Debug.Assert(_defaultCtor != null);
-                    return _defaultCtorDelegate = Provider.MemberAccessor.CreateDefaultConstructor<TEnumerable, TElement>(new MethodConstructorShapeInfo(typeof(TEnumerable), _defaultCtor, parameters: []));
-                }
-            }
-        }
-        else
+        MutableCollectionConstructor<TElement, TEnumerable> CreateDefaultConstructor()
         {
             lock (_syncObject)
             {
-                switch (relevantComparer)
+                if (_defaultCtorDelegate is { } defaultCtorDelegate)
                 {
-                    case IEqualityComparer<TElement> ec:
-                        _defaultCtorWithEqualityComparerDelegate ??= Provider.MemberAccessor.CreateFuncDelegate<IEqualityComparer<TElement>, TEnumerable>(_defaultCtorWithComparer);
-                        return (in CollectionConstructionOptions<TElement>? options) => _defaultCtorWithEqualityComparerDelegate(ec);
-                    case IComparer<TElement> c:
-                        _defaultCtorWithComparerDelegate ??= Provider.MemberAccessor.CreateFuncDelegate<IComparer<TElement>, TEnumerable>(_defaultCtorWithComparer);
-                        return (in CollectionConstructionOptions<TElement>? options) => _defaultCtorWithComparerDelegate(c);
-                    default:
-                        throw new NotSupportedException();
+                    return defaultCtorDelegate;
                 }
+
+                Debug.Assert(_defaultCtor != null);
+                return _defaultCtorDelegate = Provider.MemberAccessor.CreateDefaultConstructor<TEnumerable, TElement>(new MethodConstructorShapeInfo(typeof(TEnumerable), _defaultCtor, parameters: []));
             }
         }
     }
@@ -142,80 +120,31 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
             static void Throw() => throw new InvalidOperationException("The current enumerable shape does not support enumerable constructors.");
         }
 
-        // We'll use a shared delegate when no comparer applies.
-        object? relevantComparer = GetRelevantComparer(collectionConstructionOptions);
-        if (relevantComparer is null || _enumerableCtorWithComparer is null)
-        {
-            DebugExt.Assert(_enumerableCtor != null);
-            return _enumerableCtorDelegate ?? CreateEnumerableConstructor();
+        DebugExt.Assert(_enumerableCtor != null);
+        return _enumerableCtorDelegate ?? CreateEnumerableConstructor();
 
-            EnumerableCollectionConstructor<TElement, TElement, TEnumerable> CreateEnumerableConstructor()
+        EnumerableCollectionConstructor<TElement, TElement, TEnumerable> CreateEnumerableConstructor()
+        {
+            lock (_syncObject)
             {
-                lock (_syncObject)
+                if (_enumerableCtorDelegate is { } enumerableCtorDelegate)
                 {
-                    if (_enumerableCtorDelegate is { } enumerableCtorDelegate)
-                    {
-                        return enumerableCtorDelegate;
-                    }
-
-                    return _enumerableCtorDelegate = _enumerableCtor switch
-                    {
-                        ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateFuncDelegate<IEnumerable<TElement>, TEnumerable>(ctorInfo),
-                        MethodInfo enumerableFactory when _isFrozenSet => CreateFrozenSetDelegate(enumerableFactory),
-                        _ => ((MethodInfo)_enumerableCtor).CreateDelegate<EnumerableCollectionConstructor<TElement, TElement, TEnumerable>>(),
-                    };
-
-                    static Func<IEnumerable<TElement>, TEnumerable> CreateFrozenSetDelegate(MethodInfo enumerableFactory)
-                    {
-                        // FrozenSet only exposes one factory overload accepting IEqualityComparer
-                        var factoryDelegate = enumerableFactory.CreateDelegate<Func<IEnumerable<TElement>, IEqualityComparer<TElement>?, TEnumerable>>();
-                        return values => factoryDelegate(values, null);
-                    }
+                    return enumerableCtorDelegate;
                 }
-            }
-        }
-        else
-        {
-            switch (_constructionComparer)
-            {
-                case ConstructionWithComparer.ValuesEqualityComparer:
-                    Func<IEnumerable<TElement>, IEqualityComparer<TElement>, TEnumerable> del = _enumerableCtorWithComparer switch
-                    {
-                        ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateFuncDelegate<IEnumerable<TElement>, IEqualityComparer<TElement>, TEnumerable>(ctorInfo),
-                        MethodInfo methodInfo => methodInfo.CreateDelegate<Func<IEnumerable<TElement>, IEqualityComparer<TElement>, TEnumerable>>(),
-                        _ => throw new NotSupportedException(),
-                    };
 
-                    return (IEnumerable<TElement> values, in CollectionConstructionOptions<TElement>? options) => del(values, (IEqualityComparer<TElement>)relevantComparer);
-                case ConstructionWithComparer.EqualityComparerValues:
-                    Func<IEqualityComparer<TElement>, IEnumerable<TElement>, TEnumerable> del2 = _enumerableCtorWithComparer switch
-                    {
-                        ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateFuncDelegate<IEqualityComparer<TElement>, IEnumerable<TElement>, TEnumerable>(ctorInfo),
-                        MethodInfo methodInfo => methodInfo.CreateDelegate<Func<IEqualityComparer<TElement>, IEnumerable<TElement>, TEnumerable>>(),
-                        _ => throw new NotSupportedException(),
-                    };
+                return _enumerableCtorDelegate = _enumerableCtor switch
+                {
+                    ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateFuncDelegate<IEnumerable<TElement>, TEnumerable>(ctorInfo),
+                    MethodInfo enumerableFactory when _isFrozenSet => CreateFrozenSetDelegate(enumerableFactory),
+                    _ => ((MethodInfo)_enumerableCtor).CreateDelegate<EnumerableCollectionConstructor<TElement, TElement, TEnumerable>>(),
+                };
 
-                    return (IEnumerable<TElement> values, in CollectionConstructionOptions<TElement>? options) => del2((IEqualityComparer<TElement>)relevantComparer, values);
-                case ConstructionWithComparer.ValuesComparer:
-                    Func<IEnumerable<TElement>, IComparer<TElement>, TEnumerable> del3 = _enumerableCtorWithComparer switch
-                    {
-                        ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateFuncDelegate<IEnumerable<TElement>, IComparer<TElement>, TEnumerable>(ctorInfo),
-                        MethodInfo methodInfo => methodInfo.CreateDelegate<Func<IEnumerable<TElement>, IComparer<TElement>, TEnumerable>>(),
-                        _ => throw new NotSupportedException(),
-                    };
-
-                    return (IEnumerable<TElement> values, in CollectionConstructionOptions<TElement>? options) => del3(values, (IComparer<TElement>)relevantComparer);
-                case ConstructionWithComparer.ComparerValues:
-                    Func<IComparer<TElement>, IEnumerable<TElement>, TEnumerable> del4 = _enumerableCtorWithComparer switch
-                    {
-                        ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateFuncDelegate<IComparer<TElement>, IEnumerable<TElement>, TEnumerable>(ctorInfo),
-                        MethodInfo methodInfo => methodInfo.CreateDelegate<Func<IComparer<TElement>, IEnumerable<TElement>, TEnumerable>>(),
-                        _ => throw new NotSupportedException(),
-                    };
-
-                    return (IEnumerable<TElement> values, in CollectionConstructionOptions<TElement>? options) => del4((IComparer<TElement>)relevantComparer, values);
-                default:
-                    throw new NotSupportedException();
+                static Func<IEnumerable<TElement>, TEnumerable> CreateFrozenSetDelegate(MethodInfo enumerableFactory)
+                {
+                    // FrozenSet only exposes one factory overload accepting IEqualityComparer
+                    var factoryDelegate = enumerableFactory.CreateDelegate<Func<IEnumerable<TElement>, IEqualityComparer<TElement>?, TEnumerable>>();
+                    return values => factoryDelegate(values, null);
+                }
             }
         }
     }
@@ -228,72 +157,33 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
             static void Throw() => throw new InvalidOperationException("The current enumerable shape does not support span constructors.");
         }
 
-        // We'll use a shared delegate when no comparer applies.
-        object? relevantComparer = GetRelevantComparer(collectionConstructionOptions);
-        if (relevantComparer is null || (_spanCtorWithComparer is null && _listCtorWithComparer is null))
-        {
-            return _spanCtorDelegate ?? CreateSpanConstructor();
+        return _spanCtorDelegate ?? CreateSpanConstructor();
 
-            SpanConstructor<TElement, TElement, TEnumerable> CreateSpanConstructor()
-            {
-                lock (_syncObject)
-                {
-                    if (_spanCtorDelegate is { } spanCtorDelegate)
-                    {
-                        return spanCtorDelegate;
-                    }
-
-                    if (_listCtor is ConstructorInfo listCtor)
-                    {
-                        var listCtorDelegate = Provider.MemberAccessor.CreateFuncDelegate<List<TElement>, TEnumerable>(listCtor);
-                        return _spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => listCtorDelegate(CollectionHelpers.CreateList(span));
-                    }
-
-                    return _spanCtorDelegate = _spanCtor switch
-                    {
-                        ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateSpanConstructorDelegate<TElement, TEnumerable>(ctorInfo),
-                        MethodInfo methodInfo => methodInfo.CreateDelegate<SpanConstructor<TElement, TElement, TEnumerable>>(),
-                        _ => throw new NotSupportedException($"_spanCtor is {_spanCtor}."),
-                    };
-                }
-            }
-        }
-        else
+        SpanConstructor<TElement, TElement, TEnumerable> CreateSpanConstructor()
         {
             lock (_syncObject)
             {
-                if (_listCtorWithComparer is ConstructorInfo listCtorWithComparer)
+                if (_spanCtorDelegate is { } spanCtorDelegate)
                 {
-                    switch (_constructionComparer)
-                    {
-                        case ConstructionWithComparer.ValuesEqualityComparer:
-                            _listCtorValuesEqualityComparerDelegate ??= Provider.MemberAccessor.CreateFuncDelegate<List<TElement>, IEqualityComparer<TElement>, TEnumerable>(listCtorWithComparer);
-                            return (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => _listCtorValuesEqualityComparerDelegate(CollectionHelpers.CreateList(span), (IEqualityComparer<TElement>)relevantComparer);
-                        case ConstructionWithComparer.ValuesComparer:
-                            _listCtorValuesComparerDelegate ??= Provider.MemberAccessor.CreateFuncDelegate<List<TElement>, IComparer<TElement>, TEnumerable>(listCtorWithComparer);
-                            return (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => _listCtorValuesComparerDelegate(CollectionHelpers.CreateList(span), (IComparer<TElement>)relevantComparer);
-                        case ConstructionWithComparer.EqualityComparerValues:
-                            _listCtorEqualityComparerValuesDelegate ??= Provider.MemberAccessor.CreateFuncDelegate<IEqualityComparer<TElement>, List<TElement>, TEnumerable>(listCtorWithComparer);
-                            return (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => _listCtorEqualityComparerValuesDelegate((IEqualityComparer<TElement>)relevantComparer, CollectionHelpers.CreateList(span));
-                        case ConstructionWithComparer.ComparerValues:
-                            _listCtorComparerValuesDelegate ??= Provider.MemberAccessor.CreateFuncDelegate<IComparer<TElement>, List<TElement>, TEnumerable>(listCtorWithComparer);
-                            return (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => _listCtorComparerValuesDelegate((IComparer<TElement>)relevantComparer, CollectionHelpers.CreateList(span));
-                        default: throw new NotSupportedException();
-                    }
+                    return spanCtorDelegate;
                 }
 
-                DebugExt.Assert(_constructionComparer is not null);
-                _spanCtorDelegateFromComparerDelegate ??= _spanCtorWithComparer switch
+                if (_listCtor is ConstructorInfo listCtor)
                 {
-                    ConstructorInfo ctorInfoWithComparer => Provider.MemberAccessor.CreateSpanConstructorDelegate<TElement, TElement, TEnumerable>(ctorInfoWithComparer, _constructionComparer.Value),
-                    MethodInfo ctorInfoWithComparer => CreateSpanMethodDelegate<TElement, TElement, TEnumerable>(ctorInfoWithComparer, _constructionComparer.Value),
-                    _ => throw new NotSupportedException(),
+                    var listCtorDelegate = Provider.MemberAccessor.CreateFuncDelegate<List<TElement>, TEnumerable>(listCtor);
+                    return _spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => listCtorDelegate(CollectionHelpers.CreateList(span));
+                }
+
+                return _spanCtorDelegate = _spanCtor switch
+                {
+                    ConstructorInfo ctorInfo => Provider.MemberAccessor.CreateSpanConstructorDelegate<TElement, TEnumerable>(ctorInfo),
+                    MethodInfo methodInfo => methodInfo.CreateDelegate<SpanConstructor<TElement, TElement, TEnumerable>>(),
+                    _ => throw new NotSupportedException($"_spanCtor is {_spanCtor}."),
                 };
             }
-
-            return _spanCtorDelegateFromComparerDelegate(relevantComparer);
         }
     }
+
 
     protected override CollectionConstructorParameterType ClassifyConstructorParameter(ParameterInfo parameter)
     {

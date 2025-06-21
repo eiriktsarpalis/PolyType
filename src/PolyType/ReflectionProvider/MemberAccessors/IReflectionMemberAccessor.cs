@@ -11,7 +11,7 @@ internal interface IReflectionMemberAccessor
     Setter<TEnumerable, TElement> CreateEnumerableAddDelegate<TEnumerable, TElement>(MethodInfo methodInfo);
     Setter<TDictionary, KeyValuePair<TKey, TValue>> CreateDictionaryAddDelegate<TDictionary, TKey, TValue>(MethodInfo methodInfo);
 
-    MutableCollectionConstructor<TElement, TEnumerable> CreateDefaultConstructor<TEnumerable, TElement>(IConstructorShapeInfo ctorInfo);
+    Func<TDeclaringType> CreateDefaultConstructor<TDeclaringType>(IConstructorShapeInfo ctorInfo);
 
     Type CreateConstructorArgumentStateType(IConstructorShapeInfo ctorInfo);
     Func<TArgumentState> CreateConstructorArgumentStateCtor<TArgumentState>(IConstructorShapeInfo ctorInfo);
@@ -26,7 +26,7 @@ internal interface IReflectionMemberAccessor
     /// Creates a keyed collection constructor delegate.
     /// </summary>
     /// <typeparam name="TElement">The type of element stored in the collection.</typeparam>
-    /// <typeparam name="TCompare">The type of the key in the collection.</typeparam>
+    /// <typeparam name="TKey">The type of the key in the collection.</typeparam>
     /// <typeparam name="TResult">The type of collection.</typeparam>
     /// <param name="ctorInfo">The collection constructor that takes two parameters.</param>
     /// <param name="signatureStyle">The signature of the constructor, indicating which type of comparer is taken and the parameter order.</param>
@@ -34,7 +34,9 @@ internal interface IReflectionMemberAccessor
     /// The delegate that constructs delegates. The argument to this delegate should be an instance of <see cref="IEqualityComparer{T}"/> or <see cref="IComparer{T}"/>,
     /// in accordance with <paramref name="signatureStyle"/>.
     /// </returns>
-    SpanConstructor<TCompare, TElement, TResult> CreateSpanConstructorDelegate<TElement, TCompare, TResult>(ConstructorInfo ctorInfo, ConstructionWithComparer signatureStyle);
+    SpanConstructor<TKey, TElement, TResult> CreateSpanConstructorDelegate<TElement, TKey, TResult>(ConstructorInfo ctorInfo, ConstructionWithComparer signatureStyle);
+
+    MutableCollectionConstructor<TKey, TDeclaringType> CreateMutableCollectionConstructor<TKey, TDeclaringType>(IConstructorShapeInfo ctorInfo);
 
     Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeInfo[] derivedTypeInfos);
 }
