@@ -367,6 +367,12 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         return null!;
     }
 
+    public TDelegate CreateFuncDelegate<TDelegate>(ConstructorInfo ctorInfo) where TDelegate : Delegate
+    {
+        Debug.Fail("Should not be called if not using Reflection.Emit");
+        throw new NotSupportedException();
+    }
+
     public Func<T, TResult> CreateFuncDelegate<T, TResult>(ConstructorInfo ctorInfo)
         => value => (TResult)ctorInfo.Invoke([value]);
 
@@ -379,15 +385,17 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         throw new NotSupportedException();
     }
 
-    public SpanConstructor<TKey, TElement, TResult> CreateSpanConstructorDelegate<TKey, TElement, TResult>(ConstructorInfo ctorInfo, ConstructionWithComparer signatureStyle)
+    public SpanConstructor<TKey, TElement, TResult> CreateSpanConstructorDelegate<TKey, TElement, TResult>(ConstructorInfo ctorInfo, ConstructionSignature signatureStyle)
     {
         Debug.Fail("Should not be called if not using Reflection.Emit");
         throw new NotSupportedException();
     }
 
-    public MutableCollectionConstructor<TKey, TDeclaringType> CreateMutableCollectionConstructor<TKey, TDeclaringType>(IConstructorShapeInfo ctorInfo)
+    [DoesNotReturn]
+    private static T NotReachable<T>()
     {
-        throw new NotImplementedException();
+        Debug.Fail("This code should not be reachable.");
+        throw new InvalidOperationException("This code should not be reachable.");
     }
 
     public Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeInfo[] derivedTypeInfos)

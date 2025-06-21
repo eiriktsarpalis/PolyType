@@ -729,13 +729,16 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         }
     }
 
+    public TDelegate CreateFuncDelegate<TDelegate>(ConstructorInfo ctorInfo) where TDelegate : Delegate
+        => CreateDelegate<TDelegate>(EmitConstructor(ctorInfo));
+
     public Func<T, TResult> CreateFuncDelegate<T, TResult>(ConstructorInfo ctorInfo)
         => CreateDelegate<Func<T, TResult>>(EmitConstructor(ctorInfo));
 
     public Func<T1, T2, TResult> CreateFuncDelegate<T1, T2, TResult>(ConstructorInfo ctorInfo)
         => CreateDelegate<Func<T1, T2, TResult>>(EmitConstructor(ctorInfo));
 
-    public MutableCollectionConstructor<TKey, TDeclaringType> CreateMutableCollectionConstructor<TKey, TDeclaringType>(IConstructorShapeInfo ctorInfo)
+    public MutableCollectionConstructor<TKey, TDeclaringType> CreateMutableCollectionConstructor<TKey, TDeclaringType>(MethodBase ctor, ConstructionSignature signature)
     {
         throw new NotImplementedException();
     }
@@ -743,20 +746,20 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
     public SpanConstructor<TKey, TElement, TCollection> CreateSpanConstructorDelegate<TKey, TElement, TCollection>(ConstructorInfo ctorInfo)
         => CreateDelegate<SpanConstructor<TKey, TElement, TCollection>>(EmitConstructor(ctorInfo));
 
-    public SpanConstructor<TKey, TElement, TResult> CreateSpanConstructorDelegate<TKey, TElement, TResult>(ConstructorInfo ctorInfo, ConstructionWithComparer signatureStyle)
+    public SpanConstructor<TKey, TElement, TResult> CreateSpanConstructorDelegate<TKey, TElement, TResult>(ConstructorInfo ctorInfo, ConstructionSignature signatureStyle)
     {
         switch (signatureStyle)
         {
-            case ConstructionWithComparer.ValuesEqualityComparer:
+            case ConstructionSignature.ValuesEqualityComparer:
                 var spanEC = CreateDelegate<SpanECConstructor<TKey, TElement, TResult>>(EmitConstructor(ctorInfo));
                 return (ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey>? options) => spanEC(values, options?.EqualityComparer);
-            case ConstructionWithComparer.EqualityComparerValues:
+            case ConstructionSignature.EqualityComparerValues:
                 var ecSpan = CreateDelegate<ECSpanConstructor<TKey, TElement, TResult>>(EmitConstructor(ctorInfo));
                 return (ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey>? options) => ecSpan(options?.EqualityComparer, values);
-            case ConstructionWithComparer.ValuesComparer:
+            case ConstructionSignature.ValuesComparer:
                 var spanC = CreateDelegate<SpanCConstructor<TKey, TElement, TResult>>(EmitConstructor(ctorInfo));
                 return (ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey>? options) => spanC(values, options?.Comparer);
-            case ConstructionWithComparer.ComparerValues:
+            case ConstructionSignature.ComparerValues:
                 var cSpan = CreateDelegate<CSpanConstructor<TKey, TElement, TResult>>(EmitConstructor(ctorInfo));
                 return (ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey>? options) => cSpan(options?.Comparer, values);
             default:
