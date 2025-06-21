@@ -3,6 +3,7 @@ using PolyType.SourceGenModel;
 using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Reflection;
 
 namespace PolyType.ReflectionProvider;
@@ -29,17 +30,17 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     private bool _discoveryComplete;
 
     private Setter<TDictionary, KeyValuePair<TKey, TValue>>? _addDelegate;
-    private Func<TDictionary>? _defaultCtorDelegate;
+    private MutableCollectionConstructor<TKey, TDictionary>? _defaultCtorDelegate;
     private Func<IEqualityComparer<TKey>, TDictionary>? _defaultCtorWithEqualityComparerDelegate;
     private Func<IComparer<TKey>, TDictionary>? _defaultCtorWithComparerDelegate;
     private Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>? _enumerableCtorDelegate;
-    private SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary>? _spanCtorDelegate;
+    private SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>? _spanCtorDelegate;
 
     private Func<IEnumerable<KeyValuePair<TKey, TValue>>, IEqualityComparer<TKey>, TDictionary>? _enumerableCtorValuesEqualityComparerDelegate;
     private Func<IEqualityComparer<TKey>, IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>? _enumerableCtorEqualityComparerValuesDelegate;
     private Func<IEnumerable<KeyValuePair<TKey, TValue>>, IComparer<TKey>, TDictionary>? _enumerableCtorValuesComparerDelegate;
     private Func<IComparer<TKey>, IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>? _enumerableCtorComparerValuesDelegate;
-    private Func<object, SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary>>? _spanCtorDelegateFromComparerDelegate;
+    private Func<object, SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>>? _spanCtorDelegateFromComparerDelegate;
 
     private Func<Dictionary<TKey, TValue>, IEqualityComparer<TKey>, TDictionary>? _spanCtorEqualityComparer;
     private Func<SortedDictionary<TKey, TValue>, IComparer<TKey>, TDictionary>? _spanCtorComparer;
@@ -100,7 +101,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         return _addDelegate;
     }
 
-    public Func<TDictionary> GetDefaultConstructor(CollectionConstructionOptions<TKey>? collectionConstructionOptions)
+    public MutableCollectionConstructor<TKey, TDictionary> GetDefaultConstructor()
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
         {
@@ -123,9 +124,9 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
             }
 
             return _defaultCtorDelegate;
-            Func<TDictionary> CreateDefaultCtor()
+            MutableCollectionConstructor<TKey, TDictionary> CreateDefaultCtor()
             {
-                return Provider.MemberAccessor.CreateDefaultConstructor<TDictionary>(new MethodConstructorShapeInfo(typeof(TDictionary), _defaultCtor, parameters: []));
+                return Provider.MemberAccessor.CreateDefaultConstructor<TDictionary, TKey>(new MethodConstructorShapeInfo(typeof(TDictionary), _defaultCtor, parameters: []));
             }
         }
         else
@@ -147,7 +148,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         }
     }
 
-    public Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> GetEnumerableConstructor(CollectionConstructionOptions<TKey>? collectionConstructionOptions)
+    public EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetEnumerableConstructor()
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Enumerable)
         {
@@ -243,7 +244,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         }
     }
 
-    public SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> GetSpanConstructor(CollectionConstructionOptions<TKey>? collectionConstructionOptions)
+    public SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetSpanConstructor()
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Span)
         {
@@ -291,7 +292,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                     {
                         case IEqualityComparer<TKey> equalityComparer:
                             _spanCtorEqualityComparer ??= Provider.MemberAccessor.CreateFuncDelegate<Dictionary<TKey, TValue>, IEqualityComparer<TKey>, TDictionary>(dictionaryCtorWithComparer);
-                            return span => _spanCtorEqualityComparer(CollectionHelpers.CreateDictionary(span, equalityComparer), equalityComparer);
+                            return (span, options) => _spanCtorEqualityComparer(CollectionHelpers.CreateDictionary(span, equalityComparer), equalityComparer);
                         case IComparer<TKey> comparer:
                             _spanCtorComparer ??= Provider.MemberAccessor.CreateFuncDelegate<SortedDictionary<TKey, TValue>, IComparer<TKey>, TDictionary>(dictionaryCtorWithComparer);
                             return span => _spanCtorComparer(CollectionHelpers.CreateSortedDictionary(span, comparer), comparer);

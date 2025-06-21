@@ -45,7 +45,7 @@ internal class CborEnumerableConverter<TEnumerable, TElement>(
 internal sealed class CborMutableEnumerableConverter<TEnumerable, TElement>(
     CborConverter<TElement> elementConverter,
     Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
-    Func<TEnumerable> createObject,
+    MutableCollectionConstructor<TElement, TEnumerable> createObject,
     Setter<TEnumerable, TElement> addDelegate) : CborEnumerableConverter<TEnumerable, TElement>(elementConverter, getEnumerable)
 {
     private readonly Setter<TEnumerable, TElement> _addDelegate = addDelegate;

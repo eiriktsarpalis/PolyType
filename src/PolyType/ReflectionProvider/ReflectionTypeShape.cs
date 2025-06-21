@@ -60,22 +60,22 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
             _ => null,
         };
 
-    protected static Func<object, SpanConstructor<TElement, TResult>> CreateSpanMethodDelegate<TElement, TCompare, TResult>(MethodInfo methodInfo, ConstructionWithComparer signatureStyle)
+    protected static SpanConstructor<TKey, TElement, TResult> CreateSpanMethodDelegate<TElement, TKey, TResult>(MethodInfo methodInfo, ConstructionWithComparer signatureStyle)
     {
         switch (signatureStyle)
         {
             case ConstructionWithComparer.ValuesEqualityComparer:
-                var ctor = methodInfo.CreateDelegate<SpanECConstructor<TElement, TCompare, TResult>>();
-                return comparer => values => ctor(values, (IEqualityComparer<TCompare>)comparer);
+                var ctor = methodInfo.CreateDelegate<SpanECConstructor<TElement, TKey, TResult>>();
+                return (ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey>? options) => ctor(values, options?.EqualityComparer);
             case ConstructionWithComparer.EqualityComparerValues:
-                var ctor2 = methodInfo.CreateDelegate<ECSpanConstructor<TElement, TCompare, TResult>>();
-                return comparer => values => ctor2((IEqualityComparer<TCompare>)comparer, values);
+                var ctor2 = methodInfo.CreateDelegate<ECSpanConstructor<TElement, TKey, TResult>>();
+                return (ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey>? options) => ctor2(options?.EqualityComparer, values);
             case ConstructionWithComparer.ValuesComparer:
-                var ctor3 = methodInfo.CreateDelegate<SpanCConstructor<TElement, TCompare, TResult>>();
-                return comparer => values => ctor3(values, (IComparer<TCompare>)comparer);
+                var ctor3 = methodInfo.CreateDelegate<SpanCConstructor<TElement, TKey, TResult>>();
+                return (ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey>? options) => ctor3(values, options?.Comparer);
             case ConstructionWithComparer.ComparerValues:
-                var ctor4 = methodInfo.CreateDelegate<CSpanConstructor<TElement, TCompare, TResult>>();
-                return comparer => values => ctor4((IComparer<TCompare>)comparer, values);
+                var ctor4 = methodInfo.CreateDelegate<CSpanConstructor<TElement, TKey, TResult>>();
+                return (ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey>? options) => ctor4(options?.Comparer, values);
             default:
                 throw new NotSupportedException();
         }
