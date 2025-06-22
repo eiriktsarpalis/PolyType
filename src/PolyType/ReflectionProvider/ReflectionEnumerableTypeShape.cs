@@ -20,21 +20,12 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
     private (MethodBase Method, ConstructionSignature Signature)? _factoryWithComparer;
     private MethodInfo? _addMethod;
     private bool _isListCtor;
-    private bool _isFrozenSet;
     private bool _discoveryComplete;
 
     private Setter<TEnumerable, TElement>? _addDelegate;
     private MutableCollectionConstructor<TElement, TEnumerable>? _mutableCtorDelegate;
     private EnumerableCollectionConstructor<TElement, TElement, TEnumerable>? _enumerableCtorDelegate;
     private SpanConstructor<TElement, TElement, TEnumerable>? _spanCtorDelegate;
-
-    private Func<List<TElement>, IEqualityComparer<TElement>, TEnumerable>? _listCtorValuesEqualityComparerDelegate;
-    private Func<List<TElement>, IComparer<TElement>, TEnumerable>? _listCtorValuesComparerDelegate;
-    private Func<IEqualityComparer<TElement>, List<TElement>, TEnumerable>? _listCtorEqualityComparerValuesDelegate;
-    private Func<IComparer<TElement>, List<TElement>, TEnumerable>? _listCtorComparerValuesDelegate;
-    private Func<IEqualityComparer<TElement>, TEnumerable>? _defaultCtorWithEqualityComparerDelegate;
-    private Func<IComparer<TElement>, TEnumerable>? _defaultCtorWithComparerDelegate;
-    private Func<object, SpanConstructor<TElement, TElement, TEnumerable>>? _spanCtorDelegateFromComparerDelegate;
 
     public virtual CollectionComparerOptions ComparerOptions
     {
@@ -316,7 +307,6 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
     [MemberNotNull(nameof(_constructionStrategy))]
     private void DetermineConstructionStrategy()
     {
-        //if (Type == typeof(ReadOnlyCollection<int>)) Debugger.Launch();
         // There are many fields that are initialized by this method.
         // We actually initialize them sometimes multiple times along the way.
         // For thread-safety, we need to ensure that we do not recognize halfway initialized as fully initialized.
@@ -528,7 +518,6 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                     {
                         _factoryWithComparer = (factoryWithComparer, ConstructionSignature.ValuesEqualityComparer);
                         _constructionStrategy = CollectionConstructionStrategy.Enumerable;
-                        _isFrozenSet = true;
                         return true;
                     }
                 }

@@ -22,7 +22,6 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     private (MethodBase Method, ConstructionSignature Signature)? _factoryWithComparer;
     private MethodInfo? _addMethod;
     private bool _isDictionaryCtor;
-    private bool _isFrozenDictionary;
     private bool _isFSharpMap;
     private bool _discoveryComplete;
 
@@ -306,7 +305,6 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         [MemberNotNull(nameof(_constructionStrategy))]
         void Helper()
         {
-            //if (Type == typeof(ReadOnlyDictionary<int, int>)) Debugger.Launch();
             // TODO resolve CollectionBuilderAttribute once added for Dictionary types
 
             Type dictionaryType = typeof(TDictionary);
@@ -437,7 +435,6 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 {
                     _factoryWithComparer = (factoryWithComparer, ConstructionSignature.ValuesEqualityComparer);
                     _constructionStrategy = CollectionConstructionStrategy.Enumerable;
-                    _isFrozenDictionary = true;
                     return;
                 }
             }

@@ -7,6 +7,9 @@ internal enum ConstructionSignature
     /// </summary>
     None,
 
+    /// <summary>
+    /// The construction expects just values. No comparer.
+    /// </summary>
     Values,
 
     /// <summary>
