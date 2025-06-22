@@ -231,7 +231,6 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 var ctor = Provider.MemberAccessor.CreateFuncDelegate<Dictionary<TKey, TValue>, TDictionary>((ConstructorInfo)_factory.Value.Method);
                 switch ((_factory, _factoryWithComparer))
                 {
-                    // TODO: add ReadOnlyDictionary tests with comparers.
                     case ({ Signature: ConstructionSignature.Values }, null):
                         spanCtorDelegate = (ReadOnlySpan<KeyValuePair<TKey, TValue>> span, in CollectionConstructionOptions<TKey>? options) => ctor(CollectionHelpers.CreateDictionary(span));
                         break;
