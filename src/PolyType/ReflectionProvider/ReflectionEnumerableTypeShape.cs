@@ -473,6 +473,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
 
                 if (typeof(TEnumerable) is { Name: "FrozenSet`1", Namespace: "System.Collections.Frozen" })
                 {
+                    // FrozenSet only has overloads that take comparers.
                     Type? factoryType = typeof(TEnumerable).Assembly.GetType("System.Collections.Frozen.FrozenSet");
                     MethodInfo? factoryWithComparer = factoryType?.GetMethods(BindingFlags.Public | BindingFlags.Static)
                         .Where(m => m.Name is "ToFrozenSet")

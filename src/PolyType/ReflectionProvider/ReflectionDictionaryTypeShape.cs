@@ -421,7 +421,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 if (factoryWithComparer != null)
                 {
                     _factoryWithComparer = (factoryWithComparer, ConstructionSignature.ValuesEqualityComparer);
-                    SetComparerConstructionOverload(CollectionConstructionStrategy.Enumerable);
+                    _constructionStrategy = CollectionConstructionStrategy.Enumerable;
                     _isFrozenDictionary = true;
                     return;
                 }
@@ -436,7 +436,12 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                     .Select(m => m.MakeGenericMethod(typeof(TKey), typeof(TValue)))
                     .FirstOrDefault();
 
-                _isFSharpMap = fsharpFactory != null;
+                if (fsharpFactory is not null)
+                {
+                    _factory = (fsharpFactory, ConstructionSignature.Values);
+                    _isFSharpMap = true;
+                }
+
                 SetComparerConstructionOverload(CollectionConstructionStrategy.Enumerable);
                 return;
             }
