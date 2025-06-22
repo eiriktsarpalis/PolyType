@@ -86,6 +86,7 @@ public sealed partial class Parser
 
                 StaticFactoryMethod = enumerableModel.FactoryMethod is { IsStatic: true } m ? m.GetFullyQualifiedName() : null,
                 StaticFactoryWithComparerMethod = enumerableModel.FactoryMethodWithComparer is { IsStatic: true } m2 ? m2.GetFullyQualifiedName() : null,
+                HasConstructorWithoutComparer = enumerableModel.FactoryMethod is not null,
                 ConstructionComparer = AnalyzeComparerConstruction(enumerableModel.FactoryMethodWithComparer),
                 CtorRequiresListConversion =
                     enumerableModel.ConstructionStrategy is CollectionModelConstructionStrategy.List &&
@@ -128,6 +129,7 @@ public sealed partial class Parser
 
                 StaticFactoryMethod = dictionaryModel.FactoryMethod is { IsStatic: true } m ? m.GetFullyQualifiedName() : null,
                 StaticFactoryWithComparerMethod = dictionaryModel.FactoryMethodWithComparer is { IsStatic: true } m2 ? m2.GetFullyQualifiedName() : null,
+                HasConstructorWithoutComparer = dictionaryModel.FactoryMethod is not null,
                 ConstructionComparer = AnalyzeComparerConstruction(dictionaryModel.FactoryMethodWithComparer),
                 IsTupleEnumerableFactory = dictionaryModel.ConstructionStrategy is CollectionModelConstructionStrategy.TupleEnumerable,
                 Kind = dictionaryModel.DictionaryKind,

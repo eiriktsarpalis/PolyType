@@ -115,7 +115,7 @@ internal sealed partial class SourceFormatter
                 string fac = dictionaryType.StaticFactoryMethod is string factory
                     ? $"{factory}(global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionary({{0}}))"
                     : $"new {dictionaryType.Type.FullyQualifiedName}(global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionary({{0}}))";
-                return FormatCollectionInitializer(dictionaryType.ConstructionComparer, dictionaryType.KeyType, fac, (valuesType, valuesExpr));
+                return FormatCollectionInitializer(dictionaryType.ConstructionComparer, dictionaryType.HasConstructorWithoutComparer, dictionaryType.KeyType, fac, (valuesType, valuesExpr));
             }
 
             return FormatCollectionInitializer(dictionaryType, (valuesType, valuesExpr));
@@ -127,6 +127,6 @@ internal sealed partial class SourceFormatter
         string factory = dictionaryType.StaticFactoryMethod is not null
           ? $"{dictionaryType.StaticFactoryMethod}({{0}})"
           : $"new {dictionaryType.ImplementationTypeFQN ?? dictionaryType.Type.FullyQualifiedName}({{0}})";
-        return FormatCollectionInitializer(dictionaryType.ConstructionComparer, dictionaryType.KeyType, factory, values);
+        return FormatCollectionInitializer(dictionaryType.ConstructionComparer, dictionaryType.HasConstructorWithoutComparer, dictionaryType.KeyType, factory, values);
     }
 }
