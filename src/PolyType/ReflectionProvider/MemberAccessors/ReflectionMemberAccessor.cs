@@ -385,12 +385,6 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         throw new NotSupportedException();
     }
 
-    public SpanConstructor<TKey, TElement, TResult> CreateSpanConstructorDelegate<TKey, TElement, TResult>(ConstructorInfo ctorInfo, ConstructionSignature signatureStyle)
-    {
-        Debug.Fail("Should not be called if not using Reflection.Emit");
-        throw new NotSupportedException();
-    }
-
     [DoesNotReturn]
     private static T NotReachable<T>()
     {

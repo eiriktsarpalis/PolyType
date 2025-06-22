@@ -746,27 +746,6 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
     public SpanConstructor<TKey, TElement, TCollection> CreateSpanConstructorDelegate<TKey, TElement, TCollection>(ConstructorInfo ctorInfo)
         => CreateDelegate<SpanConstructor<TKey, TElement, TCollection>>(EmitConstructor(ctorInfo));
 
-    public SpanConstructor<TKey, TElement, TResult> CreateSpanConstructorDelegate<TKey, TElement, TResult>(ConstructorInfo ctorInfo, ConstructionSignature signatureStyle)
-    {
-        switch (signatureStyle)
-        {
-            case ConstructionSignature.ValuesEqualityComparer:
-                var spanEC = CreateDelegate<SpanECConstructor<TKey, TElement, TResult>>(EmitConstructor(ctorInfo));
-                return (ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey>? options) => spanEC(values, options?.EqualityComparer);
-            case ConstructionSignature.EqualityComparerValues:
-                var ecSpan = CreateDelegate<ECSpanConstructor<TKey, TElement, TResult>>(EmitConstructor(ctorInfo));
-                return (ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey>? options) => ecSpan(options?.EqualityComparer, values);
-            case ConstructionSignature.ValuesComparer:
-                var spanC = CreateDelegate<SpanCConstructor<TKey, TElement, TResult>>(EmitConstructor(ctorInfo));
-                return (ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey>? options) => spanC(values, options?.Comparer);
-            case ConstructionSignature.ComparerValues:
-                var cSpan = CreateDelegate<CSpanConstructor<TKey, TElement, TResult>>(EmitConstructor(ctorInfo));
-                return (ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey>? options) => cSpan(options?.Comparer, values);
-            default:
-                throw new NotSupportedException();
-        }
-    }
-
     private static DynamicMethod EmitConstructor(ConstructorInfo ctorInfo)
     {
         ParameterInfo[] parameters = ctorInfo.GetParameters();
