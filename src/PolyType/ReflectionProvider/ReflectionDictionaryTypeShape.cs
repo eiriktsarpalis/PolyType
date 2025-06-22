@@ -94,18 +94,16 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
             static void Throw() => throw new InvalidOperationException("The current dictionary shape does not support mutation.");
         }
 
-        DebugExt.Assert(_factory != null);
-
         return _mutableCtorDelegate ?? CreateMutableCtor();
 
         MutableCollectionConstructor<TKey, TDictionary> CreateMutableCtor()
         {
-            var ctor = CreateConstructorDelegate(_factory.Value.Method);
             MutableCollectionConstructor<TKey, TDictionary> mutableCtorDelegate;
             switch ((_factory, _factoryWithComparer))
             {
                 case ({ Signature: ConstructionSignature.None }, { Signature: ConstructionSignature.EqualityComparer }):
                     {
+                        var ctor = CreateConstructorDelegate(_factory.Value.Method);
                         var comparerCtor = CreateConstructorDelegate<IEqualityComparer<TKey>>(_factoryWithComparer.Value.Method);
                         mutableCtorDelegate = (in CollectionConstructionOptions<TKey>? options) => options?.EqualityComparer is null ? ctor() : comparerCtor(options.Value.EqualityComparer);
                     }
@@ -113,6 +111,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                     break;
                 case ({ Signature: ConstructionSignature.None }, { Signature: ConstructionSignature.Comparer }):
                     {
+                        var ctor = CreateConstructorDelegate(_factory.Value.Method);
                         var comparerCtor = CreateConstructorDelegate<IComparer<TKey>>(_factoryWithComparer.Value.Method);
                         mutableCtorDelegate = (in CollectionConstructionOptions<TKey>? options) => options?.Comparer is null ? ctor() : comparerCtor(options.Value.Comparer);
                     }
@@ -120,6 +119,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                     break;
                 case ({ Signature: ConstructionSignature.None }, null):
                     {
+                        var ctor = CreateConstructorDelegate(_factory.Value.Method);
                         mutableCtorDelegate = (in CollectionConstructionOptions<TKey>? options) => ctor();
                     }
 
