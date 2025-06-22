@@ -90,6 +90,16 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
         };
     }
 
+    protected SpanCConstructor<TKey, TElement, T> CreateSpanCConstructorDelegate<TKey, TElement>(MethodBase methodBase)
+    {
+        return methodBase switch
+        {
+            MethodInfo methodInfo => methodInfo.CreateDelegate<SpanCConstructor<TKey, TElement, T>>(),
+            ConstructorInfo ctorInfo => provider.MemberAccessor.CreateFuncDelegate<SpanCConstructor<TKey, TElement, T>>(ctorInfo),
+            _ => throw new NotSupportedException($"Method base of type {methodBase.GetType()} is not supported for creating a delegate."),
+        };
+    }
+
     protected ECSpanConstructor<TKey, TElement, T> CreateECSpanConstructorDelegate<TKey, TElement>(MethodBase methodBase)
     {
         return methodBase switch

@@ -249,15 +249,30 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
             }
             else
             {
-                var ctor = CreateSpanConstructorDelegate<KeyValuePair<TKey, TValue>>(_factory.Value.Method);
                 switch ((_factory, _factoryWithComparer))
                 {
                     case ({ Signature: ConstructionSignature.Values }, null):
-                        spanCtorDelegate = (ReadOnlySpan<KeyValuePair<TKey, TValue>> span, in CollectionConstructionOptions<TKey>? options) => ctor(span);
+                        {
+                            var ctor = CreateSpanConstructorDelegate<KeyValuePair<TKey, TValue>>(_factory.Value.Method);
+                            spanCtorDelegate = (ReadOnlySpan<KeyValuePair<TKey, TValue>> span, in CollectionConstructionOptions<TKey>? options) => ctor(span);
+                        }
+
                         break;
                     case ({ Signature: ConstructionSignature.Values }, { Signature: ConstructionSignature.ValuesEqualityComparer }):
-                        var comparerCtor = CreateSpanECConstructorDelegate<TKey, KeyValuePair<TKey, TValue>>(_factoryWithComparer.Value.Method);
-                        spanCtorDelegate = (ReadOnlySpan<KeyValuePair<TKey, TValue>> span, in CollectionConstructionOptions<TKey>? options) => options?.EqualityComparer is null ? ctor(span) : comparerCtor(span, options.Value.EqualityComparer);
+                        {
+                            var ctor = CreateSpanConstructorDelegate<KeyValuePair<TKey, TValue>>(_factory.Value.Method);
+                            var comparerCtor = CreateSpanECConstructorDelegate<TKey, KeyValuePair<TKey, TValue>>(_factoryWithComparer.Value.Method);
+                            spanCtorDelegate = (ReadOnlySpan<KeyValuePair<TKey, TValue>> span, in CollectionConstructionOptions<TKey>? options) => options?.EqualityComparer is null ? ctor(span) : comparerCtor(span, options.Value.EqualityComparer);
+                        }
+
+                        break;
+                    case ({ Signature: ConstructionSignature.Values }, { Signature: ConstructionSignature.ValuesComparer }):
+                        {
+                            var ctor = CreateSpanConstructorDelegate<KeyValuePair<TKey, TValue>>(_factory.Value.Method);
+                            var comparerCtor = CreateSpanCConstructorDelegate<TKey, KeyValuePair<TKey, TValue>>(_factoryWithComparer.Value.Method);
+                            spanCtorDelegate = (ReadOnlySpan<KeyValuePair<TKey, TValue>> span, in CollectionConstructionOptions<TKey>? options) => options?.Comparer is null ? ctor(span) : comparerCtor(span, options.Value.Comparer);
+                        }
+
                         break;
                     default:
                         throw CreateUnsupportedConstructorException();
