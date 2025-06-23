@@ -84,7 +84,7 @@ public interface IDictionaryTypeShape<TDictionary, TKey, TValue> : ITypeShape<TD
     /// </summary>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Mutable"/>.</exception>
     /// <returns>A delegate wrapping a constructor that takes no elements.</returns>
-    MutableCollectionConstructor<TKey, TDictionary> GetMutableConstructor();
+    MutableCollectionConstructor<TKey, TDictionary> GetMutableCollectionConstructor();
 
     /// <summary>
     /// Creates a setter delegate used for appending a <see cref="KeyValuePair{TKey, TValue}"/> to a mutable dictionary.
@@ -98,12 +98,12 @@ public interface IDictionaryTypeShape<TDictionary, TKey, TValue> : ITypeShape<TD
     /// </summary>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Span"/>.</exception>
     /// <returns>A delegate constructing a collection from a span of values.</returns>
-    SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetSpanConstructor();
+    SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetSpanCollectionConstructor();
 
     /// <summary>
     /// Creates a constructor delegate for creating a collection from an enumerable.
     /// </summary>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Enumerable"/>.</exception>
     /// <returns>A delegate constructing a collection from an enumerable of values.</returns>
-    EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetEnumerableConstructor();
+    EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetEnumerableCollectionConstructor();
 }

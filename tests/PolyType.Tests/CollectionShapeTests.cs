@@ -16,7 +16,7 @@ public abstract partial class CollectionShapeTests(ProviderUnderTest providerUnd
         var shape = (IEnumerableTypeShape<InternalListOfIntWithPublicConstructor, int>?)providerUnderTest.Provider.GetShape(typeof(InternalListOfIntWithPublicConstructor));
         Assert.NotNull(shape);
         Assert.Equal(CollectionConstructionStrategy.Mutable, shape.ConstructionStrategy);
-        Assert.NotNull(shape.GetMutableConstructor()());
+        Assert.NotNull(shape.GetMutableCollectionConstructor()());
     }
 
     [Fact]
@@ -33,7 +33,7 @@ public abstract partial class CollectionShapeTests(ProviderUnderTest providerUnd
         var shape = (IDictionaryTypeShape<InternalDictionaryOfIntWithPublicConstructor, int, bool>?)providerUnderTest.Provider.GetShape(typeof(InternalDictionaryOfIntWithPublicConstructor));
         Assert.NotNull(shape);
         Assert.Equal(CollectionConstructionStrategy.Mutable, shape.ConstructionStrategy);
-        Assert.NotNull(shape.GetMutableConstructor()());
+        Assert.NotNull(shape.GetMutableCollectionConstructor()());
     }
 
     [GenerateShape]

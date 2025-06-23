@@ -86,7 +86,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         return _addDelegate;
     }
 
-    public MutableCollectionConstructor<TKey, TDictionary> GetMutableConstructor()
+    public MutableCollectionConstructor<TKey, TDictionary> GetMutableCollectionConstructor()
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
         {
@@ -132,7 +132,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         }
     }
 
-    public EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetEnumerableConstructor()
+    public EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetEnumerableCollectionConstructor()
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Enumerable)
         {
@@ -212,7 +212,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         }
     }
 
-    public SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetSpanConstructor()
+    public SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetSpanCollectionConstructor()
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Span)
         {

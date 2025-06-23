@@ -164,7 +164,7 @@ public partial class RandomGenerator
             switch (enumerableShape.ConstructionStrategy)
             {
                 case CollectionConstructionStrategy.Mutable:
-                    MutableCollectionConstructor<TElement, TEnumerable> defaultCtor = enumerableShape.GetMutableConstructor();
+                    MutableCollectionConstructor<TElement, TEnumerable> defaultCtor = enumerableShape.GetMutableCollectionConstructor();
                     Setter<TEnumerable, TElement> addElementFunc = enumerableShape.GetAddElement();
                     return new RandomGenerator<TEnumerable>((Random random, int size) =>
                     {
@@ -186,7 +186,7 @@ public partial class RandomGenerator
                     });
 
                 case CollectionConstructionStrategy.Enumerable:
-                    EnumerableCollectionConstructor<TElement, TElement, TEnumerable> enumerableCtor = enumerableShape.GetEnumerableConstructor();
+                    EnumerableCollectionConstructor<TElement, TElement, TEnumerable> enumerableCtor = enumerableShape.GetEnumerableCollectionConstructor();
                     return new RandomGenerator<TEnumerable>((Random random, int size) =>
                     {
                         if (size == 0)
@@ -207,7 +207,7 @@ public partial class RandomGenerator
                     });
 
                 case CollectionConstructionStrategy.Span:
-                    SpanConstructor<TElement, TElement, TEnumerable> spanCtor = enumerableShape.GetSpanConstructor();
+                    SpanConstructor<TElement, TElement, TEnumerable> spanCtor = enumerableShape.GetSpanCollectionConstructor();
                     return new RandomGenerator<TEnumerable>((Random random, int size) =>
                     {
                         if (size == 0)
@@ -240,7 +240,7 @@ public partial class RandomGenerator
             switch (dictionaryShape.ConstructionStrategy)
             {
                 case CollectionConstructionStrategy.Mutable:
-                    MutableCollectionConstructor<TKey, TDictionary> defaultCtorFunc = dictionaryShape.GetMutableConstructor();
+                    MutableCollectionConstructor<TKey, TDictionary> defaultCtorFunc = dictionaryShape.GetMutableCollectionConstructor();
                     Setter<TDictionary, KeyValuePair<TKey, TValue>> addKeyValuePairFunc = dictionaryShape.GetAddKeyValuePair();
                     return new RandomGenerator<TDictionary>((Random random, int size) =>
                     {
@@ -264,7 +264,7 @@ public partial class RandomGenerator
                     });
 
                 case CollectionConstructionStrategy.Enumerable:
-                    EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> enumerableCtorFunc = dictionaryShape.GetEnumerableConstructor();
+                    EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> enumerableCtorFunc = dictionaryShape.GetEnumerableCollectionConstructor();
                     return new RandomGenerator<TDictionary>((Random random, int size) =>
                     {
                         if (size == 0)
@@ -285,7 +285,7 @@ public partial class RandomGenerator
                     });
 
                 case CollectionConstructionStrategy.Span:
-                    SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> spanCtorFunc = dictionaryShape.GetSpanConstructor();
+                    SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> spanCtorFunc = dictionaryShape.GetSpanCollectionConstructor();
                     return new RandomGenerator<TDictionary>((Random random, int size) =>
                     {
                         if (size == 0)

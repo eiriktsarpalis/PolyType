@@ -68,15 +68,15 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     Func<TEnumerable, IEnumerable<TElement>> IEnumerableTypeShape<TEnumerable, TElement>.GetGetEnumerable()
         => GetEnumerableFunc;
 
-    MutableCollectionConstructor<TElement, TEnumerable> IEnumerableTypeShape<TEnumerable, TElement>.GetMutableConstructor()
+    MutableCollectionConstructor<TElement, TEnumerable> IEnumerableTypeShape<TEnumerable, TElement>.GetMutableCollectionConstructor()
         => MutableConstructorFunc ?? throw new InvalidOperationException("Enumerable shape does not specify a default constructor.");
 
     Setter<TEnumerable, TElement> IEnumerableTypeShape<TEnumerable, TElement>.GetAddElement()
         => AddElementFunc ?? throw new InvalidOperationException("Enumerable shape does not specify an append delegate.");
 
-    EnumerableCollectionConstructor<TElement, TElement, TEnumerable> IEnumerableTypeShape<TEnumerable, TElement>.GetEnumerableConstructor()
+    EnumerableCollectionConstructor<TElement, TElement, TEnumerable> IEnumerableTypeShape<TEnumerable, TElement>.GetEnumerableCollectionConstructor()
         => EnumerableConstructorFunc ?? throw new InvalidOperationException("Enumerable shape does not specify an enumerable constructor.");
 
-    SpanConstructor<TElement, TElement, TEnumerable> IEnumerableTypeShape<TEnumerable, TElement>.GetSpanConstructor()
+    SpanConstructor<TElement, TElement, TEnumerable> IEnumerableTypeShape<TEnumerable, TElement>.GetSpanCollectionConstructor()
         => SpanConstructorFunc ?? throw new InvalidOperationException("Enumerable shape does not specify a span constructor.");
 }
