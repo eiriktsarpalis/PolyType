@@ -33,7 +33,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     public sealed override TypeShapeKind Kind => TypeShapeKind.Dictionary;
     public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitDictionary(this, state);
 
-    public CollectionComparerOptions ComparerOptions
+    public SupportedCollectionConstructionOptions SupportedConstructionOptions
     {
         get
         {
@@ -42,7 +42,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 DetermineConstructionStrategy();
             }
 
-            return _factoryWithComparer is null ? CollectionComparerOptions.None : ToComparerConstruction(_factoryWithComparer.Value.Signature);
+            return _factoryWithComparer is null ? SupportedCollectionConstructionOptions.None : ToComparerConstruction(_factoryWithComparer.Value.Signature);
         }
     }
 
@@ -499,7 +499,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     private NotSupportedException CreateUnsupportedConstructorException() => new NotSupportedException($"({_factory?.Signature}, {_factoryWithComparer?.Signature}) constructor is not supported for this type.");
 
     private object? GetRelevantComparer(CollectionConstructionOptions<TKey>? collectionConstructionOptions)
-        => GetRelevantComparer(collectionConstructionOptions, ComparerOptions);
+        => GetRelevantComparer(collectionConstructionOptions, SupportedConstructionOptions);
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]

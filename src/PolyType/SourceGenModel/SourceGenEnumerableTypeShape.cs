@@ -30,7 +30,7 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     public required Func<TEnumerable, IEnumerable<TElement>> GetEnumerableFunc { get; init; }
 
     /// <inheritdoc/>
-    public required CollectionComparerOptions ComparerOptions { get; init; }
+    public required SupportedCollectionConstructionOptions SupportedConstructionOptions { get; init; }
 
     /// <summary>
     /// Gets the construction strategy for the collection.

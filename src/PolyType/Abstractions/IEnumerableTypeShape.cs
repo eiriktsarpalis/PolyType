@@ -25,9 +25,10 @@ public interface IEnumerableTypeShape : ITypeShape
     CollectionConstructionStrategy ConstructionStrategy { get; }
 
     /// <summary>
-    /// Gets the kind of custom comparer (if any) that this collection may be initialized with.
+    /// Gets an enumeration that describes the properties in <see cref="CollectionConstructionOptions{TKey}"/>
+    /// that this collection supports.
     /// </summary>
-    CollectionComparerOptions ComparerOptions { get; }
+    SupportedCollectionConstructionOptions SupportedConstructionOptions { get; }
 
     /// <summary>
     /// Gets the dimensionality of the collection type.

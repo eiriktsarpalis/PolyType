@@ -4,6 +4,19 @@
 /// Options for constructing collections.
 /// </summary>
 /// <typeparam name="TKey">The type of keys within the collection. When collections aren't keyed, this is the element type directly.</typeparam>
+/// <remarks>
+/// <para>
+/// Construction of any particular collection type may ignore any or all of these properties.
+/// To predict whether a collection uses a particular property, check for the presence of its associated flag
+/// on the <see cref="SupportedCollectionConstructionOptions"/> enum, as defined by either
+/// <see cref="IEnumerableTypeShape.SupportedConstructionOptions"/> or <see cref="IDictionaryTypeShape.SupportedConstructionOptions"/>.
+/// </para>
+/// <para>
+/// When <see cref="SupportedCollectionConstructionOptions.EqualityComparer"/> and <see cref="SupportedCollectionConstructionOptions.Comparer"/>
+/// flags are both set, initializing only one of the comparers on this struct will direct the collection to use that comparer.
+/// Initializing both introduces an ambiguity which PolyType will resolve by selecting the <see cref="EqualityComparer"/>.
+/// </para>
+/// </remarks>
 public record struct CollectionConstructionOptions<TKey>
 {
     /// <summary>

@@ -18,7 +18,7 @@ internal sealed partial class SourceFormatter
                     MutableConstructorFunc = {{FormatMutableConstructorFunc(enumerableShapeModel)}},
                     EnumerableConstructorFunc = {{FormatEnumerableConstructorFunc(enumerableShapeModel)}},
                     SpanConstructorFunc = {{FormatSpanConstructorFunc(enumerableShapeModel)}},
-                    ComparerOptions = {{FormatComparerOptions(enumerableShapeModel.ConstructionComparer)}},
+                    SupportedConstructionOptions = {{FormatComparerOptions(enumerableShapeModel.ConstructionComparer)}},
                     GetEnumerableFunc = {{FormatGetEnumerableFunc(enumerableShapeModel)}},
                     AddElementFunc = {{FormatAddElementFunc(enumerableShapeModel)}},
                     IsAsyncEnumerable = {{FormatBool(enumerableShapeModel.Kind is EnumerableKind.AsyncEnumerableOfT)}},
