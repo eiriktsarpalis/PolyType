@@ -207,7 +207,7 @@ public partial class RandomGenerator
                     });
 
                 case CollectionConstructionStrategy.Span:
-                    SpanConstructor<TElement, TElement, TEnumerable> spanCtor = enumerableShape.GetSpanCollectionConstructor();
+                    SpanCollectionConstructor<TElement, TElement, TEnumerable> spanCtor = enumerableShape.GetSpanCollectionConstructor();
                     return new RandomGenerator<TEnumerable>((Random random, int size) =>
                     {
                         if (size == 0)
@@ -285,7 +285,7 @@ public partial class RandomGenerator
                     });
 
                 case CollectionConstructionStrategy.Span:
-                    SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> spanCtorFunc = dictionaryShape.GetSpanCollectionConstructor();
+                    SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> spanCtorFunc = dictionaryShape.GetSpanCollectionConstructor();
                     return new RandomGenerator<TDictionary>((Random random, int size) =>
                     {
                         if (size == 0)

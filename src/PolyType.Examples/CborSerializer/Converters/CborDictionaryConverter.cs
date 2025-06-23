@@ -129,7 +129,7 @@ internal sealed class CborSpanConstructorDictionaryConverter<TDictionary, TKey, 
     CborConverter<TKey> keyConverter,
     CborConverter<TValue> valueConverter,
     Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getDictionary,
-    SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> constructor)
+    SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> constructor)
     : CborImmutableDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, getDictionary)
 {
     private protected override TDictionary Construct(PooledList<KeyValuePair<TKey, TValue>> buffer)

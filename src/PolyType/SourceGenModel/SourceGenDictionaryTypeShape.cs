@@ -52,7 +52,7 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     /// <summary>
     /// Gets the function that constructs a dictionary from a span of key-value pairs.
     /// </summary>
-    public SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>? SpanConstructorFunc { get; init; }
+    public SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>? SpanConstructorFunc { get; init; }
 
     /// <inheritdoc/>
     public override TypeShapeKind Kind => TypeShapeKind.Dictionary;
@@ -75,6 +75,6 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetEnumerableCollectionConstructor()
         => EnumerableConstructorFunc ?? throw new InvalidOperationException("Dictionary shape does not specify an enumerable constructor.");
 
-    SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetSpanCollectionConstructor()
+    SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetSpanCollectionConstructor()
         => SpanConstructorFunc ?? throw new InvalidOperationException("Dictionary shape does not specify a span constructor.");
 }

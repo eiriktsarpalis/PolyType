@@ -55,7 +55,7 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     /// <summary>
     /// Gets the function that constructs a collection from a span.
     /// </summary>
-    public SpanConstructor<TElement, TElement, TEnumerable>? SpanConstructorFunc { get; init; }
+    public SpanCollectionConstructor<TElement, TElement, TEnumerable>? SpanConstructorFunc { get; init; }
 
     /// <inheritdoc/>
     public override TypeShapeKind Kind => TypeShapeKind.Enumerable;
@@ -77,6 +77,6 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     EnumerableCollectionConstructor<TElement, TElement, TEnumerable> IEnumerableTypeShape<TEnumerable, TElement>.GetEnumerableCollectionConstructor()
         => EnumerableConstructorFunc ?? throw new InvalidOperationException("Enumerable shape does not specify an enumerable constructor.");
 
-    SpanConstructor<TElement, TElement, TEnumerable> IEnumerableTypeShape<TEnumerable, TElement>.GetSpanCollectionConstructor()
+    SpanCollectionConstructor<TElement, TElement, TEnumerable> IEnumerableTypeShape<TEnumerable, TElement>.GetSpanCollectionConstructor()
         => SpanConstructorFunc ?? throw new InvalidOperationException("Enumerable shape does not specify a span constructor.");
 }

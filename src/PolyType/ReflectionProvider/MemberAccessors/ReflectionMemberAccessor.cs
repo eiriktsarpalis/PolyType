@@ -379,7 +379,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
     public Func<T1, T2, TResult> CreateFuncDelegate<T1, T2, TResult>(ConstructorInfo ctorInfo)
         => (arg1, arg2) => (TResult)ctorInfo.Invoke([arg1, arg2]);
 
-    public SpanConstructor<TKey, TElement, TResult> CreateSpanConstructorDelegate<TKey, TElement, TResult>(ConstructorInfo ctorInfo)
+    public SpanCollectionConstructor<TKey, TElement, TResult> CreateSpanConstructorDelegate<TKey, TElement, TResult>(ConstructorInfo ctorInfo)
     {
         Debug.Fail("Should not be called if not using Reflection.Emit");
         throw new NotSupportedException();

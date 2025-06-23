@@ -186,7 +186,7 @@ internal sealed class JsonSpanConstructorDictionaryConverter<TDictionary, TKey, 
     JsonConverter<TKey> keyConverter,
     JsonConverter<TValue> valueConverter,
     IDictionaryTypeShape<TDictionary, TKey, TValue> shape,
-    SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> constructor)
+    SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> constructor)
     : JsonImmutableDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, shape)
     where TKey : notnull
 {

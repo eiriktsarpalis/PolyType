@@ -140,7 +140,7 @@ public static partial class ConfigurationBinderTS
                     });
                 
                 case CollectionConstructionStrategy.Span:
-                    SpanConstructor<TElement, TElement, TEnumerable> spanCtor = enumerableShape.GetSpanCollectionConstructor();
+                    SpanCollectionConstructor<TElement, TElement, TEnumerable> spanCtor = enumerableShape.GetSpanCollectionConstructor();
                     return new Func<IConfiguration, TEnumerable?>(configuration =>
                     {
                         if (IsNullConfiguration(configuration))
@@ -220,7 +220,7 @@ public static partial class ConfigurationBinderTS
                     });
                 
                 case CollectionConstructionStrategy.Span:
-                    SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> spanCtor = dictionaryShape.GetSpanCollectionConstructor();
+                    SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> spanCtor = dictionaryShape.GetSpanCollectionConstructor();
                     return new Func<IConfiguration, TDictionary?>(configuration =>
                     {
                         if (IsNullConfiguration(configuration))

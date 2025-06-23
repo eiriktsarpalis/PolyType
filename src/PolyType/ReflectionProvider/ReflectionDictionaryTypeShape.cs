@@ -28,7 +28,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     private Setter<TDictionary, KeyValuePair<TKey, TValue>>? _addDelegate;
     private MutableCollectionConstructor<TKey, TDictionary>? _mutableCtorDelegate;
     private EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>? _enumerableCtorDelegate;
-    private SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>? _spanCtorDelegate;
+    private SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>? _spanCtorDelegate;
 
     public sealed override TypeShapeKind Kind => TypeShapeKind.Dictionary;
     public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitDictionary(this, state);
@@ -212,7 +212,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         }
     }
 
-    public SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetSpanCollectionConstructor()
+    public SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetSpanCollectionConstructor()
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Span)
         {
@@ -223,9 +223,9 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         DebugExt.Assert(_factory is not null);
         return _spanCtorDelegate ??= CreateSpanConstructor();
 
-        SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> CreateSpanConstructor()
+        SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> CreateSpanConstructor()
         {
-            SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> spanCtorDelegate;
+            SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> spanCtorDelegate;
             if (_isDictionaryCtor)
             {
                 var ctor = Provider.MemberAccessor.CreateFuncDelegate<Dictionary<TKey, TValue>, TDictionary>((ConstructorInfo)_factory.Value.Method);

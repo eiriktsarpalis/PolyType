@@ -743,8 +743,8 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         throw new NotImplementedException();
     }
 
-    public SpanConstructor<TKey, TElement, TCollection> CreateSpanConstructorDelegate<TKey, TElement, TCollection>(ConstructorInfo ctorInfo)
-        => CreateDelegate<SpanConstructor<TKey, TElement, TCollection>>(EmitConstructor(ctorInfo));
+    public SpanCollectionConstructor<TKey, TElement, TCollection> CreateSpanConstructorDelegate<TKey, TElement, TCollection>(ConstructorInfo ctorInfo)
+        => CreateDelegate<SpanCollectionConstructor<TKey, TElement, TCollection>>(EmitConstructor(ctorInfo));
 
     private static DynamicMethod EmitConstructor(ConstructorInfo ctorInfo)
     {

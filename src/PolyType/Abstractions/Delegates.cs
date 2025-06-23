@@ -38,7 +38,7 @@ public delegate TDeclaringType Constructor<TArgumentState, TDeclaringType>(ref T
 /// <param name="values">The span of values used to create the instance.</param>
 /// <param name="options">An optional set of parameters used to create the collection.</param>
 /// <returns>A newly constructed instance using the specified values.</returns>
-public delegate TDeclaringType SpanConstructor<TKey, TElement, TDeclaringType>(ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey>? options = null);
+public delegate TDeclaringType SpanCollectionConstructor<TKey, TElement, TDeclaringType>(ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey>? options = null);
 
 /// <summary>
 /// Delegate representing a constructor for a mutable collection.

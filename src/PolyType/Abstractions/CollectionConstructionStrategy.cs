@@ -19,7 +19,7 @@ public enum CollectionConstructionStrategy
     Mutable = 1,
 
     /// <summary>
-    /// Constructed using a <see cref="SpanConstructor{TKey, TElement, TDeclaringType}"/> delegate.
+    /// Constructed using a <see cref="SpanCollectionConstructor{TKey, TElement, TDeclaringType}"/> delegate.
     /// </summary>
     Span = 2,
 

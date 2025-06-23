@@ -152,7 +152,7 @@ internal sealed class XmlSpanConstructorDictionaryConverter<TDictionary, TKey, T
     XmlConverter<TKey> keyConverter,
     XmlConverter<TValue> valueConverter,
     Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getEnumerable,
-    SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> constructor)
+    SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> constructor)
     : XmlImmutableDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, getEnumerable)
     where TKey : notnull
 {

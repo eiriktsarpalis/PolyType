@@ -98,7 +98,7 @@ public interface IDictionaryTypeShape<TDictionary, TKey, TValue> : ITypeShape<TD
     /// </summary>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Span"/>.</exception>
     /// <returns>A delegate constructing a collection from a span of values.</returns>
-    SpanConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetSpanCollectionConstructor();
+    SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetSpanCollectionConstructor();
 
     /// <summary>
     /// Creates a constructor delegate for creating a collection from an enumerable.

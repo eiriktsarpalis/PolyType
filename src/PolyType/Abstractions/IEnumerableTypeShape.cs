@@ -102,7 +102,7 @@ public interface IEnumerableTypeShape<TEnumerable, TElement> : ITypeShape<TEnume
     /// </summary>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Span"/>.</exception>
     /// <returns>A delegate constructing a collection from a span of values.</returns>
-    SpanConstructor<TElement, TElement, TEnumerable> GetSpanCollectionConstructor();
+    SpanCollectionConstructor<TElement, TElement, TEnumerable> GetSpanCollectionConstructor();
 
     /// <summary>
     /// Creates a constructor delegate for creating a collection from an enumerable.
