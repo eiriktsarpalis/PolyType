@@ -9,6 +9,7 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TUnderlying">The type of the underlying type of the enum.</typeparam>
 public sealed class SourceGenEnumTypeShape<TEnum, TUnderlying> : SourceGenTypeShape<TEnum>, IEnumTypeShape<TEnum, TUnderlying>
     where TEnum : struct, Enum
+    where TUnderlying : unmanaged
 {
     /// <summary>
     /// Gets the shape of the underlying type of the enum.
@@ -17,6 +18,9 @@ public sealed class SourceGenEnumTypeShape<TEnum, TUnderlying> : SourceGenTypeSh
 
     /// <inheritdoc/>
     public override TypeShapeKind Kind => TypeShapeKind.Enum;
+
+    /// <inheritdoc/>
+    public required IReadOnlyDictionary<string, TUnderlying> Members { get; init; }
 
     /// <inheritdoc/>
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnum(this, state);

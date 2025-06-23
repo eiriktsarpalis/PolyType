@@ -15,17 +15,36 @@ public partial class TypeDataModelGenerator
             return false;
         }
 
-        INamedTypeSymbol underlyingType = ((INamedTypeSymbol)type).EnumUnderlyingType!;
+        INamedTypeSymbol enumType = (INamedTypeSymbol)type;
+        INamedTypeSymbol underlyingType = enumType.EnumUnderlyingType!;
         status = IncludeNestedType(underlyingType, ref ctx);
         Debug.Assert(status is TypeDataModelGenerationStatus.Success);
+
+        Dictionary<string, object> members = new(StringComparer.Ordinal);
+        foreach (ISymbol member in enumType.GetMembers())
+        {
+            if (member is IFieldSymbol { ConstantValue: { } value } field)
+            {
+                string name = this.GetEnumValueName(field);
+                members.Add(name, value);
+            }
+        }
 
         model = new EnumDataModel
         {
             Type = type,
             Depth = TypeShapeRequirements.Full,
             UnderlyingType = underlyingType,
+            Members = members,
         };
-        
+
         return true;
     }
+
+    /// <summary>
+    /// Gets the name of given enum value.
+    /// </summary>
+    /// <param name="field">The field symbol of the enum.</param>
+    /// <returns>The name of the enum value.</returns>
+    protected virtual string GetEnumValueName(IFieldSymbol field) => field.Name;
 }

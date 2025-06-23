@@ -14,4 +14,9 @@ public sealed class EnumDataModel : TypeDataModel
     /// The underlying numeric type used by the enum.
     /// </summary>
     public required ITypeSymbol UnderlyingType { get; init; }
+
+    /// <summary>
+    /// The members of the enum, represented as a dictionary of member names to their underlying values.
+    /// </summary>
+    public required IReadOnlyDictionary<string, object> Members { get; init; } = new Dictionary<string, object>();
 }

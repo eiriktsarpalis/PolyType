@@ -29,6 +29,7 @@ public sealed partial class Parser
                 SourceIdentifier = sourceIdentifier,
                 UnderlyingType = CreateTypeId(enumModel.UnderlyingType),
                 AssociatedTypes = associatedTypes,
+                Members = enumModel.Members.ToImmutableEquatableDictionary(m => m.Key, m => EnumValueToString(m.Value)),
             },
 
             OptionalDataModel optionalModel => new OptionalShapeModel
@@ -548,6 +549,14 @@ public sealed partial class Parser
         };
     }
 
+    private static string EnumValueToString(object underlyingValue)
+        => underlyingValue switch
+        {
+            float f => f.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+            double d => d.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+            _ => underlyingValue.ToString(),
+        };
+
     private static ConstructorShapeModel MapTupleConstructor(TypeId typeId, TupleDataModel tupleModel)
     {
         if (tupleModel.IsValueTuple)
@@ -709,6 +718,19 @@ public sealed partial class Parser
 
             return new CustomAttributeAssociatedTypeProvider(names.ToImmutable());
         }
+    }
+
+    protected override string GetEnumValueName(IFieldSymbol field)
+    {
+        if (field.GetAttribute(_knownSymbols.EnumMemberShapeAttribute, inherit: false) is AttributeData ad)
+        {
+            if (ad.TryGetNamedArgument(PolyTypeKnownSymbols.EnumMemberShapeAttributePropertyNames.Name, out string? name) && name is not null)
+            {
+                return name;
+            }
+        }
+
+        return base.GetEnumValueName(field);
     }
 
     private void ParseTypeShapeAttribute(

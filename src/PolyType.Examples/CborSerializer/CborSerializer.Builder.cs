@@ -156,7 +156,8 @@ public static partial class CborSerializer
 
         public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state)
         {
-            return new CborEnumConverter<TEnum>();
+            var reverseLookup = enumShape.Members.ToDictionary(kv => kv.Value, kv => kv.Key);
+            return new CborEnumConverter<TEnum, TUnderlying>(enumShape.Members, reverseLookup);
         }
 
         public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state)

@@ -63,6 +63,7 @@ public abstract class TypeShapeVisitor
     /// <returns>The result produced by the visitor.</returns>
     public virtual object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null)
         where TEnum : struct, Enum
+        where TUnderlying : unmanaged
         => ThrowNotImplementedException();
 
     /// <summary>
