@@ -39,10 +39,4 @@ public enum SupportedCollectionConstructionOptions
     /// </summary>
     /// <seealso cref="CollectionConstructionOptions{TKey}.Comparer"/>
     Comparer,
-
-    /// <summary>
-    /// The collection can be constructed with a custom initial capacity.
-    /// </summary>
-    /// <seealso cref="CollectionConstructionOptions{TKey}.Capacity"/>
-    Capacity,
 }
