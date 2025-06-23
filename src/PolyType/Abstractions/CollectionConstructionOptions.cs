@@ -17,7 +17,7 @@
 /// Initializing both introduces an ambiguity which PolyType will resolve by selecting the <see cref="EqualityComparer"/>.
 /// </para>
 /// </remarks>
-public record struct CollectionConstructionOptions<TKey>
+public struct CollectionConstructionOptions<TKey>
 {
     /// <summary>
     /// Gets an optional equality comparer for the keys or elements in the collection.
