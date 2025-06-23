@@ -28,7 +28,7 @@ public interface IEnumerableTypeShape : ITypeShape
     /// Gets an enumeration that describes the properties in <see cref="CollectionConstructionOptions{TKey}"/>
     /// that this collection supports.
     /// </summary>
-    SupportedCollectionConstructionOptions SupportedConstructionOptions { get; }
+    CollectionComparerOptions SupportedConstructionOptions { get; }
 
     /// <summary>
     /// Gets the dimensionality of the collection type.

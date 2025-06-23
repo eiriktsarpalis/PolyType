@@ -37,7 +37,7 @@ public interface IDictionaryTypeShape : ITypeShape
     /// Gets an enumeration that describes the properties in <see cref="CollectionConstructionOptions{TKey}"/>
     /// that this collection supports.
     /// </summary>
-    SupportedCollectionConstructionOptions SupportedConstructionOptions { get; }
+    CollectionComparerOptions SupportedConstructionOptions { get; }
 }
 
 /// <summary>

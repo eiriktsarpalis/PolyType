@@ -32,7 +32,7 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     public required CollectionConstructionStrategy ConstructionStrategy { get; init; }
 
     /// <inheritdoc/>
-    public required SupportedCollectionConstructionOptions SupportedConstructionOptions { get; init; }
+    public required CollectionComparerOptions SupportedConstructionOptions { get; init; }
 
     /// <summary>
     /// Gets the function that constructs a default instance of the dictionary type.

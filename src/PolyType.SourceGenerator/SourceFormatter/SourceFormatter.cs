@@ -187,7 +187,7 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
             _ => throw new NotSupportedException(),
         };
 
-        return $"global::PolyType.Abstractions.SupportedCollectionConstructionOptions.{kind}";
+        return $"global::PolyType.Abstractions.CollectionComparerOptions.{kind}";
     }
 
     private string FormatAssociatedTypeShapes(TypeShapeModel objectShapeModel)

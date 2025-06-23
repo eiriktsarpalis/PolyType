@@ -27,12 +27,12 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
     private EnumerableCollectionConstructor<TElement, TElement, TEnumerable>? _enumerableCtorDelegate;
     private SpanCollectionConstructor<TElement, TElement, TEnumerable>? _spanCtorDelegate;
 
-    public virtual SupportedCollectionConstructionOptions SupportedConstructionOptions
+    public virtual CollectionComparerOptions SupportedConstructionOptions
     {
         get
         {
             DetermineConstructionStrategy();
-            return _factoryWithComparer is null ? SupportedCollectionConstructionOptions.None : ToComparerConstruction(_factoryWithComparer.Value.Signature);
+            return _factoryWithComparer is null ? CollectionComparerOptions.None : ToComparerConstruction(_factoryWithComparer.Value.Signature);
         }
     }
 
@@ -600,7 +600,7 @@ internal sealed class ReflectionNonGenericEnumerableTypeShape<TEnumerable>(Refle
 internal sealed class ReflectionArrayTypeShape<TElement>(ReflectionTypeShapeProvider provider)
     : ReflectionEnumerableTypeShape<TElement[], TElement>(provider)
 {
-    public override SupportedCollectionConstructionOptions SupportedConstructionOptions => SupportedCollectionConstructionOptions.None;
+    public override CollectionComparerOptions SupportedConstructionOptions => CollectionComparerOptions.None;
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Span;
     public override Func<TElement[], IEnumerable<TElement>> GetGetEnumerable() => static array => array;
     public override SpanCollectionConstructor<TElement, TElement, TElement[]> GetSpanCollectionConstructor() => static (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => span.ToArray();
@@ -612,7 +612,7 @@ internal sealed class MultiDimensionalArrayTypeShape<TEnumerable, TElement>(Refl
     : ReflectionEnumerableTypeShape<TEnumerable, TElement>(provider)
     where TEnumerable : IEnumerable
 {
-    public override SupportedCollectionConstructionOptions SupportedConstructionOptions => SupportedCollectionConstructionOptions.None;
+    public override CollectionComparerOptions SupportedConstructionOptions => CollectionComparerOptions.None;
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.None;
     public override int Rank => rank;
     public override Func<TEnumerable, IEnumerable<TElement>> GetGetEnumerable()
@@ -624,7 +624,7 @@ internal sealed class MultiDimensionalArrayTypeShape<TEnumerable, TElement>(Refl
 internal sealed class ReadOnlyMemoryTypeShape<TElement>(ReflectionTypeShapeProvider provider)
     : ReflectionEnumerableTypeShape<ReadOnlyMemory<TElement>, TElement>(provider)
 {
-    public override SupportedCollectionConstructionOptions SupportedConstructionOptions => SupportedCollectionConstructionOptions.None;
+    public override CollectionComparerOptions SupportedConstructionOptions => CollectionComparerOptions.None;
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Span;
     public override Func<ReadOnlyMemory<TElement>, IEnumerable<TElement>> GetGetEnumerable() => static memory => MemoryMarshal.ToEnumerable(memory);
     public override SpanCollectionConstructor<TElement, TElement, ReadOnlyMemory<TElement>> GetSpanCollectionConstructor() => static (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => span.ToArray();
@@ -635,7 +635,7 @@ internal sealed class ReadOnlyMemoryTypeShape<TElement>(ReflectionTypeShapeProvi
 internal sealed class MemoryTypeShape<TElement>(ReflectionTypeShapeProvider provider)
     : ReflectionEnumerableTypeShape<Memory<TElement>, TElement>(provider)
 {
-    public override SupportedCollectionConstructionOptions SupportedConstructionOptions => SupportedCollectionConstructionOptions.None;
+    public override CollectionComparerOptions SupportedConstructionOptions => CollectionComparerOptions.None;
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Span;
     public override Func<Memory<TElement>, IEnumerable<TElement>> GetGetEnumerable() => static memory => MemoryMarshal.ToEnumerable((ReadOnlyMemory<TElement>)memory);
     public override SpanCollectionConstructor<TElement, TElement, Memory<TElement>> GetSpanCollectionConstructor() => static (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => span.ToArray();
@@ -646,7 +646,7 @@ internal sealed class MemoryTypeShape<TElement>(ReflectionTypeShapeProvider prov
 internal sealed class ReflectionAsyncEnumerableShape<TEnumerable, TElement>(ReflectionTypeShapeProvider provider)
     : ReflectionEnumerableTypeShape<TEnumerable, TElement>(provider)
 {
-    public override SupportedCollectionConstructionOptions SupportedConstructionOptions => SupportedCollectionConstructionOptions.None;
+    public override CollectionComparerOptions SupportedConstructionOptions => CollectionComparerOptions.None;
     public override bool IsAsyncEnumerable => true;
     public override Func<TEnumerable, IEnumerable<TElement>> GetGetEnumerable() =>
         static _ => throw new InvalidOperationException("Sync enumeration of IAsyncEnumerable instances is not supported.");

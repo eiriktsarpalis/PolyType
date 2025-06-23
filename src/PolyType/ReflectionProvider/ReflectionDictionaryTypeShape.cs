@@ -33,7 +33,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     public sealed override TypeShapeKind Kind => TypeShapeKind.Dictionary;
     public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitDictionary(this, state);
 
-    public SupportedCollectionConstructionOptions SupportedConstructionOptions
+    public CollectionComparerOptions SupportedConstructionOptions
     {
         get
         {
@@ -42,7 +42,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 DetermineConstructionStrategy();
             }
 
-            return _factoryWithComparer is null ? SupportedCollectionConstructionOptions.None : ToComparerConstruction(_factoryWithComparer.Value.Signature);
+            return _factoryWithComparer is null ? CollectionComparerOptions.None : ToComparerConstruction(_factoryWithComparer.Value.Signature);
         }
     }
 

@@ -21,22 +21,22 @@ namespace PolyType.Abstractions;
 /// </para>
 /// </remarks>
 [Flags]
-public enum SupportedCollectionConstructionOptions
+public enum CollectionComparerOptions
 {
     /// <summary>
     /// The collection has no recognizable support for custom comparers.
     /// </summary>
-    None,
+    None = 0x0,
 
     /// <summary>
     /// The collection accepts a custom <see cref="IEqualityComparer{T}"/> for hashing and/or equality checks.
     /// </summary>
     /// <seealso cref="CollectionConstructionOptions{TKey}.EqualityComparer"/>
-    EqualityComparer,
+    EqualityComparer = 0x1,
 
     /// <summary>
     /// The collection accepts a custom <see cref="IComparer{T}"/> for sorting and/or equality checks.
     /// </summary>
     /// <seealso cref="CollectionConstructionOptions{TKey}.Comparer"/>
-    Comparer,
+    Comparer = 0x2,
 }
