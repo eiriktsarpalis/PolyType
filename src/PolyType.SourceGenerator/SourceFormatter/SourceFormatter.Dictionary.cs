@@ -23,7 +23,7 @@ internal sealed partial class SourceFormatter
                     KeyType = {{GetShapeModel(dictionaryShapeModel.KeyType).SourceIdentifier}},
                     ValueType = {{GetShapeModel(dictionaryShapeModel.ValueType).SourceIdentifier}},
                     GetDictionaryFunc = {{FormatGetDictionaryFunc(dictionaryShapeModel)}},
-                    SupportedConstructionOptions = {{FormatComparerOptions(dictionaryShapeModel.ConstructionComparer)}},
+                    SupportedComparers = {{FormatComparerOptions(dictionaryShapeModel.ConstructionComparer)}},
                     ConstructionStrategy = {{FormatCollectionConstructionStrategy(dictionaryShapeModel.ConstructionStrategy)}},
                     MutableConstructorFunc = {{FormatDefaultConstructorFunc(dictionaryShapeModel)}},
                     AddKeyValuePairFunc = {{FormatAddKeyValuePairFunc(dictionaryShapeModel)}},

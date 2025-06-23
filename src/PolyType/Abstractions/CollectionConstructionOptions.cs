@@ -9,7 +9,7 @@
 /// Construction of any particular collection type may ignore any or all of these properties.
 /// To predict whether a collection uses a particular property, check for the presence of its associated flag
 /// on the <see cref="CollectionComparerOptions"/> enum, as defined by either
-/// <see cref="IEnumerableTypeShape.SupportedConstructionOptions"/> or <see cref="IDictionaryTypeShape.SupportedConstructionOptions"/>.
+/// <see cref="IEnumerableTypeShape.SupportedComparers"/> or <see cref="IDictionaryTypeShape.SupportedComparers"/>.
 /// </para>
 /// <para>
 /// When <see cref="CollectionComparerOptions.EqualityComparer"/> and <see cref="CollectionComparerOptions.Comparer"/>
