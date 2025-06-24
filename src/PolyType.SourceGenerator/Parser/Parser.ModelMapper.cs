@@ -130,12 +130,10 @@ public sealed partial class Parser
                 StaticFactoryMethod = dictionaryModel.FactoryMethod is { IsStatic: true } m ? m.GetFullyQualifiedName() : null,
                 StaticFactoryWithComparerMethod = dictionaryModel.FactoryMethodWithComparer is { IsStatic: true } m2 ? m2.GetFullyQualifiedName() : null,
                 HasConstructorWithoutComparer = dictionaryModel.FactoryMethod is not null,
-                ConstructionComparer = AnalyzeComparerConstruction(dictionaryModel.FactoryMethodWithComparer),
+                ConstructionComparer = DictionaryRequiresHelper(dictionaryModel) ? ConstructionWithComparer.ValuesEqualityComparer : AnalyzeComparerConstruction(dictionaryModel.FactoryMethodWithComparer),
                 IsTupleEnumerableFactory = dictionaryModel.ConstructionStrategy is CollectionModelConstructionStrategy.TupleEnumerable,
                 Kind = dictionaryModel.DictionaryKind,
-                CtorRequiresDictionaryConversion =
-                    dictionaryModel.ConstructionStrategy is CollectionModelConstructionStrategy.Dictionary &&
-                    !IsFactoryAcceptingIEnumerable(dictionaryModel.FactoryMethod),
+                CtorRequiresDictionaryConversion = DictionaryRequiresHelper(dictionaryModel),
                 KeyValueTypesContainNullableAnnotations =
                     dictionaryModel.KeyType.ContainsNullabilityAnnotations() ||
                     dictionaryModel.ValueType.ContainsNullabilityAnnotations(),
@@ -227,8 +225,11 @@ public sealed partial class Parser
 
         static bool IsFactoryAcceptingIEnumerable(IMethodSymbol? method)
         {
-            return method?.Parameters.Any(p => p is { Type: INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Collections_Generic_IEnumerable_T }}) ?? false;
+            return method?.Parameters.Any(p => p is { Type: INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Collections_Generic_IEnumerable_T } }) ?? false;
         }
+
+        static bool DictionaryRequiresHelper(DictionaryDataModel dictionaryModel)
+            => dictionaryModel.ConstructionStrategy is CollectionModelConstructionStrategy.Dictionary && !IsFactoryAcceptingIEnumerable(dictionaryModel.FactoryMethod);
     }
 
     private static ConstructionWithComparer AnalyzeComparerConstruction(IMethodSymbol? factoryMethodWithComparer) => factoryMethodWithComparer?.Parameters switch

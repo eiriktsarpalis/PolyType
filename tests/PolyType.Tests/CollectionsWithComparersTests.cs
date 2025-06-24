@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using PolyType.Examples.Utilities;
 
@@ -19,6 +20,20 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
 
     [Fact]
     public void SortedDictionary() => this.AssertDefaultDictionary<SortedDictionary<int, bool>, int, bool>(new ReverseComparer(), d => d.Comparer);
+
+    [Fact]
+    public void ReadOnlyDictionary()
+    {
+        KeyValuePair<int, bool>[] values = [new(3, true), new(6, true), new(5, true)];
+        ReadOnlyDictionary<int, bool> dict = this.CreateSpanDictionary<ReadOnlyDictionary<int, bool>, int, bool>(values, new EvenOddEqualityComparer());
+
+        // We have to get creative when testing the comparer backing a ReadOnlyDictionary because that type doesn't expose it.
+        // We provided 3 key=value pairs, but with our custom EqualityComparer, only 2 unique keys are present.
+        Assert.Equal(2, dict.Count);
+
+        dict = this.CreateSpanDictionary<ReadOnlyDictionary<int, bool>, int, bool>(values, equalityComparer: null);
+        Assert.Equal(values.ToArray(), dict);
+    }
 
     [Fact]
     public void ImmutableDictionary() => this.AssertEnumerableDictionary<ImmutableDictionary<int, bool>, int, bool>(NonEmptyDictionary, new EvenOddEqualityComparer(), d => d.KeyComparer);
@@ -387,6 +402,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
 
     [GenerateShape<Dictionary<int, bool>>]
     [GenerateShape<IDictionary<int, bool>>]
+    [GenerateShape<ReadOnlyDictionary<int, bool>>]
     [GenerateShape<SortedDictionary<int, bool>>]
     [GenerateShape<ImmutableDictionary<int, bool>>]
     [GenerateShape<ImmutableSortedDictionary<int, bool>>]
