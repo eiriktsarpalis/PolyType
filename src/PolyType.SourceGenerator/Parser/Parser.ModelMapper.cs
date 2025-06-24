@@ -86,7 +86,7 @@ public sealed partial class Parser
 
                 StaticFactoryMethod = enumerableModel.FactoryMethod is { IsStatic: true } m ? m.GetFullyQualifiedName() : null,
                 StaticFactoryWithComparerMethod = enumerableModel.FactoryMethodWithComparer is { IsStatic: true } m2 ? m2.GetFullyQualifiedName() : null,
-                HasConstructorWithoutComparer = enumerableModel.FactoryMethod is not null,
+                HasConstructorWithoutComparer = enumerableModel.FactoryMethod is not null && !UseComparerOverloadEvenForNullComparersEnumerable(enumerableModel),
                 ConstructionComparer = AnalyzeComparerConstruction(enumerableModel.FactoryMethodWithComparer),
                 CtorRequiresListConversion =
                     enumerableModel.ConstructionStrategy is CollectionModelConstructionStrategy.List &&
@@ -129,7 +129,7 @@ public sealed partial class Parser
 
                 StaticFactoryMethod = dictionaryModel.FactoryMethod is { IsStatic: true } m ? m.GetFullyQualifiedName() : null,
                 StaticFactoryWithComparerMethod = dictionaryModel.FactoryMethodWithComparer is { IsStatic: true } m2 ? m2.GetFullyQualifiedName() : null,
-                HasConstructorWithoutComparer = dictionaryModel.FactoryMethod is not null,
+                HasConstructorWithoutComparer = dictionaryModel.FactoryMethod is not null && !UseComparerOverloadEvenForNullComparersDictionary(dictionaryModel),
                 ConstructionComparer = DictionaryRequiresHelper(dictionaryModel) ? ConstructionWithComparer.ValuesEqualityComparer : AnalyzeComparerConstruction(dictionaryModel.FactoryMethodWithComparer),
                 IsTupleEnumerableFactory = dictionaryModel.ConstructionStrategy is CollectionModelConstructionStrategy.TupleEnumerable,
                 Kind = dictionaryModel.DictionaryKind,
@@ -230,6 +230,14 @@ public sealed partial class Parser
 
         static bool DictionaryRequiresHelper(DictionaryDataModel dictionaryModel)
             => dictionaryModel.ConstructionStrategy is CollectionModelConstructionStrategy.Dictionary && !IsFactoryAcceptingIEnumerable(dictionaryModel.FactoryMethod);
+
+        // For .NET collections known to accept null arguments for comparer parameters,
+        // take that path because it skips one conditional jump in the compiled code.
+        static bool UseComparerOverloadEvenForNullComparersDictionary(DictionaryDataModel model)
+            => model.FactoryMethodWithComparer is not null && (model.FactoryMethod is null || model.Type.ContainingNamespace.MatchesNamespace(Namespaces.SystemCollectionsGeneric));
+
+        static bool UseComparerOverloadEvenForNullComparersEnumerable(EnumerableDataModel model)
+            => model.FactoryMethodWithComparer is not null && (model.FactoryMethod is null || model.Type.ContainingNamespace.MatchesNamespace(Namespaces.SystemCollectionsGeneric));
     }
 
     private static ConstructionWithComparer AnalyzeComparerConstruction(IMethodSymbol? factoryMethodWithComparer) => factoryMethodWithComparer?.Parameters switch

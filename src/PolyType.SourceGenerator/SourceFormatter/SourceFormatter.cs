@@ -96,8 +96,8 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
             """);
 #else
         writer.WriteLine("""
-            #nullable enable annotations
-            #nullable disable warnings
+#nullable enable annotations
+#nullable disable warnings
 
             """);
 #endif
@@ -163,7 +163,7 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
 
             return $"{preamble}{noComparer}";
         }
-        else
+        else if (hasConstructorWithoutComparer)
         {
             string? argsWithComparer = constructorComparer switch
             {
@@ -174,6 +174,18 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
             };
 
             return $"{preamble}options?.{comparer} is null ? {noComparer} : {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, argsWithComparer)}";
+        }
+        else
+        {
+            string? argsWithComparer = constructorComparer switch
+            {
+                ConstructionWithComparer.Comparer or ConstructionWithComparer.EqualityComparer when values is null => $"options?.{comparer}",
+                ConstructionWithComparer.ComparerValues or ConstructionWithComparer.EqualityComparerValues => $"options?.{comparer}, {values?.Expression}",
+                ConstructionWithComparer.ValuesComparer or ConstructionWithComparer.ValuesEqualityComparer => $"{values?.Expression}, options?.{comparer}",
+                _ => throw new NotSupportedException(),
+            };
+
+            return $"{preamble}{string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, argsWithComparer)}";
         }
     }
 

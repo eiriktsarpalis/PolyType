@@ -51,12 +51,12 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     {
         get
         {
-            if (_constructionStrategy is null)
+            if (!_discoveryComplete)
             {
                 DetermineConstructionStrategy();
             }
 
-            return _constructionStrategy.Value;
+            return _constructionStrategy!.Value;
         }
     }
 
@@ -115,6 +115,20 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                         var ctor = CreateConstructorDelegate(_factory.Value.Method);
                         var comparerCtor = CreateConstructorDelegate<IComparer<TKey>>(_factoryWithComparer.Value.Method);
                         mutableCtorDelegate = (in CollectionConstructionOptions<TKey>? options) => options?.Comparer is null ? ctor() : comparerCtor(options.Value.Comparer);
+                    }
+
+                    break;
+                case (null, { Signature: ConstructionSignature.EqualityComparer }):
+                    {
+                        var comparerCtor = CreateConstructorDelegate<IEqualityComparer<TKey>?>(_factoryWithComparer.Value.Method);
+                        mutableCtorDelegate = (in CollectionConstructionOptions<TKey>? options) => comparerCtor(options?.EqualityComparer);
+                    }
+
+                    break;
+                case (null, { Signature: ConstructionSignature.Comparer }):
+                    {
+                        var comparerCtor = CreateConstructorDelegate<IComparer<TKey>?>(_factoryWithComparer.Value.Method);
+                        mutableCtorDelegate = (in CollectionConstructionOptions<TKey>? options) => comparerCtor(options?.Comparer);
                     }
 
                     break;
@@ -475,6 +489,12 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
 
         _constructionStrategy = strategy;
         _factoryWithComparer = FindComparerConstructionOverload(_factory.Value.Method, _factory.Value.Signature);
+
+        // If this is a collection inside System.Collections.Generic, assume that all comparer parameters accept null arguments.
+        if (_factoryWithComparer is not null && this.Type.Namespace == "System.Collections.Generic")
+        {
+            _factory = null;
+        }
     }
 
     protected override CollectionConstructorParameterType ClassifyConstructorParameter(ParameterInfo parameter)

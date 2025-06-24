@@ -86,25 +86,43 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
 
         MutableCollectionConstructor<TElement, TEnumerable> CreateDefaultConstructor()
         {
-            DebugExt.Assert(_factory != null);
-            Func<TEnumerable> ctor = CreateConstructorDelegate(_factory.Value.Method);
             MutableCollectionConstructor<TElement, TEnumerable> mutableCtorDelegate;
             switch ((_factory, _factoryWithComparer))
             {
                 case ({ Signature: ConstructionSignature.None }, null):
-                    mutableCtorDelegate = (in CollectionConstructionOptions<TElement>? options) => ctor();
+                    {
+                        var ctor = CreateConstructorDelegate(_factory.Value.Method);
+                        mutableCtorDelegate = (in CollectionConstructionOptions<TElement>? options) => ctor();
+                    }
+
                     break;
                 case ({ Signature: ConstructionSignature.None }, { Signature: ConstructionSignature.EqualityComparer }):
                     {
-                        Func<IEqualityComparer<TElement>, TEnumerable> comparerCtor = CreateConstructorDelegate<IEqualityComparer<TElement>>(_factoryWithComparer.Value.Method);
+                        var ctor = CreateConstructorDelegate(_factory.Value.Method);
+                        var comparerCtor = CreateConstructorDelegate<IEqualityComparer<TElement>>(_factoryWithComparer.Value.Method);
                         mutableCtorDelegate = (in CollectionConstructionOptions<TElement>? options) => options?.EqualityComparer is null ? ctor() : comparerCtor(options.Value.EqualityComparer);
                     }
 
                     break;
                 case ({ Signature: ConstructionSignature.None }, { Signature: ConstructionSignature.Comparer }):
                     {
-                        Func<IComparer<TElement>, TEnumerable> comparerCtor = CreateConstructorDelegate<IComparer<TElement>>(_factoryWithComparer.Value.Method);
+                        var ctor = CreateConstructorDelegate(_factory.Value.Method);
+                        var comparerCtor = CreateConstructorDelegate<IComparer<TElement>>(_factoryWithComparer.Value.Method);
                         mutableCtorDelegate = (in CollectionConstructionOptions<TElement>? options) => options?.Comparer is null ? ctor() : comparerCtor(options.Value.Comparer);
+                    }
+
+                    break;
+                case (null, { Signature: ConstructionSignature.EqualityComparer }):
+                    {
+                        var comparerCtor = CreateConstructorDelegate<IEqualityComparer<TElement>?>(_factoryWithComparer.Value.Method);
+                        mutableCtorDelegate = (in CollectionConstructionOptions<TElement>? options) => comparerCtor(options?.EqualityComparer);
+                    }
+
+                    break;
+                case (null, { Signature: ConstructionSignature.Comparer }):
+                    {
+                        var comparerCtor = CreateConstructorDelegate<IComparer<TElement>?>(_factoryWithComparer.Value.Method);
+                        mutableCtorDelegate = (in CollectionConstructionOptions<TElement>? options) => comparerCtor(options?.Comparer);
                     }
 
                     break;
@@ -259,6 +277,13 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                             var ctor = CreateSpanConstructorDelegate<TElement>(_factory.Value.Method);
                             var comparerCtor = CreateSpanECConstructorDelegate<TElement, TElement>(_factoryWithComparer.Value.Method);
                             spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => options?.EqualityComparer is null ? ctor(span) : comparerCtor(span, options.Value.EqualityComparer);
+                        }
+
+                        break;
+                    case (null, { Signature: ConstructionSignature.ValuesEqualityComparer }):
+                        {
+                            var comparerCtor = CreateSpanECConstructorDelegate<TElement, TElement>(_factoryWithComparer.Value.Method);
+                            spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => comparerCtor(span, options?.EqualityComparer);
                         }
 
                         break;
@@ -567,6 +592,12 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
 
         _constructionStrategy = strategy;
         _factoryWithComparer = FindComparerConstructionOverload(_factory.Value.Method, _factory.Value.Signature);
+
+        // If this is a collection inside System.Collections.Generic, assume that all comparer parameters accept null arguments.
+        if (_factoryWithComparer is not null && this.Type.Namespace == "System.Collections.Generic")
+        {
+            _factory = null;
+        }
     }
 
     private NotSupportedException CreateUnsupportedConstructorException() => new NotSupportedException($"({_factory?.Signature}, {_factoryWithComparer?.Signature}) constructor is not supported for this type.");
@@ -653,7 +684,7 @@ internal sealed class ReflectionAsyncEnumerableShape<TEnumerable, TElement>(Refl
 }
 
 internal delegate TDeclaringType SpanOnlyConstructor<TElement, TDeclaringType>(ReadOnlySpan<TElement> values);
-internal delegate TDeclaringType SpanECConstructor<TKey, TElement, TDeclaringType>(ReadOnlySpan<TElement> values, IEqualityComparer<TKey> comparer);
-internal delegate TDeclaringType SpanCConstructor<TKey, TElement, TDeclaringType>(ReadOnlySpan<TElement> values, IComparer<TKey> comparer);
-internal delegate TDeclaringType ECSpanConstructor<TKey, TElement, TDeclaringType>(IEqualityComparer<TKey> comparer, ReadOnlySpan<TElement> values);
-internal delegate TDeclaringType CSpanConstructor<TKey, TElement, TDeclaringType>(IComparer<TKey> comparer, ReadOnlySpan<TElement> values);
+internal delegate TDeclaringType SpanECConstructor<TKey, TElement, TDeclaringType>(ReadOnlySpan<TElement> values, IEqualityComparer<TKey>? comparer);
+internal delegate TDeclaringType SpanCConstructor<TKey, TElement, TDeclaringType>(ReadOnlySpan<TElement> values, IComparer<TKey>? comparer);
+internal delegate TDeclaringType ECSpanConstructor<TKey, TElement, TDeclaringType>(IEqualityComparer<TKey>? comparer, ReadOnlySpan<TElement> values);
+internal delegate TDeclaringType CSpanConstructor<TKey, TElement, TDeclaringType>(IComparer<TKey>? comparer, ReadOnlySpan<TElement> values);

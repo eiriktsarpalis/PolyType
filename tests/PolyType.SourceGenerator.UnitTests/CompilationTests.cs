@@ -1085,6 +1085,21 @@ public static class CompilationTests
     }
 
     [Fact]
+    public static void ConcurrentDictionary()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System.Collections.Concurrent;
+            using PolyType;
+
+            [GenerateShape<ConcurrentDictionary<string, int>>]
+            partial class Witness;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
     public static void ImmutableDictionary()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
