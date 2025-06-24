@@ -23,9 +23,4 @@ public struct CollectionConstructionOptions<TKey>
     /// Gets an optional comparer for the keys or elements in the collection.
     /// </summary>
     public IComparer<TKey>? Comparer { get; init; }
-
-    /// <summary>
-    /// Gets the initial capacity of the collection.
-    /// </summary>
-    public int? Capacity { get; init; }
 }
