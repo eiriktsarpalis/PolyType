@@ -7,14 +7,9 @@
 /// <remarks>
 /// <para>
 /// Construction of any particular collection type may ignore any or all of these properties.
-/// To predict whether a collection uses a particular property, check for the presence of its associated flag
-/// on the <see cref="CollectionComparerOptions"/> enum, as defined by either
+/// To predict whether a collection will use a particular comparer property, check the
+/// <see cref="CollectionComparerOptions"/> enum, as defined by either
 /// <see cref="IEnumerableTypeShape.SupportedComparers"/> or <see cref="IDictionaryTypeShape.SupportedComparers"/>.
-/// </para>
-/// <para>
-/// When <see cref="CollectionComparerOptions.EqualityComparer"/> and <see cref="CollectionComparerOptions.Comparer"/>
-/// flags are both set, initializing only one of the comparers on this struct will direct the collection to use that comparer.
-/// Initializing both introduces an ambiguity which PolyType will resolve by selecting the <see cref="EqualityComparer"/>.
 /// </para>
 /// </remarks>
 public struct CollectionConstructionOptions<TKey>
