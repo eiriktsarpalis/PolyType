@@ -106,7 +106,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                     {
                         var ctor = CreateConstructorDelegate(_factory.Value.Method);
                         var comparerCtor = CreateConstructorDelegate<IEqualityComparer<TKey>>(_factoryWithComparer.Value.Method);
-                        mutableCtorDelegate = (in CollectionConstructionOptions<TKey>? options) => options?.EqualityComparer is null ? ctor() : comparerCtor(options.Value.EqualityComparer);
+                        mutableCtorDelegate = (in CollectionConstructionOptions<TKey> options) => options.EqualityComparer is null ? ctor() : comparerCtor(options.EqualityComparer);
                     }
 
                     break;
@@ -114,28 +114,28 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                     {
                         var ctor = CreateConstructorDelegate(_factory.Value.Method);
                         var comparerCtor = CreateConstructorDelegate<IComparer<TKey>>(_factoryWithComparer.Value.Method);
-                        mutableCtorDelegate = (in CollectionConstructionOptions<TKey>? options) => options?.Comparer is null ? ctor() : comparerCtor(options.Value.Comparer);
+                        mutableCtorDelegate = (in CollectionConstructionOptions<TKey> options) => options.Comparer is null ? ctor() : comparerCtor(options.Comparer);
                     }
 
                     break;
                 case (null, { Signature: ConstructionSignature.EqualityComparer }):
                     {
                         var comparerCtor = CreateConstructorDelegate<IEqualityComparer<TKey>?>(_factoryWithComparer.Value.Method);
-                        mutableCtorDelegate = (in CollectionConstructionOptions<TKey>? options) => comparerCtor(options?.EqualityComparer);
+                        mutableCtorDelegate = (in CollectionConstructionOptions<TKey> options) => comparerCtor(options.EqualityComparer);
                     }
 
                     break;
                 case (null, { Signature: ConstructionSignature.Comparer }):
                     {
                         var comparerCtor = CreateConstructorDelegate<IComparer<TKey>?>(_factoryWithComparer.Value.Method);
-                        mutableCtorDelegate = (in CollectionConstructionOptions<TKey>? options) => comparerCtor(options?.Comparer);
+                        mutableCtorDelegate = (in CollectionConstructionOptions<TKey> options) => comparerCtor(options.Comparer);
                     }
 
                     break;
                 case ({ Signature: ConstructionSignature.None }, null):
                     {
                         var ctor = CreateConstructorDelegate(_factory.Value.Method);
-                        mutableCtorDelegate = (in CollectionConstructionOptions<TKey>? options) => ctor();
+                        mutableCtorDelegate = (in CollectionConstructionOptions<TKey> options) => ctor();
                     }
 
                     break;
@@ -165,7 +165,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
             {
                 DebugExt.Assert(_factory != null);
                 var mapOfSeqDelegate = ((MethodInfo)_factory.Value.Method).CreateDelegate<Func<IEnumerable<Tuple<TKey, TValue>>, TDictionary>>();
-                enumerableCtorDelegate = (IEnumerable<KeyValuePair<TKey, TValue>> values, in CollectionConstructionOptions<TKey>? options) => mapOfSeqDelegate(values.Select(kvp => new Tuple<TKey, TValue>(kvp.Key, kvp.Value)));
+                enumerableCtorDelegate = (IEnumerable<KeyValuePair<TKey, TValue>> values, in CollectionConstructionOptions<TKey> options) => mapOfSeqDelegate(values.Select(kvp => new Tuple<TKey, TValue>(kvp.Key, kvp.Value)));
             }
             else
             {
@@ -174,7 +174,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                     case ({ Signature: ConstructionSignature.Values }, null):
                         {
                             var ctor = CreateConstructorDelegate<IEnumerable<KeyValuePair<TKey, TValue>>>(_factory.Value.Method);
-                            enumerableCtorDelegate = (IEnumerable<KeyValuePair<TKey, TValue>> values, in CollectionConstructionOptions<TKey>? options) => ctor(values);
+                            enumerableCtorDelegate = (IEnumerable<KeyValuePair<TKey, TValue>> values, in CollectionConstructionOptions<TKey> options) => ctor(values);
                         }
 
                         break;
@@ -182,7 +182,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                         {
                             var ctor = CreateConstructorDelegate<IEnumerable<KeyValuePair<TKey, TValue>>>(_factory.Value.Method);
                             var comparerCtor = CreateConstructorDelegate<IEnumerable<KeyValuePair<TKey, TValue>>, IEqualityComparer<TKey>>(_factoryWithComparer.Value.Method);
-                            enumerableCtorDelegate = (IEnumerable<KeyValuePair<TKey, TValue>> values, in CollectionConstructionOptions<TKey>? options) => options?.EqualityComparer is null ? ctor(values) : comparerCtor(values, options.Value.EqualityComparer);
+                            enumerableCtorDelegate = (IEnumerable<KeyValuePair<TKey, TValue>> values, in CollectionConstructionOptions<TKey> options) => options.EqualityComparer is null ? ctor(values) : comparerCtor(values, options.EqualityComparer);
                         }
 
                         break;
@@ -190,7 +190,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                         {
                             var ctor = CreateConstructorDelegate<IEnumerable<KeyValuePair<TKey, TValue>>>(_factory.Value.Method);
                             var comparerCtor = CreateConstructorDelegate<IEnumerable<KeyValuePair<TKey, TValue>>, IComparer<TKey>>(_factoryWithComparer.Value.Method);
-                            enumerableCtorDelegate = (IEnumerable<KeyValuePair<TKey, TValue>> values, in CollectionConstructionOptions<TKey>? options) => options?.Comparer is null ? ctor(values) : comparerCtor(values, options.Value.Comparer);
+                            enumerableCtorDelegate = (IEnumerable<KeyValuePair<TKey, TValue>> values, in CollectionConstructionOptions<TKey> options) => options.Comparer is null ? ctor(values) : comparerCtor(values, options.Comparer);
                         }
 
                         break;
@@ -198,7 +198,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                         {
                             var ctor = CreateConstructorDelegate<IEnumerable<KeyValuePair<TKey, TValue>>>(_factory.Value.Method);
                             var comparerCtor = CreateConstructorDelegate<IEqualityComparer<TKey>, IEnumerable<KeyValuePair<TKey, TValue>>>(_factoryWithComparer.Value.Method);
-                            enumerableCtorDelegate = (IEnumerable<KeyValuePair<TKey, TValue>> values, in CollectionConstructionOptions<TKey>? options) => options?.EqualityComparer is null ? ctor(values) : comparerCtor(options.Value.EqualityComparer, values);
+                            enumerableCtorDelegate = (IEnumerable<KeyValuePair<TKey, TValue>> values, in CollectionConstructionOptions<TKey> options) => options.EqualityComparer is null ? ctor(values) : comparerCtor(options.EqualityComparer, values);
                         }
 
                         break;
@@ -206,7 +206,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                         {
                             var ctor = CreateConstructorDelegate<IEnumerable<KeyValuePair<TKey, TValue>>>(_factory.Value.Method);
                             var comparerCtor = CreateConstructorDelegate<IComparer<TKey>, IEnumerable<KeyValuePair<TKey, TValue>>>(_factoryWithComparer.Value.Method);
-                            enumerableCtorDelegate = (IEnumerable<KeyValuePair<TKey, TValue>> values, in CollectionConstructionOptions<TKey>? options) => options?.Comparer is null ? ctor(values) : comparerCtor(options.Value.Comparer, values);
+                            enumerableCtorDelegate = (IEnumerable<KeyValuePair<TKey, TValue>> values, in CollectionConstructionOptions<TKey> options) => options.Comparer is null ? ctor(values) : comparerCtor(options.Comparer, values);
                         }
 
                         break;
@@ -214,7 +214,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                         {
                             // When only a comparer overload is available, we assume it accepts null.
                             var comparerCtor = CreateConstructorDelegate<IEnumerable<KeyValuePair<TKey, TValue>>, IEqualityComparer<TKey>?>(_factoryWithComparer.Value.Method);
-                            enumerableCtorDelegate = (IEnumerable<KeyValuePair<TKey, TValue>> values, in CollectionConstructionOptions<TKey>? options) => comparerCtor(values, options?.EqualityComparer);
+                            enumerableCtorDelegate = (IEnumerable<KeyValuePair<TKey, TValue>> values, in CollectionConstructionOptions<TKey> options) => comparerCtor(values, options.EqualityComparer);
                         }
 
                         break;
@@ -247,12 +247,12 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 switch ((_factory, _factoryWithComparer))
                 {
                     case ({ Signature: ConstructionSignature.Values }, null):
-                        spanCtorDelegate = (ReadOnlySpan<KeyValuePair<TKey, TValue>> span, in CollectionConstructionOptions<TKey>? options) => ctor(CollectionHelpers.CreateDictionary(span, SupportedComparers is CollectionComparerOptions.EqualityComparer ? options?.EqualityComparer : null));
+                        spanCtorDelegate = (ReadOnlySpan<KeyValuePair<TKey, TValue>> span, in CollectionConstructionOptions<TKey> options) => ctor(CollectionHelpers.CreateDictionary(span, SupportedComparers is CollectionComparerOptions.EqualityComparer ? options.EqualityComparer : null));
                         break;
                     case ({ Signature: ConstructionSignature.Values }, { Signature: ConstructionSignature.ValuesEqualityComparer }):
                         {
                             var comparerCtor = Provider.MemberAccessor.CreateFuncDelegate<Dictionary<TKey, TValue>, IEqualityComparer<TKey>, TDictionary>((ConstructorInfo)_factoryWithComparer.Value.Method);
-                            spanCtorDelegate = (ReadOnlySpan<KeyValuePair<TKey, TValue>> span, in CollectionConstructionOptions<TKey>? options) => options?.EqualityComparer is null ? ctor(CollectionHelpers.CreateDictionary(span)) : comparerCtor(CollectionHelpers.CreateDictionary(span, options.Value.EqualityComparer), options.Value.EqualityComparer);
+                            spanCtorDelegate = (ReadOnlySpan<KeyValuePair<TKey, TValue>> span, in CollectionConstructionOptions<TKey> options) => options.EqualityComparer is null ? ctor(CollectionHelpers.CreateDictionary(span)) : comparerCtor(CollectionHelpers.CreateDictionary(span, options.EqualityComparer), options.EqualityComparer);
                         }
 
                         break;
@@ -267,7 +267,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                     case ({ Signature: ConstructionSignature.Values }, null):
                         {
                             var ctor = CreateSpanConstructorDelegate<KeyValuePair<TKey, TValue>>(_factory.Value.Method);
-                            spanCtorDelegate = (ReadOnlySpan<KeyValuePair<TKey, TValue>> span, in CollectionConstructionOptions<TKey>? options) => ctor(span);
+                            spanCtorDelegate = (ReadOnlySpan<KeyValuePair<TKey, TValue>> span, in CollectionConstructionOptions<TKey> options) => ctor(span);
                         }
 
                         break;
@@ -275,7 +275,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                         {
                             var ctor = CreateSpanConstructorDelegate<KeyValuePair<TKey, TValue>>(_factory.Value.Method);
                             var comparerCtor = CreateSpanECConstructorDelegate<TKey, KeyValuePair<TKey, TValue>>(_factoryWithComparer.Value.Method);
-                            spanCtorDelegate = (ReadOnlySpan<KeyValuePair<TKey, TValue>> span, in CollectionConstructionOptions<TKey>? options) => options?.EqualityComparer is null ? ctor(span) : comparerCtor(span, options.Value.EqualityComparer);
+                            spanCtorDelegate = (ReadOnlySpan<KeyValuePair<TKey, TValue>> span, in CollectionConstructionOptions<TKey> options) => options.EqualityComparer is null ? ctor(span) : comparerCtor(span, options.EqualityComparer);
                         }
 
                         break;
@@ -283,7 +283,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                         {
                             var ctor = CreateSpanConstructorDelegate<KeyValuePair<TKey, TValue>>(_factory.Value.Method);
                             var comparerCtor = CreateSpanCConstructorDelegate<TKey, KeyValuePair<TKey, TValue>>(_factoryWithComparer.Value.Method);
-                            spanCtorDelegate = (ReadOnlySpan<KeyValuePair<TKey, TValue>> span, in CollectionConstructionOptions<TKey>? options) => options?.Comparer is null ? ctor(span) : comparerCtor(span, options.Value.Comparer);
+                            spanCtorDelegate = (ReadOnlySpan<KeyValuePair<TKey, TValue>> span, in CollectionConstructionOptions<TKey> options) => options.Comparer is null ? ctor(span) : comparerCtor(span, options.Comparer);
                         }
 
                         break;

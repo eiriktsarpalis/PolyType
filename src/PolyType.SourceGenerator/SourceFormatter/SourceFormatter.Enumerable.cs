@@ -87,7 +87,7 @@ internal sealed partial class SourceFormatter
             if (enumerableType.Kind is EnumerableKind.ArrayOfT or EnumerableKind.ReadOnlyMemoryOfT or EnumerableKind.MemoryOfT)
             {
                 string optionsTypeName = FormatCollectionConstructionOptionsTypeName(enumerableType.ElementType);
-                return $"static ({valuesType} values, in {FormatCollectionConstructionOptionsTypeName(enumerableType.ElementType)}? options) => {valuesExpr}.ToArray()";
+                return $"static ({valuesType} values, in {FormatCollectionConstructionOptionsTypeName(enumerableType.ElementType)} options) => {valuesExpr}.ToArray()";
             }
 
             return FormatCollectionInitializer(enumerableType, valuesType, valuesExpr);

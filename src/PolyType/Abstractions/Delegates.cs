@@ -38,7 +38,7 @@ public delegate TDeclaringType Constructor<TArgumentState, TDeclaringType>(ref T
 /// <param name="values">The span of values used to create the instance.</param>
 /// <param name="options">An optional set of parameters used to create the collection.</param>
 /// <returns>A newly constructed instance using the specified values.</returns>
-public delegate TDeclaringType SpanCollectionConstructor<TKey, TElement, TDeclaringType>(ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey>? options = null);
+public delegate TDeclaringType SpanCollectionConstructor<TKey, TElement, TDeclaringType>(ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey> options = default);
 
 /// <summary>
 /// Delegate representing a constructor for a mutable collection.
@@ -47,7 +47,7 @@ public delegate TDeclaringType SpanCollectionConstructor<TKey, TElement, TDeclar
 /// <typeparam name="TDeclaringType">The type of the collection to be constructed.</typeparam>
 /// <param name="options">An optional set of parameters used to create the collection.</param>
 /// <returns>A newly constructed mutable collection instance.</returns>
-public delegate TDeclaringType MutableCollectionConstructor<TKey, TDeclaringType>(in CollectionConstructionOptions<TKey>? options = null);
+public delegate TDeclaringType MutableCollectionConstructor<TKey, TDeclaringType>(in CollectionConstructionOptions<TKey> options = default);
 
 /// <summary>
 /// Delegate representing a constructor for a collection from an enumeration of elements.
@@ -58,7 +58,7 @@ public delegate TDeclaringType MutableCollectionConstructor<TKey, TDeclaringType
 /// <param name="elements">The enumerable of elements used to create the collection.</param>
 /// <param name="options">An optional set of parameters used to create the collection.</param>
 /// <returns>A newly constructed collection instance containing the specified elements.</returns>
-public delegate TDeclaringType EnumerableCollectionConstructor<TKey, TElement, TDeclaringType>(IEnumerable<TElement> elements, in CollectionConstructionOptions<TKey>? options = null);
+public delegate TDeclaringType EnumerableCollectionConstructor<TKey, TElement, TDeclaringType>(IEnumerable<TElement> elements, in CollectionConstructionOptions<TKey> options = default);
 
 /// <summary>
 /// Delegate deconstructing an optional type.

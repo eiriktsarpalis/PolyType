@@ -34,7 +34,7 @@ public interface IDictionaryTypeShape : ITypeShape
     CollectionConstructionStrategy ConstructionStrategy { get; }
 
     /// <summary>
-    /// Gets the kind of custom comparer(s) (if any) that this collection may be initialized with.
+    /// Gets the kind of custom comparer (if any) that this collection may be initialized with.
     /// </summary>
     CollectionComparerOptions SupportedComparers { get; }
 }
@@ -79,10 +79,10 @@ public interface IDictionaryTypeShape<TDictionary, TKey, TValue> : ITypeShape<TD
     Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> GetGetDictionary();
 
     /// <summary>
-    /// Creates a delegate wrapping a parameterless constructor of a mutable collection.
+    /// Creates a delegate for creating an empty, mutable collection.
     /// </summary>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Mutable"/>.</exception>
-    /// <returns>A delegate wrapping a constructor that takes no elements.</returns>
+    /// <returns>A delegate for creating an empty mutable collection.</returns>
     MutableCollectionConstructor<TKey, TDictionary> GetMutableCollectionConstructor();
 
     /// <summary>
@@ -93,14 +93,14 @@ public interface IDictionaryTypeShape<TDictionary, TKey, TValue> : ITypeShape<TD
     Setter<TDictionary, KeyValuePair<TKey, TValue>> GetAddKeyValuePair();
 
     /// <summary>
-    /// Creates a constructor delegate for creating a collection from a span.
+    /// Creates a delegate for creating a collection from a span.
     /// </summary>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Span"/>.</exception>
     /// <returns>A delegate constructing a collection from a span of values.</returns>
     SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetSpanCollectionConstructor();
 
     /// <summary>
-    /// Creates a constructor delegate for creating a collection from an enumerable.
+    /// Creates a delegate for creating a collection from an enumerable.
     /// </summary>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Enumerable"/>.</exception>
     /// <returns>A delegate constructing a collection from an enumerable of values.</returns>

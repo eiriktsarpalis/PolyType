@@ -92,7 +92,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                 case ({ Signature: ConstructionSignature.None }, null):
                     {
                         var ctor = CreateConstructorDelegate(_factory.Value.Method);
-                        mutableCtorDelegate = (in CollectionConstructionOptions<TElement>? options) => ctor();
+                        mutableCtorDelegate = (in CollectionConstructionOptions<TElement> options) => ctor();
                     }
 
                     break;
@@ -100,7 +100,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                     {
                         var ctor = CreateConstructorDelegate(_factory.Value.Method);
                         var comparerCtor = CreateConstructorDelegate<IEqualityComparer<TElement>>(_factoryWithComparer.Value.Method);
-                        mutableCtorDelegate = (in CollectionConstructionOptions<TElement>? options) => options?.EqualityComparer is null ? ctor() : comparerCtor(options.Value.EqualityComparer);
+                        mutableCtorDelegate = (in CollectionConstructionOptions<TElement> options) => options.EqualityComparer is null ? ctor() : comparerCtor(options.EqualityComparer);
                     }
 
                     break;
@@ -108,21 +108,21 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                     {
                         var ctor = CreateConstructorDelegate(_factory.Value.Method);
                         var comparerCtor = CreateConstructorDelegate<IComparer<TElement>>(_factoryWithComparer.Value.Method);
-                        mutableCtorDelegate = (in CollectionConstructionOptions<TElement>? options) => options?.Comparer is null ? ctor() : comparerCtor(options.Value.Comparer);
+                        mutableCtorDelegate = (in CollectionConstructionOptions<TElement> options) => options.Comparer is null ? ctor() : comparerCtor(options.Comparer);
                     }
 
                     break;
                 case (null, { Signature: ConstructionSignature.EqualityComparer }):
                     {
                         var comparerCtor = CreateConstructorDelegate<IEqualityComparer<TElement>?>(_factoryWithComparer.Value.Method);
-                        mutableCtorDelegate = (in CollectionConstructionOptions<TElement>? options) => comparerCtor(options?.EqualityComparer);
+                        mutableCtorDelegate = (in CollectionConstructionOptions<TElement> options) => comparerCtor(options.EqualityComparer);
                     }
 
                     break;
                 case (null, { Signature: ConstructionSignature.Comparer }):
                     {
                         var comparerCtor = CreateConstructorDelegate<IComparer<TElement>?>(_factoryWithComparer.Value.Method);
-                        mutableCtorDelegate = (in CollectionConstructionOptions<TElement>? options) => comparerCtor(options?.Comparer);
+                        mutableCtorDelegate = (in CollectionConstructionOptions<TElement> options) => comparerCtor(options.Comparer);
                     }
 
                     break;
@@ -151,7 +151,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                 case ({ Signature: ConstructionSignature.Values }, null):
                     {
                         var ctor = CreateConstructorDelegate<IEnumerable<TElement>>(_factory.Value.Method);
-                        enumerableCtorDelegate = (IEnumerable<TElement> values, in CollectionConstructionOptions<TElement>? options) => ctor(values);
+                        enumerableCtorDelegate = (IEnumerable<TElement> values, in CollectionConstructionOptions<TElement> options) => ctor(values);
                     }
 
                     break;
@@ -159,7 +159,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                     {
                         var ctor = CreateConstructorDelegate<IEnumerable<TElement>>(_factory.Value.Method);
                         var comparerCtor = CreateConstructorDelegate<IComparer<TElement>, IEnumerable<TElement>>(_factoryWithComparer.Value.Method);
-                        enumerableCtorDelegate = (IEnumerable<TElement> values, in CollectionConstructionOptions<TElement>? options) => options?.Comparer is null ? ctor(values) : comparerCtor(options.Value.Comparer, values);
+                        enumerableCtorDelegate = (IEnumerable<TElement> values, in CollectionConstructionOptions<TElement> options) => options.Comparer is null ? ctor(values) : comparerCtor(options.Comparer, values);
                     }
 
                     break;
@@ -167,7 +167,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                     {
                         var ctor = CreateConstructorDelegate<IEnumerable<TElement>>(_factory.Value.Method);
                         var comparerCtor = CreateConstructorDelegate<IEqualityComparer<TElement>, IEnumerable<TElement>>(_factoryWithComparer.Value.Method);
-                        enumerableCtorDelegate = (IEnumerable<TElement> values, in CollectionConstructionOptions<TElement>? options) => options?.EqualityComparer is null ? ctor(values) : comparerCtor(options.Value.EqualityComparer, values);
+                        enumerableCtorDelegate = (IEnumerable<TElement> values, in CollectionConstructionOptions<TElement> options) => options.EqualityComparer is null ? ctor(values) : comparerCtor(options.EqualityComparer, values);
                     }
 
                     break;
@@ -175,7 +175,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                     {
                         var ctor = CreateConstructorDelegate<IEnumerable<TElement>>(_factory.Value.Method);
                         var comparerCtor = CreateConstructorDelegate<IEnumerable<TElement>, IComparer<TElement>>(_factoryWithComparer.Value.Method);
-                        enumerableCtorDelegate = (IEnumerable<TElement> values, in CollectionConstructionOptions<TElement>? options) => options?.Comparer is null ? ctor(values) : comparerCtor(values, options.Value.Comparer);
+                        enumerableCtorDelegate = (IEnumerable<TElement> values, in CollectionConstructionOptions<TElement> options) => options.Comparer is null ? ctor(values) : comparerCtor(values, options.Comparer);
                     }
 
                     break;
@@ -183,7 +183,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                     {
                         var ctor = CreateConstructorDelegate<IEnumerable<TElement>>(_factory.Value.Method);
                         var comparerCtor = CreateConstructorDelegate<IEnumerable<TElement>, IEqualityComparer<TElement>>(_factoryWithComparer.Value.Method);
-                        enumerableCtorDelegate = (IEnumerable<TElement> values, in CollectionConstructionOptions<TElement>? options) => options?.EqualityComparer is null ? ctor(values) : comparerCtor(values, options.Value.EqualityComparer);
+                        enumerableCtorDelegate = (IEnumerable<TElement> values, in CollectionConstructionOptions<TElement> options) => options.EqualityComparer is null ? ctor(values) : comparerCtor(values, options.EqualityComparer);
                     }
 
                     break;
@@ -191,7 +191,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                     {
                         // When only a comparer overload is available, we assume it accepts null.
                         var comparerCtor = CreateConstructorDelegate<IEnumerable<TElement>, IEqualityComparer<TElement>?>(_factoryWithComparer.Value.Method);
-                        enumerableCtorDelegate = (IEnumerable<TElement> values, in CollectionConstructionOptions<TElement>? options) => comparerCtor(values, options?.EqualityComparer);
+                        enumerableCtorDelegate = (IEnumerable<TElement> values, in CollectionConstructionOptions<TElement> options) => comparerCtor(values, options.EqualityComparer);
                     }
 
                     break;
@@ -222,7 +222,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                     case ({ Signature: ConstructionSignature.Values }, null):
                         {
                             var ctor = Provider.MemberAccessor.CreateFuncDelegate<List<TElement>, TEnumerable>((ConstructorInfo)_factory.Value.Method);
-                            spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => ctor(CollectionHelpers.CreateList(span));
+                            spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => ctor(CollectionHelpers.CreateList(span));
                         }
 
                         break;
@@ -230,7 +230,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                         {
                             var ctor = Provider.MemberAccessor.CreateFuncDelegate<List<TElement>, TEnumerable>((ConstructorInfo)_factory.Value.Method);
                             var comparerCtor = Provider.MemberAccessor.CreateFuncDelegate<IEqualityComparer<TElement>, List<TElement>, TEnumerable>((ConstructorInfo)_factoryWithComparer.Value.Method);
-                            spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => options?.EqualityComparer is null ? ctor(CollectionHelpers.CreateList(span)) : comparerCtor(options.Value.EqualityComparer, CollectionHelpers.CreateList(span));
+                            spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => options.EqualityComparer is null ? ctor(CollectionHelpers.CreateList(span)) : comparerCtor(options.EqualityComparer, CollectionHelpers.CreateList(span));
                         }
 
                         break;
@@ -238,7 +238,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                         {
                             var ctor = Provider.MemberAccessor.CreateFuncDelegate<List<TElement>, TEnumerable>((ConstructorInfo)_factory.Value.Method);
                             var comparerCtor = Provider.MemberAccessor.CreateFuncDelegate<IComparer<TElement>, List<TElement>, TEnumerable>((ConstructorInfo)_factoryWithComparer.Value.Method);
-                            spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => options?.Comparer is null ? ctor(CollectionHelpers.CreateList(span)) : comparerCtor(options.Value.Comparer, CollectionHelpers.CreateList(span));
+                            spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => options.Comparer is null ? ctor(CollectionHelpers.CreateList(span)) : comparerCtor(options.Comparer, CollectionHelpers.CreateList(span));
                         }
 
                         break;
@@ -246,7 +246,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                         {
                             var ctor = Provider.MemberAccessor.CreateFuncDelegate<List<TElement>, TEnumerable>((ConstructorInfo)_factory.Value.Method);
                             var comparerCtor = Provider.MemberAccessor.CreateFuncDelegate<List<TElement>, IEqualityComparer<TElement>, TEnumerable>((ConstructorInfo)_factoryWithComparer.Value.Method);
-                            spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => options?.EqualityComparer is null ? ctor(CollectionHelpers.CreateList(span)) : comparerCtor(CollectionHelpers.CreateList(span), options.Value.EqualityComparer);
+                            spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => options.EqualityComparer is null ? ctor(CollectionHelpers.CreateList(span)) : comparerCtor(CollectionHelpers.CreateList(span), options.EqualityComparer);
                         }
 
                         break;
@@ -254,7 +254,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                         {
                             var ctor = Provider.MemberAccessor.CreateFuncDelegate<List<TElement>, TEnumerable>((ConstructorInfo)_factory.Value.Method);
                             var comparerCtor = Provider.MemberAccessor.CreateFuncDelegate<List<TElement>, IComparer<TElement>, TEnumerable>((ConstructorInfo)_factoryWithComparer.Value.Method);
-                            spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => options?.Comparer is null ? ctor(CollectionHelpers.CreateList(span)) : comparerCtor(CollectionHelpers.CreateList(span), options.Value.Comparer);
+                            spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => options.Comparer is null ? ctor(CollectionHelpers.CreateList(span)) : comparerCtor(CollectionHelpers.CreateList(span), options.Comparer);
                         }
 
                         break;
@@ -268,7 +268,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                     case ({ Signature: ConstructionSignature.Values }, null):
                         {
                             var ctor = CreateSpanConstructorDelegate<TElement>(_factory.Value.Method);
-                            spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => ctor(span);
+                            spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => ctor(span);
                         }
 
                         break;
@@ -276,14 +276,14 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                         {
                             var ctor = CreateSpanConstructorDelegate<TElement>(_factory.Value.Method);
                             var comparerCtor = CreateSpanECConstructorDelegate<TElement, TElement>(_factoryWithComparer.Value.Method);
-                            spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => options?.EqualityComparer is null ? ctor(span) : comparerCtor(span, options.Value.EqualityComparer);
+                            spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => options.EqualityComparer is null ? ctor(span) : comparerCtor(span, options.EqualityComparer);
                         }
 
                         break;
                     case (null, { Signature: ConstructionSignature.ValuesEqualityComparer }):
                         {
                             var comparerCtor = CreateSpanECConstructorDelegate<TElement, TElement>(_factoryWithComparer.Value.Method);
-                            spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => comparerCtor(span, options?.EqualityComparer);
+                            spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => comparerCtor(span, options.EqualityComparer);
                         }
 
                         break;
@@ -291,7 +291,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                         {
                             var ctor = CreateSpanConstructorDelegate<TElement>(_factory.Value.Method);
                             var comparerCtor = CreateECSpanConstructorDelegate<TElement, TElement>(_factoryWithComparer.Value.Method);
-                            spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => options?.EqualityComparer is null ? ctor(span) : comparerCtor(options.Value.EqualityComparer, span);
+                            spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => options.EqualityComparer is null ? ctor(span) : comparerCtor(options.EqualityComparer, span);
                         }
 
                         break;
@@ -299,7 +299,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                         {
                             var ctor = CreateSpanConstructorDelegate<TElement>(_factory.Value.Method);
                             var comparerCtor = CreateCSpanConstructorDelegate<TElement, TElement>(_factoryWithComparer.Value.Method);
-                            spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => options?.Comparer is null ? ctor(span) : comparerCtor(options.Value.Comparer, span);
+                            spanCtorDelegate = (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => options.Comparer is null ? ctor(span) : comparerCtor(options.Comparer, span);
                         }
 
                         break;
@@ -634,7 +634,7 @@ internal sealed class ReflectionArrayTypeShape<TElement>(ReflectionTypeShapeProv
     public override CollectionComparerOptions SupportedComparers => CollectionComparerOptions.None;
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Span;
     public override Func<TElement[], IEnumerable<TElement>> GetGetEnumerable() => static array => array;
-    public override SpanCollectionConstructor<TElement, TElement, TElement[]> GetSpanCollectionConstructor() => static (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => span.ToArray();
+    public override SpanCollectionConstructor<TElement, TElement, TElement[]> GetSpanCollectionConstructor() => static (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => span.ToArray();
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
@@ -658,7 +658,7 @@ internal sealed class ReadOnlyMemoryTypeShape<TElement>(ReflectionTypeShapeProvi
     public override CollectionComparerOptions SupportedComparers => CollectionComparerOptions.None;
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Span;
     public override Func<ReadOnlyMemory<TElement>, IEnumerable<TElement>> GetGetEnumerable() => static memory => MemoryMarshal.ToEnumerable(memory);
-    public override SpanCollectionConstructor<TElement, TElement, ReadOnlyMemory<TElement>> GetSpanCollectionConstructor() => static (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => span.ToArray();
+    public override SpanCollectionConstructor<TElement, TElement, ReadOnlyMemory<TElement>> GetSpanCollectionConstructor() => static (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => span.ToArray();
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
@@ -669,7 +669,7 @@ internal sealed class MemoryTypeShape<TElement>(ReflectionTypeShapeProvider prov
     public override CollectionComparerOptions SupportedComparers => CollectionComparerOptions.None;
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Span;
     public override Func<Memory<TElement>, IEnumerable<TElement>> GetGetEnumerable() => static memory => MemoryMarshal.ToEnumerable((ReadOnlyMemory<TElement>)memory);
-    public override SpanCollectionConstructor<TElement, TElement, Memory<TElement>> GetSpanCollectionConstructor() => static (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement>? options) => span.ToArray();
+    public override SpanCollectionConstructor<TElement, TElement, Memory<TElement>> GetSpanCollectionConstructor() => static (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => span.ToArray();
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
