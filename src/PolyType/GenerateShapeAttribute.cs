@@ -18,7 +18,7 @@ namespace PolyType;
 /// or <see cref="GenerateShapeAttribute(Type)"/>.
 /// </para>
 /// </remarks>
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Interface, AllowMultiple = true, Inherited = false)]
 [Conditional("NEVER")] // only the source generator uses this.
 public sealed class GenerateShapeAttribute : Attribute
 {
