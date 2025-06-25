@@ -64,8 +64,8 @@ public static class CompilationTests
             public class GenericClass<T1, T2>;
             public class GenericConverter<T1, T2>;
 
-            [GenerateShape<GenericClass<int, string>>]
-            public partial class Witness;
+            [GenerateShape(typeof(GenericClass<int, string>))]
+            public partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -83,8 +83,8 @@ public static class CompilationTests
             public class GenericClass<T1, T2>;
             public class GenericConverter<T1, T2>;
 
-            [GenerateShape<GenericClass<int, string>>]
-            public partial class Witness;
+            [GenerateShape(typeof(GenericClass<int, string>))]
+            public partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -102,8 +102,8 @@ public static class CompilationTests
             public class GenericClass<T1, T2>;
             public class GenericHelper<T1, T2>;
 
-            [GenerateShape<GenericClass<int, string>>]
-            public partial class Witness;
+            [GenerateShape(typeof(GenericClass<int, string>))]
+            public partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -122,8 +122,8 @@ public static class CompilationTests
             public class GenericClass<T1, T2>;
             public class GenericHelper<T1, T2>;
 
-            [GenerateShape<GenericClass<int, string>>]
-            public partial class Witness;
+            [GenerateShape(typeof(GenericClass<int, string>))]
+            public partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -143,8 +143,8 @@ public static class CompilationTests
             public class GenericClass<T1, T2>;
             public class GenericHelper<T1, T2> { public int Prop { get; set; } }
 
-            [GenerateShape<GenericClass<int, string>>]
-            public partial class Witness;
+            [GenerateShape(typeof(GenericClass<int, string>))]
+            public partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -165,9 +165,9 @@ public static class CompilationTests
 
             public record AnotherShapeReference(GenericHelper<int, string> helper);
 
-            [GenerateShape<GenericClass<int, string>>]
-            [GenerateShape<AnotherShapeReference>]
-            public partial class Witness;
+            [GenerateShape(typeof(GenericClass<int, string>))]
+            [GenerateShape(typeof(AnotherShapeReference))]
+            public partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -188,9 +188,9 @@ public static class CompilationTests
 
             public record AnotherShapeReference(GenericHelper<int, string> helper);
 
-            [GenerateShape<AnotherShapeReference>]
-            [GenerateShape<GenericClass<int, string>>]
-            public partial class Witness;
+            [GenerateShape(typeof(AnotherShapeReference))]
+            [GenerateShape(typeof(GenericClass<int, string>))]
+            public partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -206,22 +206,24 @@ public static class CompilationTests
             using PolyType;
             using PolyType.Abstractions;
 
-            [AssociatedTypeAttribute(nameof(converterType), TypeShapeRequirements.Constructor)]
+            [AssociatedTypeAttribute("converterType", TypeShapeRequirements.Constructor)]
             [AssociatedTypeAttribute(nameof(Shapes), TypeShapeRequirements.Full)]
             [AttributeUsage(AttributeTargets.Class)]
-            public class CustomAttribute(Type converterType) : Attribute
+            public class CustomAttribute : Attribute
             {
-                public Type ConverterType => converterType;
+                public CustomAttribute(Type converterType) => ConverterType = converterType;
 
-                public Type[] Shapes { get; set; } = [];
+                public Type ConverterType { get; }
+
+                public Type[] Shapes { get; set; } = Type.EmptyTypes;
             }
 
             [Custom(typeof(GenericConverter<,>), Shapes = new Type[] { typeof(GenericHelper<,>) })]
             public class GenericClass<T1, T2> { }
             public class GenericConverter<T1, T2> { }
-            public record class GenericHelper<T1, T2>(T1 Value) { }
+            public record GenericHelper<T1, T2>(T1 Value) { }
 
-            [GenerateShape<GenericClass<int, string>>]
+            [GenerateShape(typeof(GenericClass<int, string>))]
             public partial class Witness { }
             """);
 
@@ -240,7 +242,7 @@ public static class CompilationTests
             public class GenericClass<T1, T2> { }
             public class GenericHelper<T1, T2> { }
 
-            [GenerateShape<GenericClass<int, string>>]
+            [GenerateShape(typeof(GenericClass<int, string>))]
             public partial class Witness { }
             """);
 
@@ -259,8 +261,8 @@ public static class CompilationTests
             public class GenericClass<T1, T2>;
             public class GenericConverter<T1, T2>;
 
-            [GenerateShape<GenericClass<int, string>>]
-            public partial class Witness;
+            [GenerateShape(typeof(GenericClass<int, string>))]
+            public partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -284,8 +286,8 @@ public static class CompilationTests
                         public class GenericNested<T2>;
                     }
 
-                    [GenerateShape<GenericClass<int, string>>]
-                    public partial class Witness;
+                    [GenerateShape(typeof(GenericClass<int, string>))]
+                    public partial class Witness { }
                 }
             }
             """);
@@ -337,7 +339,7 @@ public static class CompilationTests
             using PolyType;
             using System.Collections;
 
-            [GenerateShape<ICollection>]
+            [GenerateShape(typeof(ICollection))]
             public partial class MyWitness { }
             """);
 
@@ -383,8 +385,8 @@ public static class CompilationTests
 
             public record GenericClass<T>(T? Value = default);
 
-            [GenerateShape<GenericClass<int>>]
-            public partial class Witness;
+            [GenerateShape(typeof(GenericClass<int>))]
+            public partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -399,8 +401,8 @@ public static class CompilationTests
 
             public record GenericClass<T>(T? Value = default) where T : struct;
 
-            [GenerateShape<GenericClass<int>>]
-            public partial class Witness;
+            [GenerateShape(typeof(GenericClass<int>))]
+            public partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -455,7 +457,7 @@ public static class CompilationTests
                     where TProvider : IShapeable<T> { }
             }
 
-            [GenerateShape<Dictionary<int, string>>]
+            [GenerateShape(typeof(Dictionary<int, string>))]
             public partial class MyProvider { }
             """);
 
@@ -499,8 +501,8 @@ public static class CompilationTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [GenerateShape<System.Dynamic.ExpandoObject>]
-            partial class Witness;
+            [GenerateShape(typeof(System.Dynamic.ExpandoObject))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -543,10 +545,10 @@ public static class CompilationTests
             }
             #endif
 
-            [GenerateShape<int>]
+            [GenerateShape(typeof(int))]
             public partial class MyWitness;
 
-            [GenerateShape<string>]
+            [GenerateShape(typeof(string))]
             public partial class MyWitness;
             """);
 
@@ -563,7 +565,7 @@ public static class CompilationTests
 
            enum MyEnum { A, B, C }
 
-           [GenerateShape<MyEnum>]
+           [GenerateShape(typeof(MyEnum))]
            partial class Witness { }
            """);
 
@@ -583,7 +585,7 @@ public static class CompilationTests
            public class MyPoco<T> { }
 
            /// <summary>My Witness.</summary>
-           [GenerateShape<MyPoco<int>>]
+           [GenerateShape(typeof(MyPoco<int>))]
            public partial class Witness { }
            """,
            parseOptions: parseOptions);
@@ -646,7 +648,7 @@ public static class CompilationTests
             {
                 public partial class Outer2
                 {
-                    [GenerateShape<MyPoco>]
+                    [GenerateShape(typeof(MyPoco))]
                     private partial class Witness { }
 
                     internal record MyPoco(int Value);
@@ -679,7 +681,7 @@ public static class CompilationTests
 
             record MyPoco(string[] Values);
 
-            [GenerateShape<MyPoco>]
+            [GenerateShape(typeof(MyPoco))]
             {kind} Witness;
             """, outputKind: OutputKind.ConsoleApplication);
 
@@ -694,7 +696,7 @@ public static class CompilationTests
             using PolyType;
 
             [GenerateShape]
-            public partial class MyPoco;
+            public partial class MyPoco { }
 
             namespace Foo.Bar
             {
@@ -727,12 +729,12 @@ public static class CompilationTests
 
             class Container<T>
             {
-                public partial class MyPoco;
+                public partial class MyPoco { }
             }
 
-            [GenerateShape<Container<int>.MyPoco>]
-            [GenerateShape<Container<string>.MyPoco>]
-            partial class Witness;
+            [GenerateShape(typeof(Container<int>.MyPoco))]
+            [GenerateShape(typeof(Container<string>.MyPoco))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -780,9 +782,9 @@ public static class CompilationTests
            using PolyType;
            using System;
 
-           [GenerateShape<(int, int, int, int, int, int, int, int, int, int)>]
-           [GenerateShape<System.Tuple<int, int, int, int, int, int, int, Tuple<int, int, int>>>]
-           partial class Witness;
+           [GenerateShape(typeof((int, int, int, int, int, int, int, int, int, int)))]
+           [GenerateShape(typeof(System.Tuple<int, int, int, int, int, int, int, Tuple<int, int, int>>))]
+           partial class Witness { }
            """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -796,9 +798,9 @@ public static class CompilationTests
            using PolyType;
            using System;
 
-           [GenerateShape<int?>]
-           [GenerateShape<Guid?>]
-           partial class Witness;
+           [GenerateShape(typeof(int?))]
+           [GenerateShape(typeof(Guid?))]
+           partial class Witness { }
            """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -825,11 +827,11 @@ public static class CompilationTests
             return; // Ambiguity between types in System.Memory and mscorlib.
         }
 
-        Compilation compilation = CompilationHelpers.CreateCompilation($"""
+        Compilation compilation = CompilationHelpers.CreateCompilation($$"""
            using PolyType;
 
-           [GenerateShape<{type}>]
-           partial class Witness;
+           [GenerateShape(typeof({{type}}))]
+           partial class Witness { }
            """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -846,17 +848,17 @@ public static class CompilationTests
            using System.Collections.Immutable;
            using System.Linq;
 
-           [GenerateShape<Dictionary<string, int>>]
-           [GenerateShape<ImmutableDictionary<string, int>>]
-           [GenerateShape<ImmutableSortedDictionary<string, int>>]
-           [GenerateShape<IReadOnlyDictionary<string, int>>]
-           [GenerateShape<IDictionary>]
-           [GenerateShape<Hashtable>]
-           [GenerateShape<CustomDictionary1>]
-           partial class Witness;
+           [GenerateShape(typeof(Dictionary<string, int>))]
+           [GenerateShape(typeof(ImmutableDictionary<string, int>))]
+           [GenerateShape(typeof(ImmutableSortedDictionary<string, int>))]
+           [GenerateShape(typeof(IReadOnlyDictionary<string, int>))]
+           [GenerateShape(typeof(IDictionary))]
+           [GenerateShape(typeof(Hashtable))]
+           [GenerateShape(typeof(CustomDictionary1))]
+           partial class Witness { }
 
-           class CustomDictionary1(IEnumerable<KeyValuePair<string, int>> inner) : Dictionary<string, int>(inner.ToDictionary(kv => kv.Key, kv => kv.Value));
-           class CustomDictionary2(Dictionary<string, int> inner) : Dictionary<string, int>(inner);
+           class CustomDictionary1(IEnumerable<KeyValuePair<string, int>> inner) : Dictionary<string, int>(inner.ToDictionary(kv => kv.Key, kv => kv.Value)) { }
+           class CustomDictionary2(Dictionary<string, int> inner) : Dictionary<string, int>(inner) { }
            """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -1031,8 +1033,8 @@ public static class CompilationTests
                 public record Node(T Value, GenericTree<T> Left, GenericTree<T> Right) : GenericTree<T>;
             }
 
-            [GenerateShape<GenericTree<string>>]
-            partial class Witness;
+            [GenerateShape(typeof(GenericTree<string>))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -1046,11 +1048,11 @@ public static class CompilationTests
             using Microsoft.FSharp.Core;
             using PolyType;
 
-            [GenerateShape<FSharpOption<int>>]
-            [GenerateShape<FSharpValueOption<int>>]
-            [GenerateShape<FSharpResult<string, int>>]
-            [GenerateShape<FSharpChoice<int, string, bool>>]
-            partial class Witness;
+            [GenerateShape(typeof(FSharpOption<int>))]
+            [GenerateShape(typeof(FSharpValueOption<int>))]
+            [GenerateShape(typeof(FSharpResult<string, int>))]
+            [GenerateShape(typeof(FSharpChoice<int, string, bool>))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -1064,8 +1066,8 @@ public static class CompilationTests
             using System.Collections.Generic;
             using PolyType;
 
-            [GenerateShape<HashSet<string>>]
-            partial class Witness;
+            [GenerateShape(typeof(HashSet<string>))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -1079,8 +1081,8 @@ public static class CompilationTests
             using System.Collections.Generic;
             using PolyType;
 
-            [GenerateShape<Dictionary<string, int>>]
-            partial class Witness;
+            [GenerateShape(typeof(Dictionary<string, int>))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -1094,8 +1096,8 @@ public static class CompilationTests
             using System.Collections.Immutable;
             using PolyType;
 
-            [GenerateShape<ImmutableDictionary<string, int>>]
-            partial class Witness;
+            [GenerateShape(typeof(ImmutableDictionary<string, int>))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -1109,8 +1111,8 @@ public static class CompilationTests
             using System.Collections.Generic;
             using PolyType;
 
-            [GenerateShape<SortedDictionary<string, int>>]
-            partial class Witness;
+            [GenerateShape(typeof(SortedDictionary<string, int>))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -1124,8 +1126,8 @@ public static class CompilationTests
             using System.Collections.Generic;
             using PolyType;
 
-            [GenerateShape<SortedSet<int>>]
-            partial class Witness;
+            [GenerateShape(typeof(SortedSet<int>))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -1139,8 +1141,8 @@ public static class CompilationTests
             using System.Collections.ObjectModel;
             using PolyType;
 
-            [GenerateShape<ReadOnlyDictionary<int, int>>]
-            partial class Witness;
+            [GenerateShape(typeof(ReadOnlyDictionary<int, int>))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -1204,8 +1206,8 @@ public static class CompilationTests
             using System;
             using PolyType;
 
-            [GenerateShape<Memory<int>>]
-            partial class Witness;
+            [GenerateShape(typeof(Memory<int>))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -1219,8 +1221,8 @@ public static class CompilationTests
             using System.Collections.Immutable;
             using PolyType;
 
-            [GenerateShape<ImmutableQueue<int>>]
-            partial class Witness;
+            [GenerateShape(typeof(ImmutableQueue<int>))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -1243,8 +1245,8 @@ public static class CompilationTests
                 IEnumerator IEnumerable.GetEnumerator() => _values.GetEnumerator();
             }
 
-            [GenerateShape<CollectionWithNullableElement<int>>]
-            partial class Witness;
+            [GenerateShape(typeof(CollectionWithNullableElement<int>))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -1343,8 +1345,8 @@ public static class CompilationTests
                 E,
             }
 
-            [GenerateShape<MyEnum>]
-            internal partial class Witness;
+            [GenerateShape(typeof(MyEnum))]
+            internal partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
