@@ -10,6 +10,7 @@ public sealed record EnumerableShapeModel : TypeShapeModel
     public required int Rank { get; init; }
     public required CollectionConstructionStrategy ConstructionStrategy { get; init; }
     public required ConstructionWithComparer ConstructionComparer { get; init; }
+    public required bool HasConstructorWithoutComparer { get; init; }
     public required string? AddElementMethod { get; init; }
     public required string? ImplementationTypeFQN { get; init; }
     public required string? StaticFactoryMethod { get; init; }

@@ -1,11 +1,16 @@
 ﻿namespace PolyType.ReflectionProvider;
 
-internal enum ConstructionWithComparer
+internal enum ConstructionSignature
 {
     /// <summary>
     /// No construction accepts any kind of comparer.
     /// </summary>
     None,
+
+    /// <summary>
+    /// The construction expects just values. No comparer.
+    /// </summary>
+    Values,
 
     /// <summary>
     /// The construction expects just the <see cref="IComparer{T}"/>.

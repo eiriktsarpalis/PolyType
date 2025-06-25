@@ -36,7 +36,7 @@ public interface IDictionaryTypeShape : ITypeShape
     /// <summary>
     /// Gets the kind of custom comparer (if any) that this collection may be initialized with.
     /// </summary>
-    CollectionComparerOptions ComparerOptions { get; }
+    CollectionComparerOptions SupportedComparers { get; }
 }
 
 /// <summary>
@@ -79,12 +79,11 @@ public interface IDictionaryTypeShape<TDictionary, TKey, TValue> : ITypeShape<TD
     Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> GetGetDictionary();
 
     /// <summary>
-    /// Creates a delegate wrapping a parameterless constructor of a mutable collection.
+    /// Creates a delegate for creating an empty, mutable collection.
     /// </summary>
-    /// <param name="collectionConstructionOptions">Options that control how the collection is constructed. Use <see cref="IDictionaryTypeShape.ComparerOptions" /> to predict which properties may be worth initializing.</param>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Mutable"/>.</exception>
-    /// <returns>A delegate wrapping a default constructor.</returns>
-    Func<TDictionary> GetDefaultConstructor(CollectionConstructionOptions<TKey>? collectionConstructionOptions = null);
+    /// <returns>A delegate for creating an empty mutable collection.</returns>
+    MutableCollectionConstructor<TKey, TDictionary> GetMutableCollectionConstructor();
 
     /// <summary>
     /// Creates a setter delegate used for appending a <see cref="KeyValuePair{TKey, TValue}"/> to a mutable dictionary.
@@ -94,18 +93,16 @@ public interface IDictionaryTypeShape<TDictionary, TKey, TValue> : ITypeShape<TD
     Setter<TDictionary, KeyValuePair<TKey, TValue>> GetAddKeyValuePair();
 
     /// <summary>
-    /// Creates a constructor delegate for creating a collection from a span.
+    /// Creates a delegate for creating a collection from a span.
     /// </summary>
-    /// <param name="collectionConstructionOptions">Options that control how the collection is constructed. Use <see cref="IDictionaryTypeShape.ComparerOptions" /> to predict which properties may be worth initializing.</param>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Span"/>.</exception>
     /// <returns>A delegate constructing a collection from a span of values.</returns>
-    SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> GetSpanConstructor(CollectionConstructionOptions<TKey>? collectionConstructionOptions = null);
+    SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetSpanCollectionConstructor();
 
     /// <summary>
-    /// Creates a constructor delegate for creating a collection from an enumerable.
+    /// Creates a delegate for creating a collection from an enumerable.
     /// </summary>
-    /// <param name="collectionConstructionOptions">Optional options that control how the collection is constructed. Use <see cref="IDictionaryTypeShape.ComparerOptions" /> to predict which properties may be worth initializing.</param>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Enumerable"/>.</exception>
     /// <returns>A delegate constructing a collection from an enumerable of values.</returns>
-    Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> GetEnumerableConstructor(CollectionConstructionOptions<TKey>? collectionConstructionOptions = null);
+    EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetEnumerableCollectionConstructor();
 }

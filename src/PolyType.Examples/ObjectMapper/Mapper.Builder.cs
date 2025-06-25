@@ -249,7 +249,7 @@ public static partial class Mapper
                 switch (enumerableShape.ConstructionStrategy)
                 {
                     case CollectionConstructionStrategy.Mutable:
-                        var defaultCtor = enumerableShape.GetDefaultConstructor();
+                        var defaultCtor = enumerableShape.GetMutableCollectionConstructor();
                         var addElement = enumerableShape.GetAddElement();
                         return new Mapper<TSourceEnumerable, TTargetEnumerable>(source =>
                         {
@@ -268,7 +268,7 @@ public static partial class Mapper
                         });
 
                     case CollectionConstructionStrategy.Enumerable:
-                        var createEnumerable = enumerableShape.GetEnumerableConstructor();
+                        var createEnumerable = enumerableShape.GetEnumerableCollectionConstructor();
                         return new Mapper<TSourceEnumerable, TTargetEnumerable>(source =>
                         {
                             if (source is null)
@@ -280,7 +280,7 @@ public static partial class Mapper
                         });
 
                     case CollectionConstructionStrategy.Span:
-                        var createSpan = enumerableShape.GetSpanConstructor();
+                        var createSpan = enumerableShape.GetSpanCollectionConstructor();
                         return new Mapper<TSourceEnumerable, TTargetEnumerable>(source =>
                         {
                             if (source is null)
@@ -311,7 +311,7 @@ public static partial class Mapper
                 switch (targetDictionary.ConstructionStrategy)
                 {
                     case CollectionConstructionStrategy.Mutable:
-                        var defaultCtor = targetDictionary.GetDefaultConstructor();
+                        var defaultCtor = targetDictionary.GetMutableCollectionConstructor();
                         var addEntry = targetDictionary.GetAddKeyValuePair();
                         return new Mapper<TSourceDictionary, TTargetDictionary>(source =>
                         {
@@ -331,7 +331,7 @@ public static partial class Mapper
                         });
 
                     case CollectionConstructionStrategy.Enumerable:
-                        var createEnumerable = targetDictionary.GetEnumerableConstructor();
+                        var createEnumerable = targetDictionary.GetEnumerableCollectionConstructor();
                         return new Mapper<TSourceDictionary, TTargetDictionary>(source =>
                         {
                             if (source is null)
@@ -343,7 +343,7 @@ public static partial class Mapper
                         });
 
                     case CollectionConstructionStrategy.Span:
-                        var createFromSpan = targetDictionary.GetSpanConstructor();
+                        var createFromSpan = targetDictionary.GetSpanCollectionConstructor();
                         return new Mapper<TSourceDictionary, TTargetDictionary>(source =>
                         {
                             if (source is null)

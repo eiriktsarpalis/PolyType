@@ -47,7 +47,10 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         JsonConverter<T> converter = GetConverterUnderTest(testCase);
 
         string json = converter.Serialize(testCase.Value);
-        Assert.Equal(await ToJsonBaseline(testCase.Value), json);
+        string expected = await ToJsonBaseline(testCase.Value);
+        TestContext.Current.TestOutputHelper?.WriteLine($"Expected: {expected}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Actual:   {json}");
+        Assert.Equal(expected, json);
 
         if (!providerUnderTest.HasConstructor(testCase) && testCase.Value is not null)
         {
@@ -91,7 +94,10 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         PocoWithGenericProperty<T> poco = new() { Value = testCase.Value };
 
         string json = converter.Serialize(poco);
-        Assert.Equal(await ToJsonBaseline(poco), json);
+        string expected = await ToJsonBaseline(poco);
+        TestContext.Current.TestOutputHelper?.WriteLine($"Expected: {expected}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Actual:   {json}");
+        Assert.Equal(expected, json);
 
         if (testCase.Value is not null && !providerUnderTest.HasConstructor(testCase))
         {
@@ -136,7 +142,10 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         var list = new List<T?> { testCase.Value, testCase.Value, testCase.Value };
 
         string json = converter.Serialize(list);
-        Assert.Equal(await ToJsonBaseline(list), json);
+        string expected = await ToJsonBaseline(list);
+        TestContext.Current.TestOutputHelper?.WriteLine($"Expected: {expected}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Actual:   {json}");
+        Assert.Equal(expected, json);
 
         if (testCase.Value is not null && !providerUnderTest.HasConstructor(testCase))
         {
@@ -181,7 +190,10 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         var dict = new Dictionary<string, T?> { ["key1"] = testCase.Value, ["key2"] = testCase.Value, ["key3"] = testCase.Value };
 
         string json = converter.Serialize(dict);
-        Assert.Equal(await ToJsonBaseline(dict), json);
+        string expected = await ToJsonBaseline(dict);
+        TestContext.Current.TestOutputHelper?.WriteLine($"Expected: {expected}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Actual:   {json}");
+        Assert.Equal(expected, json);
 
         if (testCase.Value is not null && !providerUnderTest.HasConstructor(testCase))
         {

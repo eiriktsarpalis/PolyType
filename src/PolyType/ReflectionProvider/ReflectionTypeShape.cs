@@ -31,24 +31,24 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
         return provider.GetShape(closedType);
     }
 
-    protected static ConstructionWithComparer IsAcceptableConstructorPair(CollectionConstructorParameterType first, CollectionConstructorParameterType second, CollectionConstructorParameterType collectionType)
+    protected static ConstructionSignature IsAcceptableConstructorPair(CollectionConstructorParameterType first, CollectionConstructorParameterType second, CollectionConstructorParameterType collectionType)
     {
         return (first, second) switch
         {
-            (CollectionConstructorParameterType.IComparerOfT, CollectionConstructorParameterType.CollectionOfT) => ConstructionWithComparer.ComparerValues,
-            (CollectionConstructorParameterType.CollectionOfT, CollectionConstructorParameterType.IComparerOfT) => ConstructionWithComparer.ValuesComparer,
-            (CollectionConstructorParameterType.IEqualityComparerOfT, CollectionConstructorParameterType.CollectionOfT) => ConstructionWithComparer.EqualityComparerValues,
-            (CollectionConstructorParameterType.CollectionOfT, CollectionConstructorParameterType.IEqualityComparerOfT) => ConstructionWithComparer.ValuesEqualityComparer,
-            _ => ConstructionWithComparer.None,
+            (CollectionConstructorParameterType.IComparerOfT, CollectionConstructorParameterType.CollectionOfT) => ConstructionSignature.ComparerValues,
+            (CollectionConstructorParameterType.CollectionOfT, CollectionConstructorParameterType.IComparerOfT) => ConstructionSignature.ValuesComparer,
+            (CollectionConstructorParameterType.IEqualityComparerOfT, CollectionConstructorParameterType.CollectionOfT) => ConstructionSignature.EqualityComparerValues,
+            (CollectionConstructorParameterType.CollectionOfT, CollectionConstructorParameterType.IEqualityComparerOfT) => ConstructionSignature.ValuesEqualityComparer,
+            _ => ConstructionSignature.None,
         };
     }
 
-    protected static CollectionComparerOptions ToComparerConstruction(ConstructionWithComparer signature)
+    protected static CollectionComparerOptions ToComparerConstruction(ConstructionSignature signature)
         => signature switch
         {
-            ConstructionWithComparer.Comparer or ConstructionWithComparer.ComparerValues or ConstructionWithComparer.ValuesComparer => CollectionComparerOptions.Comparer,
-            ConstructionWithComparer.EqualityComparer or ConstructionWithComparer.EqualityComparerValues or ConstructionWithComparer.ValuesEqualityComparer => CollectionComparerOptions.EqualityComparer,
-            ConstructionWithComparer.None => CollectionComparerOptions.None,
+            ConstructionSignature.Comparer or ConstructionSignature.ComparerValues or ConstructionSignature.ValuesComparer => CollectionComparerOptions.Comparer,
+            ConstructionSignature.EqualityComparer or ConstructionSignature.EqualityComparerValues or ConstructionSignature.ValuesEqualityComparer => CollectionComparerOptions.EqualityComparer,
+            ConstructionSignature.None => CollectionComparerOptions.None,
             _ => throw new NotImplementedException(),
         };
 
@@ -60,43 +60,91 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
             _ => null,
         };
 
-    protected static Func<object, SpanConstructor<TElement, TResult>> CreateSpanMethodDelegate<TElement, TCompare, TResult>(MethodInfo methodInfo, ConstructionWithComparer signatureStyle)
+    protected Func<T> CreateConstructorDelegate(MethodBase methodBase)
     {
-        switch (signatureStyle)
+        return methodBase switch
         {
-            case ConstructionWithComparer.ValuesEqualityComparer:
-                var ctor = methodInfo.CreateDelegate<SpanECConstructor<TElement, TCompare, TResult>>();
-                return comparer => values => ctor(values, (IEqualityComparer<TCompare>)comparer);
-            case ConstructionWithComparer.EqualityComparerValues:
-                var ctor2 = methodInfo.CreateDelegate<ECSpanConstructor<TElement, TCompare, TResult>>();
-                return comparer => values => ctor2((IEqualityComparer<TCompare>)comparer, values);
-            case ConstructionWithComparer.ValuesComparer:
-                var ctor3 = methodInfo.CreateDelegate<SpanCConstructor<TElement, TCompare, TResult>>();
-                return comparer => values => ctor3(values, (IComparer<TCompare>)comparer);
-            case ConstructionWithComparer.ComparerValues:
-                var ctor4 = methodInfo.CreateDelegate<CSpanConstructor<TElement, TCompare, TResult>>();
-                return comparer => values => ctor4((IComparer<TCompare>)comparer, values);
-            default:
-                throw new NotSupportedException();
-        }
+            MethodInfo methodInfo => methodInfo.CreateDelegate<Func<T>>(),
+            ConstructorInfo ctorInfo => provider.MemberAccessor.CreateDefaultConstructor<T>(new MethodConstructorShapeInfo(typeof(T), methodBase, [])),
+            _ => throw new NotSupportedException($"Method base of type {methodBase.GetType()} is not supported for creating a delegate."),
+        };
     }
 
-    protected (ConstructionWithComparer, ConstructorInfo?) FindComparerConstructorOverload(ConstructorInfo? nonComparerOverload)
+    protected SpanOnlyConstructor<TElement, T> CreateSpanConstructorDelegate<TElement>(MethodBase methodBase)
     {
-        var (comparer, overload) = FindComparerConstructionOverload(nonComparerOverload);
-        return (comparer, (ConstructorInfo?)overload);
+        return methodBase switch
+        {
+            MethodInfo methodInfo => methodInfo.CreateDelegate<SpanOnlyConstructor<TElement, T>>(),
+            ConstructorInfo ctorInfo => provider.MemberAccessor.CreateFuncDelegate<SpanOnlyConstructor<TElement, T>>(ctorInfo),
+            _ => throw new NotSupportedException($"Method base of type {methodBase.GetType()} is not supported for creating a delegate."),
+        };
     }
 
-    protected ConstructionWithComparer IsAcceptableConstructorPair(ParameterInfo first, ParameterInfo second, CollectionConstructorParameterType collectionType)
+    protected SpanECConstructor<TKey, TElement, T> CreateSpanECConstructorDelegate<TKey, TElement>(MethodBase methodBase)
+    {
+        return methodBase switch
+        {
+            MethodInfo methodInfo => methodInfo.CreateDelegate<SpanECConstructor<TKey, TElement, T>>(),
+            ConstructorInfo ctorInfo => provider.MemberAccessor.CreateFuncDelegate<SpanECConstructor<TKey, TElement, T>>(ctorInfo),
+            _ => throw new NotSupportedException($"Method base of type {methodBase.GetType()} is not supported for creating a delegate."),
+        };
+    }
+
+    protected SpanCConstructor<TKey, TElement, T> CreateSpanCConstructorDelegate<TKey, TElement>(MethodBase methodBase)
+    {
+        return methodBase switch
+        {
+            MethodInfo methodInfo => methodInfo.CreateDelegate<SpanCConstructor<TKey, TElement, T>>(),
+            ConstructorInfo ctorInfo => provider.MemberAccessor.CreateFuncDelegate<SpanCConstructor<TKey, TElement, T>>(ctorInfo),
+            _ => throw new NotSupportedException($"Method base of type {methodBase.GetType()} is not supported for creating a delegate."),
+        };
+    }
+
+    protected ECSpanConstructor<TKey, TElement, T> CreateECSpanConstructorDelegate<TKey, TElement>(MethodBase methodBase)
+    {
+        return methodBase switch
+        {
+            MethodInfo methodInfo => methodInfo.CreateDelegate<ECSpanConstructor<TKey, TElement, T>>(),
+            ConstructorInfo ctorInfo => provider.MemberAccessor.CreateFuncDelegate<ECSpanConstructor<TKey, TElement, T>>(ctorInfo),
+            _ => throw new NotSupportedException($"Method base of type {methodBase.GetType()} is not supported for creating a delegate."),
+        };
+    }
+
+    protected CSpanConstructor<TKey, TElement, T> CreateCSpanConstructorDelegate<TKey, TElement>(MethodBase methodBase)
+    {
+        return methodBase switch
+        {
+            MethodInfo methodInfo => methodInfo.CreateDelegate<CSpanConstructor<TKey, TElement, T>>(),
+            ConstructorInfo ctorInfo => provider.MemberAccessor.CreateFuncDelegate<CSpanConstructor<TKey, TElement, T>>(ctorInfo),
+            _ => throw new NotSupportedException($"Method base of type {methodBase.GetType()} is not supported for creating a delegate."),
+        };
+    }
+
+    protected Func<TArg, T> CreateConstructorDelegate<TArg>(MethodBase methodBase)
+    {
+        return methodBase switch
+        {
+            MethodInfo methodInfo => methodInfo.CreateDelegate<Func<TArg, T>>(),
+            ConstructorInfo ctorInfo => provider.MemberAccessor.CreateFuncDelegate<TArg, T>(ctorInfo),
+            _ => throw new NotSupportedException($"Method base of type {methodBase.GetType()} is not supported for creating a delegate."),
+        };
+    }
+
+    protected Func<TArg1, TArg2, T> CreateConstructorDelegate<TArg1, TArg2>(MethodBase methodBase)
+    {
+        return methodBase switch
+        {
+            MethodInfo methodInfo => methodInfo.CreateDelegate<Func<TArg1, TArg2, T>>(),
+            ConstructorInfo ctorInfo => provider.MemberAccessor.CreateFuncDelegate<TArg1, TArg2, T>(ctorInfo),
+            _ => throw new NotSupportedException($"Method base of type {methodBase.GetType()} is not supported for creating a delegate."),
+        };
+    }
+
+    protected ConstructionSignature IsAcceptableConstructorPair(ParameterInfo first, ParameterInfo second, CollectionConstructorParameterType collectionType)
         => IsAcceptableConstructorPair(ClassifyConstructorParameter(first), ClassifyConstructorParameter(second), collectionType);
 
-    protected (ConstructionWithComparer, MethodBase?) FindComparerConstructionOverload(MethodBase? nonComparerOverload)
+    protected (MethodBase, ConstructionSignature)? FindComparerConstructionOverload(MethodBase nonComparerOverload, ConstructionSignature nonComparerSignature)
     {
-        if (nonComparerOverload is null)
-        {
-            return default;
-        }
-
         switch (nonComparerOverload.GetParameters())
         {
             case []:
@@ -110,9 +158,9 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
                     switch (ToComparerConstruction(onlyParameter))
                     {
                         case CollectionComparerOptions.Comparer:
-                            return (ConstructionWithComparer.Comparer, overload);
+                            return (overload, ConstructionSignature.Comparer);
                         case CollectionComparerOptions.EqualityComparer:
-                            return (ConstructionWithComparer.EqualityComparer, overload);
+                            return (overload, ConstructionSignature.EqualityComparer);
                     }
                 }
 
@@ -125,17 +173,17 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
                         continue;
                     }
 
-                    ConstructionWithComparer comparerType = IsAcceptableConstructorPair(first, second, CollectionConstructorParameterType.CollectionOfT);
-                    if (comparerType != ConstructionWithComparer.None)
+                    ConstructionSignature comparerType = IsAcceptableConstructorPair(first, second, CollectionConstructorParameterType.CollectionOfT);
+                    if (comparerType != ConstructionSignature.None)
                     {
-                        return (comparerType, overload);
+                        return (overload, comparerType);
                     }
                 }
 
                 break;
         }
 
-        return (ConstructionWithComparer.None, null);
+        return null;
 
         IEnumerable<MethodBase> EnumerateOverloads()
         {
