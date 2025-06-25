@@ -367,22 +367,29 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         return null!;
     }
 
+    public TDelegate CreateFuncDelegate<TDelegate>(ConstructorInfo ctorInfo) where TDelegate : Delegate
+    {
+        Debug.Fail("Should not be called if not using Reflection.Emit");
+        throw new NotSupportedException();
+    }
+
     public Func<T, TResult> CreateFuncDelegate<T, TResult>(ConstructorInfo ctorInfo)
         => value => (TResult)ctorInfo.Invoke([value]);
 
     public Func<T1, T2, TResult> CreateFuncDelegate<T1, T2, TResult>(ConstructorInfo ctorInfo)
         => (arg1, arg2) => (TResult)ctorInfo.Invoke([arg1, arg2]);
 
-    public SpanConstructor<T, TResult> CreateSpanConstructorDelegate<T, TResult>(ConstructorInfo ctorInfo)
+    public SpanCollectionConstructor<TKey, TElement, TResult> CreateSpanConstructorDelegate<TKey, TElement, TResult>(ConstructorInfo ctorInfo)
     {
         Debug.Fail("Should not be called if not using Reflection.Emit");
         throw new NotSupportedException();
     }
 
-    public Func<object, SpanConstructor<TElement, TResult>> CreateSpanConstructorDelegate<TElement, TCompare, TResult>(ConstructorInfo ctorInfo, ConstructionWithComparer signatureStyle)
+    [DoesNotReturn]
+    private static T NotReachable<T>()
     {
-        Debug.Fail("Should not be called if not using Reflection.Emit");
-        throw new NotSupportedException();
+        Debug.Fail("This code should not be reachable.");
+        throw new InvalidOperationException("This code should not be reachable.");
     }
 
     public Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeInfo[] derivedTypeInfos)

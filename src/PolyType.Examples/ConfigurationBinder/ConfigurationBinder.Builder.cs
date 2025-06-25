@@ -120,7 +120,7 @@ public static partial class ConfigurationBinderTS
             switch (enumerableShape.ConstructionStrategy)
             {
                 case CollectionConstructionStrategy.Mutable:
-                    Func<TEnumerable> defaultCtor = enumerableShape.GetDefaultConstructor();
+                    MutableCollectionConstructor<TElement, TEnumerable> defaultCtor = enumerableShape.GetMutableCollectionConstructor();
                     Setter<TEnumerable, TElement> addElement = enumerableShape.GetAddElement();
                     return new Func<IConfiguration, TEnumerable?>(configuration =>
                     {
@@ -140,7 +140,7 @@ public static partial class ConfigurationBinderTS
                     });
                 
                 case CollectionConstructionStrategy.Span:
-                    SpanConstructor<TElement, TEnumerable> spanCtor = enumerableShape.GetSpanConstructor();
+                    SpanCollectionConstructor<TElement, TElement, TEnumerable> spanCtor = enumerableShape.GetSpanCollectionConstructor();
                     return new Func<IConfiguration, TEnumerable?>(configuration =>
                     {
                         if (IsNullConfiguration(configuration))
@@ -159,7 +159,7 @@ public static partial class ConfigurationBinderTS
                     });
                 
                 case CollectionConstructionStrategy.Enumerable:
-                    Func<IEnumerable<TElement>, TEnumerable> enumerableCtor = enumerableShape.GetEnumerableConstructor();
+                    EnumerableCollectionConstructor<TElement, TElement, TEnumerable> enumerableCtor = enumerableShape.GetEnumerableCollectionConstructor();
                     return new Func<IConfiguration, TEnumerable?>(configuration =>
                     {
                         if (IsNullConfiguration(configuration))
@@ -195,7 +195,7 @@ public static partial class ConfigurationBinderTS
             switch (dictionaryShape.ConstructionStrategy)
             {
                 case CollectionConstructionStrategy.Mutable:
-                    Func<TDictionary> defaultCtor = dictionaryShape.GetDefaultConstructor();
+                    MutableCollectionConstructor<TKey, TDictionary> defaultCtor = dictionaryShape.GetMutableCollectionConstructor();
                     Setter<TDictionary, KeyValuePair<TKey, TValue>> addEntry = dictionaryShape.GetAddKeyValuePair();
                     return new Func<IConfiguration, TDictionary?>(configuration =>
                     {
@@ -220,7 +220,7 @@ public static partial class ConfigurationBinderTS
                     });
                 
                 case CollectionConstructionStrategy.Span:
-                    SpanConstructor<KeyValuePair<TKey, TValue>, TDictionary> spanCtor = dictionaryShape.GetSpanConstructor();
+                    SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> spanCtor = dictionaryShape.GetSpanCollectionConstructor();
                     return new Func<IConfiguration, TDictionary?>(configuration =>
                     {
                         if (IsNullConfiguration(configuration))
@@ -244,7 +244,7 @@ public static partial class ConfigurationBinderTS
                     });
                 
                 case CollectionConstructionStrategy.Enumerable:
-                    Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary> enumerableCtor = dictionaryShape.GetEnumerableConstructor();
+                    EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> enumerableCtor = dictionaryShape.GetEnumerableCollectionConstructor();
                     return new Func<IConfiguration, TDictionary?>(configuration =>
                     {
                         if (IsNullConfiguration(configuration))

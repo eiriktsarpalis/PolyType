@@ -83,18 +83,18 @@ public static partial class XmlSerializer
                     new XmlMutableEnumerableConverter<TEnumerable, TElement>(
                         elementConverter,
                         getEnumerable,
-                        enumerableShape.GetDefaultConstructor(),
+                        enumerableShape.GetMutableCollectionConstructor(),
                         enumerableShape.GetAddElement()),
                 CollectionConstructionStrategy.Enumerable => 
                     new XmlEnumerableConstructorEnumerableConverter<TEnumerable, TElement>(
                         elementConverter,
                         getEnumerable,
-                        enumerableShape.GetEnumerableConstructor()),
+                        enumerableShape.GetEnumerableCollectionConstructor()),
                 CollectionConstructionStrategy.Span => 
                     new XmlSpanConstructorEnumerableConverter<TEnumerable, TElement>(
                         elementConverter,
                         getEnumerable,
-                        enumerableShape.GetSpanConstructor()),
+                        enumerableShape.GetSpanCollectionConstructor()),
                 _ => new XmlEnumerableConverter<TEnumerable, TElement>(elementConverter, getEnumerable),
             };
         }
@@ -112,7 +112,7 @@ public static partial class XmlSerializer
                         keyConverter,
                         valueConverter,
                         getEnumerable,
-                        dictionaryShape.GetDefaultConstructor(),
+                        dictionaryShape.GetMutableCollectionConstructor(),
                         dictionaryShape.GetAddKeyValuePair()),
 
                 CollectionConstructionStrategy.Enumerable => 
@@ -120,14 +120,14 @@ public static partial class XmlSerializer
                         keyConverter,
                         valueConverter,
                         getEnumerable,
-                        dictionaryShape.GetEnumerableConstructor()),
+                        dictionaryShape.GetEnumerableCollectionConstructor()),
 
                 CollectionConstructionStrategy.Span => 
                     new XmlSpanConstructorDictionaryConverter<TDictionary, TKey, TValue>(
                         keyConverter,
                         valueConverter,
                         getEnumerable,
-                        dictionaryShape.GetSpanConstructor()),
+                        dictionaryShape.GetSpanCollectionConstructor()),
 
                 _ => new XmlDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, getEnumerable),
             };

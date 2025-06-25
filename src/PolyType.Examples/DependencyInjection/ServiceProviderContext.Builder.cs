@@ -93,7 +93,7 @@ public sealed partial class ServiceProviderContext
         {
             if (dictionaryShape.ConstructionStrategy is CollectionConstructionStrategy.Mutable)
             {
-                Func<TDictionary> defaultCtor = dictionaryShape.GetDefaultConstructor();
+                MutableCollectionConstructor<TKey, TDictionary> defaultCtor = dictionaryShape.GetMutableCollectionConstructor();
                 return ServiceFactory.FromFunc(_ => defaultCtor(), ResolveLifetime(state));
             }
 
@@ -104,7 +104,7 @@ public sealed partial class ServiceProviderContext
         {
             if (enumerableShape.ConstructionStrategy is CollectionConstructionStrategy.Mutable)
             {
-                Func<TEnumerable> defaultCtor = enumerableShape.GetDefaultConstructor();
+                MutableCollectionConstructor<TElement, TEnumerable> defaultCtor = enumerableShape.GetMutableCollectionConstructor();
                 return ServiceFactory.FromFunc(_ => defaultCtor(), ResolveLifetime(state));
             }
 

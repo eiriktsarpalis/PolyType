@@ -132,11 +132,20 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
     private static string FormatNull(string? stringExpr) => stringExpr is null ? "null" : stringExpr;
     private static string FormatStringLiteral(string value) => SymbolDisplay.FormatLiteral(value, quote: true);
 
-    private static string GetCollectionConstructionOptionsTypeName(TypeId keyType)
-        => $"PolyType.Abstractions.CollectionConstructionOptions<{keyType}>";
+    private static string FormatCollectionConstructionOptionsTypeName(TypeId keyType)
+        => $"global::PolyType.Abstractions.CollectionConstructionOptions<{keyType}>";
 
-    private static string FormatCollectionInitializer(ConstructionWithComparer constructorComparer, TypeId keyType, string ctorOrFactoryFormat, string? valuesExpression)
+    private static string FormatCollectionInitializer(
+        ConstructionWithComparer constructorComparer,
+        bool hasConstructorWithoutComparer,
+        TypeId keyType,
+        string ctorOrFactoryFormat,
+        (string Type, string Expression)? values)
     {
+        string optionsTypeName = FormatCollectionConstructionOptionsTypeName(keyType);
+        string valuesParam = values is null ? string.Empty : $"{values.Value.Type} values, ";
+        string preamble = $"static ({valuesParam}in {optionsTypeName} options) => ";
+
         string? comparer = constructorComparer switch
         {
             ConstructionWithComparer.None => null,
@@ -144,22 +153,40 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
             ConstructionWithComparer.EqualityComparer or ConstructionWithComparer.EqualityComparerValues or ConstructionWithComparer.ValuesEqualityComparer => "EqualityComparer",
             _ => throw new NotSupportedException(),
         };
-        const string comparerLocalName = "comparer";
-        string? args = constructorComparer switch
+        string noComparer = $"{string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, values?.Expression)}";
+        if (comparer is null)
         {
-            ConstructionWithComparer.None => valuesExpression,
-            ConstructionWithComparer.Comparer or ConstructionWithComparer.EqualityComparer when valuesExpression is null => comparerLocalName,
-            ConstructionWithComparer.ComparerValues or ConstructionWithComparer.EqualityComparerValues => $"{comparerLocalName}, {valuesExpression}",
-            ConstructionWithComparer.ValuesComparer or ConstructionWithComparer.ValuesEqualityComparer => $"{valuesExpression}, {comparerLocalName}",
-            _ => throw new NotSupportedException(),
-        };
+            if (!hasConstructorWithoutComparer)
+            {
+                throw new NotSupportedException("No constructor available without comparer.");
+            }
 
-        string optionsTypeName = GetCollectionConstructionOptionsTypeName(keyType);
-        string preamble = $"static options => ";
-        string valuesParameter = valuesExpression is null ? "()" : "values";
-        return comparer is null
-            ? $"{preamble}static {valuesParameter} => {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, valuesExpression)}" // Assume a constructor that accepts the values expression exists.
-            : $"{preamble}{{ if (options?.{comparer} is null) {{ return static {valuesParameter} => {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, valuesExpression)}; }} else {{ var {comparerLocalName} = options.{comparer}; return {valuesParameter} => {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, args)}; }} }}";
+            return $"{preamble}{noComparer}";
+        }
+        else if (hasConstructorWithoutComparer)
+        {
+            string? argsWithComparer = constructorComparer switch
+            {
+                ConstructionWithComparer.Comparer or ConstructionWithComparer.EqualityComparer when values is null => $"options.{comparer}",
+                ConstructionWithComparer.ComparerValues or ConstructionWithComparer.EqualityComparerValues => $"options.{comparer}, {values?.Expression}",
+                ConstructionWithComparer.ValuesComparer or ConstructionWithComparer.ValuesEqualityComparer => $"{values?.Expression}, options.{comparer}",
+                _ => throw new NotSupportedException(),
+            };
+
+            return $"{preamble}options.{comparer} is null ? {noComparer} : {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, argsWithComparer)}";
+        }
+        else
+        {
+            string? argsWithComparer = constructorComparer switch
+            {
+                ConstructionWithComparer.Comparer or ConstructionWithComparer.EqualityComparer when values is null => $"options.{comparer}",
+                ConstructionWithComparer.ComparerValues or ConstructionWithComparer.EqualityComparerValues => $"options.{comparer}, {values?.Expression}",
+                ConstructionWithComparer.ValuesComparer or ConstructionWithComparer.ValuesEqualityComparer => $"{values?.Expression}, options.{comparer}",
+                _ => throw new NotSupportedException(),
+            };
+
+            return $"{preamble}{string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, argsWithComparer)}";
+        }
     }
 
     private static string FormatComparerOptions(ConstructionWithComparer comparer)

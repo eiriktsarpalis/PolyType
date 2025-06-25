@@ -1,4 +1,6 @@
-﻿namespace PolyType.Abstractions;
+﻿using System.Collections.ObjectModel;
+
+namespace PolyType.Abstractions;
 
 /// <summary>
 /// The kinds of comparers that may be supplied to a collection's constructor.
@@ -13,10 +15,12 @@ public enum CollectionComparerOptions
     /// <summary>
     /// The collection accepts a custom <see cref="IEqualityComparer{T}"/> for hashing and/or equality checks.
     /// </summary>
+    /// <seealso cref="CollectionConstructionOptions{TKey}.EqualityComparer"/>
     EqualityComparer,
 
     /// <summary>
     /// The collection accepts a custom <see cref="IComparer{T}"/> for sorting and/or equality checks.
     /// </summary>
+    /// <seealso cref="CollectionConstructionOptions{TKey}.Comparer"/>
     Comparer,
 }

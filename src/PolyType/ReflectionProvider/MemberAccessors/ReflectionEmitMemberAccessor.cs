@@ -729,35 +729,22 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         }
     }
 
+    public TDelegate CreateFuncDelegate<TDelegate>(ConstructorInfo ctorInfo) where TDelegate : Delegate
+        => CreateDelegate<TDelegate>(EmitConstructor(ctorInfo));
+
     public Func<T, TResult> CreateFuncDelegate<T, TResult>(ConstructorInfo ctorInfo)
         => CreateDelegate<Func<T, TResult>>(EmitConstructor(ctorInfo));
 
     public Func<T1, T2, TResult> CreateFuncDelegate<T1, T2, TResult>(ConstructorInfo ctorInfo)
         => CreateDelegate<Func<T1, T2, TResult>>(EmitConstructor(ctorInfo));
 
-    public SpanConstructor<T, TResult> CreateSpanConstructorDelegate<T, TResult>(ConstructorInfo ctorInfo)
-        => CreateDelegate<SpanConstructor<T, TResult>>(EmitConstructor(ctorInfo));
-
-    public Func<object, SpanConstructor<TElement, TResult>> CreateSpanConstructorDelegate<TElement, TCompare, TResult>(ConstructorInfo ctorInfo, ConstructionWithComparer signatureStyle)
+    public MutableCollectionConstructor<TKey, TDeclaringType> CreateMutableCollectionConstructor<TKey, TDeclaringType>(MethodBase ctor, ConstructionSignature signature)
     {
-        switch (signatureStyle)
-        {
-            case ConstructionWithComparer.ValuesEqualityComparer:
-                var spanEC = CreateDelegate<SpanECConstructor<TElement, TCompare, TResult>>(EmitConstructor(ctorInfo));
-                return comparer => values => spanEC(values, (IEqualityComparer<TCompare>)comparer);
-            case ConstructionWithComparer.EqualityComparerValues:
-                var ecSpan = CreateDelegate<ECSpanConstructor<TElement, TCompare, TResult>>(EmitConstructor(ctorInfo));
-                return comparer => values => ecSpan((IEqualityComparer<TCompare>)comparer, values);
-            case ConstructionWithComparer.ValuesComparer:
-                var spanC = CreateDelegate<SpanCConstructor<TElement, TCompare, TResult>>(EmitConstructor(ctorInfo));
-                return comparer => values => spanC(values, (IComparer<TCompare>)comparer);
-            case ConstructionWithComparer.ComparerValues:
-                var cSpan = CreateDelegate<CSpanConstructor<TElement, TCompare, TResult>>(EmitConstructor(ctorInfo));
-                return comparer => values => cSpan((IComparer<TCompare>)comparer, values);
-            default:
-                throw new NotSupportedException();
-        }
+        throw new NotImplementedException();
     }
+
+    public SpanCollectionConstructor<TKey, TElement, TCollection> CreateSpanConstructorDelegate<TKey, TElement, TCollection>(ConstructorInfo ctorInfo)
+        => CreateDelegate<SpanCollectionConstructor<TKey, TElement, TCollection>>(EmitConstructor(ctorInfo));
 
     private static DynamicMethod EmitConstructor(ConstructorInfo ctorInfo)
     {

@@ -32,11 +32,33 @@ public delegate TDeclaringType Constructor<TArgumentState, TDeclaringType>(ref T
 /// <summary>
 /// Delegate representing a constructor that accepts a span of values.
 /// </summary>
-/// <typeparam name="T">The element type of the span parameters.</typeparam>
+/// <typeparam name="TKey">The type to be compared within the <typeparamref name="TElement"/>.</typeparam>
+/// <typeparam name="TElement">The element type of the span parameters.</typeparam>
 /// <typeparam name="TDeclaringType">The type of the value produced by the constructor.</typeparam>
 /// <param name="values">The span of values used to create the instance.</param>
+/// <param name="options">An optional set of parameters used to create the collection.</param>
 /// <returns>A newly constructed instance using the specified values.</returns>
-public delegate TDeclaringType SpanConstructor<T, TDeclaringType>(ReadOnlySpan<T> values);
+public delegate TDeclaringType SpanCollectionConstructor<TKey, TElement, TDeclaringType>(ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey> options = default);
+
+/// <summary>
+/// Delegate representing a constructor for a mutable collection.
+/// </summary>
+/// <typeparam name="TKey">The type of keys or elements in the collection.</typeparam>
+/// <typeparam name="TDeclaringType">The type of the collection to be constructed.</typeparam>
+/// <param name="options">An optional set of parameters used to create the collection.</param>
+/// <returns>A newly constructed mutable collection instance.</returns>
+public delegate TDeclaringType MutableCollectionConstructor<TKey, TDeclaringType>(in CollectionConstructionOptions<TKey> options = default);
+
+/// <summary>
+/// Delegate representing a constructor for a collection from an enumeration of elements.
+/// </summary>
+/// <typeparam name="TKey">The type of keys or elements in the collection.</typeparam>
+/// <typeparam name="TElement">The element type of the enumerable.</typeparam>
+/// <typeparam name="TDeclaringType">The type of the collection to be constructed.</typeparam>
+/// <param name="elements">The enumerable of elements used to create the collection.</param>
+/// <param name="options">An optional set of parameters used to create the collection.</param>
+/// <returns>A newly constructed collection instance containing the specified elements.</returns>
+public delegate TDeclaringType EnumerableCollectionConstructor<TKey, TElement, TDeclaringType>(IEnumerable<TElement> elements, in CollectionConstructionOptions<TKey> options = default);
 
 /// <summary>
 /// Delegate deconstructing an optional type.
