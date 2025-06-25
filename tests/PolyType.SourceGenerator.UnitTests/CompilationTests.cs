@@ -1112,8 +1112,8 @@ public static class CompilationTests
             using System.Collections.Concurrent;
             using PolyType;
 
-            [GenerateShape<ConcurrentDictionary<string, int>>]
-            partial class Witness;
+            [GenerateShape(typeof(ConcurrentDictionary<string, int>))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
