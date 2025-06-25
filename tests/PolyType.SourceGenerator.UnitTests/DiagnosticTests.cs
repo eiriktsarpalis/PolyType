@@ -24,7 +24,7 @@ public static class DiagnosticTests
         Assert.NotNull(diagnostic);
         Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         Assert.Equal((2, 1), diagnostic.Location.GetStartPosition());
-        Assert.Equal((2, 27), diagnostic.Location.GetEndPosition());
+        Assert.Equal((2, 35), diagnostic.Location.GetEndPosition());
     }
 
     [Fact]
@@ -291,8 +291,8 @@ public static class DiagnosticTests
 
             [AssociatedTypeShape(typeof(InternalAssociatedType<>))]
             [GenerateShape]
-            partial class MyPoco;
-            public class InternalAssociatedType<T>;
+            partial class MyPoco { }
+            public class InternalAssociatedType<T> { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);

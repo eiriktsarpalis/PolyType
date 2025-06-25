@@ -52,7 +52,7 @@ internal sealed partial class SourceFormatter
 
             string parameterTypes = constructor.Parameters.Length == 0
                 ? "global::System.Type.EmptyTypes"
-                : $$"""[{{string.Join(", ", constructor.Parameters.Select(p => $"typeof({p.ParameterType.FullyQualifiedName})"))}}]""";
+                : $$"""new global::System.Type[] { {{string.Join(", ", constructor.Parameters.Select(p => $"typeof({p.ParameterType.FullyQualifiedName})"))}} }""";
 
             return $"static () => typeof({constructor.DeclaringType.FullyQualifiedName}).GetConstructor({InstanceBindingFlagsConstMember}, null, {parameterTypes}, null)";
         }
@@ -312,8 +312,8 @@ internal sealed partial class SourceFormatter
                 }
 
                 string parameterTypes = constructor.Parameters.Length == 0
-                    ? "[]"
-                    : $$"""[{{string.Join(", ", constructor.Parameters.Select(p => $"typeof({p.ParameterType.FullyQualifiedName})"))}}]""";
+                    ? "global::System.Type.EmptyTypes"
+                    : $$"""new global::System.Type[] { {{string.Join(", ", constructor.Parameters.Select(p => $"typeof({p.ParameterType.FullyQualifiedName})"))}} }""";
 
                 return $"static () => typeof({constructor.DeclaringType.FullyQualifiedName}).GetConstructor({InstanceBindingFlagsConstMember}, null, {parameterTypes}, null)?.GetParameters()[{parameter.Position}]";
             }
@@ -451,8 +451,8 @@ internal sealed partial class SourceFormatter
         {
             // Emit a reflection-based workaround.
             string parameterTypes = constructorModel.Parameters.Length == 0
-                ? "[]"
-                : $$"""[{{string.Join(", ", constructorModel.Parameters.Select(FormatParameterType))}}]""";
+                ? "global::System.Type.EmptyTypes"
+                : $$"""new global::System.Type[] { {{string.Join(", ", constructorModel.Parameters.Select(FormatParameterType))}} }""";
 
             static string FormatParameterType(ParameterShapeModel parameter)
             {
