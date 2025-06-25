@@ -12,7 +12,7 @@
 /// <see cref="IEnumerableTypeShape.SupportedComparers"/> or <see cref="IDictionaryTypeShape.SupportedComparers"/>.
 /// </para>
 /// </remarks>
-public struct CollectionConstructionOptions<TKey>
+public readonly struct CollectionConstructionOptions<TKey>
 {
     /// <summary>
     /// Gets an optional equality comparer for the keys or elements in the collection.
