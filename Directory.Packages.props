@@ -40,5 +40,7 @@
     <PackageVersion Update="Microsoft.CodeAnalysis.CSharp" Version="$(RoslynVersionForAnalyzers)" />
     <PackageVersion Update="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(RoslynVersionForAnalyzers)" />
     <PackageVersion Update="Microsoft.CodeAnalysis.Workspaces.Common" Version="$(RoslynVersionForAnalyzers)" />
+    <PackageVersion Update="System.Collections.Immutable" Version="6.0.0" />
+    <PackageVersion Update="System.Memory" Version="4.5.4" />
   </ItemGroup>
 </Project>

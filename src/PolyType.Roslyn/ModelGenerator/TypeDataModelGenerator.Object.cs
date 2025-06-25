@@ -115,7 +115,7 @@ public partial class TypeDataModelGenerator
     {
         _associatedTypes = _associatedTypes.SetItem(
             type,
-            [.. _associatedTypes.GetValueOrDefault(type, []), .. associatedTypes]);
+            ImmutableArray.CreateRange(_associatedTypes.GetValueOrDefault(type, ImmutableArray<AssociatedTypeModel>.Empty).Concat(associatedTypes)));
 
         foreach (AssociatedTypeModel associatedType in associatedTypes)
         {

@@ -714,7 +714,7 @@ public sealed partial class Parser : TypeDataModelGenerator
 
         foreach (KeyValuePair<ITypeSymbol, TypeDataModel> entry in GeneratedModels)
         {
-            entry.Value.AssociatedTypes = AssociatedTypes.GetValueOrDefault(entry.Key, []);
+            entry.Value.AssociatedTypes = AssociatedTypes.GetValueOrDefault(entry.Key, ImmutableArray<AssociatedTypeModel>.Empty);
 
             TypeId typeId = CreateTypeId(entry.Value.Type);
             if (results.ContainsKey(typeId))
