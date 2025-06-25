@@ -51,7 +51,7 @@ internal sealed partial class SourceFormatter
             }
 
             string parameterTypes = constructor.Parameters.Length == 0
-                ? "[]"
+                ? "global::System.Type.EmptyTypes"
                 : $$"""[{{string.Join(", ", constructor.Parameters.Select(p => $"typeof({p.ParameterType.FullyQualifiedName})"))}}]""";
 
             return $"static () => typeof({constructor.DeclaringType.FullyQualifiedName}).GetConstructor({InstanceBindingFlagsConstMember}, null, {parameterTypes}, null)";

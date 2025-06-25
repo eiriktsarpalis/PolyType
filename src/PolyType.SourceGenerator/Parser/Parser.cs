@@ -15,8 +15,7 @@ namespace PolyType.SourceGenerator;
 
 public sealed partial class Parser : TypeDataModelGenerator
 {
-    // C# 12 is the minimum LTS version that supports static abstracts and generic attributes.
-    private const LanguageVersion MinimumSupportedLanguageVersion = LanguageVersion.CSharp12;
+    private const LanguageVersion MinimumSupportedLanguageVersion = LanguageVersion.CSharp9;
 
     private static readonly IEqualityComparer<(ITypeSymbol Type, string Name)> s_ctorParamComparer =
         CommonHelpers.CreateTupleComparer<ITypeSymbol, string>(

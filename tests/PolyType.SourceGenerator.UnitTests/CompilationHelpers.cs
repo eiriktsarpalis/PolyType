@@ -28,6 +28,13 @@ public static class CompilationHelpers
 #endif
     public static bool IsMonoRuntime { get; } = Type.GetType("Mono.Runtime") is not null;
 
+    internal static LanguageVersion DefaultLanguageVersion =>
+#if NETFRAMEWORK
+        LanguageVersion.CSharp9;
+#else
+        LanguageVersion.CSharp12;
+#endif
+
     private static string GetAssemblyFromSharedFrameworkDirectory(string assemblyName) =>
         Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, assemblyName);
 
@@ -37,7 +44,7 @@ public static class CompilationHelpers
     {
         return new CSharpParseOptions(
             kind: SourceCodeKind.Regular,
-            languageVersion: version ?? LanguageVersion.CSharp12,
+            languageVersion: version ?? DefaultLanguageVersion,
 #if NET
             preprocessorSymbols: ["NET"],
 #endif

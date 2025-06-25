@@ -24,7 +24,12 @@ public class TypeShapeExtensionAnalyzerTests
 
                 public PointSurrogate ToSurrogate(Point value) => throw new System.NotImplementedException();
 
-                public record struct PointSurrogate(int X, int Y);
+                public struct PointSurrogate
+                {
+                    public PointSurrogate(int x, int y) => (X, Y) = (x, y);
+                    public int X { get; }
+                    public int Y { get; }
+                }
             }
 
             public class PointMarshaller2: IMarshaller<Point, PointMarshaller2.PointSurrogate>
@@ -33,11 +38,16 @@ public class TypeShapeExtensionAnalyzerTests
 
                 public PointSurrogate ToSurrogate(Point value) => throw new System.NotImplementedException();
 
-                public record struct PointSurrogate(int X, int Y);
+                public struct PointSurrogate
+                {
+                    public PointSurrogate(int x, int y) => (X, Y) = (x, y);
+                    public int X { get; }
+                    public int Y { get; }
+                }
             }
 
-            [GenerateShape<Point>]
-            partial class Witness;
+            [GenerateShape(typeof(Point))]
+            partial class Witness { }
             """;
 
         await VerifyCS.VerifyAnalyzerAsync(source);
@@ -59,7 +69,12 @@ public class TypeShapeExtensionAnalyzerTests
 
                 public PointSurrogate ToSurrogate(Point value) => throw new System.NotImplementedException();
 
-                public record struct PointSurrogate(int X, int Y);
+                public struct PointSurrogate
+                {
+                    public PointSurrogate(int x, int y) => (X, Y) = (x, y);
+                    public int X { get; }
+                    public int Y { get; }
+                };
             }
 
             public class SizeMarshaller: IMarshaller<Size, SizeMarshaller.SizeSurrogate>
@@ -68,11 +83,16 @@ public class TypeShapeExtensionAnalyzerTests
 
                 public SizeSurrogate ToSurrogate(Size value) => throw new System.NotImplementedException();
 
-                public record struct SizeSurrogate(int X, int Y);
+                public struct SizeSurrogate
+                {
+                    public SizeSurrogate(int x, int y) => (X, Y) = (x, y);
+                    public int X { get; }
+                    public int Y { get; }
+                };
             }
 
-            [GenerateShape<Point>]
-            partial class Witness;
+            [GenerateShape(typeof(Point))]
+            partial class Witness { }
             """;
 
         await VerifyCS.VerifyAnalyzerAsync(source);
@@ -82,11 +102,12 @@ public class TypeShapeExtensionAnalyzerTests
     public async Task CompatibleTypeExtensions()
     {
         string source = /* lang=c#-test */ """
+            using System;
             using System.Drawing;
             using PolyType;
 
             [assembly: TypeShapeExtension(typeof(Point), Marshaller = typeof(PointMarshaller))]
-            [assembly: TypeShapeExtension(typeof(Point), AssociatedTypes = [typeof(SomeOtherType)])]
+            [assembly: TypeShapeExtension(typeof(Point), AssociatedTypes = new Type[] { typeof(SomeOtherType) })]
 
             public class PointMarshaller : IMarshaller<Point, PointMarshaller.PointSurrogate>
             {
@@ -94,13 +115,18 @@ public class TypeShapeExtensionAnalyzerTests
 
                 public PointSurrogate ToSurrogate(Point value) => throw new System.NotImplementedException();
 
-                public record struct PointSurrogate(int X, int Y);
+                public struct PointSurrogate
+                {
+                    public PointSurrogate(int x, int y) => (X, Y) = (x, y);
+                    public int X { get; }
+                    public int Y { get; }
+                }
             }
 
-            public class SomeOtherType;
+            public class SomeOtherType { }
 
-            [GenerateShape<Point>]
-            partial class Witness;
+            [GenerateShape(typeof(Point))]
+            partial class Witness { }
             """;
 
         await VerifyCS.VerifyAnalyzerAsync(source);

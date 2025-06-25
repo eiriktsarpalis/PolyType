@@ -216,13 +216,13 @@ public static class CompilationTests
                 public Type[] Shapes { get; set; } = [];
             }
 
-            [Custom(typeof(GenericConverter<,>), Shapes = [typeof(GenericHelper<,>)])]
-            public class GenericClass<T1, T2>;
-            public class GenericConverter<T1, T2>;
-            public record class GenericHelper<T1, T2>(T1 Value);
+            [Custom(typeof(GenericConverter<,>), Shapes = new Type[] { typeof(GenericHelper<,>) })]
+            public class GenericClass<T1, T2> { }
+            public class GenericConverter<T1, T2> { }
+            public record class GenericHelper<T1, T2>(T1 Value) { }
 
             [GenerateShape<GenericClass<int, string>>]
-            public partial class Witness;
+            public partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -237,11 +237,11 @@ public static class CompilationTests
             using PolyType;
 
             [AssociatedTypeShape(typeof(GenericHelper<,>), Requirements = TypeShapeRequirements.None)]
-            public class GenericClass<T1, T2>;
-            public class GenericHelper<T1, T2>;
+            public class GenericClass<T1, T2> { }
+            public class GenericHelper<T1, T2> { }
 
             [GenerateShape<GenericClass<int, string>>]
-            public partial class Witness;
+            public partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -272,21 +272,21 @@ public static class CompilationTests
     public static void TypeShapeWithAssociatedTypes_GenericNestedInGeneric()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
-            namespace PolyType.Tests;
-
-            public partial class AssociatedTypesTests
+            namespace PolyType.Tests
             {
-                [AssociatedTypeShape(typeof(GenericWrapper<>.GenericNested<>))]
-                public class GenericClass<T1, T2>;
-
-                public class GenericWrapper<T1>
+                public partial class AssociatedTypesTests
                 {
-                    public class GenericNested<T2>;
+                    [AssociatedTypeShape(typeof(GenericWrapper<>.GenericNested<>))]
+                    public class GenericClass<T1, T2>;
+
+                    public class GenericWrapper<T1>
+                    {
+                        public class GenericNested<T2>;
+                    }
+
+                    [GenerateShape<GenericClass<int, string>>]
+                    public partial class Witness;
                 }
-
-
-                [GenerateShape<GenericClass<int, string>>]
-                public partial class Witness;
             }
             """);
 
@@ -302,27 +302,28 @@ public static class CompilationTests
             using System;
             using PolyType.Abstractions;
 
-            namespace PolyType.Tests;
-
-            [AssociatedTypeAttribute("Factories", TypeShapeRequirements.Constructor)]
-            [AssociatedTypeAttribute("Shapes", TypeShapeRequirements.Full)]
-            [AttributeUsage(AttributeTargets.Class)]
-            public class CustomAttribute : Attribute
+            namespace PolyType.Tests
             {
-                public Type? Factory { get; set; }
+                [AssociatedTypeAttribute("Factories", TypeShapeRequirements.Constructor)]
+                [AssociatedTypeAttribute("Shapes", TypeShapeRequirements.Full)]
+                [AttributeUsage(AttributeTargets.Class)]
+                public class CustomAttribute : Attribute
+                {
+                    public Type? Factory { get; set; }
 
-                public Type? Shape { get; set; }
+                    public Type? Shape { get; set; }
+                }
+
+                [CustomAttribute(Factory = typeof(AnotherClass<>), Shape = typeof(YetAnotherClass<>))]
+                public class GenericClass<T> { }
+
+                public class AnotherClass<T> { }
+
+                public class YetAnotherClass<T> { }
+
+                [GenerateShape(typeof(GenericClass<int>))]
+                public partial class Witness { }
             }
-
-            [CustomAttribute(Factory = typeof(AnotherClass<>), Shape = typeof(YetAnotherClass<>))]
-            public class GenericClass<T>;
-
-            public class AnotherClass<T>;
-
-            public class YetAnotherClass<T>;
-
-            [GenerateShape<GenericClass<int>>]
-            public partial class Witness;
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -337,7 +338,7 @@ public static class CompilationTests
             using System.Collections;
 
             [GenerateShape<ICollection>]
-            public partial class MyWitness;
+            public partial class MyWitness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
@@ -351,9 +352,11 @@ public static class CompilationTests
             using PolyType;
 
             [GenerateShape]
-            public partial class ClassWithParameterizedConstructorAndMultiplePropertySetters(int x00)
+            public partial class ClassWithParameterizedConstructorAndMultiplePropertySetters
             {
-                public int X00 { get; set; } = x00;
+                public ClassWithParameterizedConstructorAndMultiplePropertySetters(int x00) => this.X00 = x00;
+
+                public int X00 { get; set; }
 
                 public int X01 { get; set; }
                 public int X02 { get; set; }
@@ -422,7 +425,7 @@ public static class CompilationTests
 
                 public required int Value { get; set; }
             }
-            """);
+            """, parseOptions: CompilationHelpers.CreateParseOptions(LanguageVersion.CSharp12));
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);

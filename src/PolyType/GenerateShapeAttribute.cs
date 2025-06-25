@@ -16,7 +16,16 @@ namespace PolyType;
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
 [Conditional("NEVER")] // only the source generator uses this.
-public sealed class GenerateShapeAttribute : Attribute;
+public sealed class GenerateShapeAttribute : Attribute
+{
+    public GenerateShapeAttribute()
+    {
+    }
+
+    public GenerateShapeAttribute(Type type)
+    {
+    }
+}
 
 /// <summary>
 /// Instructs the PolyType source generator to include <typeparamref name="T"/>

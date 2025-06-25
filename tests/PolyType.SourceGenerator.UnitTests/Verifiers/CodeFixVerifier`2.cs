@@ -100,7 +100,7 @@ internal class CodeFixVerifier<TAnalyzer, TCodeFix>
 #if NET
 				.WithPreprocessorSymbols("NET")
 #endif
-                .WithLanguageVersion(LanguageVersion.CSharp12);
+                .WithLanguageVersion(CompilationHelpers.DefaultLanguageVersion);
         }
 
         protected override CompilationOptions CreateCompilationOptions()
