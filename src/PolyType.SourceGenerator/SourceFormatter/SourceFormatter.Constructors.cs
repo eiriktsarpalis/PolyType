@@ -11,6 +11,8 @@ internal sealed partial class SourceFormatter
 {
     private const string FlagsArgumentStateLabel = "Flags";
 
+    private const RefKind RefReadOnlyParameter = (RefKind)4; // RefKind.RefReadOnlyParameter
+
     private void FormatConstructorFactory(SourceWriter writer, string methodName, ObjectShapeModel type, ConstructorShapeModel constructor)
     {
         string constructorArgumentStateFQN = FormatConstructorArgumentStateFQN(type, constructor);
@@ -225,8 +227,7 @@ internal sealed partial class SourceFormatter
 
                     string refPrefix = parameter.RefKind switch
                     {
-                        RefKind.Ref or
-                        RefKind.RefReadOnlyParameter => "ref ",
+                        RefKind.Ref or RefReadOnlyParameter => "ref ",
                         RefKind.In => "in ",
                         RefKind.Out => "out ",
                         _ => ""
@@ -430,8 +431,7 @@ internal sealed partial class SourceFormatter
         {
             string refPrefix = parameter.RefKind switch
             {
-                RefKind.Ref or
-                RefKind.RefReadOnlyParameter => "ref ",
+                RefKind.Ref or RefReadOnlyParameter => "ref ",
                 RefKind.In => "in ",
                 RefKind.Out => "out ",
                 _ => ""

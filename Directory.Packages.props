@@ -2,6 +2,8 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+    <RoslynVersion>4.8.0</RoslynVersion>
+    <RoslynVersionForAnalyzers>4.3.0</RoslynVersionForAnalyzers>
   </PropertyGroup>
   <ItemGroup>
     <!-- Product dependencies -->
@@ -10,10 +12,10 @@
     <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
     <!-- Source Generator dependencies -->
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="$(RoslynVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="1.1.2" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.8.0" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="4.8.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(RoslynVersion)" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="$(RoslynVersion)" />
     <!-- Build Infra & Packaging -->
     <PackageVersion Include="PolySharp" Version="1.15.0" />
     <PackageVersion Include="Nerdbank.GitVersioning" Version="3.7.115" />
@@ -33,5 +35,10 @@
     <PackageVersion Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
     <PackageVersion Include="JsonSchema.Net" Version="7.3.4" />
     <PackageVersion Include="FSharp.Core" Version="9.0.300" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsAnalyzerProject)'=='true'">
+    <PackageVersion Update="Microsoft.CodeAnalysis.CSharp" Version="$(RoslynVersionForAnalyzers)" />
+    <PackageVersion Update="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(RoslynVersionForAnalyzers)" />
+    <PackageVersion Update="Microsoft.CodeAnalysis.Workspaces.Common" Version="$(RoslynVersionForAnalyzers)" />
   </ItemGroup>
 </Project>
