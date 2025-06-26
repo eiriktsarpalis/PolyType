@@ -88,7 +88,7 @@ public sealed partial class Parser
                 StaticFactoryMethod = enumerableModel.FactoryMethod is { IsStatic: true } m ? m.GetFullyQualifiedName() : null,
                 StaticFactoryWithComparerMethod = enumerableModel.FactoryMethodWithComparer is { IsStatic: true } m2 ? m2.GetFullyQualifiedName() : null,
                 HasConstructorWithoutComparer = enumerableModel.FactoryMethod is not null && !UseComparerOverloadEvenForNullComparersEnumerable(enumerableModel),
-                ConstructionComparer = AnalyzeComparerConstruction(enumerableModel.FactoryMethodWithComparer),
+                ConstructionParameters = AnalyzeComparerConstruction(enumerableModel.FactoryMethodWithComparer),
                 CtorRequiresListConversion =
                     enumerableModel.ConstructionStrategy is CollectionModelConstructionStrategy.List &&
                     !IsFactoryAcceptingIEnumerable(enumerableModel.FactoryMethod),
@@ -131,7 +131,7 @@ public sealed partial class Parser
                 StaticFactoryMethod = dictionaryModel.FactoryMethod is { IsStatic: true } m ? m.GetFullyQualifiedName() : null,
                 StaticFactoryWithComparerMethod = dictionaryModel.FactoryMethodWithComparer is { IsStatic: true } m2 ? m2.GetFullyQualifiedName() : null,
                 HasConstructorWithoutComparer = dictionaryModel.FactoryMethod is not null && !UseComparerOverloadEvenForNullComparersDictionary(dictionaryModel),
-                ConstructionComparer = DictionaryRequiresHelper(dictionaryModel) ? ConstructionWithComparer.ValuesEqualityComparer : AnalyzeComparerConstruction(dictionaryModel.FactoryMethodWithComparer),
+                ConstructionParameters = DictionaryRequiresHelper(dictionaryModel) ? [CollectionConstructorParameter.Values, CollectionConstructorParameter.EqualityComparer] : AnalyzeComparerConstruction(dictionaryModel.FactoryMethodWithComparer),
                 IsTupleEnumerableFactory = dictionaryModel.ConstructionStrategy is CollectionModelConstructionStrategy.TupleEnumerable,
                 Kind = dictionaryModel.DictionaryKind,
                 CtorRequiresDictionaryConversion = DictionaryRequiresHelper(dictionaryModel),
@@ -241,15 +241,15 @@ public sealed partial class Parser
             => model.FactoryMethodWithComparer is not null && (model.FactoryMethod is null || model.Type.ContainingNamespace.MatchesNamespace(Namespaces.SystemCollectionsGeneric));
     }
 
-    private static ConstructionWithComparer AnalyzeComparerConstruction(IMethodSymbol? factoryMethodWithComparer) => factoryMethodWithComparer?.Parameters switch
+    private static CollectionConstructorParameter[] AnalyzeComparerConstruction(IMethodSymbol? factoryMethodWithComparer) => factoryMethodWithComparer?.Parameters switch
     {
-        null => ConstructionWithComparer.None,
-        [{ Type.Name: "IComparer" }] => ConstructionWithComparer.Comparer,
-        [{ Type.Name: "IEqualityComparer" }] => ConstructionWithComparer.EqualityComparer,
-        [_, { Type.Name: "IComparer" }] => ConstructionWithComparer.ValuesComparer,
-        [_, { Type.Name: "IEqualityComparer" }] => ConstructionWithComparer.ValuesEqualityComparer,
-        [{ Type.Name: "IComparer" }, _] => ConstructionWithComparer.ComparerValues,
-        [{ Type.Name: "IEqualityComparer" }, _] => ConstructionWithComparer.EqualityComparerValues,
+        null => [],
+        [{ Type.Name: "IComparer" }] => [CollectionConstructorParameter.Comparer],
+        [{ Type.Name: "IEqualityComparer" }] => [CollectionConstructorParameter.EqualityComparer],
+        [_, { Type.Name: "IComparer" }] => [CollectionConstructorParameter.Values, CollectionConstructorParameter.Comparer],
+        [_, { Type.Name: "IEqualityComparer" }] => [CollectionConstructorParameter.Values, CollectionConstructorParameter.EqualityComparer],
+        [{ Type.Name: "IComparer" }, _] => [CollectionConstructorParameter.Comparer, CollectionConstructorParameter.Values],
+        [{ Type.Name: "IEqualityComparer" }, _] => [CollectionConstructorParameter.EqualityComparer, CollectionConstructorParameter.Values],
         _ => throw new NotSupportedException(),
     };
 
