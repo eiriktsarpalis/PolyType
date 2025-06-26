@@ -37,6 +37,8 @@
     <PackageVersion Include="FSharp.Core" Version="9.0.300" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsAnalyzerProject)'=='true'">
+    <!-- Keep these versions in sync with what Unity documents as supported at 
+         https://docs.unity3d.com/6000.1/Documentation/Manual/create-source-generator.html (or a newer version of that doc). -->
     <PackageVersion Update="Microsoft.CodeAnalysis.CSharp" Version="$(RoslynVersionForAnalyzers)" />
     <PackageVersion Update="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(RoslynVersionForAnalyzers)" />
     <PackageVersion Update="Microsoft.CodeAnalysis.Workspaces.Common" Version="$(RoslynVersionForAnalyzers)" />
