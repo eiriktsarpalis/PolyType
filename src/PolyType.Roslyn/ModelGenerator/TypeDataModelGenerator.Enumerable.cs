@@ -25,6 +25,7 @@ public partial class TypeDataModelGenerator
         IMethodSymbol? addElementMethod = null;
         IMethodSymbol? factoryMethod = null;
         IMethodSymbol? factoryMethodWithComparer = null;
+        IMethodSymbol? factoryMethodWithCapacity = null;
         INamedTypeSymbol? asyncEnumerableOfT = null;
         bool addMethodIsExplicitInterfaceImplementation = false;
 
@@ -88,7 +89,7 @@ public partial class TypeDataModelGenerator
                 (factoryMethod, factoryMethodWithComparer, constructionStrategy) = factories;
             }
 
-            // .ctor(IComparer<T>)
+            // .ctor(I[Equality]Comparer<T>)
             if (factoryMethodWithComparer is null &&
                 namedType.Constructors.FirstOrDefault(ctor => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ Type: INamedTypeSymbol { IsGenericType: true } parameterType }] } &&
                 (SymbolEqualityComparer.Default.Equals(parameterType.ConstructedFrom, KnownSymbols.IEqualityComparerOfT) || SymbolEqualityComparer.Default.Equals(parameterType.ConstructedFrom, KnownSymbols.IComparerOfT))) is { } ctor &&
@@ -96,6 +97,7 @@ public partial class TypeDataModelGenerator
             {
                 constructionStrategy = CollectionModelConstructionStrategy.Mutable;
                 factoryMethodWithComparer = ctor;
+                factoryMethodWithCapacity = FindConstructorWithCapacity(namedType);
             }
 
             // .ctor(ReadOnlySpan<T>)
@@ -118,6 +120,7 @@ public partial class TypeDataModelGenerator
             {
                 constructionStrategy = CollectionModelConstructionStrategy.Mutable;
                 factoryMethod = ctor2;
+                factoryMethodWithCapacity ??= FindConstructorWithCapacity(namedType);
             }
 
             // .ctor(IEnumerable<T>)
@@ -223,6 +226,7 @@ public partial class TypeDataModelGenerator
             AddElementMethod = addElementMethod,
             FactoryMethod = factoryMethod,
             FactoryMethodWithComparer = factoryMethodWithComparer,
+            FactoryMethodWithCapacity = factoryMethodWithCapacity,
             Rank = rank,
             AddMethodIsExplicitInterfaceImplementation = addMethodIsExplicitInterfaceImplementation,
         };
@@ -243,7 +247,7 @@ public partial class TypeDataModelGenerator
                 // For reference types, allow using explicit interface implementations of known Add methods.
                 if (result is null && type.GetCompatibleGenericBaseType(KnownSymbols.ICollectionOfT) is { } iCollectionOfT)
                 {
-                
+
                     result = iCollectionOfT.GetMembers("Add")
                         .OfType<IMethodSymbol>()
                         .FirstOrDefault(m =>
@@ -252,7 +256,7 @@ public partial class TypeDataModelGenerator
 
                     isExplicitImplementation = result is not null;
                 }
-            
+
                 if (result is null && KnownSymbols.IList.IsAssignableFrom(type))
                 {
                     result = KnownSymbols.IList.GetMembers("Add")
@@ -301,14 +305,14 @@ public partial class TypeDataModelGenerator
             {
                 return FindCreateRangeMethods("System.Collections.Immutable.ImmutableSortedSet", false);
             }
-            
+
             if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.FrozenSet))
             {
                 factory = KnownSymbols.Compilation.GetTypeByMetadataName("System.Collections.Frozen.FrozenSet")
                     .GetMethodSymbol(method =>
                         method is { IsStatic: true, IsGenericMethod: true, Name: "ToFrozenSet", Parameters: [{ Type.Name: "IEnumerable" }, { Type.Name: "IEqualityComparer" }] })
                     .MakeGenericMethod(namedType.TypeArguments[0]);
-                
+
                 return (factory, factory, CollectionModelConstructionStrategy.List);
             }
 
@@ -349,6 +353,20 @@ public partial class TypeDataModelGenerator
 
                 return (factory, factoryWithComparer, strategy);
             }
+        }
+
+        IMethodSymbol? FindConstructorWithCapacity(INamedTypeSymbol namedType)
+        {
+            // Look for an overload that takes a capacity parameter too.
+            // Prefer one that accepts a comparer.
+            return namedType.Constructors.FirstOrDefault(ctor => ctor is
+            {
+                DeclaredAccessibility: Accessibility.Public, Parameters: [
+                { Name: "capacity", Type: INamedTypeSymbol { Name: "Int32" } },
+                { Type: INamedTypeSymbol { IsGenericType: true } parameterType },
+            ]} &&
+                (SymbolEqualityComparer.Default.Equals(parameterType.ConstructedFrom, KnownSymbols.IEqualityComparerOfT) || SymbolEqualityComparer.Default.Equals(parameterType.ConstructedFrom, KnownSymbols.IComparerOfT)))
+                ?? namedType.Constructors.FirstOrDefault(ctor => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ Name: "capacity", Type: INamedTypeSymbol { Name: "Int32" } }] });
         }
     }
 

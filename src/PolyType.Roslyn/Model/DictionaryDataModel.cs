@@ -47,6 +47,12 @@ public sealed class DictionaryDataModel : TypeDataModel
     public required IMethodSymbol? FactoryMethodWithComparer { get; init; }
 
     /// <summary>
+    /// Constructor or static factory method that accepts a capacity parameter,
+    /// and possibly a comparer parameter.
+    /// </summary>
+    public required IMethodSymbol? FactoryMethodWithCapacity { get; init; }
+
+    /// <summary>
     /// <see langword="true"/> if the dictionary type only exposes an indexer via an explicit interface implementation of either <see cref="IDictionary{TKey, TValue}"/> or <see cref="IDictionary"/>.
     /// </summary>
     public required bool IndexerIsExplicitInterfaceImplementation { get; init; }

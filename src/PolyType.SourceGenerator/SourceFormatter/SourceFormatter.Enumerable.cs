@@ -53,7 +53,7 @@ internal sealed partial class SourceFormatter
             }
 
             string typeName = enumerableType.ImplementationTypeFQN ?? enumerableType.Type.FullyQualifiedName;
-            return FormatCollectionInitializer(enumerableType.ConstructionParameters.Span, enumerableType.HasConstructorWithoutComparer, enumerableType.ElementType, enumerableType.StaticFactoryMethod ?? $"new {typeName}({{0}})", null);
+            return FormatCollectionInitializer(enumerableType.ConstructionParameters, enumerableType.ConstructionParametersWithCapacity, enumerableType.HasConstructorWithoutComparer, enumerableType.ElementType, enumerableType.StaticFactoryMethod ?? $"new {typeName}({{0}})", null);
         }
 
         static string FormatAddElementFunc(EnumerableShapeModel enumerableType)
@@ -111,7 +111,7 @@ internal sealed partial class SourceFormatter
         string factory = enumerableType.StaticFactoryMethod is not null
           ? $"{enumerableType.StaticFactoryMethod}({{0}})"
           : $"new {enumerableType.Type.FullyQualifiedName}({{0}})";
-        return FormatCollectionInitializer(enumerableType.ConstructionParameters.Span, enumerableType.HasConstructorWithoutComparer, enumerableType.ElementType, factory, (valuesType, valuesExpr));
+        return FormatCollectionInitializer(enumerableType.ConstructionParameters, enumerableType.ConstructionParametersWithCapacity, enumerableType.HasConstructorWithoutComparer, enumerableType.ElementType, factory, (valuesType, valuesExpr));
     }
 
     private static string FormatCollectionConstructionStrategy(CollectionConstructionStrategy strategy)

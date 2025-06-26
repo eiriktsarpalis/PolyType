@@ -6,32 +6,45 @@ public abstract partial class CollectionsWithCapacityTests(ProviderUnderTest pro
     public void List_OfInt()
     {
         IEnumerableTypeShape<List<int>, int> shape = (IEnumerableTypeShape<List<int>, int>)providerUnderTest.Provider.Resolve<List<int>>();
-        List<int> list = shape.GetMutableCollectionConstructor()(new() { Capacity = 10 });
-        Assert.Equal(10, list.Capacity);
+        List<int> list = shape.GetMutableCollectionConstructor()(new() { Capacity = 11 });
+        Assert.Equal(11, list.Capacity);
     }
 
     [Fact]
     public void List_OfString()
     {
         IEnumerableTypeShape<List<string>, string> shape = (IEnumerableTypeShape<List<string>, string>)providerUnderTest.Provider.Resolve<List<string>>();
-        List<string> list = shape.GetMutableCollectionConstructor()(new() { Capacity = 10 });
-        Assert.Equal(10, list.Capacity);
+        List<string> list = shape.GetMutableCollectionConstructor()(new() { Capacity = 11 });
+        Assert.Equal(11, list.Capacity);
     }
 
     [Fact]
     public void Dictionary()
     {
         IDictionaryTypeShape<Dictionary<int, bool>, int, bool> shape = (IDictionaryTypeShape<Dictionary<int, bool>, int, bool>)providerUnderTest.Provider.Resolve<Dictionary<int, bool>>();
-        Dictionary<int, bool> dict = shape.GetMutableCollectionConstructor()(new() { Capacity = 10 });
+        Dictionary<int, bool> dict = shape.GetMutableCollectionConstructor()(new() { Capacity = 11 });
 #if NET9_0_OR_GREATER
-        Assert.Equal(10, dict.Capacity);
+        Assert.Equal(11, dict.Capacity);
 #else
-        Assert.Skip(".NET Framework provides no way to assert capacity.");
+        Assert.Skip(".NET 9+ is required to assert capacity.");
+#endif
+    }
+
+    [Fact]
+    public void HashSet()
+    {
+        IEnumerableTypeShape<HashSet<int>, int> shape = (IEnumerableTypeShape<HashSet<int>, int>)providerUnderTest.Provider.Resolve<HashSet<int>>();
+        HashSet<int> set = shape.GetMutableCollectionConstructor()(new() { Capacity = 11 });
+#if NET9_0_OR_GREATER
+        Assert.Equal(11, set.Capacity);
+#else
+        Assert.Skip(".NET 9+ is required to assert capacity.");
 #endif
     }
 
     [GenerateShape<List<int>>]
     [GenerateShape<List<string>>]
+    [GenerateShape<HashSet<int>>]
     [GenerateShape<Dictionary<int, bool>>]
     partial class Witness;
 

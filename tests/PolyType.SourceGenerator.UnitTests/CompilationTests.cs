@@ -25,6 +25,7 @@ public static class CompilationTests
                 public bool Bool { get; }
                 public string String { get; }
                 public List<int>? List { get; set; }
+                public HashSet<int>? HashSet { get; set; }
                 public Dictionary<string, int>? Dict { get; set; }
 
             #if NET8_0_OR_GREATER
@@ -815,6 +816,7 @@ public static class CompilationTests
     [InlineData("System.Collections.Generic.IEnumerable<int>")]
     [InlineData("System.Collections.Generic.ISet<int>")]
     [InlineData("System.Collections.Generic.List<int>")]
+    [InlineData("System.Collections.Generic.HashSet<int>")]
     public static void EnumerableTypes_NoErrors(string type)
     {
         if (CompilationHelpers.IsMonoRuntime && type.Contains("Memory<"))

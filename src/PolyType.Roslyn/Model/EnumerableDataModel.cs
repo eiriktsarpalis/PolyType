@@ -49,6 +49,12 @@ public sealed class EnumerableDataModel : TypeDataModel
     public required IMethodSymbol? FactoryMethodWithComparer { get; init; }
 
     /// <summary>
+    /// Constructor or static factory method that accepts a capacity parameter,
+    /// and possibly a comparer parameter.
+    /// </summary>
+    public required IMethodSymbol? FactoryMethodWithCapacity { get; init; }
+
+    /// <summary>
     /// If the enumerable is an array, the rank of the array.
     /// </summary>
     public required int Rank { get; init; }

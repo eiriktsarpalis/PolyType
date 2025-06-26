@@ -88,7 +88,8 @@ public sealed partial class Parser
                 StaticFactoryMethod = enumerableModel.FactoryMethod is { IsStatic: true } m ? m.GetFullyQualifiedName() : null,
                 StaticFactoryWithComparerMethod = enumerableModel.FactoryMethodWithComparer is { IsStatic: true } m2 ? m2.GetFullyQualifiedName() : null,
                 HasConstructorWithoutComparer = enumerableModel.FactoryMethod is not null && !UseComparerOverloadEvenForNullComparersEnumerable(enumerableModel),
-                ConstructionParameters = AnalyzeComparerConstruction(enumerableModel.FactoryMethodWithComparer),
+                ConstructionParameters = AnalyzeConstructionSignature(enumerableModel.FactoryMethodWithComparer),
+                ConstructionParametersWithCapacity = AnalyzeConstructionSignature(enumerableModel.FactoryMethodWithCapacity),
                 CtorRequiresListConversion =
                     enumerableModel.ConstructionStrategy is CollectionModelConstructionStrategy.List &&
                     !IsFactoryAcceptingIEnumerable(enumerableModel.FactoryMethod),
@@ -131,7 +132,8 @@ public sealed partial class Parser
                 StaticFactoryMethod = dictionaryModel.FactoryMethod is { IsStatic: true } m ? m.GetFullyQualifiedName() : null,
                 StaticFactoryWithComparerMethod = dictionaryModel.FactoryMethodWithComparer is { IsStatic: true } m2 ? m2.GetFullyQualifiedName() : null,
                 HasConstructorWithoutComparer = dictionaryModel.FactoryMethod is not null && !UseComparerOverloadEvenForNullComparersDictionary(dictionaryModel),
-                ConstructionParameters = DictionaryRequiresHelper(dictionaryModel) ? [CollectionConstructorParameter.Values, CollectionConstructorParameter.EqualityComparer] : AnalyzeComparerConstruction(dictionaryModel.FactoryMethodWithComparer),
+                ConstructionParameters = DictionaryRequiresHelper(dictionaryModel) ? [CollectionConstructorParameter.Values, CollectionConstructorParameter.EqualityComparer] : AnalyzeConstructionSignature(dictionaryModel.FactoryMethodWithComparer),
+                ConstructionParametersWithCapacity = AnalyzeConstructionSignature(dictionaryModel.FactoryMethodWithCapacity),
                 IsTupleEnumerableFactory = dictionaryModel.ConstructionStrategy is CollectionModelConstructionStrategy.TupleEnumerable,
                 Kind = dictionaryModel.DictionaryKind,
                 CtorRequiresDictionaryConversion = DictionaryRequiresHelper(dictionaryModel),
@@ -241,9 +243,12 @@ public sealed partial class Parser
             => model.FactoryMethodWithComparer is not null && (model.FactoryMethod is null || model.Type.ContainingNamespace.MatchesNamespace(Namespaces.SystemCollectionsGeneric));
     }
 
-    private static CollectionConstructorParameter[] AnalyzeComparerConstruction(IMethodSymbol? factoryMethodWithComparer) => factoryMethodWithComparer?.Parameters switch
+    private static CollectionConstructorParameter[] AnalyzeConstructionSignature(IMethodSymbol? factoryMethod) => factoryMethod?.Parameters switch
     {
         null => [],
+        [{ Type.Name: "Int32", Name: "capacity" }] => [CollectionConstructorParameter.Capacity],
+        [{ Type.Name: "Int32", Name: "capacity" }, { Type.Name: "IComparer" }] => [CollectionConstructorParameter.Capacity, CollectionConstructorParameter.Comparer],
+        [{ Type.Name: "Int32", Name: "capacity" }, { Type.Name: "IEqualityComparer" }] => [CollectionConstructorParameter.Capacity, CollectionConstructorParameter.EqualityComparer],
         [{ Type.Name: "IComparer" }] => [CollectionConstructorParameter.Comparer],
         [{ Type.Name: "IEqualityComparer" }] => [CollectionConstructorParameter.EqualityComparer],
         [_, { Type.Name: "IComparer" }] => [CollectionConstructorParameter.Values, CollectionConstructorParameter.Comparer],
