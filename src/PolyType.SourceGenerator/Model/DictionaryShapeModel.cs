@@ -9,7 +9,8 @@ public sealed record DictionaryShapeModel : TypeShapeModel
     public required TypeId ValueType { get; init; }
     public required DictionaryKind Kind { get; init; }
     public required CollectionConstructionStrategy ConstructionStrategy { get; init; }
-    public required ConstructionWithComparer ConstructionComparer { get; init; }
+    public required ReadOnlyMemory<CollectionConstructorParameter> ConstructionParameters { get; init; }
+    public required ReadOnlyMemory<CollectionConstructorParameter> ConstructionParametersWithCapacity { get; init; }
     public required bool HasConstructorWithoutComparer { get; init; }
     public required string? ImplementationTypeFQN { get; init; }
     public required string? StaticFactoryMethod { get; init; }

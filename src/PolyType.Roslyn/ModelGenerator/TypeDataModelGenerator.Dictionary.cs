@@ -21,6 +21,7 @@ public partial class TypeDataModelGenerator
         CollectionModelConstructionStrategy constructionStrategy = CollectionModelConstructionStrategy.None;
         IMethodSymbol? factoryMethod = null;
         IMethodSymbol? factoryMethodWithComparer = null;
+        IMethodSymbol? factoryMethodWithCapacity = null;
         ITypeSymbol? keyType = null;
         ITypeSymbol? valueType = null;
         bool indexerIsExplicitImplementation = false;
@@ -59,6 +60,11 @@ public partial class TypeDataModelGenerator
             factoryMethodWithComparer = namedType.Constructors.FirstOrDefault(ctor
                 => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [IParameterSymbol only] }
                 && ClassifyConstructorParameter(only, keyType, valueType) is CollectionConstructorParameterType.Comparer or CollectionConstructorParameterType.EqualityComparer);
+
+            // .ctor(int capacity, I[Equality]Comparer<TKey>)
+            factoryMethodWithCapacity = factoryMethodWithComparer is null ? null : namedType.Constructors.FirstOrDefault(ctor
+                => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [IParameterSymbol { Name: "capacity", Type.Name: "Int32" }, IParameterSymbol { Type: { } secondType }] }
+                && SymbolEqualityComparer.Default.Equals(factoryMethodWithComparer.Parameters[0].Type, secondType));
         }
 
         // .ctor(ReadOnlySpan<KeyValuePair<K, V>>)
@@ -153,6 +159,7 @@ public partial class TypeDataModelGenerator
             ConstructionStrategy = constructionStrategy,
             FactoryMethod = factoryMethod,
             FactoryMethodWithComparer = factoryMethodWithComparer,
+            FactoryMethodWithCapacity = factoryMethodWithCapacity,
             IndexerIsExplicitInterfaceImplementation = indexerIsExplicitImplementation,
         };
 
@@ -208,12 +215,12 @@ public partial class TypeDataModelGenerator
                     .MakeGenericMethod(namedType.TypeArguments[0], namedType.TypeArguments[1]);
                 return (factory, factoryWithComparer, CollectionModelConstructionStrategy.List);
             }
-            
+
             if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.FrozenDictionary))
             {
                 factoryWithComparer = factory = KnownSymbols.Compilation.GetTypeByMetadataName("System.Collections.Frozen.FrozenDictionary")
-                    .GetMethodSymbol(method => 
-                        method is { IsStatic: true, IsGenericMethod: true, Name: "ToFrozenDictionary", Parameters: [{ Type.Name: "IEnumerable" }, { Type.Name: "IEqualityComparer"}] })
+                    .GetMethodSymbol(method =>
+                        method is { IsStatic: true, IsGenericMethod: true, Name: "ToFrozenDictionary", Parameters: [{ Type.Name: "IEnumerable" }, { Type.Name: "IEqualityComparer" }] })
                     .MakeGenericMethod(namedType.TypeArguments[0], namedType.TypeArguments[1]);
 
                 return (factory, factoryWithComparer, CollectionModelConstructionStrategy.List);
