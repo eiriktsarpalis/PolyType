@@ -9,7 +9,7 @@ using Xunit;
 
 namespace PolyType.Tests;
 
-public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest)
+public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerUnderTest)
 {
     protected ITypeShapeProvider Provider => providerUnderTest.Provider;
 
@@ -511,7 +511,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                 Assert.Throws<InvalidOperationException>(() => getter((TEnumerable)state!));
                 return null;
             }
-            
+
             if (enumerableShape.ConstructionStrategy is CollectionConstructionStrategy.Mutable)
             {
                 var defaultCtor = enumerableShape.GetMutableCollectionConstructor();
@@ -743,6 +743,31 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             }
         }
     }
+
+    [Fact]
+    public void Tuple_GetsParameterizedConstruction()
+    {
+        IObjectTypeShape<Tuple<int, bool>> shape = (IObjectTypeShape<Tuple<int, bool>>)providerUnderTest.Provider.Resolve<Tuple<int, bool>>();
+        AssertAllPropertiesAreRequired(shape);
+    }
+
+    [Fact]
+    public void ValueTuple_GetsParameterizedConstruction()
+    {
+        var shape = (IObjectTypeShape<(int, bool)>)providerUnderTest.Provider.Resolve<(int, bool)>();
+        AssertAllPropertiesAreRequired(shape);
+    }
+
+    private void AssertAllPropertiesAreRequired(IObjectTypeShape shape)
+    {
+        Assert.NotNull(shape.Constructor);
+        Assert.Equal(shape.Properties.Count, shape.Constructor.Parameters.Count);
+        Assert.All(shape.Constructor.Parameters, p => Assert.True(p.IsRequired));
+    }
+
+    [GenerateShape<(int, bool)>]
+    [GenerateShape<Tuple<int, bool>>]
+    partial class Witness;
 }
 
 public static class ReflectionExtensions
