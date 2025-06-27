@@ -27,8 +27,8 @@ public static class MyRandomGenerator
 The source generator also supports shape generation for third-party types using witness types:
 
 ```C#
-[GenerateShape<Person[]>]
-[GenerateShape<List<int>>]
+[GenerateShapeFor<Person[]>]
+[GenerateShapeFor<List<int>>]
 public partial class Witness; // : IShapeable<Person[]>, IShapeable<List<int>>
 ```
 
@@ -147,7 +147,7 @@ public class Marshaller<T> : IMarshaller<MyPoco<T>, T>
     public MyPoco<T>? FromSurrogate(T? value) => value is null ? null : new(value);
 }
 
-[GenerateShape<MyPoco<string>>]
+[GenerateShapeFor<MyPoco<string>>]
 public partial class Witness;
 ```
 
