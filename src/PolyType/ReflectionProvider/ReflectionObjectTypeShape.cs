@@ -134,7 +134,9 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
         {
             if (typeof(T).IsValueType)
             {
-                IConstructorShapeInfo ctorInfo = CreateDefaultConstructor(memberInitializers: null);
+                MemberInitializerShapeInfo[] members = typeof(T).GetFields(BindingFlags.Public | BindingFlags.Instance).Select(
+                    f => new MemberInitializerShapeInfo(f, null, false, false, true)).ToArray();
+                IConstructorShapeInfo ctorInfo = new MethodConstructorShapeInfo(typeof(T), typeof(T).GetConstructor([]), [], members);
                 return Provider.CreateConstructor(this, ctorInfo);
             }
             else
