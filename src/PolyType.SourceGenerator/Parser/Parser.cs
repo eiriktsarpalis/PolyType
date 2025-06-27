@@ -15,8 +15,7 @@ namespace PolyType.SourceGenerator;
 
 public sealed partial class Parser : TypeDataModelGenerator
 {
-    // C# 12 is the minimum LTS version that supports static abstracts and generic attributes.
-    private const LanguageVersion MinimumSupportedLanguageVersion = LanguageVersion.CSharp12;
+    private const LanguageVersion MinimumSupportedLanguageVersion = LanguageVersion.CSharp9;
 
     private static readonly IEqualityComparer<(ITypeSymbol Type, string Name)> s_ctorParamComparer =
         CommonHelpers.CreateTupleComparer<ITypeSymbol, string>(
@@ -632,8 +631,16 @@ public sealed partial class Parser : TypeDataModelGenerator
                 typeIdToInclude = typeId;
             }
             else if (
+                SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.GenerateShapeForAttribute) &&
+                attributeData.ConstructorArguments is [{ Kind: TypedConstantKind.Type, Value: ITypeSymbol nonGenericTypeArgument }])
+            {
+                typeToInclude = nonGenericTypeArgument;
+                typeIdToInclude = CreateTypeId(nonGenericTypeArgument);
+                isWitnessTypeDeclaration = true;
+            }
+            else if (
                 attributeData.AttributeClass is { TypeArguments: [ITypeSymbol typeArgument] } &&
-                SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass.ConstructedFrom, _knownSymbols.GenerateShapeAttributeOfT))
+                SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass.ConstructedFrom, _knownSymbols.GenerateShapeForAttributeOfT))
             {
                 typeToInclude = typeArgument;
                 typeIdToInclude = CreateTypeId(typeArgument);
@@ -704,7 +711,7 @@ public sealed partial class Parser : TypeDataModelGenerator
 
         foreach (KeyValuePair<ITypeSymbol, TypeDataModel> entry in GeneratedModels)
         {
-            entry.Value.AssociatedTypes = AssociatedTypes.GetValueOrDefault(entry.Key, []);
+            entry.Value.AssociatedTypes = AssociatedTypes.GetValueOrDefault(entry.Key, ImmutableArray<AssociatedTypeModel>.Empty);
 
             TypeId typeId = CreateTypeId(entry.Value.Type);
             if (results.ContainsKey(typeId))

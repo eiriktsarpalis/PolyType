@@ -68,7 +68,7 @@ public abstract partial class CollectionShapeTests(ProviderUnderTest providerUnd
         }
     }
 
-    [GenerateShape<PublicListOfIntWithInternalConstructor>]
+    [GenerateShapeFor<PublicListOfIntWithInternalConstructor>]
     partial class Witness;
 
     public sealed class Reflection() : CollectionShapeTests(ReflectionProviderUnderTest.NoEmit);

@@ -11,6 +11,8 @@ internal sealed partial class SourceFormatter
 {
     private const string FlagsArgumentStateLabel = "Flags";
 
+    private const RefKind RefReadOnlyParameter = (RefKind)4; // RefKind.RefReadOnlyParameter
+
     private void FormatConstructorFactory(SourceWriter writer, string methodName, ObjectShapeModel type, ConstructorShapeModel constructor)
     {
         string constructorArgumentStateFQN = FormatConstructorArgumentStateFQN(type, constructor);
@@ -51,8 +53,8 @@ internal sealed partial class SourceFormatter
             }
 
             string parameterTypes = constructor.Parameters.Length == 0
-                ? "[]"
-                : $$"""[{{string.Join(", ", constructor.Parameters.Select(p => $"typeof({p.ParameterType.FullyQualifiedName})"))}}]""";
+                ? "global::System.Type.EmptyTypes"
+                : $$"""new global::System.Type[] { {{string.Join(", ", constructor.Parameters.Select(p => $"typeof({p.ParameterType.FullyQualifiedName})"))}} }""";
 
             return $"static () => typeof({constructor.DeclaringType.FullyQualifiedName}).GetConstructor({InstanceBindingFlagsConstMember}, null, {parameterTypes}, null)";
         }
@@ -225,8 +227,7 @@ internal sealed partial class SourceFormatter
 
                     string refPrefix = parameter.RefKind switch
                     {
-                        RefKind.Ref or
-                        RefKind.RefReadOnlyParameter => "ref ",
+                        RefKind.Ref or RefReadOnlyParameter => "ref ",
                         RefKind.In => "in ",
                         RefKind.Out => "out ",
                         _ => ""
@@ -308,12 +309,12 @@ internal sealed partial class SourceFormatter
                 {
                     return parameter.IsField
                         ? $$"""static () => typeof({{parameter.DeclaringType.FullyQualifiedName}}).GetField({{FormatStringLiteral(parameter.UnderlyingMemberName)}}, {{InstanceBindingFlagsConstMember}})"""
-                        : $$"""static () => typeof({{parameter.DeclaringType.FullyQualifiedName}}).GetProperty({{FormatStringLiteral(parameter.UnderlyingMemberName)}}, {{InstanceBindingFlagsConstMember}}, null, typeof({{parameter.ParameterType}}), [], null)""";
+                        : $$"""static () => typeof({{parameter.DeclaringType.FullyQualifiedName}}).GetProperty({{FormatStringLiteral(parameter.UnderlyingMemberName)}}, {{InstanceBindingFlagsConstMember}}, null, typeof({{parameter.ParameterType}}), global::System.Type.EmptyTypes, null)""";
                 }
 
                 string parameterTypes = constructor.Parameters.Length == 0
-                    ? "[]"
-                    : $$"""[{{string.Join(", ", constructor.Parameters.Select(p => $"typeof({p.ParameterType.FullyQualifiedName})"))}}]""";
+                    ? "global::System.Type.EmptyTypes"
+                    : $$"""new global::System.Type[] { {{string.Join(", ", constructor.Parameters.Select(p => $"typeof({p.ParameterType.FullyQualifiedName})"))}} }""";
 
                 return $"static () => typeof({constructor.DeclaringType.FullyQualifiedName}).GetConstructor({InstanceBindingFlagsConstMember}, null, {parameterTypes}, null)?.GetParameters()[{parameter.Position}]";
             }
@@ -430,8 +431,7 @@ internal sealed partial class SourceFormatter
         {
             string refPrefix = parameter.RefKind switch
             {
-                RefKind.Ref or
-                RefKind.RefReadOnlyParameter => "ref ",
+                RefKind.Ref or RefReadOnlyParameter => "ref ",
                 RefKind.In => "in ",
                 RefKind.Out => "out ",
                 _ => ""
@@ -451,8 +451,8 @@ internal sealed partial class SourceFormatter
         {
             // Emit a reflection-based workaround.
             string parameterTypes = constructorModel.Parameters.Length == 0
-                ? "[]"
-                : $$"""[{{string.Join(", ", constructorModel.Parameters.Select(FormatParameterType))}}]""";
+                ? "global::System.Type.EmptyTypes"
+                : $$"""new global::System.Type[] { {{string.Join(", ", constructorModel.Parameters.Select(FormatParameterType))}} }""";
 
             static string FormatParameterType(ParameterShapeModel parameter)
             {

@@ -13,8 +13,8 @@ public static class DiagnosticTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [GenerateShape<MissingType>]
-            public partial class ShapeProvider;
+            [GenerateShapeFor(typeof(MissingType))]
+            public partial class ShapeProvider { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
@@ -24,7 +24,7 @@ public static class DiagnosticTests
         Assert.NotNull(diagnostic);
         Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         Assert.Equal((2, 1), diagnostic.Location.GetStartPosition());
-        Assert.Equal((2, 27), diagnostic.Location.GetEndPosition());
+        Assert.Equal((2, 38), diagnostic.Location.GetEndPosition());
     }
 
     [Fact]
@@ -53,7 +53,7 @@ public static class DiagnosticTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [GenerateShape<TypeToGenerate>]
+            [GenerateShapeFor(typeof(TypeToGenerate))]
             public class ShapeProvider { }
 
             public class TypeToGenerate { }
@@ -122,7 +122,7 @@ public static class DiagnosticTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [GenerateShape<string>]
+            [GenerateShapeFor(typeof(string))]
             public partial class Witness<T>
             {
             }
@@ -146,7 +146,7 @@ public static class DiagnosticTests
 
             public partial class Container<T>
             {
-                [GenerateShape<string>]
+                [GenerateShapeFor(typeof(string))]
                 public partial class Witness
                 {
                 }
@@ -220,7 +220,7 @@ public static class DiagnosticTests
            using PolyType;
 
            [GenerateShape]
-           static partial class MyClass;
+           static partial class MyClass { }
            """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
@@ -230,7 +230,7 @@ public static class DiagnosticTests
         Assert.Equal("PT0007", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         Assert.Equal((2, 0), diagnostic.Location.GetStartPosition());
-        Assert.Equal((3, 29), diagnostic.Location.GetEndPosition());
+        Assert.Equal((3, 32), diagnostic.Location.GetEndPosition());
     }
 
     [Fact]
@@ -239,8 +239,8 @@ public static class DiagnosticTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
            using PolyType;
 
-           [GenerateShape<MyPoco>]
-           static partial class Witness;
+           [GenerateShapeFor(typeof(MyPoco))]
+           static partial class Witness { }
 
            record MyPoco;
            """);
@@ -252,7 +252,7 @@ public static class DiagnosticTests
         Assert.Equal("PT0007", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         Assert.Equal((2, 0), diagnostic.Location.GetStartPosition());
-        Assert.Equal((3, 29), diagnostic.Location.GetEndPosition());
+        Assert.Equal((3, 32), diagnostic.Location.GetEndPosition());
     }
 
     [Fact]
@@ -266,9 +266,9 @@ public static class DiagnosticTests
             {
                 [AssociatedTypeShape(typeof(InternalAssociatedType))]
                 [GenerateShape]
-                internal partial class MyPoco;
+                internal partial class MyPoco { }
 
-                class InternalAssociatedType;
+                class InternalAssociatedType { }
             }
             """);
 
@@ -291,8 +291,8 @@ public static class DiagnosticTests
 
             [AssociatedTypeShape(typeof(InternalAssociatedType<>))]
             [GenerateShape]
-            partial class MyPoco;
-            public class InternalAssociatedType<T>;
+            partial class MyPoco { }
+            public class InternalAssociatedType<T> { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
@@ -314,11 +314,11 @@ public static class DiagnosticTests
             using PolyType;
 
             [AssociatedTypeShape(typeof(InternalAssociatedType<>))]
-            partial class MyPoco<T1, T2>;
-            public class InternalAssociatedType<T>;
+            partial class MyPoco<T1, T2> { }
+            public class InternalAssociatedType<T> { }
 
-            [GenerateShape<MyPoco<int, string>>]
-            partial class Witness;
+            [GenerateShapeFor(typeof(MyPoco<int, string>))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
@@ -335,8 +335,6 @@ public static class DiagnosticTests
     [InlineData(LanguageVersion.CSharp2)]
     [InlineData(LanguageVersion.CSharp7_3)]
     [InlineData(LanguageVersion.CSharp8)]
-    [InlineData(LanguageVersion.CSharp10)]
-    [InlineData(LanguageVersion.CSharp11)]
     public static void UnsupportedLanguageVersions_ErrorDiagnostic(LanguageVersion langVersion)
     {
         CSharpParseOptions parseOptions = CompilationHelpers.CreateParseOptions(langVersion);
@@ -358,17 +356,15 @@ public static class DiagnosticTests
         Assert.Same(Location.None, diagnostic.Location);
     }
 
-    [Theory]
-    [InlineData(LanguageVersion.CSharp12)]
-    public static void SupportedLanguageVersions_NoErrorDiagnostics(LanguageVersion langVersion)
+    [Fact]
+    public static void SupportedLanguageVersions_NoErrorDiagnostics()
     {
-        CSharpParseOptions parseOptions = CompilationHelpers.CreateParseOptions(langVersion);
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
             [GenerateShape]
-            partial class Default;
-            """, parseOptions: parseOptions);
+            partial class Default { }
+            """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
         Assert.Empty(result.Diagnostics);
@@ -381,14 +377,14 @@ public static class DiagnosticTests
     [InlineData(TypeShapeKind.Enumerable)]
     public static void TypeShapeAttribute_ClassWithInvalidKind_ProducesDiagnostic(TypeShapeKind kind)
     {
-        Compilation compilation = CompilationHelpers.CreateCompilation($"""
+        Compilation compilation = CompilationHelpers.CreateCompilation($$"""
             using PolyType;
 
-            [TypeShape(Kind = TypeShapeKind.{kind})]
-            class MyPoco;
+            [TypeShape(Kind = TypeShapeKind.{{kind}})]
+            class MyPoco { }
 
-            [GenerateShape<MyPoco>]
-            partial class Witness;
+            [GenerateShapeFor(typeof(MyPoco))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
@@ -406,15 +402,15 @@ public static class DiagnosticTests
     [InlineData(TypeShapeKind.Optional)]
     public static void TypeShapeAttribute_DictionaryWithInvalidKind_ProducesDiagnostic(TypeShapeKind kind)
     {
-        Compilation compilation = CompilationHelpers.CreateCompilation($"""
+        Compilation compilation = CompilationHelpers.CreateCompilation($$"""
             using PolyType;
             using System.Collections.Generic;
 
-            [TypeShape(Kind = TypeShapeKind.{kind})]
-            class MyPoco : Dictionary<string, string>;
+            [TypeShape(Kind = TypeShapeKind.{{kind}})]
+            class MyPoco : Dictionary<string, string> { }
 
-            [GenerateShape<MyPoco>]
-            partial class Witness;
+            [GenerateShapeFor(typeof(MyPoco))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
@@ -433,15 +429,15 @@ public static class DiagnosticTests
     [InlineData(TypeShapeKind.Dictionary)]
     public static void TypeShapeAttribute_EnumerableWithInvalidKind_ProducesDiagnostic(TypeShapeKind kind)
     {
-        Compilation compilation = CompilationHelpers.CreateCompilation($"""
+        Compilation compilation = CompilationHelpers.CreateCompilation($$"""
             using PolyType;
             using System.Collections.Generic;
 
-            [TypeShape(Kind = TypeShapeKind.{kind})]
-            class MyPoco : List<string>;
+            [TypeShape(Kind = TypeShapeKind.{{kind}})]
+            class MyPoco : List<string> { }
 
-            [GenerateShape<MyPoco>]
-            partial class Witness;
+            [GenerateShapeFor(typeof(MyPoco))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
@@ -459,14 +455,14 @@ public static class DiagnosticTests
     [InlineData(TypeShapeKind.None)]
     public static void TypeShapeAttribute_ClassWithValidKind_NoDiagnostic(TypeShapeKind kind)
     {
-        Compilation compilation = CompilationHelpers.CreateCompilation($"""
+        Compilation compilation = CompilationHelpers.CreateCompilation($$"""
             using PolyType;
 
-            [TypeShape(Kind = TypeShapeKind.{kind})]
-            class MyPoco;
+            [TypeShape(Kind = TypeShapeKind.{{kind}})]
+            class MyPoco { }
 
-            [GenerateShape<MyPoco>]
-            partial class Witness;
+            [GenerateShapeFor(typeof(MyPoco))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
@@ -481,15 +477,15 @@ public static class DiagnosticTests
     [InlineData(TypeShapeKind.None)]
     public static void TypeShapeAttribute_DictionaryWithValidKind_NoDiagnostic(TypeShapeKind kind)
     {
-        Compilation compilation = CompilationHelpers.CreateCompilation($"""
+        Compilation compilation = CompilationHelpers.CreateCompilation($$"""
             using PolyType;
             using System.Collections.Generic;
 
-            [TypeShape(Kind = TypeShapeKind.{kind})]
-            class MyPoco : Dictionary<string, string>;
+            [TypeShape(Kind = TypeShapeKind.{{kind}})]
+            class MyPoco : Dictionary<string, string> { }
 
-            [GenerateShape<MyPoco>]
-            partial class Witness;
+            [GenerateShapeFor(typeof(MyPoco))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
@@ -503,15 +499,15 @@ public static class DiagnosticTests
     [InlineData(TypeShapeKind.None)]
     public static void TypeShapeAttribute_EnumerableWithValidKind_NoDiagnostic(TypeShapeKind kind)
     {
-        Compilation compilation = CompilationHelpers.CreateCompilation($"""
+        Compilation compilation = CompilationHelpers.CreateCompilation($$"""
             using PolyType;
             using System.Collections.Generic;
 
-            [TypeShape(Kind = TypeShapeKind.{kind})]
-            class MyPoco : List<string>;
+            [TypeShape(Kind = TypeShapeKind.{{kind}})]
+            class MyPoco : List<string> { }
 
-            [GenerateShape<MyPoco>]
-            partial class Witness;
+            [GenerateShapeFor(typeof(MyPoco))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
@@ -524,13 +520,13 @@ public static class DiagnosticTests
         using PolyType;
 
         [GenerateShape, TypeShape(Marshaller = typeof(int))]
-        partial class MyPoco;
+        partial class MyPoco { }
         """)]
     [InlineData("""
         using PolyType;
 
         [GenerateShape, TypeShape(Kind = TypeShapeKind.Surrogate)]
-        partial class MyPoco;
+        partial class MyPoco { }
         """)]
     [InlineData("""
         using PolyType;
@@ -638,8 +634,8 @@ public static class DiagnosticTests
             public MyPoco<T>? FromSurrogate(T? value) => value is null ? null : new(value);
         }
 
-        [GenerateShape<MyPoco<int>>]
-        public partial class Witness;
+        [GenerateShapeFor(typeof(MyPoco<int>))]
+        public partial class Witness { }
         """)]
     [InlineData("""
         using PolyType;
@@ -654,8 +650,8 @@ public static class DiagnosticTests
             }
         }
 
-        [GenerateShape<MyPoco<int>>]
-        public partial class Witness;
+        [GenerateShapeFor(typeof(MyPoco<int>))]
+        public partial class Witness { }
         """)]
     [InlineData("""
         using PolyType;
@@ -675,8 +671,8 @@ public static class DiagnosticTests
             }
         }
 
-        [GenerateShape<MyPoco<int, string>>]
-        public partial class Witness;
+        [GenerateShapeFor(typeof(MyPoco<int, string>))]
+        public partial class Witness { }
         """)]
     public static void ValidGenericMarshaller_NoDiagnostic(string source)
     {
@@ -696,7 +692,7 @@ public static class DiagnosticTests
 
             [GenerateShape]
             [DerivedTypeShape(typeof(object))]
-            partial class PolymorphicClassWithInvalidDerivedType_NotASubtype;
+            partial class PolymorphicClassWithInvalidDerivedType_NotASubtype { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
@@ -720,7 +716,7 @@ public static class DiagnosticTests
             [DerivedTypeShape(typeof(Derived), Name = "case2", Tag = 2)]
             public partial class PolymorphicClassWithInvalidDerivedType_ConflictingTypes
             {
-                public class Derived : PolymorphicClassWithInvalidDerivedType_ConflictingTypes;
+                public class Derived : PolymorphicClassWithInvalidDerivedType_ConflictingTypes { }
             }
             """);
 
@@ -745,8 +741,8 @@ public static class DiagnosticTests
             [DerivedTypeShape(typeof(Derived2), Name = "case1", Tag = 2)]
             public partial class PolymorphicClassWithInvalidDerivedType_ConflictingNames
             {
-                public class Derived1 : PolymorphicClassWithInvalidDerivedType_ConflictingNames;
-                public class Derived2 : PolymorphicClassWithInvalidDerivedType_ConflictingNames;
+                public class Derived1 : PolymorphicClassWithInvalidDerivedType_ConflictingNames { }
+                public class Derived2 : PolymorphicClassWithInvalidDerivedType_ConflictingNames { }
             }
             """);
 
@@ -771,8 +767,8 @@ public static class DiagnosticTests
             [DerivedTypeShape(typeof(Derived2), Name = "case2", Tag = 42)]
             public partial class PolymorphicClassWithInvalidDerivedType_ConflictingTags
             {
-                public class Derived1 : PolymorphicClassWithInvalidDerivedType_ConflictingTags;
-                public class Derived2 : PolymorphicClassWithInvalidDerivedType_ConflictingTags;
+                public class Derived1 : PolymorphicClassWithInvalidDerivedType_ConflictingTags { }
+                public class Derived2 : PolymorphicClassWithInvalidDerivedType_ConflictingTags { }
             }
             """);
 
@@ -795,11 +791,11 @@ public static class DiagnosticTests
             [DerivedTypeShape(typeof(Derived<>))]
             class PolymorphicClassWithGenericDerivedType
             {
-                public class Derived<T> : PolymorphicClassWithGenericDerivedType;
+                public class Derived<T> : PolymorphicClassWithGenericDerivedType { }
             }
 
-            [GenerateShape<PolymorphicClassWithGenericDerivedType>]
-            partial class Witness;
+            [GenerateShapeFor(typeof(PolymorphicClassWithGenericDerivedType))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
@@ -822,11 +818,11 @@ public static class DiagnosticTests
             [DerivedTypeShape(typeof(Derived<>))]
             class GenericPolymorphicClassWithMismatchingGenericDerivedType<T>
             {
-                public class Derived<S> : GenericPolymorphicClassWithMismatchingGenericDerivedType<List<S>>;
+                public class Derived<S> : GenericPolymorphicClassWithMismatchingGenericDerivedType<List<S>> { }
             }
 
-            [GenerateShape<GenericPolymorphicClassWithMismatchingGenericDerivedType<string>>]
-            partial class Witness;
+            [GenerateShapeFor(typeof(GenericPolymorphicClassWithMismatchingGenericDerivedType<string>))]
+            partial class Witness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);

@@ -286,6 +286,6 @@ public partial class DependencyInjectionTests
         public void Dispose() => IsDisposed = true;
     }
 
-    [GenerateShape<int>]
+    [GenerateShapeFor<int>]
     public partial class Witness;
 }

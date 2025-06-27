@@ -400,22 +400,22 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         return shape;
     }
 
-    [GenerateShape<Dictionary<int, bool>>]
-    [GenerateShape<IDictionary<int, bool>>]
-    [GenerateShape<ReadOnlyDictionary<int, bool>>]
-    [GenerateShape<SortedDictionary<int, bool>>]
-    [GenerateShape<ImmutableDictionary<int, bool>>]
-    [GenerateShape<ImmutableSortedDictionary<int, bool>>]
-    [GenerateShape<HashSet<int>>]
-    [GenerateShape<SortedSet<int>>]
-    [GenerateShape<ImmutableHashSet<int>>]
-    [GenerateShape<ImmutableSortedSet<int>>]
-    [GenerateShape<HashSet<IEqualityComparer<int>>>]
-    [GenerateShape<Dictionary<IEqualityComparer<int>, int>>]
-    [GenerateShape<ReadOnlyMemory<int>>]
-    [GenerateShape<Memory<int>>]
-    [GenerateShape<int[]>]
-    [GenerateShape<int[,]>]
+    [GenerateShapeFor<Dictionary<int, bool>>]
+    [GenerateShapeFor<IDictionary<int, bool>>]
+    [GenerateShapeFor<ReadOnlyDictionary<int, bool>>]
+    [GenerateShapeFor<SortedDictionary<int, bool>>]
+    [GenerateShapeFor<ImmutableDictionary<int, bool>>]
+    [GenerateShapeFor<ImmutableSortedDictionary<int, bool>>]
+    [GenerateShapeFor<HashSet<int>>]
+    [GenerateShapeFor<SortedSet<int>>]
+    [GenerateShapeFor<ImmutableHashSet<int>>]
+    [GenerateShapeFor<ImmutableSortedSet<int>>]
+    [GenerateShapeFor<HashSet<IEqualityComparer<int>>>]
+    [GenerateShapeFor<Dictionary<IEqualityComparer<int>, int>>]
+    [GenerateShapeFor<ReadOnlyMemory<int>>]
+    [GenerateShapeFor<Memory<int>>]
+    [GenerateShapeFor<int[]>]
+    [GenerateShapeFor<int[,]>]
     partial class Witness;
 
     private class ReverseComparer : IComparer<int>

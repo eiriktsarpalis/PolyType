@@ -26,7 +26,7 @@ public abstract partial class CborCustomConverterTests(ProviderUnderTest provide
 
     public record CustomConverterHelper<T>(T Value);
 
-    [GenerateShape<RootWithCustomConvertedMember>]
+    [GenerateShapeFor<RootWithCustomConvertedMember>]
     protected partial class Witness;
 
     public class CustomConverter<T> : CborConverter<ClassWithCustomConverter<T>>

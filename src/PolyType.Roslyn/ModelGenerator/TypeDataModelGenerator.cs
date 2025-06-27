@@ -331,7 +331,7 @@ public partial class TypeDataModelGenerator
         ISymbol symbol,
         out ImmutableArray<AssociatedTypeModel> associatedTypes)
     {
-        associatedTypes = [];
+        associatedTypes = ImmutableArray<AssociatedTypeModel>.Empty;
     }
 
     private static bool IsAcceptableConstructorPair(CollectionConstructorParameterType first, CollectionConstructorParameterType second, CollectionConstructorParameterType collectionType)

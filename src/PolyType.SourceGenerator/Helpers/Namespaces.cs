@@ -4,5 +4,5 @@ namespace PolyType.SourceGenerator.Helpers;
 
 internal static class Namespaces
 {
-    internal static readonly ImmutableArray<string> SystemCollectionsGeneric = ["System", "Collections", "Generic"];
+    internal static readonly ImmutableArray<string> SystemCollectionsGeneric = ImmutableArray.Create("System", "Collections", "Generic");
 }

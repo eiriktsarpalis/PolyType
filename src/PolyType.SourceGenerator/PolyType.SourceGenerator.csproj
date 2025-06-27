@@ -3,9 +3,10 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants Condition="'$(LaunchDebugger)' == 'true'">$(DefineConstants);LAUNCH_DEBUGGER</DefineConstants>
+    <IsAnalyzerProject>true</IsAnalyzerProject>
     <DefineConstants>$(DefineConstants);ROSLYN4_4_OR_GREATER</DefineConstants>
   </PropertyGroup>
-    
+
   <ItemGroup>
     <Compile Include="..\PolyType\TypeShapeKind.cs" Link="Shared\PolyType\%(Filename).cs" />
     <Compile Include="..\Shared\Helpers\CommonHelpers.cs" Link="PolyType.Roslyn\Shared\Helpers\%(Filename).cs" />
@@ -13,10 +14,9 @@
     <Compile Include="..\Shared\Polyfills\FSharpSourceConstructFlags.cs" Link="Shared\Polyfills\%(Filename).cs" />
     <Compile Include="..\PolyType.Roslyn\**\*.cs" Exclude="**\bin\**;**\obj\**" Link="PolyType.Roslyn\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
-    
+
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" Pack="false" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
   </ItemGroup>
-
 </Project>

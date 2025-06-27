@@ -62,8 +62,8 @@ public sealed partial class Parser
 
     private static DiagnosticDescriptor UnsupportedLanguageVersion { get; } = new DiagnosticDescriptor(
         id: "PT0008",
-        title: "PolyType requires C# version 12 or newer.",
-        messageFormat: "The PolyType source generator requires C# version 12 or newer.",
+        title: "PolyType requires C# version 9 or newer.",
+        messageFormat: "The PolyType source generator requires C# version 9 or newer.",
         category: "PolyType.SourceGenerator",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);

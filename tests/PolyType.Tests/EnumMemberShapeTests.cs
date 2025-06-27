@@ -21,7 +21,7 @@ public abstract partial class EnumMemberShapeTests(ProviderUnderTest providerUnd
         Third = 8,
     }
 
-    [GenerateShape<TestEnum>]
+    [GenerateShapeFor<TestEnum>]
     protected partial class Witness;
 
     public sealed class Reflection() : EnumMemberShapeTests(ReflectionProviderUnderTest.NoEmit);

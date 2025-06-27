@@ -58,22 +58,24 @@ public static class IncrementalCompilationTests
     [InlineData("""
         using PolyType;
 
-        namespace Test;
+        namespace Test
+        {
+            public record MyPoco(int x, string[] ys, bool z);
 
-        public record MyPoco(int x, string[] ys, bool z);
-
-        [GenerateShape<MyPoco>]
-        public partial class MyContext { }
+            [GenerateShapeFor(typeof(MyPoco))]
+            public partial class MyContext { }
+        }
         """,
         """
         using PolyType;
 
-        namespace Test;
+        namespace Test
+        {
+            public record MyPoco(int x, string[] ys);
 
-        public record MyPoco(int x, string[] ys);
-
-        [GenerateShape<MyPoco>]
-        public partial class MyContext { }
+            [GenerateShapeFor(typeof(MyPoco))]
+            public partial class MyContext { }
+        }
         """)]
     public static void CompilingDifferentSourcesResultsInNotEqualModels(string source1, string source2)
     {
@@ -90,37 +92,39 @@ public static class IncrementalCompilationTests
     [InlineData("""
         using PolyType;
 
-        namespace Test;
-
-        public class MyPoco
+        namespace Test
         {
-            public int X { get => _x; init { _x = value; } }
-            private int _x;
-        }
+            public class MyPoco
+            {
+                public int X { get => _x; init { _x = value; } }
+                private int _x;
+            }
 
-        [GenerateShape<MyPoco>]
-        public partial class MyContext { }
+            [GenerateShapeFor(typeof(MyPoco))]
+            public partial class MyContext { }
+        }
         """,
         """
         using PolyType;
 
-        namespace Test;
-
-        public class MyPoco
+        namespace Test
         {
+            public class MyPoco
+            {
 
-            public int X 
-            { 
-                get => 42; 
-                init 
-                {
-                    throw new System.NotSupportedException();
+                public int X 
+                { 
+                    get => 42; 
+                    init 
+                    {
+                        throw new System.NotSupportedException();
+                    }
                 }
             }
-        }
 
-        [GenerateShape<MyPoco>]
-        public partial class MyContext { }
+            [GenerateShapeFor(typeof(MyPoco))]
+            public partial class MyContext { }
+        }
         """)]
     public static void CompilingEquivalentSourcesResultsInEqualModels(string source1, string source2)
     {
