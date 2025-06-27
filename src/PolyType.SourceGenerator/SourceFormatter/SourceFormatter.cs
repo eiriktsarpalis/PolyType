@@ -136,7 +136,8 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
         => $"global::PolyType.Abstractions.CollectionConstructionOptions<{keyType}>";
 
     private static string FormatCollectionInitializer(
-        ConstructionWithComparer constructorComparer,
+        ReadOnlyMemory<CollectionConstructorParameter> constructorParameters,
+        ReadOnlyMemory<CollectionConstructorParameter> constructorWithCapacityParameters,
         bool hasConstructorWithoutComparer,
         TypeId keyType,
         string ctorOrFactoryFormat,
@@ -146,61 +147,77 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
         string valuesParam = values is null ? string.Empty : $"{values.Value.Type} values, ";
         string preamble = $"static ({valuesParam}in {optionsTypeName} options) => ";
 
-        string? comparer = constructorComparer switch
-        {
-            ConstructionWithComparer.None => null,
-            ConstructionWithComparer.Comparer or ConstructionWithComparer.ComparerValues or ConstructionWithComparer.ValuesComparer => "Comparer",
-            ConstructionWithComparer.EqualityComparer or ConstructionWithComparer.EqualityComparerValues or ConstructionWithComparer.ValuesEqualityComparer => "EqualityComparer",
-            _ => throw new NotSupportedException(),
-        };
-        string noComparer = $"{string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, values?.Expression)}";
-        if (comparer is null)
+        string? comparerType = FormatOptionsComparerPropertyName(constructorParameters.Span);
+        string justValues = $"{string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, values?.Expression)}";
+        if (comparerType is null)
         {
             if (!hasConstructorWithoutComparer)
             {
                 throw new NotSupportedException("No constructor available without comparer.");
             }
 
-            return $"{preamble}{noComparer}";
+            return constructorWithCapacityParameters.Length > 0
+                ? $"{preamble}options.Capacity is null ? {justValues} : {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, FormatArgs(constructorWithCapacityParameters.Span))}"
+                : $"{preamble}{justValues}";
         }
         else if (hasConstructorWithoutComparer)
         {
-            string? argsWithComparer = constructorComparer switch
+            string? argsWithComparer = constructorParameters.Span switch
             {
-                ConstructionWithComparer.Comparer or ConstructionWithComparer.EqualityComparer when values is null => $"options.{comparer}",
-                ConstructionWithComparer.ComparerValues or ConstructionWithComparer.EqualityComparerValues => $"options.{comparer}, {values?.Expression}",
-                ConstructionWithComparer.ValuesComparer or ConstructionWithComparer.ValuesEqualityComparer => $"{values?.Expression}, options.{comparer}",
+                [CollectionConstructorParameter.Comparer or CollectionConstructorParameter.EqualityComparer] when values is null => $"options.{comparerType}",
+                [CollectionConstructorParameter.Comparer or CollectionConstructorParameter.EqualityComparer, CollectionConstructorParameter.Values] => $"options.{comparerType}, {values!.Value.Expression}",
+                [CollectionConstructorParameter.Values, CollectionConstructorParameter.Comparer or CollectionConstructorParameter.EqualityComparer] => $"{values!.Value.Expression}, options.{comparerType}",
                 _ => throw new NotSupportedException(),
             };
 
-            return $"{preamble}options.{comparer} is null ? {noComparer} : {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, argsWithComparer)}";
+            return $"{preamble}options.{comparerType} is null ? {justValues} : {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, argsWithComparer)}";
         }
         else
         {
-            string? argsWithComparer = constructorComparer switch
-            {
-                ConstructionWithComparer.Comparer or ConstructionWithComparer.EqualityComparer when values is null => $"options.{comparer}",
-                ConstructionWithComparer.ComparerValues or ConstructionWithComparer.EqualityComparerValues => $"options.{comparer}, {values?.Expression}",
-                ConstructionWithComparer.ValuesComparer or ConstructionWithComparer.ValuesEqualityComparer => $"{values?.Expression}, options.{comparer}",
-                _ => throw new NotSupportedException(),
-            };
+            return constructorWithCapacityParameters.Length > 0
+                ? $"{preamble}options.Capacity is null ? {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, FormatArgs(constructorParameters.Span))} : {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, FormatArgs(constructorWithCapacityParameters.Span))}"
+                : $"{preamble}{string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, FormatArgs(constructorParameters.Span))}";
+        }
 
-            return $"{preamble}{string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, argsWithComparer)}";
+        string FormatArgs(ReadOnlySpan<CollectionConstructorParameter> parameters)
+        {
+            StringBuilder builder = new();
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                if (builder.Length > 0)
+                {
+                    builder.Append(", ");
+                }
+
+                builder.Append(parameters[i] switch
+                {
+                    CollectionConstructorParameter.Values => values!.Value.Expression,
+                    CollectionConstructorParameter.Comparer or CollectionConstructorParameter.EqualityComparer => $"options.{comparerType}",
+                    CollectionConstructorParameter.Capacity => "options.Capacity.Value",
+                    _ => new NotSupportedException(),
+                });
+            }
+
+            return builder.ToString();
         }
     }
 
-    private static string FormatComparerOptions(ConstructionWithComparer comparer)
+    private static string? FormatOptionsComparerPropertyName(ReadOnlySpan<CollectionConstructorParameter> parameters)
     {
-        string kind = comparer switch
+        for (int i = 0; i < parameters.Length; i++)
         {
-            ConstructionWithComparer.None => "None",
-            ConstructionWithComparer.Comparer or ConstructionWithComparer.ComparerValues or ConstructionWithComparer.ValuesComparer => "Comparer",
-            ConstructionWithComparer.EqualityComparer or ConstructionWithComparer.EqualityComparerValues or ConstructionWithComparer.ValuesEqualityComparer => "EqualityComparer",
-            _ => throw new NotSupportedException(),
-        };
+            switch (parameters[i])
+            {
+                case CollectionConstructorParameter.Comparer: return "Comparer";
+                case CollectionConstructorParameter.EqualityComparer: return "EqualityComparer";
+            }
+        }
 
-        return $"global::PolyType.Abstractions.CollectionComparerOptions.{kind}";
+        return null;
     }
+
+    private static string FormatComparerOptions(ReadOnlySpan<CollectionConstructorParameter> parameters)
+        => $"global::PolyType.Abstractions.CollectionComparerOptions.{FormatOptionsComparerPropertyName(parameters) ?? "None"}";
 
     private string FormatAssociatedTypeShapes(TypeShapeModel objectShapeModel)
     {

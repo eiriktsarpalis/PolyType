@@ -63,8 +63,8 @@ internal sealed class CborMutableDictionaryConverter<TDictionary, TKey, TValue>(
             return default;
         }
 
-        reader.ReadStartMap();
-        TDictionary result = createObject();
+        int? definiteLength = reader.ReadStartMap();
+        TDictionary result = createObject(new() { Capacity = definiteLength });
 
         CborConverter<TKey> keyConverter = _keyConverter;
         CborConverter<TValue> valueConverter = _valueConverter;

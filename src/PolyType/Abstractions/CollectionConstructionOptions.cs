@@ -9,7 +9,7 @@
 /// Construction of any particular collection type may ignore any or all of these properties.
 /// To predict whether a collection will use a particular comparer property, check the
 /// <see cref="CollectionComparerOptions"/> enum, as defined by either
-/// <see cref="IEnumerableTypeShape.SupportedComparers"/> or <see cref="IDictionaryTypeShape.SupportedComparers"/>.
+/// <see cref="IEnumerableTypeShape.SupportedComparer"/> or <see cref="IDictionaryTypeShape.SupportedComparer"/>.
 /// </para>
 /// </remarks>
 public readonly struct CollectionConstructionOptions<TKey>
@@ -23,4 +23,9 @@ public readonly struct CollectionConstructionOptions<TKey>
     /// Gets an optional comparer for the keys or elements in the collection.
     /// </summary>
     public IComparer<TKey>? Comparer { get; init; }
+
+    /// <summary>
+    /// Gets the initial capacity of the collection.
+    /// </summary>
+    public int? Capacity { get; init; }
 }

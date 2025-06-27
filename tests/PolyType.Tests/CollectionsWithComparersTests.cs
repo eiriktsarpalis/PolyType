@@ -130,10 +130,10 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     [Fact]
     public void NoComparerCollections()
     {
-        Assert.Equal(CollectionComparerOptions.None, this.GetEnumerableShape<ReadOnlyMemory<int>, int>().SupportedComparers);
-        Assert.Equal(CollectionComparerOptions.None, this.GetEnumerableShape<Memory<int>, int>().SupportedComparers);
-        Assert.Equal(CollectionComparerOptions.None, this.GetEnumerableShape<int[], int>().SupportedComparers);
-        Assert.Equal(CollectionComparerOptions.None, this.GetEnumerableShape<int[,], int>().SupportedComparers);
+        Assert.Equal(CollectionComparerOptions.None, this.GetEnumerableShape<ReadOnlyMemory<int>, int>().SupportedComparer);
+        Assert.Equal(CollectionComparerOptions.None, this.GetEnumerableShape<Memory<int>, int>().SupportedComparer);
+        Assert.Equal(CollectionComparerOptions.None, this.GetEnumerableShape<int[], int>().SupportedComparer);
+        Assert.Equal(CollectionComparerOptions.None, this.GetEnumerableShape<int[,], int>().SupportedComparer);
     }
 
     private void AssertDefaultDictionary<T, K, V>(IComparer<K> comparer, Func<T, IComparer<K>> getComparer)
@@ -212,7 +212,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         where K : notnull
     {
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
-        Assert.Equal(CollectionComparerOptions.Comparer, shape.SupportedComparers);
+        Assert.Equal(CollectionComparerOptions.Comparer, shape.SupportedComparer);
         return shape.GetMutableCollectionConstructor()(new() { Comparer = comparer });
     }
 
@@ -220,7 +220,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         where K : notnull
     {
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
-        Assert.Equal(CollectionComparerOptions.EqualityComparer, shape.SupportedComparers);
+        Assert.Equal(CollectionComparerOptions.EqualityComparer, shape.SupportedComparer);
         return shape.GetMutableCollectionConstructor()(new() { EqualityComparer = equalityComparer });
     }
 
@@ -228,7 +228,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         where K : notnull
     {
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
-        Assert.Equal(CollectionComparerOptions.Comparer, shape.SupportedComparers);
+        Assert.Equal(CollectionComparerOptions.Comparer, shape.SupportedComparer);
         return shape.GetEnumerableCollectionConstructor()(values, new() { Comparer = comparer });
     }
 
@@ -236,7 +236,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         where K : notnull
     {
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
-        Assert.Equal(CollectionComparerOptions.EqualityComparer, shape.SupportedComparers);
+        Assert.Equal(CollectionComparerOptions.EqualityComparer, shape.SupportedComparer);
         return shape.GetEnumerableCollectionConstructor()(values, new() { EqualityComparer = equalityComparer });
     }
 
@@ -245,7 +245,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     {
         Assert.SkipWhen(providerUnderTest is ReflectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span collections.");
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
-        Assert.Equal(CollectionComparerOptions.Comparer, shape.SupportedComparers);
+        Assert.Equal(CollectionComparerOptions.Comparer, shape.SupportedComparer);
         Assert.Equal(CollectionConstructionStrategy.Span, shape.ConstructionStrategy);
         return shape.GetSpanCollectionConstructor()(values, new() { Comparer = comparer });
     }
@@ -255,7 +255,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     {
         Assert.SkipWhen(providerUnderTest is ReflectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span collections.");
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
-        Assert.Equal(CollectionComparerOptions.EqualityComparer, shape.SupportedComparers);
+        Assert.Equal(CollectionComparerOptions.EqualityComparer, shape.SupportedComparer);
         Assert.Equal(CollectionConstructionStrategy.Span, shape.ConstructionStrategy);
         return shape.GetSpanCollectionConstructor()(values, new() { EqualityComparer = equalityComparer });
     }
@@ -346,7 +346,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     private T CreateDefaultEnumerable<T, K>(IComparer<K>? comparer)
     {
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
-        Assert.Equal(CollectionComparerOptions.Comparer, shape.SupportedComparers);
+        Assert.Equal(CollectionComparerOptions.Comparer, shape.SupportedComparer);
         Assert.Equal(CollectionConstructionStrategy.Mutable, shape.ConstructionStrategy);
         return shape.GetMutableCollectionConstructor()(new() { Comparer = comparer });
     }
@@ -354,7 +354,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     private T CreateDefaultEnumerable<T, K>(IEqualityComparer<K>? equalityComparer)
     {
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
-        Assert.Equal(CollectionComparerOptions.EqualityComparer, shape.SupportedComparers);
+        Assert.Equal(CollectionComparerOptions.EqualityComparer, shape.SupportedComparer);
         Assert.Equal(CollectionConstructionStrategy.Mutable, shape.ConstructionStrategy);
         return shape.GetMutableCollectionConstructor()(new() { EqualityComparer = equalityComparer });
     }
@@ -363,7 +363,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     {
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
         Assert.Equal(CollectionConstructionStrategy.Enumerable, shape.ConstructionStrategy);
-        Assert.Equal(CollectionComparerOptions.Comparer, shape.SupportedComparers);
+        Assert.Equal(CollectionComparerOptions.Comparer, shape.SupportedComparer);
         return shape.GetEnumerableCollectionConstructor()(values, new() { Comparer = comparer });
     }
 
@@ -371,7 +371,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     {
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
         Assert.Equal(CollectionConstructionStrategy.Enumerable, shape.ConstructionStrategy);
-        Assert.Equal(CollectionComparerOptions.EqualityComparer, shape.SupportedComparers);
+        Assert.Equal(CollectionComparerOptions.EqualityComparer, shape.SupportedComparer);
         return shape.GetEnumerableCollectionConstructor()(values, new() { EqualityComparer = equalityComparer });
     }
 
@@ -380,7 +380,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         Assert.SkipWhen(providerUnderTest is ReflectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span collections.");
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
         Assert.Equal(CollectionConstructionStrategy.Span, shape.ConstructionStrategy);
-        Assert.Equal(CollectionComparerOptions.Comparer, shape.SupportedComparers);
+        Assert.Equal(CollectionComparerOptions.Comparer, shape.SupportedComparer);
         return shape.GetSpanCollectionConstructor()(values, new() { Comparer = comparer });
     }
 
@@ -389,7 +389,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         Assert.SkipWhen(providerUnderTest is ReflectionProviderUnderTest { Kind: ProviderKind.ReflectionNoEmit }, "Reflection (no-emit) does not support span collections.");
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
         Assert.Equal(CollectionConstructionStrategy.Span, shape.ConstructionStrategy);
-        Assert.Equal(CollectionComparerOptions.EqualityComparer, shape.SupportedComparers);
+        Assert.Equal(CollectionComparerOptions.EqualityComparer, shape.SupportedComparer);
         return shape.GetSpanCollectionConstructor()(values, new() { EqualityComparer = equalityComparer });
     }
 

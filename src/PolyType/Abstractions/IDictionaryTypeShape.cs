@@ -36,7 +36,7 @@ public interface IDictionaryTypeShape : ITypeShape
     /// <summary>
     /// Gets the kind of custom comparer (if any) that this collection may be initialized with.
     /// </summary>
-    CollectionComparerOptions SupportedComparers { get; }
+    CollectionComparerOptions SupportedComparer { get; }
 }
 
 /// <summary>

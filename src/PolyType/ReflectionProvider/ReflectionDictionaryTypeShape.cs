@@ -18,7 +18,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
 {
     private readonly object _syncObject = new();
     private CollectionConstructionStrategy? _constructionStrategy;
-    private CollectionComparerOptions? _supportedComparers;
+    private CollectionComparerOptions? _supportedComparer;
     private (MethodBase Method, ConstructionSignature Signature)? _factory;
     private (MethodBase Method, ConstructionSignature Signature)? _factoryWithComparer;
     private MethodInfo? _addMethod;
@@ -34,7 +34,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     public sealed override TypeShapeKind Kind => TypeShapeKind.Dictionary;
     public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitDictionary(this, state);
 
-    public CollectionComparerOptions SupportedComparers
+    public CollectionComparerOptions SupportedComparer
     {
         get
         {
@@ -43,7 +43,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 DetermineConstructionStrategy();
             }
 
-            return _supportedComparers ??= _factoryWithComparer is null ? CollectionComparerOptions.None : ToComparerConstruction(_factoryWithComparer.Value.Signature);
+            return _supportedComparer ??= _factoryWithComparer is null ? CollectionComparerOptions.None : ToComparerConstruction(_factoryWithComparer.Value.Signature);
         }
     }
 
@@ -247,7 +247,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 switch ((_factory, _factoryWithComparer))
                 {
                     case ({ Signature: ConstructionSignature.Values }, null):
-                        spanCtorDelegate = (ReadOnlySpan<KeyValuePair<TKey, TValue>> span, in CollectionConstructionOptions<TKey> options) => ctor(CollectionHelpers.CreateDictionary(span, SupportedComparers is CollectionComparerOptions.EqualityComparer ? options.EqualityComparer : null));
+                        spanCtorDelegate = (ReadOnlySpan<KeyValuePair<TKey, TValue>> span, in CollectionConstructionOptions<TKey> options) => ctor(CollectionHelpers.CreateDictionary(span, SupportedComparer is CollectionComparerOptions.EqualityComparer ? options.EqualityComparer : null));
                         break;
                     case ({ Signature: ConstructionSignature.Values }, { Signature: ConstructionSignature.ValuesEqualityComparer }):
                         {
@@ -393,7 +393,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 // Handle types with ctors accepting IDictionary or IReadOnlyDictionary such as ReadOnlyDictionary<TKey, TValue>
                 _factory = (dictionaryCtor, ConstructionSignature.Values);
                 _isDictionaryCtor = true;
-                _supportedComparers = CollectionComparerOptions.EqualityComparer;
+                _supportedComparer = CollectionComparerOptions.EqualityComparer;
                 SetComparerConstructionOverload(CollectionConstructionStrategy.Span);
                 return;
             }
@@ -521,7 +521,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     private NotSupportedException CreateUnsupportedConstructorException() => new NotSupportedException($"({_factory?.Signature}, {_factoryWithComparer?.Signature}) constructor is not supported for this type.");
 
     private object? GetRelevantComparer(CollectionConstructionOptions<TKey>? collectionConstructionOptions)
-        => GetRelevantComparer(collectionConstructionOptions, SupportedComparers);
+        => GetRelevantComparer(collectionConstructionOptions, SupportedComparer);
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
