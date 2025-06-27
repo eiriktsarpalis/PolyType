@@ -62,7 +62,7 @@ public static class IncrementalCompilationTests
         {
             public record MyPoco(int x, string[] ys, bool z);
 
-            [GenerateShape(typeof(MyPoco))]
+            [GenerateShapeFor(typeof(MyPoco))]
             public partial class MyContext { }
         }
         """,
@@ -73,7 +73,7 @@ public static class IncrementalCompilationTests
         {
             public record MyPoco(int x, string[] ys);
 
-            [GenerateShape(typeof(MyPoco))]
+            [GenerateShapeFor(typeof(MyPoco))]
             public partial class MyContext { }
         }
         """)]
@@ -100,7 +100,7 @@ public static class IncrementalCompilationTests
                 private int _x;
             }
 
-            [GenerateShape(typeof(MyPoco))]
+            [GenerateShapeFor(typeof(MyPoco))]
             public partial class MyContext { }
         }
         """,
@@ -122,7 +122,7 @@ public static class IncrementalCompilationTests
                 }
             }
 
-            [GenerateShape(typeof(MyPoco))]
+            [GenerateShapeFor(typeof(MyPoco))]
             public partial class MyContext { }
         }
         """)]

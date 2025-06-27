@@ -46,7 +46,7 @@ public class TypeShapeExtensionAnalyzerTests
                 }
             }
 
-            [GenerateShape(typeof(Point))]
+            [GenerateShapeFor(typeof(Point))]
             partial class Witness { }
             """;
 
@@ -91,7 +91,7 @@ public class TypeShapeExtensionAnalyzerTests
                 };
             }
 
-            [GenerateShape(typeof(Point))]
+            [GenerateShapeFor(typeof(Point))]
             partial class Witness { }
             """;
 
@@ -125,7 +125,7 @@ public class TypeShapeExtensionAnalyzerTests
 
             public class SomeOtherType { }
 
-            [GenerateShape(typeof(Point))]
+            [GenerateShapeFor(typeof(Point))]
             partial class Witness { }
             """;
 

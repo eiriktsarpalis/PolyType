@@ -103,9 +103,9 @@ public abstract partial class ValidationTests(ProviderUnderTest providerUnderTes
     // Workaround for .NET Framework not supporting generic attributes.
     public class RangeDoubleAttribute : RangeAttribute<double>;
 
-    [GenerateShape<GenericRecord<BindingModel>>]
-    [GenerateShape<List<BindingModel>>]
-    [GenerateShape<Dictionary<string, BindingModel>>]
+    [GenerateShapeFor<GenericRecord<BindingModel>>]
+    [GenerateShapeFor<List<BindingModel>>]
+    [GenerateShapeFor<Dictionary<string, BindingModel>>]
     public partial class ModelProvider;
 }
 

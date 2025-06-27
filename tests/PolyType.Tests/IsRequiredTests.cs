@@ -217,7 +217,7 @@ public abstract partial class IsRequiredTests(ProviderUnderTest providerUnderTes
         public required bool RequiredProperty { get; set; }
     }
 
-    [GenerateShape<HasRequiredProperty>]
+    [GenerateShapeFor<HasRequiredProperty>]
     internal partial class Witness;
 
     public sealed class Reflection() : IsRequiredTests(ReflectionProviderUnderTest.NoEmit);

@@ -65,7 +65,7 @@ public static class CompilationTests
             public class GenericClass<T1, T2> { }
             public class GenericConverter<T1, T2> { }
 
-            [GenerateShape(typeof(GenericClass<int, string>))]
+            [GenerateShapeFor(typeof(GenericClass<int, string>))]
             public partial class Witness { }
             """);
 
@@ -84,7 +84,7 @@ public static class CompilationTests
             public class GenericClass<T1, T2> { }
             public class GenericConverter<T1, T2> { }
 
-            [GenerateShape(typeof(GenericClass<int, string>))]
+            [GenerateShapeFor(typeof(GenericClass<int, string>))]
             public partial class Witness { }
             """);
 
@@ -103,7 +103,7 @@ public static class CompilationTests
             public class GenericClass<T1, T2> { }
             public class GenericHelper<T1, T2> { }
 
-            [GenerateShape(typeof(GenericClass<int, string>))]
+            [GenerateShapeFor(typeof(GenericClass<int, string>))]
             public partial class Witness { }
             """);
 
@@ -124,7 +124,7 @@ public static class CompilationTests
             public class GenericClass<T1, T2> { }
             public class GenericHelper<T1, T2> { }
 
-            [GenerateShape(typeof(GenericClass<int, string>))]
+            [GenerateShapeFor(typeof(GenericClass<int, string>))]
             public partial class Witness { }
             """);
 
@@ -146,7 +146,7 @@ public static class CompilationTests
             public class GenericClass<T1, T2> { }
             public class GenericHelper<T1, T2> { public int Prop { get; set; } }
 
-            [GenerateShape(typeof(GenericClass<int, string>))]
+            [GenerateShapeFor(typeof(GenericClass<int, string>))]
             public partial class Witness { }
             """);
 
@@ -169,8 +169,8 @@ public static class CompilationTests
 
             public record AnotherShapeReference(GenericHelper<int, string> helper);
 
-            [GenerateShape(typeof(GenericClass<int, string>))]
-            [GenerateShape(typeof(AnotherShapeReference))]
+            [GenerateShapeFor(typeof(GenericClass<int, string>))]
+            [GenerateShapeFor(typeof(AnotherShapeReference))]
             public partial class Witness { }
             """);
 
@@ -193,8 +193,8 @@ public static class CompilationTests
 
             public record AnotherShapeReference(GenericHelper<int, string> helper);
 
-            [GenerateShape(typeof(AnotherShapeReference))]
-            [GenerateShape(typeof(GenericClass<int, string>))]
+            [GenerateShapeFor(typeof(AnotherShapeReference))]
+            [GenerateShapeFor(typeof(GenericClass<int, string>))]
             public partial class Witness { }
             """);
 
@@ -228,7 +228,7 @@ public static class CompilationTests
             public class GenericConverter<T1, T2> { }
             public record GenericHelper<T1, T2>(T1 Value) { }
 
-            [GenerateShape(typeof(GenericClass<int, string>))]
+            [GenerateShapeFor(typeof(GenericClass<int, string>))]
             public partial class Witness { }
             """);
 
@@ -247,7 +247,7 @@ public static class CompilationTests
             public class GenericClass<T1, T2> { }
             public class GenericHelper<T1, T2> { }
 
-            [GenerateShape(typeof(GenericClass<int, string>))]
+            [GenerateShapeFor(typeof(GenericClass<int, string>))]
             public partial class Witness { }
             """);
 
@@ -266,7 +266,7 @@ public static class CompilationTests
             public class GenericClass<T1, T2> { }
             public class GenericConverter<T1, T2> { }
 
-            [GenerateShape(typeof(GenericClass<int, string>))]
+            [GenerateShapeFor(typeof(GenericClass<int, string>))]
             public partial class Witness { }
             """);
 
@@ -291,7 +291,7 @@ public static class CompilationTests
                         public class GenericNested<T2> { }
                     }
 
-                    [GenerateShape(typeof(GenericClass<int, string>))]
+                    [GenerateShapeFor(typeof(GenericClass<int, string>))]
                     public partial class Witness { }
                 }
             }
@@ -328,7 +328,7 @@ public static class CompilationTests
 
                 public class YetAnotherClass<T> { }
 
-                [GenerateShape(typeof(GenericClass<int>))]
+                [GenerateShapeFor(typeof(GenericClass<int>))]
                 public partial class Witness { }
             }
             """);
@@ -344,7 +344,7 @@ public static class CompilationTests
             using PolyType;
             using System.Collections;
 
-            [GenerateShape(typeof(ICollection))]
+            [GenerateShapeFor(typeof(ICollection))]
             public partial class MyWitness { }
             """);
 
@@ -390,7 +390,7 @@ public static class CompilationTests
 
             public record GenericClass<T>(T? Value = default);
 
-            [GenerateShape(typeof(GenericClass<int>))]
+            [GenerateShapeFor(typeof(GenericClass<int>))]
             public partial class Witness { }
             """);
 
@@ -406,7 +406,7 @@ public static class CompilationTests
 
             public record GenericClass<T>(T? Value = default) where T : struct;
 
-            [GenerateShape(typeof(GenericClass<int>))]
+            [GenerateShapeFor(typeof(GenericClass<int>))]
             public partial class Witness { }
             """);
 
@@ -462,7 +462,7 @@ public static class CompilationTests
                     where TProvider : IShapeable<T> { }
             }
 
-            [GenerateShape(typeof(Dictionary<int, string>))]
+            [GenerateShapeFor(typeof(Dictionary<int, string>))]
             public partial class MyProvider { }
             """);
 
@@ -506,7 +506,7 @@ public static class CompilationTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [GenerateShape(typeof(System.Dynamic.ExpandoObject))]
+            [GenerateShapeFor(typeof(System.Dynamic.ExpandoObject))]
             partial class Witness { }
             """);
 
@@ -550,10 +550,10 @@ public static class CompilationTests
             }
             #endif
 
-            [GenerateShape(typeof(int))]
+            [GenerateShapeFor(typeof(int))]
             public partial class MyWitness { }
 
-            [GenerateShape(typeof(string))]
+            [GenerateShapeFor(typeof(string))]
             public partial class MyWitness { }
             """);
 
@@ -570,7 +570,7 @@ public static class CompilationTests
 
            enum MyEnum { A, B, C }
 
-           [GenerateShape(typeof(MyEnum))]
+           [GenerateShapeFor(typeof(MyEnum))]
            partial class Witness { }
            """);
 
@@ -590,7 +590,7 @@ public static class CompilationTests
            public class MyPoco<T> { }
 
            /// <summary>My Witness.</summary>
-           [GenerateShape(typeof(MyPoco<int>))]
+           [GenerateShapeFor(typeof(MyPoco<int>))]
            public partial class Witness { }
            """,
            parseOptions: parseOptions);
@@ -653,7 +653,7 @@ public static class CompilationTests
             {
                 public partial class Outer2
                 {
-                    [GenerateShape(typeof(MyPoco))]
+                    [GenerateShapeFor(typeof(MyPoco))]
                     private partial class Witness { }
 
                     internal record MyPoco(int Value);
@@ -687,7 +687,7 @@ public static class CompilationTests
 
             record MyPoco(string[] Values);
 
-            [GenerateShape(typeof(MyPoco))]
+            [GenerateShapeFor(typeof(MyPoco))]
             {{kind}} Witness { }
             """, outputKind: OutputKind.ConsoleApplication, parseOptions: parseOptions);
 
@@ -738,8 +738,8 @@ public static class CompilationTests
                 public partial class MyPoco { }
             }
 
-            [GenerateShape(typeof(Container<int>.MyPoco))]
-            [GenerateShape(typeof(Container<string>.MyPoco))]
+            [GenerateShapeFor(typeof(Container<int>.MyPoco))]
+            [GenerateShapeFor(typeof(Container<string>.MyPoco))]
             partial class Witness { }
             """);
 
@@ -788,8 +788,8 @@ public static class CompilationTests
            using PolyType;
            using System;
 
-           [GenerateShape(typeof((int, int, int, int, int, int, int, int, int, int)))]
-           [GenerateShape(typeof(System.Tuple<int, int, int, int, int, int, int, Tuple<int, int, int>>))]
+           [GenerateShapeFor(typeof((int, int, int, int, int, int, int, int, int, int)))]
+           [GenerateShapeFor(typeof(System.Tuple<int, int, int, int, int, int, int, Tuple<int, int, int>>))]
            partial class Witness { }
            """);
 
@@ -804,8 +804,8 @@ public static class CompilationTests
            using PolyType;
            using System;
 
-           [GenerateShape(typeof(int?))]
-           [GenerateShape(typeof(Guid?))]
+           [GenerateShapeFor(typeof(int?))]
+           [GenerateShapeFor(typeof(Guid?))]
            partial class Witness { }
            """);
 
@@ -836,7 +836,7 @@ public static class CompilationTests
         Compilation compilation = CompilationHelpers.CreateCompilation($$"""
            using PolyType;
 
-           [GenerateShape(typeof({{type}}))]
+           [GenerateShapeFor(typeof({{type}}))]
            partial class Witness { }
            """);
 
@@ -854,13 +854,13 @@ public static class CompilationTests
             using System.Collections.Immutable;
             using System.Linq;
             
-            [GenerateShape(typeof(Dictionary<string, int>))]
-            [GenerateShape(typeof(ImmutableDictionary<string, int>))]
-            [GenerateShape(typeof(ImmutableSortedDictionary<string, int>))]
-            [GenerateShape(typeof(IReadOnlyDictionary<string, int>))]
-            [GenerateShape(typeof(IDictionary))]
-            [GenerateShape(typeof(Hashtable))]
-            [GenerateShape(typeof(CustomDictionary1))]
+            [GenerateShapeFor(typeof(Dictionary<string, int>))]
+            [GenerateShapeFor(typeof(ImmutableDictionary<string, int>))]
+            [GenerateShapeFor(typeof(ImmutableSortedDictionary<string, int>))]
+            [GenerateShapeFor(typeof(IReadOnlyDictionary<string, int>))]
+            [GenerateShapeFor(typeof(IDictionary))]
+            [GenerateShapeFor(typeof(Hashtable))]
+            [GenerateShapeFor(typeof(CustomDictionary1))]
             partial class Witness { }
             
             class CustomDictionary1 : Dictionary<string, int>
@@ -1049,7 +1049,7 @@ public static class CompilationTests
                 public record Node(T Value, GenericTree<T> Left, GenericTree<T> Right) : GenericTree<T>;
             }
 
-            [GenerateShape(typeof(GenericTree<string>))]
+            [GenerateShapeFor(typeof(GenericTree<string>))]
             partial class Witness { }
             """);
 
@@ -1064,10 +1064,10 @@ public static class CompilationTests
             using Microsoft.FSharp.Core;
             using PolyType;
 
-            [GenerateShape(typeof(FSharpOption<int>))]
-            [GenerateShape(typeof(FSharpValueOption<int>))]
-            [GenerateShape(typeof(FSharpResult<string, int>))]
-            [GenerateShape(typeof(FSharpChoice<int, string, bool>))]
+            [GenerateShapeFor(typeof(FSharpOption<int>))]
+            [GenerateShapeFor(typeof(FSharpValueOption<int>))]
+            [GenerateShapeFor(typeof(FSharpResult<string, int>))]
+            [GenerateShapeFor(typeof(FSharpChoice<int, string, bool>))]
             partial class Witness { }
             """);
 
@@ -1082,7 +1082,7 @@ public static class CompilationTests
             using System.Collections.Generic;
             using PolyType;
 
-            [GenerateShape(typeof(HashSet<string>))]
+            [GenerateShapeFor(typeof(HashSet<string>))]
             partial class Witness { }
             """);
 
@@ -1097,7 +1097,7 @@ public static class CompilationTests
             using System.Collections.Generic;
             using PolyType;
 
-            [GenerateShape(typeof(Dictionary<string, int>))]
+            [GenerateShapeFor(typeof(Dictionary<string, int>))]
             partial class Witness { }
             """);
 
@@ -1112,7 +1112,7 @@ public static class CompilationTests
             using System.Collections.Concurrent;
             using PolyType;
 
-            [GenerateShape(typeof(ConcurrentDictionary<string, int>))]
+            [GenerateShapeFor(typeof(ConcurrentDictionary<string, int>))]
             partial class Witness { }
             """);
 
@@ -1127,7 +1127,7 @@ public static class CompilationTests
             using System.Collections.Immutable;
             using PolyType;
 
-            [GenerateShape(typeof(ImmutableDictionary<string, int>))]
+            [GenerateShapeFor(typeof(ImmutableDictionary<string, int>))]
             partial class Witness { }
             """);
 
@@ -1142,7 +1142,7 @@ public static class CompilationTests
             using System.Collections.Generic;
             using PolyType;
 
-            [GenerateShape(typeof(SortedDictionary<string, int>))]
+            [GenerateShapeFor(typeof(SortedDictionary<string, int>))]
             partial class Witness { }
             """);
 
@@ -1157,7 +1157,7 @@ public static class CompilationTests
             using System.Collections.Generic;
             using PolyType;
 
-            [GenerateShape(typeof(SortedSet<int>))]
+            [GenerateShapeFor(typeof(SortedSet<int>))]
             partial class Witness { }
             """);
 
@@ -1172,7 +1172,7 @@ public static class CompilationTests
             using System.Collections.ObjectModel;
             using PolyType;
 
-            [GenerateShape(typeof(ReadOnlyDictionary<int, int>))]
+            [GenerateShapeFor(typeof(ReadOnlyDictionary<int, int>))]
             partial class Witness { }
             """);
 
@@ -1237,7 +1237,7 @@ public static class CompilationTests
             using System;
             using PolyType;
 
-            [GenerateShape(typeof(Memory<int>))]
+            [GenerateShapeFor(typeof(Memory<int>))]
             partial class Witness { }
             """);
 
@@ -1252,7 +1252,7 @@ public static class CompilationTests
             using System.Collections.Immutable;
             using PolyType;
 
-            [GenerateShape(typeof(ImmutableQueue<int>))]
+            [GenerateShapeFor(typeof(ImmutableQueue<int>))]
             partial class Witness { }
             """);
 
@@ -1277,7 +1277,7 @@ public static class CompilationTests
                 IEnumerator IEnumerable.GetEnumerator() => _values.GetEnumerator();
             }
 
-            [GenerateShape(typeof(CollectionWithNullableElement<int>))]
+            [GenerateShapeFor(typeof(CollectionWithNullableElement<int>))]
             partial class Witness { }
             """);
 
@@ -1384,7 +1384,7 @@ public static class CompilationTests
                 E,
             }
 
-            [GenerateShape(typeof(MyEnum))]
+            [GenerateShapeFor(typeof(MyEnum))]
             internal partial class Witness { }
             """);
 

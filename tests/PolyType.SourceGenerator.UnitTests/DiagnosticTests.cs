@@ -13,7 +13,7 @@ public static class DiagnosticTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [GenerateShape(typeof(MissingType))]
+            [GenerateShapeFor(typeof(MissingType))]
             public partial class ShapeProvider { }
             """);
 
@@ -24,7 +24,7 @@ public static class DiagnosticTests
         Assert.NotNull(diagnostic);
         Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
         Assert.Equal((2, 1), diagnostic.Location.GetStartPosition());
-        Assert.Equal((2, 35), diagnostic.Location.GetEndPosition());
+        Assert.Equal((2, 38), diagnostic.Location.GetEndPosition());
     }
 
     [Fact]
@@ -53,7 +53,7 @@ public static class DiagnosticTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [GenerateShape(typeof(TypeToGenerate))]
+            [GenerateShapeFor(typeof(TypeToGenerate))]
             public class ShapeProvider { }
 
             public class TypeToGenerate { }
@@ -122,7 +122,7 @@ public static class DiagnosticTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [GenerateShape(typeof(string))]
+            [GenerateShapeFor(typeof(string))]
             public partial class Witness<T>
             {
             }
@@ -146,7 +146,7 @@ public static class DiagnosticTests
 
             public partial class Container<T>
             {
-                [GenerateShape(typeof(string))]
+                [GenerateShapeFor(typeof(string))]
                 public partial class Witness
                 {
                 }
@@ -239,7 +239,7 @@ public static class DiagnosticTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
            using PolyType;
 
-           [GenerateShape(typeof(MyPoco))]
+           [GenerateShapeFor(typeof(MyPoco))]
            static partial class Witness { }
 
            record MyPoco;
@@ -317,7 +317,7 @@ public static class DiagnosticTests
             partial class MyPoco<T1, T2> { }
             public class InternalAssociatedType<T> { }
 
-            [GenerateShape(typeof(MyPoco<int, string>))]
+            [GenerateShapeFor(typeof(MyPoco<int, string>))]
             partial class Witness { }
             """);
 
@@ -383,7 +383,7 @@ public static class DiagnosticTests
             [TypeShape(Kind = TypeShapeKind.{{kind}})]
             class MyPoco { }
 
-            [GenerateShape(typeof(MyPoco))]
+            [GenerateShapeFor(typeof(MyPoco))]
             partial class Witness { }
             """);
 
@@ -409,7 +409,7 @@ public static class DiagnosticTests
             [TypeShape(Kind = TypeShapeKind.{{kind}})]
             class MyPoco : Dictionary<string, string> { }
 
-            [GenerateShape(typeof(MyPoco))]
+            [GenerateShapeFor(typeof(MyPoco))]
             partial class Witness { }
             """);
 
@@ -436,7 +436,7 @@ public static class DiagnosticTests
             [TypeShape(Kind = TypeShapeKind.{{kind}})]
             class MyPoco : List<string> { }
 
-            [GenerateShape(typeof(MyPoco))]
+            [GenerateShapeFor(typeof(MyPoco))]
             partial class Witness { }
             """);
 
@@ -461,7 +461,7 @@ public static class DiagnosticTests
             [TypeShape(Kind = TypeShapeKind.{{kind}})]
             class MyPoco { }
 
-            [GenerateShape(typeof(MyPoco))]
+            [GenerateShapeFor(typeof(MyPoco))]
             partial class Witness { }
             """);
 
@@ -484,7 +484,7 @@ public static class DiagnosticTests
             [TypeShape(Kind = TypeShapeKind.{{kind}})]
             class MyPoco : Dictionary<string, string> { }
 
-            [GenerateShape(typeof(MyPoco))]
+            [GenerateShapeFor(typeof(MyPoco))]
             partial class Witness { }
             """);
 
@@ -506,7 +506,7 @@ public static class DiagnosticTests
             [TypeShape(Kind = TypeShapeKind.{{kind}})]
             class MyPoco : List<string> { }
 
-            [GenerateShape(typeof(MyPoco))]
+            [GenerateShapeFor(typeof(MyPoco))]
             partial class Witness { }
             """);
 
@@ -634,7 +634,7 @@ public static class DiagnosticTests
             public MyPoco<T>? FromSurrogate(T? value) => value is null ? null : new(value);
         }
 
-        [GenerateShape(typeof(MyPoco<int>))]
+        [GenerateShapeFor(typeof(MyPoco<int>))]
         public partial class Witness { }
         """)]
     [InlineData("""
@@ -650,7 +650,7 @@ public static class DiagnosticTests
             }
         }
 
-        [GenerateShape(typeof(MyPoco<int>))]
+        [GenerateShapeFor(typeof(MyPoco<int>))]
         public partial class Witness { }
         """)]
     [InlineData("""
@@ -671,7 +671,7 @@ public static class DiagnosticTests
             }
         }
 
-        [GenerateShape(typeof(MyPoco<int, string>))]
+        [GenerateShapeFor(typeof(MyPoco<int, string>))]
         public partial class Witness { }
         """)]
     public static void ValidGenericMarshaller_NoDiagnostic(string source)
@@ -794,7 +794,7 @@ public static class DiagnosticTests
                 public class Derived<T> : PolymorphicClassWithGenericDerivedType { }
             }
 
-            [GenerateShape(typeof(PolymorphicClassWithGenericDerivedType))]
+            [GenerateShapeFor(typeof(PolymorphicClassWithGenericDerivedType))]
             partial class Witness { }
             """);
 
@@ -821,7 +821,7 @@ public static class DiagnosticTests
                 public class Derived<S> : GenericPolymorphicClassWithMismatchingGenericDerivedType<List<S>> { }
             }
 
-            [GenerateShape(typeof(GenericPolymorphicClassWithMismatchingGenericDerivedType<string>))]
+            [GenerateShapeFor(typeof(GenericPolymorphicClassWithMismatchingGenericDerivedType<string>))]
             partial class Witness { }
             """);
 

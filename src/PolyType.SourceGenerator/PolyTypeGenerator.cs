@@ -24,7 +24,7 @@ public sealed class PolyTypeGenerator : IIncrementalGenerator
 
         IncrementalValueProvider<TypeShapeProviderModel?> providerModel = context.SyntaxProvider
             .ForTypesWithAttributeDeclarations(
-                attributeFullyQualifiedNames: ["PolyType.GenerateShapeAttribute<T>", "PolyType.GenerateShapeAttribute"],
+                attributeFullyQualifiedNames: ["PolyType.GenerateShapeForAttribute<T>", "PolyType.GenerateShapeForAttribute", "PolyType.GenerateShapeAttribute"],
                 (node, _) => node is TypeDeclarationSyntax)
             .Collect()
             .Combine(knownSymbols)

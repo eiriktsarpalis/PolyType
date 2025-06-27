@@ -348,10 +348,10 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
 
     public class GenericConverter<T>;
 
-    [GenerateShape<GenericDataType<int, string>>]
-    [GenerateShape<GenericDataTypeFullAndPartialPaths<int, string>>]
-    [GenerateShape<IEnumerable<SpecialKey>>]
-    [GenerateShape<Dictionary<SpecialKey, string>>]
+    [GenerateShapeFor<GenericDataType<int, string>>]
+    [GenerateShapeFor<GenericDataTypeFullAndPartialPaths<int, string>>]
+    [GenerateShapeFor<IEnumerable<SpecialKey>>]
+    [GenerateShapeFor<Dictionary<SpecialKey, string>>]
     internal partial class Witness;
 
     [GenerateShape]

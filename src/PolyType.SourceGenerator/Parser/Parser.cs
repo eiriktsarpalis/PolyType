@@ -627,23 +627,20 @@ public sealed partial class Parser : TypeDataModelGenerator
 
             if (SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.GenerateShapeAttribute))
             {
-                if (attributeData.ConstructorArguments is [{ Value: ITypeSymbol typeArgument }])
-                {
-                    // Generate a shape for the given type.
-                    typeToInclude = typeArgument;
-                    typeIdToInclude = CreateTypeId(typeArgument);
-                    isWitnessTypeDeclaration = true;
-                }
-                else
-                {
-                    // Generate a shape for the annotated type.
-                    typeToInclude = context.TypeSymbol;
-                    typeIdToInclude = typeId;
-                }
+                typeToInclude = context.TypeSymbol;
+                typeIdToInclude = typeId;
+            }
+            else if (
+                SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.GenerateShapeForAttribute) &&
+                attributeData.ConstructorArguments is [{ Kind: TypedConstantKind.Type, Value: ITypeSymbol nonGenericTypeArgument }])
+            {
+                typeToInclude = nonGenericTypeArgument;
+                typeIdToInclude = CreateTypeId(nonGenericTypeArgument);
+                isWitnessTypeDeclaration = true;
             }
             else if (
                 attributeData.AttributeClass is { TypeArguments: [ITypeSymbol typeArgument] } &&
-                SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass.ConstructedFrom, _knownSymbols.GenerateShapeAttributeOfT))
+                SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass.ConstructedFrom, _knownSymbols.GenerateShapeForAttributeOfT))
             {
                 typeToInclude = typeArgument;
                 typeIdToInclude = CreateTypeId(typeArgument);
