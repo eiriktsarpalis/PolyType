@@ -5,7 +5,7 @@ using PolyType.Examples.Utilities;
 namespace PolyType.Examples.CborSerializer.Converters;
 
 internal class CborEnumerableConverter<TEnumerable, TElement>(
-    CborConverter<TElement> elementConverter, 
+    CborConverter<TElement> elementConverter,
     Func<TEnumerable, IEnumerable<TElement>> getEnumerable) : CborConverter<TEnumerable>
 {
     private protected readonly CborConverter<TElement> _elementConverter = elementConverter;
@@ -58,8 +58,8 @@ internal sealed class CborMutableEnumerableConverter<TEnumerable, TElement>(
             return default;
         }
 
-        reader.ReadStartArray();
-        TEnumerable result = createObject();
+        int? definiteLength = reader.ReadStartArray();
+        TEnumerable result = createObject(new() { Capacity = definiteLength });
 
         CborConverter<TElement> elementConverter = _elementConverter;
         Setter<TEnumerable, TElement> addDelegate = _addDelegate;
@@ -77,7 +77,7 @@ internal sealed class CborMutableEnumerableConverter<TEnumerable, TElement>(
 
 internal abstract class CborImmutableEnumerableConverter<TEnumerable, TElement>(
     CborConverter<TElement> elementConverter,
-    Func<TEnumerable, IEnumerable<TElement>> getEnumerable) 
+    Func<TEnumerable, IEnumerable<TElement>> getEnumerable)
     : CborEnumerableConverter<TEnumerable, TElement>(elementConverter, getEnumerable)
 {
     private protected abstract TEnumerable Construct(PooledList<TElement> buffer);
