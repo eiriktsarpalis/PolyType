@@ -42,10 +42,10 @@ public abstract partial class CollectionsWithCapacityTests(ProviderUnderTest pro
 #endif
     }
 
-    [GenerateShape<List<int>>]
-    [GenerateShape<List<string>>]
-    [GenerateShape<HashSet<int>>]
-    [GenerateShape<Dictionary<int, bool>>]
+    [GenerateShapeFor<List<int>>]
+    [GenerateShapeFor<List<string>>]
+    [GenerateShapeFor<HashSet<int>>]
+    [GenerateShapeFor<Dictionary<int, bool>>]
     partial class Witness;
 
     ////public sealed class Reflection() : CollectionsWithCapacityTests(ReflectionProviderUnderTest.NoEmit);
