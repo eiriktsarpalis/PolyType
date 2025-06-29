@@ -102,6 +102,11 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
             """);
 #endif
 
+        writer.WriteLine("""
+            #pragma warning disable CS0612, CS0618 // Use of obsolete APIs is natural when we're emitting delegates for obsolete properties.
+
+            """);
+
         if (typeDeclaration.Namespace is string @namespace)
         {
             writer.WriteLine($"namespace {@namespace}");
