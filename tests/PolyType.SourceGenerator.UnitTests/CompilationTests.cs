@@ -1393,4 +1393,25 @@ public static class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
+
+    [Fact]
+    public static void ObsoleteMembers()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System;
+            using PolyType;
+
+            internal class MyObject
+            {
+                [Obsolete]
+                public int ObsoleteProperty { get; set; }
+            }
+
+            [GenerateShapeFor(typeof(MyObject))]
+            internal partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
 }
