@@ -15,6 +15,12 @@
 public readonly struct CollectionConstructionOptions<TKey>
 {
     /// <summary>
+    /// Initializes a new instance of the <see cref="CollectionConstructionOptions{TKey}"/> struct.
+    /// </summary>
+    /// <param name="copyFrom">A template to copy all properties from.</param>
+    public CollectionConstructionOptions(CollectionConstructionOptions<TKey> copyFrom) => this = copyFrom;
+
+    /// <summary>
     /// Gets an optional equality comparer for the keys or elements in the collection.
     /// </summary>
     public IEqualityComparer<TKey>? EqualityComparer { get; init; }
