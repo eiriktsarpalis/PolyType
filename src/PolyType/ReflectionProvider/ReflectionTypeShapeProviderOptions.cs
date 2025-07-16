@@ -29,7 +29,7 @@ public sealed record ReflectionTypeShapeProviderOptions
     /// and from <see cref="Assembly.GetReferencedAssemblies()"/> invoked on the calling assembly.
     /// </para>
     /// <para>
-    /// Conflicts between <see cref="TypeShapeExtensionAttribute"/> attributes are resolved by taking the first of the conficting values.
+    /// Conflicts between <see cref="TypeShapeExtensionAttribute"/> attributes are resolved by taking the first of the conflicting values.
     /// It is therefore advisable to order this list so that the calling assembly appears first in the list.
     /// The caller is then in a position to set all policies and resolve conflicts between other assemblies.
     /// </para>
@@ -44,10 +44,10 @@ public sealed record ReflectionTypeShapeProviderOptions
             return false;
         }
 
-        return this.UseReflectionEmit == other.UseReflectionEmit
-            && this.TypeShapeExtensionAssemblies.SequenceEqual(other.TypeShapeExtensionAssemblies);
+        return UseReflectionEmit == other.UseReflectionEmit
+            && TypeShapeExtensionAssemblies.SequenceEqual(other.TypeShapeExtensionAssemblies);
     }
 
     /// <inheritdoc/>
-    public override int GetHashCode() => unchecked((this.UseReflectionEmit ? 1 << 30 : 0) + this.TypeShapeExtensionAssemblies.Aggregate(0, (n, a) => a.GetHashCode()));
+    public override int GetHashCode() => unchecked((UseReflectionEmit ? 1 << 30 : 0) + TypeShapeExtensionAssemblies.Aggregate(0, (n, a) => a.GetHashCode()));
 }

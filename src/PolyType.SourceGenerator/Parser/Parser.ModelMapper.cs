@@ -67,12 +67,12 @@ public sealed partial class Parser
                         => CollectionConstructionStrategy.Span, // use ReadOnlySpan.ToArray() to create the collection
 
                     CollectionModelConstructionStrategy.Mutable => CollectionConstructionStrategy.Mutable,
+                    CollectionModelConstructionStrategy.Enumerable => CollectionConstructionStrategy.Enumerable,
                     CollectionModelConstructionStrategy.Span => CollectionConstructionStrategy.Span,
-                    CollectionModelConstructionStrategy.List =>
-                        IsFactoryAcceptingIEnumerable(enumerableModel.FactoryMethod)
-                        ? CollectionConstructionStrategy.Enumerable
-                        : CollectionConstructionStrategy.Span,
-
+                    CollectionModelConstructionStrategy.List or
+                    CollectionModelConstructionStrategy.HashSet or
+                    CollectionModelConstructionStrategy.Dictionary => CollectionConstructionStrategy.Span,
+                    CollectionModelConstructionStrategy.TupleEnumerable => CollectionConstructionStrategy.Enumerable,
                     _ => CollectionConstructionStrategy.None,
                 },
 
@@ -86,13 +86,7 @@ public sealed partial class Parser
                     : null,
 
                 StaticFactoryMethod = enumerableModel.FactoryMethod is { IsStatic: true } m ? m.GetFullyQualifiedName() : null,
-                StaticFactoryWithComparerMethod = enumerableModel.FactoryMethodWithComparer is { IsStatic: true } m2 ? m2.GetFullyQualifiedName() : null,
-                HasConstructorWithoutComparer = enumerableModel.FactoryMethod is not null && !UseComparerOverloadEvenForNullComparersEnumerable(enumerableModel),
-                ConstructionParameters = AnalyzeConstructionSignature(enumerableModel.FactoryMethodWithComparer),
-                ConstructionParametersWithCapacity = AnalyzeConstructionSignature(enumerableModel.FactoryMethodWithCapacity),
-                CtorRequiresListConversion =
-                    enumerableModel.ConstructionStrategy is CollectionModelConstructionStrategy.List &&
-                    !IsFactoryAcceptingIEnumerable(enumerableModel.FactoryMethod),
+                ConstructorParameters = enumerableModel.FactorySignature.ToImmutableEquatableArray(),
 
                 Kind = enumerableModel.EnumerableKind,
                 Rank = enumerableModel.Rank,
@@ -110,13 +104,11 @@ public sealed partial class Parser
                 ConstructionStrategy = dictionaryModel.ConstructionStrategy switch
                 {
                     CollectionModelConstructionStrategy.Mutable => CollectionConstructionStrategy.Mutable,
-                    CollectionModelConstructionStrategy.List => CollectionConstructionStrategy.Enumerable,
+                    CollectionModelConstructionStrategy.Enumerable => CollectionConstructionStrategy.Enumerable,
                     CollectionModelConstructionStrategy.Span => CollectionConstructionStrategy.Span,
-                    CollectionModelConstructionStrategy.Dictionary =>
-                        IsFactoryAcceptingIEnumerable(dictionaryModel.FactoryMethod)
-                        ? CollectionConstructionStrategy.Enumerable
-                        : CollectionConstructionStrategy.Span,
-
+                    CollectionModelConstructionStrategy.List or
+                    CollectionModelConstructionStrategy.HashSet or
+                    CollectionModelConstructionStrategy.Dictionary => CollectionConstructionStrategy.Span,
                     CollectionModelConstructionStrategy.TupleEnumerable => CollectionConstructionStrategy.Enumerable,
                     _ => CollectionConstructionStrategy.None,
                 },
@@ -130,13 +122,8 @@ public sealed partial class Parser
                     : null,
 
                 StaticFactoryMethod = dictionaryModel.FactoryMethod is { IsStatic: true } m ? m.GetFullyQualifiedName() : null,
-                StaticFactoryWithComparerMethod = dictionaryModel.FactoryMethodWithComparer is { IsStatic: true } m2 ? m2.GetFullyQualifiedName() : null,
-                HasConstructorWithoutComparer = dictionaryModel.FactoryMethod is not null && !UseComparerOverloadEvenForNullComparersDictionary(dictionaryModel),
-                ConstructionParameters = DictionaryRequiresHelper(dictionaryModel) ? [CollectionConstructorParameter.Values, CollectionConstructorParameter.EqualityComparer] : AnalyzeConstructionSignature(dictionaryModel.FactoryMethodWithComparer),
-                ConstructionParametersWithCapacity = AnalyzeConstructionSignature(dictionaryModel.FactoryMethodWithCapacity),
-                IsTupleEnumerableFactory = dictionaryModel.ConstructionStrategy is CollectionModelConstructionStrategy.TupleEnumerable,
+                ConstructorParameters = dictionaryModel.FactorySignature.ToImmutableEquatableArray(),
                 Kind = dictionaryModel.DictionaryKind,
-                CtorRequiresDictionaryConversion = DictionaryRequiresHelper(dictionaryModel),
                 KeyValueTypesContainNullableAnnotations =
                     dictionaryModel.KeyType.ContainsNullabilityAnnotations() ||
                     dictionaryModel.ValueType.ContainsNullabilityAnnotations(),
@@ -225,38 +212,7 @@ public sealed partial class Parser
                 AssociatedTypes = associatedTypes,
             }
         };
-
-        static bool IsFactoryAcceptingIEnumerable(IMethodSymbol? method)
-        {
-            return method?.Parameters.Any(p => p is { Type: INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Collections_Generic_IEnumerable_T } }) ?? false;
-        }
-
-        static bool DictionaryRequiresHelper(DictionaryDataModel dictionaryModel)
-            => dictionaryModel.ConstructionStrategy is CollectionModelConstructionStrategy.Dictionary && !IsFactoryAcceptingIEnumerable(dictionaryModel.FactoryMethod);
-
-        // For .NET collections known to accept null arguments for comparer parameters,
-        // take that path because it skips one conditional jump in the compiled code.
-        static bool UseComparerOverloadEvenForNullComparersDictionary(DictionaryDataModel model)
-            => model.FactoryMethodWithComparer is not null && (model.FactoryMethod is null || model.Type.ContainingNamespace.MatchesNamespace(Namespaces.SystemCollectionsGeneric));
-
-        static bool UseComparerOverloadEvenForNullComparersEnumerable(EnumerableDataModel model)
-            => model.FactoryMethodWithComparer is not null && (model.FactoryMethod is null || model.Type.ContainingNamespace.MatchesNamespace(Namespaces.SystemCollectionsGeneric));
     }
-
-    private static CollectionConstructorParameter[] AnalyzeConstructionSignature(IMethodSymbol? factoryMethod) => factoryMethod?.Parameters switch
-    {
-        null => [],
-        [{ Type.Name: "Int32", Name: "capacity" }] => [CollectionConstructorParameter.Capacity],
-        [{ Type.Name: "Int32", Name: "capacity" }, { Type.Name: "IComparer" }] => [CollectionConstructorParameter.Capacity, CollectionConstructorParameter.Comparer],
-        [{ Type.Name: "Int32", Name: "capacity" }, { Type.Name: "IEqualityComparer" }] => [CollectionConstructorParameter.Capacity, CollectionConstructorParameter.EqualityComparer],
-        [{ Type.Name: "IComparer" }] => [CollectionConstructorParameter.Comparer],
-        [{ Type.Name: "IEqualityComparer" }] => [CollectionConstructorParameter.EqualityComparer],
-        [_, { Type.Name: "IComparer" }] => [CollectionConstructorParameter.Values, CollectionConstructorParameter.Comparer],
-        [_, { Type.Name: "IEqualityComparer" }] => [CollectionConstructorParameter.Values, CollectionConstructorParameter.EqualityComparer],
-        [{ Type.Name: "IComparer" }, _] => [CollectionConstructorParameter.Comparer, CollectionConstructorParameter.Values],
-        [{ Type.Name: "IEqualityComparer" }, _] => [CollectionConstructorParameter.EqualityComparer, CollectionConstructorParameter.Values],
-        _ => throw new NotSupportedException(),
-    };
 
     private TypeExtensionModel? GetExtensionModel(ITypeSymbol symbol)
     {

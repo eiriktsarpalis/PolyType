@@ -1,4 +1,5 @@
 ﻿using PolyType.Abstractions;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -8,6 +9,7 @@ using System.Reflection;
 namespace PolyType.ReflectionProvider.MemberAccessors;
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
+[RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
 {
     public Getter<TDeclaringType, TPropertyType> CreateGetter<TDeclaringType, TPropertyType>(MemberInfo memberInfo, MemberInfo[]? parentMembers)
@@ -379,12 +381,6 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
     public Func<T1, T2, TResult> CreateFuncDelegate<T1, T2, TResult>(ConstructorInfo ctorInfo)
         => (arg1, arg2) => (TResult)ctorInfo.Invoke([arg1, arg2]);
 
-    public SpanCollectionConstructor<TKey, TElement, TResult> CreateSpanConstructorDelegate<TKey, TElement, TResult>(ConstructorInfo ctorInfo)
-    {
-        Debug.Fail("Should not be called if not using Reflection.Emit");
-        throw new NotSupportedException();
-    }
-
     [DoesNotReturn]
     private static T NotReachable<T>()
     {
@@ -473,6 +469,139 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         }
     }
 
+    public MutableCollectionConstructor<TKey, TDeclaringType> CreateMutableCollectionConstructor<TKey, TElement, TDeclaringType>(MutableCollectionConstructorInfo collectionCtorInfo)
+    {
+        Action<CollectionConstructionOptions<TKey>, object?[]>[] argumentSetters = collectionCtorInfo.Signature
+            .Select(CreateArgumentSetter)
+            .ToArray();
+
+        var ctorInfo = collectionCtorInfo.DefaultConstructor;
+        return (in CollectionConstructionOptions<TKey> opts) =>
+        {
+            var args = new object?[argumentSetters.Length];
+            for (int i = 0; i < argumentSetters.Length; i++)
+            {
+                argumentSetters[i](opts, args);
+            }
+
+            return (TDeclaringType)ctorInfo.Invoke(args)!;
+        };
+
+        static Action<CollectionConstructionOptions<TKey>, object?[]> CreateArgumentSetter(CollectionConstructorParameter type, int index)
+        {
+            return type switch
+            {
+                CollectionConstructorParameter.Capacity => (opts, args) => args[index] = opts.Capacity ?? 4,
+                CollectionConstructorParameter.CapacityOptional => (opts, args) => args[index] = opts.Capacity,
+                CollectionConstructorParameter.EqualityComparer => (opts, args) => args[index] = opts.EqualityComparer ?? EqualityComparer<TKey>.Default,
+                CollectionConstructorParameter.EqualityComparerOptional => (opts, args) => args[index] = opts.EqualityComparer,
+                CollectionConstructorParameter.Comparer => (opts, args) => args[index] = opts.Comparer ?? Comparer<TKey>.Default,
+                CollectionConstructorParameter.ComparerOptional => (opts, args) => args[index] = opts.Comparer,
+                _ => throw new NotSupportedException(type.ToString()),
+            };
+        }
+    }
+
+    public EnumerableCollectionConstructor<TKey, TElement, TDeclaringType> CreateEnumerableCollectionConstructor<TKey, TElement, TDeclaringType>(ParameterizedCollectionConstructorInfo collectionCtorInfo)
+    {
+        Func<IEnumerable<TElement>, IEqualityComparer<TKey>?, IDictionary>? dictionaryFactory = null;
+        Debug.Assert(collectionCtorInfo.Factory is MethodInfo { IsStatic: true } or ConstructorInfo { IsStatic: false });
+        Action<IEnumerable<TElement>, CollectionConstructionOptions<TKey>, object?[]>[] argumentSetters = collectionCtorInfo.Signature
+            .Select(CreateArgumentSetter)
+            .ToArray();
+
+        if (collectionCtorInfo.Factory is MethodInfo methodInfo)
+        {
+            return (IEnumerable<TElement> enumerable, in CollectionConstructionOptions<TKey> opts) =>
+            {
+                object?[] args = BuildArguments(enumerable, opts);
+                return (TDeclaringType)methodInfo.Invoke(null, args)!;
+            };
+        }
+
+        var ctorInfo = (ConstructorInfo)collectionCtorInfo.Factory;
+        return (IEnumerable<TElement> enumerable, in CollectionConstructionOptions<TKey> opts) =>
+        {
+            object?[] args = BuildArguments(enumerable, opts);
+            return (TDeclaringType)ctorInfo.Invoke(args)!;
+        };
+
+        object?[] BuildArguments(IEnumerable<TElement> enumerable, in CollectionConstructionOptions<TKey> opts)
+        {
+            var args = new object?[argumentSetters.Length];
+            for (int i = 0; i < argumentSetters.Length; i++)
+            {
+                argumentSetters[i](enumerable, opts, args);
+            }
+
+            return args;
+        }
+
+        Action<IEnumerable<TElement>, CollectionConstructionOptions<TKey>, object?[]> CreateArgumentSetter(CollectionConstructorParameter type, int index)
+        {
+            return type switch
+            {
+                CollectionConstructorParameter.Enumerable => (enumerable, opts, args) => args[index] = enumerable,
+                CollectionConstructorParameter.List => (enumerable, opts, args) => args[index] = enumerable.ToList(),
+                CollectionConstructorParameter.HashSet => (enumerable, opts, args) => args[index] = CreateHashSet(enumerable, opts.EqualityComparer),
+                CollectionConstructorParameter.Dictionary => (enumerable, opts, args) => args[index] = (dictionaryFactory ??= CreateDictionaryFactory())(enumerable, opts.EqualityComparer),
+                CollectionConstructorParameter.Capacity => (enumerable, opts, args) => args[index] = opts.Capacity ?? 0,
+                CollectionConstructorParameter.CapacityOptional => (enumerable, opts, args) => args[index] = opts.Capacity,
+                CollectionConstructorParameter.EqualityComparer => (enumerable, opts, args) => args[index] = opts.EqualityComparer ?? EqualityComparer<TKey>.Default,
+                CollectionConstructorParameter.EqualityComparerOptional => (enumerable, opts, args) => args[index] = opts.EqualityComparer,
+                CollectionConstructorParameter.Comparer => (enumerable, opts, args) => args[index] = opts.Comparer ?? Comparer<TKey>.Default,
+                CollectionConstructorParameter.ComparerOptional => (enumerable, opts, args) => args[index] = opts.Comparer,
+                _ => throw new NotSupportedException(), // Not supported in the current implementation.
+            };
+
+            static HashSet<TElement> CreateHashSet(IEnumerable<TElement> enumerable, IEqualityComparer<TKey>? comparer)
+            {
+                var hashSet = new HashSet<TElement>((IEqualityComparer<TElement>)(object)comparer!);
+                foreach (TElement element in enumerable)
+                {
+                    hashSet.Add(element);
+                }
+
+                return hashSet;
+            }
+        }
+
+        Func<IEnumerable<TElement>, IEqualityComparer<TKey>?, IDictionary> CreateDictionaryFactory()
+        {
+            Debug.Assert(typeof(TElement).IsGenericType && typeof(TElement).GetGenericTypeDefinition() == typeof(KeyValuePair<,>));
+            MethodInfo factory = typeof(ReflectionMemberAccessor)
+                .GetMethod(nameof(CreateDictionary), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(typeof(TElement).GetGenericArguments());
+
+            return factory.CreateDelegate<Func<IEnumerable<TElement>, IEqualityComparer<TKey>?, IDictionary>>();
+        }
+    }
+
+    private static Dictionary<TKey, TValue> CreateDictionary<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> entries, IEqualityComparer<TKey>? comparer)
+        where TKey : notnull
+    {
+#if NET
+        return entries.ToDictionary(comparer);
+#else
+        return entries.ToDictionary(kvp => kvp.Key, kvp => kvp.Value, comparer);
+#endif
+    }
+
+    public SpanCollectionConstructor<TKey, TElement, TCollection> CreateSpanCollectionConstructor<TKey, TElement, TCollection>(ParameterizedCollectionConstructorInfo constructorInfo)
+    {
+        if (constructorInfo is { Factory: MethodInfo factory, Signature: [CollectionConstructorParameter.Span] })
+        {
+            SpanFunc<TElement, TCollection> spanFunc = factory.CreateDelegate<SpanFunc<TElement, TCollection>>();
+            return (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TKey> _) =>
+            {
+                return spanFunc(span);
+            };
+        }
+
+        Debug.Fail("Should not be reached.");
+        throw new NotSupportedException("Invoking methods that accept span is not supported with reflection emit disabled.");
+    }
+
     private static Func<object?[]> CreateConstructorArgumentArrayFunc(IConstructorShapeInfo ctorInfo)
     {
         int arity = ctorInfo.Parameters.Length;
@@ -515,4 +644,6 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
 
     private static object?[] GetDefaultParameterArray(IEnumerable<IParameterShapeInfo> parameters)
         => parameters.Select(p => p.DefaultValue).ToArray();
+
+    private delegate TResult SpanFunc<TElement, TResult>(ReadOnlySpan<TElement> span);
 }

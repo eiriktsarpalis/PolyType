@@ -22,12 +22,12 @@
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
     <!-- Testing dependencies -->
     <PackageVersion Include="xunit.assert" Version="2.9.3" />
-    <PackageVersion Include="xunit.v3" Version="2.0.2" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.0" />
+    <PackageVersion Include="xunit.v3" Version="3.0.0" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.2" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.5" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="9.0.5" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.0" />
-    <PackageVersion Include="BenchmarkDotNet" Version="0.15.0" />
+    <PackageVersion Include="BenchmarkDotNet" Version="0.15.2" />
     <!-- Earliest version of the library supporting literals and frozen collections -->
     <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
     <PackageVersion Include="System.Formats.Cbor" Version="9.0.5" />

@@ -48,7 +48,7 @@ public abstract partial class CollectionsWithCapacityTests(ProviderUnderTest pro
     [GenerateShapeFor<Dictionary<int, bool>>]
     partial class Witness;
 
-    ////public sealed class Reflection() : CollectionsWithCapacityTests(ReflectionProviderUnderTest.NoEmit);
-    ////public sealed class ReflectionEmit() : CollectionsWithCapacityTests(ReflectionProviderUnderTest.Emit);
+    public sealed class Reflection() : CollectionsWithCapacityTests(ReflectionProviderUnderTest.NoEmit);
+    public sealed class ReflectionEmit() : CollectionsWithCapacityTests(ReflectionProviderUnderTest.Emit);
     public sealed class SourceGen() : CollectionsWithCapacityTests(new SourceGenProviderUnderTest(Witness.ShapeProvider));
 }

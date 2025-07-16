@@ -84,6 +84,15 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     // REVISIT: This test is skipped for no-emit Reflection because it uses Span, which isn't supported by that provider.
     //          Consider adding an array/list construction strategy for better support.
     [Fact]
+    public void IImmutableSet()
+    {
+        var enumerable = this.CreateSpanEnumerable<IImmutableSet<int>, int>([3, 6, 7], new EvenOddEqualityComparer());
+        AssertEquivalentContent([3, 6], enumerable);
+    }
+
+    // REVISIT: This test is skipped for no-emit Reflection because it uses Span, which isn't supported by that provider.
+    //          Consider adding an array/list construction strategy for better support.
+    [Fact]
     public void ImmutableSortedSet()
     {
         this.AssertSpanEnumerable<ImmutableSortedSet<int>, int>(NonEmptyEnumerable, new ReverseComparer(), s => s.KeyComparer);
@@ -410,6 +419,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     [GenerateShapeFor<SortedSet<int>>]
     [GenerateShapeFor<ImmutableHashSet<int>>]
     [GenerateShapeFor<ImmutableSortedSet<int>>]
+    [GenerateShapeFor<IImmutableSet<int>>]
     [GenerateShapeFor<HashSet<IEqualityComparer<int>>>]
     [GenerateShapeFor<Dictionary<IEqualityComparer<int>, int>>]
     [GenerateShapeFor<ReadOnlyMemory<int>>]

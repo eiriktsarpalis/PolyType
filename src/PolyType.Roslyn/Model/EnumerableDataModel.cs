@@ -43,16 +43,9 @@ public sealed class EnumerableDataModel : TypeDataModel
     public required IMethodSymbol? FactoryMethod { get; init; }
 
     /// <summary>
-    /// Constructor or static factory method whose shape is governed by <see cref="ConstructionStrategy"/>
-    /// and declares either an <see cref="IEqualityComparer{T}"/> or <see cref="IComparer{T}"/> parameter.
+    /// The inferred signature of the factory method or constructor.
     /// </summary>
-    public required IMethodSymbol? FactoryMethodWithComparer { get; init; }
-
-    /// <summary>
-    /// Constructor or static factory method that accepts a capacity parameter,
-    /// and possibly a comparer parameter.
-    /// </summary>
-    public required IMethodSymbol? FactoryMethodWithCapacity { get; init; }
+    public required ImmutableArray<CollectionConstructorParameter> FactorySignature { get; init; }
 
     /// <summary>
     /// If the enumerable is an array, the rank of the array.

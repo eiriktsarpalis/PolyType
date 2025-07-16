@@ -141,87 +141,77 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
         => $"global::PolyType.Abstractions.CollectionConstructionOptions<{keyType}>";
 
     private static string FormatCollectionInitializer(
-        ReadOnlyMemory<CollectionConstructorParameter> constructorParameters,
-        ReadOnlyMemory<CollectionConstructorParameter> constructorWithCapacityParameters,
-        bool hasConstructorWithoutComparer,
+        ImmutableEquatableArray<CollectionConstructorParameter> constructorParameters,
         TypeId keyType,
+        TypeId? valueType,
         string ctorOrFactoryFormat,
         (string Type, string Expression)? values)
     {
         string optionsTypeName = FormatCollectionConstructionOptionsTypeName(keyType);
         string valuesParam = values is null ? string.Empty : $"{values.Value.Type} values, ";
-        string preamble = $"static ({valuesParam}in {optionsTypeName} options) => ";
+        return $"static ({valuesParam}in {optionsTypeName} options) => {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, FormatArgs(constructorParameters))}";
 
-        string? comparerType = FormatOptionsComparerPropertyName(constructorParameters.Span);
-        string justValues = $"{string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, values?.Expression)}";
-        if (comparerType is null)
+        string FormatArgs(ImmutableEquatableArray<CollectionConstructorParameter> parameters)
         {
-            if (!hasConstructorWithoutComparer)
+            if (parameters.Length == 0)
             {
-                throw new NotSupportedException("No constructor available without comparer.");
+                return "";
             }
 
-            return constructorWithCapacityParameters.Length > 0
-                ? $"{preamble}options.Capacity is null ? {justValues} : {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, FormatArgs(constructorWithCapacityParameters.Span))}"
-                : $"{preamble}{justValues}";
-        }
-        else if (hasConstructorWithoutComparer)
-        {
-            string? argsWithComparer = constructorParameters.Span switch
-            {
-                [CollectionConstructorParameter.Comparer or CollectionConstructorParameter.EqualityComparer] when values is null => $"options.{comparerType}",
-                [CollectionConstructorParameter.Comparer or CollectionConstructorParameter.EqualityComparer, CollectionConstructorParameter.Values] => $"options.{comparerType}, {values!.Value.Expression}",
-                [CollectionConstructorParameter.Values, CollectionConstructorParameter.Comparer or CollectionConstructorParameter.EqualityComparer] => $"{values!.Value.Expression}, options.{comparerType}",
-                _ => throw new NotSupportedException(),
-            };
-
-            return $"{preamble}options.{comparerType} is null ? {justValues} : {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, argsWithComparer)}";
-        }
-        else
-        {
-            return constructorWithCapacityParameters.Length > 0
-                ? $"{preamble}options.Capacity is null ? {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, FormatArgs(constructorParameters.Span))} : {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, FormatArgs(constructorWithCapacityParameters.Span))}"
-                : $"{preamble}{string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, FormatArgs(constructorParameters.Span))}";
-        }
-
-        string FormatArgs(ReadOnlySpan<CollectionConstructorParameter> parameters)
-        {
             StringBuilder builder = new();
             for (int i = 0; i < parameters.Length; i++)
             {
-                if (builder.Length > 0)
-                {
-                    builder.Append(", ");
-                }
-
                 builder.Append(parameters[i] switch
                 {
-                    CollectionConstructorParameter.Values => values!.Value.Expression,
-                    CollectionConstructorParameter.Comparer or CollectionConstructorParameter.EqualityComparer => $"options.{comparerType}",
-                    CollectionConstructorParameter.Capacity => "options.Capacity.Value",
+                    CollectionConstructorParameter.Enumerable or
+                    CollectionConstructorParameter.Span => values!.Value.Expression,
+                    CollectionConstructorParameter.List => $"global::PolyType.SourceGenModel.CollectionHelpers.CreateList<{GetElementTypeFQN()}>({values!.Value.Expression})",
+                    CollectionConstructorParameter.HashSet => $"global::PolyType.SourceGenModel.CollectionHelpers.CreateHashSet<{GetElementTypeFQN()}>({values!.Value.Expression}, options.EqualityComparer)",
+                    CollectionConstructorParameter.Dictionary => $"global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionary<{keyType.FullyQualifiedName}, {valueType!.Value.FullyQualifiedName}>({values!.Value.Expression}, options.EqualityComparer)",
+                    CollectionConstructorParameter.TupleEnumerable => $"global::System.Linq.Enumerable.Select(values, kvp => new global::System.Tuple<{keyType.FullyQualifiedName},{valueType!.Value.FullyQualifiedName}>(kvp.Key, kvp.Value))",
+                    CollectionConstructorParameter.EqualityComparer => $"options.EqualityComparer ?? global::System.Collections.Generic.EqualityComparer<{keyType.FullyQualifiedName}>.Default",
+                    CollectionConstructorParameter.EqualityComparerOptional => "options.EqualityComparer!",
+                    CollectionConstructorParameter.Comparer => $"options.Comparer ?? global::System.Collections.Generic.Comparer<{keyType.FullyQualifiedName}>.Default",
+                    CollectionConstructorParameter.ComparerOptional => "options.Comparer!",
+                    CollectionConstructorParameter.Capacity => "options.Capacity ?? 0",
                     _ => new NotSupportedException(),
                 });
+
+                builder.Append(", ");
+
+                string GetElementTypeFQN() => valueType is { } vt
+                    ? $"global::System.Collections.Generic.KeyValuePair<{keyType.FullyQualifiedName}, {vt.FullyQualifiedName}>" // Dictionary, so the element type is a KeyValuePair
+                    : keyType.FullyQualifiedName; // Not a dictionary, the key type is the element type
             }
 
+            builder.Length -= 2; // Remove the last ", "
             return builder.ToString();
         }
     }
 
-    private static string? FormatOptionsComparerPropertyName(ReadOnlySpan<CollectionConstructorParameter> parameters)
+    private static string? FormatOptionsComparerPropertyName(ImmutableEquatableArray<CollectionConstructorParameter> parameters)
     {
         for (int i = 0; i < parameters.Length; i++)
         {
             switch (parameters[i])
             {
-                case CollectionConstructorParameter.Comparer: return "Comparer";
-                case CollectionConstructorParameter.EqualityComparer: return "EqualityComparer";
+                case CollectionConstructorParameter.Comparer:
+                case CollectionConstructorParameter.ComparerOptional:
+                    return "Comparer";
+                case CollectionConstructorParameter.EqualityComparer:
+                case CollectionConstructorParameter.EqualityComparerOptional:
+                // Any comparers will be passed to intermediate hashsets/dicts
+                // created by the collection construction delegate.
+                case CollectionConstructorParameter.HashSet:
+                case CollectionConstructorParameter.Dictionary:
+                    return "EqualityComparer";
             }
         }
 
         return null;
     }
 
-    private static string FormatComparerOptions(ReadOnlySpan<CollectionConstructorParameter> parameters)
+    private static string FormatComparerOptions(ImmutableEquatableArray<CollectionConstructorParameter> parameters)
         => $"global::PolyType.Abstractions.CollectionComparerOptions.{FormatOptionsComparerPropertyName(parameters) ?? "None"}";
 
     private string FormatAssociatedTypeShapes(TypeShapeModel objectShapeModel)

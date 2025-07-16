@@ -23,7 +23,7 @@ internal sealed partial class SourceFormatter
                     KeyType = {{GetShapeModel(dictionaryShapeModel.KeyType).SourceIdentifier}},
                     ValueType = {{GetShapeModel(dictionaryShapeModel.ValueType).SourceIdentifier}},
                     GetDictionaryFunc = {{FormatGetDictionaryFunc(dictionaryShapeModel)}},
-                    SupportedComparer = {{FormatComparerOptions(dictionaryShapeModel.ConstructionParameters.Span)}},
+                    SupportedComparer = {{FormatComparerOptions(dictionaryShapeModel.ConstructorParameters)}},
                     ConstructionStrategy = {{FormatCollectionConstructionStrategy(dictionaryShapeModel.ConstructionStrategy)}},
                     MutableConstructorFunc = {{FormatDefaultConstructorFunc(dictionaryShapeModel)}},
                     AddKeyValuePairFunc = {{FormatAddKeyValuePairFunc(dictionaryShapeModel)}},
@@ -89,12 +89,7 @@ internal sealed partial class SourceFormatter
                 return "null";
             }
 
-            string valuesExpr = dictionaryType switch
-            {
-                { StaticFactoryMethod: not null, IsTupleEnumerableFactory: true } => $"global::System.Linq.Enumerable.Select(values, kvp => new global::System.Tuple<{dictionaryType.KeyType.FullyQualifiedName},{dictionaryType.ValueType.FullyQualifiedName}>(kvp.Key, kvp.Value))",
-                { KeyValueTypesContainNullableAnnotations: true } => $"values!",
-                _ => $"values"
-            };
+            string valuesExpr = dictionaryType.KeyValueTypesContainNullableAnnotations ? "values!" : "values";
 
             return FormatCollectionInitializer(dictionaryType, ($"global::System.Collections.Generic.IEnumerable<{FormatKeyValueTypeName(dictionaryType)}>", valuesExpr));
         }
@@ -110,14 +105,6 @@ internal sealed partial class SourceFormatter
             string suppressSuffix = dictionaryType.KeyValueTypesContainNullableAnnotations ? "!" : "";
             string valuesExpr = $"values{suppressSuffix}";
 
-            if (dictionaryType.CtorRequiresDictionaryConversion)
-            {
-                string fac = dictionaryType.StaticFactoryMethod is string factory
-                    ? $"{factory}(global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionary({{0}}))"
-                    : $"new {dictionaryType.Type.FullyQualifiedName}(global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionary({{0}}))";
-                return FormatCollectionInitializer(dictionaryType.ConstructionParameters, dictionaryType.ConstructionParametersWithCapacity, dictionaryType.HasConstructorWithoutComparer, dictionaryType.KeyType, fac, (valuesType, valuesExpr));
-            }
-
             return FormatCollectionInitializer(dictionaryType, (valuesType, valuesExpr));
         }
     }
@@ -127,6 +114,6 @@ internal sealed partial class SourceFormatter
         string factory = dictionaryType.StaticFactoryMethod is not null
           ? $"{dictionaryType.StaticFactoryMethod}({{0}})"
           : $"new {dictionaryType.ImplementationTypeFQN ?? dictionaryType.Type.FullyQualifiedName}({{0}})";
-        return FormatCollectionInitializer(dictionaryType.ConstructionParameters, dictionaryType.ConstructionParametersWithCapacity, dictionaryType.HasConstructorWithoutComparer, dictionaryType.KeyType, factory, values);
+        return FormatCollectionInitializer(dictionaryType.ConstructorParameters, dictionaryType.KeyType, dictionaryType.ValueType, factory, values);
     }
 }

@@ -21,7 +21,9 @@ internal interface IReflectionMemberAccessor
     TDelegate CreateFuncDelegate<TDelegate>(ConstructorInfo ctorInfo) where TDelegate : Delegate;
     Func<T, TResult> CreateFuncDelegate<T, TResult>(ConstructorInfo ctorInfo);
     Func<T1, T2, TResult> CreateFuncDelegate<T1, T2, TResult>(ConstructorInfo ctorInfo);
-    SpanCollectionConstructor<TKey, TElement, TCollection> CreateSpanConstructorDelegate<TKey, TElement, TCollection>(ConstructorInfo ctorInfo);
+    MutableCollectionConstructor<TKey, TCollection> CreateMutableCollectionConstructor<TKey, TElement, TCollection>(MutableCollectionConstructorInfo constructorInfo);
+    SpanCollectionConstructor<TKey, TElement, TCollection> CreateSpanCollectionConstructor<TKey, TElement, TCollection>(ParameterizedCollectionConstructorInfo constructorInfo);
+    EnumerableCollectionConstructor<TKey, TElement, TCollection> CreateEnumerableCollectionConstructor<TKey, TElement, TCollection>(ParameterizedCollectionConstructorInfo constructorInfo);
 
     Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeInfo[] derivedTypeInfos);
 }
