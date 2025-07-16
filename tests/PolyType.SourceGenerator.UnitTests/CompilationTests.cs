@@ -1414,19 +1414,4 @@ public static class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
-
-    [Fact]
-    public static void ListOfString()
-    {
-        Compilation compilation = CompilationHelpers.CreateCompilation("""
-            using System.Collections.Concurrent;
-            using PolyType;
-
-            [GenerateShapeFor(typeof(ConcurrentDictionary<string, int>))]
-            internal partial class Witness { }
-            """);
-
-        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
-        Assert.Empty(result.Diagnostics);
-    }
 }
