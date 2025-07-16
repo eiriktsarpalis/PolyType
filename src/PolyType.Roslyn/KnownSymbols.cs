@@ -177,6 +177,12 @@ public class KnownSymbols(Compilation compilation)
     private Option<INamedTypeSymbol?> _ImmutableHashSet;
 
     /// <summary>
+    /// The type symbol for <see cref="System.Collections.Immutable.IImmutableSet{T}"/>.
+    /// </summary>
+    public INamedTypeSymbol? IImmutableSet => GetOrResolveType("System.Collections.Immutable.IImmutableSet`1", ref _IImmutableSet);
+    private Option<INamedTypeSymbol?> _IImmutableSet;
+
+    /// <summary>
     /// The type symbol for <see cref="System.Collections.Immutable.ImmutableSortedSet{T}"/>.
     /// </summary>
     public INamedTypeSymbol? ImmutableSortedSet => GetOrResolveType("System.Collections.Immutable.ImmutableSortedSet`1", ref _ImmutableSortedSet);
@@ -217,6 +223,31 @@ public class KnownSymbols(Compilation compilation)
     /// </summary>
     public INamedTypeSymbol? FSharpMap => GetOrResolveType("Microsoft.FSharp.Collections.FSharpMap`2", ref _FSharpMap);
     private Option<INamedTypeSymbol?> _FSharpMap;
+
+    /// <summary>
+    /// Gets the resolved target framework of the current compilation
+    /// </summary>
+    public TargetFramework TargetFramework => _targetFramework ??= ResolveTargetFramework();
+    private TargetFramework? _targetFramework;
+
+    private TargetFramework ResolveTargetFramework()
+    {
+        INamedTypeSymbol? alternateEqualityComparer = Compilation.GetTypeByMetadataName("System.Collections.Generic.IAlternateEqualityComparer`2");
+        if (alternateEqualityComparer is not null &&
+            SymbolEqualityComparer.Default.Equals(alternateEqualityComparer.ContainingAssembly, CoreLibAssembly))
+        {
+            return TargetFramework.Net90;
+        }
+
+        INamedTypeSymbol? searchValues = Compilation.GetTypeByMetadataName("System.Buffers.SearchValues");
+        if (searchValues is not null &&
+            SymbolEqualityComparer.Default.Equals(searchValues.ContainingAssembly, CoreLibAssembly))
+        {
+            return TargetFramework.Net80;
+        }
+
+        return TargetFramework.Legacy;
+    }
 
     /// <summary>
     /// A "simple type" in this context defines a type that is either

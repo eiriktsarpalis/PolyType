@@ -191,6 +191,9 @@ public static class TestTypes
         yield return TestCase.Create(new MyKeyedCollection<string> { "1", "2", "1", "3" }, p);
         yield return TestCase.Create(new ReadOnlyCollection<int>([1, 2, 1, 3]), p);
         yield return TestCase.Create(new ReadOnlyDictionary<int, int>(new Dictionary<int, int> { [1] = 1, [2] = 2 }), p);
+#if NET9_0_OR_GREATER
+        yield return TestCase.Create(new ReadOnlySet<int>(new HashSet<int> { 1, 2, 3 }), p);
+#endif
 
         yield return TestCase.Create(new EnumerableAsObject { Value = 42 });
         yield return TestCase.Create(new DictionaryAsEnumerable { new("key", "value") });
@@ -206,6 +209,11 @@ public static class TestTypes
         yield return TestCase.Create(ImmutableDictionary.CreateRange(new Dictionary<string, string> { ["key"] = "value" }), p);
         yield return TestCase.Create(ImmutableDictionary.CreateRange(new Dictionary<string, string?> { ["key"] = null }), p);
         yield return TestCase.Create(ImmutableSortedDictionary.CreateRange(new Dictionary<string, string> { ["key"] = "value" }), p);
+        yield return TestCase.Create((IImmutableList<int>)[1, 2, 1, 3], p);
+        yield return TestCase.Create((IImmutableQueue<int>)[1, 2, 1, 3], p);
+        yield return TestCase.Create((IImmutableSet<int>)[1, 2, 1, 3], p);
+        yield return TestCase.Create((IImmutableStack<int>)[1, 2, 1, 3], isStack: true, provider: p);
+        yield return TestCase.Create((IImmutableDictionary<string, string>)ImmutableSortedDictionary.CreateRange(new Dictionary<string, string> { ["key"] = "value" }), p);
         yield return TestCase.Create(Enumerable.Range(1, 5).Select(i => i.ToString(CultureInfo.InvariantCulture)).ToFrozenDictionary(i => i, i => i), p);
         yield return TestCase.Create(Enumerable.Range(1, 5).ToFrozenSet(), p);
 
@@ -2594,6 +2602,11 @@ public partial class AsyncEnumerableClass(IEnumerable<int> values) : IAsyncEnume
 [GenerateShapeFor<ImmutableSortedSet<int>>]
 [GenerateShapeFor<ImmutableDictionary<string, string>>]
 [GenerateShapeFor<ImmutableSortedDictionary<string, string>>]
+[GenerateShapeFor<IImmutableList<int>>]
+[GenerateShapeFor<IImmutableQueue<int>>]
+[GenerateShapeFor<IImmutableSet<int>>]
+[GenerateShapeFor<IImmutableStack<int>>]
+[GenerateShapeFor<IImmutableDictionary<string, string>>]
 [GenerateShapeFor<FrozenDictionary<string, string>>]
 [GenerateShapeFor<FrozenSet<int>>]
 [GenerateShapeFor<IEnumerable>]
@@ -2645,6 +2658,9 @@ public partial class AsyncEnumerableClass(IEnumerable<int> values) : IAsyncEnume
 [GenerateShapeFor<Collection<int>>]
 [GenerateShapeFor<ReadOnlyCollection<int>>]
 [GenerateShapeFor<ReadOnlyDictionary<int, int>>]
+#if NET9_0_OR_GREATER
+[GenerateShapeFor<ReadOnlySet<int>>]
+#endif
 [GenerateShapeFor<ObservableCollection<int>>]
 [GenerateShapeFor<MyKeyedCollection<int>>]
 [GenerateShapeFor<MyKeyedCollection<string>>]

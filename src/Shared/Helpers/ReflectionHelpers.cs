@@ -31,6 +31,7 @@ internal static class ReflectionHelpers
     }
 
     public static bool IsMonoRuntime { get; } = Type.GetType("Mono.Runtime") is not null;
+    public static bool IsNetFramework { get; } = RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.Ordinal);
 
     public static bool IsNullabilityInfoContextSupported { get; } =
 #if NET
@@ -358,7 +359,7 @@ internal static class ReflectionHelpers
                 parameterType.GetGenericTypeDefinition() == typeof(ReadOnlySpan<>))
             {
                 Type spanElementType = parameterType.GetGenericArguments()[0];
-                if (spanElementType == elementType && method.ReturnType == type)
+                if (spanElementType == elementType && type.IsAssignableFrom(method.ReturnType))
                 {
                     builderMethod = method;
                     return true;
@@ -368,7 +369,7 @@ internal static class ReflectionHelpers
                     spanElementType == typeParameter)
                 {
                     MethodInfo specializedMethod = method.MakeGenericMethod(elementType);
-                    if (specializedMethod.ReturnType == type)
+                    if (type.IsAssignableFrom(specializedMethod.ReturnType))
                     {
                         builderMethod = specializedMethod;
 
@@ -463,6 +464,12 @@ internal static class ReflectionHelpers
         }
 
         return propertyInfo;
+    }
+
+    public static T ExchangeIfNull<T>([NotNull] ref T? target, T value) where T : class
+    {
+        DebugExt.Assert(value is not null);
+        return Interlocked.CompareExchange(ref target, value, null) ?? value;
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "Called conditionally on structs whose default ctor never gets trimmed.")]

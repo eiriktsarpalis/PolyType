@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -17,8 +18,6 @@ public sealed class ImmutableEquatableArray<T> :
     IReadOnlyList<T>, 
     IList<T>, 
     IList
-
-    where T : IEquatable<T>
 {
     /// <summary>
     /// An empty <see cref="ImmutableEquatableArray{T}"/> instance.
@@ -44,7 +43,28 @@ public sealed class ImmutableEquatableArray<T> :
 
     /// <inheritdoc/>
     public bool Equals(ImmutableEquatableArray<T> other)
-        => ReferenceEquals(this, other) || ((ReadOnlySpan<T>)_values).SequenceEqual(other._values);
+    {
+        if (ReferenceEquals(this, other))
+        {
+            return true;
+        }
+
+        if (Length != other.Length)
+        {
+            return false;
+        }
+
+        EqualityComparer<T> comparer = EqualityComparer<T>.Default;
+        for (int i = 0; i < Length; i++)
+        {
+            if (!comparer.Equals(_values[i], other._values[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     /// <inheritdoc/>
     public override bool Equals(object? obj) 
@@ -90,7 +110,7 @@ public sealed class ImmutableEquatableArray<T> :
         public readonly ref T Current => ref _values[_index];
 
         readonly T IEnumerator<T>.Current => _values[_index];
-        readonly object IEnumerator.Current => _values[_index];
+        readonly object? IEnumerator.Current => _values[_index];
         void IEnumerator.Reset() => throw new NotImplementedException();
         readonly void IDisposable.Dispose() { }
     }
@@ -107,12 +127,12 @@ public sealed class ImmutableEquatableArray<T> :
     bool IList.IsReadOnly => true;
     T IReadOnlyList<T>.this[int index] => _values[index];
     T IList<T>.this[int index] { get => _values[index]; set => throw new InvalidOperationException(); }
-    object IList.this[int index] { get => _values[index]; set => throw new InvalidOperationException(); }
+    object? IList.this[int index] { get => _values[index]; set => throw new InvalidOperationException(); }
     void ICollection<T>.CopyTo(T[] array, int arrayIndex) => _values.CopyTo(array, arrayIndex);
     void ICollection.CopyTo(Array array, int index) => _values.CopyTo(array, index);
-    int IList<T>.IndexOf(T item) => _values.AsSpan().IndexOf(item);
+    int IList<T>.IndexOf(T item) => Array.IndexOf(_values, item);
     int IList.IndexOf(object value) => ((IList)_values).IndexOf(value);
-    bool ICollection<T>.Contains(T item) => _values.AsSpan().IndexOf(item) >= 0;
+    bool ICollection<T>.Contains(T item) => Array.IndexOf(_values, item) >= 0;
     bool IList.Contains(object value) => ((IList)_values).Contains(value);
     bool ICollection.IsSynchronized => false;
     object ICollection.SyncRoot => this;
@@ -151,7 +171,7 @@ public static class ImmutableEquatableArray
     /// <typeparam name="T">The element type for the array.</typeparam>
     /// <param name="values">The source enumerable from which to populate the array.</param>
     /// <returns>A new <see cref="ImmutableEquatableArray{T}"/> instance.</returns>
-    public static ImmutableEquatableArray<T> ToImmutableEquatableArray<T>(this IEnumerable<T> values) where T : IEquatable<T>
+    public static ImmutableEquatableArray<T> ToImmutableEquatableArray<T>(this IEnumerable<T> values)
         => values is ICollection<T> { Count: 0 } ? ImmutableEquatableArray<T>.Empty : ImmutableEquatableArray<T>.UnsafeCreateFromArray(values.ToArray());
 
     /// <summary>
@@ -160,6 +180,6 @@ public static class ImmutableEquatableArray
     /// <typeparam name="T">The element type for the array.</typeparam>
     /// <param name="values">The source span from which to populate the array.</param>
     /// <returns>A new <see cref="ImmutableEquatableArray{T}"/> instance.</returns>
-    public static ImmutableEquatableArray<T> Create<T>(ReadOnlySpan<T> values) where T : IEquatable<T>
+    public static ImmutableEquatableArray<T> Create<T>(ReadOnlySpan<T> values)
         => values.IsEmpty ? ImmutableEquatableArray<T>.Empty : ImmutableEquatableArray<T>.UnsafeCreateFromArray(values.ToArray());
 }

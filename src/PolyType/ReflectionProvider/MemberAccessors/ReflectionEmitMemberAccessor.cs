@@ -1,4 +1,5 @@
 ﻿using PolyType.Abstractions;
+using PolyType.SourceGenModel;
 using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -738,14 +739,6 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
     public Func<T1, T2, TResult> CreateFuncDelegate<T1, T2, TResult>(ConstructorInfo ctorInfo)
         => CreateDelegate<Func<T1, T2, TResult>>(EmitConstructor(ctorInfo));
 
-    public MutableCollectionConstructor<TKey, TDeclaringType> CreateMutableCollectionConstructor<TKey, TDeclaringType>(MethodBase ctor, ConstructionSignature signature)
-    {
-        throw new NotImplementedException();
-    }
-
-    public SpanCollectionConstructor<TKey, TElement, TCollection> CreateSpanConstructorDelegate<TKey, TElement, TCollection>(ConstructorInfo ctorInfo)
-        => CreateDelegate<SpanCollectionConstructor<TKey, TElement, TCollection>>(EmitConstructor(ctorInfo));
-
     private static DynamicMethod EmitConstructor(ConstructorInfo ctorInfo)
     {
         ParameterInfo[] parameters = ctorInfo.GetParameters();
@@ -957,6 +950,197 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                 TypeCode.Double => OpCodes.Ldind_R8,
                 _ => null,
             };
+        }
+    }
+
+    public MutableCollectionConstructor<TKey, TDeclaringType> CreateMutableCollectionConstructor<TKey, TElement, TDeclaringType>(MutableCollectionConstructorInfo ctorInfo)
+    {
+        // Only options parameter
+        var dyn = CreateCollectionConstructorDelegate(
+            "MutableCollectionCtor",
+            ctorInfo.DefaultConstructor,
+            ctorInfo.Signature,
+            keyType: typeof(TKey),
+            elementType: typeof(TElement),
+            [typeof(CollectionConstructionOptions<TKey>).MakeByRefType()],
+            typeof(TDeclaringType));
+
+        return CreateDelegate<MutableCollectionConstructor<TKey, TDeclaringType>>(dyn);
+    }
+
+    public SpanCollectionConstructor<TKey, TElement, TCollection> CreateSpanCollectionConstructor<TKey, TElement, TCollection>(ParameterizedCollectionConstructorInfo constructorInfo)
+    {
+        // (ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey> options)
+        var dyn = CreateCollectionConstructorDelegate(
+            "SpanCollectionCtor",
+            constructorInfo.Factory,
+            constructorInfo.Signature,
+            keyType: typeof(TKey),
+            elementType: typeof(TElement),
+            parameterTypes: [typeof(ReadOnlySpan<TElement>), typeof(CollectionConstructionOptions<TKey>).MakeByRefType()],
+            returnType: typeof(TCollection));
+
+        return CreateDelegate<SpanCollectionConstructor<TKey, TElement, TCollection>>(dyn);
+    }
+
+    public EnumerableCollectionConstructor<TKey, TElement, TCollection> CreateEnumerableCollectionConstructor<TKey, TElement, TCollection>(ParameterizedCollectionConstructorInfo constructorInfo)
+    {
+        // (IEnumerable<TElement> elements, in CollectionConstructionOptions<TKey> options)
+        var dyn = CreateCollectionConstructorDelegate(
+            "EnumerableCollectionCtor",
+            constructorInfo.Factory,
+            constructorInfo.Signature,
+            keyType: typeof(TKey),
+            elementType: typeof(TElement),
+            parameterTypes: [typeof(IEnumerable<TElement>), typeof(CollectionConstructionOptions<TKey>).MakeByRefType()],
+            returnType: typeof(TCollection));
+
+        return CreateDelegate<EnumerableCollectionConstructor<TKey, TElement, TCollection>>(dyn);
+    }
+
+    private static DynamicMethod CreateCollectionConstructorDelegate(
+        string name,
+        MethodBase factory,
+        CollectionConstructorParameter[] signature,
+        Type keyType,
+        Type elementType,
+        Type[] parameterTypes,
+        Type returnType)
+    {
+        var dynamicMethod = CreateDynamicMethod(name, returnType, parameterTypes);
+        var il = dynamicMethod.GetILGenerator();
+
+        Type optionsType = parameterTypes[^1];
+        Debug.Assert(optionsType.IsByRef && optionsType.GetElementType()?.GetGenericTypeDefinition() == typeof(CollectionConstructionOptions<>));
+        optionsType = optionsType.GetElementType()!;
+
+        foreach (CollectionConstructorParameter parameterType in signature)
+        {
+            switch (parameterType)
+            {
+                case CollectionConstructorParameter.Enumerable:
+                case CollectionConstructorParameter.Span:
+                    // Load the collection parameter as-is
+                    il.Emit(OpCodes.Ldarg_0);
+                    break;
+
+                case CollectionConstructorParameter.List:
+                    // Convert the span to List<T> using CollectionHelpers.CreateList before loading into the stack
+                    Debug.Assert(parameterTypes.Length == 2 && parameterTypes[0].GetGenericTypeDefinition() == typeof(ReadOnlySpan<>));
+                    MethodInfo createListMethod = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateList), BindingFlags.Public | BindingFlags.Static)!;
+
+                    il.Emit(OpCodes.Ldarg_0);
+                    il.Emit(OpCodes.Call, createListMethod.MakeGenericMethod(keyType));
+                    break;
+
+                case CollectionConstructorParameter.HashSet:
+                    // Convert the span to HashSet<T> using CollectionHelpers.CreateHashSet before loading into the stack
+                    Debug.Assert(parameterTypes.Length == 2 && parameterTypes[0].GetGenericTypeDefinition() == typeof(ReadOnlySpan<>));
+                    MethodInfo createHashSetMethod = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateHashSet), BindingFlags.Public | BindingFlags.Static)!;
+                    il.Emit(OpCodes.Ldarg_0);
+                    LdOptionsProperty(nameof(CollectionConstructionOptions<int>.EqualityComparer));
+                    il.Emit(OpCodes.Call, createHashSetMethod.MakeGenericMethod(keyType));
+                    break;
+
+                case CollectionConstructorParameter.Dictionary:
+                    Debug.Assert(parameterTypes.Length == 2 && parameterTypes[0].GetGenericTypeDefinition() == typeof(ReadOnlySpan<>));
+                    DebugExt.Assert(elementType.IsGenericType && elementType.GetGenericTypeDefinition() == typeof(KeyValuePair<,>));
+                    // Convert the span to Dictionary<T> using CollectionHelpers.CreateDictionary before loading into the stack
+                    MethodInfo createDictionaryMethod = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateDictionary), BindingFlags.Public | BindingFlags.Static)!;
+
+                    il.Emit(OpCodes.Ldarg_0);
+                    LdOptionsProperty(nameof(CollectionConstructionOptions<int>.EqualityComparer));
+                    il.Emit(OpCodes.Call, createDictionaryMethod.MakeGenericMethod(elementType.GetGenericArguments()));
+                    break;
+
+                case CollectionConstructorParameter.Capacity:
+                case CollectionConstructorParameter.CapacityOptional:
+                {
+                    LdOptionsProperty(nameof(CollectionConstructionOptions<int>.Capacity));
+
+                    LocalBuilder nullable = il.DeclareLocal(typeof(int?));
+                    il.Emit(OpCodes.Stloc, nullable);
+                    il.Emit(OpCodes.Ldloca_S, nullable);
+
+                    MethodInfo getValueOrDefault = typeof(int?).GetMethod("GetValueOrDefault", Type.EmptyTypes)!;
+                    il.Emit(OpCodes.Call, getValueOrDefault);
+                    break;
+                }
+
+                case CollectionConstructorParameter.EqualityComparer:
+                case CollectionConstructorParameter.EqualityComparerOptional:
+                {
+                    LdOptionsProperty(nameof(CollectionConstructionOptions<int>.EqualityComparer));
+
+                    if (parameterType is CollectionConstructorParameter.EqualityComparer)
+                    {
+                        // For required parameter, replace null with EqualityComparer<TKey>.Default
+                        Label notNullLabel = il.DefineLabel();
+                        Label endLabel = il.DefineLabel();
+
+                        il.Emit(OpCodes.Dup);
+                        il.Emit(OpCodes.Brtrue_S, notNullLabel);
+
+                        // Value is null, pop it and load default
+                        il.Emit(OpCodes.Pop);
+                        Type equalityComparerType = typeof(EqualityComparer<>).MakeGenericType(keyType);
+                        PropertyInfo defaultProperty = equalityComparerType.GetProperty("Default", BindingFlags.Public | BindingFlags.Static)!;
+                        il.Emit(OpCodes.Call, defaultProperty.GetGetMethod()!);
+                        il.Emit(OpCodes.Br_S, endLabel);
+
+                        il.MarkLabel(notNullLabel);
+                        // Value is not null, use it as-is
+                        il.MarkLabel(endLabel);
+                    }
+
+                    // For optional parameter, pass null as-is
+                    break;
+                }
+
+                case CollectionConstructorParameter.Comparer:
+                case CollectionConstructorParameter.ComparerOptional:
+                {
+                    LdOptionsProperty(nameof(CollectionConstructionOptions<int>.Comparer));
+
+                    if (parameterType is CollectionConstructorParameter.Comparer)
+                    {
+                        // For required parameter, replace null with Comparer<TKey>.Default
+                        Label notNullLabel = il.DefineLabel();
+                        Label endLabel = il.DefineLabel();
+
+                        il.Emit(OpCodes.Dup);
+                        il.Emit(OpCodes.Brtrue_S, notNullLabel);
+
+                        // Value is null, pop it and load default
+                        il.Emit(OpCodes.Pop);
+                        Type comparerType = typeof(Comparer<>).MakeGenericType(keyType);
+                        PropertyInfo defaultProperty = comparerType.GetProperty("Default", BindingFlags.Public | BindingFlags.Static)!;
+                        il.Emit(OpCodes.Call, defaultProperty.GetGetMethod()!);
+                        il.Emit(OpCodes.Br_S, endLabel);
+
+                        il.MarkLabel(notNullLabel);
+                        // Value is not null, use it as-is
+                        il.MarkLabel(endLabel);
+                    }
+
+                    // For optional parameter, pass null as-is
+                    break;
+                }
+
+                default:
+                    throw new NotSupportedException($"Collection parameter type {signature} not supported.");
+            }
+        }
+
+        EmitCall(il, factory);
+        il.Emit(OpCodes.Ret);
+        return dynamicMethod;
+
+        void LdOptionsProperty(string propertyName)
+        {
+            il.Emit(parameterTypes.Length == 1 ? OpCodes.Ldarg_0 : OpCodes.Ldarg_1);
+            MethodInfo getter = optionsType.GetProperty(propertyName)!.GetMethod!;
+            il.Emit(OpCodes.Call, getter);
         }
     }
 }

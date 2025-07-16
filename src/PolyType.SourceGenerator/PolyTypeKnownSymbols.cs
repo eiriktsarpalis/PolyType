@@ -75,26 +75,4 @@ public sealed class PolyTypeKnownSymbols(Compilation compilation) : KnownSymbols
 
     public INamedTypeSymbol? FSharpValueOption => GetOrResolveType("Microsoft.FSharp.Core.FSharpValueOption`1", ref _FSharpValueOptionType);
     private Option<INamedTypeSymbol?> _FSharpValueOptionType;
-
-    public TargetFramework TargetFramework => _targetFramework ??= ResolveTargetFramework();
-    private TargetFramework? _targetFramework;
-
-    private TargetFramework ResolveTargetFramework()
-    {
-        INamedTypeSymbol? alternateEqualityComparer = Compilation.GetTypeByMetadataName("System.Collections.Generic.IAlternateEqualityComparer`2");
-        if (alternateEqualityComparer is not null &&
-            SymbolEqualityComparer.Default.Equals(alternateEqualityComparer.ContainingAssembly, CoreLibAssembly))
-        {
-            return TargetFramework.Net90;
-        }
-
-        INamedTypeSymbol? searchValues = Compilation.GetTypeByMetadataName("System.Buffers.SearchValues");
-        if (searchValues is not null &&
-            SymbolEqualityComparer.Default.Equals(searchValues.ContainingAssembly, CoreLibAssembly))
-        {
-            return TargetFramework.Net80;
-        }
-
-        return TargetFramework.Legacy;
-    }
 }

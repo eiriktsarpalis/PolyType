@@ -41,16 +41,9 @@ public sealed class DictionaryDataModel : TypeDataModel
     public required IMethodSymbol? FactoryMethod { get; init; }
 
     /// <summary>
-    /// Constructor or static factory method whose shape is governed by <see cref="ConstructionStrategy"/>
-    /// and declares either an <see cref="IEqualityComparer{T}"/> or <see cref="IComparer{T}"/> parameter.
+    /// The inferred signature of the factory method or constructor.
     /// </summary>
-    public required IMethodSymbol? FactoryMethodWithComparer { get; init; }
-
-    /// <summary>
-    /// Constructor or static factory method that accepts a capacity parameter,
-    /// and possibly a comparer parameter.
-    /// </summary>
-    public required IMethodSymbol? FactoryMethodWithCapacity { get; init; }
+    public required ImmutableArray<CollectionConstructorParameter> FactorySignature { get; init; }
 
     /// <summary>
     /// <see langword="true"/> if the dictionary type only exposes an indexer via an explicit interface implementation of either <see cref="IDictionary{TKey, TValue}"/> or <see cref="IDictionary"/>.

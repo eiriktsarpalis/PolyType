@@ -249,7 +249,7 @@ internal static class RoslynHelpers
                 parameterType.IsGenericType && parameterType.ConstructedFrom.Name is "ReadOnlySpan")
             {
                 ITypeSymbol spanElementType = parameterType.TypeArguments[0];
-                if (cmp.Equals(spanElementType, elementType) && cmp.Equals(method.ReturnType, type))
+                if (cmp.Equals(spanElementType, elementType) && type.IsAssignableFrom(method.ReturnType))
                 {
                     builderMethod = method;
                     return true;
@@ -259,7 +259,7 @@ internal static class RoslynHelpers
                     cmp.Equals(spanElementType, typeParameter))
                 {
                     IMethodSymbol specializedMethod = method.Construct(elementType);
-                    if (cmp.Equals(specializedMethod.ReturnType, type))
+                    if (type.IsAssignableFrom(specializedMethod.ReturnType))
                     {
                         builderMethod = specializedMethod;
                         // Continue searching since we prefer non-generic methods.

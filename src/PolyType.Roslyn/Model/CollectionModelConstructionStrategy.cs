@@ -17,13 +17,23 @@ public enum CollectionModelConstructionStrategy
     Mutable,
 
     /// <summary>
-    /// Type exposes a constructor or factory method that takes a parameter that is compatible with <see cref="List{T}"/>,
+    /// Type exposes a constructor or factory method that takes a parameter that is <see cref="IEnumerable{T}"/>.
+    /// </summary>
+    Enumerable,
+
+    /// <summary>
+    /// Type exposes a constructor or factory method that takes a parameter that assignable from <see cref="List{T}"/>,
     /// such as <see cref="IEnumerable{T}"/> or <see cref="IList{T}"/>.
     /// </summary>
     List,
 
     /// <summary>
-    /// Type exposes a constructor or factory method that takes a parameter that is compatible with <see cref="Dictionary{TKey, TValue}"/>,
+    /// Type exposes a constructor or factory method that takes a parameter that is assignable from <see cref="HashSet{T}"/>.
+    /// </summary>
+    HashSet,
+
+    /// <summary>
+    /// Type exposes a constructor or factory method that takes a parameter that is assignable from <see cref="Dictionary{TKey, TValue}"/>,
     /// such as <see cref="IReadOnlyDictionary{TKey, TValue}"/> or <see cref="IDictionary{TKey, TValue}"/>.
     /// </summary>
     Dictionary,
@@ -37,7 +47,7 @@ public enum CollectionModelConstructionStrategy
     /// <summary>
     /// Type defines a constructor or factory method accepting enumerable of
     /// <see cref="Tuple{T1, T2}"/> instead of <see cref="KeyValuePair{TKey,TValue}"/>,
-    /// typically used by factories of the F# map type. 
+    /// typically used by factories of the F# map type.
     /// </summary>
     TupleEnumerable,
 }

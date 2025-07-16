@@ -18,7 +18,7 @@ internal sealed partial class SourceFormatter
                     MutableConstructorFunc = {{FormatMutableConstructorFunc(enumerableShapeModel)}},
                     EnumerableConstructorFunc = {{FormatEnumerableConstructorFunc(enumerableShapeModel)}},
                     SpanConstructorFunc = {{FormatSpanConstructorFunc(enumerableShapeModel)}},
-                    SupportedComparer = {{FormatComparerOptions(enumerableShapeModel.ConstructionParameters.Span)}},
+                    SupportedComparer = {{FormatComparerOptions(enumerableShapeModel.ConstructorParameters)}},
                     GetEnumerableFunc = {{FormatGetEnumerableFunc(enumerableShapeModel)}},
                     AddElementFunc = {{FormatAddElementFunc(enumerableShapeModel)}},
                     IsAsyncEnumerable = {{FormatBool(enumerableShapeModel.Kind is EnumerableKind.AsyncEnumerableOfT)}},
@@ -53,7 +53,7 @@ internal sealed partial class SourceFormatter
             }
 
             string typeName = enumerableType.ImplementationTypeFQN ?? enumerableType.Type.FullyQualifiedName;
-            return FormatCollectionInitializer(enumerableType.ConstructionParameters, enumerableType.ConstructionParametersWithCapacity, enumerableType.HasConstructorWithoutComparer, enumerableType.ElementType, enumerableType.StaticFactoryMethod ?? $"new {typeName}({{0}})", null);
+            return FormatCollectionInitializer(enumerableType.ConstructorParameters, enumerableType.ElementType, valueType: null, enumerableType.StaticFactoryMethod ?? $"new {typeName}({{0}})", null);
         }
 
         static string FormatAddElementFunc(EnumerableShapeModel enumerableType)
@@ -82,7 +82,7 @@ internal sealed partial class SourceFormatter
 
             string suppressSuffix = enumerableType.ElementTypeContainsNullableAnnotations ? "!" : "";
             string valuesType = $"global::System.ReadOnlySpan<{enumerableType.ElementType}>";
-            string valuesExpr = enumerableType.CtorRequiresListConversion ? $"global::PolyType.SourceGenModel.CollectionHelpers.CreateList(values{suppressSuffix})" : $"values{suppressSuffix}";
+            string valuesExpr = $"values{suppressSuffix}";
 
             if (enumerableType.Kind is EnumerableKind.ArrayOfT or EnumerableKind.ReadOnlyMemoryOfT or EnumerableKind.MemoryOfT)
             {
@@ -111,7 +111,7 @@ internal sealed partial class SourceFormatter
         string factory = enumerableType.StaticFactoryMethod is not null
           ? $"{enumerableType.StaticFactoryMethod}({{0}})"
           : $"new {enumerableType.Type.FullyQualifiedName}({{0}})";
-        return FormatCollectionInitializer(enumerableType.ConstructionParameters, enumerableType.ConstructionParametersWithCapacity, enumerableType.HasConstructorWithoutComparer, enumerableType.ElementType, factory, (valuesType, valuesExpr));
+        return FormatCollectionInitializer(enumerableType.ConstructorParameters, enumerableType.ElementType, valueType: null, factory, (valuesType, valuesExpr));
     }
 
     private static string FormatCollectionConstructionStrategy(CollectionConstructionStrategy strategy)
