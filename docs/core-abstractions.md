@@ -584,7 +584,7 @@ public partial interface IEnumerableTypeShape<TEnumerable, TElement>
     Setter<TEnumerable, TElement> GetAddElement();
 
     // Implemented by CollectionConstructionStrategy.Parameterized types
-    ParameterizedCollectionConstructor<TKey, TElement, TEnumerable> GetParameterizedConstructor(in CollectionConstructionOptions<TElement> collectionConstructionOptions = default);
+    ParameterizedCollectionConstructor<TKey, TElement, TEnumerable> GetParameterizedConstructor();
 }
 
 public delegate TEnumerable MutableCollectionConstructor<TKey, TEnumerable>(in CollectionConstructionOptions<TKey> options = default)
