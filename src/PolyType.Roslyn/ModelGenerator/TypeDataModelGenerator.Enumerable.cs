@@ -113,20 +113,19 @@ public partial class TypeDataModelGenerator
                 }
             }
 
-            addMethod = ResolveAddMethod(namedType, elementType, out addMethodIsExplicitInterfaceImplementation);
-            if (ResolveBestCollectionCtor(
+            if (GetImmutableCollectionFactory(namedType) is { } result)
+            {
+                (factoryMethod, factorySignature, isParameterizedFactory) = result;
+            }
+            else if (ResolveBestCollectionCtor(
                 namedType,
                 namedType.GetConstructors(),
-                hasAddMethod: addMethod is not null,
+                hasAddMethod: (addMethod = ResolveAddMethod(namedType, elementType, out addMethodIsExplicitInterfaceImplementation)) is not null,
                 elementType,
                 keyType: elementType,
                 valueType: null) is { } bestCtor)
             {
                 (factoryMethod, factorySignature, isParameterizedFactory) = bestCtor;
-            }
-            else if (GetImmutableCollectionFactory(namedType) is { } result)
-            {
-                (factoryMethod, factorySignature, isParameterizedFactory) = result;
             }
             // move this later in priority order so it doesn't skip comparer options when they exist.
             else if (

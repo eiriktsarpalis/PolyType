@@ -70,7 +70,6 @@ public partial class TypeDataModelGenerator
             }
         }
 
-        IEnumerable<IMethodSymbol> allCtors = namedType.GetConstructors();
         var elementType = KnownSymbols.KeyValuePairOfKV!.Construct(keyType, valueType);
 
         if (ResolveBestCollectionCtor(
