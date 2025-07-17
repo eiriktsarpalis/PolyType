@@ -65,14 +65,6 @@ public struct PooledList<T> : IDisposable
     /// <summary>Gets the current list contents as a span.</summary>
     public readonly ReadOnlySpan<T> AsSpan() => _values.AsSpan(0, _count);
 
-    /// <summary>Copies the contents of the list into a new array.</summary>
-    public readonly T[] ToArray()
-    {
-        T[] array = new T[_count];
-        _values.AsSpan(0, _count).CopyTo(array);
-        return array;
-    }
-
     /// <summary>Disposes of the list, returning any unused buffers to the pool.</summary>
     public void Dispose()
     {

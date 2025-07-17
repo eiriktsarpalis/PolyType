@@ -76,13 +76,12 @@ internal sealed class XmlMutableEnumerableConverter<TEnumerable, TElement>(
     }
 }
 
-internal abstract class XmlImmutableEnumerableConverter<TEnumerable, TElement>(
+internal sealed class XmlParameterizedEnumerableConverter<TEnumerable, TElement>(
     XmlConverter<TElement> elementConverter,
-    Func<TEnumerable, IEnumerable<TElement>> getEnumerable)
+    Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
+    ParameterizedCollectionConstructor<TElement, TElement, TEnumerable> spanConstructor)
     : XmlEnumerableConverter<TEnumerable, TElement>(elementConverter, getEnumerable)
 {
-    private protected abstract TEnumerable Construct(PooledList<TElement> buffer);
-
     public sealed override TEnumerable? Read(XmlReader reader)
     {
         if (default(TEnumerable) is null && reader.TryReadNullElement())
@@ -95,7 +94,7 @@ internal abstract class XmlImmutableEnumerableConverter<TEnumerable, TElement>(
         if (reader.IsEmptyElement)
         {
             reader.ReadStartElement();
-            return Construct(elements);
+            return spanConstructor(elements.AsSpan());
         }
 
         XmlConverter<TElement> elementConverter = _elementConverter;
@@ -113,16 +112,6 @@ internal abstract class XmlImmutableEnumerableConverter<TEnumerable, TElement>(
         }
 
         reader.ReadEndElement();
-        return Construct(elements);
+        return spanConstructor(elements.AsSpan());
     }
-}
-
-internal sealed class XmlParameterizedConstructorEnumerableConverter<TEnumerable, TElement>(
-    XmlConverter<TElement> elementConverter,
-    Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
-    ParameterizedCollectionConstructor<TElement, TElement, TEnumerable> spanConstructor)
-    : XmlImmutableEnumerableConverter<TEnumerable, TElement>(elementConverter, getEnumerable)
-{
-    private protected override TEnumerable Construct(PooledList<TElement> buffer)
-        => spanConstructor(buffer.AsSpan());
 }

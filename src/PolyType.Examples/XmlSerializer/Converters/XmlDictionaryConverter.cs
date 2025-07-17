@@ -90,14 +90,14 @@ internal sealed class XmlMutableDictionaryConverter<TDictionary, TKey, TValue>(
     }
 }
 
-internal abstract class XmlImmutableDictionaryConverter<TDictionary, TKey, TValue>(
+internal sealed class XmlParameterizedDictionaryConverter<TDictionary, TKey, TValue>(
     XmlConverter<TKey> keyConverter,
     XmlConverter<TValue> valueConverter,
-    Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getEnumerable)
+    Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getEnumerable,
+    ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> constructor)
     : XmlDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, getEnumerable)
     where TKey : notnull
 {
-    private protected abstract TDictionary Construct(PooledList<KeyValuePair<TKey, TValue>> buffer);
     public sealed override TDictionary? Read(XmlReader reader)
     {
         if (default(TDictionary) is null && reader.TryReadNullElement())
@@ -110,7 +110,7 @@ internal abstract class XmlImmutableDictionaryConverter<TDictionary, TKey, TValu
         if (reader.IsEmptyElement)
         {
             reader.Read();
-            return Construct(buffer);
+            return constructor(buffer.AsSpan());
         }
 
         XmlConverter<TKey> keyConverter = _keyConverter;
@@ -132,18 +132,6 @@ internal abstract class XmlImmutableDictionaryConverter<TDictionary, TKey, TValu
         }
 
         reader.ReadEndElement();
-        return Construct(buffer);
+        return constructor(buffer.AsSpan());
     }
-}
-
-internal sealed class XmlParameterizedConstructorDictionaryConverter<TDictionary, TKey, TValue>(
-    XmlConverter<TKey> keyConverter,
-    XmlConverter<TValue> valueConverter,
-    Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getEnumerable,
-    ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> constructor)
-    : XmlImmutableDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, getEnumerable)
-    where TKey : notnull
-{
-    private protected override TDictionary Construct(PooledList<KeyValuePair<TKey, TValue>> buffer)
-        => constructor(buffer.AsSpan());
 }

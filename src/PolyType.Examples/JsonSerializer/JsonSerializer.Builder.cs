@@ -94,7 +94,7 @@ public static partial class JsonSerializerTS
                         enumerableShape.GetAddElement()),
 
                 CollectionConstructionStrategy.Parameterized => 
-                    new JsonParameterizedConstructorEnumerableConverter<TEnumerable, TElement>(
+                    new JsonParameterizedEnumerableConverter<TEnumerable, TElement>(
                         elementConverter,
                         enumerableShape,
                         enumerableShape.GetParameterizedConstructor()),
@@ -118,7 +118,7 @@ public static partial class JsonSerializerTS
                         dictionaryShape.GetAddKeyValuePair()),
 
                 CollectionConstructionStrategy.Parameterized => 
-                    new JsonParameterizedConstructorDictionaryConverter<TDictionary, TKey, TValue>(
+                    new JsonParameterizedDictionaryConverter<TDictionary, TKey, TValue>(
                         keyConverter,
                         valueConverter,
                         dictionaryShape,

@@ -75,13 +75,12 @@ internal sealed class CborMutableEnumerableConverter<TEnumerable, TElement>(
     }
 }
 
-internal abstract class CborImmutableEnumerableConverter<TEnumerable, TElement>(
+internal sealed class CborParameterizedEnumerableConverter<TEnumerable, TElement>(
     CborConverter<TElement> elementConverter,
-    Func<TEnumerable, IEnumerable<TElement>> getEnumerable)
+    Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
+    ParameterizedCollectionConstructor<TElement, TElement, TEnumerable> constructor)
     : CborEnumerableConverter<TEnumerable, TElement>(elementConverter, getEnumerable)
 {
-    private protected abstract TEnumerable Construct(PooledList<TElement> buffer);
-
     public sealed override TEnumerable? Read(CborReader reader)
     {
         if (default(TEnumerable) is null && reader.PeekState() == CborReaderState.Null)
@@ -101,16 +100,6 @@ internal abstract class CborImmutableEnumerableConverter<TEnumerable, TElement>(
         }
 
         reader.ReadEndArray();
-        return Construct(buffer);
+        return constructor(buffer.AsSpan());
     }
-}
-
-internal sealed class CborParameterizedConstructorEnumerableConverter<TEnumerable, TElement>(
-    CborConverter<TElement> elementConverter,
-    Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
-    ParameterizedCollectionConstructor<TElement, TElement, TEnumerable> constructor)
-    : CborImmutableEnumerableConverter<TEnumerable, TElement>(elementConverter, getEnumerable)
-{
-    private protected override TEnumerable Construct(PooledList<TElement> buffer)
-        => constructor(buffer.AsSpan());
 }
