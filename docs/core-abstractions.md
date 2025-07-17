@@ -2,19 +2,9 @@
 
 This document provides a walkthrough of the core type abstractions found in PolyType. This includes `ITypeShape`, `IPropertyShape` and the visitor types for accessing them. These are typically consumed by library authors looking to build datatype-generic components. Unless otherwise stated, all APIs are found in the `PolyType.Abstractions` namespace.
 
-## The `ITypeShape` interface    public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? _)
-    {
-        Mutator<T>[] propertyMutators = objectShape.Properties
-            .Where(prop => prop.HasSetter)
-            .Select(prop => (Mutator<T>)prop.Accept(this)!)
-            .ToArray();
+## The `ITypeShape` interface
 
-        return new Mutator<T>((ref T value) => 
-        {
-            foreach (var mutator in propertyMutators) 
-                mutator(ref value);
-        });
-    }TypeShape` interface defines a reflection-like representation for a given .NET type. The type hierarchy that it creates encapsulates all information necessary to perform strongly typed traversal of its type graph.
+The `ITypeShape` interface defines a reflection-like representation for a given .NET type. The type hierarchy that it creates encapsulates all information necessary to perform strongly typed traversal of its type graph.
 
 To illustrate the idea, consider the following APIs modelling objects with properties:
 
