@@ -383,9 +383,9 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
 
             if (dictionaryShape.ConstructionStrategy is CollectionConstructionStrategy.Mutable)
             {
-                var defaultCtor = dictionaryShape.GetMutableCollectionConstructor();
+                var defaultCtor = dictionaryShape.GetMutableConstructor();
                 var adder = dictionaryShape.GetAddKeyValuePair();
-                Assert.Same(dictionaryShape.GetMutableCollectionConstructor(), dictionaryShape.GetMutableCollectionConstructor());
+                Assert.Same(dictionaryShape.GetMutableConstructor(), dictionaryShape.GetMutableConstructor());
                 Assert.Same(dictionaryShape.GetAddKeyValuePair(), dictionaryShape.GetAddKeyValuePair());
 
                 dictionary = defaultCtor();
@@ -397,31 +397,14 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             }
             else
             {
-                Assert.Throws<InvalidOperationException>(() => dictionaryShape.GetMutableCollectionConstructor());
+                Assert.Throws<InvalidOperationException>(() => dictionaryShape.GetMutableConstructor());
                 Assert.Throws<InvalidOperationException>(() => dictionaryShape.GetAddKeyValuePair());
             }
 
-            if (dictionaryShape.ConstructionStrategy is CollectionConstructionStrategy.Enumerable)
+            if (dictionaryShape.ConstructionStrategy is CollectionConstructionStrategy.Parameterized)
             {
-                var enumerableCtor = dictionaryShape.GetEnumerableCollectionConstructor();
-                Assert.Same(dictionaryShape.GetEnumerableCollectionConstructor(), dictionaryShape.GetEnumerableCollectionConstructor());
-
-                var values = keyGenerator.GenerateValues(seed: 42)
-                    .Select(k => new KeyValuePair<TKey, TValue>(k, default!))
-                    .Take(10);
-
-                dictionary = enumerableCtor(values);
-                Assert.Equal(10, getter(dictionary).Count);
-            }
-            else
-            {
-                Assert.Throws<InvalidOperationException>(() => dictionaryShape.GetEnumerableCollectionConstructor());
-            }
-
-            if (dictionaryShape.ConstructionStrategy is CollectionConstructionStrategy.Span)
-            {
-                var spanCtor = dictionaryShape.GetSpanCollectionConstructor();
-                Assert.Same(dictionaryShape.GetSpanCollectionConstructor(), dictionaryShape.GetSpanCollectionConstructor());
+                var spanCtor = dictionaryShape.GetParameterizedConstructor();
+                Assert.Same(dictionaryShape.GetParameterizedConstructor(), dictionaryShape.GetParameterizedConstructor());
 
                 var values = keyGenerator.GenerateValues(seed: 42)
                     .Select(k => new KeyValuePair<TKey, TValue>(k, default!))
@@ -433,7 +416,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             }
             else
             {
-                Assert.Throws<InvalidOperationException>(() => dictionaryShape.GetSpanCollectionConstructor());
+                Assert.Throws<InvalidOperationException>(() => dictionaryShape.GetParameterizedConstructor());
             }
 
             return null;
@@ -514,9 +497,9 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             
             if (enumerableShape.ConstructionStrategy is CollectionConstructionStrategy.Mutable)
             {
-                var defaultCtor = enumerableShape.GetMutableCollectionConstructor();
+                var defaultCtor = enumerableShape.GetMutableConstructor();
                 var adder = enumerableShape.GetAddElement();
-                Assert.Same(enumerableShape.GetMutableCollectionConstructor(), enumerableShape.GetMutableCollectionConstructor());
+                Assert.Same(enumerableShape.GetMutableConstructor(), enumerableShape.GetMutableConstructor());
                 Assert.Same(enumerableShape.GetAddElement(), enumerableShape.GetAddElement());
 
                 enumerable = defaultCtor();
@@ -528,28 +511,14 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             }
             else
             {
-                Assert.Throws<InvalidOperationException>(() => enumerableShape.GetMutableCollectionConstructor());
+                Assert.Throws<InvalidOperationException>(() => enumerableShape.GetMutableConstructor());
                 Assert.Throws<InvalidOperationException>(() => enumerableShape.GetAddElement());
             }
 
-            if (enumerableShape.ConstructionStrategy is CollectionConstructionStrategy.Enumerable)
+            if (enumerableShape.ConstructionStrategy is CollectionConstructionStrategy.Parameterized)
             {
-                var enumerableCtor = enumerableShape.GetEnumerableCollectionConstructor();
-                Assert.Same(enumerableShape.GetEnumerableCollectionConstructor(), enumerableShape.GetEnumerableCollectionConstructor());
-
-                var values = elementGenerator.GenerateValues(seed: 42).Take(10);
-                enumerable = enumerableCtor(values);
-                Assert.Equal(10, getter(enumerable).Count());
-            }
-            else
-            {
-                Assert.Throws<InvalidOperationException>(() => enumerableShape.GetEnumerableCollectionConstructor());
-            }
-
-            if (enumerableShape.ConstructionStrategy is CollectionConstructionStrategy.Span)
-            {
-                var spanCtor = enumerableShape.GetSpanCollectionConstructor();
-                Assert.Same(enumerableShape.GetSpanCollectionConstructor(), enumerableShape.GetSpanCollectionConstructor());
+                var spanCtor = enumerableShape.GetParameterizedConstructor();
+                Assert.Same(enumerableShape.GetParameterizedConstructor(), enumerableShape.GetParameterizedConstructor());
 
                 var values = elementGenerator.GenerateValues(seed: 42).Take(10).ToArray();
                 enumerable = spanCtor(values);
@@ -557,7 +526,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             }
             else
             {
-                Assert.Throws<InvalidOperationException>(() => enumerableShape.GetSpanCollectionConstructor());
+                Assert.Throws<InvalidOperationException>(() => enumerableShape.GetParameterizedConstructor());
             }
 
             return null;

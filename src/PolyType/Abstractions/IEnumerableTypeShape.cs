@@ -87,7 +87,7 @@ public interface IEnumerableTypeShape<TEnumerable, TElement> : ITypeShape<TEnume
     /// </summary>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Mutable"/>.</exception>
     /// <returns>A delegate wrapping a constructor that takes no elements.</returns>
-    MutableCollectionConstructor<TElement, TEnumerable> GetMutableCollectionConstructor();
+    MutableCollectionConstructor<TElement, TEnumerable> GetMutableConstructor();
 
     /// <summary>
     /// Creates a setter delegate used for appending a <typeparamref name="TElement"/> to a mutable collection.
@@ -99,14 +99,7 @@ public interface IEnumerableTypeShape<TEnumerable, TElement> : ITypeShape<TEnume
     /// <summary>
     /// Creates a delegate for creating a collection from a span.
     /// </summary>
-    /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Span"/>.</exception>
+    /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Parameterized"/>.</exception>
     /// <returns>A delegate constructing a collection from a span of values.</returns>
-    SpanCollectionConstructor<TElement, TElement, TEnumerable> GetSpanCollectionConstructor();
-
-    /// <summary>
-    /// Creates a delegate for creating a collection from an enumerable.
-    /// </summary>
-    /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Enumerable"/>.</exception>
-    /// <returns>A delegate constructing a collection from an enumerable of values.</returns>
-    EnumerableCollectionConstructor<TElement, TElement, TEnumerable> GetEnumerableCollectionConstructor();
+    ParameterizedCollectionConstructor<TElement, TElement, TEnumerable> GetParameterizedConstructor();
 }

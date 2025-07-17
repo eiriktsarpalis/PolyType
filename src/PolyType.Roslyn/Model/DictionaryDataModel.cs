@@ -31,12 +31,7 @@ public sealed class DictionaryDataModel : TypeDataModel
     public required DictionaryKind DictionaryKind { get; init; }
 
     /// <summary>
-    /// The preferred construction strategy for this collection type.
-    /// </summary>
-    public required CollectionModelConstructionStrategy ConstructionStrategy { get; init; }
-
-    /// <summary>
-    /// Constructor or static factory method whose shape is governed by <see cref="ConstructionStrategy"/>.
+    /// Constructor or static factory method.
     /// </summary>
     public required IMethodSymbol? FactoryMethod { get; init; }
 

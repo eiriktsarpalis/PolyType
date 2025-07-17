@@ -16,12 +16,11 @@ internal sealed partial class SourceFormatter
                     ElementType = {{GetShapeModel(enumerableShapeModel.ElementType).SourceIdentifier}},
                     ConstructionStrategy = {{FormatCollectionConstructionStrategy(enumerableShapeModel.ConstructionStrategy)}},
                     MutableConstructorFunc = {{FormatMutableConstructorFunc(enumerableShapeModel)}},
-                    EnumerableConstructorFunc = {{FormatEnumerableConstructorFunc(enumerableShapeModel)}},
                     SpanConstructorFunc = {{FormatSpanConstructorFunc(enumerableShapeModel)}},
                     SupportedComparer = {{FormatComparerOptions(enumerableShapeModel.ConstructorParameters)}},
                     GetEnumerableFunc = {{FormatGetEnumerableFunc(enumerableShapeModel)}},
                     AddElementFunc = {{FormatAddElementFunc(enumerableShapeModel)}},
-                    IsAsyncEnumerable = {{FormatBool(enumerableShapeModel.Kind is EnumerableKind.AsyncEnumerableOfT)}},
+                    IsAsyncEnumerable = {{FormatBool(enumerableShapeModel.Kind is EnumerableKind.IAsyncEnumerableOfT)}},
                     Rank = {{enumerableShapeModel.Rank}},
                     AssociatedTypeShapes = {{FormatAssociatedTypeShapes(enumerableShapeModel)}},
                     Provider = this,
@@ -40,7 +39,7 @@ internal sealed partial class SourceFormatter
                 EnumerableKind.ReadOnlyMemoryOfT => $"static obj => global::System.Runtime.InteropServices.MemoryMarshal.ToEnumerable(obj{suppressSuffix})",
                 EnumerableKind.IEnumerable => $"static obj => global::System.Linq.Enumerable.Cast<object>(obj{suppressSuffix})",
                 EnumerableKind.MultiDimensionalArrayOfT => $"static obj => global::System.Linq.Enumerable.Cast<{enumerableType.ElementType.FullyQualifiedName}>(obj{suppressSuffix})",
-                EnumerableKind.AsyncEnumerableOfT => $"static obj => throw new global::System.InvalidOperationException(\"Sync enumeration of IAsyncEnumerable instances is not supported.\")",
+                EnumerableKind.IAsyncEnumerableOfT => $"static obj => throw new global::System.InvalidOperationException(\"Sync enumeration of IAsyncEnumerable instances is not supported.\")",
                 _ => throw new ArgumentException(enumerableType.Kind.ToString()),
             };
         }
@@ -53,7 +52,7 @@ internal sealed partial class SourceFormatter
             }
 
             string typeName = enumerableType.ImplementationTypeFQN ?? enumerableType.Type.FullyQualifiedName;
-            return FormatCollectionInitializer(enumerableType.ConstructorParameters, enumerableType.ElementType, valueType: null, enumerableType.StaticFactoryMethod ?? $"new {typeName}({{0}})", null);
+            return FormatCollectionInitializer(enumerableType.ConstructorParameters, enumerableType.ElementType, valueType: null, enumerableType.StaticFactoryMethod ?? $"new {typeName}({{0}})", null, enumerableType.ElementTypeContainsNullableAnnotations);
         }
 
         static string FormatAddElementFunc(EnumerableShapeModel enumerableType)
@@ -75,43 +74,30 @@ internal sealed partial class SourceFormatter
 
         static string FormatSpanConstructorFunc(EnumerableShapeModel enumerableType)
         {
-            if (enumerableType.ConstructionStrategy is not CollectionConstructionStrategy.Span)
+            if (enumerableType.ConstructionStrategy is not CollectionConstructionStrategy.Parameterized)
             {
                 return "null";
             }
 
-            string suppressSuffix = enumerableType.ElementTypeContainsNullableAnnotations ? "!" : "";
-            string valuesType = $"global::System.ReadOnlySpan<{enumerableType.ElementType}>";
-            string valuesExpr = $"values{suppressSuffix}";
-
+            string elementType = enumerableType.ElementType.FullyQualifiedName;
             if (enumerableType.Kind is EnumerableKind.ArrayOfT or EnumerableKind.ReadOnlyMemoryOfT or EnumerableKind.MemoryOfT)
             {
+                string suppressSuffix = enumerableType.ElementTypeContainsNullableAnnotations ? "!" : "";
                 string optionsTypeName = FormatCollectionConstructionOptionsTypeName(enumerableType.ElementType);
-                return $"static ({valuesType} values, in {FormatCollectionConstructionOptionsTypeName(enumerableType.ElementType)} options) => {valuesExpr}.ToArray()";
+                return $"static (global::System.ReadOnlySpan<{elementType}> values, in {FormatCollectionConstructionOptionsTypeName(enumerableType.ElementType)} options) => values.ToArray(){suppressSuffix}";
             }
 
-            return FormatCollectionInitializer(enumerableType, valuesType, valuesExpr);
-        }
-
-        static string FormatEnumerableConstructorFunc(EnumerableShapeModel enumerableType)
-        {
-            if (enumerableType.ConstructionStrategy is not CollectionConstructionStrategy.Enumerable)
-            {
-                return "null";
-            }
-
-            string suppressSuffix = enumerableType.ElementTypeContainsNullableAnnotations ? "!" : "";
-            string valuesExpr = $"values{suppressSuffix}";
-            return FormatCollectionInitializer(enumerableType, $"global::System.Collections.Generic.IEnumerable<{enumerableType.ElementType}>", valuesExpr);
+            return FormatCollectionInitializer(enumerableType, enumerableType.ElementType.FullyQualifiedName);
         }
     }
 
-    private static string FormatCollectionInitializer(EnumerableShapeModel enumerableType, string valuesType, string valuesExpr)
+    private static string FormatCollectionInitializer(EnumerableShapeModel enumerableType, string valuesType)
     {
         string factory = enumerableType.StaticFactoryMethod is not null
           ? $"{enumerableType.StaticFactoryMethod}({{0}})"
           : $"new {enumerableType.Type.FullyQualifiedName}({{0}})";
-        return FormatCollectionInitializer(enumerableType.ConstructorParameters, enumerableType.ElementType, valueType: null, factory, (valuesType, valuesExpr));
+
+        return FormatCollectionInitializer(enumerableType.ConstructorParameters, enumerableType.ElementType, valueType: null, factory, valuesType, enumerableType.ElementTypeContainsNullableAnnotations);
     }
 
     private static string FormatCollectionConstructionStrategy(CollectionConstructionStrategy strategy)
@@ -120,8 +106,7 @@ internal sealed partial class SourceFormatter
         {
             CollectionConstructionStrategy.None => "None",
             CollectionConstructionStrategy.Mutable => "Mutable",
-            CollectionConstructionStrategy.Enumerable => "Enumerable",
-            CollectionConstructionStrategy.Span => "Span",
+            CollectionConstructionStrategy.Parameterized => "Parameterized",
             _ => throw new ArgumentException(strategy.ToString()),
         };
 

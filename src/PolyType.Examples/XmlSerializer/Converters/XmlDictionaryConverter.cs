@@ -136,23 +136,11 @@ internal abstract class XmlImmutableDictionaryConverter<TDictionary, TKey, TValu
     }
 }
 
-internal sealed class XmlEnumerableConstructorDictionaryConverter<TDictionary, TKey, TValue>(
+internal sealed class XmlParameterizedConstructorDictionaryConverter<TDictionary, TKey, TValue>(
     XmlConverter<TKey> keyConverter,
     XmlConverter<TValue> valueConverter,
     Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getEnumerable,
-    EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> constructor)
-    : XmlImmutableDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, getEnumerable)
-    where TKey : notnull
-{
-    private protected override TDictionary Construct(PooledList<KeyValuePair<TKey, TValue>> buffer)
-        => constructor(buffer.ToArray());
-}
-
-internal sealed class XmlSpanConstructorDictionaryConverter<TDictionary, TKey, TValue>(
-    XmlConverter<TKey> keyConverter,
-    XmlConverter<TValue> valueConverter,
-    Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getEnumerable,
-    SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> constructor)
+    ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> constructor)
     : XmlImmutableDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, getEnumerable)
     where TKey : notnull
 {

@@ -105,20 +105,10 @@ internal abstract class CborImmutableEnumerableConverter<TEnumerable, TElement>(
     }
 }
 
-internal sealed class CborEnumerableConstructorEnumerableConverter<TEnumerable, TElement>(
+internal sealed class CborParameterizedConstructorEnumerableConverter<TEnumerable, TElement>(
     CborConverter<TElement> elementConverter,
     Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
-    EnumerableCollectionConstructor<TElement, TElement, TEnumerable> constructor)
-    : CborImmutableEnumerableConverter<TEnumerable, TElement>(elementConverter, getEnumerable)
-{
-    private protected override TEnumerable Construct(PooledList<TElement> buffer)
-        => constructor(buffer.ToArray());
-}
-
-internal sealed class CborSpanConstructorEnumerableConverter<TEnumerable, TElement>(
-    CborConverter<TElement> elementConverter,
-    Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
-    SpanCollectionConstructor<TElement, TElement, TEnumerable> constructor)
+    ParameterizedCollectionConstructor<TElement, TElement, TEnumerable> constructor)
     : CborImmutableEnumerableConverter<TEnumerable, TElement>(elementConverter, getEnumerable)
 {
     private protected override TEnumerable Construct(PooledList<TElement> buffer)

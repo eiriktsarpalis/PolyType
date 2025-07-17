@@ -16,13 +16,13 @@ You can try the library by installing the `PolyType` NuGet package:
 $ dotnet add package PolyType
 ```
 
-which includes the core types and source generator for generating type shapes:
+Which includes the core types and source generator for generating type shapes:
 
 ```C#
 using PolyType;
 
 [GenerateShape]
-public partial record Person(string name, int age);
+public partial record Person(string Name, int Age);
 ```
 
 Doing this will augment `Person` with an implementation of the `IShapeable<Person>` interface. This suffices to make `Person` usable with any library that targets the PolyType core abstractions. You can try this out by installing the built-in example libraries:
@@ -31,7 +31,7 @@ Doing this will augment `Person` with an implementation of the `IShapeable<Perso
 $ dotnet add package PolyType.Examples
 ```
 
-Here's how the same value can be serialized to three separate formats.
+Here's how the same value can be serialized to three separate formats:
 
 ```csharp
 using PolyType.Examples.JsonSerializer;
@@ -59,14 +59,15 @@ public static class MyFancyParser
 
 The [`IShapeable<T>` constraint](https://eiriktsarpalis.github.io/PolyType/api/PolyType.IShapeable-1.html) indicates that the parser only works with types augmented with PolyType metadata. This metadata can be provided using the PolyType source generator:
 
-```C#
-Person? person = MyFancyParser.Parse<Person>(format); // Compiles
+```csharp
+string myFancyFormat = "..."; // Some format string
+Person? person = MyFancyParser.Parse<Person>(myFancyFormat); // Compiles
 
-[GenerateShape] // Generate an IShapeable<TPerson> implementation
+[GenerateShape] // Generate an IShapeable<Person> implementation
 partial record Person(string name, int age, List<Person> children);
 ```
 
-For more information see:
+For more information, see:
 
 * The [core abstractions](https://eiriktsarpalis.github.io/PolyType/core-abstractions.html) document for an overview of the core programming model.
 * The [shape providers](https://eiriktsarpalis.github.io/PolyType/shape-providers.html) document for an overview of the built-in shape providers and their APIs.

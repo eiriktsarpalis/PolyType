@@ -15,8 +15,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
     private CollectionConstructorInfo? _constructorInfo;
     private Setter<TEnumerable, TElement>? _addDelegate;
     private MutableCollectionConstructor<TElement, TEnumerable>? _mutableCtorDelegate;
-    private EnumerableCollectionConstructor<TElement, TElement, TEnumerable>? _enumerableCtorDelegate;
-    private SpanCollectionConstructor<TElement, TElement, TEnumerable>? _spanCtorDelegate;
+    private ParameterizedCollectionConstructor<TElement, TElement, TEnumerable>? _spanCtorDelegate;
 
     private CollectionConstructorInfo ConstructorInfo
     {
@@ -52,7 +51,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
         }
     }
 
-    public virtual MutableCollectionConstructor<TElement, TEnumerable> GetMutableCollectionConstructor()
+    public virtual MutableCollectionConstructor<TElement, TEnumerable> GetMutableConstructor()
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
         {
@@ -69,37 +68,20 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
         }
     }
 
-    public virtual EnumerableCollectionConstructor<TElement, TElement, TEnumerable> GetEnumerableCollectionConstructor()
+    public virtual ParameterizedCollectionConstructor<TElement, TElement, TEnumerable> GetParameterizedConstructor()
     {
-        if (ConstructionStrategy is not CollectionConstructionStrategy.Enumerable)
+        if (ConstructionStrategy is not CollectionConstructionStrategy.Parameterized)
         {
             Throw();
-            static void Throw() => throw new InvalidOperationException("The current enumerable shape does not support enumerable constructors.");
+            static void Throw() => throw new InvalidOperationException("The current enumerable shape does not support parameterized constructors.");
         }
 
-        return _enumerableCtorDelegate ?? ReflectionHelpers.ExchangeIfNull(ref _enumerableCtorDelegate, CreateEnumerableConstructor());
+        return _spanCtorDelegate ?? ReflectionHelpers.ExchangeIfNull(ref _spanCtorDelegate, CreateParameterizedConstructor());
 
-        EnumerableCollectionConstructor<TElement, TElement, TEnumerable> CreateEnumerableConstructor()
+        ParameterizedCollectionConstructor<TElement, TElement, TEnumerable> CreateParameterizedConstructor()
         {
             DebugExt.Assert(ConstructorInfo is ParameterizedCollectionConstructorInfo);
-            return Provider.MemberAccessor.CreateEnumerableCollectionConstructor<TElement, TElement, TEnumerable>((ParameterizedCollectionConstructorInfo)ConstructorInfo);
-        }
-    }
-
-    public virtual SpanCollectionConstructor<TElement, TElement, TEnumerable> GetSpanCollectionConstructor()
-    {
-        if (ConstructionStrategy is not CollectionConstructionStrategy.Span)
-        {
-            Throw();
-            static void Throw() => throw new InvalidOperationException("The current enumerable shape does not support span constructors.");
-        }
-
-        return _spanCtorDelegate ?? ReflectionHelpers.ExchangeIfNull(ref _spanCtorDelegate, CreateSpanConstructor());
-
-        SpanCollectionConstructor<TElement, TElement, TEnumerable> CreateSpanConstructor()
-        {
-            DebugExt.Assert(ConstructorInfo is ParameterizedCollectionConstructorInfo);
-            return Provider.MemberAccessor.CreateSpanCollectionConstructor<TElement, TElement, TEnumerable>((ParameterizedCollectionConstructorInfo)ConstructorInfo);
+            return Provider.MemberAccessor.CreateParameterizedCollectionConstructor<TElement, TElement, TEnumerable>((ParameterizedCollectionConstructorInfo)ConstructorInfo);
         }
     }
 
@@ -113,12 +95,12 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
         Type enumerableType = typeof(TEnumerable);
         if (enumerableType.IsInterface)
         {
-            if (typeof(TEnumerable).IsAssignableFrom(typeof(List<TElement>)))
+            if (enumerableType.IsAssignableFrom(typeof(List<TElement>)))
             {
                 // Handle IEnumerable<T>, ICollection<T>, IList<T>, IReadOnlyCollection<T> and IReadOnlyList<T> types using List<T>
                 enumerableType = typeof(List<TElement>);
             }
-            else if (typeof(TEnumerable).IsAssignableFrom(typeof(HashSet<TElement>)))
+            else if (enumerableType.IsAssignableFrom(typeof(HashSet<TElement>)))
             {
                 // Handle ISet<T> and IReadOnlySet<T> types using HashSet<T>
                 enumerableType = typeof(HashSet<TElement>);
@@ -126,8 +108,87 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
         }
 
         ConstructorInfo[] allCtors = enumerableType.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
-        if (Provider.FindBestCollectionFactory<TElement, TElement>(enumerableType, allCtors, shouldBeParameterized: false)
-            is (ConstructorInfo defaultCtor, CollectionConstructorParameter[] defaultCtorSignature, _))
+        MethodInfo? addMethod = ResolveAddMethod(enumerableType);
+        if (Provider.ResolveBestCollectionCtor<TElement, TElement>(enumerableType, allCtors, addMethod) is { } collectionCtorInfo)
+        {
+            return collectionCtorInfo;
+        }
+
+        // move this later in priority order so it doesn't skip comparer options when they exist.
+        IEnumerable<MethodInfo> collectionBuilderMethods = typeof(TEnumerable).GetCollectionBuilderAttributeMethods(typeof(TElement));
+        if (Provider.ResolveBestCollectionCtor<TElement, TElement>(typeof(TEnumerable), collectionBuilderMethods, addMethod: null) is { } builderCtorInfo)
+        {
+            return builderCtorInfo;
+        }
+
+        return NoCollectionConstructorInfo.Instance;
+
+        CollectionConstructorInfo? TryGetImmutableCollectionFactory()
+        {
+            if (typeof(TEnumerable) is { Name: "ImmutableArray`1", Namespace: "System.Collections.Immutable" })
+            {
+                return ResolveFactoryMethod("System.Collections.Immutable.ImmutableArray");
+            }
+
+            if (typeof(TEnumerable) is { Name: "ImmutableList`1", Namespace: "System.Collections.Immutable" })
+            {
+                return ResolveFactoryMethod("System.Collections.Immutable.ImmutableList");
+            }
+
+            if (typeof(TEnumerable) is { Name: "ImmutableQueue`1", Namespace: "System.Collections.Immutable" })
+            {
+                return ResolveFactoryMethod("System.Collections.Immutable.ImmutableQueue");
+            }
+
+            if (typeof(TEnumerable) is { Name: "ImmutableStack`1", Namespace: "System.Collections.Immutable" })
+            {
+                return ResolveFactoryMethod("System.Collections.Immutable.ImmutableStack");
+            }
+
+            if (typeof(TEnumerable) is { Name: "ImmutableHashSet`1", Namespace: "System.Collections.Immutable" } ||
+                typeof(TEnumerable) is { Name: "IImmutableSet`1", Namespace: "System.Collections.Immutable" })
+            {
+                return ResolveFactoryMethod("System.Collections.Immutable.ImmutableHashSet");
+            }
+
+            if (typeof(TEnumerable) is { Name: "ImmutableSortedSet`1", Namespace: "System.Collections.Immutable" })
+            {
+                return ResolveFactoryMethod("System.Collections.Immutable.ImmutableSortedSet");
+            }
+
+            if (typeof(TEnumerable) is { Name: "FrozenSet`1", Namespace: "System.Collections.Frozen" })
+            {
+                return ResolveFactoryMethod("System.Collections.Frozen.FrozenSet", factoryName: "ToFrozenSet");
+            }
+
+            if (typeof(TEnumerable) is { Name: "FSharpList`1", Namespace: "Microsoft.FSharp.Collections" })
+            {
+                return ResolveFactoryMethod("Microsoft.FSharp.Collections.ListModule", factoryName: "OfSeq");
+            }
+
+            return null;
+
+            CollectionConstructorInfo ResolveFactoryMethod(string typeName, string? factoryName = null)
+            {
+                Type? factoryType = typeof(TEnumerable).Assembly.GetType(typeName);
+                if (factoryType is not null)
+                {
+                    var candidates = factoryType.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                        .Where(m => factoryName is null ? m.Name is "Create" or "CreateRange" : m.Name == factoryName)
+                        .Where(m => m.IsGenericMethod && m.GetGenericArguments().Length == 1)
+                        .Select(m => m.MakeGenericMethod(typeof(TElement)));
+
+                    if (Provider.ResolveBestCollectionCtor<TElement, TElement>(typeof(TEnumerable), candidates) is { } createRangeInfo)
+                    {
+                        return createRangeInfo;
+                    }
+                }
+
+                return NoCollectionConstructorInfo.Instance;
+            }
+        }
+
+        static MethodInfo? ResolveAddMethod(Type enumerableType)
         {
             MethodInfo? addMethod = null;
             foreach (MethodInfo methodInfo in enumerableType.GetMethods(BindingFlags.Public | BindingFlags.Instance))
@@ -156,105 +217,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                 }
             }
 
-            if (addMethod is not null)
-            {
-                return new MutableCollectionConstructorInfo(defaultCtor, defaultCtorSignature, addMethod);
-            }
-        }
-
-        if (Provider.FindBestCollectionFactory<TElement, TElement>(enumerableType, allCtors, shouldBeParameterized: true)
-            is (ConstructorInfo parameterizedCtor, CollectionConstructorParameter[] parameterizedSig, CollectionConstructionStrategy ctorStrategy))
-        {
-            Debug.Assert(ctorStrategy is CollectionConstructionStrategy.Enumerable or CollectionConstructionStrategy.Span);
-            return new ParameterizedCollectionConstructorInfo(parameterizedCtor, ctorStrategy, parameterizedSig);
-        }
-
-        if (enumerableType is { Name: "FSharpList`1", Namespace: "Microsoft.FSharp.Collections" })
-        {
-            Type? module = enumerableType.Assembly.GetType("Microsoft.FSharp.Collections.ListModule");
-            MethodInfo? factory = module?.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .Where(m => m.Name is "OfSeq")
-                .Select(m => m.MakeGenericMethod(typeof(TElement)))
-                .FirstOrDefault();
-
-            if (factory is not null)
-            {
-                var signature = Provider.ClassifyMethodParameters<TElement, TElement>(enumerableType, factory, shouldBeParameterized: true, out var strategy);
-                DebugExt.Assert(signature is not null);
-                return new ParameterizedCollectionConstructorInfo(factory, strategy, signature);
-            }
-
-            return CollectionConstructorInfo.NoConstructor;
-        }
-
-        // move this later in priority order so it doesn't skip comparer options when they exist.
-        if (typeof(TEnumerable).TryGetCollectionBuilderAttribute(typeof(TElement), out MethodInfo? builderMethod) &&
-            Provider.ClassifyMethodParameters<TElement, TElement>(enumerableType, builderMethod, shouldBeParameterized: true, out var builderStrategy) is { } builderSignature)
-        {
-            return new ParameterizedCollectionConstructorInfo(builderMethod, builderStrategy, builderSignature);
-        }
-
-        return CollectionConstructorInfo.NoConstructor;
-
-        CollectionConstructorInfo? TryGetImmutableCollectionFactory()
-        {
-            if (typeof(TEnumerable) is { Name: "ImmutableArray`1", Namespace: "System.Collections.Immutable" })
-            {
-                return FindCreateRangeMethods("System.Collections.Immutable.ImmutableArray");
-            }
-
-            if (typeof(TEnumerable) is { Name: "ImmutableList`1", Namespace: "System.Collections.Immutable" })
-            {
-                return FindCreateRangeMethods("System.Collections.Immutable.ImmutableList");
-            }
-
-            if (typeof(TEnumerable) is { Name: "ImmutableQueue`1", Namespace: "System.Collections.Immutable" })
-            {
-                return FindCreateRangeMethods("System.Collections.Immutable.ImmutableQueue");
-            }
-
-            if (typeof(TEnumerable) is { Name: "ImmutableStack`1", Namespace: "System.Collections.Immutable" })
-            {
-                return FindCreateRangeMethods("System.Collections.Immutable.ImmutableStack");
-            }
-
-            if (typeof(TEnumerable) is { Name: "ImmutableHashSet`1", Namespace: "System.Collections.Immutable" } ||
-                typeof(TEnumerable) is { Name: "IImmutableSet`1", Namespace: "System.Collections.Immutable" })
-            {
-                return FindCreateRangeMethods("System.Collections.Immutable.ImmutableHashSet");
-            }
-
-            if (typeof(TEnumerable) is { Name: "ImmutableSortedSet`1", Namespace: "System.Collections.Immutable" })
-            {
-                return FindCreateRangeMethods("System.Collections.Immutable.ImmutableSortedSet");
-            }
-
-            if (typeof(TEnumerable) is { Name: "FrozenSet`1", Namespace: "System.Collections.Frozen" })
-            {
-                return FindCreateRangeMethods("System.Collections.Frozen.FrozenSet", factoryName: "ToFrozenSet");
-            }
-
-            return null;
-
-            CollectionConstructorInfo FindCreateRangeMethods(string typeName, string? factoryName = null)
-            {
-                Type? factoryType = typeof(TEnumerable).Assembly.GetType(typeName);
-                if (factoryType is not null)
-                {
-                    var candidates = factoryType.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                        .Where(m => factoryName is null ? m.Name is "Create" or "CreateRange" : m.Name == factoryName)
-                        .Where(m => m.IsGenericMethod && m.GetGenericArguments().Length == 1)
-                        .Select(m => m.MakeGenericMethod(typeof(TElement)));
-
-                    if (Provider.FindBestCollectionFactory<TElement, TElement>(typeof(TEnumerable), candidates, shouldBeParameterized: true)
-                        is (MethodInfo factory, CollectionConstructorParameter[] signature, CollectionConstructionStrategy strategy))
-                    {
-                        return new ParameterizedCollectionConstructorInfo(factory, strategy, signature);
-                    }
-                }
-
-                return CollectionConstructorInfo.NoConstructor;
-            }
+            return addMethod;
         }
     }
 }
@@ -285,9 +248,9 @@ internal sealed class ReflectionArrayTypeShape<TElement>(ReflectionTypeShapeProv
     : ReflectionEnumerableTypeShape<TElement[], TElement>(provider)
 {
     public override CollectionComparerOptions SupportedComparer => CollectionComparerOptions.None;
-    public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Span;
+    public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Parameterized;
     public override Func<TElement[], IEnumerable<TElement>> GetGetEnumerable() => static array => array;
-    public override SpanCollectionConstructor<TElement, TElement, TElement[]> GetSpanCollectionConstructor() => static (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => span.ToArray();
+    public override ParameterizedCollectionConstructor<TElement, TElement, TElement[]> GetParameterizedConstructor() => static (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => span.ToArray();
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
@@ -309,9 +272,9 @@ internal sealed class ReadOnlyMemoryTypeShape<TElement>(ReflectionTypeShapeProvi
     : ReflectionEnumerableTypeShape<ReadOnlyMemory<TElement>, TElement>(provider)
 {
     public override CollectionComparerOptions SupportedComparer => CollectionComparerOptions.None;
-    public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Span;
+    public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Parameterized;
     public override Func<ReadOnlyMemory<TElement>, IEnumerable<TElement>> GetGetEnumerable() => static memory => MemoryMarshal.ToEnumerable(memory);
-    public override SpanCollectionConstructor<TElement, TElement, ReadOnlyMemory<TElement>> GetSpanCollectionConstructor() => static (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => span.ToArray();
+    public override ParameterizedCollectionConstructor<TElement, TElement, ReadOnlyMemory<TElement>> GetParameterizedConstructor() => static (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => span.ToArray();
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
@@ -320,9 +283,9 @@ internal sealed class MemoryTypeShape<TElement>(ReflectionTypeShapeProvider prov
     : ReflectionEnumerableTypeShape<Memory<TElement>, TElement>(provider)
 {
     public override CollectionComparerOptions SupportedComparer => CollectionComparerOptions.None;
-    public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Span;
+    public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Parameterized;
     public override Func<Memory<TElement>, IEnumerable<TElement>> GetGetEnumerable() => static memory => MemoryMarshal.ToEnumerable((ReadOnlyMemory<TElement>)memory);
-    public override SpanCollectionConstructor<TElement, TElement, Memory<TElement>> GetSpanCollectionConstructor() => static (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => span.ToArray();
+    public override ParameterizedCollectionConstructor<TElement, TElement, Memory<TElement>> GetParameterizedConstructor() => static (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => span.ToArray();
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]

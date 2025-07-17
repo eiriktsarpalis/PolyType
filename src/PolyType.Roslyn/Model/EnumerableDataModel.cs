@@ -27,18 +27,13 @@ public sealed class EnumerableDataModel : TypeDataModel
     public required EnumerableKind EnumerableKind { get; init; }
 
     /// <summary>
-    /// The preferred construction strategy for this collection type.
-    /// </summary>
-    public CollectionModelConstructionStrategy ConstructionStrategy { get; init; }
-
-    /// <summary>
     /// Instance method used for appending an element to the collection.
     /// Implies that the collection also has an accessible default constructor.
     /// </summary>
     public required IMethodSymbol? AddElementMethod { get; init; }
 
     /// <summary>
-    /// Constructor or static factory method whose shape is governed by <see cref="ConstructionStrategy"/>.
+    /// Constructor or static factory method for the collection.
     /// </summary>
     public required IMethodSymbol? FactoryMethod { get; init; }
 
@@ -103,5 +98,5 @@ public enum EnumerableKind
     /// <summary>
     /// An IAsyncEnumerable{T} type.
     /// </summary>
-    AsyncEnumerableOfT,
+    IAsyncEnumerableOfT,
 }

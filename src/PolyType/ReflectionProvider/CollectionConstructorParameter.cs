@@ -11,29 +11,29 @@ internal enum CollectionConstructorParameter
     Unrecognized,
 
     /// <summary>
-    /// Accepts values of type <see cref="IEnumerable{T}"/>.
+    /// Accepts values of type <see cref="ReadOnlySpan{T}"/>.
     /// </summary>
-    Enumerable,
+    Span,
 
     /// <summary>
-    /// Accepts values of type <see cref="List{T}"/>, e.g. <see cref="ReadOnlyCollection{T}"/>.
+    /// Accepts parameters assignable from <see cref="List{T}"/>, e.g. IList, IReadOnlyList, etc.
     /// </summary>
     List,
 
     /// <summary>
-    /// Accepts values of type <see cref="HashSet{T}"/>, e.g. ReadOnlySet.
+    /// Accepts parameters assignable from <see cref="HashSet{T}"/>, e.g. ISet, IReadOnlySet, etc.
     /// </summary>
     HashSet,
 
     /// <summary>
-    /// Accepts values of type <see cref="Dictionary{TKey, TValue}"/>, e.g. <see cref="ReadOnlyDictionary{TKey, TValue}"/>.
+    /// Accepts parameters assignable from <see cref="Dictionary{TKey, TValue}"/>, e.g. IReadOnlyDictionary, IDictionary, etc.
     /// </summary>
     Dictionary,
 
     /// <summary>
-    /// Accepts values of type <see cref="ReadOnlySpan{T}"/>.
+    /// Accepts a class tuple of key-value pairs, reserved for the FSharp map constructor.
     /// </summary>
-    Span,
+    TupleEnumerable,
 
     /// <summary>
     /// Accepts a numeric capacity parameter.

@@ -968,7 +968,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         return CreateDelegate<MutableCollectionConstructor<TKey, TDeclaringType>>(dyn);
     }
 
-    public SpanCollectionConstructor<TKey, TElement, TCollection> CreateSpanCollectionConstructor<TKey, TElement, TCollection>(ParameterizedCollectionConstructorInfo constructorInfo)
+    public ParameterizedCollectionConstructor<TKey, TElement, TCollection> CreateParameterizedCollectionConstructor<TKey, TElement, TCollection>(ParameterizedCollectionConstructorInfo constructorInfo)
     {
         // (ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey> options)
         var dyn = CreateCollectionConstructorDelegate(
@@ -980,22 +980,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
             parameterTypes: [typeof(ReadOnlySpan<TElement>), typeof(CollectionConstructionOptions<TKey>).MakeByRefType()],
             returnType: typeof(TCollection));
 
-        return CreateDelegate<SpanCollectionConstructor<TKey, TElement, TCollection>>(dyn);
-    }
-
-    public EnumerableCollectionConstructor<TKey, TElement, TCollection> CreateEnumerableCollectionConstructor<TKey, TElement, TCollection>(ParameterizedCollectionConstructorInfo constructorInfo)
-    {
-        // (IEnumerable<TElement> elements, in CollectionConstructionOptions<TKey> options)
-        var dyn = CreateCollectionConstructorDelegate(
-            "EnumerableCollectionCtor",
-            constructorInfo.Factory,
-            constructorInfo.Signature,
-            keyType: typeof(TKey),
-            elementType: typeof(TElement),
-            parameterTypes: [typeof(IEnumerable<TElement>), typeof(CollectionConstructionOptions<TKey>).MakeByRefType()],
-            returnType: typeof(TCollection));
-
-        return CreateDelegate<EnumerableCollectionConstructor<TKey, TElement, TCollection>>(dyn);
+        return CreateDelegate<ParameterizedCollectionConstructor<TKey, TElement, TCollection>>(dyn);
     }
 
     private static DynamicMethod CreateCollectionConstructorDelegate(
@@ -1018,7 +1003,6 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         {
             switch (parameterType)
             {
-                case CollectionConstructorParameter.Enumerable:
                 case CollectionConstructorParameter.Span:
                     // Load the collection parameter as-is
                     il.Emit(OpCodes.Ldarg_0);
@@ -1030,11 +1014,11 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                     MethodInfo createListMethod = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateList), BindingFlags.Public | BindingFlags.Static)!;
 
                     il.Emit(OpCodes.Ldarg_0);
-                    il.Emit(OpCodes.Call, createListMethod.MakeGenericMethod(keyType));
+                    il.Emit(OpCodes.Call, createListMethod.MakeGenericMethod(elementType));
                     break;
 
                 case CollectionConstructorParameter.HashSet:
-                    // Convert the span to HashSet<T> using CollectionHelpers.CreateHashSet before loading into the stack
+                    // Convert the span to HashSet<T> using CollectionHelpers.CreateHashSet before loading onto the stack
                     Debug.Assert(parameterTypes.Length == 2 && parameterTypes[0].GetGenericTypeDefinition() == typeof(ReadOnlySpan<>));
                     MethodInfo createHashSetMethod = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateHashSet), BindingFlags.Public | BindingFlags.Static)!;
                     il.Emit(OpCodes.Ldarg_0);
@@ -1045,12 +1029,22 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                 case CollectionConstructorParameter.Dictionary:
                     Debug.Assert(parameterTypes.Length == 2 && parameterTypes[0].GetGenericTypeDefinition() == typeof(ReadOnlySpan<>));
                     DebugExt.Assert(elementType.IsGenericType && elementType.GetGenericTypeDefinition() == typeof(KeyValuePair<,>));
-                    // Convert the span to Dictionary<T> using CollectionHelpers.CreateDictionary before loading into the stack
+                    // Convert the span to Dictionary<T> using CollectionHelpers.CreateDictionary before loading onto the stack
                     MethodInfo createDictionaryMethod = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateDictionary), BindingFlags.Public | BindingFlags.Static)!;
 
                     il.Emit(OpCodes.Ldarg_0);
                     LdOptionsProperty(nameof(CollectionConstructionOptions<int>.EqualityComparer));
                     il.Emit(OpCodes.Call, createDictionaryMethod.MakeGenericMethod(elementType.GetGenericArguments()));
+                    break;
+
+                case CollectionConstructorParameter.TupleEnumerable:
+                    Debug.Assert(parameterTypes.Length == 2 && parameterTypes[0].GetGenericTypeDefinition() == typeof(ReadOnlySpan<>));
+                    DebugExt.Assert(elementType.IsGenericType && elementType.GetGenericTypeDefinition() == typeof(KeyValuePair<,>));
+                    // Convert the span to Tuple<TKey,TValue>[] using CollectionHelpers.CreateTupleArray before loading onto the stack
+                    MethodInfo createTupleArrayMethod = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateTupleArray), BindingFlags.Public | BindingFlags.Static)!;
+
+                    il.Emit(OpCodes.Ldarg_0);
+                    il.Emit(OpCodes.Call, createTupleArrayMethod.MakeGenericMethod(elementType.GetGenericArguments()));
                     break;
 
                 case CollectionConstructorParameter.Capacity:
@@ -1128,7 +1122,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                 }
 
                 default:
-                    throw new NotSupportedException($"Collection parameter type {signature} not supported.");
+                    throw new NotSupportedException($"Collection parameter type {parameterType} not supported.");
             }
         }
 

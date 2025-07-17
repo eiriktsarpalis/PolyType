@@ -61,25 +61,23 @@ public sealed partial class Parser
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
                 ElementType = CreateTypeId(enumerableModel.ElementType),
-                ConstructionStrategy = enumerableModel.ConstructionStrategy switch
+                ConstructionStrategy = enumerableModel switch
                 {
-                    _ when enumerableModel.EnumerableKind is EnumerableKind.ArrayOfT or EnumerableKind.MemoryOfT or EnumerableKind.ReadOnlyMemoryOfT
-                        => CollectionConstructionStrategy.Span, // use ReadOnlySpan.ToArray() to create the collection
+                    { EnumerableKind: EnumerableKind.ArrayOfT or EnumerableKind.MemoryOfT or EnumerableKind.ReadOnlyMemoryOfT } =>
+                        CollectionConstructionStrategy.Parameterized, // use ReadOnlySpan.ToArray() to create the collection
 
-                    CollectionModelConstructionStrategy.Mutable => CollectionConstructionStrategy.Mutable,
-                    CollectionModelConstructionStrategy.Enumerable => CollectionConstructionStrategy.Enumerable,
-                    CollectionModelConstructionStrategy.Span => CollectionConstructionStrategy.Span,
-                    CollectionModelConstructionStrategy.List or
-                    CollectionModelConstructionStrategy.HashSet or
-                    CollectionModelConstructionStrategy.Dictionary => CollectionConstructionStrategy.Span,
-                    CollectionModelConstructionStrategy.TupleEnumerable => CollectionConstructionStrategy.Enumerable,
+                    { FactoryMethod: not null } => 
+                        IsParameterizedConstructor(enumerableModel.FactorySignature)
+                        ? CollectionConstructionStrategy.Parameterized
+                        : CollectionConstructionStrategy.Mutable,
+
                     _ => CollectionConstructionStrategy.None,
                 },
 
                 AddElementMethod = enumerableModel.AddElementMethod?.Name,
                 ImplementationTypeFQN =
-                    enumerableModel.ConstructionStrategy is CollectionModelConstructionStrategy.Mutable &&
                     enumerableModel.FactoryMethod is { IsStatic: false, ContainingType: INamedTypeSymbol implType } &&
+                    !IsParameterizedConstructor(enumerableModel.FactorySignature) &&
                     !SymbolEqualityComparer.Default.Equals(implType, enumerableModel.Type)
 
                     ? implType.GetFullyQualifiedName()
@@ -101,21 +99,19 @@ public sealed partial class Parser
                 SourceIdentifier = sourceIdentifier,
                 KeyType = CreateTypeId(dictionaryModel.KeyType),
                 ValueType = CreateTypeId(dictionaryModel.ValueType),
-                ConstructionStrategy = dictionaryModel.ConstructionStrategy switch
+                ConstructionStrategy = dictionaryModel switch
                 {
-                    CollectionModelConstructionStrategy.Mutable => CollectionConstructionStrategy.Mutable,
-                    CollectionModelConstructionStrategy.Enumerable => CollectionConstructionStrategy.Enumerable,
-                    CollectionModelConstructionStrategy.Span => CollectionConstructionStrategy.Span,
-                    CollectionModelConstructionStrategy.List or
-                    CollectionModelConstructionStrategy.HashSet or
-                    CollectionModelConstructionStrategy.Dictionary => CollectionConstructionStrategy.Span,
-                    CollectionModelConstructionStrategy.TupleEnumerable => CollectionConstructionStrategy.Enumerable,
+                    { FactoryMethod: not null } => 
+                        IsParameterizedConstructor(dictionaryModel.FactorySignature)
+                        ? CollectionConstructionStrategy.Parameterized
+                        : CollectionConstructionStrategy.Mutable,
+
                     _ => CollectionConstructionStrategy.None,
                 },
 
                 ImplementationTypeFQN =
-                    dictionaryModel.ConstructionStrategy is CollectionModelConstructionStrategy.Mutable &&
                     dictionaryModel.FactoryMethod is { IsStatic: false, ContainingType: INamedTypeSymbol implType } &&
+                    !IsParameterizedConstructor(dictionaryModel.FactorySignature) &&
                     !SymbolEqualityComparer.Default.Equals(implType, dictionaryModel.Type)
 
                     ? implType.GetFullyQualifiedName()
@@ -770,6 +766,25 @@ public sealed partial class Parser
             TypeShapeKind.Object => TypeDataKind.Object,
             _ => TypeDataKind.None,
         };
+    }
+
+    private static bool IsParameterizedConstructor(ImmutableArray<CollectionConstructorParameter> signature)
+    {
+
+        foreach (var param in signature)
+        {
+            switch (param)
+            {
+                case CollectionConstructorParameter.Span:
+                case CollectionConstructorParameter.List:
+                case CollectionConstructorParameter.HashSet:
+                case CollectionConstructorParameter.Dictionary:
+                case CollectionConstructorParameter.TupleEnumerable:
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     private void ParsePropertyShapeAttribute(ISymbol propertySymbol, out string propertyName, out int order)

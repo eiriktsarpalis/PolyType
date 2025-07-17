@@ -117,20 +117,10 @@ internal abstract class XmlImmutableEnumerableConverter<TEnumerable, TElement>(
     }
 }
 
-internal sealed class XmlEnumerableConstructorEnumerableConverter<TEnumerable, TElement>(
+internal sealed class XmlParameterizedConstructorEnumerableConverter<TEnumerable, TElement>(
     XmlConverter<TElement> elementConverter,
     Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
-    EnumerableCollectionConstructor<TElement, TElement, TEnumerable> enumerableConstructor)
-    : XmlImmutableEnumerableConverter<TEnumerable, TElement>(elementConverter, getEnumerable)
-{
-    private protected override TEnumerable Construct(PooledList<TElement> buffer)
-        => enumerableConstructor(buffer.ToArray());
-}
-
-internal sealed class XmlSpanConstructorEnumerableConverter<TEnumerable, TElement>(
-    XmlConverter<TElement> elementConverter,
-    Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
-    SpanCollectionConstructor<TElement, TElement, TEnumerable> spanConstructor)
+    ParameterizedCollectionConstructor<TElement, TElement, TEnumerable> spanConstructor)
     : XmlImmutableEnumerableConverter<TEnumerable, TElement>(elementConverter, getEnumerable)
 {
     private protected override TEnumerable Construct(PooledList<TElement> buffer)

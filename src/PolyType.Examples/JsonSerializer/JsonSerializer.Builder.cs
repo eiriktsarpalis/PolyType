@@ -90,20 +90,14 @@ public static partial class JsonSerializerTS
                     new JsonMutableEnumerableConverter<TEnumerable, TElement>(
                         elementConverter,
                         enumerableShape,
-                        enumerableShape.GetMutableCollectionConstructor(),
+                        enumerableShape.GetMutableConstructor(),
                         enumerableShape.GetAddElement()),
 
-                CollectionConstructionStrategy.Enumerable => 
-                    new JsonEnumerableConstructorEnumerableConverter<TEnumerable, TElement>(
+                CollectionConstructionStrategy.Parameterized => 
+                    new JsonParameterizedConstructorEnumerableConverter<TEnumerable, TElement>(
                         elementConverter,
                         enumerableShape,
-                        enumerableShape.GetEnumerableCollectionConstructor()),
-
-                CollectionConstructionStrategy.Span => 
-                    new JsonSpanConstructorEnumerableConverter<TEnumerable, TElement>(
-                        elementConverter,
-                        enumerableShape,
-                        enumerableShape.GetSpanCollectionConstructor()),
+                        enumerableShape.GetParameterizedConstructor()),
                 _ => new JsonEnumerableConverter<TEnumerable, TElement>(elementConverter, enumerableShape),
             };
         }
@@ -120,22 +114,15 @@ public static partial class JsonSerializerTS
                         keyConverter,
                         valueConverter,
                         dictionaryShape,
-                        dictionaryShape.GetMutableCollectionConstructor(),
+                        dictionaryShape.GetMutableConstructor(),
                         dictionaryShape.GetAddKeyValuePair()),
 
-                CollectionConstructionStrategy.Enumerable => 
-                    new JsonEnumerableConstructorDictionaryConverter<TDictionary, TKey, TValue>(
+                CollectionConstructionStrategy.Parameterized => 
+                    new JsonParameterizedConstructorDictionaryConverter<TDictionary, TKey, TValue>(
                         keyConverter,
                         valueConverter,
                         dictionaryShape,
-                        dictionaryShape.GetEnumerableCollectionConstructor()),
-
-                CollectionConstructionStrategy.Span => 
-                    new JsonSpanConstructorDictionaryConverter<TDictionary, TKey, TValue>(
-                        keyConverter,
-                        valueConverter,
-                        dictionaryShape,
-                        dictionaryShape.GetSpanCollectionConstructor()),
+                        dictionaryShape.GetParameterizedConstructor()),
 
                 _ => new JsonDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, dictionaryShape),
             };

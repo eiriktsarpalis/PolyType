@@ -13,7 +13,7 @@ using PolyType;
 partial record Person(string name, int age, List<Person> children);
 ```
 
-This augments `Person` with an explicit implementation of `IShapeable<Person>`, which can be used an entry point by libraries targeting PolyType:
+This augments `Person` with an explicit implementation of `IShapeable<Person>`, which can be used as an entry point by libraries targeting PolyType:
 
 ```C#
 MyRandomGenerator.Generate<Person>(); // Compiles
@@ -68,7 +68,7 @@ public static class MyRandomGenerator
 }
 ```
 
-By default, the reflection provider uses dynamic methods (Reflection.Emit) to speed up reflection, however this might not be desirable when running in certain platforms (e.g. blazor-wasm). It can be turned off using the relevant constructor parameter:
+By default, the reflection provider uses dynamic methods (Reflection.Emit) to speed up reflection, however, this might not be desirable when running on certain platforms (e.g., Blazor WebAssembly). It can be turned off using the relevant constructor parameter:
 
 ```C#
 ITypeShapeProvider provider = new ReflectionTypeShapeProvider(useReflectionEmit: false);
@@ -234,10 +234,10 @@ for each derived type declaration:
 
 ```C#
 [DerivedTypeShape(typeof(Leaf), Name = "leaf", Tag = 5)]
-[DerivedTypeShape(typeof(Leaf), Name = "node", Tag = 6)]
+[DerivedTypeShape(typeof(Node), Name = "node", Tag = 6)]
 abstract record BinTree;
 abstract record Leaf : BinTree;
-abstract record Node(int label, int left, int right) : BinTree
+abstract record Node(int label, int left, int right) : BinTree;
 ```
 
 If left unset, the name of a derived type defaults to its type name (i.e. `nameof(TDerived)`) and the tag corresponds to the attribute declaration order.

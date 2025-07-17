@@ -83,18 +83,13 @@ public static partial class XmlSerializer
                     new XmlMutableEnumerableConverter<TEnumerable, TElement>(
                         elementConverter,
                         getEnumerable,
-                        enumerableShape.GetMutableCollectionConstructor(),
+                        enumerableShape.GetMutableConstructor(),
                         enumerableShape.GetAddElement()),
-                CollectionConstructionStrategy.Enumerable => 
-                    new XmlEnumerableConstructorEnumerableConverter<TEnumerable, TElement>(
+                CollectionConstructionStrategy.Parameterized => 
+                    new XmlParameterizedConstructorEnumerableConverter<TEnumerable, TElement>(
                         elementConverter,
                         getEnumerable,
-                        enumerableShape.GetEnumerableCollectionConstructor()),
-                CollectionConstructionStrategy.Span => 
-                    new XmlSpanConstructorEnumerableConverter<TEnumerable, TElement>(
-                        elementConverter,
-                        getEnumerable,
-                        enumerableShape.GetSpanCollectionConstructor()),
+                        enumerableShape.GetParameterizedConstructor()),
                 _ => new XmlEnumerableConverter<TEnumerable, TElement>(elementConverter, getEnumerable),
             };
         }
@@ -112,22 +107,15 @@ public static partial class XmlSerializer
                         keyConverter,
                         valueConverter,
                         getEnumerable,
-                        dictionaryShape.GetMutableCollectionConstructor(),
+                        dictionaryShape.GetMutableConstructor(),
                         dictionaryShape.GetAddKeyValuePair()),
 
-                CollectionConstructionStrategy.Enumerable => 
-                    new XmlEnumerableConstructorDictionaryConverter<TDictionary, TKey, TValue>(
+                CollectionConstructionStrategy.Parameterized => 
+                    new XmlParameterizedConstructorDictionaryConverter<TDictionary, TKey, TValue>(
                         keyConverter,
                         valueConverter,
                         getEnumerable,
-                        dictionaryShape.GetEnumerableCollectionConstructor()),
-
-                CollectionConstructionStrategy.Span => 
-                    new XmlSpanConstructorDictionaryConverter<TDictionary, TKey, TValue>(
-                        keyConverter,
-                        valueConverter,
-                        getEnumerable,
-                        dictionaryShape.GetSpanCollectionConstructor()),
+                        dictionaryShape.GetParameterizedConstructor()),
 
                 _ => new XmlDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, getEnumerable),
             };

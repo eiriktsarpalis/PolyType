@@ -114,22 +114,11 @@ internal abstract class CborImmutableDictionaryConverter<TDictionary, TKey, TVal
     }
 }
 
-internal sealed class CborEnumerableConstructorDictionaryConverter<TDictionary, TKey, TValue>(
+internal sealed class CborParameterizedConstructorDictionaryConverter<TDictionary, TKey, TValue>(
     CborConverter<TKey> keyConverter,
     CborConverter<TValue> valueConverter,
     Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getDictionary,
-    EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> constructor)
-    : CborImmutableDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, getDictionary)
-{
-    private protected override TDictionary Construct(PooledList<KeyValuePair<TKey, TValue>> buffer)
-        => constructor(buffer.ToArray());
-}
-
-internal sealed class CborSpanConstructorDictionaryConverter<TDictionary, TKey, TValue>(
-    CborConverter<TKey> keyConverter,
-    CborConverter<TValue> valueConverter,
-    Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getDictionary,
-    SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> constructor)
+    ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> constructor)
     : CborImmutableDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, getDictionary)
 {
     private protected override TDictionary Construct(PooledList<KeyValuePair<TKey, TValue>> buffer)

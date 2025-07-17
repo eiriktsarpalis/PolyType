@@ -129,6 +129,12 @@ public class KnownSymbols(Compilation compilation)
     private Option<INamedTypeSymbol?> _KeyValuePairOfKV;
 
     /// <summary>
+    /// The type symbol for <see cref="Tuple{TKey, TValue}"/>.
+    /// </summary>
+    public INamedTypeSymbol? TupleOfKV => GetOrResolveType("System.Tuple`2", ref _TupleOfKV);
+    private Option<INamedTypeSymbol?> _TupleOfKV;
+
+    /// <summary>
     /// The type symbol for <see cref="Dictionary{TKey, TValue}"/>.
     /// </summary>
     public INamedTypeSymbol? DictionaryOfTKeyTValue => GetOrResolveType("System.Collections.Generic.Dictionary`2", ref _DictionaryOfTKeyTValue);

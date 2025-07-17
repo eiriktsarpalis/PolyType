@@ -334,14 +334,14 @@ internal static class ReflectionHelpers
 
     [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
     [RequiresDynamicCode(RequiresDynamicCodeMessage)]
-    public static bool TryGetCollectionBuilderAttribute(this Type type, Type elementType, [NotNullWhen(true)] out MethodInfo? builderMethod)
+    public static IEnumerable<MethodInfo> GetCollectionBuilderAttributeMethods(this Type collectionType, Type elementType)
     {
-        builderMethod = null;
-        CustomAttributeData? attributeData = type.CustomAttributes.FirstOrDefault(attr => attr.AttributeType.FullName == "System.Runtime.CompilerServices.CollectionBuilderAttribute");
+        CustomAttributeData? attributeData = collectionType.CustomAttributes
+            .FirstOrDefault(attr => attr.AttributeType.FullName == "System.Runtime.CompilerServices.CollectionBuilderAttribute");
 
         if (attributeData is null)
         {
-            return false;
+            yield break;
         }
 
         Type builderType = (Type)attributeData.ConstructorArguments[0].Value!;
@@ -349,37 +349,30 @@ internal static class ReflectionHelpers
 
         if (builderType.IsGenericType)
         {
-            return false;
+            yield break;
         }
 
         foreach (MethodInfo method in builderType.GetMethods(BindingFlags.Public | BindingFlags.Static))
         {
-            if (method.Name == methodName &&
-                method.GetParameters() is [{ ParameterType: { IsGenericType: true } parameterType }] &&
-                parameterType.GetGenericTypeDefinition() == typeof(ReadOnlySpan<>))
+            if (method.Name != methodName)
             {
-                Type spanElementType = parameterType.GetGenericArguments()[0];
-                if (spanElementType == elementType && type.IsAssignableFrom(method.ReturnType))
+                continue;
+            }
+
+            if (method.IsGenericMethod)
+            {
+                if (method.GetGenericArguments().Length != 1)
                 {
-                    builderMethod = method;
-                    return true;
+                    continue;
                 }
 
-                if (method.IsGenericMethod && method.GetGenericArguments() is [Type typeParameter] &&
-                    spanElementType == typeParameter)
-                {
-                    MethodInfo specializedMethod = method.MakeGenericMethod(elementType);
-                    if (type.IsAssignableFrom(specializedMethod.ReturnType))
-                    {
-                        builderMethod = specializedMethod;
-
-                        // Continue searching since we prioritize non-generic methods.
-                    }
-                }
+                yield return method.MakeGenericMethod(elementType);
+            }
+            else
+            {
+                yield return method;
             }
         }
-
-        return builderMethod != null;
     }
 
     public static bool IsInitOnly(this MemberInfo memberInfo)

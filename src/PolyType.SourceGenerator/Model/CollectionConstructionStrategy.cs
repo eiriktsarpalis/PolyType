@@ -8,6 +8,5 @@ public enum CollectionConstructionStrategy
 {
     None = 0,
     Mutable = 1,
-    Span = 2,
-    Enumerable = 4,
+    Parameterized = 2,
 }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using PolyType.Roslyn.Helpers;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace PolyType.Roslyn;
@@ -20,12 +21,11 @@ public partial class TypeDataModelGenerator
 
         int rank = 1;
         EnumerableKind kind;
-        CollectionModelConstructionStrategy constructionStrategy = CollectionModelConstructionStrategy.None;
         ITypeSymbol? elementType;
-        IMethodSymbol? addElementMethod = null;
+        IMethodSymbol? addMethod = null;
+        bool isParameterizedFactory = false;
         IMethodSymbol? factoryMethod = null;
         CollectionConstructorParameter[]? factorySignature = null;
-        INamedTypeSymbol? asyncEnumerableOfT = null;
         bool addMethodIsExplicitInterfaceImplementation = false;
 
         if (type is IArrayTypeSymbol array)
@@ -67,98 +67,79 @@ public partial class TypeDataModelGenerator
             kind = EnumerableKind.ReadOnlyMemoryOfT;
             elementType = namedType.TypeArguments[0];
         }
-        else if ((
-            type.GetCompatibleGenericBaseType(KnownSymbols.IEnumerableOfT) ??
-            (asyncEnumerableOfT = type.GetCompatibleGenericBaseType(KnownSymbols.IAsyncEnumerableOfT))) is { } enumerableOfT)
+        else // IAsyncEnumerable<T>, IEnumerable<T>, IEnumerable
         {
-            kind = asyncEnumerableOfT is not null ? EnumerableKind.AsyncEnumerableOfT : EnumerableKind.IEnumerableOfT;
-            elementType = enumerableOfT.TypeArguments[0];
+            if (namedType.GetCompatibleGenericBaseType(KnownSymbols.IAsyncEnumerableOfT) is { } asyncEnumerableOfT)
+            {
+                kind = EnumerableKind.IAsyncEnumerableOfT;
+                elementType = asyncEnumerableOfT.TypeArguments[0];
+            }
+            else if (namedType.GetCompatibleGenericBaseType(KnownSymbols.IEnumerableOfT) is { } enumerableOfT)
+            {
+                kind = EnumerableKind.IEnumerableOfT;
+                elementType = enumerableOfT.TypeArguments[0];
+            }
+            else if (KnownSymbols.IEnumerable.IsAssignableFrom(namedType))
+            {
+                kind = EnumerableKind.IEnumerable;
+                elementType = KnownSymbols.Compilation.ObjectType;
+            }
+            else
+            {
+                return false; // Type is not IEnumerable
+            }
 
-            var ctorCandidates = ClassifyConstructors(type, elementType, elementType, valueType: null, namedType.Constructors
-                .Where(ctor => ctor is { DeclaredAccessibility: Accessibility.Public, IsStatic: false }))
-                .ToArray();
-
-            if (GetImmutableCollectionFactory(namedType) is { } result)
-            {
-                (factoryMethod, factorySignature, constructionStrategy) = result;
-            } 
-            else if (
-                ResolveBestConstructor(ctorCandidates.Where(ctor => ctor.Strategy is CollectionModelConstructionStrategy.Mutable)) is { } bestMutableCtor &&
-                TryGetAddMethod(type, elementType, out addElementMethod, out addMethodIsExplicitInterfaceImplementation))
-            {
-                (factoryMethod, factorySignature, constructionStrategy) = bestMutableCtor;
-            }
-            else if (ResolveBestConstructor(ctorCandidates.Where(ctor => ctor.Strategy is not CollectionModelConstructionStrategy.Mutable)) is { } bestParameterizedCtor)
-            {
-                (factoryMethod, factorySignature, constructionStrategy) = bestParameterizedCtor;
-            }
-            else if (
-                KnownSymbols.Compilation.TryGetCollectionBuilderAttribute(namedType, elementType, out IMethodSymbol? builderMethod, CancellationToken) &&
-                ClassifyConstructor(type, elementType, elementType, valueType: null, builderMethod) is { } classifiedBuilderMethod)
-            {
-                (factoryMethod, factorySignature, constructionStrategy) = classifiedBuilderMethod;
-            }
-            else if (namedType.TypeKind == TypeKind.Interface)
+            if (namedType.TypeKind is TypeKind.Interface)
             {
                 INamedTypeSymbol listOfT = KnownSymbols.ListOfT!.Construct(elementType);
-                if (namedType.IsAssignableFrom(listOfT) && 
-                    ResolveBestMutableConstructor(namedType, declaringType: listOfT, elementType, keyType: elementType, valueType: null) is { } listCtor)
+                if (namedType.IsAssignableFrom(listOfT))
                 {
                     // Handle IEnumerable<T>, ICollection<T>, IList<T>, IReadOnlyCollection<T> and IReadOnlyList<T> types using List<T>
-                    (factoryMethod, factorySignature, constructionStrategy) = listCtor;
-                    addElementMethod = listOfT.GetMembers("Add")
-                        .OfType<IMethodSymbol>()
-                        .First(m =>
-                            m.Parameters.Length == 1 &&
-                            SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, elementType));
+                    namedType = listOfT;
+                }
+                else if (namedType.IsAssignableFrom(KnownSymbols.IList))
+                {
+                    // Handle construction of IList, ICollection and IEnumerable interfaces using List<object?>
+                    namedType = KnownSymbols.ListOfT!.Construct(KnownSymbols.Compilation.ObjectType);
                 }
                 else
                 {
                     INamedTypeSymbol hashSetOfT = KnownSymbols.HashSetOfT!.Construct(elementType);
-                    if (namedType.IsAssignableFrom(hashSetOfT) &&
-                        ResolveBestMutableConstructor(namedType, declaringType: hashSetOfT, elementType, keyType: elementType, valueType: null) is { } hashCtor)
+                    if (namedType.IsAssignableFrom(hashSetOfT))
                     {
                         // Handle ISet<T> and IReadOnlySet<T> types using HashSet<T>
-                        (factoryMethod, factorySignature, constructionStrategy) = hashCtor;
-                        addElementMethod = hashSetOfT.GetMembers("Add")
-                            .OfType<IMethodSymbol>()
-                            .First(m =>
-                                m.Parameters.Length == 1 &&
-                                SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, elementType));
+                        namedType = hashSetOfT;
                     }
                 }
             }
-        }
-        else if (KnownSymbols.IEnumerable.IsAssignableFrom(type))
-        {
-            elementType = KnownSymbols.Compilation.ObjectType;
-            kind = EnumerableKind.IEnumerable;
 
-            if (namedType.Constructors.FirstOrDefault(ctor => ctor is { DeclaredAccessibility: Accessibility.Public, Parameters: [] } && !ctor.IsStatic) is { } ctor &&
-                TryGetAddMethod(type, elementType, out addElementMethod, out addMethodIsExplicitInterfaceImplementation))
+            addMethod = ResolveAddMethod(namedType, elementType, out addMethodIsExplicitInterfaceImplementation);
+            if (ResolveBestCollectionCtor(
+                namedType,
+                namedType.GetConstructors(),
+                hasAddMethod: addMethod is not null,
+                elementType,
+                keyType: elementType,
+                valueType: null) is { } bestCtor)
             {
-                constructionStrategy = CollectionModelConstructionStrategy.Mutable;
-                factoryMethod = ctor;
+                (factoryMethod, factorySignature, isParameterizedFactory) = bestCtor;
             }
-            else if (type.IsAssignableFrom(KnownSymbols.IList))
+            else if (GetImmutableCollectionFactory(namedType) is { } result)
             {
-                // Handle construction of IList, ICollection and IEnumerable interfaces using List<object?>
-                INamedTypeSymbol listOfObject = KnownSymbols.ListOfT!.Construct(elementType);
-                if (ResolveBestMutableConstructor(namedType, listOfObject, elementType, elementType, valueType: null) is { } listCtor)
-                {
-                    (factoryMethod, factorySignature, constructionStrategy) = listCtor;
-                    addElementMethod = listOfObject.GetMembers("Add")
-                        .OfType<IMethodSymbol>()
-                        .FirstOrDefault(m =>
-                            m is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ Type: ITypeSymbol paramType }] } &&
-                            SymbolEqualityComparer.Default.Equals(paramType, elementType));
-                }
+                (factoryMethod, factorySignature, isParameterizedFactory) = result;
             }
-        }
-        else
-        {
-            // Type is not IEnumerable
-            return false;
+            // move this later in priority order so it doesn't skip comparer options when they exist.
+            else if (
+                ResolveBestCollectionCtor(
+                    namedType,
+                    candidates: KnownSymbols.Compilation.GetCollectionBuilderAttributeMethods(namedType, elementType, CancellationToken),
+                    hasAddMethod: false,
+                    elementType,
+                    keyType: elementType,
+                    valueType: null) is { } classifiedBuilderMethod)
+            {
+                (factoryMethod, factorySignature, isParameterizedFactory) = classifiedBuilderMethod;
+            }
         }
 
         if ((status = IncludeNestedType(elementType, ref ctx)) != TypeDataModelGenerationStatus.Success)
@@ -174,20 +155,19 @@ public partial class TypeDataModelGenerator
             ElementType = elementType,
             EnumerableKind = kind,
             DerivedTypes = IncludeDerivedTypes(type, ref ctx, TypeShapeRequirements.Full),
-            AddElementMethod = addElementMethod,
+            AddElementMethod = isParameterizedFactory ? null : addMethod,
             FactoryMethod = factoryMethod,
             FactorySignature = factorySignature?.ToImmutableArray() ?? ImmutableArray<CollectionConstructorParameter>.Empty,
-            ConstructionStrategy = constructionStrategy,
             Rank = rank,
             AddMethodIsExplicitInterfaceImplementation = addMethodIsExplicitInterfaceImplementation,
         };
 
         return true;
 
-        bool TryGetAddMethod(ITypeSymbol type, ITypeSymbol elementType, [NotNullWhen(true)] out IMethodSymbol? result, out bool isExplicitImplementation)
+        IMethodSymbol? ResolveAddMethod(ITypeSymbol type, ITypeSymbol elementType, out bool isExplicitImplementation)
         {
             isExplicitImplementation = false;
-            result = type.GetAllMembers()
+            IMethodSymbol? result = type.GetAllMembers()
                 .OfType<IMethodSymbol>()
                 .FirstOrDefault(method =>
                     method is { DeclaredAccessibility: Accessibility.Public, IsStatic: false, Name: "Add" or "Enqueue" or "Push", Parameters: [{ Type: ITypeSymbol parameterType }] } &&
@@ -199,8 +179,7 @@ public partial class TypeDataModelGenerator
                 if (result is null && type.GetCompatibleGenericBaseType(KnownSymbols.ICollectionOfT) is { } iCollectionOfT)
                 {
 
-                    result = iCollectionOfT.GetMembers("Add")
-                        .OfType<IMethodSymbol>()
+                    result = iCollectionOfT.GetMethods("Add", isStatic: false)
                         .FirstOrDefault(m =>
                             m is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ Type: ITypeSymbol paramType }] } &&
                             SymbolEqualityComparer.Default.Equals(paramType, elementType));
@@ -210,7 +189,7 @@ public partial class TypeDataModelGenerator
 
                 if (result is null && KnownSymbols.IList.IsAssignableFrom(type))
                 {
-                    result = KnownSymbols.IList.GetMembers("Add")
+                    result = KnownSymbols.IList.GetMethods("Add", isStatic: false)
                         .OfType<IMethodSymbol>()
                         .FirstOrDefault(m =>
                             m is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ Type: ITypeSymbol paramType }] } &&
@@ -220,10 +199,10 @@ public partial class TypeDataModelGenerator
                 }
             }
 
-            return result is not null;
+            return result;
         }
 
-        (IMethodSymbol Factory, CollectionConstructorParameter[] Signature, CollectionModelConstructionStrategy Strategy)? GetImmutableCollectionFactory(INamedTypeSymbol namedType)
+        (IMethodSymbol Factory, CollectionConstructorParameter[] Signature, bool IsParameterized)? GetImmutableCollectionFactory(INamedTypeSymbol namedType)
         {
             if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.ImmutableArray))
             {
@@ -272,7 +251,7 @@ public partial class TypeDataModelGenerator
 
             return default;
 
-            (IMethodSymbol Factory, CollectionConstructorParameter[] Signature, CollectionModelConstructionStrategy Strategy)? FindCreateRangeMethods(string typeName, string? factoryName = null)
+            (IMethodSymbol Factory, CollectionConstructorParameter[] Signature, bool IsParameterized)? FindCreateRangeMethods(string typeName, string? factoryName = null)
             {
                 INamedTypeSymbol? typeSymbol = KnownSymbols.Compilation.GetTypeByMetadataName(typeName);
                 if (typeSymbol is null)
@@ -287,80 +266,101 @@ public partial class TypeDataModelGenerator
                         factoryName is null ? method.Name is "Create" or "CreateRange" : method.Name == factoryName)
                     .Select(method => method.MakeGenericMethod(elementType)!);
 
-                var classifiedCtors = ClassifyConstructors(type, elementType, keyType: elementType, valueType: null, candidates);
-                return ResolveBestConstructor(classifiedCtors);
+                return ResolveBestCollectionCtor(type, candidates, hasAddMethod: false, elementType, elementType, valueType: null);
             }
         }
     }
 
-    private (IMethodSymbol Method, CollectionConstructorParameter[] Signature, CollectionModelConstructionStrategy Strategy)? ResolveBestMutableConstructor(
+    private (IMethodSymbol Factory, CollectionConstructorParameter[] Signature, bool IsParameterized)? ResolveBestCollectionCtor(
         ITypeSymbol collectionType,
-        INamedTypeSymbol declaringType,
+        IEnumerable<IMethodSymbol> candidates,
+        bool hasAddMethod,
         ITypeSymbol elementType,
         ITypeSymbol keyType,
         ITypeSymbol? valueType)
     {
-        var candidates = declaringType.Constructors
-            .Where(ctor => ctor is { DeclaredAccessibility: Accessibility.Public, IsStatic: false })
-            .Select(ctor => ClassifyConstructor(collectionType, elementType, keyType, valueType, ctor))
-            .Where(ctor => ctor is { Strategy: CollectionModelConstructionStrategy.Mutable })
-            .Select(ctor => ctor!.Value);
+        var result = candidates
+            .Select(method =>
+            {
+                var signature = ClassifyCollectionConstructor(
+                    collectionType,
+                    method,
+                    hasAddMethod,
+                    out CollectionConstructorParameter? valuesParam,
+                    out CollectionConstructorParameter? comparerParam,
+                    elementType, keyType, valueType);
 
-        return ResolveBestConstructor(candidates);
-    }
+                return (Factory: method, Signature: signature, ValuesParam: valuesParam, ComparerParam: comparerParam);
+            })
+            .Where(ctor => ctor.Signature is not null)
+            // Pick the best constructor based on the following criteria:
+            // 1. Prefer constructors with a comparer parameter.
+            // 2. Prefer constructors with a values parameter if not using an add method.
+            // 3. Prefer constructors with a larger arity.
+            // 4. Prefer constructors with a more efficient kind (Mutable > Span > Enumerable).
+            .OrderBy(result =>
+                (RankComparer(result.ComparerParam),
+                 RankStrategy(result.ValuesParam),
+                 -result.Signature!.Length,
+                 RankValuePerformance(result.ValuesParam)))
+            .FirstOrDefault();
 
-    private static (IMethodSymbol Method, CollectionConstructorParameter[] Signature, CollectionModelConstructionStrategy Strategy)? ResolveBestConstructor(
-        IEnumerable<(IMethodSymbol Method, CollectionConstructorParameter[] Signature, CollectionModelConstructionStrategy Strategy)> candidates)
-    {
-        if (!candidates.Any())
+        if (result.Factory is null)
         {
-            return null;
+            return null; // No suitable constructor found.
         }
 
-        // Pick the best constructor based on the following criteria:
-        // 1. Prefer constructors with a comparer parameter.
-        // 2. Prefer constructors with a larger arity.
-        // 3. Prefer constructors with a more efficient kind (Mutable > Span > Enumerable).
-        return candidates
-            .OrderBy(c => (HasComparer(c.Signature) ? 0 : 1, -c.Signature.Length, RankStrategy(c.Strategy)))
-            .First();
+        return (result.Factory, result.Signature!, IsParameterized: result.ValuesParam is not null);
 
-        static bool HasComparer(CollectionConstructorParameter[] signature)
+        static int RankComparer(CollectionConstructorParameter? comparer)
         {
-            return signature.Any(param => 
-                param is CollectionConstructorParameter.Comparer or CollectionConstructorParameter.ComparerOptional 
-                      or CollectionConstructorParameter.EqualityComparer or CollectionConstructorParameter.EqualityComparerOptional);
+            return comparer switch
+            {
+                // Rank optional comparers higher than mandatory ones.
+                CollectionConstructorParameter.EqualityComparerOptional or
+                CollectionConstructorParameter.ComparerOptional => 0,
+                CollectionConstructorParameter.EqualityComparer or
+                CollectionConstructorParameter.Comparer => 1,
+                _ => int.MaxValue,
+            };
         }
 
-        static int RankStrategy(CollectionModelConstructionStrategy kind) => kind switch
+        int RankStrategy(CollectionConstructorParameter? valueParam)
         {
-            CollectionModelConstructionStrategy.Mutable => 0,
-            CollectionModelConstructionStrategy.Span => 1,
-            CollectionModelConstructionStrategy.Enumerable => 2,
-            _ => int.MaxValue, // Everything else (intermediate collections) is less preferred
-        };
+            return (hasAddMethod, valueParam) switch
+            {
+                (true, null) => 0, // Mutable collections with add methods are ranked highest.
+                (false, not null) => 0, // Parameterized constructors are ranked highest if an add method is not available.
+                _ => int.MaxValue, // Every other combination is ranked lowest.
+            };
+        }
+
+        static int RankValuePerformance(CollectionConstructorParameter? valueParam)
+        {
+            return valueParam switch
+            {
+                null => 0, // mutable collection constructors are ranked highest.
+                CollectionConstructorParameter.Span => 1, // Constructors accepting span.
+                CollectionConstructorParameter.List => 2, // Constructors accepting List.
+                _ => int.MaxValue, // Everything is ranked equally.
+            };
+        }
     }
 
-    private IEnumerable<(IMethodSymbol Method, CollectionConstructorParameter[] Signature, CollectionModelConstructionStrategy Strategy)> ClassifyConstructors(
+    private CollectionConstructorParameter[]? ClassifyCollectionConstructor(
         ITypeSymbol collectionType,
+        IMethodSymbol method,
+        bool hasAddMethod,
+        out CollectionConstructorParameter? valuesParameter,
+        out CollectionConstructorParameter? comparerParameter,
         ITypeSymbol elementType,
         ITypeSymbol keyType,
-        ITypeSymbol? valueType,
-        IEnumerable<IMethodSymbol> candidates)
+        ITypeSymbol? valueType)
     {
-        return candidates
-            .Select(candidate => ClassifyConstructor(collectionType, elementType, keyType, valueType, candidate))
-            .Where(ctor => ctor is not null)
-            .Select(ctor => ctor!.Value);
-    }
+        Debug.Assert(method.MethodKind is MethodKind.Constructor || method.IsStatic);
+        valuesParameter = null;
+        comparerParameter = null;
 
-    private (IMethodSymbol Method, CollectionConstructorParameter[] Signature, CollectionModelConstructionStrategy Strategy)? ClassifyConstructor(
-        ITypeSymbol collectionType,
-        ITypeSymbol elementType,
-        ITypeSymbol keyType,
-        ITypeSymbol? valueType,
-        IMethodSymbol method)
-    {
         ITypeSymbol returnType = method.MethodKind is MethodKind.Constructor
             ? method.ContainingType
             : method.ReturnType;
@@ -372,17 +372,14 @@ public partial class TypeDataModelGenerator
         
         if (method.Parameters.IsEmpty)
         {
-            if (method.MethodKind is not MethodKind.Constructor)
+            if (!hasAddMethod)
             {
-                return null; // Static factories need to have at least one parameter.
+                return null;
             }
 
-            return (method, [], CollectionModelConstructionStrategy.Mutable);
+            return [];
         }
 
-        bool foundComparer = false;
-        bool foundValuesParameter = false;
-        CollectionModelConstructionStrategy strategy = CollectionModelConstructionStrategy.Mutable;
         var signature = new CollectionConstructorParameter[method.Parameters.Length];
         for (int i = 0; i < method.Parameters.Length; i++)
         {
@@ -395,24 +392,21 @@ public partial class TypeDataModelGenerator
                 return null;
             }
 
-            CollectionModelConstructionStrategy inferredParameterStrategy = parameterType switch
-            {
-                CollectionConstructorParameter.Span => CollectionModelConstructionStrategy.Span,
-                CollectionConstructorParameter.Enumerable => CollectionModelConstructionStrategy.Enumerable,
-                CollectionConstructorParameter.List => CollectionModelConstructionStrategy.List,
-                CollectionConstructorParameter.HashSet => CollectionModelConstructionStrategy.HashSet,
-                CollectionConstructorParameter.Dictionary => CollectionModelConstructionStrategy.Dictionary,
-                _ => CollectionModelConstructionStrategy.None,
-            };
+            bool isValuesParameter = parameterType is
+                CollectionConstructorParameter.Span or
+                CollectionConstructorParameter.List or
+                CollectionConstructorParameter.HashSet or
+                CollectionConstructorParameter.Dictionary or
+                CollectionConstructorParameter.TupleEnumerable;
 
-            if (inferredParameterStrategy is not CollectionModelConstructionStrategy.None)
+            if (isValuesParameter)
             {
-                if (foundValuesParameter)
+                if (valuesParameter is not null)
                 {
-                    return null; // Duplicate values parameter.
+                    return null; // duplicate values parameter.
                 }
 
-                strategy = inferredParameterStrategy;
+                valuesParameter = parameterType;
                 continue;
             }
 
@@ -424,29 +418,32 @@ public partial class TypeDataModelGenerator
 
             if (isComparerParameter)
             {
-                if (foundComparer)
+                if (comparerParameter is not null)
                 {
                     return null; // duplicate comparer parameter.
                 }
 
-                foundComparer = true;
+                comparerParameter = parameterType;
             }
         }
 
-        if (strategy is CollectionModelConstructionStrategy.Mutable &&
-            method.MethodKind is not MethodKind.Constructor)
-        {
-            return null; // Static methods need to accept a values parameter.
-        }
-
-        return (method, signature, strategy);
+        return signature;
 
         CollectionConstructorParameter ClassifyParameter(IParameterSymbol parameter)
         {
             ITypeSymbol parameterType = parameter.Type;
-            if (parameterType.IsAssignableFrom(KnownSymbols.IEnumerableOfT.Construct(elementType)))
+            INamedTypeSymbol? namedType = parameter as INamedTypeSymbol;
+
+            if (collectionType.IsAssignableFrom(parameterType))
             {
-                return CollectionConstructorParameter.Enumerable;
+                // The parameter is the same type as the collection, creating a recursive relationship.
+                return CollectionConstructorParameter.Unrecognized;
+            }
+
+            if (SymbolEqualityComparer.Default.Equals(parameterType.OriginalDefinition, KnownSymbols.ReadOnlySpanOfT) &&
+                SymbolEqualityComparer.Default.Equals(elementType, ((INamedTypeSymbol)parameterType).TypeArguments[0]))
+            {
+                return CollectionConstructorParameter.Span;
             }
 
             if (parameterType.IsAssignableFrom(KnownSymbols.ListOfT?.Construct(elementType)))
@@ -464,9 +461,12 @@ public partial class TypeDataModelGenerator
                 return CollectionConstructorParameter.Dictionary;
             }
 
-            if (SymbolEqualityComparer.Default.Equals(parameterType, KnownSymbols.ReadOnlySpanOfT?.Construct(elementType)))
+            if (valueType is not null &&
+                KnownSymbols.TupleOfKV?.Construct(keyType, valueType) is { } tupleKV &&
+                KnownSymbols.IEnumerableOfT.Construct(tupleKV) is { } tupleEnumerable &&
+                SymbolEqualityComparer.Default.Equals(tupleEnumerable, parameterType))
             {
-                return CollectionConstructorParameter.Span;
+                return CollectionConstructorParameter.TupleEnumerable;
             }
 
             if (parameterType.SpecialType is SpecialType.System_Int32 && parameter.Name is "capacity" or "initialCapacity")

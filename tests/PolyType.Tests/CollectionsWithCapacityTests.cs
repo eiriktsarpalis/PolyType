@@ -6,7 +6,7 @@ public abstract partial class CollectionsWithCapacityTests(ProviderUnderTest pro
     public void List_OfInt()
     {
         IEnumerableTypeShape<List<int>, int> shape = (IEnumerableTypeShape<List<int>, int>)providerUnderTest.Provider.Resolve<List<int>>();
-        List<int> list = shape.GetMutableCollectionConstructor()(new() { Capacity = 11 });
+        List<int> list = shape.GetMutableConstructor()(new() { Capacity = 11 });
         Assert.Equal(11, list.Capacity);
     }
 
@@ -14,7 +14,7 @@ public abstract partial class CollectionsWithCapacityTests(ProviderUnderTest pro
     public void List_OfString()
     {
         IEnumerableTypeShape<List<string>, string> shape = (IEnumerableTypeShape<List<string>, string>)providerUnderTest.Provider.Resolve<List<string>>();
-        List<string> list = shape.GetMutableCollectionConstructor()(new() { Capacity = 11 });
+        List<string> list = shape.GetMutableConstructor()(new() { Capacity = 11 });
         Assert.Equal(11, list.Capacity);
     }
 
@@ -22,7 +22,7 @@ public abstract partial class CollectionsWithCapacityTests(ProviderUnderTest pro
     public void Dictionary()
     {
         IDictionaryTypeShape<Dictionary<int, bool>, int, bool> shape = (IDictionaryTypeShape<Dictionary<int, bool>, int, bool>)providerUnderTest.Provider.Resolve<Dictionary<int, bool>>();
-        Dictionary<int, bool> dict = shape.GetMutableCollectionConstructor()(new() { Capacity = 11 });
+        Dictionary<int, bool> dict = shape.GetMutableConstructor()(new() { Capacity = 11 });
 #if NET9_0_OR_GREATER
         Assert.Equal(11, dict.Capacity);
 #else
@@ -34,7 +34,7 @@ public abstract partial class CollectionsWithCapacityTests(ProviderUnderTest pro
     public void HashSet()
     {
         IEnumerableTypeShape<HashSet<int>, int> shape = (IEnumerableTypeShape<HashSet<int>, int>)providerUnderTest.Provider.Resolve<HashSet<int>>();
-        HashSet<int> set = shape.GetMutableCollectionConstructor()(new() { Capacity = 11 });
+        HashSet<int> set = shape.GetMutableConstructor()(new() { Capacity = 11 });
 #if NET9_0_OR_GREATER
         Assert.Equal(11, set.Capacity);
 #else

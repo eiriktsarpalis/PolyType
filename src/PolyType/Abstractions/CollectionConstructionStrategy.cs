@@ -19,12 +19,7 @@ public enum CollectionConstructionStrategy
     Mutable = 1,
 
     /// <summary>
-    /// Constructed using a <see cref="SpanCollectionConstructor{TKey, TElement, TDeclaringType}"/> delegate.
+    /// Constructed using a constructor or factory method accepting a <see cref="ReadOnlySpan{T}"/> of elements.
     /// </summary>
-    Span = 2,
-
-    /// <summary>
-    /// Constructed using a <see cref="Func{TEnumerable, TDeclaringType}"/> delegate.
-    /// </summary>
-    Enumerable = 4,
+    Parameterized = 2,
 }

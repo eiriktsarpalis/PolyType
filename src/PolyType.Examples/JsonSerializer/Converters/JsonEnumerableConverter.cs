@@ -133,20 +133,10 @@ internal abstract class JsonImmutableEnumerableConverter<TEnumerable, TElement>(
     }
 }
 
-internal sealed class JsonEnumerableConstructorEnumerableConverter<TEnumerable, TElement>(
+internal sealed class JsonParameterizedConstructorEnumerableConverter<TEnumerable, TElement>(
     JsonConverter<TElement> elementConverter,
     IEnumerableTypeShape<TEnumerable, TElement> typeShape,
-    EnumerableCollectionConstructor<TElement, TElement, TEnumerable> enumerableConstructor) 
-    : JsonImmutableEnumerableConverter<TEnumerable, TElement>(elementConverter, typeShape)
-{
-    private protected override TEnumerable Construct(PooledList<TElement> buffer)
-        => enumerableConstructor(buffer.ToArray());
-}
-
-internal sealed class JsonSpanConstructorEnumerableConverter<TEnumerable, TElement>(
-    JsonConverter<TElement> elementConverter,
-    IEnumerableTypeShape<TEnumerable, TElement> typeShape,
-    SpanCollectionConstructor<TElement, TElement, TEnumerable> spanConstructor) 
+    ParameterizedCollectionConstructor<TElement, TElement, TEnumerable> spanConstructor) 
     : JsonImmutableEnumerableConverter<TEnumerable, TElement>(elementConverter, typeShape)
 {
     private protected override TEnumerable Construct(PooledList<TElement> buffer)
