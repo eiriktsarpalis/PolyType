@@ -1,6 +1,4 @@
 ﻿using PolyType.Abstractions;
-using System.Reflection;
-using System.Text;
 
 namespace PolyType.SourceGenModel;
 
@@ -10,8 +8,6 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TObject">The type whose shape is described.</typeparam>
 public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObject>, IObjectTypeShape<TObject>
 {
-    private readonly object _syncObject = new();
-
     /// <summary>
     /// Gets a value indicating whether the type represents a record.
     /// </summary>
@@ -38,22 +34,7 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
     /// <inheritdoc/>
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);
 
-    IReadOnlyList<IPropertyShape> IObjectTypeShape.Properties
-    {
-        get
-        {
-            if (_properties is null)
-            {
-                lock (_syncObject)
-                {
-                    return _properties ??= (CreatePropertiesFunc?.Invoke()).AsReadOnlyList();
-                }
-            }
-
-            return _properties;
-        }
-    }
-
+    IReadOnlyList<IPropertyShape> IObjectTypeShape.Properties => _properties ?? CommonHelpers.ExchangeIfNull(ref _properties, (CreatePropertiesFunc?.Invoke()).AsReadOnlyList());
     private IReadOnlyList<IPropertyShape>? _properties;
 
     IConstructorShape? IObjectTypeShape.Constructor

@@ -18,7 +18,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
 
     private CollectionConstructorInfo ConstructorInfo
     {
-        get => _constructorInfo ?? ReflectionHelpers.ExchangeIfNull(ref _constructorInfo, DetermineConstructorInfo());
+        get => _constructorInfo ?? CommonHelpers.ExchangeIfNull(ref _constructorInfo, DetermineConstructorInfo());
     }
 
     public virtual CollectionConstructionStrategy ConstructionStrategy => ConstructorInfo.Strategy;
@@ -41,7 +41,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
             static void Throw() => throw new InvalidOperationException("The current enumerable shape does not support mutation.");
         }
 
-        return _addDelegate ?? ReflectionHelpers.ExchangeIfNull(ref _addDelegate, CreateAddDelegate());
+        return _addDelegate ?? CommonHelpers.ExchangeIfNull(ref _addDelegate, CreateAddDelegate());
 
         Setter<TEnumerable, TElement> CreateAddDelegate()
         {
@@ -58,7 +58,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
             static void Throw() => throw new InvalidOperationException("The current enumerable shape does not support default constructors.");
         }
 
-        return _mutableCtorDelegate ?? ReflectionHelpers.ExchangeIfNull(ref _mutableCtorDelegate, CreateDefaultConstructor());
+        return _mutableCtorDelegate ?? CommonHelpers.ExchangeIfNull(ref _mutableCtorDelegate, CreateDefaultConstructor());
 
         MutableCollectionConstructor<TElement, TEnumerable> CreateDefaultConstructor()
         {
@@ -75,7 +75,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
             static void Throw() => throw new InvalidOperationException("The current enumerable shape does not support parameterized constructors.");
         }
 
-        return _spanCtorDelegate ?? ReflectionHelpers.ExchangeIfNull(ref _spanCtorDelegate, CreateParameterizedConstructor());
+        return _spanCtorDelegate ?? CommonHelpers.ExchangeIfNull(ref _spanCtorDelegate, CreateParameterizedConstructor());
 
         ParameterizedCollectionConstructor<TElement, TElement, TEnumerable> CreateParameterizedConstructor()
         {

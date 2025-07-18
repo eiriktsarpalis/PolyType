@@ -459,12 +459,6 @@ internal static class ReflectionHelpers
         return propertyInfo;
     }
 
-    public static T ExchangeIfNull<T>([NotNull] ref T? target, T value) where T : class
-    {
-        DebugExt.Assert(value is not null);
-        return Interlocked.CompareExchange(ref target, value, null) ?? value;
-    }
-
     [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "Called conditionally on structs whose default ctor never gets trimmed.")]
     public static object? GetDefaultValue(Type type)
     {

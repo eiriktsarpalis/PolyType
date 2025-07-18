@@ -6,7 +6,6 @@ namespace PolyType.ReflectionProvider;
 
 internal sealed class ReflectionParameterShape<TArgumentState, TParameter> : IParameterShape<TArgumentState, TParameter>
 {
-    private readonly object _syncObject = new();
     private readonly ReflectionTypeShapeProvider _provider;
     private readonly IConstructorShapeInfo _ctorInfo;
     private readonly IParameterShapeInfo _parameterInfo;
@@ -43,15 +42,9 @@ internal sealed class ReflectionParameterShape<TArgumentState, TParameter> : IPa
 
     public Setter<TArgumentState, TParameter> GetSetter()
     {
-        return _setter ?? Helper();
-
-        Setter<TArgumentState, TParameter> Helper()
-        {
-            lock (_syncObject)
-            {
-                return _setter ??= _provider.MemberAccessor.CreateConstructorArgumentStateSetter<TArgumentState, TParameter>(_ctorInfo, Position);
-            }
-        }
+        return _setter ?? CommonHelpers.ExchangeIfNull(ref _setter, CreateSetter());
+        Setter<TArgumentState, TParameter> CreateSetter() =>
+            _provider.MemberAccessor.CreateConstructorArgumentStateSetter<TArgumentState, TParameter>(_ctorInfo, Position);
     }
 }
 
