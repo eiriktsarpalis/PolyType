@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Reflection;
 
 namespace PolyType.ReflectionProvider;
@@ -529,57 +530,106 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         }
     }
 
-    internal (MethodBase Factory, CollectionConstructorParameter[] Signature, CollectionConstructionStrategy Strategy)? FindBestCollectionFactory<TElement, TKey>(
+    internal CollectionConstructorInfo? ResolveBestCollectionCtor<TElement, TKey>(
         Type collectionType,
         IEnumerable<MethodBase> candidates,
-        bool shouldBeParameterized,
-        Type? correspondingDictionaryType = null)
+        MethodInfo? addMethod = null,
+        Type? correspondingDictionaryType = null,
+        Type? correspondingTupleEnumerable = null)
     {
-        // Pick the best constructor based on the following criteria:
-        // 1. Prefer constructors with a comparer parameter.
-        // 2. Prefer constructors with a larger arity.
-        // 3. Prefer constructors with a more efficient kind (Mutable > Span > Enumerable).
         return candidates
-            .Select(candidate =>
+            .Select(method =>
             {
-                var signature = ClassifyMethodParameters<TElement, TKey>(collectionType, candidate, shouldBeParameterized, out CollectionConstructionStrategy strategy, correspondingDictionaryType);
-                return (Factory: candidate, Signature: signature, Strategy: strategy);
+                var signature = ClassifyCollectionConstructor<TElement, TKey>(
+                    collectionType,
+                    method,
+                    allowMutableCtor: addMethod is not null,
+                    out CollectionConstructorParameter? valuesParam,
+                    out CollectionConstructorParameter? comparerParam,
+                    correspondingDictionaryType,
+                    correspondingTupleEnumerable);
+
+                return (Factory: method, Signature: signature, ValuesParam: valuesParam, ComparerParam: comparerParam);
             })
             .Where(result => result.Signature is not null)
-            // Rank constructors by highest arity and then by the efficiency of the values parameter.
-            .OrderBy(result => (HasComparer(result.Signature!) ? 0 : 1, -result.Signature!.Length, RankStrategy(result.Strategy)))
-            .FirstOrDefault()!;
+            // Pick the best constructor based on the following criteria:
+            // 1. Prefer constructors with a comparer parameter.
+            // 2. Prefer constructors with a values parameter if not using an add method.
+            // 3. Prefer constructors with a larger arity.
+            // 4. Prefer constructors with a more efficient kind (Mutable > Span > Enumerable).
+            .OrderBy(result =>
+                (RankComparer(result.ComparerParam),
+                 RankStrategy(result.ValuesParam),
+                 -result.Signature!.Length,
+                 RankValuePerformance(result.ValuesParam)))
+            .Select(result => (CollectionConstructorInfo)(result.ValuesParam is null
+                ? new MutableCollectionConstructorInfo(result.Factory!, result.Signature!, GetComparerOptions(result.ComparerParam, result.ValuesParam), addMethod!)
+                : new ParameterizedCollectionConstructorInfo(result.Factory, result.Signature!, GetComparerOptions(result.ComparerParam, result.ValuesParam))))
+            .FirstOrDefault();
 
-        static bool HasComparer(CollectionConstructorParameter[] signature)
+        static int RankComparer(CollectionConstructorParameter? comparer)
         {
-            return signature.Any(param =>
-                param is CollectionConstructorParameter.Comparer or CollectionConstructorParameter.ComparerOptional
-                      or CollectionConstructorParameter.EqualityComparer or CollectionConstructorParameter.EqualityComparerOptional);
+            return comparer switch
+            {
+                // Rank optional comparers higher than mandatory ones.
+                CollectionConstructorParameter.EqualityComparerOptional or
+                CollectionConstructorParameter.ComparerOptional => 0,
+                CollectionConstructorParameter.EqualityComparer or
+                CollectionConstructorParameter.Comparer => 1,
+                _ => int.MaxValue,
+            };
         }
 
-        static int RankStrategy(CollectionConstructionStrategy strategy)
+        int RankStrategy(CollectionConstructorParameter? valueParam)
         {
-            return strategy switch
+            return (addMethod, valueParam) switch
             {
-                CollectionConstructionStrategy.Mutable => 0,
-                CollectionConstructionStrategy.Span => 1,
-                CollectionConstructionStrategy.Enumerable => 2,
-                _ => int.MaxValue, // Least efficient strategies.
+                (not null, null) => 0, // Mutable collections with add methods are ranked highest.
+                (null, not null) => 0, // Parameterized constructors are ranked highest if not add method is not available.
+                _ => int.MaxValue, // Every other combination is ranked lowest.
+            };
+        }
+
+        static int RankValuePerformance(CollectionConstructorParameter? valueParam)
+        {
+            return valueParam switch
+            {
+                null => 0, // mutable collection constructors are ranked highest.
+                CollectionConstructorParameter.Span => 1, // Constructors accepting span.
+                CollectionConstructorParameter.List => 2, // Constructors accepting List.
+                _ => int.MaxValue, // Everything is ranked equally.
+            };
+        }
+
+        static CollectionComparerOptions GetComparerOptions(CollectionConstructorParameter? options, CollectionConstructorParameter? valuesParam)
+        {
+            return (options ?? valuesParam) switch
+            {
+                CollectionConstructorParameter.EqualityComparer or
+                CollectionConstructorParameter.EqualityComparerOptional or
+                CollectionConstructorParameter.HashSet or
+                CollectionConstructorParameter.Dictionary => CollectionComparerOptions.EqualityComparer,
+                CollectionConstructorParameter.Comparer or
+                CollectionConstructorParameter.ComparerOptional => CollectionComparerOptions.Comparer,
+                _ => CollectionComparerOptions.None,
             };
         }
     }
 
-    internal CollectionConstructorParameter[]? ClassifyMethodParameters<TElement, TKey>(
+    private CollectionConstructorParameter[]? ClassifyCollectionConstructor<TElement, TKey>(
         Type collectionType,
         MethodBase method,
-        bool shouldBeParameterized,
-        out CollectionConstructionStrategy constructionStrategy,
-        Type? correspondingDictionaryType = null)
+        bool allowMutableCtor,
+        out CollectionConstructorParameter? valuesParameter,
+        out CollectionConstructorParameter? comparerParameter,
+        Type? correspondingDictionaryType = null,
+        Type? correspondingTupleEnumerable = null)
     {
         Debug.Assert(method is MethodInfo { IsStatic: true } or ConstructorInfo { IsStatic: false });
         NullabilityInfoContext? nullabilityInfoContext = CreateNullabilityInfoContext();
         ParameterInfo[] parameters = method.GetParameters();
-        constructionStrategy = CollectionConstructionStrategy.None;
+        valuesParameter = null;
+        comparerParameter = null;
 
         Type returnType = method is MethodInfo methodInfo
             ? methodInfo.ReturnType
@@ -592,16 +642,14 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
         if (parameters.Length == 0)
         {
-            if (shouldBeParameterized)
+            if (!allowMutableCtor)
             {
                 return null;
             }
 
-            constructionStrategy = CollectionConstructionStrategy.Mutable;
             return [];
         }
 
-        bool foundComparer = false;
         var signature = new CollectionConstructorParameter[parameters.Length];
         for (int i = 0; i < parameters.Length; i++)
         {
@@ -620,29 +668,21 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
                 return null;
             }
 
-            CollectionConstructionStrategy parameterValueStrategy = parameterType switch
-            {
-                CollectionConstructorParameter.Enumerable => CollectionConstructionStrategy.Enumerable,
-                CollectionConstructorParameter.Span => CollectionConstructionStrategy.Span,
+            bool isValuesParameter = parameterType is
+                CollectionConstructorParameter.Span or
                 CollectionConstructorParameter.List or
                 CollectionConstructorParameter.HashSet or
-                CollectionConstructorParameter.Dictionary => Options.UseReflectionEmit ? CollectionConstructionStrategy.Span : CollectionConstructionStrategy.Enumerable,
-                _ => CollectionConstructionStrategy.None,
-            };
+                CollectionConstructorParameter.Dictionary or
+                CollectionConstructorParameter.TupleEnumerable;
 
-            if (parameterValueStrategy is not CollectionConstructionStrategy.None)
+            if (isValuesParameter)
             {
-                if (!shouldBeParameterized)
-                {
-                    return null; // Not looking for parameterized constructors.
-                }
-
-                if (constructionStrategy is not CollectionConstructionStrategy.None)
+                if (valuesParameter is not null)
                 {
                     return null; // duplicate values parameter.
                 }
 
-                constructionStrategy = parameterValueStrategy;
+                valuesParameter = parameterType;
                 continue;
             }
 
@@ -654,12 +694,12 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
             if (isComparerParameter)
             {
-                if (foundComparer)
+                if (comparerParameter is not null)
                 {
                     return null; // duplicate comparer parameter.
                 }
 
-                foundComparer = true;
+                comparerParameter = parameterType;
             }
         }
 
@@ -668,9 +708,16 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         CollectionConstructorParameter ClassifyParameter(ParameterInfo parameter)
         {
             Type parameterType = parameter.ParameterType;
-            if (parameterType.IsAssignableFrom(typeof(IEnumerable<TElement>)))
+
+            if (collectionType.IsAssignableFrom(parameterType))
             {
-                return CollectionConstructorParameter.Enumerable;
+                // The parameter is the same type as the collection, creating a recursive relationship.
+                return CollectionConstructorParameter.Unrecognized;
+            }
+
+            if (parameterType == typeof(ReadOnlySpan<TElement>))
+            {
+                return CollectionConstructorParameter.Span;
             }
 
             if (parameterType.IsAssignableFrom(typeof(List<TElement>)))
@@ -685,13 +732,12 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
             if (parameterType.IsAssignableFrom(correspondingDictionaryType))
             {
-                // A constructor accepting a Dictionary or IReadOnlyDictionary such as ReadOnlyDictionary.
                 return CollectionConstructorParameter.Dictionary;
             }
 
-            if (parameterType == typeof(ReadOnlySpan<TElement>))
+            if (parameterType == correspondingTupleEnumerable)
             {
-                return CollectionConstructorParameter.Span;
+                return CollectionConstructorParameter.TupleEnumerable;
             }
 
             if (parameterType == typeof(int) && parameter.Name is "capacity" or "initialCapacity")

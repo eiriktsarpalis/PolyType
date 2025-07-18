@@ -131,15 +131,14 @@ internal sealed class JsonMutableDictionaryConverter<TDictionary, TKey, TValue>(
     }
 }
 
-internal abstract class JsonImmutableDictionaryConverter<TDictionary, TKey, TValue>(
+internal sealed class JsonParameterizedDictionaryConverter<TDictionary, TKey, TValue>(
     JsonConverter<TKey> keyConverter,
     JsonConverter<TValue> valueConverter,
-    IDictionaryTypeShape<TDictionary, TKey, TValue> shape)
+    IDictionaryTypeShape<TDictionary, TKey, TValue> shape,
+    ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> constructor)
     : JsonDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, shape)
     where TKey : notnull
 {
-    private protected abstract TDictionary Construct(PooledList<KeyValuePair<TKey, TValue>> buffer);
-
     public sealed override TDictionary? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (default(TDictionary) is null && reader.TokenType is JsonTokenType.Null)
@@ -166,30 +165,6 @@ internal abstract class JsonImmutableDictionaryConverter<TDictionary, TKey, TVal
             buffer.Add(new(key, value));
         }
 
-        return Construct(buffer);
+        return constructor(buffer.AsSpan());
     }
-}
-
-internal sealed class JsonEnumerableConstructorDictionaryConverter<TDictionary, TKey, TValue>(
-    JsonConverter<TKey> keyConverter,
-    JsonConverter<TValue> valueConverter,
-    IDictionaryTypeShape<TDictionary, TKey, TValue> shape,
-    EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> constructor)
-    : JsonImmutableDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, shape)
-    where TKey : notnull
-{
-    private protected override TDictionary Construct(PooledList<KeyValuePair<TKey, TValue>> buffer)
-        => constructor(buffer.ToArray());
-}
-
-internal sealed class JsonSpanConstructorDictionaryConverter<TDictionary, TKey, TValue>(
-    JsonConverter<TKey> keyConverter,
-    JsonConverter<TValue> valueConverter,
-    IDictionaryTypeShape<TDictionary, TKey, TValue> shape,
-    SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> constructor)
-    : JsonImmutableDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, shape)
-    where TKey : notnull
-{
-    private protected override TDictionary Construct(PooledList<KeyValuePair<TKey, TValue>> buffer)
-        => constructor(buffer.AsSpan());
 }

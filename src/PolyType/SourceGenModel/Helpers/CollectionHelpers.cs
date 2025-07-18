@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -73,6 +74,25 @@ public static class CollectionHelpers
         }
 
         return dict;
+    }
+
+    /// <summary>
+    /// Creates an array of tuples from a span of key/value pairs.
+    /// </summary>
+    /// <typeparam name="TKey">The key type of the span.</typeparam>
+    /// <typeparam name="TValue">The value type of the span.</typeparam>
+    /// <param name="span">The span containing the entries of the span.</param>
+    /// <returns>A new array containing the specified entries.</returns>
+    public static Tuple<TKey, TValue>[] CreateTupleArray<TKey, TValue>(ReadOnlySpan<KeyValuePair<TKey, TValue>> span)
+    {
+        Tuple<TKey, TValue>[] array = new Tuple<TKey, TValue>[span.Length];
+        for (int i = 0; i < span.Length; i++)
+        {
+            var kvp = span[i];
+            array[i] = Tuple.Create(kvp.Key, kvp.Value);
+        }
+
+        return array;
     }
 
     /// <summary>

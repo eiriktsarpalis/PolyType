@@ -27,7 +27,6 @@ internal sealed partial class SourceFormatter
                     ConstructionStrategy = {{FormatCollectionConstructionStrategy(dictionaryShapeModel.ConstructionStrategy)}},
                     MutableConstructorFunc = {{FormatDefaultConstructorFunc(dictionaryShapeModel)}},
                     AddKeyValuePairFunc = {{FormatAddKeyValuePairFunc(dictionaryShapeModel)}},
-                    EnumerableConstructorFunc = {{FormatEnumerableConstructorFunc(dictionaryShapeModel)}},
                     SpanConstructorFunc = {{FormatSpanConstructorFunc(dictionaryShapeModel)}},
                     AssociatedTypeShapes = {{FormatAssociatedTypeShapes(dictionaryShapeModel)}},
                     Provider = this,
@@ -82,38 +81,23 @@ internal sealed partial class SourceFormatter
         static string FormatKeyValueTypeName(DictionaryShapeModel dictionaryType)
             => $"global::System.Collections.Generic.KeyValuePair<{dictionaryType.KeyType}, {dictionaryType.ValueType}>";
 
-        static string FormatEnumerableConstructorFunc(DictionaryShapeModel dictionaryType)
-        {
-            if (dictionaryType.ConstructionStrategy is not CollectionConstructionStrategy.Enumerable)
-            {
-                return "null";
-            }
-
-            string valuesExpr = dictionaryType.KeyValueTypesContainNullableAnnotations ? "values!" : "values";
-
-            return FormatCollectionInitializer(dictionaryType, ($"global::System.Collections.Generic.IEnumerable<{FormatKeyValueTypeName(dictionaryType)}>", valuesExpr));
-        }
-
         static string FormatSpanConstructorFunc(DictionaryShapeModel dictionaryType)
         {
-            if (dictionaryType.ConstructionStrategy is not CollectionConstructionStrategy.Span)
+            if (dictionaryType.ConstructionStrategy is not CollectionConstructionStrategy.Parameterized)
             {
                 return "null";
             }
 
-            string valuesType = $"global::System.ReadOnlySpan<{FormatKeyValueTypeName(dictionaryType)}>";
-            string suppressSuffix = dictionaryType.KeyValueTypesContainNullableAnnotations ? "!" : "";
-            string valuesExpr = $"values{suppressSuffix}";
-
-            return FormatCollectionInitializer(dictionaryType, (valuesType, valuesExpr));
+            string valuesType = FormatKeyValueTypeName(dictionaryType);
+            return FormatCollectionInitializer(dictionaryType, valuesType);
         }
     }
 
-    private static string FormatCollectionInitializer(DictionaryShapeModel dictionaryType, (string Type, string Expression)? values)
+    private static string FormatCollectionInitializer(DictionaryShapeModel dictionaryType, string? valuesType)
     {
         string factory = dictionaryType.StaticFactoryMethod is not null
           ? $"{dictionaryType.StaticFactoryMethod}({{0}})"
           : $"new {dictionaryType.ImplementationTypeFQN ?? dictionaryType.Type.FullyQualifiedName}({{0}})";
-        return FormatCollectionInitializer(dictionaryType.ConstructorParameters, dictionaryType.KeyType, dictionaryType.ValueType, factory, values);
+        return FormatCollectionInitializer(dictionaryType.ConstructorParameters, dictionaryType.KeyType, dictionaryType.ValueType, factory, valuesType, dictionaryType.KeyValueTypesContainNullableAnnotations);
     }
 }

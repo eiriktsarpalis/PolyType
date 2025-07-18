@@ -1,6 +1,6 @@
 # Core Abstractions
 
-This document provides a walkthrough the core type abstractions found in PolyType. This includes `ITypeShape`, `IPropertyShape` and the visitor types for accessing them. These are typically consumed by library authors looking to build datatype-generic components. Unless otherwise stated, all APIs are found in the `PolyType.Abstractions` namespace.
+This document provides a walkthrough of the core type abstractions found in PolyType. This includes `ITypeShape`, `IPropertyShape` and the visitor types for accessing them. These are typically consumed by library authors looking to build datatype-generic components. Unless otherwise stated, all APIs are found in the `PolyType.Abstractions` namespace.
 
 ## The `ITypeShape` interface
 
@@ -18,7 +18,7 @@ public partial interface IObjectTypeShape<TDeclaringType> : ITypeShape
 
 public partial interface IPropertyShape<TDeclaringType, TPropertyType> : IPropertyShape
 {
-    IObjectTypeShape<TPropertyType> PropertyType { get; }
+    ITypeShape<TPropertyType> PropertyType { get; }
     Func<TDeclaringType, TPropertyType> GetGetter();
     bool HasGetter { get; }
 }
@@ -73,9 +73,9 @@ partial class CounterVisitor : TypeShapeVisitor
 
     public override object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> propertyShape, object? _)
     {
-        Getter<TDeclaringType, TPropertyType> getter = propertyShape.GetGetter(); // extract the getter delegate
+        Func<TDeclaringType, TPropertyType> getter = propertyShape.GetGetter(); // extract the getter delegate
         var propertyTypeCounter = (Func<TPropertyType, int>)propertyShape.PropertyType.Accept(this)!; // extract the counter for the property shape
-        return new Func<TDeclaringType, int>(obj => propertyTypeCounter(getter(ref obj))); // combine into a property-specific counter delegate
+        return new Func<TDeclaringType, int>(obj => propertyTypeCounter(getter(obj))); // combine into a property-specific counter delegate
     }
 }
 ```
@@ -119,7 +119,7 @@ public interface IDictionaryTypeShape<TDictionary, TKey, TValue> : ITypeShape<TD
     ITypeShape<TKey> KeyType { get; }
     ITypeShape<TValue> ValueType { get; }
 
-    Func<IReadOnlyDictionary<TKey, TValue>> GetGetDictionary();
+    Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> GetGetDictionary();
 }
 ```
 
@@ -271,7 +271,7 @@ public interface IUnionTypeShape<TUnion> : ITypeShape<TUnion>
     ITypeShape<TUnion> BaseType { get; }
 
     // Gets a delegate used to compute the union case index for a given value, or -1 if none is found.
-    Getter<TUnion, int> GetGetUnionCaseIndex();
+    Func<TUnion, int> GetGetUnionCaseIndex();
 }
 
 public interface IUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShape
@@ -307,14 +307,14 @@ partial class CounterVisitor : TypeShapeVisitor
     public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? _)
     {
         var getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
-        var baseTypeCounter = (Func<Union, int>)unionShape.BaseType.Accept(this);
+        var baseTypeCounter = (Func<TUnion, int>)unionShape.BaseType.Accept(this);
         var unionCaseCounters = unionShape.UnionCases
-            .Select(unionCase => (Func<Union, int>)unionCase.Accept(this))
+            .Select(unionCase => (Func<TUnion, int>)unionCase.Accept(this))
             .ToArray();
 
-        return new Func<Union, int>(union =>
+        return new Func<TUnion, int>(union =>
         {
-            int index = getUnionCaseIndex(ref union);
+            int index = getUnionCaseIndex(union);
             Func<TUnion, int> counter = index < 0 ? baseTypeCounter : unionCaseCounters[index];
             return counter(union);
         });
@@ -365,21 +365,21 @@ partial class CounterVisitor : TypeShapeVisitor
 {
     public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? _)
     {
-        var surrogateCounter = (Func<TSurrogate, int>)surrogateShape.Accept(this)!;
+        var surrogateCounter = (Func<TSurrogate, int>)surrogateShape.SurrogateType.Accept(this)!;
         var marshaller = surrogateShape.Marshaller;
         return new Func<T, int>(t => surrogateCounter(marshaller.ToSurrogate(t)));
     }
 }
 ```
 
-To recap, the `ITypeShape` model splits .NET types into five separate kinds:
+To recap, the `ITypeShape` model splits .NET types into seven separate kinds:
 
 * `IObjectTypeShape` instances which may or may not define properties,
 * `IEnumerableTypeShape` instances describing enumerable types,
 * `IDictionaryTypeShape` instances describing dictionary types,
-* `IEnumTypeShape` instances describing enum types and
-* `IOptionalTypeShape` instances describing optional types such as `Nullable<T>` or F# option types.
-* `IUnionTypeShape` instances describing union types such as polymorphic type hierarchies or F# discriminated unions.
+* `IEnumTypeShape` instances describing enum types,
+* `IOptionalTypeShape` instances describing optional types such as `Nullable<T>` or F# option types,
+* `IUnionTypeShape` instances describing union types such as polymorphic type hierarchies or F# discriminated unions, and
 * `ISurrogateTypeShape` instances that delegate their shape declaration to surrogate types.
 
 ## Constructing and mutating types
@@ -400,7 +400,7 @@ public interface IPropertyShape<TDeclaringType, TPropertyType>
 public delegate void Setter<TDeclaringType, TPropertyType>(ref TDeclaringType obj, TPropertyType value);
 ```
 
-The setter is defined using a special delegate the accepts the declaring type by reference, ensuring that it has the expected behavior when working with value types. To illustrate how this works, here is a toy example that sets all properties to their default value:
+The setter is defined using a special delegate that accepts the declaring type by reference, ensuring that it has the expected behavior when working with value types. To illustrate how this works, here is a toy example that sets all properties to their default value:
 
 ```C#
 public delegate void Mutator<T>(ref T obj);
@@ -494,7 +494,7 @@ public partial interface IParameterShape<TArgumentState, TParameterType> : IPara
 
 public abstract partial class TypeShapeVisitor
 {
-    object? VisitConstructor<TArgumentState, TParameterType>(IParameterShape<TArgumentState, TParameterType> shape, object? state = null);
+    object? VisitParameter<TArgumentState, TParameterType>(IParameterShape<TArgumentState, TParameterType> shape, object? state = null);
 }
 ```
 
@@ -505,12 +505,11 @@ class EmptyConstructorVisitor : TypeShapeVisitor
 {
     private delegate void ParameterSetter<T>(ref T object);
 
-    public override object? VisitObject<T>(ITypeShape<T> objectShape, object? _)
+    public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? _)
     {
-        IConstructorShape? ctor = objectShape.GetConstructor();
-        return ctor is null
+        return objectShape.Constructor is null
             ? new Func<T>(() => default) // Just return the default if no ctor is found
-            : ctor.Accept(this);
+            : objectShape.Constructor.Accept(this);
     }
 
     public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructorShape, object? _)
@@ -518,7 +517,7 @@ class EmptyConstructorVisitor : TypeShapeVisitor
         Func<TArgumentState> argumentStateCtor = constructorShape.GetArgumentStateConstructor();
         Func<TArgumentState, TDeclaringType> ctor = constructorShape.GetParameterizedConstructor();
         ParameterSetter<TArgumentState>[] parameterSetters = constructorShape.Parameters
-            .Where(param => (ParameterSetter<TArgumentState>)param.Accept(this)!)
+            .Select(param => (ParameterSetter<TArgumentState>)param.Accept(this)!)
             .ToArray();
 
         return new Func<TDeclaringType>(() =>
@@ -558,8 +557,7 @@ record MyPoco(int x, string y);
 Collection types are constructed somewhat differently compared to regular POCOs, using one of the following strategies:
 
 * The collection is mutable and can be populated following the conventions of [C# collection initializers](https://learn.microsoft.com/dotnet/csharp/programming-guide/classes-and-structs/object-and-collection-initializers).
-* The collection can be constructed using a `ReadOnlySpan` of entries. Types declaring factories via the `CollectionBuilderAttribute` map to this strategy.
-* The collection can be constructed using an `IEnumerable` of entries. Typically reserved for immutable collections that expose a relevant constructor.
+* The collection can be constructed from a span of entries. Types declaring factories via the `CollectionBuilderAttribute` or immutable collections map to this strategy.
 * The collection type is not constructible.
 
 These strategies are surfaced via the `CollectionConstructionStrategy` enum:
@@ -570,8 +568,7 @@ public enum CollectionConstructionStrategy
 {
     None = 0,
     Mutable = 1,
-    Span = 2,
-    Enumerable = 4,
+    Parameterized = 2
 }
 ```
 
@@ -583,17 +580,15 @@ public partial interface IEnumerableTypeShape<TEnumerable, TElement>
     CollectionConstructionStrategy ConstructionStrategy { get; }
 
     // Implemented by CollectionConstructionStrategy.Mutable types
-    Func<TEnumerable> GetDefaultConstructor(in CollectionConstructionOptions<TElement> collectionConstructionOptions = default);
+    MutableCollectionConstructor<TKey, TEnumerable> GetDefaultConstructor();
     Setter<TEnumerable, TElement> GetAddElement();
 
-    // Implemented by CollectionConstructionStrategy.Span types
-    SpanConstructor<TElement, TEnumerable> GetSpanConstructor(in CollectionConstructionOptions<TElement> collectionConstructionOptions = default);
-
-    // Implemented by CollectionConstructionStrategy.Enumerable types
-    Func<IEnumerable<TElement>, TEnumerable> GetEnumerableConstructor(in CollectionConstructionOptions<TElement> collectionConstructionOptions = default);
+    // Implemented by CollectionConstructionStrategy.Parameterized types
+    ParameterizedCollectionConstructor<TKey, TElement, TEnumerable> GetParameterizedConstructor();
 }
 
-public delegate TEnumerable SpanConstructor<TElement, TEnumerable>(ReadOnlySpan<TElement> span);
+public delegate TEnumerable MutableCollectionConstructor<TKey, TEnumerable>(in CollectionConstructionOptions<TKey> options = default)
+public delegate TEnumerable ParameterizedCollectionConstructor<TKey, TElement, TDeclaringType>(ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey> options = default);
 ```
 
 Putting it all together, we can extend `EmptyConstructorVisitor` to collection types like so:
@@ -604,12 +599,12 @@ class EmptyConstructorVisitor : TypeShapeVisitor
     public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> typeShape, object? _)
     {
         const int size = 10;
-        var elementFactory = (Func<TElement>)typeShape.Accept(this);
+        var elementFactory = (Func<TElement>)typeShape.ElementType.Accept(this);
         switch (typeShape.ConstructionStrategy)
         {
             case CollectionConstructionStrategy.Mutable:
-                Func<TEnumerable> defaultCtor = typeShape.GetDefaultConstructor();
-                Setter<TEnumerable, TElement> addElement = typeShape.GetAddElement();
+                var defaultCtor = typeShape.GetDefaultConstructor();
+                var addElement = typeShape.GetAddElement();
                 return new Func<TEnumerable>(() =>
                 {
                     TEnumerable value = defaultCtor();
@@ -617,22 +612,13 @@ class EmptyConstructorVisitor : TypeShapeVisitor
                     return value;
                 });
 
-            case CollectionConstructionStrategy.Span:
-                SpanConstructor<TElement, TEnumerable> spanCtor = typeShape.GetSpanConstructor();
+            case CollectionConstructionStrategy.Parameterized:
+                var parameterizedCtor = typeShape.GetParameterizedConstructor();
                 return new Func<TEnumerable>(() =>
                 {
                     var buffer = new TElement[size];
                     for (int i = 0; i < size; i++) buffer[i] = elementFactory();
-                    return spanCtor(buffer);
-                });
-
-            case CollectionConstructionStrategy.Enumerable:
-                Func<IEnumerable<TElement>, TEnumerable> enumerableCtor = typeShape.GetEnumerableConstructor();
-                return new Func<TEnumerable>(() =>
-                {
-                    var buffer = new TElement[size];
-                    for (int i = 0; i < size; i++) buffer[i] = elementFactory();
-                    return enumerableCtor(buffer);
+                    return parameterizedCtor(buffer);
                 });
 
             default:

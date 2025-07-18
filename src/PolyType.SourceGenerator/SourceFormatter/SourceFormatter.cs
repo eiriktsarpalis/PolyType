@@ -145,10 +145,13 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
         TypeId keyType,
         TypeId? valueType,
         string ctorOrFactoryFormat,
-        (string Type, string Expression)? values)
+        string? elementType,
+        bool elementContainsNullableAnnotations)
     {
+        const string Values = "values";
         string optionsTypeName = FormatCollectionConstructionOptionsTypeName(keyType);
-        string valuesParam = values is null ? string.Empty : $"{values.Value.Type} values, ";
+        string valuesParam = elementType is null ? string.Empty : $"global::System.ReadOnlySpan<{elementType}> {Values}, ";
+        string suppressSuffix = elementContainsNullableAnnotations ? "!" : "";
         return $"static ({valuesParam}in {optionsTypeName} options) => {string.Format(CultureInfo.InvariantCulture, ctorOrFactoryFormat, FormatArgs(constructorParameters))}";
 
         string FormatArgs(ImmutableEquatableArray<CollectionConstructorParameter> parameters)
@@ -163,18 +166,17 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
             {
                 builder.Append(parameters[i] switch
                 {
-                    CollectionConstructorParameter.Enumerable or
-                    CollectionConstructorParameter.Span => values!.Value.Expression,
-                    CollectionConstructorParameter.List => $"global::PolyType.SourceGenModel.CollectionHelpers.CreateList<{GetElementTypeFQN()}>({values!.Value.Expression})",
-                    CollectionConstructorParameter.HashSet => $"global::PolyType.SourceGenModel.CollectionHelpers.CreateHashSet<{GetElementTypeFQN()}>({values!.Value.Expression}, options.EqualityComparer)",
-                    CollectionConstructorParameter.Dictionary => $"global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionary<{keyType.FullyQualifiedName}, {valueType!.Value.FullyQualifiedName}>({values!.Value.Expression}, options.EqualityComparer)",
-                    CollectionConstructorParameter.TupleEnumerable => $"global::System.Linq.Enumerable.Select(values, kvp => new global::System.Tuple<{keyType.FullyQualifiedName},{valueType!.Value.FullyQualifiedName}>(kvp.Key, kvp.Value))",
+                    CollectionConstructorParameter.Span => Values + suppressSuffix,
+                    CollectionConstructorParameter.List => $"global::PolyType.SourceGenModel.CollectionHelpers.CreateList<{GetElementTypeFQN()}>({Values}){suppressSuffix}",
+                    CollectionConstructorParameter.HashSet => $"global::PolyType.SourceGenModel.CollectionHelpers.CreateHashSet<{GetElementTypeFQN()}>({Values}, options.EqualityComparer){suppressSuffix}",
+                    CollectionConstructorParameter.Dictionary => $"global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionary<{keyType.FullyQualifiedName}, {valueType!.Value.FullyQualifiedName}>({Values}, options.EqualityComparer){suppressSuffix}",
+                    CollectionConstructorParameter.TupleEnumerable => $"global::PolyType.SourceGenModel.CollectionHelpers.CreateTupleArray<{keyType.FullyQualifiedName}, {valueType!.Value.FullyQualifiedName}>({Values}){suppressSuffix}",
                     CollectionConstructorParameter.EqualityComparer => $"options.EqualityComparer ?? global::System.Collections.Generic.EqualityComparer<{keyType.FullyQualifiedName}>.Default",
                     CollectionConstructorParameter.EqualityComparerOptional => "options.EqualityComparer!",
                     CollectionConstructorParameter.Comparer => $"options.Comparer ?? global::System.Collections.Generic.Comparer<{keyType.FullyQualifiedName}>.Default",
                     CollectionConstructorParameter.ComparerOptional => "options.Comparer!",
                     CollectionConstructorParameter.Capacity => "options.Capacity ?? 0",
-                    _ => new NotSupportedException(),
+                    _ => throw new NotSupportedException(parameters[i].ToString()),
                 });
 
                 builder.Append(", ");

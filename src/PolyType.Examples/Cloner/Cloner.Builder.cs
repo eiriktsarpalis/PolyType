@@ -143,7 +143,7 @@ public static partial class Cloner
             switch (enumerableShape.ConstructionStrategy)
             {
                 case CollectionConstructionStrategy.Mutable:
-                    var defaultCtor = enumerableShape.GetMutableCollectionConstructor();
+                    var defaultCtor = enumerableShape.GetMutableConstructor();
                     var addMember = enumerableShape.GetAddElement();
                     return new Func<TEnumerable?, TEnumerable?>(source =>
                     {
@@ -161,8 +161,8 @@ public static partial class Cloner
                         return target;
                     });
                 
-                case CollectionConstructionStrategy.Span:
-                    var spanCtor = enumerableShape.GetSpanCollectionConstructor();
+                case CollectionConstructionStrategy.Parameterized:
+                    var spanCtor = enumerableShape.GetParameterizedConstructor();
                     return new Func<TEnumerable?, TEnumerable?>(source =>
                     {
                         if (source is null)
@@ -179,18 +179,6 @@ public static partial class Cloner
                         return spanCtor(buffer);
                     });
                 
-                case CollectionConstructionStrategy.Enumerable:
-                    var enumerableCtor = enumerableShape.GetEnumerableCollectionConstructor();
-                    return new Func<TEnumerable?, TEnumerable?>(source =>
-                    {
-                        if (source is null)
-                        {
-                            return source;
-                        }
-
-                        return enumerableCtor(getEnumerable(source).Select(elementCloner)!);
-                    });
-                
                 default:
                     return CreateUnsupportedTypeCloner<TEnumerable>();
             }
@@ -204,7 +192,7 @@ public static partial class Cloner
             switch (dictionaryShape.ConstructionStrategy)
             {
                 case CollectionConstructionStrategy.Mutable:
-                    var defaultCtor = dictionaryShape.GetMutableCollectionConstructor();
+                    var defaultCtor = dictionaryShape.GetMutableConstructor();
                     var addEntry = dictionaryShape.GetAddKeyValuePair();
                     return new Func<TDictionary?, TDictionary?>(source =>
                     {
@@ -223,8 +211,8 @@ public static partial class Cloner
                         return target;
                     });
                 
-                case CollectionConstructionStrategy.Span:
-                    var spanCtor = dictionaryShape.GetSpanCollectionConstructor();
+                case CollectionConstructionStrategy.Parameterized:
+                    var spanCtor = dictionaryShape.GetParameterizedConstructor();
                     return new Func<TDictionary?, TDictionary?>(source =>
                     {
                         if (source is null)
@@ -240,18 +228,6 @@ public static partial class Cloner
                         }
                         
                         return spanCtor(buffer);
-                    });
-                
-                case CollectionConstructionStrategy.Enumerable:
-                    var enumerableCtor = dictionaryShape.GetEnumerableCollectionConstructor();
-                    return new Func<TDictionary?, TDictionary?>(source =>
-                    {
-                        if (source is null)
-                        {
-                            return source;
-                        }
-
-                        return enumerableCtor(getDictionary(source).Select(e => new KeyValuePair<TKey, TValue>(keyCloner(e.Key)!, valueCloner(e.Value)!)));
                     });
                 
                 default:

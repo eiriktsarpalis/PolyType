@@ -120,7 +120,7 @@ public static partial class ConfigurationBinderTS
             switch (enumerableShape.ConstructionStrategy)
             {
                 case CollectionConstructionStrategy.Mutable:
-                    MutableCollectionConstructor<TElement, TEnumerable> defaultCtor = enumerableShape.GetMutableCollectionConstructor();
+                    MutableCollectionConstructor<TElement, TEnumerable> defaultCtor = enumerableShape.GetMutableConstructor();
                     Setter<TEnumerable, TElement> addElement = enumerableShape.GetAddElement();
                     return new Func<IConfiguration, TEnumerable?>(configuration =>
                     {
@@ -139,8 +139,8 @@ public static partial class ConfigurationBinderTS
                         return enumerable;
                     });
                 
-                case CollectionConstructionStrategy.Span:
-                    SpanCollectionConstructor<TElement, TElement, TEnumerable> spanCtor = enumerableShape.GetSpanCollectionConstructor();
+                case CollectionConstructionStrategy.Parameterized:
+                    ParameterizedCollectionConstructor<TElement, TElement, TEnumerable> spanCtor = enumerableShape.GetParameterizedConstructor();
                     return new Func<IConfiguration, TEnumerable?>(configuration =>
                     {
                         if (IsNullConfiguration(configuration))
@@ -156,25 +156,6 @@ public static partial class ConfigurationBinderTS
                         }
 
                         return spanCtor(buffer.AsSpan());
-                    });
-                
-                case CollectionConstructionStrategy.Enumerable:
-                    EnumerableCollectionConstructor<TElement, TElement, TEnumerable> enumerableCtor = enumerableShape.GetEnumerableCollectionConstructor();
-                    return new Func<IConfiguration, TEnumerable?>(configuration =>
-                    {
-                        if (IsNullConfiguration(configuration))
-                        {
-                            return default;
-                        }
-                        
-                        var buffer = new List<TElement>();
-                        foreach (IConfigurationSection child in configuration.GetChildren())
-                        {
-                            TElement element = elementBinder(child);
-                            buffer.Add(element);
-                        }
-
-                        return enumerableCtor(buffer);
                     });
                 
                 default:
@@ -195,7 +176,7 @@ public static partial class ConfigurationBinderTS
             switch (dictionaryShape.ConstructionStrategy)
             {
                 case CollectionConstructionStrategy.Mutable:
-                    MutableCollectionConstructor<TKey, TDictionary> defaultCtor = dictionaryShape.GetMutableCollectionConstructor();
+                    MutableCollectionConstructor<TKey, TDictionary> defaultCtor = dictionaryShape.GetMutableConstructor();
                     Setter<TDictionary, KeyValuePair<TKey, TValue>> addEntry = dictionaryShape.GetAddKeyValuePair();
                     return new Func<IConfiguration, TDictionary?>(configuration =>
                     {
@@ -219,8 +200,8 @@ public static partial class ConfigurationBinderTS
                         return dict;
                     });
                 
-                case CollectionConstructionStrategy.Span:
-                    SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> spanCtor = dictionaryShape.GetSpanCollectionConstructor();
+                case CollectionConstructionStrategy.Parameterized:
+                    ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> spanCtor = dictionaryShape.GetParameterizedConstructor();
                     return new Func<IConfiguration, TDictionary?>(configuration =>
                     {
                         if (IsNullConfiguration(configuration))
@@ -241,30 +222,6 @@ public static partial class ConfigurationBinderTS
                         }
 
                         return spanCtor(buffer.AsSpan());
-                    });
-                
-                case CollectionConstructionStrategy.Enumerable:
-                    EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> enumerableCtor = dictionaryShape.GetEnumerableCollectionConstructor();
-                    return new Func<IConfiguration, TDictionary?>(configuration =>
-                    {
-                        if (IsNullConfiguration(configuration))
-                        {
-                            return default;
-                        }
-                        
-                        var buffer = new List<KeyValuePair<TKey, TValue>>();
-                        foreach (IConfigurationSection section in configuration.GetChildren())
-                        {
-                            if (section.Key is TypeDiscriminator)
-                            {
-                                continue;
-                            }
-
-                            KeyValuePair<TKey, TValue> entry = new(keyBinder(section), valueBinder(section));
-                            buffer.Add(entry);
-                        }
-
-                        return enumerableCtor(buffer);
                     });
                 
                 default:

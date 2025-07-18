@@ -103,12 +103,12 @@ internal sealed class JsonMutableEnumerableConverter<TEnumerable, TElement>(
     }
 }
 
-internal abstract class JsonImmutableEnumerableConverter<TEnumerable, TElement>(
+internal sealed class JsonParameterizedEnumerableConverter<TEnumerable, TElement>(
     JsonConverter<TElement> elementConverter,
-    IEnumerableTypeShape<TEnumerable, TElement> typeShape)
+    IEnumerableTypeShape<TEnumerable, TElement> typeShape,
+    ParameterizedCollectionConstructor<TElement, TElement, TEnumerable> spanConstructor)
     : JsonEnumerableConverter<TEnumerable, TElement>(elementConverter, typeShape)
 {
-    private protected abstract TEnumerable Construct(PooledList<TElement> buffer);
     public sealed override TEnumerable? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {   
         if (default(TEnumerable) is null && reader.TokenType is JsonTokenType.Null)
@@ -129,28 +129,8 @@ internal abstract class JsonImmutableEnumerableConverter<TEnumerable, TElement>(
             reader.EnsureRead();
         }
 
-        return Construct(buffer);
+        return spanConstructor(buffer.AsSpan());
     }
-}
-
-internal sealed class JsonEnumerableConstructorEnumerableConverter<TEnumerable, TElement>(
-    JsonConverter<TElement> elementConverter,
-    IEnumerableTypeShape<TEnumerable, TElement> typeShape,
-    EnumerableCollectionConstructor<TElement, TElement, TEnumerable> enumerableConstructor) 
-    : JsonImmutableEnumerableConverter<TEnumerable, TElement>(elementConverter, typeShape)
-{
-    private protected override TEnumerable Construct(PooledList<TElement> buffer)
-        => enumerableConstructor(buffer.ToArray());
-}
-
-internal sealed class JsonSpanConstructorEnumerableConverter<TEnumerable, TElement>(
-    JsonConverter<TElement> elementConverter,
-    IEnumerableTypeShape<TEnumerable, TElement> typeShape,
-    SpanCollectionConstructor<TElement, TElement, TEnumerable> spanConstructor) 
-    : JsonImmutableEnumerableConverter<TEnumerable, TElement>(elementConverter, typeShape)
-{
-    private protected override TEnumerable Construct(PooledList<TElement> buffer)
-        => spanConstructor(buffer.AsSpan());
 }
 
 internal sealed class JsonMDArrayConverter<TArray, TElement>(JsonConverter<TElement> elementConverter, int rank) : JsonConverter<TArray>

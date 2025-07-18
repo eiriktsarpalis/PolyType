@@ -1,4 +1,5 @@
 ﻿using PolyType.Abstractions;
+using PolyType.SourceGenModel;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -471,8 +472,8 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
 
     public MutableCollectionConstructor<TKey, TDeclaringType> CreateMutableCollectionConstructor<TKey, TElement, TDeclaringType>(MutableCollectionConstructorInfo collectionCtorInfo)
     {
-        Action<CollectionConstructionOptions<TKey>, object?[]>[] argumentSetters = collectionCtorInfo.Signature
-            .Select(CreateArgumentSetter)
+        SpanAction<TElement, CollectionConstructionOptions<TKey>, object?[]>[] argumentSetters = collectionCtorInfo.Signature
+            .Select(CreateArgumentSetter<TElement, TKey>)
             .ToArray();
 
         var ctorInfo = collectionCtorInfo.DefaultConstructor;
@@ -481,125 +482,91 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
             var args = new object?[argumentSetters.Length];
             for (int i = 0; i < argumentSetters.Length; i++)
             {
-                argumentSetters[i](opts, args);
+                argumentSetters[i]([], opts, args);
             }
 
             return (TDeclaringType)ctorInfo.Invoke(args)!;
         };
-
-        static Action<CollectionConstructionOptions<TKey>, object?[]> CreateArgumentSetter(CollectionConstructorParameter type, int index)
-        {
-            return type switch
-            {
-                CollectionConstructorParameter.Capacity => (opts, args) => args[index] = opts.Capacity ?? 4,
-                CollectionConstructorParameter.CapacityOptional => (opts, args) => args[index] = opts.Capacity,
-                CollectionConstructorParameter.EqualityComparer => (opts, args) => args[index] = opts.EqualityComparer ?? EqualityComparer<TKey>.Default,
-                CollectionConstructorParameter.EqualityComparerOptional => (opts, args) => args[index] = opts.EqualityComparer,
-                CollectionConstructorParameter.Comparer => (opts, args) => args[index] = opts.Comparer ?? Comparer<TKey>.Default,
-                CollectionConstructorParameter.ComparerOptional => (opts, args) => args[index] = opts.Comparer,
-                _ => throw new NotSupportedException(type.ToString()),
-            };
-        }
     }
 
-    public EnumerableCollectionConstructor<TKey, TElement, TDeclaringType> CreateEnumerableCollectionConstructor<TKey, TElement, TDeclaringType>(ParameterizedCollectionConstructorInfo collectionCtorInfo)
-    {
-        Func<IEnumerable<TElement>, IEqualityComparer<TKey>?, IDictionary>? dictionaryFactory = null;
-        Debug.Assert(collectionCtorInfo.Factory is MethodInfo { IsStatic: true } or ConstructorInfo { IsStatic: false });
-        Action<IEnumerable<TElement>, CollectionConstructionOptions<TKey>, object?[]>[] argumentSetters = collectionCtorInfo.Signature
-            .Select(CreateArgumentSetter)
-            .ToArray();
-
-        if (collectionCtorInfo.Factory is MethodInfo methodInfo)
-        {
-            return (IEnumerable<TElement> enumerable, in CollectionConstructionOptions<TKey> opts) =>
-            {
-                object?[] args = BuildArguments(enumerable, opts);
-                return (TDeclaringType)methodInfo.Invoke(null, args)!;
-            };
-        }
-
-        var ctorInfo = (ConstructorInfo)collectionCtorInfo.Factory;
-        return (IEnumerable<TElement> enumerable, in CollectionConstructionOptions<TKey> opts) =>
-        {
-            object?[] args = BuildArguments(enumerable, opts);
-            return (TDeclaringType)ctorInfo.Invoke(args)!;
-        };
-
-        object?[] BuildArguments(IEnumerable<TElement> enumerable, in CollectionConstructionOptions<TKey> opts)
-        {
-            var args = new object?[argumentSetters.Length];
-            for (int i = 0; i < argumentSetters.Length; i++)
-            {
-                argumentSetters[i](enumerable, opts, args);
-            }
-
-            return args;
-        }
-
-        Action<IEnumerable<TElement>, CollectionConstructionOptions<TKey>, object?[]> CreateArgumentSetter(CollectionConstructorParameter type, int index)
-        {
-            return type switch
-            {
-                CollectionConstructorParameter.Enumerable => (enumerable, opts, args) => args[index] = enumerable,
-                CollectionConstructorParameter.List => (enumerable, opts, args) => args[index] = enumerable.ToList(),
-                CollectionConstructorParameter.HashSet => (enumerable, opts, args) => args[index] = CreateHashSet(enumerable, opts.EqualityComparer),
-                CollectionConstructorParameter.Dictionary => (enumerable, opts, args) => args[index] = (dictionaryFactory ??= CreateDictionaryFactory())(enumerable, opts.EqualityComparer),
-                CollectionConstructorParameter.Capacity => (enumerable, opts, args) => args[index] = opts.Capacity ?? 0,
-                CollectionConstructorParameter.CapacityOptional => (enumerable, opts, args) => args[index] = opts.Capacity,
-                CollectionConstructorParameter.EqualityComparer => (enumerable, opts, args) => args[index] = opts.EqualityComparer ?? EqualityComparer<TKey>.Default,
-                CollectionConstructorParameter.EqualityComparerOptional => (enumerable, opts, args) => args[index] = opts.EqualityComparer,
-                CollectionConstructorParameter.Comparer => (enumerable, opts, args) => args[index] = opts.Comparer ?? Comparer<TKey>.Default,
-                CollectionConstructorParameter.ComparerOptional => (enumerable, opts, args) => args[index] = opts.Comparer,
-                _ => throw new NotSupportedException(), // Not supported in the current implementation.
-            };
-
-            static HashSet<TElement> CreateHashSet(IEnumerable<TElement> enumerable, IEqualityComparer<TKey>? comparer)
-            {
-                var hashSet = new HashSet<TElement>((IEqualityComparer<TElement>)(object)comparer!);
-                foreach (TElement element in enumerable)
-                {
-                    hashSet.Add(element);
-                }
-
-                return hashSet;
-            }
-        }
-
-        Func<IEnumerable<TElement>, IEqualityComparer<TKey>?, IDictionary> CreateDictionaryFactory()
-        {
-            Debug.Assert(typeof(TElement).IsGenericType && typeof(TElement).GetGenericTypeDefinition() == typeof(KeyValuePair<,>));
-            MethodInfo factory = typeof(ReflectionMemberAccessor)
-                .GetMethod(nameof(CreateDictionary), BindingFlags.NonPublic | BindingFlags.Static)!
-                .MakeGenericMethod(typeof(TElement).GetGenericArguments());
-
-            return factory.CreateDelegate<Func<IEnumerable<TElement>, IEqualityComparer<TKey>?, IDictionary>>();
-        }
-    }
-
-    private static Dictionary<TKey, TValue> CreateDictionary<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> entries, IEqualityComparer<TKey>? comparer)
-        where TKey : notnull
-    {
-#if NET
-        return entries.ToDictionary(comparer);
-#else
-        return entries.ToDictionary(kvp => kvp.Key, kvp => kvp.Value, comparer);
-#endif
-    }
-
-    public SpanCollectionConstructor<TKey, TElement, TCollection> CreateSpanCollectionConstructor<TKey, TElement, TCollection>(ParameterizedCollectionConstructorInfo constructorInfo)
+    public ParameterizedCollectionConstructor<TKey, TElement, TCollection> CreateParameterizedCollectionConstructor<TKey, TElement, TCollection>(ParameterizedCollectionConstructorInfo constructorInfo)
     {
         if (constructorInfo is { Factory: MethodInfo factory, Signature: [CollectionConstructorParameter.Span] })
         {
             SpanFunc<TElement, TCollection> spanFunc = factory.CreateDelegate<SpanFunc<TElement, TCollection>>();
-            return (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TKey> _) =>
+            return (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TKey> _) => spanFunc(span);
+        }
+
+        SpanAction<TElement, CollectionConstructionOptions<TKey>, object?[]>[] argumentSetters = constructorInfo.Signature
+            .Select(CreateArgumentSetter<TElement, TKey>)
+            .ToArray();
+
+        if (constructorInfo.Factory is MethodInfo methodInfo)
+        {
+            return (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TKey> opts) =>
             {
-                return spanFunc(span);
+                object?[] args = BuildArguments(span, opts);
+                return (TCollection)methodInfo.Invoke(null, args)!;
             };
         }
 
-        Debug.Fail("Should not be reached.");
-        throw new NotSupportedException("Invoking methods that accept span is not supported with reflection emit disabled.");
+        var ctorInfo = (ConstructorInfo)constructorInfo.Factory;
+        return (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TKey> opts) =>
+        {
+            object?[] args = BuildArguments(span, opts);
+            return (TCollection)ctorInfo.Invoke(args)!;
+        };
+
+        object?[] BuildArguments(ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TKey> opts)
+        {
+            var args = new object?[argumentSetters.Length];
+            for (int i = 0; i < argumentSetters.Length; i++)
+            {
+                argumentSetters[i](span, opts, args);
+            }
+
+            return args;
+        }
+    }
+
+    private static SpanAction<TElement, CollectionConstructionOptions<TKey>, object?[]> CreateArgumentSetter<TElement, TKey>(CollectionConstructorParameter type, int index)
+    {
+        SpanFunc<TElement, IEqualityComparer<TKey>?, IDictionary>? dictionaryFactory = null;
+        SpanFunc<TElement, IEnumerable>? tupleEnumerableFactory = null;
+        return type switch
+        {
+            CollectionConstructorParameter.List => (span, opts, args) => args[index] = CollectionHelpers.CreateList(span),
+            CollectionConstructorParameter.HashSet => (span, opts, args) => args[index] = CollectionHelpers.CreateHashSet(span, (IEqualityComparer<TElement>?)(object?)opts.Capacity),
+            CollectionConstructorParameter.Dictionary => (span, opts, args) => args[index] = (dictionaryFactory ??= CreateDictionaryFactory())(span, opts.EqualityComparer),
+            CollectionConstructorParameter.TupleEnumerable => (span, opts, args) => args[index] = (tupleEnumerableFactory ??= CreateTupleEnumerableFactory())(span),
+            CollectionConstructorParameter.Capacity => (span, opts, args) => args[index] = opts.Capacity ?? 0,
+            CollectionConstructorParameter.CapacityOptional => (span, opts, args) => args[index] = opts.Capacity,
+            CollectionConstructorParameter.EqualityComparer => (span, opts, args) => args[index] = opts.EqualityComparer ?? EqualityComparer<TKey>.Default,
+            CollectionConstructorParameter.EqualityComparerOptional => (span, opts, args) => args[index] = opts.EqualityComparer,
+            CollectionConstructorParameter.Comparer => (span, opts, args) => args[index] = opts.Comparer ?? Comparer<TKey>.Default,
+            CollectionConstructorParameter.ComparerOptional => (span, opts, args) => args[index] = opts.Comparer,
+            _ => throw new NotSupportedException(type.ToString()), // Not supported in the current implementation.
+        };
+
+        SpanFunc<TElement, IEqualityComparer<TKey>?, IDictionary> CreateDictionaryFactory()
+        {
+            Debug.Assert(typeof(TElement).IsGenericType && typeof(TElement).GetGenericTypeDefinition() == typeof(KeyValuePair<,>));
+            MethodInfo factory = typeof(CollectionHelpers)
+                .GetMethod(nameof(CollectionHelpers.CreateDictionary), BindingFlags.Public | BindingFlags.Static)!
+                .MakeGenericMethod(typeof(TElement).GetGenericArguments());
+
+            return factory.CreateDelegate<SpanFunc<TElement, IEqualityComparer<TKey>?, IDictionary>>();
+        }
+
+        SpanFunc<TElement, IEnumerable> CreateTupleEnumerableFactory()
+        {
+            Debug.Assert(typeof(TElement).IsGenericType && typeof(TElement).GetGenericTypeDefinition() == typeof(KeyValuePair<,>));
+            MethodInfo factory = typeof(CollectionHelpers)
+                .GetMethod(nameof(CollectionHelpers.CreateTupleArray), BindingFlags.Public | BindingFlags.Static)!
+                .MakeGenericMethod(typeof(TElement).GetGenericArguments());
+
+            return factory.CreateDelegate<SpanFunc<TElement, IEnumerable>>();
+        }
     }
 
     private static Func<object?[]> CreateConstructorArgumentArrayFunc(IConstructorShapeInfo ctorInfo)
@@ -646,4 +613,6 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         => parameters.Select(p => p.DefaultValue).ToArray();
 
     private delegate TResult SpanFunc<TElement, TResult>(ReadOnlySpan<TElement> span);
+    private delegate TResult SpanFunc<TElement, TArg1, TResult>(ReadOnlySpan<TElement> span, TArg1 arg1);
+    private delegate void SpanAction<TElement, TArg1, TArg2>(ReadOnlySpan<TElement> span, TArg1 arg1, TArg2 arg2);
 }

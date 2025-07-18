@@ -18,26 +18,26 @@ public partial class TypeDataModelGenerator
         }
 
         DictionaryKind kind = default;
-        CollectionModelConstructionStrategy constructionStrategy = CollectionModelConstructionStrategy.None;
+        bool isParameterizedFactory = false;
         IMethodSymbol? factoryMethod = null;
         CollectionConstructorParameter[]? factorySignature = null;
         ITypeSymbol? keyType = null;
         ITypeSymbol? valueType = null;
         bool indexerIsExplicitImplementation = false;
 
-        if (type.GetCompatibleGenericBaseType(KnownSymbols.IReadOnlyDictionaryOfTKeyTValue) is { } genericReadOnlyIDictInstance)
+        if (namedType.GetCompatibleGenericBaseType(KnownSymbols.IReadOnlyDictionaryOfTKeyTValue) is { } genericReadOnlyIDictInstance)
         {
             keyType = genericReadOnlyIDictInstance.TypeArguments[0];
             valueType = genericReadOnlyIDictInstance.TypeArguments[1];
             kind = DictionaryKind.IReadOnlyDictionaryOfKV;
         }
-        else if (type.GetCompatibleGenericBaseType(KnownSymbols.IDictionaryOfTKeyTValue) is { } genericIDictInstance)
+        else if (namedType.GetCompatibleGenericBaseType(KnownSymbols.IDictionaryOfTKeyTValue) is { } genericIDictInstance)
         {
             keyType = genericIDictInstance.TypeArguments[0];
             valueType = genericIDictInstance.TypeArguments[1];
             kind = DictionaryKind.IDictionaryOfKV;
         }
-        else if (KnownSymbols.IDictionary.IsAssignableFrom(type))
+        else if (KnownSymbols.IDictionary.IsAssignableFrom(namedType))
         {
             keyType = KnownSymbols.Compilation.ObjectType;
             valueType = KnownSymbols.Compilation.ObjectType;
@@ -48,57 +48,43 @@ public partial class TypeDataModelGenerator
             return false; // Not a dictionary type
         }
 
-        var elementType = KnownSymbols.KeyValuePairOfKV!.Construct(keyType, valueType);
-        var ctorCandidates = ClassifyConstructors(type, elementType, keyType, valueType, namedType.Constructors
-            .Where(ctor => ctor is { DeclaredAccessibility: Accessibility.Public, IsStatic: false }))
-            .ToArray();
-
-        if (GetImmutableDictionaryFactory(namedType) is { } bestImmutableDictionaryCtor)
+        if (namedType.TypeKind is TypeKind.Interface)
         {
-            (factoryMethod, factorySignature, constructionStrategy) = bestImmutableDictionaryCtor;
-        }
-        else if (namedType.TypeKind == TypeKind.Interface)
-        {
-            if (namedType.TypeArguments.Length == 2)
+            if (namedType.TypeParameters.Length == 2)
             {
-                if (KnownSymbols.DictionaryOfTKeyTValue?.GetCompatibleGenericBaseType(namedType.ConstructedFrom) != null)
+                if (KnownSymbols.DictionaryOfTKeyTValue?.GetCompatibleGenericBaseType(namedType.ConstructedFrom) is not null)
                 {
                     // Handle IDictionary<TKey, TValue> and IReadOnlyDictionary<TKey, TValue> using Dictionary<TKey, TValue>
-                    INamedTypeSymbol dictOfTKeyTValue = KnownSymbols.DictionaryOfTKeyTValue!.Construct(keyType, valueType);
-                    if (ResolveBestMutableConstructor(namedType, dictOfTKeyTValue, elementType, keyType, valueType) is { } dictionaryCtor)
-                    {
-                        (factoryMethod, factorySignature, constructionStrategy) = dictionaryCtor;
-                    }
+                    namedType = KnownSymbols.DictionaryOfTKeyTValue!.Construct(keyType, valueType);
                 }
-                else if (KnownSymbols.ImmutableDictionary?.GetCompatibleGenericBaseType(namedType.ConstructedFrom) != null)
+                else if (KnownSymbols.ImmutableDictionary?.GetCompatibleGenericBaseType(namedType.ConstructedFrom) is not null)
                 {
                     // Handle IImmutableDictionary<TKey, TValue> using ImmutableDictionary<TKey, TValue>
-                    INamedTypeSymbol immutableDictOfTKeyTValue = KnownSymbols.ImmutableDictionary!.Construct(keyType, valueType);
-                    if (GetImmutableDictionaryFactory(immutableDictOfTKeyTValue) is { } immutableDictCtor)
-                    {
-                        (factoryMethod, factorySignature, constructionStrategy) = immutableDictCtor;
-                    }
+                    namedType = KnownSymbols.ImmutableDictionary!.Construct(keyType, valueType);
                 }
             }
             else if (SymbolEqualityComparer.Default.Equals(namedType, KnownSymbols.IDictionary))
             {
                 // Handle IDictionary using Dictionary<object, object>
-                INamedTypeSymbol dictOfObject = KnownSymbols.DictionaryOfTKeyTValue!.Construct(keyType, valueType);
-                if (ResolveBestMutableConstructor(namedType, dictOfObject, elementType, keyType, valueType) is { } dictionaryCtor)
-                {
-                    (factoryMethod, factorySignature, constructionStrategy) = dictionaryCtor;
-                }
+                namedType = KnownSymbols.DictionaryOfTKeyTValue!.Construct(keyType, valueType);
             }
         }
-        else if (
-            ResolveBestConstructor(ctorCandidates.Where(ctor => ctor.Strategy is CollectionModelConstructionStrategy.Mutable)) is { } bestMutableCtor &&
-            ContainsSettableIndexer(type, keyType, valueType, out indexerIsExplicitImplementation))
+
+        var elementType = KnownSymbols.KeyValuePairOfKV!.Construct(keyType, valueType);
+
+        if (ResolveBestCollectionCtor(
+            namedType,
+            namedType.GetConstructors(),
+            hasAddMethod: ContainsSettableIndexer(namedType, keyType, valueType, out indexerIsExplicitImplementation),
+            elementType,
+            keyType,
+            valueType) is { } bestCtor)
         {
-            (factoryMethod, factorySignature, constructionStrategy) = bestMutableCtor;
+            (factoryMethod, factorySignature, isParameterizedFactory) = bestCtor;
         }
-        else if (ResolveBestConstructor(ctorCandidates.Where(ctor => ctor.Strategy is not CollectionModelConstructionStrategy.Mutable)) is { } bestParameterizedCtor)
+        else if (GetImmutableDictionaryFactory(namedType) is { } bestImmutableDictionaryCtor)
         {
-            (factoryMethod, factorySignature, constructionStrategy) = bestParameterizedCtor;
+            (factoryMethod, factorySignature, isParameterizedFactory) = bestImmutableDictionaryCtor;
         }
 
         if ((status = IncludeNestedType(keyType, ref ctx)) != TypeDataModelGenerationStatus.Success ||
@@ -116,7 +102,6 @@ public partial class TypeDataModelGenerator
             ValueType = valueType,
             DictionaryKind = kind,
             DerivedTypes = IncludeDerivedTypes(type, ref ctx, TypeShapeRequirements.Full),
-            ConstructionStrategy = constructionStrategy,
             FactoryMethod = factoryMethod,
             FactorySignature = factorySignature?.ToImmutableArray() ?? ImmutableArray<CollectionConstructorParameter>.Empty,
             IndexerIsExplicitInterfaceImplementation = indexerIsExplicitImplementation,
@@ -145,36 +130,31 @@ public partial class TypeDataModelGenerator
             return hasSettableIndexer;
         }
 
-        (IMethodSymbol Factory, CollectionConstructorParameter[] Signature, CollectionModelConstructionStrategy Strategy)? GetImmutableDictionaryFactory(INamedTypeSymbol namedType)
+        (IMethodSymbol Factory, CollectionConstructorParameter[] Signature, bool IsParameterized)? GetImmutableDictionaryFactory(INamedTypeSymbol namedType)
         {
             if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.ImmutableDictionary))
             {
-                return FindCreateRangeMethods("System.Collections.Immutable.ImmutableDictionary");
+                return ResolveFactoryMethod("System.Collections.Immutable.ImmutableDictionary");
             }
 
             if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.ImmutableSortedDictionary))
             {
-                return FindCreateRangeMethods("System.Collections.Immutable.ImmutableSortedDictionary");
+                return ResolveFactoryMethod("System.Collections.Immutable.ImmutableSortedDictionary");
             }
 
             if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.FrozenDictionary))
             {
-                return FindCreateRangeMethods("System.Collections.Frozen.FrozenDictionary", factoryName: "ToFrozenDictionary");
+                return ResolveFactoryMethod("System.Collections.Frozen.FrozenDictionary", factoryName: "ToFrozenDictionary");
             }
 
             if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.FSharpMap))
             {
-                IMethodSymbol factory = KnownSymbols.Compilation.GetTypeByMetadataName("Microsoft.FSharp.Collections.MapModule")
-                    .GetMethodSymbol(method =>
-                        method is { IsStatic: true, IsGenericMethod: true, Name: "OfSeq", Parameters: [{ Type.Name: "IEnumerable" }] })
-                    .MakeGenericMethod(namedType.TypeArguments[0], namedType.TypeArguments[1])!;
-
-                return (factory, [CollectionConstructorParameter.TupleEnumerable], CollectionModelConstructionStrategy.TupleEnumerable);
+                return ResolveFactoryMethod("Microsoft.FSharp.Collections.MapModule", "OfSeq");
             }
 
             return null;
 
-            (IMethodSymbol Factory, CollectionConstructorParameter[] Signature, CollectionModelConstructionStrategy Strategy)? FindCreateRangeMethods(string typeName, string? factoryName = null)
+            (IMethodSymbol Factory, CollectionConstructorParameter[] Signature, bool IsParameterized)? ResolveFactoryMethod(string typeName, string? factoryName = null)
             {
                 INamedTypeSymbol? typeSymbol = KnownSymbols.Compilation.GetTypeByMetadataName(typeName);
                 if (typeSymbol is null)
@@ -189,8 +169,7 @@ public partial class TypeDataModelGenerator
                         (factoryName is null ? method.Name is "Create" or "CreateRange" : method.Name == factoryName))
                     .Select(method => method.MakeGenericMethod(keyType, valueType)!);
 
-                var classifiedCtors = ClassifyConstructors(type, elementType, keyType, valueType, candidates);
-                return ResolveBestConstructor(classifiedCtors);
+                return ResolveBestCollectionCtor(type, candidates, hasAddMethod: false, elementType, keyType, valueType: null);
             }
         }
     }

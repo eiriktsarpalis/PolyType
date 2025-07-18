@@ -26,6 +26,14 @@ internal static class RoslynHelpers
         return property;
     }
 
+    public static IEnumerable<IMethodSymbol> GetConstructors(this INamedTypeSymbol type) =>
+        type.Constructors.Where(ctor => ctor is { IsStatic: false, DeclaredAccessibility: Accessibility.Public });
+
+    public static IEnumerable<IMethodSymbol> GetMethods(this INamedTypeSymbol type, string name, bool isStatic) =>
+         type.GetMembers(name)
+            .OfType<IMethodSymbol>()
+            .Where(method => method.IsStatic == isStatic && method.DeclaredAccessibility == Accessibility.Public);
+
     public static bool ContainsLocation(this Compilation compilation, Location location) =>
         location.SourceTree != null && compilation.ContainsSyntaxTree(location.SourceTree);
 
@@ -225,50 +233,43 @@ internal static class RoslynHelpers
                 ns.ToDisplayString() == "System.Diagnostics.CodeAnalysis");
     }
 
-    public static bool TryGetCollectionBuilderAttribute(
+    public static IEnumerable<IMethodSymbol> GetCollectionBuilderAttributeMethods(
         this Compilation compilation,
         INamedTypeSymbol type,
         ITypeSymbol elementType,
-        [NotNullWhen(true)] out IMethodSymbol? builderMethod,
         CancellationToken cancellationToken)
     {
-        builderMethod = null;
         AttributeData? attributeData = type.GetAttributes().FirstOrDefault(static attr =>
             attr is { AttributeClass.Name: "CollectionBuilderAttribute" } &&
             attr.AttributeClass.ContainingNamespace.ToDisplayString() == "System.Runtime.CompilerServices");
 
         if (!TryParseAttributeData(attributeData, out INamedTypeSymbol? builderType, out string? methodName))
         {
-            return false;
+            yield break;
         }
 
         var cmp = SymbolEqualityComparer.Default;
         foreach (IMethodSymbol method in builderType.GetMembers().OfType<IMethodSymbol>())
         {
-            if (method.IsStatic && method.Name == methodName && method.Parameters is [{ Type: INamedTypeSymbol parameterType }] &&
-                parameterType.IsGenericType && parameterType.ConstructedFrom.Name is "ReadOnlySpan")
+            if (!method.IsStatic || method.Name != methodName)
             {
-                ITypeSymbol spanElementType = parameterType.TypeArguments[0];
-                if (cmp.Equals(spanElementType, elementType) && type.IsAssignableFrom(method.ReturnType))
+                continue;
+            }
+
+            if (method.IsGenericMethod)
+            {
+                if (method.TypeArguments.Length != 1)
                 {
-                    builderMethod = method;
-                    return true;
+                    continue;
                 }
 
-                if (method.IsGenericMethod && method.TypeArguments is [ITypeSymbol typeParameter] &&
-                    cmp.Equals(spanElementType, typeParameter))
-                {
-                    IMethodSymbol specializedMethod = method.Construct(elementType);
-                    if (type.IsAssignableFrom(specializedMethod.ReturnType))
-                    {
-                        builderMethod = specializedMethod;
-                        // Continue searching since we prefer non-generic methods.
-                    }
-                }
+                yield return method.Construct(elementType);
+            }
+            else
+            {
+                yield return method;
             }
         }
-
-        return builderMethod != null;
 
         bool TryParseAttributeData(
             AttributeData? attributeData,

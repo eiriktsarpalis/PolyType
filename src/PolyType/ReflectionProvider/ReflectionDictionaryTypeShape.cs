@@ -19,8 +19,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     private CollectionConstructorInfo? _constructorInfo;
     private Setter<TDictionary, KeyValuePair<TKey, TValue>>? _addDelegate;
     private MutableCollectionConstructor<TKey, TDictionary>? _mutableCtorDelegate;
-    private EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>? _enumerableCtorDelegate;
-    private SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>? _spanCtorDelegate;
+    private ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>? _spanCtorDelegate;
 
     private CollectionConstructorInfo ConstructorInfo
     {
@@ -57,7 +56,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         }
     }
 
-    public MutableCollectionConstructor<TKey, TDictionary> GetMutableCollectionConstructor()
+    public MutableCollectionConstructor<TKey, TDictionary> GetMutableConstructor()
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
         {
@@ -74,57 +73,32 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         }
     }
 
-    public EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetEnumerableCollectionConstructor()
+    public ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetParameterizedConstructor()
     {
-        if (ConstructionStrategy is not CollectionConstructionStrategy.Enumerable)
+        if (ConstructionStrategy is not CollectionConstructionStrategy.Parameterized)
         {
             Throw();
-            static void Throw() => throw new InvalidOperationException("The current dictionary shape does not support enumerable constructors.");
+            static void Throw() => throw new InvalidOperationException("The current dictionary shape does not support parameterized constructors.");
         }
 
-        return _enumerableCtorDelegate ?? ReflectionHelpers.ExchangeIfNull(ref _enumerableCtorDelegate, CreateEnumerableCtor());
-
-        EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> CreateEnumerableCtor()
+        return _spanCtorDelegate ?? ReflectionHelpers.ExchangeIfNull(ref _spanCtorDelegate, CreateParameterizedCtor());
+        ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> CreateParameterizedCtor()
         {
             DebugExt.Assert(_constructorInfo is ParameterizedCollectionConstructorInfo);
-            var parameterizedCtorInfo = (ParameterizedCollectionConstructorInfo)_constructorInfo;
-            if (parameterizedCtorInfo.IsFSharpMap)
-            {
-                // F# maps are constructed using a static method that takes a sequence of class tuples.
-                var mapOfSeqDelegate = ((MethodInfo)parameterizedCtorInfo.Factory).CreateDelegate<Func<IEnumerable<Tuple<TKey, TValue>>, TDictionary>>();
-                return (IEnumerable<KeyValuePair<TKey, TValue>> values, in CollectionConstructionOptions<TKey> options) => mapOfSeqDelegate(values.Select(kvp => new Tuple<TKey, TValue>(kvp.Key, kvp.Value)));
-            }
-
-            return Provider.MemberAccessor.CreateEnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>(parameterizedCtorInfo);
-        }
-    }
-
-    public SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetSpanCollectionConstructor()
-    {
-        if (ConstructionStrategy is not CollectionConstructionStrategy.Span)
-        {
-            Throw();
-            static void Throw() => throw new InvalidOperationException("The current dictionary shape does not support span constructors.");
-        }
-
-        return _spanCtorDelegate ?? ReflectionHelpers.ExchangeIfNull(ref _spanCtorDelegate, CreateSpanCtor());
-        SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> CreateSpanCtor()
-        {
-            DebugExt.Assert(_constructorInfo is ParameterizedCollectionConstructorInfo);
-            return Provider.MemberAccessor.CreateSpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>((ParameterizedCollectionConstructorInfo)_constructorInfo);
+            return Provider.MemberAccessor.CreateParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>((ParameterizedCollectionConstructorInfo)_constructorInfo);
         }
     }
 
     private CollectionConstructorInfo DetermineConstructorInfo()
     {
         // TODO resolve CollectionBuilderAttribute once added for Dictionary types
-
         Type dictionaryType = typeof(TDictionary);
 
-        // The System.Collections.Generic.Dictionary<TKey, TValue> type corresponding to the current TDictionary type, if not a Dictionary<TKey, TValue>.
-        // Used for resolving dictionary constructors that accept Dictionary<TKey, TValue> as a parameter.
-        Type? correspondingGenericDictionaryType = !typeof(Dictionary<TKey, TValue>).IsAssignableFrom(typeof(TDictionary))
-            ? dictionaryType : null;
+        // The System.Collections.Generic.Dictionary<TKey, TValue> type corresponding to the current shape.
+        Type correspondingGenericDictionaryType = typeof(Dictionary<TKey, TValue>);
+
+        // Used by the F# map factory method.
+        Type correspondingTupleEnumerableType = typeof(IEnumerable<Tuple<TKey, TValue>>);
 
         if (dictionaryType.IsInterface)
         {
@@ -142,8 +116,65 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         }
 
         ConstructorInfo[] allCtors = dictionaryType.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
-        if (Provider.FindBestCollectionFactory<KeyValuePair<TKey, TValue>, TKey>(dictionaryType, allCtors, shouldBeParameterized: false)
-            is (ConstructorInfo defaultCtor, CollectionConstructorParameter[] defaultCtorSignature, _))
+        MethodInfo? addMethod = ResolveAddMethod(dictionaryType);
+        if (Provider.ResolveBestCollectionCtor<KeyValuePair<TKey, TValue>, TKey>(
+                dictionaryType,
+                allCtors,
+                addMethod,
+                correspondingGenericDictionaryType,
+                correspondingTupleEnumerableType) is { } collectionCtorInfo)
+        {
+            return collectionCtorInfo;
+        }
+
+        if (dictionaryType is { Name: "ImmutableDictionary`2", Namespace: "System.Collections.Immutable" }
+                           or { Name: "IImmutableDictionary`2", Namespace: "System.Collections.Immutable" })
+        {
+            return ResolveFactoryMethod("System.Collections.Immutable.ImmutableDictionary");
+        }
+
+        if (dictionaryType is { Name: "ImmutableSortedDictionary`2", Namespace: "System.Collections.Immutable" })
+        {
+            return ResolveFactoryMethod("System.Collections.Immutable.ImmutableSortedDictionary");
+        }
+
+        if (dictionaryType is { Name: "FrozenDictionary`2", Namespace: "System.Collections.Frozen" })
+        {
+            return ResolveFactoryMethod("System.Collections.Frozen.FrozenDictionary", "ToFrozenDictionary");
+        }
+
+        if (dictionaryType is { Name: "FSharpMap`2", Namespace: "Microsoft.FSharp.Collections" })
+        {
+            return ResolveFactoryMethod("Microsoft.FSharp.Collections.MapModule", "OfSeq");
+        }
+
+        return NoCollectionConstructorInfo.Instance;
+
+        CollectionConstructorInfo ResolveFactoryMethod(string typeName, string? factoryName = null)
+        {
+            Type? factoryType = dictionaryType.Assembly.GetType(typeName);
+            if (factoryType is not null)
+            {
+                var candidates = factoryType.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                    .Where(m => factoryName is null ? m.Name is "Create" or "CreateRange" : m.Name == factoryName)
+                    .Where(m => m.GetGenericArguments().Length == 2)
+                    .Select(m => m.MakeGenericMethod(typeof(TKey), typeof(TValue)));
+
+                if (Provider.ResolveBestCollectionCtor<KeyValuePair<TKey, TValue>, TKey>(
+                        dictionaryType,
+                        candidates,
+                        addMethod: null,
+                        correspondingGenericDictionaryType,
+                        correspondingTupleEnumerableType) is { } factoryCtorInfo)
+                {
+                    return factoryCtorInfo;
+                }
+            }
+
+            return NoCollectionConstructorInfo.Instance;
+        }
+
+        static MethodInfo? ResolveAddMethod(Type dictionaryType)
         {
             MethodInfo? addMethod = dictionaryType.GetMethods(BindingFlags.Public | BindingFlags.Instance)
                 .Where(m =>
@@ -168,70 +199,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 }
             }
 
-            if (addMethod != null)
-            {
-                return new MutableCollectionConstructorInfo(defaultCtor, defaultCtorSignature, addMethod);
-            }
-        }
-
-        if (Provider.FindBestCollectionFactory<KeyValuePair<TKey, TValue>, TKey>(dictionaryType, allCtors, shouldBeParameterized: true, correspondingGenericDictionaryType)
-            is (ConstructorInfo parameterizedCtor, CollectionConstructorParameter[] parameterizedSig, var ctorStrategy))
-        {
-            Debug.Assert(ctorStrategy is CollectionConstructionStrategy.Enumerable or CollectionConstructionStrategy.Span);
-            return new ParameterizedCollectionConstructorInfo(parameterizedCtor, ctorStrategy, parameterizedSig);
-        }
-
-        if (dictionaryType is { Name: "ImmutableDictionary`2", Namespace: "System.Collections.Immutable" }
-                           or { Name: "IImmutableDictionary`2", Namespace: "System.Collections.Immutable" })
-        {
-            return FindCreateRangeMethods("System.Collections.Immutable.ImmutableDictionary");
-        }
-
-        if (dictionaryType is { Name: "ImmutableSortedDictionary`2", Namespace: "System.Collections.Immutable" })
-        {
-            return FindCreateRangeMethods("System.Collections.Immutable.ImmutableSortedDictionary");
-        }
-
-        if (dictionaryType is { Name: "FrozenDictionary`2", Namespace: "System.Collections.Frozen" })
-        {
-            return FindCreateRangeMethods("System.Collections.Frozen.FrozenDictionary", "ToFrozenDictionary");
-        }
-
-        if (dictionaryType is { Name: "FSharpMap`2", Namespace: "Microsoft.FSharp.Collections" })
-        {
-            Type? module = dictionaryType.Assembly.GetType("Microsoft.FSharp.Collections.MapModule");
-            MethodBase? fsharpFactory = module?.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .Where(m => m.Name is "OfSeq")
-                .Where(m => m.GetParameters() is [ParameterInfo p] && p.ParameterType.IsIEnumerable())
-                .Select(m => m.MakeGenericMethod(typeof(TKey), typeof(TValue)))
-                .FirstOrDefault();
-
-            if (fsharpFactory is not null)
-            {
-                return new ParameterizedCollectionConstructorInfo(fsharpFactory, CollectionConstructionStrategy.Enumerable, [CollectionConstructorParameter.Unrecognized], isFSharpMap: true);
-            }
-        }
-
-        return CollectionConstructorInfo.NoConstructor;
-
-        CollectionConstructorInfo FindCreateRangeMethods(string typeName, string? factoryName = null)
-        {
-            Type? factoryType = dictionaryType.Assembly.GetType(typeName);
-            if (factoryType is not null)
-            {
-                var candidates = factoryType.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                    .Where(m => factoryName is null ? m.Name is "Create" or "CreateRange" : m.Name == factoryName)
-                    .Where(m => m.GetGenericArguments().Length == 2)
-                    .Select(m => m.MakeGenericMethod(typeof(TKey), typeof(TValue)));
-
-                if (Provider.FindBestCollectionFactory<KeyValuePair<TKey, TValue>, TKey>(dictionaryType, candidates, shouldBeParameterized: true)
-                    is (MethodInfo factory, CollectionConstructorParameter[] signature, CollectionConstructionStrategy strategy))
-                {
-                    return new ParameterizedCollectionConstructorInfo(factory, strategy, signature);
-                }
-            }
-
-            return CollectionConstructorInfo.NoConstructor;
+            return addMethod;
         }
     }
 }

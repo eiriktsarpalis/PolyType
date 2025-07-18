@@ -92,20 +92,14 @@ public static partial class CborSerializer
                     new CborMutableEnumerableConverter<TEnumerable, TElement>(
                         elementConverter,
                         getEnumerable,
-                        enumerableShape.GetMutableCollectionConstructor(),
+                        enumerableShape.GetMutableConstructor(),
                         enumerableShape.GetAddElement()),
 
-                CollectionConstructionStrategy.Enumerable =>
-                    new CborEnumerableConstructorEnumerableConverter<TEnumerable, TElement>(
+                CollectionConstructionStrategy.Parameterized =>
+                    new CborParameterizedEnumerableConverter<TEnumerable, TElement>(
                         elementConverter,
                         getEnumerable,
-                        enumerableShape.GetEnumerableCollectionConstructor()),
-
-                CollectionConstructionStrategy.Span =>
-                    new CborSpanConstructorEnumerableConverter<TEnumerable, TElement>(
-                        elementConverter,
-                        getEnumerable,
-                        enumerableShape.GetSpanCollectionConstructor()),
+                        enumerableShape.GetParameterizedConstructor()),
 
                 _ => new CborEnumerableConverter<TEnumerable, TElement>(elementConverter, getEnumerable),
             };
@@ -124,22 +118,15 @@ public static partial class CborSerializer
                         keyConverter,
                         valueConverter,
                         getDictionary,
-                        dictionaryShape.GetMutableCollectionConstructor(),
+                        dictionaryShape.GetMutableConstructor(),
                         dictionaryShape.GetAddKeyValuePair()),
 
-                CollectionConstructionStrategy.Enumerable =>
-                    new CborEnumerableConstructorDictionaryConverter<TDictionary, TKey, TValue>(
+                CollectionConstructionStrategy.Parameterized =>
+                    new CborParameterizedDictionaryConverter<TDictionary, TKey, TValue>(
                         keyConverter,
                         valueConverter,
                         getDictionary,
-                        dictionaryShape.GetEnumerableCollectionConstructor()),
-
-                CollectionConstructionStrategy.Span =>
-                    new CborSpanConstructorDictionaryConverter<TDictionary, TKey, TValue>(
-                        keyConverter,
-                        valueConverter,
-                        getDictionary,
-                        dictionaryShape.GetSpanCollectionConstructor()),
+                        dictionaryShape.GetParameterizedConstructor()),
 
                 _ => new CborDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, getDictionary),
             };

@@ -83,7 +83,7 @@ public interface IDictionaryTypeShape<TDictionary, TKey, TValue> : ITypeShape<TD
     /// </summary>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Mutable"/>.</exception>
     /// <returns>A delegate for creating an empty mutable collection.</returns>
-    MutableCollectionConstructor<TKey, TDictionary> GetMutableCollectionConstructor();
+    MutableCollectionConstructor<TKey, TDictionary> GetMutableConstructor();
 
     /// <summary>
     /// Creates a setter delegate used for appending a <see cref="KeyValuePair{TKey, TValue}"/> to a mutable dictionary.
@@ -95,14 +95,7 @@ public interface IDictionaryTypeShape<TDictionary, TKey, TValue> : ITypeShape<TD
     /// <summary>
     /// Creates a delegate for creating a collection from a span.
     /// </summary>
-    /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Span"/>.</exception>
+    /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Parameterized"/>.</exception>
     /// <returns>A delegate constructing a collection from a span of values.</returns>
-    SpanCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetSpanCollectionConstructor();
-
-    /// <summary>
-    /// Creates a delegate for creating a collection from an enumerable.
-    /// </summary>
-    /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Enumerable"/>.</exception>
-    /// <returns>A delegate constructing a collection from an enumerable of values.</returns>
-    EnumerableCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetEnumerableCollectionConstructor();
+    ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> GetParameterizedConstructor();
 }

@@ -4,70 +4,35 @@ using System.Reflection;
 
 namespace PolyType.ReflectionProvider;
 
-internal abstract class CollectionConstructorInfo
+internal abstract class CollectionConstructorInfo(CollectionConstructionStrategy strategy, CollectionComparerOptions comparerOptions)
 {
-    public static NoCollectionConstructorInfo NoConstructor { get; } = new();
-    public abstract CollectionConstructionStrategy Strategy { get; }
-    public abstract CollectionComparerOptions ComparerOptions { get; }
-
-    protected static CollectionComparerOptions DetermineComparerOptions(CollectionConstructorParameter[] signature)
-    {
-        bool hasEqualityComparer = false;
-        bool hasComparer = false;
-
-        foreach (CollectionConstructorParameter parameterType in signature)
-        {
-            switch (parameterType)
-            {
-                case CollectionConstructorParameter.EqualityComparer:
-                case CollectionConstructorParameter.EqualityComparerOptional:
-                case CollectionConstructorParameter.Dictionary:
-                case CollectionConstructorParameter.HashSet:
-                    hasEqualityComparer = true;
-                    break;
-
-                case CollectionConstructorParameter.Comparer:
-                case CollectionConstructorParameter.ComparerOptional:
-                    hasComparer = true;
-                    break;
-            }
-        }
-
-        return hasEqualityComparer ? CollectionComparerOptions.EqualityComparer :
-            hasComparer ? CollectionComparerOptions.Comparer :
-            CollectionComparerOptions.None;
-    }
+    public CollectionConstructionStrategy Strategy { get; } = strategy;
+    public CollectionComparerOptions ComparerOptions { get; } = comparerOptions;
 }
 
-internal sealed class NoCollectionConstructorInfo : CollectionConstructorInfo
+internal sealed class NoCollectionConstructorInfo() : CollectionConstructorInfo(CollectionConstructionStrategy.None, CollectionComparerOptions.None)
 {
-    public override CollectionConstructionStrategy Strategy => CollectionConstructionStrategy.None;
-    public override CollectionComparerOptions ComparerOptions => CollectionComparerOptions.None;
+    public static NoCollectionConstructorInfo Instance { get; } = new();
 }
 
 internal sealed class MutableCollectionConstructorInfo(
-    ConstructorInfo defaultCtor,
+    MethodBase factory,
     CollectionConstructorParameter[] signature,
+    CollectionComparerOptions comparerOptions,
     MethodInfo addMethod)
-    : CollectionConstructorInfo
+    : CollectionConstructorInfo(CollectionConstructionStrategy.Mutable, comparerOptions)
 {
-    public override CollectionConstructionStrategy Strategy => CollectionConstructionStrategy.Mutable;
-    public override CollectionComparerOptions ComparerOptions { get; } = DetermineComparerOptions(signature);
-    public ConstructorInfo DefaultConstructor { get; } = defaultCtor;
+    public MethodBase DefaultConstructor { get; } = factory;
     public CollectionConstructorParameter[] Signature { get; } = signature;
     public MethodInfo AddMethod { get; } = addMethod;
 }
 
 internal sealed class ParameterizedCollectionConstructorInfo(
     MethodBase factory,
-    CollectionConstructionStrategy strategy,
     CollectionConstructorParameter[] signature,
-    bool isFSharpMap = false)
-    : CollectionConstructorInfo
+    CollectionComparerOptions comparerOptions)
+    : CollectionConstructorInfo(CollectionConstructionStrategy.Parameterized, comparerOptions)
 {
-    public override CollectionConstructionStrategy Strategy { get; } = strategy;
-    public override CollectionComparerOptions ComparerOptions { get; } = DetermineComparerOptions(signature);
     public MethodBase Factory { get; } = factory;
     public CollectionConstructorParameter[] Signature { get; } = signature;
-    public bool IsFSharpMap { get; } = isFSharpMap;
 }
