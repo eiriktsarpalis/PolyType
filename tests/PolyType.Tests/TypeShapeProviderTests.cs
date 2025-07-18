@@ -364,8 +364,8 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             Assert.Equal(keyValueTypes[0], dictionaryType.KeyType.Type);
             Assert.Equal(keyValueTypes[1], dictionaryType.ValueType.Type);
 
-            var visitor = new DictionaryTestVisitor();
-            dictionaryType.Accept(visitor);
+            var visitor = new DictionaryTestVisitor(providerUnderTest.Kind);
+            dictionaryType.Accept(visitor, testCase);
         }
         else
         {
@@ -373,11 +373,12 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         }
     }
 
-    private sealed class DictionaryTestVisitor : TypeShapeVisitor
+    private sealed class DictionaryTestVisitor(ProviderKind providerKind) : TypeShapeVisitor
     {
         public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state)
         {
             TDictionary dictionary;
+            var testCase = (TestCase<TDictionary>)state!;
             RandomGenerator<TKey> keyGenerator = RandomGenerator.Create(dictionaryShape.KeyType);
             var getter = dictionaryShape.GetGetDictionary();
 
@@ -411,8 +412,15 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                     .Take(10)
                     .ToArray();
 
-                dictionary = spanCtor(values);
-                Assert.Equal(10, getter(dictionary).Count);
+                if (testCase.UsesSpanConstructor && providerKind is ProviderKind.ReflectionNoEmit)
+                {
+                    Assert.Throws<NotSupportedException>(() => spanCtor(values));
+                }
+                else
+                {
+                    dictionary = spanCtor(values);
+                    Assert.Equal(10, getter(dictionary).Count);
+                }
             }
             else
             {
@@ -469,8 +477,8 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                 Assert.Fail($"Unexpected enumerable type: {typeof(T)}");
             }
 
-            var visitor = new EnumerableTestVisitor();
-            enumerableTypeType.Accept(visitor, state: testCase.Value);
+            var visitor = new EnumerableTestVisitor(providerUnderTest.Kind);
+            enumerableTypeType.Accept(visitor, state: testCase);
         }
         else
         {
@@ -478,12 +486,13 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         }
     }
 
-    private sealed class EnumerableTestVisitor : TypeShapeVisitor
+    private sealed class EnumerableTestVisitor(ProviderKind providerKind) : TypeShapeVisitor
     {
         public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state)
         {
             TEnumerable enumerable;
             RandomGenerator<TElement> elementGenerator = RandomGenerator.Create(enumerableShape.ElementType);
+            var testCase = (TestCase<TEnumerable>)state!;
 
             var getter = enumerableShape.GetGetEnumerable();
 
@@ -491,7 +500,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             {
                 Type targetAsyncEnumerable = typeof(IAsyncEnumerable<>).MakeGenericType(enumerableShape.ElementType.Type);
                 Assert.True(targetAsyncEnumerable.IsAssignableFrom(enumerableShape.Type));
-                Assert.Throws<InvalidOperationException>(() => getter((TEnumerable)state!));
+                Assert.Throws<InvalidOperationException>(() => getter(testCase.Value!));
                 return null;
             }
             
@@ -521,8 +530,15 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                 Assert.Same(enumerableShape.GetParameterizedConstructor(), enumerableShape.GetParameterizedConstructor());
 
                 var values = elementGenerator.GenerateValues(seed: 42).Take(10).ToArray();
-                enumerable = spanCtor(values);
-                Assert.Equal(10, getter(enumerable).Count());
+                if (testCase.UsesSpanConstructor && providerKind is ProviderKind.ReflectionNoEmit)
+                {
+                    Assert.Throws<NotSupportedException>(() => spanCtor(values));
+                }
+                else
+                {
+                    enumerable = spanCtor(values);
+                    Assert.Equal(10, getter(enumerable).Count());
+                }
             }
             else
             {

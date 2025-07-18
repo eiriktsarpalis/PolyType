@@ -1,5 +1,4 @@
 ﻿using PolyType.Abstractions;
-using PolyType.SourceGenModel;
 using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -46,8 +45,8 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
 
         Setter<TEnumerable, TElement> CreateAddDelegate()
         {
-            DebugExt.Assert(ConstructorInfo is MutableCollectionConstructorInfo);
-            return Provider.MemberAccessor.CreateEnumerableAddDelegate<TEnumerable, TElement>(((MutableCollectionConstructorInfo)ConstructorInfo).AddMethod);
+            DebugExt.Assert(ConstructorInfo is MethodCollectionConstructorInfo { AddMethod: not null });
+            return Provider.MemberAccessor.CreateEnumerableAddDelegate<TEnumerable, TElement>(((MethodCollectionConstructorInfo)ConstructorInfo).AddMethod!);
         }
     }
 
@@ -63,8 +62,8 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
 
         MutableCollectionConstructor<TElement, TEnumerable> CreateDefaultConstructor()
         {
-            DebugExt.Assert(ConstructorInfo is MutableCollectionConstructorInfo);
-            return Provider.MemberAccessor.CreateMutableCollectionConstructor<TElement, TElement, TEnumerable>((MutableCollectionConstructorInfo)ConstructorInfo);
+            DebugExt.Assert(ConstructorInfo is MethodCollectionConstructorInfo);
+            return Provider.MemberAccessor.CreateMutableCollectionConstructor<TElement, TElement, TEnumerable>((MethodCollectionConstructorInfo)ConstructorInfo);
         }
     }
 
@@ -80,8 +79,8 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
 
         ParameterizedCollectionConstructor<TElement, TElement, TEnumerable> CreateParameterizedConstructor()
         {
-            DebugExt.Assert(ConstructorInfo is ParameterizedCollectionConstructorInfo);
-            return Provider.MemberAccessor.CreateParameterizedCollectionConstructor<TElement, TElement, TEnumerable>((ParameterizedCollectionConstructorInfo)ConstructorInfo);
+            DebugExt.Assert(ConstructorInfo is MethodCollectionConstructorInfo);
+            return Provider.MemberAccessor.CreateParameterizedCollectionConstructor<TElement, TElement, TEnumerable>((MethodCollectionConstructorInfo)ConstructorInfo);
         }
     }
 

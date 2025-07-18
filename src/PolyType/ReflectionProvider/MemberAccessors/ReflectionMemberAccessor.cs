@@ -470,13 +470,23 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         }
     }
 
-    public MutableCollectionConstructor<TKey, TDeclaringType> CreateMutableCollectionConstructor<TKey, TElement, TDeclaringType>(MutableCollectionConstructorInfo collectionCtorInfo)
+    public bool IsCollectionConstructorSupported(MethodBase method, CollectionConstructorParameter[] signature)
+    {
+        if (signature.Contains(CollectionConstructorParameter.Span))
+        {
+            return method is MethodInfo && signature is [CollectionConstructorParameter.Span];
+        }
+
+        return true;
+    }
+
+    public MutableCollectionConstructor<TKey, TDeclaringType> CreateMutableCollectionConstructor<TKey, TElement, TDeclaringType>(MethodCollectionConstructorInfo collectionCtorInfo)
     {
         SpanAction<TElement, CollectionConstructionOptions<TKey>, object?[]>[] argumentSetters = collectionCtorInfo.Signature
             .Select(CreateArgumentSetter<TElement, TKey>)
             .ToArray();
 
-        var ctorInfo = collectionCtorInfo.DefaultConstructor;
+        var ctorInfo = collectionCtorInfo.Factory;
         return (in CollectionConstructionOptions<TKey> opts) =>
         {
             var args = new object?[argumentSetters.Length];
@@ -489,11 +499,11 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         };
     }
 
-    public ParameterizedCollectionConstructor<TKey, TElement, TCollection> CreateParameterizedCollectionConstructor<TKey, TElement, TCollection>(ParameterizedCollectionConstructorInfo constructorInfo)
+    public ParameterizedCollectionConstructor<TKey, TElement, TCollection> CreateParameterizedCollectionConstructor<TKey, TElement, TCollection>(MethodCollectionConstructorInfo constructorInfo)
     {
-        if (constructorInfo is { Factory: MethodInfo factory, Signature: [CollectionConstructorParameter.Span] })
+        if (constructorInfo is { Factory: MethodInfo methodInfo, Signature: [CollectionConstructorParameter.Span] })
         {
-            SpanFunc<TElement, TCollection> spanFunc = factory.CreateDelegate<SpanFunc<TElement, TCollection>>();
+            SpanFunc<TElement, TCollection> spanFunc = methodInfo.CreateDelegate<SpanFunc<TElement, TCollection>>();
             return (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TKey> _) => spanFunc(span);
         }
 
@@ -501,23 +511,8 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
             .Select(CreateArgumentSetter<TElement, TKey>)
             .ToArray();
 
-        if (constructorInfo.Factory is MethodInfo methodInfo)
-        {
-            return (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TKey> opts) =>
-            {
-                object?[] args = BuildArguments(span, opts);
-                return (TCollection)methodInfo.Invoke(null, args)!;
-            };
-        }
-
-        var ctorInfo = (ConstructorInfo)constructorInfo.Factory;
+        MethodBase factory = constructorInfo.Factory;
         return (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TKey> opts) =>
-        {
-            object?[] args = BuildArguments(span, opts);
-            return (TCollection)ctorInfo.Invoke(args)!;
-        };
-
-        object?[] BuildArguments(ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TKey> opts)
         {
             var args = new object?[argumentSetters.Length];
             for (int i = 0; i < argumentSetters.Length; i++)
@@ -525,8 +520,8 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                 argumentSetters[i](span, opts, args);
             }
 
-            return args;
-        }
+            return (TCollection)factory.Invoke(args)!;
+        };
     }
 
     private static SpanAction<TElement, CollectionConstructionOptions<TKey>, object?[]> CreateArgumentSetter<TElement, TKey>(CollectionConstructorParameter type, int index)
@@ -545,6 +540,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
             CollectionConstructorParameter.EqualityComparerOptional => (span, opts, args) => args[index] = opts.EqualityComparer,
             CollectionConstructorParameter.Comparer => (span, opts, args) => args[index] = opts.Comparer ?? Comparer<TKey>.Default,
             CollectionConstructorParameter.ComparerOptional => (span, opts, args) => args[index] = opts.Comparer,
+            CollectionConstructorParameter.Span => (span, opts, args) => throw new NotSupportedException("Constructors accepting span parameters are not supported when reflection emit is disabled."),
             _ => throw new NotSupportedException(type.ToString()), // Not supported in the current implementation.
         };
 

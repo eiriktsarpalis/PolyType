@@ -15,24 +15,14 @@ internal sealed class NoCollectionConstructorInfo() : CollectionConstructorInfo(
     public static NoCollectionConstructorInfo Instance { get; } = new();
 }
 
-internal sealed class MutableCollectionConstructorInfo(
+internal sealed class MethodCollectionConstructorInfo(
     MethodBase factory,
     CollectionConstructorParameter[] signature,
     CollectionComparerOptions comparerOptions,
-    MethodInfo addMethod)
-    : CollectionConstructorInfo(CollectionConstructionStrategy.Mutable, comparerOptions)
-{
-    public MethodBase DefaultConstructor { get; } = factory;
-    public CollectionConstructorParameter[] Signature { get; } = signature;
-    public MethodInfo AddMethod { get; } = addMethod;
-}
-
-internal sealed class ParameterizedCollectionConstructorInfo(
-    MethodBase factory,
-    CollectionConstructorParameter[] signature,
-    CollectionComparerOptions comparerOptions)
-    : CollectionConstructorInfo(CollectionConstructionStrategy.Parameterized, comparerOptions)
+    MethodInfo? addMethod)
+    : CollectionConstructorInfo(addMethod is null ? CollectionConstructionStrategy.Parameterized : CollectionConstructionStrategy.Mutable, comparerOptions)
 {
     public MethodBase Factory { get; } = factory;
     public CollectionConstructorParameter[] Signature { get; } = signature;
+    public MethodInfo? AddMethod { get; } = addMethod;
 }
