@@ -19,7 +19,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
 
     private CollectionConstructorInfo ConstructorInfo
     {
-        get => _constructorInfo ?? ReflectionHelpers.ExchangeIfNull(ref _constructorInfo, DetermineConstructorInfo());
+        get => _constructorInfo ?? CommonHelpers.ExchangeIfNull(ref _constructorInfo, DetermineConstructorInfo());
     }
 
     public sealed override TypeShapeKind Kind => TypeShapeKind.Dictionary;
@@ -43,7 +43,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
             static void Throw() => throw new InvalidOperationException("The current dictionary shape does not support mutation.");
         }
 
-        return _addDelegate ?? ReflectionHelpers.ExchangeIfNull(ref _addDelegate, CreateAddKeyValuePair());
+        return _addDelegate ?? CommonHelpers.ExchangeIfNull(ref _addDelegate, CreateAddKeyValuePair());
 
         Setter<TDictionary, KeyValuePair<TKey, TValue>> CreateAddKeyValuePair()
         {
@@ -60,7 +60,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
             static void Throw() => throw new InvalidOperationException("The current dictionary shape does not support mutation.");
         }
 
-        return _mutableCtorDelegate ?? ReflectionHelpers.ExchangeIfNull(ref _mutableCtorDelegate, CreateMutableCtor());
+        return _mutableCtorDelegate ?? CommonHelpers.ExchangeIfNull(ref _mutableCtorDelegate, CreateMutableCtor());
 
         MutableCollectionConstructor<TKey, TDictionary> CreateMutableCtor()
         {
@@ -77,7 +77,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
             static void Throw() => throw new InvalidOperationException("The current dictionary shape does not support parameterized constructors.");
         }
 
-        return _spanCtorDelegate ?? ReflectionHelpers.ExchangeIfNull(ref _spanCtorDelegate, CreateParameterizedCtor());
+        return _spanCtorDelegate ?? CommonHelpers.ExchangeIfNull(ref _spanCtorDelegate, CreateParameterizedCtor());
         ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> CreateParameterizedCtor()
         {
             DebugExt.Assert(_constructorInfo is MethodCollectionConstructorInfo);

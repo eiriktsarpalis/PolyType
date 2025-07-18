@@ -8,8 +8,6 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TUnion">The type whose shape is described.</typeparam>
 public sealed class SourceGenUnionTypeShape<TUnion> : SourceGenTypeShape<TUnion>, IUnionTypeShape<TUnion>
 {
-    private readonly object _syncObject = new();
-
     /// <summary>
     /// Gets the underlying type shape of the union base type.
     /// </summary>
@@ -31,23 +29,7 @@ public sealed class SourceGenUnionTypeShape<TUnion> : SourceGenTypeShape<TUnion>
     /// <inheritdoc/>
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnion(this, state);
 
-    IReadOnlyList<IUnionCaseShape> IUnionTypeShape.UnionCases
-    {
-        get
-        {
-            if (_unionCases is null)
-            {
-                lock (_syncObject)
-                {
-                    return _unionCases ??= CreateUnionCasesFunc().AsReadOnlyList();
-                }
-
-            }
-
-            return _unionCases;
-        }
-    }
-
+    IReadOnlyList<IUnionCaseShape> IUnionTypeShape.UnionCases => _unionCases ?? CommonHelpers.ExchangeIfNull(ref _unionCases, CreateUnionCasesFunc().AsReadOnlyList());
     private IReadOnlyList<IUnionCaseShape>? _unionCases;
 
     Getter<TUnion, int> IUnionTypeShape<TUnion>.GetGetUnionCaseIndex() => GetUnionCaseIndexFunc;

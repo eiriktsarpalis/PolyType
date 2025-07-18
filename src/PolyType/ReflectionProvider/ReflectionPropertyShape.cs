@@ -6,7 +6,6 @@ namespace PolyType.ReflectionProvider;
 
 internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : IPropertyShape<TDeclaringType, TPropertyType>
 {
-    private readonly object _syncObject = new();
     private readonly ReflectionTypeShapeProvider _provider;
     private readonly MemberInfo _memberInfo;
     private readonly MemberInfo[]? _parentMembers; // stack of parent members reserved for nested tuple representations
@@ -75,15 +74,10 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
             static void Throw() => throw new InvalidOperationException("The current property shape does not define a getter.");
         }
 
-        return _getter ?? Helper();
+        return _getter ?? CommonHelpers.ExchangeIfNull(ref _getter, CreateGetter());
 
-        Getter<TDeclaringType, TPropertyType> Helper()
-        {
-            lock (_syncObject)
-            {
-                return _getter ??= _provider.MemberAccessor.CreateGetter<TDeclaringType, TPropertyType>(_memberInfo, _parentMembers);
-            }
-        }
+        Getter<TDeclaringType, TPropertyType> CreateGetter() =>
+            _provider.MemberAccessor.CreateGetter<TDeclaringType, TPropertyType>(_memberInfo, _parentMembers);
     }
 
     public Setter<TDeclaringType, TPropertyType> GetSetter()
@@ -94,15 +88,10 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
             static void Throw() => throw new InvalidOperationException("The current property shape does not define a setter.");
         }
 
-        return _setter ?? Helper();
+        return _setter ?? CommonHelpers.ExchangeIfNull(ref _setter, CreateSetter());
 
-        Setter<TDeclaringType, TPropertyType> Helper()
-        {
-            lock (_syncObject)
-            {
-                return _setter ??= _provider.MemberAccessor.CreateSetter<TDeclaringType, TPropertyType>(_memberInfo, _parentMembers);
-            }
-        }
+        Setter<TDeclaringType, TPropertyType> CreateSetter() =>
+            _provider.MemberAccessor.CreateSetter<TDeclaringType, TPropertyType>(_memberInfo, _parentMembers);
     }
 }
 

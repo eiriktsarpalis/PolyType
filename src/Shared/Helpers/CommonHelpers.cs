@@ -1,9 +1,23 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PolyType;
 
 internal static class CommonHelpers
 {
+    /// <summary>
+    /// Atomically exchanges the target reference with the provided value if the target is null.
+    /// </summary>
+    /// <typeparam name="T">The type to exchange.</typeparam>
+    /// <param name="target">The target reference.</param>
+    /// <param name="value">The value to populate.</param>
+    /// <returns>The value now populating the target.</returns>
+    public static T ExchangeIfNull<T>([NotNull] ref T? target, T value) where T : class
+    {
+        DebugExt.Assert(value is not null);
+        return Interlocked.CompareExchange(ref target, value, null) ?? value;
+    }
+
     /// <summary>
     /// Traverses a DAG and returns its nodes applying topological sorting to the result.
     /// </summary>

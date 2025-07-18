@@ -10,43 +10,14 @@ namespace PolyType.ReflectionProvider;
 internal sealed class FSharpUnionTypeShape<TUnion>(FSharpUnionInfo unionInfo, ReflectionTypeShapeProvider provider)
     : ReflectionTypeShape<TUnion>(provider), IUnionTypeShape<TUnion>
 {
-    private readonly object _syncObject = new();
-
     public override TypeShapeKind Kind => TypeShapeKind.Union;
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnion(this, state);
     public ITypeShape<TUnion> BaseType { get; } = new FSharpUnionCaseTypeShape<TUnion>(null, provider);
 
-    public IReadOnlyList<IUnionCaseShape> UnionCases
-    {
-        get
-        {
-            if (_unionCases is null)
-            {
-                lock (_syncObject)
-                {
-                    return _unionCases ??= CreateUnionCaseShapes().AsReadOnlyList();
-                }
-            }
-
-            return _unionCases;
-        }
-    }
-
+    public IReadOnlyList<IUnionCaseShape> UnionCases => _unionCases ?? CommonHelpers.ExchangeIfNull(ref _unionCases, CreateUnionCaseShapes().AsReadOnlyList());
     private IReadOnlyList<IUnionCaseShape>? _unionCases;
 
-    public Getter<TUnion, int> GetGetUnionCaseIndex()
-    {
-        if (_unionCaseIndexReader is null)
-        {
-            lock (_syncObject)
-            {
-                return _unionCaseIndexReader ??= CreateUnionCaseIndex();
-            }
-        }
-
-        return _unionCaseIndexReader;
-    }
-
+    public Getter<TUnion, int> GetGetUnionCaseIndex() => _unionCaseIndexReader ?? CommonHelpers.ExchangeIfNull(ref _unionCaseIndexReader, CreateUnionCaseIndex());
     private Getter<TUnion, int>? _unionCaseIndexReader;
 
     ITypeShape IUnionTypeShape.BaseType => BaseType;

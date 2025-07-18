@@ -11,42 +11,16 @@ internal sealed class FSharpOptionTypeShape<TOptional, TElement>(FSharpUnionInfo
     : ReflectionTypeShape<TOptional>(provider), IOptionalTypeShape<TOptional, TElement>
     where TOptional : IEquatable<TOptional>
 {
-    private readonly object _syncObject = new();
-
     public override TypeShapeKind Kind => TypeShapeKind.Optional;
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitOptional(this, state);
 
     public ITypeShape<TElement> ElementType => Provider.GetShape<TElement>();
     ITypeShape IOptionalTypeShape.ElementType => ElementType;
 
-    public Func<TOptional> GetNoneConstructor()
-    {
-        if (_noneConstructor is null)
-        {
-            lock (_syncObject)
-            {
-                return _noneConstructor ??= unionInfo.UnionCases[0].Constructor.CreateDelegate<Func<TOptional>>();
-            }
-        }
-
-        return _noneConstructor;
-    }
-
+    public Func<TOptional> GetNoneConstructor() => _noneConstructor ?? CommonHelpers.ExchangeIfNull(ref _noneConstructor, unionInfo.UnionCases[0].Constructor.CreateDelegate<Func<TOptional>>());
     private Func<TOptional>? _noneConstructor;
 
-    public Func<TElement, TOptional> GetSomeConstructor()
-    {
-        if (_someConstructor is null)
-        {
-            lock (_syncObject)
-            {
-                return _someConstructor ??= unionInfo.UnionCases[1].Constructor.CreateDelegate<Func<TElement, TOptional>>();
-            }
-        }
-
-        return _someConstructor;
-    }
-
+    public Func<TElement, TOptional> GetSomeConstructor() => _someConstructor ?? CommonHelpers.ExchangeIfNull(ref _someConstructor, unionInfo.UnionCases[1].Constructor.CreateDelegate<Func<TElement, TOptional>>());
     private Func<TElement, TOptional>? _someConstructor;
 
     public OptionDeconstructor<TOptional, TElement> GetDeconstructor()
