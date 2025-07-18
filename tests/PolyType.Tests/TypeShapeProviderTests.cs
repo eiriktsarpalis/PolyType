@@ -141,6 +141,13 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             return;
         }
 
+        if (testCase.IsTuple)
+        {
+            Assert.NotNull(objectShape.Constructor);
+            Assert.Equal(typeof(T).IsGenericType, objectShape.Constructor.Parameters.Count > 0);
+            Assert.All(objectShape.Constructor.Parameters, param => Assert.True(param.IsRequired));
+        }
+
         var visitor = new ConstructorTestVisitor();
         if (objectShape.Constructor is { } ctor)
         {

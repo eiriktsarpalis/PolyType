@@ -527,42 +527,20 @@ public sealed partial class Parser
 
     private static ConstructorShapeModel MapTupleConstructor(TypeId typeId, TupleDataModel tupleModel)
     {
-        if (tupleModel.IsValueTuple)
+        return new ConstructorShapeModel
         {
-            // Return the default constructor for value tuples
-            return new ConstructorShapeModel
-            {
-                DeclaringType = typeId,
-                Parameters = [],
-                RequiredMembers = [],
-                OptionalMembers = [],
-                OptionalMemberFlagsType = OptionalMemberFlagsType.None,
-                StaticFactoryName = null,
-                StaticFactoryIsProperty = false,
-                ResultRequiresCast = false,
-                IsAccessible = true,
-                CanUseUnsafeAccessors = false,
-                IsPublic = true,
-            };
-        }
-        else
-        {
-            // Return the parameterized constructor for object tuples
-            return new ConstructorShapeModel
-            {
-                DeclaringType = typeId,
-                Parameters = tupleModel.Elements.Select((p, i) => MapTupleConstructorParameter(typeId, p, i)).ToImmutableEquatableArray(),
-                RequiredMembers = [],
-                OptionalMembers = [],
-                OptionalMemberFlagsType = OptionalMemberFlagsType.None,
-                StaticFactoryName = null,
-                StaticFactoryIsProperty = false,
-                ResultRequiresCast = false,
-                IsAccessible = true,
-                CanUseUnsafeAccessors = false,
-                IsPublic = true,
-            };
-        }
+            DeclaringType = typeId,
+            Parameters = tupleModel.Elements.Select((p, i) => MapTupleConstructorParameter(typeId, p, i)).ToImmutableEquatableArray(),
+            RequiredMembers = [],
+            OptionalMembers = [],
+            OptionalMemberFlagsType = OptionalMemberFlagsType.None,
+            StaticFactoryName = null,
+            StaticFactoryIsProperty = false,
+            ResultRequiresCast = false,
+            IsAccessible = true,
+            CanUseUnsafeAccessors = false,
+            IsPublic = true,
+        };
 
         static ParameterShapeModel MapTupleConstructorParameter(TypeId typeId, PropertyDataModel tupleElement, int position)
         {

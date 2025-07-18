@@ -488,7 +488,12 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
     internal static IConstructorShapeInfo CreateTupleConstructorShapeInfo(Type tupleType)
     {
-        Debug.Assert(tupleType.IsTupleType() && tupleType != typeof(ValueTuple));
+        Debug.Assert(tupleType.IsTupleType());
+
+        if (tupleType == typeof(ValueTuple))
+        {
+            return new MethodConstructorShapeInfo(tupleType, constructorMethod: null, parameters: []);
+        }
 
         if (!tupleType.IsNestedTupleRepresentation())
         {
