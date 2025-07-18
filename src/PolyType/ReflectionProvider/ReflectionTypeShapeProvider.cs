@@ -561,10 +561,13 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
                 (RankComparer(result.ComparerParam),
                  RankStrategy(result.ValuesParam),
                  -result.Signature!.Length,
-                 RankValuePerformance(result.ValuesParam)))
-            .Select(result => (CollectionConstructorInfo)(result.ValuesParam is null
-                ? new MutableCollectionConstructorInfo(result.Factory!, result.Signature!, GetComparerOptions(result.ComparerParam, result.ValuesParam), addMethod!)
-                : new ParameterizedCollectionConstructorInfo(result.Factory, result.Signature!, GetComparerOptions(result.ComparerParam, result.ValuesParam))))
+                 RankValuePerformance(result.ValuesParam, result.Factory, result.Signature)))
+            .Select(result =>
+                new MethodCollectionConstructorInfo(
+                    result.Factory!,
+                    result.Signature!,
+                    GetComparerOptions(result.ComparerParam, result.ValuesParam),
+                    result.ValuesParam is null ? addMethod : null))
             .FirstOrDefault();
 
         static int RankComparer(CollectionConstructorParameter? comparer)
@@ -585,19 +588,24 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             return (addMethod, valueParam) switch
             {
                 (not null, null) => 0, // Mutable collections with add methods are ranked highest.
-                (null, not null) => 0, // Parameterized constructors are ranked highest if not add method is not available.
+                (null, not null) => 0, // Parameterized constructors are ranked highest if no add method is available.
                 _ => int.MaxValue, // Every other combination is ranked lowest.
             };
         }
 
-        static int RankValuePerformance(CollectionConstructorParameter? valueParam)
+        int RankValuePerformance(CollectionConstructorParameter? valueParam, MethodBase factory, CollectionConstructorParameter[] signature)
         {
+            if (!MemberAccessor.IsCollectionConstructorSupported(factory, signature))
+            {
+                return int.MaxValue; // Unsupported constructors are ranked lowest.
+            }
+
             return valueParam switch
             {
                 null => 0, // mutable collection constructors are ranked highest.
                 CollectionConstructorParameter.Span => 1, // Constructors accepting span.
                 CollectionConstructorParameter.List => 2, // Constructors accepting List.
-                _ => int.MaxValue, // Everything is ranked equally.
+                _ => 3, // Everything is ranked equally.
             };
         }
 
@@ -616,7 +624,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         }
     }
 
-    private CollectionConstructorParameter[]? ClassifyCollectionConstructor<TElement, TKey>(
+    static private CollectionConstructorParameter[]? ClassifyCollectionConstructor<TElement, TKey>(
         Type collectionType,
         MethodBase method,
         bool allowMutableCtor,
@@ -659,12 +667,6 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
                 Array.IndexOf(signature, parameterType, 0, i) >= 0)
             {
                 // Unrecognized or duplicated parameter type.
-                return null;
-            }
-
-            if (!Options.UseReflectionEmit && parameterType is CollectionConstructorParameter.Span && (parameters.Length != 1 || method is not MethodInfo))
-            {
-                // When reflection emit is not used, we can only support a single parameter of type ReadOnlySpan<TElement>.
                 return null;
             }
 

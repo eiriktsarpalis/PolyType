@@ -953,12 +953,14 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         }
     }
 
-    public MutableCollectionConstructor<TKey, TDeclaringType> CreateMutableCollectionConstructor<TKey, TElement, TDeclaringType>(MutableCollectionConstructorInfo ctorInfo)
+    public bool IsCollectionConstructorSupported(MethodBase method, CollectionConstructorParameter[] signature) => true;
+
+    public MutableCollectionConstructor<TKey, TDeclaringType> CreateMutableCollectionConstructor<TKey, TElement, TDeclaringType>(MethodCollectionConstructorInfo ctorInfo)
     {
         // Only options parameter
         var dyn = CreateCollectionConstructorDelegate(
             "MutableCollectionCtor",
-            ctorInfo.DefaultConstructor,
+            ctorInfo.Factory,
             ctorInfo.Signature,
             keyType: typeof(TKey),
             elementType: typeof(TElement),
@@ -968,7 +970,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         return CreateDelegate<MutableCollectionConstructor<TKey, TDeclaringType>>(dyn);
     }
 
-    public ParameterizedCollectionConstructor<TKey, TElement, TCollection> CreateParameterizedCollectionConstructor<TKey, TElement, TCollection>(ParameterizedCollectionConstructorInfo constructorInfo)
+    public ParameterizedCollectionConstructor<TKey, TElement, TCollection> CreateParameterizedCollectionConstructor<TKey, TElement, TCollection>(MethodCollectionConstructorInfo constructorInfo)
     {
         // (ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey> options)
         var dyn = CreateCollectionConstructorDelegate(

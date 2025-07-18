@@ -1,13 +1,9 @@
-﻿using System.Collections;
-using System.Collections.ObjectModel;
+﻿using PolyType.Abstractions;
+using PolyType.SourceGenModel;
+using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Reflection;
-using System.Security.Cryptography;
-using System.Xml.Linq;
-using PolyType.Abstractions;
-using PolyType.SourceGenModel;
 
 namespace PolyType.ReflectionProvider;
 
@@ -51,8 +47,8 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
 
         Setter<TDictionary, KeyValuePair<TKey, TValue>> CreateAddKeyValuePair()
         {
-            DebugExt.Assert(_constructorInfo is MutableCollectionConstructorInfo);
-            return Provider.MemberAccessor.CreateDictionaryAddDelegate<TDictionary, TKey, TValue>(((MutableCollectionConstructorInfo)_constructorInfo).AddMethod);
+            DebugExt.Assert(_constructorInfo is MethodCollectionConstructorInfo { AddMethod: not null });
+            return Provider.MemberAccessor.CreateDictionaryAddDelegate<TDictionary, TKey, TValue>(((MethodCollectionConstructorInfo)_constructorInfo).AddMethod!);
         }
     }
 
@@ -68,8 +64,8 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
 
         MutableCollectionConstructor<TKey, TDictionary> CreateMutableCtor()
         {
-            DebugExt.Assert(_constructorInfo is MutableCollectionConstructorInfo);
-            return Provider.MemberAccessor.CreateMutableCollectionConstructor<TKey, TValue, TDictionary>((MutableCollectionConstructorInfo)_constructorInfo);
+            DebugExt.Assert(_constructorInfo is MethodCollectionConstructorInfo);
+            return Provider.MemberAccessor.CreateMutableCollectionConstructor<TKey, TValue, TDictionary>((MethodCollectionConstructorInfo)_constructorInfo);
         }
     }
 
@@ -84,8 +80,8 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         return _spanCtorDelegate ?? ReflectionHelpers.ExchangeIfNull(ref _spanCtorDelegate, CreateParameterizedCtor());
         ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> CreateParameterizedCtor()
         {
-            DebugExt.Assert(_constructorInfo is ParameterizedCollectionConstructorInfo);
-            return Provider.MemberAccessor.CreateParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>((ParameterizedCollectionConstructorInfo)_constructorInfo);
+            DebugExt.Assert(_constructorInfo is MethodCollectionConstructorInfo);
+            return Provider.MemberAccessor.CreateParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>((MethodCollectionConstructorInfo)_constructorInfo);
         }
     }
 
