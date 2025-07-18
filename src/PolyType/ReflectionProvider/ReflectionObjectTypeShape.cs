@@ -132,16 +132,8 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
 
         if (IsTupleType)
         {
-            if (typeof(T).IsValueType)
-            {
-                IConstructorShapeInfo ctorInfo = CreateDefaultConstructor(memberInitializers: null);
-                return Provider.CreateConstructor(this, ctorInfo);
-            }
-            else
-            {
-                IConstructorShapeInfo ctorInfo = ReflectionTypeShapeProvider.CreateTupleConstructorShapeInfo(typeof(T));
-                return Provider.CreateConstructor(this, ctorInfo);
-            }
+            IConstructorShapeInfo ctorInfo = ReflectionTypeShapeProvider.CreateTupleConstructorShapeInfo(typeof(T));
+            return Provider.CreateConstructor(this, ctorInfo);
         }
 
         PropertyShapeInfo[] allMembers;
