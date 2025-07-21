@@ -1,4 +1,6 @@
-﻿using PolyType.Abstractions;
+﻿using System.Data;
+using System.Diagnostics;
+using PolyType.Abstractions;
 
 namespace PolyType.SourceGenModel;
 
@@ -34,16 +36,24 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
     /// <inheritdoc/>
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);
 
-    IReadOnlyList<IPropertyShape> IObjectTypeShape.Properties => _properties ?? CommonHelpers.ExchangeIfNull(ref _properties, (CreatePropertiesFunc?.Invoke()).AsReadOnlyList());
+    /// <inheritdoc/>
+    public IReadOnlyList<IPropertyShape> Properties => _properties ?? CommonHelpers.ExchangeIfNull(ref _properties, (CreatePropertiesFunc?.Invoke()).AsReadOnlyList());
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private IReadOnlyList<IPropertyShape>? _properties;
 
-    IConstructorShape? IObjectTypeShape.Constructor
+    /// <inheritdoc/>
+    public IConstructorShape? Constructor
     {
         get
         {
             if (!_isConstructorResolved)
             {
-                _constructor = CreateConstructorFunc?.Invoke();
+                if (CreateConstructorFunc?.Invoke() is { } constructor)
+                {
+                    CommonHelpers.ExchangeIfNull(ref _constructor, constructor);
+                }
+
                 Volatile.Write(ref _isConstructorResolved, true);
             }
 
@@ -52,5 +62,7 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
     }
 
     private bool _isConstructorResolved;
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private IConstructorShape? _constructor;
 }

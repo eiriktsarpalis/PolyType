@@ -1,4 +1,5 @@
 ﻿using PolyType.Abstractions;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace PolyType.SourceGenModel;
@@ -50,7 +51,10 @@ public sealed class SourceGenConstructorShape<TDeclaringType, TArgumentState> : 
     /// </summary>
     public Constructor<TArgumentState, TDeclaringType>? ParameterizedConstructorFunc { get; init; }
 
-    IReadOnlyList<IParameterShape> IConstructorShape.Parameters => _parameters ?? CommonHelpers.ExchangeIfNull(ref _parameters, (GetParametersFunc?.Invoke()).AsReadOnlyList());
+    /// <inheritdoc/>
+    public IReadOnlyList<IParameterShape> Parameters => _parameters ?? CommonHelpers.ExchangeIfNull(ref _parameters, (GetParametersFunc?.Invoke()).AsReadOnlyList());
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private IReadOnlyList<IParameterShape>? _parameters;
 
     Func<TDeclaringType> IConstructorShape<TDeclaringType, TArgumentState>.GetDefaultConstructor()
