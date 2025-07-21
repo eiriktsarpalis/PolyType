@@ -49,9 +49,9 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
         {
             if (!_isConstructorResolved)
             {
-                if (CreateConstructorFunc is not null)
+                if (CreateConstructorFunc?.Invoke() is { } constructor)
                 {
-                    CommonHelpers.ExchangeIfNull(ref _constructor, CreateConstructorFunc());
+                    CommonHelpers.ExchangeIfNull(ref _constructor, constructor);
                 }
 
                 Volatile.Write(ref _isConstructorResolved, true);
