@@ -13,5 +13,5 @@ public sealed record DictionaryShapeModel : TypeShapeModel
     public required string? ImplementationTypeFQN { get; init; }
     public required string? StaticFactoryMethod { get; init; }
     public required bool KeyValueTypesContainNullableAnnotations { get; init; }
-    public required bool IndexerIsExplicitInterfaceImplementation { get; init; }
+    public required DictionaryInsertionMode AvailableInsertionModes { get; init; }
 }

@@ -50,6 +50,28 @@ public delegate TDeclaringType MutableCollectionConstructor<TKey, TDeclaringType
 public delegate TDeclaringType ParameterizedCollectionConstructor<TKey, TElement, TDeclaringType>(ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey> options = default);
 
 /// <summary>
+/// Delegate that appends an element to a mutable enumerable collection.
+/// </summary>
+/// <typeparam name="TEnumerable">The type of the enumerable collection to append to.</typeparam>
+/// <typeparam name="TElement">The type of the element to append.</typeparam>
+/// <param name="enumerable">The enumerable collection instance to append the element to.</param>
+/// <param name="value">The element to append to the collection.</param>
+/// <returns><see langword="true"/> if the append operation was successful, <see langword="false"/> otherwise.</returns>
+public delegate bool EnumerableAppender<TEnumerable, TElement>(ref TEnumerable enumerable, TElement value);
+
+/// <summary>
+/// Delegate that inserts a key-value pair into a mutable dictionary.
+/// </summary>
+/// <typeparam name="TDictionary">The type of the dictionary to insert into.</typeparam>
+/// <typeparam name="TKey">The type of the key to insert.</typeparam>
+/// <typeparam name="TValue">The type of the value to insert.</typeparam>
+/// <param name="dictionary">The dictionary instance to insert the key-value pair into.</param>
+/// <param name="key">The key to insert.</param>
+/// <param name="value">The value to insert.</param>
+/// <returns><see langword="true"/> if the insertion was successful, <see langword="false"/> otherwise.</returns>
+public delegate bool DictionaryInserter<TDictionary, TKey, TValue>(ref TDictionary dictionary, TKey key, TValue value);
+
+/// <summary>
 /// Delegate deconstructing an optional type.
 /// </summary>
 /// <typeparam name="TOptional">The optional type to deconstruct.</typeparam>

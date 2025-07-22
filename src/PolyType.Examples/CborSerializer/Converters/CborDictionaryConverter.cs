@@ -51,9 +51,9 @@ internal sealed class CborMutableDictionaryConverter<TDictionary, TKey, TValue>(
     CborConverter<TValue> valueConverter,
     Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getDictionary,
     MutableCollectionConstructor<TKey, TDictionary> createObject,
-    Setter<TDictionary, KeyValuePair<TKey, TValue>> addDelegate) : CborDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, getDictionary)
+    DictionaryInserter<TDictionary, TKey, TValue> inserter) : CborDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, getDictionary)
 {
-    private readonly Setter<TDictionary, KeyValuePair<TKey, TValue>> _addDelegate = addDelegate;
+    private readonly DictionaryInserter<TDictionary, TKey, TValue> _inserter = inserter;
 
     public override TDictionary? Read(CborReader reader)
     {
@@ -68,13 +68,13 @@ internal sealed class CborMutableDictionaryConverter<TDictionary, TKey, TValue>(
 
         CborConverter<TKey> keyConverter = _keyConverter;
         CborConverter<TValue> valueConverter = _valueConverter;
-        Setter<TDictionary, KeyValuePair<TKey, TValue>> addDelegate = _addDelegate;
+        DictionaryInserter<TDictionary, TKey, TValue> inserter = _inserter;
 
         while (reader.PeekState() != CborReaderState.EndMap)
         {
             TKey key = keyConverter.Read(reader)!;
             TValue value = valueConverter.Read(reader)!;
-            addDelegate(ref result, new(key, value));
+            inserter(ref result, key, value);
         }
 
         reader.ReadEndMap();

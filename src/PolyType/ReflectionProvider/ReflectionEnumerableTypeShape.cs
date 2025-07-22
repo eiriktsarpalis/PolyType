@@ -12,7 +12,7 @@ namespace PolyType.ReflectionProvider;
 internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(ReflectionTypeShapeProvider provider) : ReflectionTypeShape<TEnumerable>(provider), IEnumerableTypeShape<TEnumerable, TElement>
 {
     private CollectionConstructorInfo? _constructorInfo;
-    private Setter<TEnumerable, TElement>? _addDelegate;
+    private EnumerableAppender<TEnumerable, TElement>? _addDelegate;
     private MutableCollectionConstructor<TElement, TEnumerable>? _mutableCtorDelegate;
     private ParameterizedCollectionConstructor<TElement, TElement, TEnumerable>? _spanCtorDelegate;
 
@@ -33,7 +33,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
     public ITypeShape<TElement> ElementType => Provider.GetShape<TElement>();
     ITypeShape IEnumerableTypeShape.ElementType => ElementType;
 
-    public virtual Setter<TEnumerable, TElement> GetAddElement()
+    public virtual EnumerableAppender<TEnumerable, TElement> GetAppender()
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
         {
@@ -43,10 +43,10 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
 
         return _addDelegate ?? CommonHelpers.ExchangeIfNull(ref _addDelegate, CreateAddDelegate());
 
-        Setter<TEnumerable, TElement> CreateAddDelegate()
+        EnumerableAppender<TEnumerable, TElement> CreateAddDelegate()
         {
-            DebugExt.Assert(ConstructorInfo is MethodCollectionConstructorInfo { AddMethod: not null });
-            return Provider.MemberAccessor.CreateEnumerableAddDelegate<TEnumerable, TElement>(((MethodCollectionConstructorInfo)ConstructorInfo).AddMethod!);
+            DebugExt.Assert(ConstructorInfo is MutableCollectionConstructorInfo { AddMethod: not null });
+            return Provider.MemberAccessor.CreateEnumerableAppender<TEnumerable, TElement>(((MutableCollectionConstructorInfo)ConstructorInfo).AddMethod!);
         }
     }
 
@@ -62,8 +62,8 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
 
         MutableCollectionConstructor<TElement, TEnumerable> CreateDefaultConstructor()
         {
-            DebugExt.Assert(ConstructorInfo is MethodCollectionConstructorInfo);
-            return Provider.MemberAccessor.CreateMutableCollectionConstructor<TElement, TElement, TEnumerable>((MethodCollectionConstructorInfo)ConstructorInfo);
+            DebugExt.Assert(ConstructorInfo is MutableCollectionConstructorInfo);
+            return Provider.MemberAccessor.CreateMutableCollectionConstructor<TElement, TElement, TEnumerable>((MutableCollectionConstructorInfo)ConstructorInfo);
         }
     }
 
@@ -79,8 +79,8 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
 
         ParameterizedCollectionConstructor<TElement, TElement, TEnumerable> CreateParameterizedConstructor()
         {
-            DebugExt.Assert(ConstructorInfo is MethodCollectionConstructorInfo);
-            return Provider.MemberAccessor.CreateParameterizedCollectionConstructor<TElement, TElement, TEnumerable>((MethodCollectionConstructorInfo)ConstructorInfo);
+            DebugExt.Assert(ConstructorInfo is ParameterizedCollectionConstructorInfo);
+            return Provider.MemberAccessor.CreateParameterizedCollectionConstructor<TElement, TElement, TEnumerable>((ParameterizedCollectionConstructorInfo)ConstructorInfo);
         }
     }
 
@@ -92,22 +92,8 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
         }
 
         Type enumerableType = typeof(TEnumerable);
-        if (enumerableType.IsInterface)
-        {
-            if (enumerableType.IsAssignableFrom(typeof(List<TElement>)))
-            {
-                // Handle IEnumerable<T>, ICollection<T>, IList<T>, IReadOnlyCollection<T> and IReadOnlyList<T> types using List<T>
-                enumerableType = typeof(List<TElement>);
-            }
-            else if (enumerableType.IsAssignableFrom(typeof(HashSet<TElement>)))
-            {
-                // Handle ISet<T> and IReadOnlySet<T> types using HashSet<T>
-                enumerableType = typeof(HashSet<TElement>);
-            }
-        }
-
-        ConstructorInfo[] allCtors = enumerableType.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
-        MethodInfo? addMethod = ResolveAddMethod(enumerableType);
+        ConstructorInfo[] allCtors = DetermineImplementationType(enumerableType).GetConstructors(BindingFlags.Public | BindingFlags.Instance);
+        MethodInfo? addMethod = ResolveAddMethod(typeof(TEnumerable));
         if (Provider.ResolveBestCollectionCtor<TElement, TElement>(enumerableType, allCtors, addMethod) is { } collectionCtorInfo)
         {
             return collectionCtorInfo;
@@ -124,6 +110,24 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
 
         CollectionConstructorInfo? TryGetImmutableCollectionFactory()
         {
+            if (typeof(TEnumerable) == typeof(IEnumerable) ||
+                typeof(TEnumerable) == typeof(ICollection) ||
+                typeof(TEnumerable) == typeof(IEnumerable<TElement>) ||
+                typeof(TEnumerable) == typeof(IReadOnlyCollection<TElement>) ||
+                typeof(TEnumerable) == typeof(IReadOnlyList<TElement>))
+            {
+                // Handle readonly list-like collection interfaces using a static factory method.
+                return ResolveFactoryMethod("PolyType.SourceGenModel.CollectionHelpers", "CreateList");
+            }
+
+#if NET
+            if (typeof(TEnumerable) == typeof(IReadOnlySet<TElement>))
+            {
+                // Handle readonly set-like collection interfaces using a static factory method.
+                return ResolveFactoryMethod("PolyType.SourceGenModel.CollectionHelpers", "CreateHashSet");
+            }
+#endif
+
             if (typeof(TEnumerable) is { Name: "ImmutableArray`1", Namespace: "System.Collections.Immutable" })
             {
                 return ResolveFactoryMethod("System.Collections.Immutable.ImmutableArray");
@@ -169,7 +173,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
 
             CollectionConstructorInfo ResolveFactoryMethod(string typeName, string? factoryName = null)
             {
-                Type? factoryType = typeof(TEnumerable).Assembly.GetType(typeName);
+                Type? factoryType = typeof(TEnumerable).Assembly.GetType(typeName) ?? Assembly.GetExecutingAssembly().GetType(typeName);
                 if (factoryType is not null)
                 {
                     var candidates = factoryType.GetMethods(BindingFlags.Public | BindingFlags.Static)
@@ -187,6 +191,27 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
             }
         }
 
+        static Type DetermineImplementationType(Type enumerableType)
+        {
+            if (enumerableType.IsInterface)
+            {
+                if (enumerableType == typeof(ICollection<TElement>) ||
+                    enumerableType == typeof(IList<TElement>) ||
+                    enumerableType == typeof(IList))
+                {
+                    // Handle IList, ICollection<T> and IList<T> types using List<T>
+                    return typeof(List<TElement>);
+                }
+                else if (enumerableType == typeof(ISet<TElement>))
+                {
+                    // Handle ISet<T> types using HashSet<T>
+                    return typeof(HashSet<TElement>);
+                }
+            }
+
+            return enumerableType;
+        }
+
         static MethodInfo? ResolveAddMethod(Type enumerableType)
         {
             MethodInfo? addMethod = null;
@@ -201,10 +226,9 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                 }
             }
 
-            if (!enumerableType.IsValueType)
+            if (!enumerableType.IsInterface)
             {
                 // If no Add method was found, check for potential explicit interface implementations.
-                // Only do so if the type is not a value type, since this would force boxing otherwise.
                 if (addMethod is null && typeof(ICollection<TElement>).IsAssignableFrom(enumerableType))
                 {
                     addMethod = typeof(ICollection<TElement>).GetMethod(nameof(ICollection<TElement>.Add));

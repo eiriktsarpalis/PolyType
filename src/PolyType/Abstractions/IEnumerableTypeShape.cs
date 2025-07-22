@@ -90,11 +90,11 @@ public interface IEnumerableTypeShape<TEnumerable, TElement> : ITypeShape<TEnume
     MutableCollectionConstructor<TElement, TEnumerable> GetMutableConstructor();
 
     /// <summary>
-    /// Creates a setter delegate used for appending a <typeparamref name="TElement"/> to a mutable collection.
+    /// Creates a delegate used for appending a <typeparamref name="TElement"/> to a mutable collection.
     /// </summary>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Mutable"/>.</exception>
     /// <returns>A setter delegate used for appending elements to a mutable collection.</returns>
-    Setter<TEnumerable, TElement> GetAddElement();
+    EnumerableAppender<TEnumerable, TElement> GetAppender();
 
     /// <summary>
     /// Creates a delegate for creating a collection from a span.

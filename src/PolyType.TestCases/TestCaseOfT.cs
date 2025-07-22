@@ -60,6 +60,11 @@ public record TestCase<T> : ITestCase
     public T?[]? AdditionalValues { get; init; }
 
     /// <summary>
+    /// Gets a value indicating whether the type represents a set.
+    /// </summary>
+    public bool IsSet { get; init; }
+
+    /// <summary>
     /// Gets a value indicating whether the type is a LIFO collection that serializes elements in reverse order.
     /// </summary>
     public bool IsStack { get; init; }

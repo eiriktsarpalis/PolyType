@@ -144,7 +144,7 @@ public static partial class Cloner
             {
                 case CollectionConstructionStrategy.Mutable:
                     var defaultCtor = enumerableShape.GetMutableConstructor();
-                    var addMember = enumerableShape.GetAddElement();
+                    var appender = enumerableShape.GetAppender();
                     return new Func<TEnumerable?, TEnumerable?>(source =>
                     {
                         if (source is null)
@@ -155,7 +155,7 @@ public static partial class Cloner
                         var target = defaultCtor();
                         foreach (var element in getEnumerable(source))
                         {
-                            addMember(ref target, elementCloner(element)!);
+                            appender(ref target, elementCloner(element)!);
                         }
 
                         return target;
@@ -193,7 +193,7 @@ public static partial class Cloner
             {
                 case CollectionConstructionStrategy.Mutable:
                     var defaultCtor = dictionaryShape.GetMutableConstructor();
-                    var addEntry = dictionaryShape.GetAddKeyValuePair();
+                    var inserter = dictionaryShape.GetInserter();
                     return new Func<TDictionary?, TDictionary?>(source =>
                     {
                         if (source is null)
@@ -204,8 +204,7 @@ public static partial class Cloner
                         var target = defaultCtor();
                         foreach (var entry in getDictionary(source))
                         {
-                            KeyValuePair<TKey, TValue> targetEntry = new(keyCloner(entry.Key)!, valueCloner(entry.Value)!);
-                            addEntry(ref target, targetEntry);
+                            inserter(ref target, keyCloner(entry.Key)!, valueCloner(entry.Value)!);
                         }
 
                         return target;

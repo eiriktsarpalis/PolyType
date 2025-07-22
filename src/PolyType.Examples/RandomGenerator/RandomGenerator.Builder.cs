@@ -165,7 +165,7 @@ public partial class RandomGenerator
             {
                 case CollectionConstructionStrategy.Mutable:
                     MutableCollectionConstructor<TElement, TEnumerable> defaultCtor = enumerableShape.GetMutableConstructor();
-                    Setter<TEnumerable, TElement> addElementFunc = enumerableShape.GetAddElement();
+                    EnumerableAppender<TEnumerable, TElement> addElementFunc = enumerableShape.GetAppender();
                     return new RandomGenerator<TEnumerable>((Random random, int size) =>
                     {
                         if (size == 0)
@@ -220,7 +220,7 @@ public partial class RandomGenerator
             {
                 case CollectionConstructionStrategy.Mutable:
                     MutableCollectionConstructor<TKey, TDictionary> defaultCtorFunc = dictionaryShape.GetMutableConstructor();
-                    Setter<TDictionary, KeyValuePair<TKey, TValue>> addKeyValuePairFunc = dictionaryShape.GetAddKeyValuePair();
+                    DictionaryInserter<TDictionary, TKey, TValue> inserter = dictionaryShape.GetInserter();
                     return new RandomGenerator<TDictionary>((Random random, int size) =>
                     {
                         if (size == 0)
@@ -234,9 +234,9 @@ public partial class RandomGenerator
 
                         for (int i = 0; i < count; i++)
                         {
-                            addKeyValuePairFunc(ref obj,
-                                new(keyGenerator(random, entrySize),
-                                    valueGenerator(random, entrySize)));
+                            inserter(ref obj,
+                                keyGenerator(random, entrySize),
+                                valueGenerator(random, entrySize));
                         }
 
                         return obj;

@@ -139,28 +139,93 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         };
     }
 
-    public Setter<TEnumerable, TElement> CreateEnumerableAddDelegate<TEnumerable, TElement>(MethodInfo addMethod)
+    public EnumerableAppender<TEnumerable, TElement> CreateEnumerableAppender<TEnumerable, TElement>(MethodInfo addMethod)
     {
         return !typeof(TEnumerable).IsValueType
-        ? (ref TEnumerable enumerable, TElement element) => addMethod.Invoke(enumerable, new object?[] { element })
+        ? (ref TEnumerable enumerable, TElement element) => addMethod.Invoke(enumerable, [element]) is not bool success || success
         : (ref TEnumerable enumerable, TElement element) =>
         {
             object boxed = enumerable!;
-            addMethod.Invoke(boxed, new object?[] { element });
+            bool success = addMethod.Invoke(boxed, [element]) is not bool s || s;
             enumerable = (TEnumerable)boxed;
+            return success;
         };
     }
 
-    public Setter<TDictionary, KeyValuePair<TKey, TValue>> CreateDictionaryAddDelegate<TDictionary, TKey, TValue>(MethodInfo addMethod)
+    public DictionaryInserter<TDictionary, TKey, TValue> CreateDictionaryInserter<TDictionary, TKey, TValue>(MutableCollectionConstructorInfo ctorInfo, DictionaryInsertionMode insertionMode)
     {
-        return !typeof(TDictionary).IsValueType
-        ? (ref TDictionary dict, KeyValuePair<TKey, TValue> entry) => addMethod.Invoke(dict, new object?[] { entry.Key, entry.Value })
-        : (ref TDictionary dict, KeyValuePair<TKey, TValue> entry) =>
+        switch (insertionMode)
         {
-            object boxed = dict!;
-            addMethod.Invoke(boxed, new object?[] { entry.Key, entry.Value });
-            dict = (TDictionary)boxed;
-        };
+            case DictionaryInsertionMode.Overwrite or DictionaryInsertionMode.Throw:
+                DebugExt.Assert(ctorInfo.SetMethod is not null || ctorInfo.AddMethod is not null);
+                var insertMethod = insertionMode is DictionaryInsertionMode.Overwrite ? ctorInfo.SetMethod! : ctorInfo.AddMethod!;
+                if (typeof(TDictionary).IsValueType)
+                {
+                    var setDelegate = insertMethod.CreateDelegate<RefAction<TDictionary, TKey, TValue>>();
+                    return (ref TDictionary dict, TKey key, TValue value) =>
+                    {
+                        setDelegate(ref dict, key, value);
+                        return true;
+                    };
+                }
+                else
+                {
+                    var setDelegate = insertMethod.CreateDelegate<Action<TDictionary, TKey, TValue>>();
+                    return (ref TDictionary dict, TKey key, TValue value) =>
+                    {
+                        setDelegate(dict, key, value);
+                        return true; // Always returns true since it overwrites existing keys.
+                    };
+                }
+
+            case DictionaryInsertionMode.Discard when ctorInfo.TryAddMethod is not null:
+                if (typeof(TDictionary).IsValueType)
+                {
+                    return ctorInfo.TryAddMethod.CreateDelegate<DictionaryInserter<TDictionary, TKey, TValue>>();
+                }
+                else
+                {
+                    var tryAddDelegate = ctorInfo.TryAddMethod.CreateDelegate<Func<TDictionary, TKey, TValue, bool>>();
+                    return (ref TDictionary dict, TKey key, TValue value) => tryAddDelegate(dict, key, value);
+                }
+
+            case DictionaryInsertionMode.Discard:
+                DebugExt.Assert(ctorInfo.ContainsKeyMethod is not null && ctorInfo is { AddMethod: not null } or { SetMethod: not null });
+                var addMethod = ctorInfo.AddMethod ?? ctorInfo.SetMethod;
+                if (typeof(TDictionary).IsValueType)
+                {
+                    var containsKeyDelegate = ctorInfo.ContainsKeyMethod.CreateDelegate<RefFunc<TDictionary, TKey, bool>>();
+                    var addMethodDelegate = addMethod!.CreateDelegate<RefAction<TDictionary, TKey, TValue>>();
+                    return (ref TDictionary dict, TKey key, TValue value) =>
+                    {
+                        if (containsKeyDelegate(ref dict, key))
+                        {
+                            return false; // Key already exists, discard the insertion.
+                        }
+
+                        addMethodDelegate(ref dict, key, value);
+                        return true; // Successfully added the new key/value pair.
+                    };
+                }
+                else
+                {
+                    var containsKeyDelegate = ctorInfo.ContainsKeyMethod.CreateDelegate<Func<TDictionary, TKey, bool>>();
+                    var addMethodDelegate = addMethod!.CreateDelegate<Action<TDictionary, TKey, TValue>>();
+                    return (ref TDictionary dict, TKey key, TValue value) =>
+                    {
+                        if (containsKeyDelegate(dict, key))
+                        {
+                            return false; // Key already exists, discard the insertion.
+                        }
+
+                        addMethodDelegate(dict, key, value);
+                        return true; // Successfully added the new key/value pair.
+                    };
+                }
+
+            default:
+                throw new NotSupportedException();
+        }
     }
 
     public Func<TDeclaringType> CreateDefaultConstructor<TDeclaringType>(IConstructorShapeInfo ctorInfo)
@@ -474,13 +539,15 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
     {
         if (signature.Contains(CollectionConstructorParameter.Span))
         {
-            return method is MethodInfo && signature is [CollectionConstructorParameter.Span];
+            return method is MethodInfo &&
+                signature is [CollectionConstructorParameter.Span]
+                          or [CollectionConstructorParameter.Span, CollectionConstructorParameter.EqualityComparerOptional];
         }
 
         return true;
     }
 
-    public MutableCollectionConstructor<TKey, TDeclaringType> CreateMutableCollectionConstructor<TKey, TElement, TDeclaringType>(MethodCollectionConstructorInfo collectionCtorInfo)
+    public MutableCollectionConstructor<TKey, TDeclaringType> CreateMutableCollectionConstructor<TKey, TElement, TDeclaringType>(MutableCollectionConstructorInfo collectionCtorInfo)
     {
         SpanAction<TElement, CollectionConstructionOptions<TKey>, object?[]>[] argumentSetters = collectionCtorInfo.Signature
             .Select(CreateArgumentSetter<TElement, TKey>)
@@ -499,12 +566,18 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         };
     }
 
-    public ParameterizedCollectionConstructor<TKey, TElement, TCollection> CreateParameterizedCollectionConstructor<TKey, TElement, TCollection>(MethodCollectionConstructorInfo constructorInfo)
+    public ParameterizedCollectionConstructor<TKey, TElement, TCollection> CreateParameterizedCollectionConstructor<TKey, TElement, TCollection>(ParameterizedCollectionConstructorInfo constructorInfo)
     {
         if (constructorInfo is { Factory: MethodInfo methodInfo, Signature: [CollectionConstructorParameter.Span] })
         {
             SpanFunc<TElement, TCollection> spanFunc = methodInfo.CreateDelegate<SpanFunc<TElement, TCollection>>();
             return (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TKey> _) => spanFunc(span);
+        }
+
+        if (constructorInfo is { Factory: MethodInfo methodInfo2, Signature: [CollectionConstructorParameter.Span, CollectionConstructorParameter.EqualityComparerOptional] })
+        {
+            SpanFunc<TElement, IEqualityComparer<TKey>?, TCollection> spanFunc = methodInfo2.CreateDelegate<SpanFunc<TElement, IEqualityComparer<TKey>?, TCollection>>();
+            return (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TKey> options) => spanFunc(span, options.EqualityComparer);
         }
 
         SpanAction<TElement, CollectionConstructionOptions<TKey>, object?[]>[] argumentSetters = constructorInfo.Signature
@@ -611,4 +684,6 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
     private delegate TResult SpanFunc<TElement, TResult>(ReadOnlySpan<TElement> span);
     private delegate TResult SpanFunc<TElement, TArg1, TResult>(ReadOnlySpan<TElement> span, TArg1 arg1);
     private delegate void SpanAction<TElement, TArg1, TArg2>(ReadOnlySpan<TElement> span, TArg1 arg1, TArg2 arg2);
+    private delegate void RefAction<T1, T2, T3>(ref T1 arg1, T2 arg2, T3 arg3);
+    private delegate TResult RefFunc<T1, T2, TResult>(ref T1 arg1, T2 arg2);
 }

@@ -1,5 +1,5 @@
-﻿using System.Collections;
-using System.ComponentModel;
+﻿using PolyType.Abstractions;
+using System.Collections;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -116,6 +116,117 @@ public static class CollectionHelpers
     public static IReadOnlyDictionary<object, object?> AsReadOnlyDictionary<TDictionary>(TDictionary dictionary)
         where TDictionary : IDictionary
         => dictionary is IReadOnlyDictionary<object, object?> rod ? rod : new ReadOnlyDictionaryAdapter<TDictionary>(dictionary);
+
+    /// <summary>
+    /// Creates an element insertion delegate for collections that implement <see cref="ICollection{T}"/>.
+    /// </summary>
+    /// <typeparam name="TEnumerable">The collection type that implements <see cref="ICollection{T}"/>.</typeparam>
+    /// <typeparam name="TElement">The element type of the collection.</typeparam>
+    /// <returns>A delegate that adds elements to the collection.</returns>
+    public static EnumerableAppender<TEnumerable, TElement> CreateEnumerableAppender<TEnumerable, TElement>()
+        where TEnumerable : ICollection<TElement>
+    {
+        return (ref TEnumerable enumerable, TElement element) =>
+        {
+            enumerable.Add(element);
+            return true;
+        };
+    }
+
+    /// <summary>
+    /// Creates an element insertion delegate for collections that implement <see cref="IList"/>.
+    /// </summary>
+    /// <typeparam name="TEnumerable">The collection type that implements <see cref="IList"/>.</typeparam>
+    /// <returns>A delegate that adds elements to the collection.</returns>
+    public static EnumerableAppender<TEnumerable, object?> CreateEnumerableAppender<TEnumerable>()
+        where TEnumerable : IList
+    {
+        return (ref TEnumerable enumerable, object? element) =>
+        {
+            enumerable.Add(element);
+            return true;
+        };
+    }
+
+    /// <summary>
+    /// Creates a dictionary insertion delegate based on the available APIs on <see cref="IDictionary{TKey, TValue}"/>.
+    /// </summary>
+    /// <typeparam name="TDictionary">The dictionary type that implements <see cref="IDictionary{TKey, TValue}"/>.</typeparam>
+    /// <typeparam name="TKey">The key type of the dictionary.</typeparam>
+    /// <typeparam name="TValue">The value type of the dictionary.</typeparam>
+    /// <param name="insertionMode">The insertion mode that determines the behavior when a key already exists.</param>
+    /// <returns>A delegate that inserts key-value pairs into the dictionary according to the specified insertion mode.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when an invalid <paramref name="insertionMode"/> is specified.</exception>
+    public static DictionaryInserter<TDictionary, TKey, TValue> CreateDictionaryInserter<TDictionary, TKey, TValue>(DictionaryInsertionMode insertionMode)
+        where TDictionary : IDictionary<TKey, TValue>
+    {
+        return insertionMode switch
+        {
+            DictionaryInsertionMode.Overwrite => static (ref TDictionary dictionary, TKey key, TValue value) =>
+            {
+                dictionary[key] = value;
+                return true;
+            },
+
+            DictionaryInsertionMode.Discard => static (ref TDictionary dictionary, TKey key, TValue value) =>
+            {
+                if (dictionary.ContainsKey(key))
+                {
+                    return false;
+                }
+
+                dictionary[key] = value;
+                return true;
+            },
+
+            DictionaryInsertionMode.Throw => static (ref TDictionary dictionary, TKey key, TValue value) =>
+            {
+                dictionary.Add(key, value);
+                return true;
+            },
+
+            _ => throw new ArgumentOutOfRangeException(nameof(insertionMode)),
+        };
+    }
+
+    /// <summary>
+    /// Creates a dictionary insertion delegate based on the available APIs on <see cref="IDictionary"/>.
+    /// </summary>
+    /// <typeparam name="TDictionary">The dictionary type that implements <see cref="IDictionary"/>.</typeparam>
+    /// <param name="insertionMode">The insertion mode that determines the behavior when a key already exists.</param>
+    /// <returns>A delegate that inserts key-value pairs into the dictionary according to the specified insertion mode.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when an invalid <paramref name="insertionMode"/> is specified.</exception>
+    public static DictionaryInserter<TDictionary, object, object?> CreateDictionaryInserter<TDictionary>(DictionaryInsertionMode insertionMode)
+        where TDictionary : IDictionary
+    {
+        return insertionMode switch
+        {
+            DictionaryInsertionMode.Overwrite => static (ref TDictionary dictionary, object key, object? value) =>
+            {
+                dictionary[key] = value;
+                return true;
+            },
+
+            DictionaryInsertionMode.Discard => static (ref TDictionary dictionary, object key, object? value) =>
+            {
+                if (dictionary.Contains(key))
+                {
+                    return false;
+                }
+
+                dictionary[key] = value;
+                return true;
+            },
+
+            DictionaryInsertionMode.Throw => static (ref TDictionary dictionary, object key, object? value) =>
+            {
+                dictionary.Add(key, value);
+                return true;
+            },
+
+            _ => throw new ArgumentOutOfRangeException(nameof(insertionMode)),
+        };
+    }
 
     private sealed class ReadOnlyDictionaryAdapter<TDictionary, TKey, TValue> : IReadOnlyDictionary<TKey, TValue>
         where TDictionary : IDictionary<TKey, TValue>

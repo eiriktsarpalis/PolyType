@@ -4,7 +4,6 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection;
 
 namespace PolyType.ReflectionProvider;
@@ -539,20 +538,25 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         Type collectionType,
         IEnumerable<MethodBase> candidates,
         MethodInfo? addMethod = null,
+        MethodInfo? setMethod = null,
+        MethodInfo? tryAddMethod = null,
+        MethodInfo? containsKeyMethod = null,
+        DictionaryInsertionMode insertionMode = DictionaryInsertionMode.None,
         Type? correspondingDictionaryType = null,
-        Type? correspondingTupleEnumerable = null)
+        Type? correspondingTupleEnumerableType = null)
     {
+        bool isMutable = addMethod is not null || tryAddMethod is not null || setMethod is not null;
         return candidates
             .Select(method =>
             {
                 var signature = ClassifyCollectionConstructor<TElement, TKey>(
                     collectionType,
                     method,
-                    allowMutableCtor: addMethod is not null,
+                    allowMutableCtor: isMutable,
                     out CollectionConstructorParameter? valuesParam,
                     out CollectionConstructorParameter? comparerParam,
                     correspondingDictionaryType,
-                    correspondingTupleEnumerable);
+                    correspondingTupleEnumerableType);
 
                 return (Factory: method, Signature: signature, ValuesParam: valuesParam, ComparerParam: comparerParam);
             })
@@ -567,12 +571,20 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
                  RankStrategy(result.ValuesParam),
                  -result.Signature!.Length,
                  RankValuePerformance(result.ValuesParam, result.Factory, result.Signature)))
-            .Select(result =>
-                new MethodCollectionConstructorInfo(
+            .Select(result => (MethodCollectionConstructorInfo)(isMutable && result.ValuesParam is null
+                ? new MutableCollectionConstructorInfo(
                     result.Factory!,
                     result.Signature!,
-                    GetComparerOptions(result.ComparerParam, result.ValuesParam),
-                    result.ValuesParam is null ? addMethod : null))
+                    addMethod,
+                    setMethod,
+                    tryAddMethod,
+                    containsKeyMethod,
+                    insertionMode,
+                    GetComparerOptions(result.ComparerParam, result.ValuesParam))
+                : new ParameterizedCollectionConstructorInfo(
+                    result.Factory!,
+                    result.Signature!,
+                    GetComparerOptions(result.ComparerParam, result.ValuesParam))))
             .FirstOrDefault();
 
         static int RankComparer(CollectionConstructorParameter? comparer)

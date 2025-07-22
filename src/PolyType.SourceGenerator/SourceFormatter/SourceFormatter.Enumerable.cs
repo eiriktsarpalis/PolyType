@@ -19,7 +19,7 @@ internal sealed partial class SourceFormatter
                     SpanConstructorFunc = {{FormatSpanConstructorFunc(enumerableShapeModel)}},
                     SupportedComparer = {{FormatComparerOptions(enumerableShapeModel.ConstructorParameters)}},
                     GetEnumerableFunc = {{FormatGetEnumerableFunc(enumerableShapeModel)}},
-                    AddElementFunc = {{FormatAddElementFunc(enumerableShapeModel)}},
+                    AppenderFunc = {{FormatAppenderFunc(enumerableShapeModel)}},
                     IsAsyncEnumerable = {{FormatBool(enumerableShapeModel.Kind is EnumerableKind.IAsyncEnumerableOfT)}},
                     Rank = {{enumerableShapeModel.Rank}},
                     AssociatedTypeShapes = {{FormatAssociatedTypeShapes(enumerableShapeModel)}},
@@ -55,19 +55,19 @@ internal sealed partial class SourceFormatter
             return FormatCollectionInitializer(enumerableType.ConstructorParameters, enumerableType.ElementType, valueType: null, enumerableType.StaticFactoryMethod ?? $"new {typeName}({{0}})", null, enumerableType.ElementTypeContainsNullableAnnotations);
         }
 
-        static string FormatAddElementFunc(EnumerableShapeModel enumerableType)
+        static string FormatAppenderFunc(EnumerableShapeModel enumerableType)
         {
             string suppressSuffix = enumerableType.ElementTypeContainsNullableAnnotations ? "!" : "";
             return enumerableType switch
             {
-                { AddElementMethod: { } addMethod, ImplementationTypeFQN: null, AddMethodIsExplicitInterfaceImplementation: false } =>
+                { AppendMethod: { } addMethod, InsertionMode: EnumerableInsertionMode.AddMethod, AppendMethodReturnsBoolean: true } =>
                     $"static (ref {enumerableType.Type.FullyQualifiedName} obj, {enumerableType.ElementType.FullyQualifiedName} value) => obj.{addMethod}(value{suppressSuffix})",
-                { AddElementMethod: { } addMethod, ImplementationTypeFQN: { } implTypeFQN } =>
-                    $"static (ref {enumerableType.Type.FullyQualifiedName} obj, {enumerableType.ElementType.FullyQualifiedName} value) => (({implTypeFQN})obj).{addMethod}(value{suppressSuffix})",
-                { AddElementMethod: { } addMethod, AddMethodIsExplicitInterfaceImplementation: true, Kind: EnumerableKind.IEnumerableOfT } =>
-                    $"static (ref {enumerableType.Type.FullyQualifiedName} obj, {enumerableType.ElementType.FullyQualifiedName} value) => ((global::System.Collections.Generic.ICollection<{enumerableType.ElementType.FullyQualifiedName}>)obj{suppressSuffix}).{addMethod}(value{suppressSuffix})",
-                { AddElementMethod: { } addMethod, AddMethodIsExplicitInterfaceImplementation: true, Kind: EnumerableKind.IEnumerable } =>
-                    $"static (ref {enumerableType.Type.FullyQualifiedName} obj, {enumerableType.ElementType.FullyQualifiedName} value) => ((global::System.Collections.IList)obj{suppressSuffix}).{addMethod}(value{suppressSuffix})",
+                { AppendMethod: { } addMethod, InsertionMode: EnumerableInsertionMode.AddMethod } =>
+                    $"static (ref {enumerableType.Type.FullyQualifiedName} obj, {enumerableType.ElementType.FullyQualifiedName} value) => {{ obj.{addMethod}(value{suppressSuffix}); return true; }}",
+                { AppendMethod: { } addMethod, InsertionMode: EnumerableInsertionMode.ExplicitICollectionOfT } =>
+                    $"global::PolyType.SourceGenModel.CollectionHelpers.CreateEnumerableAppender<{enumerableType.Type.FullyQualifiedName}, {enumerableType.ElementType.FullyQualifiedName}>()!",
+                { AppendMethod: { } addMethod, InsertionMode: EnumerableInsertionMode.ExplicitIList } =>
+                    $"global::PolyType.SourceGenModel.CollectionHelpers.CreateEnumerableAppender<{enumerableType.Type.FullyQualifiedName}>()!",
                 _ => "null",
             };
         }

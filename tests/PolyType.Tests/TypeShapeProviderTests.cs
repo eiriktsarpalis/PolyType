@@ -392,21 +392,54 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             if (dictionaryShape.ConstructionStrategy is CollectionConstructionStrategy.Mutable)
             {
                 var defaultCtor = dictionaryShape.GetMutableConstructor();
-                var adder = dictionaryShape.GetAddKeyValuePair();
                 Assert.Same(dictionaryShape.GetMutableConstructor(), dictionaryShape.GetMutableConstructor());
-                Assert.Same(dictionaryShape.GetAddKeyValuePair(), dictionaryShape.GetAddKeyValuePair());
 
-                dictionary = defaultCtor();
-                Assert.Empty(getter(dictionary));
+                ReadOnlySpan<DictionaryInsertionMode> allInsertionModes = [
+                    DictionaryInsertionMode.None,
+                    DictionaryInsertionMode.Overwrite,
+                    DictionaryInsertionMode.Discard,
+                    DictionaryInsertionMode.Throw
+                ];
 
-                TKey newKey = keyGenerator.GenerateValue(size: 1000, seed: 42);
-                adder(ref dictionary, new(newKey, default!));
-                Assert.Single(getter(dictionary));
+                Assert.NotEqual(DictionaryInsertionMode.None, dictionaryShape.AvailableInsertionModes);
+
+                foreach (var insertionMode in allInsertionModes)
+                {
+                    if ((dictionaryShape.AvailableInsertionModes & insertionMode) == insertionMode)
+                    {
+                        var inserter = dictionaryShape.GetInserter(insertionMode);
+                        Assert.Same(dictionaryShape.GetInserter(insertionMode), inserter);
+                        dictionary = defaultCtor();
+                        Assert.Empty(getter(dictionary));
+                        TKey key = keyGenerator.GenerateValue(size: 1000, seed: 42);
+                        Assert.True(inserter(ref dictionary, key, default!));
+                        Assert.Single(getter(dictionary));
+
+                        switch (insertionMode)
+                        {
+                            case DictionaryInsertionMode.Throw:
+                                Assert.Throws<ArgumentException>(() => inserter(ref dictionary, key, default!));
+                                break;
+                            case DictionaryInsertionMode.Discard:
+                                Assert.False(inserter(ref dictionary, key, default!));
+                                break;
+                            case DictionaryInsertionMode.Overwrite or DictionaryInsertionMode.None:
+                                Assert.True(inserter(ref dictionary, key, default!));
+                                break;
+                        }
+
+                        Assert.Single(getter(dictionary));
+                    }
+                    else
+                    {
+                        Assert.Throws<ArgumentOutOfRangeException>(() => dictionaryShape.GetInserter(insertionMode));
+                    }
+                }
             }
             else
             {
                 Assert.Throws<InvalidOperationException>(() => dictionaryShape.GetMutableConstructor());
-                Assert.Throws<InvalidOperationException>(() => dictionaryShape.GetAddKeyValuePair());
+                Assert.Throws<InvalidOperationException>(() => dictionaryShape.GetInserter());
             }
 
             if (dictionaryShape.ConstructionStrategy is CollectionConstructionStrategy.Parameterized)
@@ -514,21 +547,32 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             if (enumerableShape.ConstructionStrategy is CollectionConstructionStrategy.Mutable)
             {
                 var defaultCtor = enumerableShape.GetMutableConstructor();
-                var adder = enumerableShape.GetAddElement();
+                var appender = enumerableShape.GetAppender();
                 Assert.Same(enumerableShape.GetMutableConstructor(), enumerableShape.GetMutableConstructor());
-                Assert.Same(enumerableShape.GetAddElement(), enumerableShape.GetAddElement());
+                Assert.Same(enumerableShape.GetAppender(), enumerableShape.GetAppender());
 
                 enumerable = defaultCtor();
                 Assert.Empty(getter(enumerable));
 
                 TElement newElement = elementGenerator.GenerateValue(size: 1000, seed: 42);
-                adder(ref enumerable, newElement);
+                Assert.True(appender(ref enumerable, newElement));
                 Assert.Single(getter(enumerable));
+
+                if (testCase.IsSet)
+                {
+                    Assert.False(appender(ref enumerable, newElement));
+                    Assert.Single(getter(enumerable));
+                }
+                else
+                {
+                    Assert.True(appender(ref enumerable, newElement));
+                    Assert.Equal(2, getter(enumerable).Count());
+                }
             }
             else
             {
                 Assert.Throws<InvalidOperationException>(() => enumerableShape.GetMutableConstructor());
-                Assert.Throws<InvalidOperationException>(() => enumerableShape.GetAddElement());
+                Assert.Throws<InvalidOperationException>(() => enumerableShape.GetAppender());
             }
 
             if (enumerableShape.ConstructionStrategy is CollectionConstructionStrategy.Parameterized)

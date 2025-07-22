@@ -414,24 +414,6 @@ internal static class ReflectionHelpers
         }
     }
 
-    [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
-    public static bool ImplementsInterface(this Type type, Type interfaceType)
-    {
-        Debug.Assert(interfaceType is { IsInterface: true, IsConstructedGenericType: false });
-
-        foreach (Type otherInterface in type.GetAllInterfaces())
-        {
-            if (otherInterface.IsGenericType
-                ? otherInterface.GetGenericTypeDefinition() == interfaceType
-                : otherInterface == interfaceType)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     public static bool IsExplicitInterfaceImplementation(this MethodInfo methodInfo)
     {
         DebugExt.Assert(!methodInfo.IsStatic);
