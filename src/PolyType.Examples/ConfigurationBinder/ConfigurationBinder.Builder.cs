@@ -201,6 +201,7 @@ public static partial class ConfigurationBinderTS
                 
                 case CollectionConstructionStrategy.Parameterized:
                     ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> spanCtor = dictionaryShape.GetParameterizedConstructor();
+                    var duplicateKeyValidator = dictionaryShape.CreateDuplicateKeyValidator();
                     return new Func<IConfiguration, TDictionary?>(configuration =>
                     {
                         if (IsNullConfiguration(configuration))
@@ -220,7 +221,10 @@ public static partial class ConfigurationBinderTS
                             buffer.Add(entry);
                         }
 
-                        return spanCtor(buffer.AsSpan());
+                        var span = buffer.AsSpan();
+                        var finalDict = spanCtor(span);
+                        duplicateKeyValidator.ValidatePotentialDuplicates(finalDict, span);
+                        return finalDict;
                     });
                 
                 default:
