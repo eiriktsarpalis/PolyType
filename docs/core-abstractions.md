@@ -581,7 +581,7 @@ public partial interface IEnumerableTypeShape<TEnumerable, TElement>
 
     // Implemented by CollectionConstructionStrategy.Mutable types
     MutableCollectionConstructor<TKey, TEnumerable> GetDefaultConstructor();
-    Setter<TEnumerable, TElement> GetAddElement();
+    EnumerableAppender<TEnumerable, TElement> GetAppender();
 
     // Implemented by CollectionConstructionStrategy.Parameterized types
     ParameterizedCollectionConstructor<TKey, TElement, TEnumerable> GetParameterizedConstructor();
@@ -604,11 +604,11 @@ class EmptyConstructorVisitor : TypeShapeVisitor
         {
             case CollectionConstructionStrategy.Mutable:
                 var defaultCtor = typeShape.GetDefaultConstructor();
-                var addElement = typeShape.GetAddElement();
+                var appender = typeShape.GetAppender();
                 return new Func<TEnumerable>(() =>
                 {
                     TEnumerable value = defaultCtor();
-                    for (int i = 0; i < size; i++) addElement(ref value, elementFactory());
+                    for (int i = 0; i < size; i++) appender(ref value, elementFactory());
                     return value;
                 });
 

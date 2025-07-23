@@ -37,6 +37,11 @@ public interface IDictionaryTypeShape : ITypeShape
     /// Gets the kind of custom comparer (if any) that this collection may be initialized with.
     /// </summary>
     CollectionComparerOptions SupportedComparer { get; }
+
+    /// <summary>
+    /// Gets the available insertion modes supported by the dictionary type.
+    /// </summary>
+    DictionaryInsertionMode AvailableInsertionModes { get; }
 }
 
 /// <summary>
@@ -86,11 +91,12 @@ public interface IDictionaryTypeShape<TDictionary, TKey, TValue> : ITypeShape<TD
     MutableCollectionConstructor<TKey, TDictionary> GetMutableConstructor();
 
     /// <summary>
-    /// Creates a setter delegate used for appending a <see cref="KeyValuePair{TKey, TValue}"/> to a mutable dictionary.
+    /// Creates a delegate used for inserting a new key/value pair to a mutable dictionary.
     /// </summary>
+    /// <param name="insertionMode">Specifies the duplicate key handling strategy used by the delegate.</param>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Mutable"/>.</exception>
-    /// <returns>A setter delegate used for appending entries to a mutable dictionary.</returns>
-    Setter<TDictionary, KeyValuePair<TKey, TValue>> GetAddKeyValuePair();
+    /// <returns>A delegate used for inserting entries into a mutable dictionary.</returns>
+    DictionaryInserter<TDictionary, TKey, TValue> GetInserter(DictionaryInsertionMode insertionMode = DictionaryInsertionMode.None);
 
     /// <summary>
     /// Creates a delegate for creating a collection from a span.

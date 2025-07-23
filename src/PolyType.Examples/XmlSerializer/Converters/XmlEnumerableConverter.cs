@@ -36,10 +36,10 @@ internal sealed class XmlMutableEnumerableConverter<TEnumerable, TElement>(
     XmlConverter<TElement> elementConverter,
     Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
     MutableCollectionConstructor<TElement, TEnumerable> createObject,
-    Setter<TEnumerable, TElement> addDelegate)
+    EnumerableAppender<TEnumerable, TElement> appender)
     : XmlEnumerableConverter<TEnumerable, TElement>(elementConverter, getEnumerable)
 {
-    private readonly Setter<TEnumerable, TElement> _addDelegate = addDelegate;
+    private readonly EnumerableAppender<TEnumerable, TElement> _appender = appender;
 
     public override TEnumerable? Read(XmlReader reader)
     {
@@ -58,7 +58,7 @@ internal sealed class XmlMutableEnumerableConverter<TEnumerable, TElement>(
 
         reader.ReadStartElement();
         XmlConverter<TElement> elementConverter = _elementConverter;
-        Setter<TEnumerable, TElement> addDelegate = _addDelegate;
+        EnumerableAppender<TEnumerable, TElement> appender = _appender;
 
         while (reader.NodeType != XmlNodeType.EndElement)
         {
@@ -68,7 +68,7 @@ internal sealed class XmlMutableEnumerableConverter<TEnumerable, TElement>(
             }
 
             TElement? element = elementConverter.Read(reader);
-            addDelegate(ref result, element!);
+            appender(ref result, element!);
         }
 
         reader.ReadEndElement();

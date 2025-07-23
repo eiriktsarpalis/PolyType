@@ -26,7 +26,9 @@ internal sealed partial class SourceFormatter
                     SupportedComparer = {{FormatComparerOptions(dictionaryShapeModel.ConstructorParameters)}},
                     ConstructionStrategy = {{FormatCollectionConstructionStrategy(dictionaryShapeModel.ConstructionStrategy)}},
                     MutableConstructorFunc = {{FormatDefaultConstructorFunc(dictionaryShapeModel)}},
-                    AddKeyValuePairFunc = {{FormatAddKeyValuePairFunc(dictionaryShapeModel)}},
+                    OverwritingInserter = {{FormatOverwritingInserter(dictionaryShapeModel)}},
+                    DiscardingInserter = {{FormatDiscardingInserter(dictionaryShapeModel)}},
+                    ThrowingInserter = {{FormatThrowingInserter(dictionaryShapeModel)}},
                     SpanConstructorFunc = {{FormatSpanConstructorFunc(dictionaryShapeModel)}},
                     AssociatedTypeShapes = {{FormatAssociatedTypeShapes(dictionaryShapeModel)}},
                     Provider = this,
@@ -61,21 +63,87 @@ internal sealed partial class SourceFormatter
             return FormatCollectionInitializer(dictionaryType, null);
         }
 
-        static string FormatAddKeyValuePairFunc(DictionaryShapeModel dictionaryType)
+        static string FormatOverwritingInserter(DictionaryShapeModel dictionaryType)
         {
-            string suppressSuffix = dictionaryType.KeyValueTypesContainNullableAnnotations ? "!" : "";
-            return dictionaryType switch
+            if (dictionaryType.ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
             {
-                { ConstructionStrategy: CollectionConstructionStrategy.Mutable, ImplementationTypeFQN: null, IndexerIsExplicitInterfaceImplementation: false }
-                    => $"static (ref {dictionaryType.Type.FullyQualifiedName} dict, global::System.Collections.Generic.KeyValuePair<{dictionaryType.KeyType.FullyQualifiedName}, {dictionaryType.ValueType.FullyQualifiedName}> kvp) => dict[kvp.Key{suppressSuffix}] = kvp.Value{suppressSuffix}",
-                { ConstructionStrategy: CollectionConstructionStrategy.Mutable, ImplementationTypeFQN: { } implementationTypeFQN }
-                    => $"static (ref {dictionaryType.Type.FullyQualifiedName} dict, global::System.Collections.Generic.KeyValuePair<{dictionaryType.KeyType.FullyQualifiedName}, {dictionaryType.ValueType.FullyQualifiedName}> kvp) => (({implementationTypeFQN})dict)[kvp.Key{suppressSuffix}] = kvp.Value{suppressSuffix}",
-                { ConstructionStrategy: CollectionConstructionStrategy.Mutable, IndexerIsExplicitInterfaceImplementation: true, Kind: DictionaryKind.IDictionary }
-                    => $"static (ref {dictionaryType.Type.FullyQualifiedName} dict, global::System.Collections.Generic.KeyValuePair<{dictionaryType.KeyType.FullyQualifiedName}, {dictionaryType.ValueType.FullyQualifiedName}> kvp) => ((global::System.Collections.IDictionary)dict{suppressSuffix})[kvp.Key{suppressSuffix}] = kvp.Value{suppressSuffix}",
-                { ConstructionStrategy: CollectionConstructionStrategy.Mutable, IndexerIsExplicitInterfaceImplementation: true, Kind: DictionaryKind.IDictionaryOfKV }
-                    => $"static (ref {dictionaryType.Type.FullyQualifiedName} dict, global::System.Collections.Generic.KeyValuePair<{dictionaryType.KeyType.FullyQualifiedName}, {dictionaryType.ValueType.FullyQualifiedName}> kvp) => ((global::System.Collections.Generic.IDictionary<{dictionaryType.KeyType.FullyQualifiedName}, {dictionaryType.ValueType.FullyQualifiedName}>)dict{suppressSuffix})[kvp.Key{suppressSuffix}] = kvp.Value{suppressSuffix}",
-                _ => "null",
-            };
+                return "null";
+            }
+
+            string suppressSuffix = dictionaryType.KeyValueTypesContainNullableAnnotations ? "!" : "";
+            if ((dictionaryType.AvailableInsertionModes & DictionaryInsertionMode.SetItem) != 0)
+            {
+                return $"static (ref {dictionaryType.Type.FullyQualifiedName} dict, {dictionaryType.KeyType.FullyQualifiedName} key, {dictionaryType.ValueType.FullyQualifiedName} value) => {{ dict[key{suppressSuffix}] = value{suppressSuffix}; return true; }}";
+            }
+
+            if ((dictionaryType.AvailableInsertionModes & DictionaryInsertionMode.ExplicitIDictionaryOfT) != 0)
+            {
+                return $"global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionaryInserter<{dictionaryType.Type.FullyQualifiedName}, {dictionaryType.KeyType.FullyQualifiedName}, {dictionaryType.ValueType.FullyQualifiedName}>(global::PolyType.Abstractions.DictionaryInsertionMode.Overwrite)";
+            }
+
+            if ((dictionaryType.AvailableInsertionModes & DictionaryInsertionMode.ExplicitIDictionary) != 0)
+            {
+                return $"global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionaryInserter<{dictionaryType.Type.FullyQualifiedName}>(global::PolyType.Abstractions.DictionaryInsertionMode.Overwrite)!";
+            }
+
+            return "null";
+        }
+
+        static string FormatDiscardingInserter(DictionaryShapeModel dictionaryType)
+        {
+            if (dictionaryType.ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
+            {
+                return "null";
+            }
+
+            string suppressSuffix = dictionaryType.KeyValueTypesContainNullableAnnotations ? "!" : "";
+            if ((dictionaryType.AvailableInsertionModes & DictionaryInsertionMode.TryAdd) != 0)
+            {
+                return $"static (ref {dictionaryType.Type.FullyQualifiedName} dict, {dictionaryType.KeyType.FullyQualifiedName} key, {dictionaryType.ValueType.FullyQualifiedName} value) => dict.TryAdd(key{suppressSuffix}, value{suppressSuffix})";
+            }
+
+            if ((dictionaryType.AvailableInsertionModes & DictionaryInsertionMode.ContainsKeyAdd) == DictionaryInsertionMode.ContainsKeyAdd)
+            {
+                return $"static (ref {dictionaryType.Type.FullyQualifiedName} dict, {dictionaryType.KeyType.FullyQualifiedName} key, {dictionaryType.ValueType.FullyQualifiedName} value) => {{ if (dict.ContainsKey(key{suppressSuffix})) return false; dict.Add(key{suppressSuffix}, value{suppressSuffix}); return true; }}";
+            }
+
+            if ((dictionaryType.AvailableInsertionModes & DictionaryInsertionMode.ExplicitIDictionaryOfT) != 0)
+            {
+                return $"global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionaryInserter<{dictionaryType.Type.FullyQualifiedName}, {dictionaryType.KeyType.FullyQualifiedName}, {dictionaryType.ValueType.FullyQualifiedName}>(global::PolyType.Abstractions.DictionaryInsertionMode.Discard)";
+            }
+
+            if ((dictionaryType.AvailableInsertionModes & DictionaryInsertionMode.ExplicitIDictionary) != 0)
+            {
+                return $"global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionaryInserter<{dictionaryType.Type.FullyQualifiedName}>(global::PolyType.Abstractions.DictionaryInsertionMode.Discard)!";
+            }
+
+            return "null";
+        }
+
+        static string FormatThrowingInserter(DictionaryShapeModel dictionaryType)
+        {
+            if (dictionaryType.ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
+            {
+                return "null";
+            }
+
+            string suppressSuffix = dictionaryType.KeyValueTypesContainNullableAnnotations ? "!" : "";
+            if ((dictionaryType.AvailableInsertionModes & DictionaryInsertionMode.Add) != 0)
+            {
+                return $"static (ref {dictionaryType.Type.FullyQualifiedName} dict, {dictionaryType.KeyType.FullyQualifiedName} key, {dictionaryType.ValueType.FullyQualifiedName} value) => {{ dict.Add(key{suppressSuffix}, value{suppressSuffix}); return true; }}";
+            }
+
+            if ((dictionaryType.AvailableInsertionModes & DictionaryInsertionMode.ExplicitIDictionaryOfT) != 0)
+            {
+                return $"global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionaryInserter<{dictionaryType.Type.FullyQualifiedName}, {dictionaryType.KeyType.FullyQualifiedName}, {dictionaryType.ValueType.FullyQualifiedName}>(global::PolyType.Abstractions.DictionaryInsertionMode.Throw)";
+            }
+
+            if ((dictionaryType.AvailableInsertionModes & DictionaryInsertionMode.ExplicitIDictionary) != 0)
+            {
+                return $"global::PolyType.SourceGenModel.CollectionHelpers.CreateDictionaryInserter<{dictionaryType.Type.FullyQualifiedName}>(global::PolyType.Abstractions.DictionaryInsertionMode.Throw)!";
+            }
+
+            return "null";
         }
 
         static string FormatKeyValueTypeName(DictionaryShapeModel dictionaryType)

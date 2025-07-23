@@ -132,9 +132,9 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         return CreateDelegate<Setter<TDeclaringType, TPropertyType>>(dynamicMethod);
     }
 
-    public Setter<TEnumerable, TElement> CreateEnumerableAddDelegate<TEnumerable, TElement>(MethodInfo methodInfo)
+    public EnumerableAppender<TEnumerable, TElement> CreateEnumerableAppender<TEnumerable, TElement>(MethodInfo methodInfo)
     {
-        DynamicMethod dynamicMethod = CreateDynamicMethod(methodInfo.Name, typeof(void), [typeof(TEnumerable).MakeByRefType(), typeof(TElement)]);
+        DynamicMethod dynamicMethod = CreateDynamicMethod(methodInfo.Name, typeof(bool), [typeof(TEnumerable).MakeByRefType(), typeof(TElement)]);
         ILGenerator generator = dynamicMethod.GetILGenerator();
 
         // return arg0.Add(arg1);
@@ -152,42 +152,165 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
             generator.Emit(OpCodes.Callvirt, methodInfo);
         }
 
-        if (methodInfo.ReturnType != typeof(void))
+        if (methodInfo.ReturnType != typeof(bool))
         {
-            generator.Emit(OpCodes.Pop);
+            if (methodInfo.ReturnType != typeof(void))
+            {
+                generator.Emit(OpCodes.Pop);
+            }
+
+            generator.Emit(OpCodes.Ldc_I4_1); // Load true
         }
 
         generator.Emit(OpCodes.Ret);
-        return CreateDelegate<Setter<TEnumerable, TElement>>(dynamicMethod);
+        return CreateDelegate<EnumerableAppender<TEnumerable, TElement>>(dynamicMethod);
     }
 
-    public Setter<TDictionary, KeyValuePair<TKey, TValue>> CreateDictionaryAddDelegate<TDictionary, TKey, TValue>(MethodInfo methodInfo)
+    public DictionaryInserter<TDictionary, TKey, TValue> CreateDictionaryInserter<TDictionary, TKey, TValue>(MutableCollectionConstructorInfo ctorInfo, DictionaryInsertionMode insertionMode)
     {
-        Type keyValuePairTy = typeof(KeyValuePair<TKey, TValue>);
-        DynamicMethod dynamicMethod = CreateDynamicMethod(methodInfo.Name, typeof(void), [typeof(TDictionary).MakeByRefType(), keyValuePairTy]);
-        ILGenerator generator = dynamicMethod.GetILGenerator();
-
-        // return arg0.Add(arg1.Key, arg1.Value);
-        generator.Emit(OpCodes.Ldarg_0);
-        LdRef(generator, typeof(TDictionary));
-
-        generator.Emit(OpCodes.Ldarga_S, 1);
-        generator.Emit(OpCodes.Call, keyValuePairTy.GetMethod("get_Key", BindingFlags.Public | BindingFlags.Instance)!);
-
-        generator.Emit(OpCodes.Ldarga_S, 1);
-        generator.Emit(OpCodes.Call, keyValuePairTy.GetMethod("get_Value", BindingFlags.Public | BindingFlags.Instance)!);
-
-        if (typeof(TDictionary).IsValueType)
+        switch (insertionMode)
         {
-            generator.Emit(OpCodes.Call, methodInfo);
-        }
-        else
-        {
-            generator.Emit(OpCodes.Callvirt, methodInfo);
+            case DictionaryInsertionMode.Overwrite or DictionaryInsertionMode.Throw:
+                DebugExt.Assert(ctorInfo.SetMethod is not null || ctorInfo.AddMethod is not null);
+                var insertMethod = insertionMode is DictionaryInsertionMode.Overwrite ? ctorInfo.SetMethod : ctorInfo.AddMethod;
+                return CreateAddMethodDelegate(insertMethod!);
+
+            case DictionaryInsertionMode.Discard when ctorInfo.TryAddMethod is not null:
+                return CreateTryAddMethodDelegate(ctorInfo.TryAddMethod);
+
+            case DictionaryInsertionMode.Discard:
+                DebugExt.Assert(ctorInfo.ContainsKeyMethod is not null && ctorInfo is { AddMethod: not null } or { SetMethod: not null });
+                var addMethod = ctorInfo.AddMethod ?? ctorInfo.SetMethod;
+                return CreateContainsKeyAddMethodDelegate(ctorInfo.ContainsKeyMethod, addMethod!);
+
+            default:
+                throw new NotSupportedException();
         }
 
-        generator.Emit(OpCodes.Ret);
-        return CreateDelegate<Setter<TDictionary, KeyValuePair<TKey, TValue>>>(dynamicMethod);
+        DictionaryInserter<TDictionary, TKey, TValue> CreateAddMethodDelegate(MethodInfo insertMethod)
+        {
+            DynamicMethod dynamicMethod = CreateDynamicMethod("dictionaryInserter", typeof(bool), [typeof(TDictionary).MakeByRefType(), typeof(TKey), typeof(TValue)]);
+            ILGenerator generator = dynamicMethod.GetILGenerator();
+
+            // Load dictionary reference
+            generator.Emit(OpCodes.Ldarg_0);
+            LdRef(generator, typeof(TDictionary));
+
+            // Load key and value arguments
+            generator.Emit(OpCodes.Ldarg_1);
+            generator.Emit(OpCodes.Ldarg_2);
+
+            // Call the insert method
+            if (typeof(TDictionary).IsValueType)
+            {
+                generator.Emit(OpCodes.Call, insertMethod);
+            }
+            else
+            {
+                generator.Emit(OpCodes.Callvirt, insertMethod);
+            }
+
+            // Pop return value if method returns non-void
+            if (insertMethod.ReturnType != typeof(void))
+            {
+                generator.Emit(OpCodes.Pop);
+            }
+
+            // Return true (always successful for overwrite/throw modes)
+            generator.Emit(OpCodes.Ldc_I4_1);
+            generator.Emit(OpCodes.Ret);
+
+            return CreateDelegate<DictionaryInserter<TDictionary, TKey, TValue>>(dynamicMethod);
+        }
+
+        DictionaryInserter<TDictionary, TKey, TValue> CreateTryAddMethodDelegate(MethodInfo tryAddMethod)
+        {
+            DynamicMethod dynamicMethod = CreateDynamicMethod("dictionaryTryAdd", typeof(bool), [typeof(TDictionary).MakeByRefType(), typeof(TKey), typeof(TValue)]);
+            ILGenerator generator = dynamicMethod.GetILGenerator();
+
+            // Load dictionary reference
+            generator.Emit(OpCodes.Ldarg_0);
+            LdRef(generator, typeof(TDictionary));
+
+            // Load key and value arguments
+            generator.Emit(OpCodes.Ldarg_1);
+            generator.Emit(OpCodes.Ldarg_2);
+
+            // Call TryAdd method
+            if (typeof(TDictionary).IsValueType)
+            {
+                generator.Emit(OpCodes.Call, tryAddMethod);
+            }
+            else
+            {
+                generator.Emit(OpCodes.Callvirt, tryAddMethod);
+            }
+
+            // Return the result from TryAdd
+            generator.Emit(OpCodes.Ret);
+
+            return CreateDelegate<DictionaryInserter<TDictionary, TKey, TValue>>(dynamicMethod);
+        }
+
+        DictionaryInserter<TDictionary, TKey, TValue> CreateContainsKeyAddMethodDelegate(MethodInfo containsKeyMethod, MethodInfo addMethod)
+        {
+            DynamicMethod dynamicMethod = CreateDynamicMethod("dictionaryContainsKeyAdd", typeof(bool), [typeof(TDictionary).MakeByRefType(), typeof(TKey), typeof(TValue)]);
+            ILGenerator generator = dynamicMethod.GetILGenerator();
+
+            Label addLabel = generator.DefineLabel();
+            Label returnFalseLabel = generator.DefineLabel();
+
+            // Check if key already exists
+            generator.Emit(OpCodes.Ldarg_0);
+            LdRef(generator, typeof(TDictionary));
+            generator.Emit(OpCodes.Ldarg_1);
+
+            // Call ContainsKey
+            if (typeof(TDictionary).IsValueType)
+            {
+                generator.Emit(OpCodes.Call, containsKeyMethod);
+            }
+            else
+            {
+                generator.Emit(OpCodes.Callvirt, containsKeyMethod);
+            }
+
+            // If key exists, return false (discard mode)
+            generator.Emit(OpCodes.Brtrue_S, returnFalseLabel);
+
+            // Key doesn't exist, add it
+            generator.Emit(OpCodes.Ldarg_0);
+            LdRef(generator, typeof(TDictionary));
+            generator.Emit(OpCodes.Ldarg_1);
+            generator.Emit(OpCodes.Ldarg_2);
+
+            // Call Add method
+            if (typeof(TDictionary).IsValueType)
+            {
+                generator.Emit(OpCodes.Call, addMethod);
+            }
+            else
+            {
+                generator.Emit(OpCodes.Callvirt, addMethod);
+            }
+
+            // Pop return value if add method returns non-void
+            if (addMethod.ReturnType != typeof(void))
+            {
+                generator.Emit(OpCodes.Pop);
+            }
+
+            // Return true (successfully added)
+            generator.Emit(OpCodes.Ldc_I4_1);
+            generator.Emit(OpCodes.Ret);
+
+            // Return false (key already exists, discarded)
+            generator.MarkLabel(returnFalseLabel);
+            generator.Emit(OpCodes.Ldc_I4_0);
+            generator.Emit(OpCodes.Ret);
+
+            return CreateDelegate<DictionaryInserter<TDictionary, TKey, TValue>>(dynamicMethod);
+        }
     }
 
     public Func<TDeclaringType> CreateDefaultConstructor<TDeclaringType>(IConstructorShapeInfo ctorInfo)
@@ -955,7 +1078,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
 
     public bool IsCollectionConstructorSupported(MethodBase method, CollectionConstructorParameter[] signature) => true;
 
-    public MutableCollectionConstructor<TKey, TDeclaringType> CreateMutableCollectionConstructor<TKey, TElement, TDeclaringType>(MethodCollectionConstructorInfo ctorInfo)
+    public MutableCollectionConstructor<TKey, TDeclaringType> CreateMutableCollectionConstructor<TKey, TElement, TDeclaringType>(MutableCollectionConstructorInfo ctorInfo)
     {
         // Only options parameter
         var dyn = CreateCollectionConstructorDelegate(
@@ -970,7 +1093,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         return CreateDelegate<MutableCollectionConstructor<TKey, TDeclaringType>>(dyn);
     }
 
-    public ParameterizedCollectionConstructor<TKey, TElement, TCollection> CreateParameterizedCollectionConstructor<TKey, TElement, TCollection>(MethodCollectionConstructorInfo constructorInfo)
+    public ParameterizedCollectionConstructor<TKey, TElement, TCollection> CreateParameterizedCollectionConstructor<TKey, TElement, TCollection>(ParameterizedCollectionConstructorInfo constructorInfo)
     {
         // (ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey> options)
         var dyn = CreateCollectionConstructorDelegate(

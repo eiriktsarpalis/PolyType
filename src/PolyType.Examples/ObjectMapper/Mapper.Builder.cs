@@ -250,7 +250,7 @@ public static partial class Mapper
                 {
                     case CollectionConstructionStrategy.Mutable:
                         var defaultCtor = enumerableShape.GetMutableConstructor();
-                        var addElement = enumerableShape.GetAddElement();
+                        var appender = enumerableShape.GetAppender();
                         return new Mapper<TSourceEnumerable, TTargetEnumerable>(source =>
                         {
                             if (source is null)
@@ -261,7 +261,7 @@ public static partial class Mapper
                             var target = defaultCtor();
                             foreach (TSourceElement sourceElement in sourceGetEnumerable(source))
                             {
-                                addElement(ref target, elementMapper(sourceElement)!);
+                                appender(ref target, elementMapper(sourceElement)!);
                             }
 
                             return target;
@@ -300,7 +300,7 @@ public static partial class Mapper
                 {
                     case CollectionConstructionStrategy.Mutable:
                         var defaultCtor = targetDictionary.GetMutableConstructor();
-                        var addEntry = targetDictionary.GetAddKeyValuePair();
+                        var inserter = targetDictionary.GetInserter();
                         return new Mapper<TSourceDictionary, TTargetDictionary>(source =>
                         {
                             if (source is null)
@@ -311,8 +311,7 @@ public static partial class Mapper
                             var target = defaultCtor();
                             foreach (var sourceEntry in sourceGetDictionary(source))
                             {
-                                KeyValuePair<TTargetKey, TTargetValue> entry = new(keyMapper(sourceEntry.Key), valueMapper(sourceEntry.Value)!);
-                                addEntry(ref target, entry);
+                                inserter(ref target, keyMapper(sourceEntry.Key), valueMapper(sourceEntry.Value)!);
                             }
 
                             return target;

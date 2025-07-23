@@ -45,11 +45,11 @@ internal sealed class XmlMutableDictionaryConverter<TDictionary, TKey, TValue>(
     XmlConverter<TValue> valueConverter,
     Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getEnumerable,
     MutableCollectionConstructor<TKey, TDictionary> createObject,
-    Setter<TDictionary, KeyValuePair<TKey, TValue>> addDelegate)
+    DictionaryInserter<TDictionary, TKey, TValue> inserter)
     : XmlDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, getEnumerable)
     where TKey : notnull
 {
-    private readonly Setter<TDictionary, KeyValuePair<TKey, TValue>> _addDelegate = addDelegate;
+    private readonly DictionaryInserter<TDictionary, TKey, TValue> _inserter = inserter;
 
     public override TDictionary? Read(XmlReader reader)
     {
@@ -68,7 +68,7 @@ internal sealed class XmlMutableDictionaryConverter<TDictionary, TKey, TValue>(
 
         XmlConverter<TKey> keyConverter = _keyConverter;
         XmlConverter<TValue> valueConverter = _valueConverter;
-        Setter<TDictionary, KeyValuePair<TKey, TValue>> addDelegate = _addDelegate;
+        DictionaryInserter<TDictionary, TKey, TValue> inserter = _inserter;
         
         reader.ReadStartElement();
         while (reader.NodeType != XmlNodeType.EndElement)
@@ -81,7 +81,7 @@ internal sealed class XmlMutableDictionaryConverter<TDictionary, TKey, TValue>(
             reader.ReadStartElement();
             TKey key = keyConverter.Read(reader)!;
             TValue value = valueConverter.Read(reader)!;
-            addDelegate(ref result, new(key, value));
+            inserter(ref result, key, value);
             reader.ReadEndElement();
         }
 

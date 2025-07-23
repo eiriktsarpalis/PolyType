@@ -30,7 +30,7 @@ public sealed class EnumerableDataModel : TypeDataModel
     /// Instance method used for appending an element to the collection.
     /// Implies that the collection also has an accessible default constructor.
     /// </summary>
-    public required IMethodSymbol? AddElementMethod { get; init; }
+    public required IMethodSymbol? AppendMethod { get; init; }
 
     /// <summary>
     /// Constructor or static factory method for the collection.
@@ -48,9 +48,14 @@ public sealed class EnumerableDataModel : TypeDataModel
     public required int Rank { get; init; }
 
     /// <summary>
-    /// <see langword="true"/> if the enumerable type only exposes an add method via an explicit interface implementation of either <see cref="ICollection{T}"/> or <see cref="ICollection"/>.
+    /// Indicates whether the enumerable is a known set type.
     /// </summary>
-    public required bool AddMethodIsExplicitInterfaceImplementation { get; init; }
+    public required bool IsSetType { get; init; }
+
+    /// <summary>
+    ///  Gets the insertion mode supported by the enumerable type if mutable.
+    /// </summary>
+    public required EnumerableInsertionMode InsertionMode { get; init; }
 }
 
 /// <summary>
@@ -99,4 +104,30 @@ public enum EnumerableKind
     /// An IAsyncEnumerable{T} type.
     /// </summary>
     IAsyncEnumerableOfT,
+}
+
+/// <summary>
+/// Identifies the insertion models available to the dictionary.
+/// </summary>
+public enum EnumerableInsertionMode
+{
+    /// <summary>
+    /// No insertion model available.
+    /// </summary>
+    None,
+
+    /// <summary>
+    /// Insertion possible by an Add-like method defined on the type.
+    /// </summary>
+    AddMethod,
+
+    /// <summary>
+    /// Enumerable explicitly implements <see cref="ICollection{T}"/>.
+    /// </summary>
+    ExplicitICollectionOfT,
+
+    /// <summary>
+    /// Enumerable explicitly implements <see cref="ICollection"/>.
+    /// </summary>
+    ExplicitIList,
 }

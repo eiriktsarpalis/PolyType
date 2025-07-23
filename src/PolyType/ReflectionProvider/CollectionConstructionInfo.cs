@@ -15,14 +15,37 @@ internal sealed class NoCollectionConstructorInfo() : CollectionConstructorInfo(
     public static NoCollectionConstructorInfo Instance { get; } = new();
 }
 
-internal sealed class MethodCollectionConstructorInfo(
+internal abstract class MethodCollectionConstructorInfo(
     MethodBase factory,
     CollectionConstructorParameter[] signature,
-    CollectionComparerOptions comparerOptions,
-    MethodInfo? addMethod)
-    : CollectionConstructorInfo(addMethod is null ? CollectionConstructionStrategy.Parameterized : CollectionConstructionStrategy.Mutable, comparerOptions)
+    CollectionConstructionStrategy strategy,
+    CollectionComparerOptions comparerOptions)
+    : CollectionConstructorInfo(strategy, comparerOptions)
 {
     public MethodBase Factory { get; } = factory;
     public CollectionConstructorParameter[] Signature { get; } = signature;
-    public MethodInfo? AddMethod { get; } = addMethod;
 }
+
+internal sealed class MutableCollectionConstructorInfo(
+    MethodBase factory,
+    CollectionConstructorParameter[] signature,
+    MethodInfo? addMethod,
+    MethodInfo? setMethod,
+    MethodInfo? tryAddMethod,
+    MethodInfo? containsKeyMethod,
+    DictionaryInsertionMode insertionModes,
+    CollectionComparerOptions comparerOptions)
+    : MethodCollectionConstructorInfo(factory, signature, CollectionConstructionStrategy.Mutable, comparerOptions)
+{
+    public MethodInfo? AddMethod { get; } = addMethod;
+    public MethodInfo? TryAddMethod { get; } = tryAddMethod;
+    public MethodInfo? SetMethod { get; } = setMethod;
+    public MethodInfo? ContainsKeyMethod { get; } = containsKeyMethod;
+    public DictionaryInsertionMode AvailableInsertionModes { get; } = insertionModes;
+}
+
+internal sealed class ParameterizedCollectionConstructorInfo(
+    MethodBase factory,
+    CollectionConstructorParameter[] signature,
+    CollectionComparerOptions comparerOptions)
+    : MethodCollectionConstructorInfo(factory, signature, CollectionConstructionStrategy.Parameterized, comparerOptions);

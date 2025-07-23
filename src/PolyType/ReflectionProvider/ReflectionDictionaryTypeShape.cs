@@ -13,8 +13,10 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
     where TKey : notnull
 {
     private CollectionConstructorInfo? _constructorInfo;
-    private Setter<TDictionary, KeyValuePair<TKey, TValue>>? _addDelegate;
     private MutableCollectionConstructor<TKey, TDictionary>? _mutableCtorDelegate;
+    private DictionaryInserter<TDictionary, TKey, TValue>? _addInserter;
+    private DictionaryInserter<TDictionary, TKey, TValue>? _setInserter;
+    private DictionaryInserter<TDictionary, TKey, TValue>? _tryAddInserter;
     private ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>? _spanCtorDelegate;
 
     private CollectionConstructorInfo ConstructorInfo
@@ -27,6 +29,10 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
 
     public CollectionComparerOptions SupportedComparer => ConstructorInfo.ComparerOptions;
     public CollectionConstructionStrategy ConstructionStrategy => ConstructorInfo.Strategy;
+    public DictionaryInsertionMode AvailableInsertionModes =>
+        ConstructorInfo is MutableCollectionConstructorInfo mutableCtor
+        ? mutableCtor.AvailableInsertionModes
+        : DictionaryInsertionMode.None;
 
     public ITypeShape<TKey> KeyType => Provider.GetShape<TKey>();
     public ITypeShape<TValue> ValueType => Provider.GetShape<TValue>();
@@ -35,7 +41,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
 
     public abstract Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> GetGetDictionary();
 
-    public Setter<TDictionary, KeyValuePair<TKey, TValue>> GetAddKeyValuePair()
+    public DictionaryInserter<TDictionary, TKey, TValue> GetInserter(DictionaryInsertionMode insertionMode)
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
         {
@@ -43,12 +49,22 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
             static void Throw() => throw new InvalidOperationException("The current dictionary shape does not support mutation.");
         }
 
-        return _addDelegate ?? CommonHelpers.ExchangeIfNull(ref _addDelegate, CreateAddKeyValuePair());
-
-        Setter<TDictionary, KeyValuePair<TKey, TValue>> CreateAddKeyValuePair()
+        switch (DetermineInsertionMode(AvailableInsertionModes, insertionMode))
         {
-            DebugExt.Assert(_constructorInfo is MethodCollectionConstructorInfo { AddMethod: not null });
-            return Provider.MemberAccessor.CreateDictionaryAddDelegate<TDictionary, TKey, TValue>(((MethodCollectionConstructorInfo)_constructorInfo).AddMethod!);
+            case DictionaryInsertionMode.Overwrite: return _setInserter ?? CreateInserter(ref _setInserter, DictionaryInsertionMode.Overwrite);
+            case DictionaryInsertionMode.Discard: return _tryAddInserter ?? CreateInserter(ref _tryAddInserter, DictionaryInsertionMode.Discard);
+            case DictionaryInsertionMode.Throw: return _addInserter ?? CreateInserter(ref _addInserter, DictionaryInsertionMode.Throw);
+            default:
+                Throw();
+                return null!;
+                static void Throw() => throw new ArgumentOutOfRangeException(nameof(insertionMode), "The requested insertion mode is not supported by the current dictionary shape.");
+        }
+
+        DictionaryInserter<TDictionary, TKey, TValue> CreateInserter(ref DictionaryInserter<TDictionary, TKey, TValue>? field, DictionaryInsertionMode insertionMode)
+        {
+            DebugExt.Assert(_constructorInfo is MutableCollectionConstructorInfo);
+            var inserter = Provider.MemberAccessor.CreateDictionaryInserter<TDictionary, TKey, TValue>((MutableCollectionConstructorInfo)_constructorInfo, insertionMode);
+            return CommonHelpers.ExchangeIfNull(ref field, inserter);
         }
     }
 
@@ -64,8 +80,8 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
 
         MutableCollectionConstructor<TKey, TDictionary> CreateMutableCtor()
         {
-            DebugExt.Assert(_constructorInfo is MethodCollectionConstructorInfo);
-            return Provider.MemberAccessor.CreateMutableCollectionConstructor<TKey, TValue, TDictionary>((MethodCollectionConstructorInfo)_constructorInfo);
+            DebugExt.Assert(_constructorInfo is MutableCollectionConstructorInfo);
+            return Provider.MemberAccessor.CreateMutableCollectionConstructor<TKey, TValue, TDictionary>((MutableCollectionConstructorInfo)_constructorInfo);
         }
     }
 
@@ -80,8 +96,8 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         return _spanCtorDelegate ?? CommonHelpers.ExchangeIfNull(ref _spanCtorDelegate, CreateParameterizedCtor());
         ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> CreateParameterizedCtor()
         {
-            DebugExt.Assert(_constructorInfo is MethodCollectionConstructorInfo);
-            return Provider.MemberAccessor.CreateParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>((MethodCollectionConstructorInfo)_constructorInfo);
+            DebugExt.Assert(_constructorInfo is ParameterizedCollectionConstructorInfo);
+            return Provider.MemberAccessor.CreateParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>((ParameterizedCollectionConstructorInfo)_constructorInfo);
         }
     }
 
@@ -96,107 +112,219 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         // Used by the F# map factory method.
         Type correspondingTupleEnumerableType = typeof(IEnumerable<Tuple<TKey, TValue>>);
 
-        if (dictionaryType.IsInterface)
+        if (GetImmutableDictionaryFactory() is { } factoryCtorInfo)
         {
-            if (dictionaryType.IsAssignableFrom(typeof(Dictionary<TKey, TValue>)))
-            {
-                // Handle IDictionary, IDictionary<TKey, TValue> and IReadOnlyDictionary<TKey, TValue> using Dictionary<TKey, TValue>
-                dictionaryType = typeof(Dictionary<TKey, TValue>);
-            }
-            else if (dictionaryType == typeof(IDictionary))
-            {
-                // Handle IDictionary using Dictionary<object, object>
-                Debug.Assert(typeof(TKey) == typeof(object) && typeof(TValue) == typeof(object));
-                dictionaryType = typeof(Dictionary<object, object>);
-            }
+            return factoryCtorInfo;
         }
 
-        ConstructorInfo[] allCtors = dictionaryType.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
-        MethodInfo? addMethod = ResolveAddMethod(dictionaryType);
+        ConstructorInfo[] allCtors = DetermineImplementationType(dictionaryType).GetConstructors(BindingFlags.Public | BindingFlags.Instance);
+        DictionaryInsertionMode availableInsertionModes = ResolveInsertionMethods(
+            typeof(TDictionary),
+            out MethodInfo? addMethod,
+            out MethodInfo? setMethod,
+            out MethodInfo? tryAddMethod,
+            out MethodInfo? containsKeyMethod);
+
         if (Provider.ResolveBestCollectionCtor<KeyValuePair<TKey, TValue>, TKey>(
                 dictionaryType,
                 allCtors,
                 addMethod,
+                setMethod,
+                tryAddMethod,
+                containsKeyMethod,
+                availableInsertionModes,
                 correspondingGenericDictionaryType,
                 correspondingTupleEnumerableType) is { } collectionCtorInfo)
         {
             return collectionCtorInfo;
         }
 
-        if (dictionaryType is { Name: "ImmutableDictionary`2", Namespace: "System.Collections.Immutable" }
-                           or { Name: "IImmutableDictionary`2", Namespace: "System.Collections.Immutable" })
-        {
-            return ResolveFactoryMethod("System.Collections.Immutable.ImmutableDictionary");
-        }
-
-        if (dictionaryType is { Name: "ImmutableSortedDictionary`2", Namespace: "System.Collections.Immutable" })
-        {
-            return ResolveFactoryMethod("System.Collections.Immutable.ImmutableSortedDictionary");
-        }
-
-        if (dictionaryType is { Name: "FrozenDictionary`2", Namespace: "System.Collections.Frozen" })
-        {
-            return ResolveFactoryMethod("System.Collections.Frozen.FrozenDictionary", "ToFrozenDictionary");
-        }
-
-        if (dictionaryType is { Name: "FSharpMap`2", Namespace: "Microsoft.FSharp.Collections" })
-        {
-            return ResolveFactoryMethod("Microsoft.FSharp.Collections.MapModule", "OfSeq");
-        }
-
         return NoCollectionConstructorInfo.Instance;
 
-        CollectionConstructorInfo ResolveFactoryMethod(string typeName, string? factoryName = null)
+        CollectionConstructorInfo? GetImmutableDictionaryFactory()
         {
-            Type? factoryType = dictionaryType.Assembly.GetType(typeName);
-            if (factoryType is not null)
+            if (dictionaryType == typeof(IReadOnlyDictionary<TKey, TValue>))
             {
-                var candidates = factoryType.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                    .Where(m => factoryName is null ? m.Name is "Create" or "CreateRange" : m.Name == factoryName)
-                    .Where(m => m.GetGenericArguments().Length == 2)
-                    .Select(m => m.MakeGenericMethod(typeof(TKey), typeof(TValue)));
+                return ResolveFactoryMethod("PolyType.SourceGenModel.CollectionHelpers", "CreateDictionary");
+            }
 
-                if (Provider.ResolveBestCollectionCtor<KeyValuePair<TKey, TValue>, TKey>(
-                        dictionaryType,
-                        candidates,
-                        addMethod: null,
-                        correspondingGenericDictionaryType,
-                        correspondingTupleEnumerableType) is { } factoryCtorInfo)
+            if (dictionaryType is { Name: "ImmutableDictionary`2", Namespace: "System.Collections.Immutable" }
+                   or { Name: "IImmutableDictionary`2", Namespace: "System.Collections.Immutable" })
+            {
+                return ResolveFactoryMethod("System.Collections.Immutable.ImmutableDictionary");
+            }
+
+            if (dictionaryType is { Name: "ImmutableSortedDictionary`2", Namespace: "System.Collections.Immutable" })
+            {
+                return ResolveFactoryMethod("System.Collections.Immutable.ImmutableSortedDictionary");
+            }
+
+            if (dictionaryType is { Name: "FrozenDictionary`2", Namespace: "System.Collections.Frozen" })
+            {
+                return ResolveFactoryMethod("System.Collections.Frozen.FrozenDictionary", "ToFrozenDictionary");
+            }
+
+            if (dictionaryType is { Name: "FSharpMap`2", Namespace: "Microsoft.FSharp.Collections" })
+            {
+                return ResolveFactoryMethod("Microsoft.FSharp.Collections.MapModule", "OfSeq");
+            }
+
+            return null;
+
+            CollectionConstructorInfo ResolveFactoryMethod(string typeName, string? factoryName = null)
+            {
+                Type? factoryType = dictionaryType.Assembly.GetType(typeName) ?? Assembly.GetExecutingAssembly().GetType(typeName);
+                if (factoryType is not null)
                 {
-                    return factoryCtorInfo;
+                    var candidates = factoryType.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                        .Where(m => factoryName is null ? m.Name is "Create" or "CreateRange" : m.Name == factoryName)
+                        .Where(m => m.GetGenericArguments().Length == 2)
+                        .Select(m => m.MakeGenericMethod(typeof(TKey), typeof(TValue)));
+
+                    if (Provider.ResolveBestCollectionCtor<KeyValuePair<TKey, TValue>, TKey>(
+                            dictionaryType,
+                            candidates,
+                            addMethod: null,
+                            correspondingDictionaryType: correspondingGenericDictionaryType,
+                            correspondingTupleEnumerableType: correspondingTupleEnumerableType) is { } factoryCtorInfo)
+                    {
+                        return factoryCtorInfo;
+                    }
+                }
+
+                return NoCollectionConstructorInfo.Instance;
+            }
+        }
+
+        static DictionaryInsertionMode ResolveInsertionMethods(
+            Type dictionaryType,
+            out MethodInfo? addMethod,
+            out MethodInfo? setMethod,
+            out MethodInfo? tryAddMethod,
+            out MethodInfo? containsKeyMethod)
+        {
+            IEnumerable<MethodInfo> instanceMethods = dictionaryType.GetMethods(BindingFlags.Public | BindingFlags.Instance);
+            if (!dictionaryType.IsInterface)
+            {
+                if (typeof(IDictionary<TKey, TValue>).IsAssignableFrom(dictionaryType))
+                {
+                    instanceMethods = instanceMethods.Concat(typeof(IDictionary<TKey, TValue>).GetMethods());
+                }
+                else if (typeof(IDictionary).IsAssignableFrom(dictionaryType))
+                {
+                    instanceMethods = instanceMethods.Concat(typeof(IDictionary).GetMethods());
                 }
             }
 
-            return NoCollectionConstructorInfo.Instance;
-        }
+            DictionaryInsertionMode availableModes = DictionaryInsertionMode.None;
 
-        static MethodInfo? ResolveAddMethod(Type dictionaryType)
-        {
-            MethodInfo? addMethod = dictionaryType.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            addMethod = instanceMethods
                 .Where(m =>
-                    m.Name is "set_Item" or "Add" &&
+                    m.Name is "Add" &&
                     m.GetParameters() is [ParameterInfo key, ParameterInfo value] &&
                     key.ParameterType == typeof(TKey) && value.ParameterType == typeof(TValue))
-                .OrderByDescending(m => m.Name) // Prefer set_Item over Add
                 .FirstOrDefault();
 
-            if (!dictionaryType.IsValueType)
+            if (addMethod is not null)
             {
-                // If no indexer was found, check for potential explicit interface implementations.
-                // Only do so if the type is not a value type, since this would force boxing otherwise.
-                if (addMethod is null && typeof(IDictionary<TKey, TValue>).IsAssignableFrom(dictionaryType))
-                {
-                    addMethod = typeof(IDictionary<TKey, TValue>).GetMethod("set_Item", BindingFlags.Public | BindingFlags.Instance);
-                }
-
-                if (addMethod is null && typeof(IDictionary).IsAssignableFrom(dictionaryType) && typeof(TKey) == typeof(object))
-                {
-                    addMethod = typeof(IDictionary).GetMethod("set_Item", BindingFlags.Public | BindingFlags.Instance);
-                }
+                availableModes |= DictionaryInsertionMode.Throw;
             }
 
-            return addMethod;
+            setMethod = instanceMethods
+                .Where(m =>
+                    m.Name is "set_Item" &&
+                    m.GetParameters() is [ParameterInfo key, ParameterInfo value] &&
+                    key.ParameterType == typeof(TKey) && value.ParameterType == typeof(TValue))
+                .FirstOrDefault();
+
+            if (setMethod is not null)
+            {
+                availableModes |= DictionaryInsertionMode.Overwrite;
+            }
+
+            tryAddMethod = instanceMethods
+                .Where(m =>
+                    m.Name is "TryAdd" &&
+                    m.GetParameters() is [ParameterInfo key, ParameterInfo value] &&
+                    m.ReturnType == typeof(bool) &&
+                    key.ParameterType == typeof(TKey) && value.ParameterType == typeof(TValue))
+                .FirstOrDefault();
+
+            if (tryAddMethod is not null)
+            {
+                availableModes |= DictionaryInsertionMode.Discard;
+                containsKeyMethod = null;
+            }
+            else if (addMethod is not null || setMethod is not null)
+            {
+                // If TryAdd is not available, check if a ContainsKey/Add combination is available.
+                containsKeyMethod = instanceMethods
+                    .Where(m =>
+                        m.Name is "ContainsKey" or "Contains" &&
+                        m.GetParameters() is [ParameterInfo key] &&
+                        m.ReturnType == typeof(bool) &&
+                        key.ParameterType == typeof(TKey))
+                    .FirstOrDefault();
+
+                if (containsKeyMethod is not null)
+                {
+                    availableModes |= DictionaryInsertionMode.Discard;
+                }
+            }
+            else
+            {
+                containsKeyMethod = null;
+            }
+
+            return availableModes;
         }
+    }
+
+    private static Type DetermineImplementationType(Type dictionaryType)
+    {
+        if (dictionaryType.IsInterface)
+        {
+            if (dictionaryType == typeof(IDictionary<TKey, TValue>) ||
+                dictionaryType == typeof(IDictionary))
+            {
+                // Handle IDictionary<TKey, TValue> and IDictionary using Dictionary<TKey, TValue>
+                return typeof(Dictionary<TKey, TValue>);
+            }
+        }
+
+        return dictionaryType;
+    }
+
+    private static DictionaryInsertionMode DetermineInsertionMode(DictionaryInsertionMode supportedModes, DictionaryInsertionMode requestedMode)
+    {
+        Debug.Assert(supportedModes is not DictionaryInsertionMode.None);
+        switch (requestedMode)
+        {
+            case DictionaryInsertionMode.None:
+                // If no specific mode is requested, return the first supported mode.
+                ReadOnlySpan<DictionaryInsertionMode> allModes = [
+                    DictionaryInsertionMode.Overwrite,
+                    DictionaryInsertionMode.Discard,
+                    DictionaryInsertionMode.Throw
+                ];
+
+                foreach (var mode in allModes)
+                {
+                    if ((supportedModes & mode) != 0)
+                    {
+                        return mode;
+                    }
+                }
+
+                break;
+
+            case DictionaryInsertionMode.Overwrite when (supportedModes & DictionaryInsertionMode.Overwrite) != 0:
+            case DictionaryInsertionMode.Discard when (supportedModes & DictionaryInsertionMode.Discard) != 0:
+            case DictionaryInsertionMode.Throw when (supportedModes & DictionaryInsertionMode.Throw) != 0:
+                return requestedMode;
+        }
+
+        return DictionaryInsertionMode.None;
     }
 }
 

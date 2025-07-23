@@ -23,7 +23,7 @@ public partial class TypeDataModelGenerator
         CollectionConstructorParameter[]? factorySignature = null;
         ITypeSymbol? keyType = null;
         ITypeSymbol? valueType = null;
-        bool indexerIsExplicitImplementation = false;
+        DictionaryInsertionMode availableInsertionModes = DictionaryInsertionMode.None;
 
         if (namedType.GetCompatibleGenericBaseType(KnownSymbols.IReadOnlyDictionaryOfTKeyTValue) is { } genericReadOnlyIDictInstance)
         {
@@ -48,43 +48,20 @@ public partial class TypeDataModelGenerator
             return false; // Not a dictionary type
         }
 
-        if (namedType.TypeKind is TypeKind.Interface)
-        {
-            if (namedType.TypeParameters.Length == 2)
-            {
-                if (KnownSymbols.DictionaryOfTKeyTValue?.GetCompatibleGenericBaseType(namedType.ConstructedFrom) is not null)
-                {
-                    // Handle IDictionary<TKey, TValue> and IReadOnlyDictionary<TKey, TValue> using Dictionary<TKey, TValue>
-                    namedType = KnownSymbols.DictionaryOfTKeyTValue!.Construct(keyType, valueType);
-                }
-                else if (KnownSymbols.ImmutableDictionary?.GetCompatibleGenericBaseType(namedType.ConstructedFrom) is not null)
-                {
-                    // Handle IImmutableDictionary<TKey, TValue> using ImmutableDictionary<TKey, TValue>
-                    namedType = KnownSymbols.ImmutableDictionary!.Construct(keyType, valueType);
-                }
-            }
-            else if (SymbolEqualityComparer.Default.Equals(namedType, KnownSymbols.IDictionary))
-            {
-                // Handle IDictionary using Dictionary<object, object>
-                namedType = KnownSymbols.DictionaryOfTKeyTValue!.Construct(keyType, valueType);
-            }
-        }
-
         var elementType = KnownSymbols.KeyValuePairOfKV!.Construct(keyType, valueType);
-
-        if (ResolveBestCollectionCtor(
+        if (GetImmutableDictionaryFactory(namedType) is { } bestImmutableDictionaryCtor)
+        {
+            (factoryMethod, factorySignature, isParameterizedFactory) = bestImmutableDictionaryCtor;
+        }
+        else if (ResolveBestCollectionCtor(
             namedType,
-            namedType.GetConstructors(),
-            hasAddMethod: ContainsSettableIndexer(namedType, keyType, valueType, out indexerIsExplicitImplementation),
+            DetermineImplementationType(namedType).GetConstructors(),
+            hasInserter: ContainsInserter(type, keyType, valueType, out availableInsertionModes),
             elementType,
             keyType,
             valueType) is { } bestCtor)
         {
             (factoryMethod, factorySignature, isParameterizedFactory) = bestCtor;
-        }
-        else if (GetImmutableDictionaryFactory(namedType) is { } bestImmutableDictionaryCtor)
-        {
-            (factoryMethod, factorySignature, isParameterizedFactory) = bestImmutableDictionaryCtor;
         }
 
         if ((status = IncludeNestedType(keyType, ref ctx)) != TypeDataModelGenerationStatus.Success ||
@@ -104,40 +81,79 @@ public partial class TypeDataModelGenerator
             DerivedTypes = IncludeDerivedTypes(type, ref ctx, TypeShapeRequirements.Full),
             FactoryMethod = factoryMethod,
             FactorySignature = factorySignature?.ToImmutableArray() ?? ImmutableArray<CollectionConstructorParameter>.Empty,
-            IndexerIsExplicitInterfaceImplementation = indexerIsExplicitImplementation,
+            AvailableInsertionModes = availableInsertionModes,
         };
 
         return true;
 
-        bool ContainsSettableIndexer(ITypeSymbol type, ITypeSymbol keyType, ITypeSymbol valueType, out bool isExplicitInterfaceImplementation)
+        bool ContainsInserter(ITypeSymbol type, ITypeSymbol keyType, ITypeSymbol valueType, out DictionaryInsertionMode availableInsertionModes)
         {
-            bool hasSettableIndexer = type.GetAllMembers()
-                .OfType<IPropertySymbol>()
-                .Any(prop =>
-                    prop is { IsStatic: false, IsIndexer: true, Parameters.Length: 1, SetMethod: not null } &&
-                    SymbolEqualityComparer.Default.Equals(prop.Parameters[0].Type, keyType) &&
-                    SymbolEqualityComparer.Default.Equals(prop.Type, valueType) &&
-                    IsAccessibleSymbol(prop));
+            availableInsertionModes = DictionaryInsertionMode.None;
+            bool foundContainsKey = false;
+            var instanceMethods = type.GetAllMembers()
+                .OfType<IMethodSymbol>()
+                .Where(method => method.IsStatic is false && IsAccessibleSymbol(method));
 
-            if (!hasSettableIndexer && !type.IsValueType && kind is DictionaryKind.IDictionaryOfKV or DictionaryKind.IDictionary)
+            foreach (var method in instanceMethods)
             {
-                // For reference types, allow using explicit interface implementations of the indexer.
-                isExplicitInterfaceImplementation = true;
-                return true;
+                if (method.Parameters is [var p1, var p2] &&
+                    SymbolEqualityComparer.Default.Equals(p1.Type, keyType) &&
+                    SymbolEqualityComparer.Default.Equals(p2.Type, valueType))
+                {
+                    if (method.Name is "Add")
+                    {
+                        availableInsertionModes |= DictionaryInsertionMode.Add;
+                    }
+                    else if (method is { Name: "TryAdd", ReturnType.SpecialType: SpecialType.System_Boolean })
+                    {
+                        availableInsertionModes |= DictionaryInsertionMode.TryAdd;
+                    }
+                    else if (method is { Name: "set_Item", MethodKind: MethodKind.PropertySet })
+                    {
+                        availableInsertionModes |= DictionaryInsertionMode.SetItem;
+                    }
+
+                    continue;
+                }
+
+                if (method is { Name: "ContainsKey", Parameters: [var param], ReturnType.SpecialType: SpecialType.System_Boolean } &&
+                    SymbolEqualityComparer.Default.Equals(param.Type, keyType))
+                {
+                    foundContainsKey = true;
+                }
             }
 
-            isExplicitInterfaceImplementation = false;
-            return hasSettableIndexer;
+            if (foundContainsKey && (availableInsertionModes & DictionaryInsertionMode.Add) != 0)
+            {
+                availableInsertionModes |= DictionaryInsertionMode.ContainsKeyAdd;
+            }
+
+            if (type.GetCompatibleGenericBaseType(KnownSymbols.IDictionaryOfTKeyTValue) is not null)
+            {
+                availableInsertionModes |= DictionaryInsertionMode.ExplicitIDictionaryOfT;
+            }
+            else if (KnownSymbols.IDictionary.IsAssignableFrom(type))
+            {
+                availableInsertionModes |= DictionaryInsertionMode.ExplicitIDictionary;
+            }
+
+            return availableInsertionModes is not DictionaryInsertionMode.None;
         }
 
         (IMethodSymbol Factory, CollectionConstructorParameter[] Signature, bool IsParameterized)? GetImmutableDictionaryFactory(INamedTypeSymbol namedType)
         {
+            if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.IReadOnlyDictionaryOfTKeyTValue))
+            {
+                return ResolveFactoryMethod("PolyType.SourceGenModel.CollectionHelpers", "CreateDictionary");
+            }
+
             if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.ImmutableDictionary))
             {
                 return ResolveFactoryMethod("System.Collections.Immutable.ImmutableDictionary");
             }
 
-            if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.ImmutableSortedDictionary))
+            if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.ImmutableSortedDictionary) ||
+                SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.IImmutableDictionary))
             {
                 return ResolveFactoryMethod("System.Collections.Immutable.ImmutableSortedDictionary");
             }
@@ -169,8 +185,23 @@ public partial class TypeDataModelGenerator
                         (factoryName is null ? method.Name is "Create" or "CreateRange" : method.Name == factoryName))
                     .Select(method => method.MakeGenericMethod(keyType, valueType)!);
 
-                return ResolveBestCollectionCtor(type, candidates, hasAddMethod: false, elementType, keyType, valueType: null);
+                return ResolveBestCollectionCtor(type, candidates, hasInserter: false, elementType, keyType, valueType: null);
             }
+        }
+
+        INamedTypeSymbol DetermineImplementationType(INamedTypeSymbol namedType)
+        {
+            if (namedType.TypeKind is TypeKind.Interface)
+            {
+                if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.IDictionaryOfTKeyTValue) ||
+                    SymbolEqualityComparer.Default.Equals(namedType, KnownSymbols.IDictionary))
+                {
+                    // Handle IDictionary<TKey, TValue> and IDictionary using Dictionary<TKey, TValue>
+                    return KnownSymbols.DictionaryOfTKeyTValue!.Construct(keyType, valueType);
+                }
+            }
+
+            return namedType;
         }
     }
 }

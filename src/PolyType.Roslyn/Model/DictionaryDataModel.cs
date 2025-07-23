@@ -41,9 +41,9 @@ public sealed class DictionaryDataModel : TypeDataModel
     public required ImmutableArray<CollectionConstructorParameter> FactorySignature { get; init; }
 
     /// <summary>
-    /// <see langword="true"/> if the dictionary type only exposes an indexer via an explicit interface implementation of either <see cref="IDictionary{TKey, TValue}"/> or <see cref="IDictionary"/>.
+    /// Gets the available insertion modes supported by the dictionary type if mutable.
     /// </summary>
-    public required bool IndexerIsExplicitInterfaceImplementation { get; init; }
+    public required DictionaryInsertionMode AvailableInsertionModes { get; init; }
 }
 
 /// <summary>
@@ -65,4 +65,46 @@ public enum DictionaryKind
     /// The type implements <see cref="System.Collections.IDictionary"/>.
     /// </summary>
     IDictionary,
+}
+
+/// <summary>
+/// Identifies the insertion models available to the dictionary.
+/// </summary>
+[Flags]
+public enum DictionaryInsertionMode
+{
+    /// <summary>
+    /// No available insertion mode.
+    /// </summary>
+    None = 0,
+
+    /// <summary>
+    /// Dictionary exposes a settable indexer.
+    /// </summary>
+    SetItem = 1,
+
+    /// <summary>
+    /// Dictionary exposes a "TryAdd" method,
+    /// </summary>
+    TryAdd = 2,
+
+    /// <summary>
+    /// Dictionary exposes an "Add" method.
+    /// </summary>
+    Add = 4,
+
+    /// <summary>
+    /// Dictionary supports emulating "TryAdd" using a combination of "ContainsKey" and "Add".
+    /// </summary>
+    ContainsKeyAdd = 8,
+
+    /// <summary>
+    /// Dictionary explicitly implements <see cref="IDictionary{TKey, TValue}"/>.
+    /// </summary>
+    ExplicitIDictionaryOfT = 16,
+
+    /// <summary>
+    /// Dictionary explicitly implements <see cref="IDictionary"/>.
+    /// </summary>
+    ExplicitIDictionary = 32,
 }

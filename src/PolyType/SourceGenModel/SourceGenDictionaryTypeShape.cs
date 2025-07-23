@@ -26,9 +26,7 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     /// </summary>
     public required Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> GetDictionaryFunc { get; init; }
 
-    /// <summary>
-    /// Gets the construction strategy for the dictionary.
-    /// </summary>
+    /// <inheritdoc/>
     public required CollectionConstructionStrategy ConstructionStrategy { get; init; }
 
     /// <inheritdoc/>
@@ -40,9 +38,19 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     public MutableCollectionConstructor<TKey, TDictionary>? MutableConstructorFunc { get; init; }
 
     /// <summary>
-    /// Gets the function that adds a key-value pair to the dictionary.
+    /// Gets the inserter function for adding key-value pairs to the dictionary with overwrite semantics.
     /// </summary>
-    public Setter<TDictionary, KeyValuePair<TKey, TValue>>? AddKeyValuePairFunc { get; init; }
+    public DictionaryInserter<TDictionary, TKey, TValue>? OverwritingInserter { get; init; }
+
+    /// <summary>
+    /// Gets the inserter function for adding key-value pairs to the dictionary with discard semantics.
+    /// </summary>
+    public DictionaryInserter<TDictionary, TKey, TValue>? DiscardingInserter { get; init; }
+
+    /// <summary>
+    /// Gets the inserter function for adding key-value pairs to the dictionary with throwing semantics.
+    /// </summary>
+    public DictionaryInserter<TDictionary, TKey, TValue>? ThrowingInserter { get; init; }
 
     /// <summary>
     /// Gets the function that constructs a dictionary from a span of key-value pairs.
@@ -64,8 +72,62 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     MutableCollectionConstructor<TKey, TDictionary> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetMutableConstructor()
         => MutableConstructorFunc ?? throw new InvalidOperationException("Dictionary shape does not specify a default constructor.");
 
-    Setter<TDictionary, KeyValuePair<TKey, TValue>> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetAddKeyValuePair()
-        => AddKeyValuePairFunc ?? throw new InvalidOperationException("Dictionary shape does not specify an append delegate.");
+    /// <inheritdoc/>
+    public DictionaryInsertionMode AvailableInsertionModes
+    {
+        get
+        {
+            return _availableInsertionModes ??= DetermineAvailableInsertionModes();
+            DictionaryInsertionMode DetermineAvailableInsertionModes()
+            {
+                DictionaryInsertionMode availableModes = DictionaryInsertionMode.None;
+                if (OverwritingInserter is not null)
+                {
+                    availableModes |= DictionaryInsertionMode.Overwrite;
+                }
+
+                if (DiscardingInserter is not null)
+                {
+                    availableModes |= DictionaryInsertionMode.Discard;
+                }
+
+                if (ThrowingInserter is not null)
+                {
+                    availableModes |= DictionaryInsertionMode.Throw;
+                }
+
+                return availableModes;
+            }
+        }
+    }
+
+    private DictionaryInsertionMode? _availableInsertionModes;
+
+    DictionaryInserter<TDictionary, TKey, TValue> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetInserter(DictionaryInsertionMode insertionMode)
+    {
+        if (ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
+        {
+            Throw();
+            static void Throw() => throw new InvalidOperationException("Dictionary shape does not specify a default constructor.");
+        }
+
+        switch (insertionMode)
+        {
+            case DictionaryInsertionMode.None:
+                return OverwritingInserter ?? DiscardingInserter ?? ThrowingInserter ?? Fail();
+            case DictionaryInsertionMode.Overwrite when OverwritingInserter is { } inserter:
+                return inserter;
+            case DictionaryInsertionMode.Discard when DiscardingInserter is { } inserter:
+                return inserter;
+            case DictionaryInsertionMode.Throw when ThrowingInserter is { } inserter:
+                return inserter;
+            default:
+                return Fail();
+        }
+
+        static DictionaryInserter<TDictionary, TKey, TValue> Fail() =>
+            throw new ArgumentOutOfRangeException(nameof(insertionMode), "Unsupported dictionary insertion mode.");
+    }
 
     ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetParameterizedConstructor()
         => SpanConstructorFunc ?? throw new InvalidOperationException("Dictionary shape does not specify a span constructor.");

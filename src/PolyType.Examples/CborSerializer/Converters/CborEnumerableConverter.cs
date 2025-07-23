@@ -46,9 +46,9 @@ internal sealed class CborMutableEnumerableConverter<TEnumerable, TElement>(
     CborConverter<TElement> elementConverter,
     Func<TEnumerable, IEnumerable<TElement>> getEnumerable,
     MutableCollectionConstructor<TElement, TEnumerable> createObject,
-    Setter<TEnumerable, TElement> addDelegate) : CborEnumerableConverter<TEnumerable, TElement>(elementConverter, getEnumerable)
+    EnumerableAppender<TEnumerable, TElement> appender) : CborEnumerableConverter<TEnumerable, TElement>(elementConverter, getEnumerable)
 {
-    private readonly Setter<TEnumerable, TElement> _addDelegate = addDelegate;
+    private readonly EnumerableAppender<TEnumerable, TElement> _appender = appender;
 
     public override TEnumerable? Read(CborReader reader)
     {
@@ -62,12 +62,12 @@ internal sealed class CborMutableEnumerableConverter<TEnumerable, TElement>(
         TEnumerable result = createObject(new() { Capacity = definiteLength });
 
         CborConverter<TElement> elementConverter = _elementConverter;
-        Setter<TEnumerable, TElement> addDelegate = _addDelegate;
+        EnumerableAppender<TEnumerable, TElement> appender = _appender;
 
         while (reader.PeekState() != CborReaderState.EndArray)
         {
             TElement? element = elementConverter.Read(reader);
-            addDelegate(ref result, element!);
+            appender(ref result, element!);
         }
 
         reader.ReadEndArray();

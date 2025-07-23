@@ -86,10 +86,10 @@ internal sealed class JsonMutableDictionaryConverter<TDictionary, TKey, TValue>(
     JsonConverter<TValue> valueConverter,
     IDictionaryTypeShape<TDictionary, TKey, TValue> shape,
     MutableCollectionConstructor<TKey, TDictionary> createObject,
-    Setter<TDictionary, KeyValuePair<TKey, TValue>> addDelegate) : JsonDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, shape)
+    DictionaryInserter<TDictionary, TKey, TValue> inserter) : JsonDictionaryConverter<TDictionary, TKey, TValue>(keyConverter, valueConverter, shape)
     where TKey : notnull
 {
-    private readonly Setter<TDictionary, KeyValuePair<TKey, TValue>> _addDelegate = addDelegate;
+    private readonly DictionaryInserter<TDictionary, TKey, TValue> _inserter = inserter;
 
     public override TDictionary? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
@@ -105,7 +105,7 @@ internal sealed class JsonMutableDictionaryConverter<TDictionary, TKey, TValue>(
 
         JsonConverter<TKey> keyConverter = _keyConverter;
         JsonConverter<TValue> valueConverter = _valueConverter;
-        Setter<TDictionary, KeyValuePair<TKey, TValue>> addDelegate = _addDelegate;
+        DictionaryInserter<TDictionary, TKey, TValue> inserter = _inserter;
 
         while (reader.TokenType != JsonTokenType.EndObject)
         {
@@ -124,7 +124,7 @@ internal sealed class JsonMutableDictionaryConverter<TDictionary, TKey, TValue>(
             TValue value = valueConverter.Read(ref reader, typeof(TValue), options)!;
             reader.EnsureRead();
 
-            addDelegate(ref result, new(key, value));
+            inserter(ref result, key, value);
         }
 
         return result;

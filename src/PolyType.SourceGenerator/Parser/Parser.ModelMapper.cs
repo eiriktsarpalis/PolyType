@@ -65,8 +65,7 @@ public sealed partial class Parser
                 {
                     { EnumerableKind: EnumerableKind.ArrayOfT or EnumerableKind.MemoryOfT or EnumerableKind.ReadOnlyMemoryOfT } =>
                         CollectionConstructionStrategy.Parameterized, // use ReadOnlySpan.ToArray() to create the collection
-
-                    { FactoryMethod: not null } => 
+                    { FactoryMethod: not null } =>
                         IsParameterizedConstructor(enumerableModel.FactorySignature)
                         ? CollectionConstructionStrategy.Parameterized
                         : CollectionConstructionStrategy.Mutable,
@@ -74,12 +73,10 @@ public sealed partial class Parser
                     _ => CollectionConstructionStrategy.None,
                 },
 
-                AddElementMethod = enumerableModel.AddElementMethod?.Name,
+                AppendMethod = enumerableModel.AppendMethod?.Name,
                 ImplementationTypeFQN =
                     enumerableModel.FactoryMethod is { IsStatic: false, ContainingType: INamedTypeSymbol implType } &&
-                    !IsParameterizedConstructor(enumerableModel.FactorySignature) &&
                     !SymbolEqualityComparer.Default.Equals(implType, enumerableModel.Type)
-
                     ? implType.GetFullyQualifiedName()
                     : null,
 
@@ -88,8 +85,10 @@ public sealed partial class Parser
 
                 Kind = enumerableModel.EnumerableKind,
                 Rank = enumerableModel.Rank,
+                IsSetType = enumerableModel.IsSetType,
                 ElementTypeContainsNullableAnnotations = enumerableModel.ElementType.ContainsNullabilityAnnotations(),
-                AddMethodIsExplicitInterfaceImplementation = enumerableModel.AddMethodIsExplicitInterfaceImplementation,
+                InsertionMode = enumerableModel.InsertionMode,
+                AppendMethodReturnsBoolean = enumerableModel.AppendMethod?.ReturnType.SpecialType is SpecialType.System_Boolean,
                 AssociatedTypes = associatedTypes,
             },
 
@@ -111,7 +110,6 @@ public sealed partial class Parser
 
                 ImplementationTypeFQN =
                     dictionaryModel.FactoryMethod is { IsStatic: false, ContainingType: INamedTypeSymbol implType } &&
-                    !IsParameterizedConstructor(dictionaryModel.FactorySignature) &&
                     !SymbolEqualityComparer.Default.Equals(implType, dictionaryModel.Type)
 
                     ? implType.GetFullyQualifiedName()
@@ -123,7 +121,7 @@ public sealed partial class Parser
                 KeyValueTypesContainNullableAnnotations =
                     dictionaryModel.KeyType.ContainsNullabilityAnnotations() ||
                     dictionaryModel.ValueType.ContainsNullabilityAnnotations(),
-                IndexerIsExplicitInterfaceImplementation = dictionaryModel.IndexerIsExplicitInterfaceImplementation,
+                AvailableInsertionModes = dictionaryModel.AvailableInsertionModes,
                 AssociatedTypes = associatedTypes,
             },
 

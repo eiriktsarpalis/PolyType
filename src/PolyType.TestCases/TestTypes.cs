@@ -135,8 +135,8 @@ public static class TestTypes
         yield return TestCase.Create(new Queue<int>([1, 2, 3]), p);
         yield return TestCase.Create(new Stack<int>([1, 2, 3]), isStack: true, provider: p);
         yield return TestCase.Create(new Dictionary<string, int> { ["key1"] = 42, ["key2"] = -1 }, provider: p);
-        yield return TestCase.Create((HashSet<string>)["apple", "orange", "banana"], p);
-        yield return TestCase.Create((SortedSet<string>)["apple", "orange", "banana"], p);
+        yield return TestCase.Create((HashSet<string>)["apple", "orange", "banana"], isSet: true, provider: p);
+        yield return TestCase.Create((SortedSet<string>)["apple", "orange", "banana"], isSet: true, provider: p);
         yield return TestCase.Create(new SortedDictionary<string, int> { ["key1"] = 42, ["key2"] = -1 }, provider: p);
         yield return TestCase.Create(new SortedList<int, string> { [42] = "forty-two", [32] = "thirty-two" }, provider: p);
 
@@ -159,9 +159,9 @@ public static class TestTypes
         yield return TestCase.Create((IList<int>)[1, 2, 1, 3], p);
         yield return TestCase.Create((IReadOnlyCollection<int>)[1, 2, 1, 3], p);
         yield return TestCase.Create((IReadOnlyList<int>)[1, 2, 1, 3], p);
-        yield return TestCase.Create((ISet<int>)new HashSet<int> { 1, 2, 3 }, p);
+        yield return TestCase.Create((ISet<int>)new HashSet<int> { 1, 2, 3 }, isSet: true, provider: p);
 #if NET
-        yield return TestCase.Create((IReadOnlySet<int>)new HashSet<int> { 1, 2, 3 }, p);
+        yield return TestCase.Create((IReadOnlySet<int>)new HashSet<int> { 1, 2, 3 }, isSet: true, provider: p);
 #endif
         yield return TestCase.Create((IDictionary<int, int>)new Dictionary<int, int> { [42] = 42 }, p);
         yield return TestCase.Create((IReadOnlyDictionary<int, int>)new Dictionary<int, int> { [42] = 42 }, p);
@@ -192,7 +192,7 @@ public static class TestTypes
         yield return TestCase.Create(new ReadOnlyCollection<int>([1, 2, 1, 3]), p);
         yield return TestCase.Create(new ReadOnlyDictionary<int, int>(new Dictionary<int, int> { [1] = 1, [2] = 2 }), p);
 #if NET9_0_OR_GREATER
-        yield return TestCase.Create(new ReadOnlySet<int>(new HashSet<int> { 1, 2, 3 }), p);
+        yield return TestCase.Create(new ReadOnlySet<int>(new HashSet<int> { 1, 2, 3 }), isSet: true, provider: p);
 #endif
 
         yield return TestCase.Create(new EnumerableAsObject { Value = 42 });
@@ -204,18 +204,18 @@ public static class TestTypes
         yield return TestCase.Create(ImmutableList.Create("1", "2", null), p);
         yield return TestCase.Create(ImmutableQueue.Create(1, 2, 1, 3), p);
         yield return TestCase.Create(ImmutableStack.Create(1, 2, 1, 3), isStack: true, provider: p);
-        yield return TestCase.Create(ImmutableHashSet.Create(1, 2, 1, 3), p);
-        yield return TestCase.Create(ImmutableSortedSet.Create(1, 2, 1, 3), p);
+        yield return TestCase.Create(ImmutableHashSet.Create(1, 2, 1, 3), isSet: true, provider: p);
+        yield return TestCase.Create(ImmutableSortedSet.Create(1, 2, 1, 3), isSet: true, provider: p);
         yield return TestCase.Create(ImmutableDictionary.CreateRange(new Dictionary<string, string> { ["key"] = "value" }), p);
         yield return TestCase.Create(ImmutableDictionary.CreateRange(new Dictionary<string, string?> { ["key"] = null }), p);
         yield return TestCase.Create(ImmutableSortedDictionary.CreateRange(new Dictionary<string, string> { ["key"] = "value" }), p);
         yield return TestCase.Create((IImmutableList<int>)[1, 2, 1, 3], p);
         yield return TestCase.Create((IImmutableQueue<int>)[1, 2, 1, 3], p);
-        yield return TestCase.Create((IImmutableSet<int>)[1, 2, 1, 3], p);
+        yield return TestCase.Create((IImmutableSet<int>)[1, 2, 1, 3], isSet: true, provider: p);
         yield return TestCase.Create((IImmutableStack<int>)[1, 2, 1, 3], isStack: true, provider: p);
         yield return TestCase.Create((IImmutableDictionary<string, string>)ImmutableSortedDictionary.CreateRange(new Dictionary<string, string> { ["key"] = "value" }), p);
         yield return TestCase.Create(Enumerable.Range(1, 5).Select(i => i.ToString(CultureInfo.InvariantCulture)).ToFrozenDictionary(i => i, i => i), p);
-        yield return TestCase.Create(Enumerable.Range(1, 5).ToFrozenSet(), p);
+        yield return TestCase.Create(Enumerable.Range(1, 5).ToFrozenSet(), isSet: true, provider: p);
 
         yield return TestCase.Create(new PocoWithListAndDictionaryProps(@string: "myString")
         {
@@ -798,13 +798,13 @@ public sealed partial class ExplicitlyImplementedIDictionary : IDictionary
     IDictionaryEnumerator IDictionary.GetEnumerator() => ((IDictionary)_dictionary).GetEnumerator();
     void IDictionary.Clear() => _dictionary.Clear();
     int ICollection.Count => _dictionary.Count;
+    bool IDictionary.Contains(object key) => _dictionary.ContainsKey(key);
     bool IDictionary.IsFixedSize => throw new NotImplementedException();
     bool IDictionary.IsReadOnly => throw new NotImplementedException();
     bool ICollection.IsSynchronized => throw new NotImplementedException();
     object ICollection.SyncRoot => throw new NotImplementedException();
     ICollection IDictionary.Keys => throw new NotImplementedException();
     ICollection IDictionary.Values => throw new NotImplementedException();
-    bool IDictionary.Contains(object? key) => throw new NotImplementedException();
     void ICollection.CopyTo(Array array, int index) => throw new NotImplementedException();
     void IDictionary.Remove(object? key) => throw new NotImplementedException();
 }

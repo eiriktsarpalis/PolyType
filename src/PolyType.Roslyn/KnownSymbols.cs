@@ -45,6 +45,18 @@ public class KnownSymbols(Compilation compilation)
     private Option<INamedTypeSymbol?> _IReadOnlyDictionaryOfTKeyTValue;
 
     /// <summary>
+    /// The type symbol for IReadOnlySet{T}.
+    /// </summary>
+    public INamedTypeSymbol? IReadOnlySetOfT => GetOrResolveType("System.Collections.Generic.IReadOnlySet`1", ref _IReadOnlySetOfT);
+    private Option<INamedTypeSymbol?> _IReadOnlySetOfT;
+
+    /// <summary>
+    /// The type symbol for IImmutableSet{T}.
+    /// </summary>
+    public INamedTypeSymbol? IImmutableSetOfT => GetOrResolveType("System.Collections.Immutable.IImmutableSet`1", ref _IImmutableSetOfT);
+    private Option<INamedTypeSymbol?> _IImmutableSetOfT;
+
+    /// <summary>
     /// The type symbol for <see cref="IDictionary{TKey, TValue}"/>.
     /// </summary>
     public INamedTypeSymbol? IDictionaryOfTKeyTValue => GetOrResolveType("System.Collections.Generic.IDictionary`2", ref _IDictionaryOfTKeyTValue);
@@ -147,6 +159,18 @@ public class KnownSymbols(Compilation compilation)
     private Option<INamedTypeSymbol?> _ICollectionOfT;
 
     /// <summary>
+    /// The type symbol for <see cref="ISet{T}"/>.
+    /// </summary>
+    public INamedTypeSymbol? ISetOfT => GetOrResolveType("System.Collections.Generic.ISet`1", ref _ISetOfT);
+    private Option<INamedTypeSymbol?> _ISetOfT;
+
+    /// <summary>
+    /// The type symbol for <see cref="System.Collections.ICollection"/>.
+    /// </summary>
+    public INamedTypeSymbol? ICollection => GetOrResolveType("System.Collections.ICollection", ref _ICollection);
+    private Option<INamedTypeSymbol?> _ICollection;
+
+    /// <summary>
     /// The type symbol for <see cref="System.Collections.IList"/>.
     /// </summary>
     public INamedTypeSymbol? IList => GetOrResolveType("System.Collections.IList", ref _IList);
@@ -205,7 +229,13 @@ public class KnownSymbols(Compilation compilation)
     /// </summary>
     public INamedTypeSymbol? ImmutableSortedDictionary => GetOrResolveType("System.Collections.Immutable.ImmutableSortedDictionary`2", ref _ImmutableSortedDictionary);
     private Option<INamedTypeSymbol?> _ImmutableSortedDictionary;
-    
+
+    /// <summary>
+    /// The type symbol for <see cref="System.Collections.Immutable.IImmutableDictionary{TKey, TValue}"/>.
+    /// </summary>
+    public INamedTypeSymbol? IImmutableDictionary => GetOrResolveType("System.Collections.Immutable.IImmutableDictionary`2", ref _IImmutableDictionary);
+    private Option<INamedTypeSymbol?> _IImmutableDictionary;
+
     /// <summary>
     /// The type symbol for FrozenDictionary.
     /// </summary>

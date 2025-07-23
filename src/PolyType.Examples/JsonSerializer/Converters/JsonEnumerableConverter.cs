@@ -73,9 +73,9 @@ internal sealed class JsonMutableEnumerableConverter<TEnumerable, TElement>(
     JsonConverter<TElement> elementConverter,
     IEnumerableTypeShape<TEnumerable, TElement> typeShape,
     MutableCollectionConstructor<TElement, TEnumerable> createObject,
-    Setter<TEnumerable, TElement> addDelegate) : JsonEnumerableConverter<TEnumerable, TElement>(elementConverter, typeShape)
+    EnumerableAppender<TEnumerable, TElement> appender) : JsonEnumerableConverter<TEnumerable, TElement>(elementConverter, typeShape)
 {
-    private readonly Setter<TEnumerable, TElement> _addDelegate = addDelegate;
+    private readonly EnumerableAppender<TEnumerable, TElement> _appender = appender;
 
     public override TEnumerable? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
@@ -90,12 +90,12 @@ internal sealed class JsonMutableEnumerableConverter<TEnumerable, TElement>(
         reader.EnsureRead();
 
         JsonConverter<TElement> elementConverter = _elementConverter;
-        Setter<TEnumerable, TElement> addDelegate = _addDelegate;
+        EnumerableAppender<TEnumerable, TElement> appender = _appender;
 
         while (reader.TokenType != JsonTokenType.EndArray)
         {
             TElement? element = elementConverter.Read(ref reader, typeof(TElement), options);
-            addDelegate(ref result, element!);
+            appender(ref result, element!);
             reader.EnsureRead();
         }
 

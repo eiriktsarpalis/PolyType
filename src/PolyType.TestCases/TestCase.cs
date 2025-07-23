@@ -22,6 +22,7 @@ public static class TestCase
     /// <param name="hasRefConstructorParameters">Whether the shape constructor accepts any ref parameters.</param>
     /// <param name="hasOutConstructorParameters">Whether the shape constructor accepts any out parameters.</param>
     /// <param name="usesSpanConstructor">Whether the shape defines a collection constructor that takes a span of elements.</param>
+    /// <param name="isSet">Whether the type is a set.</param>
     /// <param name="isStack">Whether the type is a stack.</param>
     /// <param name="isUnion">Whether the type is a union.</param>
     /// <returns>A test case instance using the specified parameters.</returns>
@@ -31,6 +32,7 @@ public static class TestCase
         bool hasRefConstructorParameters = false,
         bool hasOutConstructorParameters = false,
         bool usesSpanConstructor = false,
+        bool isSet = false,
         bool isStack = false,
         bool isUnion = false)
         where T : IShapeable<T>
@@ -41,6 +43,7 @@ public static class TestCase
             HasRefConstructorParameters = hasRefConstructorParameters,
             HasOutConstructorParameters = hasOutConstructorParameters,
             UsesSpanConstructor = usesSpanConstructor,
+            IsSet = isSet,
             IsStack = isStack,
             IsUnion = isUnion,
         };
@@ -57,6 +60,7 @@ public static class TestCase
     /// <param name="hasRefConstructorParameters">Whether the shape constructor accepts any ref parameters.</param>
     /// <param name="hasOutConstructorParameters">Whether the shape constructor accepts any out parameters.</param>
     /// <param name="usesSpanConstructor">Whether the shape defines a collection constructor that takes a span of elements.</param>
+    /// <param name="isSet">Whether the type is a set.</param>
     /// <param name="isStack">Whether the type is a stack.</param>
     /// <param name="isUnion">Whether the type is a union.</param>
     /// <returns>A test case instance using the specified parameters.</returns>
@@ -67,6 +71,7 @@ public static class TestCase
         bool hasRefConstructorParameters = false,
         bool hasOutConstructorParameters = false,
         bool usesSpanConstructor = false,
+        bool isSet = false,
         bool isStack = false,
         bool isUnion = false)
         where TProvider : IShapeable<T>
@@ -77,6 +82,7 @@ public static class TestCase
             HasRefConstructorParameters = hasRefConstructorParameters,
             HasOutConstructorParameters = hasOutConstructorParameters,
             UsesSpanConstructor = usesSpanConstructor,
+            IsSet = isSet,
             IsStack = isStack,
             IsUnion = isUnion,
         };
@@ -94,6 +100,7 @@ public static class TestCase
     /// <param name="hasRefConstructorParameters">Whether the shape constructor accepts any ref parameters.</param>
     /// <param name="hasOutConstructorParameters">Whether the shape constructor accepts any out parameters.</param>
     /// <param name="usesSpanConstructor">Whether the shape defines a collection constructor that takes a span of elements.</param>
+    /// <param name="isSet">Whether the type is a set.</param>
     /// <param name="isStack">Whether the type is a stack.</param>
     /// <param name="isUnion">Whether the type is a union.</param>
     /// <returns>A test case instance using the specified parameters.</returns>
@@ -104,6 +111,7 @@ public static class TestCase
         bool hasRefConstructorParameters = false,
         bool hasOutConstructorParameters = false,
         bool usesSpanConstructor = false,
+        bool isSet = false,
         bool isStack = false,
         bool isUnion = false)
     {
@@ -113,6 +121,7 @@ public static class TestCase
             HasRefConstructorParameters = hasRefConstructorParameters,
             HasOutConstructorParameters = hasOutConstructorParameters,
             UsesSpanConstructor = usesSpanConstructor,
+            IsSet = isSet,
             IsStack = isStack,
             IsUnion = isUnion,
         };
@@ -127,6 +136,7 @@ public static class TestCase
         bool hasRefConstructorParameters = false,
         bool hasOutConstructorParameters = false,
         bool usesSpanConstructor = false,
+        bool isSet = false,
         bool isStack = false,
         bool isUnion = false)
     {
@@ -136,6 +146,7 @@ public static class TestCase
             HasRefConstructorParameters = hasRefConstructorParameters,
             HasOutConstructorParameters = hasOutConstructorParameters,
             UsesSpanConstructor = usesSpanConstructor,
+            IsSet = isSet,
             IsStack = isStack,
             IsUnion = isUnion,
         };

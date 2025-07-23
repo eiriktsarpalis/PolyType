@@ -2,7 +2,6 @@
 using PolyType.Roslyn.Helpers;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace PolyType.Roslyn;
 
@@ -22,11 +21,12 @@ public partial class TypeDataModelGenerator
         int rank = 1;
         EnumerableKind kind;
         ITypeSymbol? elementType;
-        IMethodSymbol? addMethod = null;
+        bool isSetType = false;
+        IMethodSymbol? appendMethod = null;
         bool isParameterizedFactory = false;
         IMethodSymbol? factoryMethod = null;
         CollectionConstructorParameter[]? factorySignature = null;
-        bool addMethodIsExplicitInterfaceImplementation = false;
+        EnumerableInsertionMode insertionMode = EnumerableInsertionMode.None;
 
         if (type is IArrayTypeSymbol array)
         {
@@ -89,38 +89,14 @@ public partial class TypeDataModelGenerator
                 return false; // Type is not IEnumerable
             }
 
-            if (namedType.TypeKind is TypeKind.Interface)
-            {
-                INamedTypeSymbol listOfT = KnownSymbols.ListOfT!.Construct(elementType);
-                if (namedType.IsAssignableFrom(listOfT))
-                {
-                    // Handle IEnumerable<T>, ICollection<T>, IList<T>, IReadOnlyCollection<T> and IReadOnlyList<T> types using List<T>
-                    namedType = listOfT;
-                }
-                else if (namedType.IsAssignableFrom(KnownSymbols.IList))
-                {
-                    // Handle construction of IList, ICollection and IEnumerable interfaces using List<object?>
-                    namedType = KnownSymbols.ListOfT!.Construct(KnownSymbols.Compilation.ObjectType);
-                }
-                else
-                {
-                    INamedTypeSymbol hashSetOfT = KnownSymbols.HashSetOfT!.Construct(elementType);
-                    if (namedType.IsAssignableFrom(hashSetOfT))
-                    {
-                        // Handle ISet<T> and IReadOnlySet<T> types using HashSet<T>
-                        namedType = hashSetOfT;
-                    }
-                }
-            }
-
             if (GetImmutableCollectionFactory(namedType) is { } result)
             {
                 (factoryMethod, factorySignature, isParameterizedFactory) = result;
             }
             else if (ResolveBestCollectionCtor(
                 namedType,
-                namedType.GetConstructors(),
-                hasAddMethod: (addMethod = ResolveAddMethod(namedType, elementType, out addMethodIsExplicitInterfaceImplementation)) is not null,
+                DetermineImplementationType(namedType).GetConstructors(),
+                hasInserter: (appendMethod = ResolveAddMethod(type, elementType, out insertionMode)) is not null,
                 elementType,
                 keyType: elementType,
                 valueType: null) is { } bestCtor)
@@ -132,12 +108,19 @@ public partial class TypeDataModelGenerator
                 ResolveBestCollectionCtor(
                     namedType,
                     candidates: KnownSymbols.Compilation.GetCollectionBuilderAttributeMethods(namedType, elementType, CancellationToken),
-                    hasAddMethod: false,
+                    hasInserter: false,
                     elementType,
                     keyType: elementType,
                     valueType: null) is { } classifiedBuilderMethod)
             {
                 (factoryMethod, factorySignature, isParameterizedFactory) = classifiedBuilderMethod;
+            }
+
+            if (type.GetCompatibleGenericBaseType(KnownSymbols.ISetOfT) is not null ||
+                type.GetCompatibleGenericBaseType(KnownSymbols.IReadOnlySetOfT) is not null ||
+                type.GetCompatibleGenericBaseType(KnownSymbols.IImmutableSetOfT) is not null)
+            {
+                isSetType = true;
             }
         }
 
@@ -154,103 +137,129 @@ public partial class TypeDataModelGenerator
             ElementType = elementType,
             EnumerableKind = kind,
             DerivedTypes = IncludeDerivedTypes(type, ref ctx, TypeShapeRequirements.Full),
-            AddElementMethod = isParameterizedFactory ? null : addMethod,
+            AppendMethod = isParameterizedFactory ? null : appendMethod,
+            InsertionMode = isParameterizedFactory ? EnumerableInsertionMode.None : insertionMode,
             FactoryMethod = factoryMethod,
             FactorySignature = factorySignature?.ToImmutableArray() ?? ImmutableArray<CollectionConstructorParameter>.Empty,
+            IsSetType = isSetType,
             Rank = rank,
-            AddMethodIsExplicitInterfaceImplementation = addMethodIsExplicitInterfaceImplementation,
         };
 
         return true;
 
-        IMethodSymbol? ResolveAddMethod(ITypeSymbol type, ITypeSymbol elementType, out bool isExplicitImplementation)
+        IMethodSymbol? ResolveAddMethod(ITypeSymbol type, ITypeSymbol elementType, out EnumerableInsertionMode insertionMode)
         {
-            isExplicitImplementation = false;
+            insertionMode = EnumerableInsertionMode.None;
             IMethodSymbol? result = type.GetAllMembers()
                 .OfType<IMethodSymbol>()
                 .FirstOrDefault(method =>
                     method is { DeclaredAccessibility: Accessibility.Public, IsStatic: false, Name: "Add" or "Enqueue" or "Push", Parameters: [{ Type: ITypeSymbol parameterType }] } &&
                     SymbolEqualityComparer.Default.Equals(method.Parameters[0].Type, elementType));
 
-            if (!type.IsValueType)
+            if (result is not null)
             {
-                // For reference types, allow using explicit interface implementations of known Add methods.
-                if (result is null && type.GetCompatibleGenericBaseType(KnownSymbols.ICollectionOfT) is { } iCollectionOfT)
+                insertionMode = EnumerableInsertionMode.AddMethod;
+                return result;
+            }
+
+            // Allow using explicit interface implementations of known Add methods.
+            if (type.GetCompatibleGenericBaseType(KnownSymbols.ICollectionOfT) is { } iCollectionOfT)
+            {
+                result = iCollectionOfT.GetMethods("Add", isStatic: false)
+                    .FirstOrDefault(m =>
+                        m is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ Type: ITypeSymbol paramType }] } &&
+                        SymbolEqualityComparer.Default.Equals(paramType, elementType));
+
+                if (result is not null)
                 {
-
-                    result = iCollectionOfT.GetMethods("Add", isStatic: false)
-                        .FirstOrDefault(m =>
-                            m is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ Type: ITypeSymbol paramType }] } &&
-                            SymbolEqualityComparer.Default.Equals(paramType, elementType));
-
-                    isExplicitImplementation = result is not null;
-                }
-
-                if (result is null && KnownSymbols.IList.IsAssignableFrom(type))
-                {
-                    result = KnownSymbols.IList.GetMethods("Add", isStatic: false)
-                        .OfType<IMethodSymbol>()
-                        .FirstOrDefault(m =>
-                            m is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ Type: ITypeSymbol paramType }] } &&
-                            SymbolEqualityComparer.Default.Equals(paramType, elementType));
-
-                    isExplicitImplementation = result is not null;
+                    insertionMode = EnumerableInsertionMode.ExplicitICollectionOfT;
+                    return result;
                 }
             }
 
-            return result;
+            if (KnownSymbols.IList.IsAssignableFrom(type))
+            {
+                result = KnownSymbols.IList.GetMethods("Add", isStatic: false)
+                    .OfType<IMethodSymbol>()
+                    .FirstOrDefault(m =>
+                        m is { DeclaredAccessibility: Accessibility.Public, Parameters: [{ Type: ITypeSymbol paramType }] } &&
+                        SymbolEqualityComparer.Default.Equals(paramType, elementType));
+
+                if (result is not null)
+                {
+                    insertionMode = EnumerableInsertionMode.ExplicitIList;
+                    return result;
+                }
+            }
+
+            return appendMethod;
         }
 
         (IMethodSymbol Factory, CollectionConstructorParameter[] Signature, bool IsParameterized)? GetImmutableCollectionFactory(INamedTypeSymbol namedType)
         {
+            if (namedType.OriginalDefinition.SpecialType 
+                    is SpecialType.System_Collections_IEnumerable or SpecialType.System_Collections_Generic_IEnumerable_T
+                    or SpecialType.System_Collections_Generic_IReadOnlyCollection_T or SpecialType.System_Collections_Generic_IReadOnlyList_T ||
+                SymbolEqualityComparer.Default.Equals(namedType, KnownSymbols.ICollection))
+            {
+                // Handle readonly list-like collection interfaces using a static factory method.
+                return ResolveFactoryMethod("PolyType.SourceGenModel.CollectionHelpers", "CreateList");
+            }
+
+            if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.IReadOnlySetOfT))
+            {
+                // Handle readonly set-like collection interfaces using a static factory method.
+                return ResolveFactoryMethod("PolyType.SourceGenModel.CollectionHelpers", "CreateHashSet");
+            }
+
             if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.ImmutableArray))
             {
-                return FindCreateRangeMethods("System.Collections.Immutable.ImmutableArray");
+                return ResolveFactoryMethod("System.Collections.Immutable.ImmutableArray");
             }
 
             if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.ImmutableList))
             {
-                return FindCreateRangeMethods("System.Collections.Immutable.ImmutableList");
+                return ResolveFactoryMethod("System.Collections.Immutable.ImmutableList");
             }
 
             if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.ImmutableQueue))
             {
-                return FindCreateRangeMethods("System.Collections.Immutable.ImmutableQueue");
+                return ResolveFactoryMethod("System.Collections.Immutable.ImmutableQueue");
             }
 
             if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.ImmutableStack))
             {
-                return FindCreateRangeMethods("System.Collections.Immutable.ImmutableStack");
+                return ResolveFactoryMethod("System.Collections.Immutable.ImmutableStack");
             }
 
             if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.ImmutableHashSet))
             {
-                return FindCreateRangeMethods("System.Collections.Immutable.ImmutableHashSet");
+                return ResolveFactoryMethod("System.Collections.Immutable.ImmutableHashSet");
             }
 
             if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.IImmutableSet))
             {
-                return FindCreateRangeMethods("System.Collections.Immutable.ImmutableHashSet");
+                return ResolveFactoryMethod("System.Collections.Immutable.ImmutableHashSet");
             }
 
             if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.ImmutableSortedSet))
             {
-                return FindCreateRangeMethods("System.Collections.Immutable.ImmutableSortedSet");
+                return ResolveFactoryMethod("System.Collections.Immutable.ImmutableSortedSet");
             }
 
             if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.FrozenSet))
             {
-                return FindCreateRangeMethods("System.Collections.Frozen.FrozenSet", "ToFrozenSet");
+                return ResolveFactoryMethod("System.Collections.Frozen.FrozenSet", "ToFrozenSet");
             }
 
             if (SymbolEqualityComparer.Default.Equals(namedType.ConstructedFrom, KnownSymbols.FSharpList))
             {
-                return FindCreateRangeMethods("Microsoft.FSharp.Collections.ListModule", factoryName: "OfSeq");
+                return ResolveFactoryMethod("Microsoft.FSharp.Collections.ListModule", factoryName: "OfSeq");
             }
 
             return default;
 
-            (IMethodSymbol Factory, CollectionConstructorParameter[] Signature, bool IsParameterized)? FindCreateRangeMethods(string typeName, string? factoryName = null)
+            (IMethodSymbol Factory, CollectionConstructorParameter[] Signature, bool IsParameterized)? ResolveFactoryMethod(string typeName, string? factoryName = null)
             {
                 INamedTypeSymbol? typeSymbol = KnownSymbols.Compilation.GetTypeByMetadataName(typeName);
                 if (typeSymbol is null)
@@ -265,15 +274,40 @@ public partial class TypeDataModelGenerator
                         factoryName is null ? method.Name is "Create" or "CreateRange" : method.Name == factoryName)
                     .Select(method => method.MakeGenericMethod(elementType)!);
 
-                return ResolveBestCollectionCtor(type, candidates, hasAddMethod: false, elementType, elementType, valueType: null);
+                return ResolveBestCollectionCtor(type, candidates, hasInserter: false, elementType, elementType, valueType: null);
             }
+        }
+
+        INamedTypeSymbol DetermineImplementationType(INamedTypeSymbol namedType)
+        {
+            if (namedType.TypeKind is TypeKind.Interface)
+            {
+                if (namedType.OriginalDefinition.SpecialType is SpecialType.System_Collections_Generic_ICollection_T 
+                                                             or SpecialType.System_Collections_Generic_IList_T ||
+                    SymbolEqualityComparer.Default.Equals(namedType, KnownSymbols.IList))
+                {
+                    // Handle IList, ICollection<T> and IList<T> types using List<T>
+                    return KnownSymbols.ListOfT!.Construct(elementType);
+                }
+                else
+                {
+                    INamedTypeSymbol hashSetOfT = KnownSymbols.HashSetOfT!.Construct(elementType);
+                    if (namedType.IsAssignableFrom(hashSetOfT))
+                    {
+                        // Handle ISet<T> types using HashSet<T>
+                        return hashSetOfT;
+                    }
+                }
+            }
+
+            return namedType;
         }
     }
 
     private (IMethodSymbol Factory, CollectionConstructorParameter[] Signature, bool IsParameterized)? ResolveBestCollectionCtor(
         ITypeSymbol collectionType,
         IEnumerable<IMethodSymbol> candidates,
-        bool hasAddMethod,
+        bool hasInserter,
         ITypeSymbol elementType,
         ITypeSymbol keyType,
         ITypeSymbol? valueType)
@@ -284,7 +318,7 @@ public partial class TypeDataModelGenerator
                 var signature = ClassifyCollectionConstructor(
                     collectionType,
                     method,
-                    hasAddMethod,
+                    hasInserter,
                     out CollectionConstructorParameter? valuesParam,
                     out CollectionConstructorParameter? comparerParam,
                     elementType, keyType, valueType);
@@ -326,7 +360,7 @@ public partial class TypeDataModelGenerator
 
         int RankStrategy(CollectionConstructorParameter? valueParam)
         {
-            return (hasAddMethod, valueParam) switch
+            return (hasInserter, valueParam) switch
             {
                 (true, null) => 0, // Mutable collections with add methods are ranked highest.
                 (false, not null) => 0, // Parameterized constructors are ranked highest if an add method is not available.

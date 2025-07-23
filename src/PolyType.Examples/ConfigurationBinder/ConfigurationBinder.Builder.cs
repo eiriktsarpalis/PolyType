@@ -121,7 +121,7 @@ public static partial class ConfigurationBinderTS
             {
                 case CollectionConstructionStrategy.Mutable:
                     MutableCollectionConstructor<TElement, TEnumerable> defaultCtor = enumerableShape.GetMutableConstructor();
-                    Setter<TEnumerable, TElement> addElement = enumerableShape.GetAddElement();
+                    EnumerableAppender<TEnumerable, TElement> appender = enumerableShape.GetAppender();
                     return new Func<IConfiguration, TEnumerable?>(configuration =>
                     {
                         if (IsNullConfiguration(configuration))
@@ -133,7 +133,7 @@ public static partial class ConfigurationBinderTS
                         foreach (IConfigurationSection child in configuration.GetChildren())
                         {
                             TElement element = elementBinder(child);
-                            addElement(ref enumerable, element);
+                            appender(ref enumerable, element);
                         }
 
                         return enumerable;
@@ -177,7 +177,7 @@ public static partial class ConfigurationBinderTS
             {
                 case CollectionConstructionStrategy.Mutable:
                     MutableCollectionConstructor<TKey, TDictionary> defaultCtor = dictionaryShape.GetMutableConstructor();
-                    Setter<TDictionary, KeyValuePair<TKey, TValue>> addEntry = dictionaryShape.GetAddKeyValuePair();
+                    var inserter = dictionaryShape.GetInserter();
                     return new Func<IConfiguration, TDictionary?>(configuration =>
                     {
                         if (IsNullConfiguration(configuration))
@@ -193,8 +193,7 @@ public static partial class ConfigurationBinderTS
                                 continue;
                             }
 
-                            KeyValuePair<TKey, TValue> entry = new(keyBinder(section), valueBinder(section));
-                            addEntry(ref dict, entry);
+                            inserter(ref dict, keyBinder(section), valueBinder(section));
                         }
 
                         return dict;
@@ -202,6 +201,7 @@ public static partial class ConfigurationBinderTS
                 
                 case CollectionConstructionStrategy.Parameterized:
                     ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> spanCtor = dictionaryShape.GetParameterizedConstructor();
+                    var duplicateKeyValidator = dictionaryShape.CreateDuplicateKeyValidator();
                     return new Func<IConfiguration, TDictionary?>(configuration =>
                     {
                         if (IsNullConfiguration(configuration))
@@ -221,7 +221,10 @@ public static partial class ConfigurationBinderTS
                             buffer.Add(entry);
                         }
 
-                        return spanCtor(buffer.AsSpan());
+                        var span = buffer.AsSpan();
+                        var finalDict = spanCtor(span);
+                        duplicateKeyValidator.ValidatePotentialDuplicates(finalDict, span);
+                        return finalDict;
                     });
                 
                 default:
