@@ -74,7 +74,11 @@ internal sealed class CborMutableDictionaryConverter<TDictionary, TKey, TValue>(
         {
             TKey key = keyConverter.Read(reader)!;
             TValue value = valueConverter.Read(reader)!;
-            inserter(ref result, key, value);
+            if (!inserter(ref result, key, value))
+            {
+                Throw(key);
+                static void Throw(TKey key) => throw new ArgumentException($"Found duplicate key '{key}.'");
+            }
         }
 
         reader.ReadEndMap();

@@ -26,6 +26,9 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
 
     public virtual int Rank => 1;
     public virtual bool IsAsyncEnumerable => false;
+    public bool IsSetType => _isSetType ??= DetermineIsSetType();
+    private bool? _isSetType;
+
     public abstract Func<TEnumerable, IEnumerable<TElement>> GetGetEnumerable();
 
     public sealed override TypeShapeKind Kind => TypeShapeKind.Enumerable;
@@ -242,6 +245,16 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
 
             return addMethod;
         }
+    }
+
+    private static bool DetermineIsSetType()
+    {
+        return
+            typeof(ISet<TElement>).IsAssignableFrom(typeof(TEnumerable)) ||
+#if NET
+            typeof(IReadOnlySet<TElement>).IsAssignableFrom(typeof(TEnumerable)) ||
+#endif
+            typeof(TEnumerable) is { Name: "IImmutableSet`1", Namespace: "System.Collections.Immutable" };
     }
 }
 

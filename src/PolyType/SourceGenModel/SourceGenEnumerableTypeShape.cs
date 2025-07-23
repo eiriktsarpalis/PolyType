@@ -25,6 +25,11 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     public required bool IsAsyncEnumerable { get; init; }
 
     /// <summary>
+    /// Indicates whether the enumerable is one of the recognized set collection types.
+    /// </summary>
+    public required bool IsSetType { get; init; }
+
+    /// <summary>
     /// Gets the function that retrieves an enumerable from an instance of the collection.
     /// </summary>
     public required Func<TEnumerable, IEnumerable<TElement>> GetEnumerableFunc { get; init; }

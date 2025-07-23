@@ -128,11 +128,11 @@ public partial class TypeDataModelGenerator
                 availableInsertionModes |= DictionaryInsertionMode.ContainsKeyAdd;
             }
 
-            if (kind is DictionaryKind.IDictionaryOfKV)
+            if (type.GetCompatibleGenericBaseType(KnownSymbols.IDictionaryOfTKeyTValue) is not null)
             {
                 availableInsertionModes |= DictionaryInsertionMode.ExplicitIDictionaryOfT;
             }
-            else if (kind is DictionaryKind.IDictionary)
+            else if (KnownSymbols.IDictionary.IsAssignableFrom(type))
             {
                 availableInsertionModes |= DictionaryInsertionMode.ExplicitIDictionary;
             }

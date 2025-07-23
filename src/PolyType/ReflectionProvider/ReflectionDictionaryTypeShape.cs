@@ -260,7 +260,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 // If TryAdd is not available, check if a ContainsKey/Add combination is available.
                 containsKeyMethod = instanceMethods
                     .Where(m =>
-                        m.Name is "ContainsKey" &&
+                        m.Name is "ContainsKey" or "Contains" &&
                         m.GetParameters() is [ParameterInfo key] &&
                         m.ReturnType == typeof(bool) &&
                         key.ParameterType == typeof(TKey))

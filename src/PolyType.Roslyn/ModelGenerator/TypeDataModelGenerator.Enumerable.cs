@@ -21,6 +21,7 @@ public partial class TypeDataModelGenerator
         int rank = 1;
         EnumerableKind kind;
         ITypeSymbol? elementType;
+        bool isSetType = false;
         IMethodSymbol? appendMethod = null;
         bool isParameterizedFactory = false;
         IMethodSymbol? factoryMethod = null;
@@ -114,6 +115,13 @@ public partial class TypeDataModelGenerator
             {
                 (factoryMethod, factorySignature, isParameterizedFactory) = classifiedBuilderMethod;
             }
+
+            if (type.GetCompatibleGenericBaseType(KnownSymbols.ISetOfT) is not null ||
+                type.GetCompatibleGenericBaseType(KnownSymbols.IReadOnlySetOfT) is not null ||
+                type.GetCompatibleGenericBaseType(KnownSymbols.IImmutableSetOfT) is not null)
+            {
+                isSetType = true;
+            }
         }
 
         if ((status = IncludeNestedType(elementType, ref ctx)) != TypeDataModelGenerationStatus.Success)
@@ -133,6 +141,7 @@ public partial class TypeDataModelGenerator
             InsertionMode = isParameterizedFactory ? EnumerableInsertionMode.None : insertionMode,
             FactoryMethod = factoryMethod,
             FactorySignature = factorySignature?.ToImmutableArray() ?? ImmutableArray<CollectionConstructorParameter>.Empty,
+            IsSetType = isSetType,
             Rank = rank,
         };
 

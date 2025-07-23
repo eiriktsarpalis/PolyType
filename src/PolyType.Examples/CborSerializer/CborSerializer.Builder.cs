@@ -119,7 +119,7 @@ public static partial class CborSerializer
                         valueConverter,
                         getDictionary,
                         dictionaryShape.GetMutableConstructor(),
-                        dictionaryShape.GetInserter()),
+                        dictionaryShape.GetInserter(DictionaryInsertionMode.Discard)),
 
                 CollectionConstructionStrategy.Parameterized =>
                     new CborParameterizedDictionaryConverter<TDictionary, TKey, TValue>(

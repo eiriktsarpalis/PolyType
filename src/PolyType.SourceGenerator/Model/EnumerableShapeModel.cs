@@ -8,6 +8,7 @@ public sealed record EnumerableShapeModel : TypeShapeModel
     public required TypeId ElementType { get; init; }
     public required EnumerableKind Kind { get; init; }
     public required int Rank { get; init; }
+    public required bool IsSetType { get; init; }
     public required CollectionConstructionStrategy ConstructionStrategy { get; init; }
     public required ImmutableEquatableArray<CollectionConstructorParameter> ConstructorParameters { get; init; }
     public required string? AppendMethod { get; init; }

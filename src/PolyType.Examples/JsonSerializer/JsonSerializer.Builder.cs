@@ -115,7 +115,7 @@ public static partial class JsonSerializerTS
                         valueConverter,
                         dictionaryShape,
                         dictionaryShape.GetMutableConstructor(),
-                        dictionaryShape.GetInserter()),
+                        dictionaryShape.GetInserter(DictionaryInsertionMode.Overwrite)),
 
                 CollectionConstructionStrategy.Parameterized => 
                     new JsonParameterizedDictionaryConverter<TDictionary, TKey, TValue>(

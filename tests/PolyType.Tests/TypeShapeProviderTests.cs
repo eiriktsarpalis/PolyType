@@ -481,6 +481,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         {
             IEnumerableTypeShape enumerableTypeType = Assert.IsAssignableFrom<IEnumerableTypeShape>(shape);
             Assert.Equal(typeof(T), enumerableTypeType.Type);
+            Assert.Equal(testCase.IsSet, enumerableTypeType.IsSetType);
 
             if (typeof(T).GetCompatibleGenericInterface(typeof(IEnumerable<>)) is { } enumerableImplementation)
             {

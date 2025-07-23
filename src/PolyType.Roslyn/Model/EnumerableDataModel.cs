@@ -48,6 +48,11 @@ public sealed class EnumerableDataModel : TypeDataModel
     public required int Rank { get; init; }
 
     /// <summary>
+    /// Indicates whether the enumerable is a known set type.
+    /// </summary>
+    public required bool IsSetType { get; init; }
+
+    /// <summary>
     ///  Gets the insertion mode supported by the enumerable type if mutable.
     /// </summary>
     public required EnumerableInsertionMode InsertionMode { get; init; }

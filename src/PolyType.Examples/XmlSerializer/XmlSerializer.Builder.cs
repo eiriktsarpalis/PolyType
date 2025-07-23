@@ -108,7 +108,7 @@ public static partial class XmlSerializer
                         valueConverter,
                         getEnumerable,
                         dictionaryShape.GetMutableConstructor(),
-                        dictionaryShape.GetInserter()),
+                        dictionaryShape.GetInserter(DictionaryInsertionMode.Throw)),
 
                 CollectionConstructionStrategy.Parameterized => 
                     new XmlParameterizedDictionaryConverter<TDictionary, TKey, TValue>(

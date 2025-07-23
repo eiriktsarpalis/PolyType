@@ -51,6 +51,12 @@ public class KnownSymbols(Compilation compilation)
     private Option<INamedTypeSymbol?> _IReadOnlySetOfT;
 
     /// <summary>
+    /// The type symbol for IImmutableSet{T}.
+    /// </summary>
+    public INamedTypeSymbol? IImmutableSetOfT => GetOrResolveType("System.Collections.Immutable.IImmutableSet`1", ref _IImmutableSetOfT);
+    private Option<INamedTypeSymbol?> _IImmutableSetOfT;
+
+    /// <summary>
     /// The type symbol for <see cref="IDictionary{TKey, TValue}"/>.
     /// </summary>
     public INamedTypeSymbol? IDictionaryOfTKeyTValue => GetOrResolveType("System.Collections.Generic.IDictionary`2", ref _IDictionaryOfTKeyTValue);

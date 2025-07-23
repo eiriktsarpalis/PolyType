@@ -49,6 +49,11 @@ public interface IEnumerableTypeShape : ITypeShape
     /// instances to IAsyncEnumerable and enumerate elements asynchronously.
     /// </remarks>
     bool IsAsyncEnumerable { get; }
+
+    /// <summary>
+    /// Indicates whether the enumerable is one of the recognized set collection types.
+    /// </summary>
+    bool IsSetType { get; }
 }
 
 /// <summary>

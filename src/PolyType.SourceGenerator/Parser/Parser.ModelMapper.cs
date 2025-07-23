@@ -85,6 +85,7 @@ public sealed partial class Parser
 
                 Kind = enumerableModel.EnumerableKind,
                 Rank = enumerableModel.Rank,
+                IsSetType = enumerableModel.IsSetType,
                 ElementTypeContainsNullableAnnotations = enumerableModel.ElementType.ContainsNullabilityAnnotations(),
                 InsertionMode = enumerableModel.InsertionMode,
                 AppendMethodReturnsBoolean = enumerableModel.AppendMethod?.ReturnType.SpecialType is SpecialType.System_Boolean,

@@ -21,6 +21,7 @@ internal sealed partial class SourceFormatter
                     GetEnumerableFunc = {{FormatGetEnumerableFunc(enumerableShapeModel)}},
                     AppenderFunc = {{FormatAppenderFunc(enumerableShapeModel)}},
                     IsAsyncEnumerable = {{FormatBool(enumerableShapeModel.Kind is EnumerableKind.IAsyncEnumerableOfT)}},
+                    IsSetType = {{FormatBool(enumerableShapeModel.IsSetType)}},
                     Rank = {{enumerableShapeModel.Rank}},
                     AssociatedTypeShapes = {{FormatAssociatedTypeShapes(enumerableShapeModel)}},
                     Provider = this,
