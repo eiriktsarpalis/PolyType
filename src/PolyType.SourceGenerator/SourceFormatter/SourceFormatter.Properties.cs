@@ -17,7 +17,7 @@ internal sealed partial class SourceFormatter
         int i = 0;
         foreach (PropertyShapeModel property in type.Properties)
         {
-            if (i++ > 0)
+            if (i > 0)
             {
                 writer.WriteLine();
             }
@@ -39,6 +39,7 @@ internal sealed partial class SourceFormatter
             writer.WriteLine($$"""
                 new global::PolyType.SourceGenModel.SourceGenPropertyShape<{{type.Type.FullyQualifiedName}}, {{property.PropertyType.FullyQualifiedName}}>
                 {
+                    Position = {{i}},
                     Name = {{FormatStringLiteral(property.Name)}},
                     DeclaringType = (global::PolyType.Abstractions.IObjectTypeShape<{{type.Type.FullyQualifiedName}}>){{type.SourceIdentifier}},
                     PropertyType = {{GetShapeModel(property.PropertyType).SourceIdentifier}},
@@ -52,6 +53,8 @@ internal sealed partial class SourceFormatter
                     IsSetterNonNullable = {{FormatBool(property.IsSetterNonNullable)}},
                 },
                 """, trimNullAssignmentLines: true);
+
+            i++;
 
             static string FormatAttributeProviderFunc(ObjectShapeModel type, PropertyShapeModel property)
             {

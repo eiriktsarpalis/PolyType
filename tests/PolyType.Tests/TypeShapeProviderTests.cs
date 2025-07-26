@@ -183,12 +183,18 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                 Assert.Same(constructor.GetArgumentStateConstructor(), constructor.GetArgumentStateConstructor());
 
                 TArgumentState argumentState = argumentStateCtor();
+                Assert.Equal(argumentState.Count, constructor.Parameters.Count);
+                int lastRequiredIndex = constructor.Parameters.LastOrDefault(p => p.IsRequired)?.Position ?? -1;
+                Assert.Equal(lastRequiredIndex == -1, argumentState.AreRequiredArgumentsSet);
+
                 foreach (IParameterShape parameter in constructor.Parameters)
                 {
                     Assert.Equal(i++, parameter.Position);
                     argumentState = (TArgumentState)parameter.Accept(this, argumentState)!;
+                    Assert.Equal(lastRequiredIndex is -1 || parameter.Position >= lastRequiredIndex, argumentState.AreRequiredArgumentsSet);
                 }
 
+                Assert.True(argumentState.AreRequiredArgumentsSet);
                 var parameterizedCtor = constructor.GetParameterizedConstructor();
                 Assert.NotNull(parameterizedCtor);
                 Assert.Same(constructor.GetParameterizedConstructor(), constructor.GetParameterizedConstructor());
@@ -210,7 +216,9 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             Assert.Same(parameter.GetSetter(), parameter.GetSetter());
 
             TParameter? value = parameter.HasDefaultValue ? parameter.DefaultValue : default;
+            Assert.False(argState.IsArgumentSet(parameter.Position));
             setter(ref argState, value!);
+            Assert.True(argState.IsArgumentSet(parameter.Position));
             return argState;
         }
     }
@@ -618,10 +626,12 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             return;
         }
 
+        int pos = 0;
         foreach (IPropertyShape property in objectShape.Properties)
         {
             MemberInfo attributeProvider = Assert.IsAssignableFrom<MemberInfo>(property.AttributeProvider);
             PropertyShapeAttribute? attr = attributeProvider.GetCustomAttribute<PropertyShapeAttribute>();
+            Assert.Equal(pos++, property.Position);
 
             if (property.IsField)
             {

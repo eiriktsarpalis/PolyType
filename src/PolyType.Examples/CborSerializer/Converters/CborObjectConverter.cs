@@ -1,5 +1,7 @@
-﻿using System.Formats.Cbor;
-using PolyType.Abstractions;
+﻿using PolyType.Abstractions;
+using PolyType.Examples.Utilities;
+using System.Diagnostics;
+using System.Formats.Cbor;
 
 namespace PolyType.Examples.CborSerializer.Converters;
 
@@ -35,11 +37,14 @@ internal class CborObjectConverter<T>(CborPropertyConverter<T>[] properties) : C
 
         writer.WriteEndMap();
     }
+
+    protected static Exception CreateDuplicatePropertyException(string key) =>
+        new InvalidOperationException($"Duplicate property '{key}' found in CBOR object.");
 }
 
-internal sealed class CborObjectConverterWithDefaultCtor<T>(Func<T> defaultConstructor, CborPropertyConverter<T>[] properties) : CborObjectConverter<T>(properties)
+internal sealed class CborObjectConverterWithDefaultCtor<T>(Func<T> defaultConstructor, CborPropertyConverter<T>[] propertyConverters, IReadOnlyList<IPropertyShape> properties) : CborObjectConverter<T>(propertyConverters)
 {
-    private readonly Dictionary<string, CborPropertyConverter<T>> _propertiesToRead = properties.Where(prop => prop.HasSetter).ToDictionary(prop => prop.Name);
+    private readonly Dictionary<string, CborPropertyConverter<T>> _propertiesToRead = propertyConverters.Where(prop => prop.HasSetter).ToDictionary(prop => prop.Name);
 
     public sealed override T? Read(CborReader reader)
     {
@@ -52,6 +57,7 @@ internal sealed class CborObjectConverterWithDefaultCtor<T>(Func<T> defaultConst
         reader.ReadStartMap();
         T result = defaultConstructor();
         Dictionary<string, CborPropertyConverter<T>> propertiesToRead = _propertiesToRead;
+        DuplicatePropertyValidator validator = new(properties, static prop => CreateDuplicatePropertyException(prop.Name));
 
         while (reader.PeekState() != CborReaderState.EndMap)
         {
@@ -63,6 +69,7 @@ internal sealed class CborObjectConverterWithDefaultCtor<T>(Func<T> defaultConst
                 continue;
             }
 
+            validator.MarkAsRead(propConverter.Position);
             propConverter.Read(reader, ref result);
         }
 
@@ -75,7 +82,9 @@ internal sealed class CborObjectConverterWithParameterizedCtor<TDeclaringType, T
     Func<TArgumentState> createArgumentState,
     Constructor<TArgumentState, TDeclaringType> createObject,
     CborPropertyConverter<TArgumentState>[] constructorParameters,
-    CborPropertyConverter<TDeclaringType>[] properties) : CborObjectConverter<TDeclaringType>(properties)
+    CborPropertyConverter<TDeclaringType>[] properties,
+    IReadOnlyList<IParameterShape> parameters) : CborObjectConverter<TDeclaringType>(properties)
+    where TArgumentState : IArgumentState
 {
     private readonly Dictionary<string, CborPropertyConverter<TArgumentState>> _constructorParameters = constructorParameters
         .ToDictionary(prop => prop.Name, StringComparer.Ordinal);
@@ -101,10 +110,23 @@ internal sealed class CborObjectConverterWithParameterizedCtor<TDeclaringType, T
                 continue;
             }
 
+            if (argumentState.IsArgumentSet(propertyConverter.Position))
+            {
+                ThrowDuplicateProperty(key);
+                static void ThrowDuplicateProperty(string key) => throw CreateDuplicatePropertyException(key);
+            }
+
             propertyConverter.Read(reader, ref argumentState);
+            Debug.Assert(argumentState.IsArgumentSet(propertyConverter.Position));
         }
 
         reader.ReadEndMap();
+
+        if (!argumentState.AreRequiredArgumentsSet)
+        {
+            Helpers.ThrowMissingRequiredArguments(ref argumentState, parameters);
+        }
+
         return createObject(ref argumentState);
     }
 }

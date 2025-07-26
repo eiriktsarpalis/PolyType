@@ -25,7 +25,7 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
         }
 
         Type closedType = associatedType.IsGenericTypeDefinition
-            ? associatedType.MakeGenericType(this.Type.GenericTypeArguments)
+            ? associatedType.MakeGenericType(Type.GenericTypeArguments)
             : associatedType;
 
         return provider.GetShape(closedType);

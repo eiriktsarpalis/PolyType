@@ -105,6 +105,38 @@ public abstract partial class CborTests(ProviderUnderTest providerUnderTest)
         }
     }
 
+    [Fact]
+    public void ThrowsOnMissingRequiredProperties()
+    {
+        var converter = CborSerializer.CreateConverter(providerUnderTest.Provider.Resolve<SimpleRecord>());
+        var ex = Assert.Throws<KeyNotFoundException>(() => converter.DecodeFromHex("A16376616C182A"));
+        Assert.Contains("'value'", ex.Message);
+    }
+
+    [Fact]
+    public void ThrowsOnDuplicateProperties_Mutable()
+    {
+        var converter = CborSerializer.CreateConverter(providerUnderTest.Provider.Resolve<SimplePoco>());
+        var ex = Assert.Throws<InvalidOperationException>(() => converter.DecodeFromHex("A26556616C7565182A6556616C7565182B"));
+        Assert.Contains("Duplicate", ex.Message);
+    }
+
+    [Fact]
+    public void ThrowsOnDuplicateProperties_Parameterized()
+    {
+        var converter = CborSerializer.CreateConverter(providerUnderTest.Provider.Resolve<SimpleRecord>());
+        var ex = Assert.Throws<InvalidOperationException>(() => converter.DecodeFromHex("A26576616C7565182A6576616C7565182B"));
+        Assert.Contains("Duplicate", ex.Message);
+    }
+
+    [Fact]
+    public void DoesNotThrowOnDuplicateUnboundProperties()
+    {
+        var converter = CborSerializer.CreateConverter(providerUnderTest.Provider.Resolve<SimplePoco>());
+        var result = converter.DecodeFromHex("A26576616C7565182A6576616C7565182B");
+        Assert.Equal(0, result?.Value);
+    }
+
     private CborConverter<T> GetConverterUnderTest<T>(TestCase<T> testCase) =>
         CborSerializer.CreateConverter(providerUnderTest.ResolveShape(testCase));
 }

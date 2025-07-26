@@ -65,7 +65,8 @@ public static partial class JsonSerializerTS
                 constructor.GetArgumentStateConstructor(), 
                 constructor.GetParameterizedConstructor(), 
                 constructorParams,
-                properties);
+                properties,
+                constructor.Parameters);
         }
 
         public override object? VisitParameter<TArgumentState, TParameter>(IParameterShape<TArgumentState, TParameter> parameter, object? state)

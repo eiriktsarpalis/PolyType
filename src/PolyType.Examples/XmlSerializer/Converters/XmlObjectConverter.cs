@@ -1,4 +1,5 @@
 ﻿using PolyType.Abstractions;
+using PolyType.Examples.Utilities;
 using System.Xml;
 
 namespace PolyType.Examples.XmlSerializer.Converters;
@@ -75,7 +76,9 @@ internal sealed class XmlObjectConverterWithParameterizedCtor<TDeclaringType, TA
     Func<TArgumentState> createArgumentState,
     Constructor<TArgumentState, TDeclaringType> createObject,
     XmlPropertyConverter<TArgumentState>[] constructorParameters,
-    XmlPropertyConverter<TDeclaringType>[] properties) : XmlObjectConverter<TDeclaringType>(properties)
+    XmlPropertyConverter<TDeclaringType>[] properties,
+    IReadOnlyList<IParameterShape> parameters) : XmlObjectConverter<TDeclaringType>(properties)
+    where TArgumentState : IArgumentState
 {
     private readonly Dictionary<string, XmlPropertyConverter<TArgumentState>> _constructorParameters = constructorParameters
         .ToDictionary(param => param.Name, StringComparer.Ordinal);
@@ -114,6 +117,12 @@ internal sealed class XmlObjectConverterWithParameterizedCtor<TDeclaringType, TA
         }
 
         reader.ReadEndElement();
+
+        if (!argumentState.AreRequiredArgumentsSet)
+        {
+            Helpers.ThrowMissingRequiredArguments(ref argumentState, parameters);
+        }
+
         return createObject(ref argumentState);
     }
 }

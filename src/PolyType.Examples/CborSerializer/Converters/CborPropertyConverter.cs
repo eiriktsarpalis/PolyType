@@ -9,7 +9,7 @@ internal abstract class CborPropertyConverter<TDeclaringType>(string name)
     public string Name { get; } = name;
     public abstract bool HasGetter { get; }
     public abstract bool HasSetter { get; }
-    public bool IsParameter { get; private protected init; }
+    public int Position { get; private protected init; }
 
     public abstract void Write(CborWriter writer, ref TDeclaringType value);
     public abstract void Read(CborReader reader, ref TDeclaringType value);
@@ -24,6 +24,7 @@ internal sealed class CborPropertyConverter<TDeclaringType, TPropertyType> : Cbo
     public CborPropertyConverter(IPropertyShape<TDeclaringType, TPropertyType> property, CborConverter<TPropertyType> propertyConverter)
         : base(property.Name)
     {
+        Position = property.Position;
         _propertyConverter = propertyConverter;
 
         if (property.HasGetter)
@@ -38,11 +39,11 @@ internal sealed class CborPropertyConverter<TDeclaringType, TPropertyType> : Cbo
     }
 
     public CborPropertyConverter(IParameterShape<TDeclaringType, TPropertyType> parameter, CborConverter<TPropertyType> propertyConverter)
-    : base(parameter.Name)
+        : base(parameter.Name)
     {
         _propertyConverter = propertyConverter;
         _setter = parameter.GetSetter();
-        IsParameter = parameter.Kind is ParameterKind.MethodParameter;
+        Position = parameter.Position;
     }
 
     public override bool HasGetter => _getter != null;

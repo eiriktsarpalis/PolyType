@@ -14,13 +14,14 @@ internal interface IReflectionMemberAccessor
     Func<TDeclaringType> CreateDefaultConstructor<TDeclaringType>(IConstructorShapeInfo ctorInfo);
 
     Type CreateConstructorArgumentStateType(IConstructorShapeInfo ctorInfo);
-    Func<TArgumentState> CreateConstructorArgumentStateCtor<TArgumentState>(IConstructorShapeInfo ctorInfo);
-    Setter<TArgumentState, TParameter> CreateConstructorArgumentStateSetter<TArgumentState, TParameter>(IConstructorShapeInfo ctorInfo, int parameterIndex);
-    Constructor<TArgumentState, TDeclaringType> CreateParameterizedConstructor<TArgumentState, TDeclaringType>(IConstructorShapeInfo ctorInfo);
+    Func<TArgumentState> CreateConstructorArgumentStateCtor<TArgumentState>(IConstructorShapeInfo ctorInfo)
+        where TArgumentState : IArgumentState;
 
-    TDelegate CreateFuncDelegate<TDelegate>(ConstructorInfo ctorInfo) where TDelegate : Delegate;
-    Func<T, TResult> CreateFuncDelegate<T, TResult>(ConstructorInfo ctorInfo);
-    Func<T1, T2, TResult> CreateFuncDelegate<T1, T2, TResult>(ConstructorInfo ctorInfo);
+    Setter<TArgumentState, TParameter> CreateConstructorArgumentStateSetter<TArgumentState, TParameter>(IConstructorShapeInfo ctorInfo, int parameterIndex)
+        where TArgumentState : IArgumentState;
+
+    Constructor<TArgumentState, TDeclaringType> CreateParameterizedConstructor<TArgumentState, TDeclaringType>(IConstructorShapeInfo ctorInfo)
+        where TArgumentState : IArgumentState;
 
     bool IsCollectionConstructorSupported(MethodBase method, CollectionConstructorParameter[] signature);
     MutableCollectionConstructor<TKey, TCollection> CreateMutableCollectionConstructor<TKey, TElement, TCollection>(MutableCollectionConstructorInfo constructorInfo);

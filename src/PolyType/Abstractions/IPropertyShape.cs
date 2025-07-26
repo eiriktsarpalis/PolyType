@@ -10,6 +10,11 @@ namespace PolyType.Abstractions;
 public interface IPropertyShape
 {
     /// <summary>
+    /// Gets the 0-indexed position of the current property.
+    /// </summary>
+    int Position { get; }
+
+    /// <summary>
     /// Gets the name of the property.
     /// </summary>
     string Name { get; }

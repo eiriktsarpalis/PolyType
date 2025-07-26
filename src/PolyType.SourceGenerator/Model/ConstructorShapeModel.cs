@@ -11,24 +11,35 @@ public sealed record ConstructorShapeModel
     public required ImmutableEquatableArray<ParameterShapeModel> Parameters { get; init; }
     public required ImmutableEquatableArray<ParameterShapeModel> RequiredMembers { get; init; }
     public required ImmutableEquatableArray<ParameterShapeModel> OptionalMembers { get; init; }
-    public required OptionalMemberFlagsType OptionalMemberFlagsType { get; init; }
+    public required ArgumentStateType ArgumentStateType { get; init; }
     public required string? StaticFactoryName { get; init; }
     public required bool StaticFactoryIsProperty { get; init; }
     public required bool ResultRequiresCast { get; init; }
 
     public int TotalArity => Parameters.Length + RequiredMembers.Length + OptionalMembers.Length;
     public bool IsStaticFactory => StaticFactoryName != null;
+    public IEnumerable<ParameterShapeModel> GetAllParameters()
+    {
+        foreach (var param in Parameters)
+        {
+            yield return param;
+        }
+        foreach (var member in RequiredMembers)
+        {
+            yield return member;
+        }
+        foreach (var member in OptionalMembers)
+        {
+            yield return member;
+        }
+    }
 }
 
 /// <summary>
-/// Type used to store flags for whether optional members are set.
+/// Type used to store the state of arguments for a constructor.
 /// </summary>
-public enum OptionalMemberFlagsType
+public enum ArgumentStateType
 {
-    None,
-    Byte,
-    UShort,
-    UInt32,
-    ULong,
-    BitArray,
+    SmallArgumentState,
+    LargeArgumentState,
 }

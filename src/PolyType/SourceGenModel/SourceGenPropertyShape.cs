@@ -11,6 +11,11 @@ namespace PolyType.SourceGenModel;
 public sealed class SourceGenPropertyShape<TDeclaringType, TPropertyType> : IPropertyShape<TDeclaringType, TPropertyType>
 {
     /// <summary>
+    /// Gets the 0-based position of the property in the declaring type.
+    /// </summary>
+    public required int Position { get; init; }
+
+    /// <summary>
     /// Gets the name of the property.
     /// </summary>
     public required string Name { get; init; }

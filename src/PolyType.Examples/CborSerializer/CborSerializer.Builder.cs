@@ -61,7 +61,7 @@ public static partial class CborSerializer
 
             if (constructor.Parameters is [])
             {
-                return new CborObjectConverterWithDefaultCtor<TDeclaringType>(constructor.GetDefaultConstructor(), properties);
+                return new CborObjectConverterWithDefaultCtor<TDeclaringType>(constructor.GetDefaultConstructor(), properties, constructor.DeclaringType.Properties);
             }
 
             CborPropertyConverter<TArgumentState>[] constructorParams = constructor.Parameters
@@ -72,7 +72,8 @@ public static partial class CborSerializer
                 constructor.GetArgumentStateConstructor(),
                 constructor.GetParameterizedConstructor(),
                 constructorParams,
-                properties);
+                properties,
+                constructor.Parameters);
         }
 
         public override object? VisitParameter<TArgumentState, TParameterType>(IParameterShape<TArgumentState, TParameterType> parameter, object? state)

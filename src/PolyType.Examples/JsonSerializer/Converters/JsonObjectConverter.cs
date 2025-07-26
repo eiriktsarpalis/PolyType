@@ -1,8 +1,9 @@
-﻿using System.Buffers;
+﻿using PolyType.Abstractions;
+using PolyType.Examples.Utilities;
+using System.Buffers;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using PolyType.Abstractions;
 
 namespace PolyType.Examples.JsonSerializer.Converters;
 
@@ -89,7 +90,9 @@ internal sealed class JsonObjectConverterWithParameterizedCtor<TDeclaringType, T
     Func<TArgumentState> createArgumentState,
     Constructor<TArgumentState, TDeclaringType> createObject,
     JsonPropertyConverter<TArgumentState>[] constructorParameters,
-    JsonPropertyConverter<TDeclaringType>[] properties) : JsonObjectConverter<TDeclaringType>(properties)
+    JsonPropertyConverter<TDeclaringType>[] properties,
+    IReadOnlyList<IParameterShape> parameters) : JsonObjectConverter<TDeclaringType>(properties)
+    where TArgumentState : IArgumentState
 {
     private readonly JsonPropertyDictionary<JsonPropertyConverter<TArgumentState>> _constructorParameters = constructorParameters.ToJsonPropertyDictionary(p => p.Name);
 
@@ -123,6 +126,11 @@ internal sealed class JsonObjectConverterWithParameterizedCtor<TDeclaringType, T
             }
 
             reader.EnsureRead();
+        }
+
+        if (!argumentState.AreRequiredArgumentsSet)
+        {
+            Helpers.ThrowMissingRequiredArguments(ref argumentState, parameters);
         }
 
         return createObject(ref argumentState);

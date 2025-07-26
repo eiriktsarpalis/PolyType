@@ -223,6 +223,7 @@ public static class TestTypes
             Dict = new() { ["key1"] = 42, ["key2"] = -1 },
         });
 
+        yield return TestCase.Create(new SimplePoco { Value = 42 });
         yield return TestCase.Create(new BaseClass { X = 1 });
         yield return TestCase.Create(new DerivedClass { X = 1, Y = 2 });
         yield return TestCase.Create(new DerivedClassWithVirtualProperties());
@@ -370,7 +371,7 @@ public static class TestTypes
         yield return TestCase.Create(new ClassWithDefaultConstructorAndSingleRequiredProperty { Value = 42 });
         yield return TestCase.Create(new ClassWithParameterizedConstructorAnd2OptionalSetters(42));
         yield return TestCase.Create(new ClassWithParameterizedConstructorAnd10OptionalSetters(42));
-        yield return TestCase.Create(new ClassWithParameterizedConstructorAnd70OptionalSetters(42));
+        yield return TestCase.Create(new ClassWithParameterizedConstructorAnd70Setters(42) { X03 = 3, X10 = 10, X47 = 47 });
 
         yield return TestCase.Create(new ClassRecord(0, 1, 2, 3));
         yield return TestCase.Create(new StructRecord(0, 1, 2, 3));
@@ -810,6 +811,12 @@ public sealed partial class ExplicitlyImplementedIDictionary : IDictionary
 }
 
 [GenerateShape]
+public partial class SimplePoco
+{
+    public int Value { get; set; }
+}
+
+[GenerateShape]
 public partial class PocoWithListAndDictionaryProps
 {
     public PocoWithListAndDictionaryProps(bool @bool = true, string @string = "str")
@@ -1190,18 +1197,18 @@ public partial class ClassWithParameterizedConstructorAnd10OptionalSetters(int x
 }
 
 [GenerateShape]
-public partial class ClassWithParameterizedConstructorAnd70OptionalSetters(int x01)
+public partial class ClassWithParameterizedConstructorAnd70Setters(int x01)
 {
     public int X01 { get; set; } = x01;
     public int X02 { get; set; } = x01;
-    public int X03 { get; set; } = x01;
+    public required int X03 { get; set; } = x01;
     public int X04 { get; set; } = x01;
     public int X05 { get; set; } = x01;
     public int X06 { get; set; } = x01;
     public int X07 { get; set; } = x01;
     public int X08 { get; set; } = x01;
     public int X09 { get; set; } = x01;
-    public int X10 { get; set; } = x01;
+    public required int X10 { get; set; } = x01;
     public int X11 { get; set; } = x01;
     public int X12 { get; set; } = x01;
     public int X13 { get; set; } = x01;
@@ -1238,7 +1245,7 @@ public partial class ClassWithParameterizedConstructorAnd70OptionalSetters(int x
     public int X44 { get; set; } = x01;
     public int X45 { get; set; } = x01;
     public int X46 { get; set; } = x01;
-    public int X47 { get; set; } = x01;
+    public required int X47 { get; set; } = x01;
     public int X48 { get; set; } = x01;
     public int X49 { get; set; } = x01;
     public int X50 { get; set; } = x01;

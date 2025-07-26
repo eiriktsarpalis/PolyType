@@ -40,6 +40,7 @@ public abstract class TypeShapeVisitor
     /// <param name="state">Defines user-provided state.</param>
     /// <returns>The result produced by the visitor.</returns>
     public virtual object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructorShape, object? state = null)
+        where TArgumentState : IArgumentState
         => ThrowNotImplementedException();
 
     /// <summary>
@@ -51,6 +52,7 @@ public abstract class TypeShapeVisitor
     /// <param name="state">Defines user-provided state.</param>
     /// <returns>The result produced by the visitor.</returns>
     public virtual object? VisitParameter<TArgumentState, TParameterType>(IParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
+        where TArgumentState : IArgumentState
         => ThrowNotImplementedException();
 
     /// <summary>

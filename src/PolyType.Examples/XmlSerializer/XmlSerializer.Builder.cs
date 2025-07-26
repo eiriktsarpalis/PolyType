@@ -63,7 +63,8 @@ public static partial class XmlSerializer
                 constructor.GetArgumentStateConstructor(),
                 constructor.GetParameterizedConstructor(),
                 constructorParams,
-                properties);
+                properties,
+                constructor.Parameters);
         }
 
         public override object? VisitParameter<TArgumentState, TParameterType>(IParameterShape<TArgumentState, TParameterType> parameter, object? state)
