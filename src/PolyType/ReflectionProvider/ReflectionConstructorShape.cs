@@ -10,6 +10,7 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
     IObjectTypeShape<TDeclaringType> declaringType,
     IConstructorShapeInfo ctorInfo) :
     IConstructorShape<TDeclaringType, TArgumentState>
+    where TArgumentState : IArgumentState
 {
     private IReadOnlyList<IParameterShape>? _parameters;
     private Func<TArgumentState>? _argumentStateConstructor;

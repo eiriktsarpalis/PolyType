@@ -13,7 +13,7 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
     private Getter<TDeclaringType, TPropertyType>? _getter;
     private Setter<TDeclaringType, TPropertyType>? _setter;
 
-    public ReflectionPropertyShape(ReflectionTypeShapeProvider provider, IObjectTypeShape<TDeclaringType> declaringType, PropertyShapeInfo shapeInfo)
+    public ReflectionPropertyShape(ReflectionTypeShapeProvider provider, IObjectTypeShape<TDeclaringType> declaringType, PropertyShapeInfo shapeInfo, int position)
     {
         Debug.Assert(shapeInfo.MemberInfo.DeclaringType!.IsAssignableFrom(typeof(TDeclaringType)) || shapeInfo.ParentMembers is not null);
         Debug.Assert(shapeInfo.MemberInfo is PropertyInfo or FieldInfo);
@@ -25,6 +25,7 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
         DeclaringType = declaringType;
         AttributeProvider = shapeInfo.AttributeProvider;
 
+        Position = position;
         Name = shapeInfo.LogicalName ?? shapeInfo.MemberInfo.Name;
 
         if (shapeInfo.MemberInfo is FieldInfo f)
@@ -48,6 +49,7 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
         IsSetterNonNullable = HasSetter && shapeInfo.IsSetterNonNullable;
     }
 
+    public int Position { get; }
     public string Name { get; }
     public ICustomAttributeProvider AttributeProvider { get; }
     public IObjectTypeShape<TDeclaringType> DeclaringType { get; }

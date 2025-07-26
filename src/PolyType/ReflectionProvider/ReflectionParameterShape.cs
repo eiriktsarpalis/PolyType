@@ -5,6 +5,7 @@ using System.Reflection;
 namespace PolyType.ReflectionProvider;
 
 internal sealed class ReflectionParameterShape<TArgumentState, TParameter> : IParameterShape<TArgumentState, TParameter>
+    where TArgumentState : IArgumentState
 {
     private readonly ReflectionTypeShapeProvider _provider;
     private readonly IConstructorShapeInfo _ctorInfo;

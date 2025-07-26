@@ -28,7 +28,7 @@ public static class DuplicateDictionaryKeyValidator
 /// <summary>
 /// Performs post-hoc duplicate key detection for parameterized dictionary constructors.
 /// </summary>
-public sealed class DuplicateDictionaryKeyValidator<TDictionary, TKey, TValue>
+public readonly struct DuplicateDictionaryKeyValidator<TDictionary, TKey, TValue>
     where TKey : notnull
 {
     private readonly Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> _getDictionary;

@@ -23,6 +23,9 @@ internal static partial class RoslynHelpers
         };
     }
 
+    public static ITypeSymbol GetReturnType(this IMethodSymbol method) =>
+        method is { MethodKind: MethodKind.Constructor, IsStatic: false } ? method.ContainingType : method.ReturnType;
+
     /// <summary>
     /// Removes erased compiler metadata such as tuple names and nullable annotations.
     /// </summary>

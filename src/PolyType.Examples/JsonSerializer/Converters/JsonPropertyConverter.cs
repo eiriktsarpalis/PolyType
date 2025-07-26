@@ -11,7 +11,6 @@ internal abstract class JsonPropertyConverter<TDeclaringType>(string name)
     public JsonEncodedText EncodedName { get; } = JsonEncodedText.Encode(name);
     public abstract bool HasGetter { get; }
     public abstract bool HasSetter { get; }
-    public bool IsParameter { get; private protected init; }
 
     public abstract void Read(ref Utf8JsonReader reader, ref TDeclaringType declaringType, JsonSerializerOptions options);
     public abstract void Write(Utf8JsonWriter writer, ref TDeclaringType declaringType, JsonSerializerOptions options);
@@ -49,7 +48,6 @@ internal sealed class JsonPropertyConverter<TDeclaringType, TPropertyType> : Jso
         _propertyTypeConverter = propertyConverter;
         _setterDisallowsNull = parameter.IsNonNullable;
         _setter = parameter.GetSetter();
-        IsParameter = parameter.Kind is ParameterKind.MethodParameter;
     }
 
     public override bool HasGetter => _getter != null;

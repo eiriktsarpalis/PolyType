@@ -35,10 +35,10 @@ public class TypeShapeVisitorTests(ITestOutputHelper logger)
     public void VisitProperty() => AssertVisitor(v => v.VisitProperty<object, object>(default!));
 
     [Fact]
-    public void VisitConstructor() => AssertVisitor(v => v.VisitConstructor<object, object>(default!));
+    public void VisitConstructor() => AssertVisitor(v => v.VisitConstructor<object, IArgumentState>(default!));
 
     [Fact]
-    public void VisitParameter() => AssertVisitor(v => v.VisitParameter<object, object>(default!));
+    public void VisitParameter() => AssertVisitor(v => v.VisitParameter<IArgumentState, object>(default!));
 
     [Fact]
     public void VisitOptional() => AssertVisitor(v => v.VisitOptional<object, object>(default!));

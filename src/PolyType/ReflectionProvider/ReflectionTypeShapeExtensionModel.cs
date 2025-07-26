@@ -32,7 +32,7 @@ internal readonly record struct ReflectionTypeShapeExtensionModel
     {
         return this with
         {
-            Marshaller = this.Marshaller ?? other.Marshaller,
+            Marshaller = Marshaller ?? other.Marshaller,
         };
     }
 }

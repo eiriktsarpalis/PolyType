@@ -92,12 +92,13 @@ internal sealed class FSharpUnionCaseTypeShape<TUnionCase>(FSharpUnionCaseInfo? 
             yield break;
         }
 
+        int i = 0;
         NullabilityInfoContext? nullabilityCtx = ReflectionTypeShapeProvider.CreateNullabilityInfoContext();
         foreach (PropertyInfo property in unionCaseInfo.Properties)
         {
             property.ResolveNullableAnnotation(nullabilityCtx, out bool isGetterNonNullable, out _);
             PropertyShapeInfo propertyShapeInfo = new(typeof(TUnionCase), property, AttributeProvider: property, IsGetterNonNullable: isGetterNonNullable);
-            yield return Provider.CreateProperty(this, propertyShapeInfo);
+            yield return Provider.CreateProperty(this, propertyShapeInfo, position: i++);
         }
     }
 }

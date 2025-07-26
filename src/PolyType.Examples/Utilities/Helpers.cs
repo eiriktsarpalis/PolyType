@@ -10,6 +10,22 @@ namespace PolyType.Examples.Utilities;
 
 internal static class Helpers
 {
+    public static void ThrowMissingRequiredArguments<TArgumentState>(ref TArgumentState argumentState, IReadOnlyList<IParameterShape> parameters)
+        where TArgumentState : IArgumentState
+    {
+        Debug.Assert(!argumentState.AreRequiredArgumentsSet);
+        List<string> missingRequiredParams = new();
+        foreach (IParameterShape parameter in parameters)
+        {
+            if (parameter.IsRequired && !argumentState.IsArgumentSet(parameter.Position))
+            {
+                missingRequiredParams.Add($"'{parameter.Name}'");
+            }
+        }
+
+        throw new KeyNotFoundException($"Missing required parameters: {string.Join(", ", missingRequiredParams)}");
+    }
+
     public static string ConvertBytesToHexString(byte[] bytes)
     {
 #if NET

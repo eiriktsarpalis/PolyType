@@ -1,5 +1,6 @@
 ﻿using PolyType.Abstractions;
 using System.Collections;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -8,6 +9,7 @@ namespace PolyType.SourceGenModel;
 /// <summary>
 /// Collection helper methods to be consumed by the source generator.
 /// </summary>
+[EditorBrowsable(EditorBrowsableState.Never)]
 public static class CollectionHelpers
 {
     /// <summary>

@@ -238,19 +238,21 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
 
         if (IsTupleType)
         {
+            int i = 0;
             foreach (var field in ReflectionHelpers.EnumerateTupleMemberPaths(typeof(T)))
             {
                 PropertyShapeInfo propertyShapeInfo = new(typeof(T), field.Member, field.Member, field.ParentMembers, field.LogicalName);
-                yield return Provider.CreateProperty(this, propertyShapeInfo);
+                yield return Provider.CreateProperty(this, propertyShapeInfo, position: i++);
             }
 
             yield break;
         }
 
+        int p = 0;
         NullabilityInfoContext? nullabilityCtx = ReflectionTypeShapeProvider.CreateNullabilityInfoContext();
         foreach (PropertyShapeInfo member in GetMembers(nullabilityCtx))
         {
-            yield return Provider.CreateProperty(this, member);
+            yield return Provider.CreateProperty(this, member, position: p++);
         }
     }
 

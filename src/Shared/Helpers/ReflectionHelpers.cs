@@ -561,31 +561,6 @@ internal static class ReflectionHelpers
         };
     }
 
-    public static int GetValueTupleArity<TupleType>()
-    {
-        Debug.Assert(typeof(TupleType).IsValueTupleType());
-#if NET
-        return ((ITuple)default(TupleType)!).Length;
-#else
-        return GetArityCore(typeof(TupleType));
-        static int GetArityCore(Type type)
-        {
-            int count = 0;
-            while (true)
-            {
-                Type[] genericParams = type.GetGenericArguments();
-                if (genericParams.Length < 8)
-                {
-                    return count + genericParams.Length;
-                }
-
-                type = genericParams[7];
-                count += 7;
-            }
-        }
-#endif
-    }
-
     [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
     public static IEnumerable<(string LogicalName, MemberInfo Member, MemberInfo[]? ParentMembers)> EnumerateTupleMemberPaths(Type tupleType)
     {

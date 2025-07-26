@@ -10,6 +10,7 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TDeclaringType">The type being constructed.</typeparam>
 /// <typeparam name="TArgumentState">The mutable argument state for the constructor.</typeparam>
 public sealed class SourceGenConstructorShape<TDeclaringType, TArgumentState> : IConstructorShape<TDeclaringType, TArgumentState>
+    where TArgumentState : IArgumentState
 {
     /// <summary>
     /// Gets a value indicating whether the constructor is public.

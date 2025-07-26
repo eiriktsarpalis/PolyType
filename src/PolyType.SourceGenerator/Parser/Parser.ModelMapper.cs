@@ -415,15 +415,9 @@ public sealed partial class Parser
             Parameters = constructor.Parameters.Select(p => MapParameter(objectModel, declaringTypeId, p, isFSharpUnionCase)).ToImmutableEquatableArray(),
             RequiredMembers = requiredMembers?.ToImmutableEquatableArray() ?? [],
             OptionalMembers = optionalMembers?.ToImmutableEquatableArray() ?? [],
-            OptionalMemberFlagsType = (optionalMembers?.Count ?? 0) switch
-            {
-                0 => OptionalMemberFlagsType.None,
-                <= 8 => OptionalMemberFlagsType.Byte,
-                <= 16 => OptionalMemberFlagsType.UShort,
-                <= 32 => OptionalMemberFlagsType.UInt32,
-                <= 64 => OptionalMemberFlagsType.ULong,
-                _ => OptionalMemberFlagsType.BitArray,
-            },
+            ArgumentStateType = constructor.Parameters.Length + constructor.MemberInitializers.Length <= 64
+                ? ArgumentStateType.SmallArgumentState
+                : ArgumentStateType.LargeArgumentState,
 
             StaticFactoryName = constructor.Constructor switch
             {
@@ -432,7 +426,7 @@ public sealed partial class Parser
                 _ => null,
             },
             StaticFactoryIsProperty = constructor.Constructor.MethodKind is MethodKind.PropertyGet,
-            ResultRequiresCast = !SymbolEqualityComparer.Default.Equals(constructor.Constructor.ReturnType, objectModel.Type),
+            ResultRequiresCast = !objectModel.Type.IsAssignableFrom(constructor.Constructor.GetReturnType()),
             IsPublic = constructor.Constructor.DeclaredAccessibility is Accessibility.Public,
             CanUseUnsafeAccessors = _knownSymbols.TargetFramework switch
             {
@@ -531,7 +525,9 @@ public sealed partial class Parser
             Parameters = tupleModel.Elements.Select((p, i) => MapTupleConstructorParameter(typeId, p, i)).ToImmutableEquatableArray(),
             RequiredMembers = [],
             OptionalMembers = [],
-            OptionalMemberFlagsType = OptionalMemberFlagsType.None,
+            ArgumentStateType = tupleModel.Elements.Length <= 64
+                ? ArgumentStateType.SmallArgumentState
+                : ArgumentStateType.LargeArgumentState,
             StaticFactoryName = null,
             StaticFactoryIsProperty = false,
             ResultRequiresCast = false,
