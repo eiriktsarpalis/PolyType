@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace PolyType.Abstractions;
+﻿namespace PolyType.Abstractions;
 
 /// <summary>
 /// Declares list of arguments to be passed to a parameterized constructor or method.
