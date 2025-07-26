@@ -391,11 +391,12 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
             MemberInitializerShapeInfo[] memberInitializers = methodCtor.MemberInitializers;
             if (methodCtor.ConstructorMethod is { } ctor)
             {
+                int ctorArity = methodCtor.ConstructorParameters.Length;
                 return (Constructor<TArgumentState, TDeclaringType>)(object)new Constructor<LargeArgumentState<(object?[], object?[])>, TDeclaringType>(
                     (ref LargeArgumentState<(object?[] ctorArgs, object?[] memberArgs)> state) =>
                     {
                         object obj = ctor.Invoke(state.Arguments.ctorArgs)!;
-                        PopulateMemberInitializers(ref state, obj, memberInitializers, state.Arguments.memberArgs);
+                        PopulateMemberInitializers(ref state, obj, ctorArity, memberInitializers, state.Arguments.memberArgs);
                         return (TDeclaringType)obj!;
                     });
             }
@@ -405,17 +406,17 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                     (ref LargeArgumentState<(object?[] ctorArgs, object?[] memberArgs)> state) =>
                     {
                         object obj = default(TDeclaringType)!;
-                        PopulateMemberInitializers(ref state, obj, memberInitializers, state.Arguments.memberArgs);
+                        PopulateMemberInitializers(ref state, obj, ctorArity: 0, memberInitializers, state.Arguments.memberArgs);
                         return (TDeclaringType)obj!;
                     });
             }
 
-            static void PopulateMemberInitializers<TArgState>(ref TArgState state, object obj, MemberInitializerShapeInfo[] memberInitializers, object?[] memberArgs)
+            static void PopulateMemberInitializers<TArgState>(ref TArgState state, object obj, int ctorArity, MemberInitializerShapeInfo[] memberInitializers, object?[] memberArgs)
                 where TArgState : IArgumentState
             {
                 for (int i = 0; i < memberInitializers.Length; i++)
                 {
-                    if (!state.IsArgumentSet(i))
+                    if (!state.IsArgumentSet(ctorArity + i))
                     {
                         continue; // Skip to avoid setting uninitialized members.
                     }
