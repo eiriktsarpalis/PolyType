@@ -21,7 +21,8 @@ public readonly struct ValueBitArray
     {
         if (length < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(length), "Length must be non-negative.");
+            Throw();
+            static void Throw() => throw new ArgumentOutOfRangeException(nameof(length), "Length must be non-negative.");
         }
 
         _length = (uint)length;
@@ -37,12 +38,14 @@ public readonly struct ValueBitArray
     {
         if (length < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(length), "Length must be non-negative.");
+            Throw();
+            static void Throw() => throw new ArgumentOutOfRangeException(nameof(length), "Length must be non-negative.");
         }
 
         if (length > bytes.Length * 8)
         {
-            throw new ArgumentOutOfRangeException(nameof(length), "The declared length exceeds the bit capacity of the byte buffer");
+            Throw();
+            static void Throw() => throw new ArgumentOutOfRangeException(nameof(length), "The declared length exceeds the bit capacity of the byte buffer");
         }
 
         byte[] array = new byte[(length + 7) >> 3];

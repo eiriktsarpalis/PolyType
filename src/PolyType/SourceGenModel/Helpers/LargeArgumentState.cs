@@ -23,6 +23,12 @@ public struct LargeArgumentState<TArguments> : IArgumentState
     /// <param name="requiredArgumentsMask">A bitmask indicating which arguments are required.</param>
     public LargeArgumentState(TArguments arguments, int count, ValueBitArray requiredArgumentsMask)
     {
+        if (requiredArgumentsMask.Length != count)
+        {
+            Throw();
+            static void Throw() => throw new ArgumentOutOfRangeException(nameof(requiredArgumentsMask), "The length of the required arguments mask must match the count.");
+        }
+
         Arguments = arguments;
         _requiredArgumentsMask = requiredArgumentsMask;
         _setArguments = new ValueBitArray(count);

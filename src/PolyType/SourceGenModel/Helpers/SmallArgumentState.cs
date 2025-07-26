@@ -12,6 +12,7 @@ namespace PolyType.SourceGenModel;
 [StructLayout(LayoutKind.Auto)]
 public struct SmallArgumentState<TArguments> : IArgumentState
 {
+    private readonly uint _count;
     private readonly ulong _requiredArgumentsMask;
     private ulong _setArguments;
 
@@ -25,11 +26,12 @@ public struct SmallArgumentState<TArguments> : IArgumentState
     {
         if ((uint)count > 64)
         {
-            ThrowArgumentOutOfRange();
+            Throw();
+            static void Throw() => throw new ArgumentOutOfRangeException(nameof(count), "Count must be 64 or fewer.");
         }
 
         Arguments = arguments;
-        Count = count;
+        _count = (uint)count;
         _requiredArgumentsMask = requiredArgumentsMask;
     }
 
@@ -41,7 +43,7 @@ public struct SmallArgumentState<TArguments> : IArgumentState
 #pragma warning restore CA1051 // Do not declare visible instance fields
 
     /// <inheritdoc />
-    public readonly int Count { get; }
+    public readonly int Count => (int)_count;
 
     /// <inheritdoc />
     public readonly bool AreRequiredArgumentsSet => (_setArguments & _requiredArgumentsMask) == _requiredArgumentsMask;
@@ -49,9 +51,9 @@ public struct SmallArgumentState<TArguments> : IArgumentState
     /// <inheritdoc />
     public readonly bool IsArgumentSet(int index)
     {
-        if ((uint)index >= Count)
+        if ((uint)index >= _count)
         {
-            ThrowArgumentOutOfRange();
+            return false;
         }
 
         // Check if the bit at the specified index is set in _setArguments.
@@ -64,11 +66,9 @@ public struct SmallArgumentState<TArguments> : IArgumentState
     /// <param name="index">The index of the argument to mark as set.</param>
     public void MarkArgumentSet(int index)
     {
-        if ((uint)index < Count)
+        if ((uint)index < _count)
         {
             _setArguments |= 1UL << index;
         }
     }
-
-    private static void ThrowArgumentOutOfRange() => throw new ArgumentOutOfRangeException("index");
 }
