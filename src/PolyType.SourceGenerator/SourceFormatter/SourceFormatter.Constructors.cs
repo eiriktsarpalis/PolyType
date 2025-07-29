@@ -416,6 +416,7 @@ internal sealed partial class SourceFormatter
         string typeParameter = FormatArgumentStateTypeTypeParameter();
         return constructorModel.ArgumentStateType switch
         {
+            ArgumentStateType.EmptyArgumentState => $"global::PolyType.SourceGenModel.EmptyArgumentState",
             ArgumentStateType.SmallArgumentState => $"global::PolyType.SourceGenModel.SmallArgumentState<{typeParameter}>",
             ArgumentStateType.LargeArgumentState => $"global::PolyType.SourceGenModel.LargeArgumentState<{typeParameter}>",
             _ => throw new InvalidOperationException(constructorModel.ArgumentStateType.ToString()),

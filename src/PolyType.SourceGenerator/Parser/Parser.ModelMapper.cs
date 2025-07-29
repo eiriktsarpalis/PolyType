@@ -415,9 +415,12 @@ public sealed partial class Parser
             Parameters = constructor.Parameters.Select(p => MapParameter(objectModel, declaringTypeId, p, isFSharpUnionCase)).ToImmutableEquatableArray(),
             RequiredMembers = requiredMembers?.ToImmutableEquatableArray() ?? [],
             OptionalMembers = optionalMembers?.ToImmutableEquatableArray() ?? [],
-            ArgumentStateType = constructor.Parameters.Length + constructor.MemberInitializers.Length <= 64
-                ? ArgumentStateType.SmallArgumentState
-                : ArgumentStateType.LargeArgumentState,
+            ArgumentStateType = (constructor.Parameters.Length + constructor.MemberInitializers.Length) switch
+            {
+                0 => ArgumentStateType.EmptyArgumentState,
+                <= 64 => ArgumentStateType.SmallArgumentState,
+                _ => ArgumentStateType.LargeArgumentState,
+            },
 
             StaticFactoryName = constructor.Constructor switch
             {
