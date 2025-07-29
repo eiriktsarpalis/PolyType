@@ -55,7 +55,7 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     /// <summary>
     /// Gets the function that constructs a dictionary from a span of key-value pairs.
     /// </summary>
-    public ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>? SpanConstructorFunc { get; init; }
+    public ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>? ParameterizedConstructorFunc { get; init; }
 
     /// <inheritdoc/>
     public override TypeShapeKind Kind => TypeShapeKind.Dictionary;
@@ -130,5 +130,5 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     }
 
     ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetParameterizedConstructor()
-        => SpanConstructorFunc ?? throw new InvalidOperationException("Dictionary shape does not specify a span constructor.");
+        => ParameterizedConstructorFunc ?? throw new InvalidOperationException("Dictionary shape does not specify a span constructor.");
 }

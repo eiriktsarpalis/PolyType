@@ -29,7 +29,7 @@ internal sealed partial class SourceFormatter
                     OverwritingInserter = {{FormatOverwritingInserter(dictionaryShapeModel)}},
                     DiscardingInserter = {{FormatDiscardingInserter(dictionaryShapeModel)}},
                     ThrowingInserter = {{FormatThrowingInserter(dictionaryShapeModel)}},
-                    SpanConstructorFunc = {{FormatSpanConstructorFunc(dictionaryShapeModel)}},
+                    ParameterizedConstructorFunc = {{FormatParameterizedConstructorFunc(dictionaryShapeModel)}},
                     AssociatedTypeShapes = {{FormatAssociatedTypeShapes(dictionaryShapeModel)}},
                     Provider = this,
                 };
@@ -149,7 +149,7 @@ internal sealed partial class SourceFormatter
         static string FormatKeyValueTypeName(DictionaryShapeModel dictionaryType)
             => $"global::System.Collections.Generic.KeyValuePair<{dictionaryType.KeyType}, {dictionaryType.ValueType}>";
 
-        static string FormatSpanConstructorFunc(DictionaryShapeModel dictionaryType)
+        static string FormatParameterizedConstructorFunc(DictionaryShapeModel dictionaryType)
         {
             if (dictionaryType.ConstructionStrategy is not CollectionConstructionStrategy.Parameterized)
             {

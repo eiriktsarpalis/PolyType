@@ -55,7 +55,7 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     /// <summary>
     /// Gets the function that constructs a collection from a span.
     /// </summary>
-    public ParameterizedCollectionConstructor<TElement, TElement, TEnumerable>? SpanConstructorFunc { get; init; }
+    public ParameterizedCollectionConstructor<TElement, TElement, TEnumerable>? ParameterizedConstructorFunc { get; init; }
 
     /// <inheritdoc/>
     public override TypeShapeKind Kind => TypeShapeKind.Enumerable;
@@ -75,5 +75,5 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
         => AppenderFunc ?? throw new InvalidOperationException("Enumerable shape does not specify an append delegate.");
 
     ParameterizedCollectionConstructor<TElement, TElement, TEnumerable> IEnumerableTypeShape<TEnumerable, TElement>.GetParameterizedConstructor()
-        => SpanConstructorFunc ?? throw new InvalidOperationException("Enumerable shape does not specify a span constructor.");
+        => ParameterizedConstructorFunc ?? throw new InvalidOperationException("Enumerable shape does not specify a span constructor.");
 }
