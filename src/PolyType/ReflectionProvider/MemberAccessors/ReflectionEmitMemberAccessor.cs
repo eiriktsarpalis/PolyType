@@ -334,9 +334,13 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
 
     public Type CreateConstructorArgumentStateType(IConstructorShapeInfo ctorInfo)
     {
+        if (ctorInfo.Parameters is [])
+        {
+            return typeof(EmptyArgumentState);
+        }
+
         Type argumentType = ctorInfo switch
         {
-            { Parameters: [] } => typeof(object), // use object for default ctors.
             { Parameters: [IParameterShapeInfo p] } => p.Type, // use the type itself for single parameter ctors.
             TupleConstructorShapeInfo { IsValueTuple: true } => ctorInfo.ConstructedType, // Use the type itself as the argument state for value tuples.
             _ => ReflectionHelpers.CreateValueTupleType(ctorInfo.Parameters.Select(p => p.Type).ToArray()), // use a value tuple for multiple parameters.

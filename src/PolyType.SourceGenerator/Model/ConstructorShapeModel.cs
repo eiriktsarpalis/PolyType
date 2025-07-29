@@ -40,6 +40,7 @@ public sealed record ConstructorShapeModel
 /// </summary>
 public enum ArgumentStateType
 {
+    EmptyArgumentState,
     SmallArgumentState,
     LargeArgumentState,
 }

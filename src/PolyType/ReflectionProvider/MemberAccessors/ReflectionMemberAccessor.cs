@@ -241,6 +241,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
     {
         return ctorInfo switch
         {
+            { Parameters: [] } => typeof(EmptyArgumentState),
             MethodConstructorShapeInfo { MemberInitializers.Length: > 0 } => typeof(LargeArgumentState<(object?[], object?[])>),
             _ => typeof(LargeArgumentState<object?[]>),
         };
