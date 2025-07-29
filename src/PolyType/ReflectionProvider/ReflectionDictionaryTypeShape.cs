@@ -68,7 +68,7 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         }
     }
 
-    public MutableCollectionConstructor<TKey, TDictionary> GetMutableConstructor()
+    public MutableCollectionConstructor<TKey, TDictionary> GetDefaultConstructor()
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
         {

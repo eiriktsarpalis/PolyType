@@ -15,7 +15,7 @@ internal sealed partial class SourceFormatter
                 {
                     ElementType = {{GetShapeModel(enumerableShapeModel.ElementType).SourceIdentifier}},
                     ConstructionStrategy = {{FormatCollectionConstructionStrategy(enumerableShapeModel.ConstructionStrategy)}},
-                    MutableConstructorFunc = {{FormatMutableConstructorFunc(enumerableShapeModel)}},
+                    DefaultConstructorFunc = {{FormatMutableConstructorFunc(enumerableShapeModel)}},
                     SpanConstructorFunc = {{FormatSpanConstructorFunc(enumerableShapeModel)}},
                     SupportedComparer = {{FormatComparerOptions(enumerableShapeModel.ConstructorParameters)}},
                     GetEnumerableFunc = {{FormatGetEnumerableFunc(enumerableShapeModel)}},

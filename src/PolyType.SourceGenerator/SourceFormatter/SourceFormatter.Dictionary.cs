@@ -25,7 +25,7 @@ internal sealed partial class SourceFormatter
                     GetDictionaryFunc = {{FormatGetDictionaryFunc(dictionaryShapeModel)}},
                     SupportedComparer = {{FormatComparerOptions(dictionaryShapeModel.ConstructorParameters)}},
                     ConstructionStrategy = {{FormatCollectionConstructionStrategy(dictionaryShapeModel.ConstructionStrategy)}},
-                    MutableConstructorFunc = {{FormatDefaultConstructorFunc(dictionaryShapeModel)}},
+                    DefaultConstructorFunc = {{FormatDefaultConstructorFunc(dictionaryShapeModel)}},
                     OverwritingInserter = {{FormatOverwritingInserter(dictionaryShapeModel)}},
                     DiscardingInserter = {{FormatDiscardingInserter(dictionaryShapeModel)}},
                     ThrowingInserter = {{FormatThrowingInserter(dictionaryShapeModel)}},

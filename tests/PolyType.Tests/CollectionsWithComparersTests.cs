@@ -196,7 +196,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     {
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
         Assert.Equal(CollectionComparerOptions.Comparer, shape.SupportedComparer);
-        return shape.GetMutableConstructor()(new() { Comparer = comparer });
+        return shape.GetDefaultConstructor()(new() { Comparer = comparer });
     }
 
     private T CreateDefaultDictionary<T, K, V>(IEqualityComparer<K>? equalityComparer)
@@ -204,7 +204,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     {
         IDictionaryTypeShape<T, K, V> shape = this.GetDictionaryShape<T, K, V>();
         Assert.Equal(CollectionComparerOptions.EqualityComparer, shape.SupportedComparer);
-        return shape.GetMutableConstructor()(new() { EqualityComparer = equalityComparer });
+        return shape.GetDefaultConstructor()(new() { EqualityComparer = equalityComparer });
     }
 
     private T CreateParameterizedDictionary<T, K, V>(ReadOnlySpan<KeyValuePair<K, V>> values, IComparer<K>? comparer)
@@ -289,7 +289,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
         Assert.Equal(CollectionComparerOptions.Comparer, shape.SupportedComparer);
         Assert.Equal(CollectionConstructionStrategy.Mutable, shape.ConstructionStrategy);
-        return shape.GetMutableConstructor()(new() { Comparer = comparer });
+        return shape.GetDefaultConstructor()(new() { Comparer = comparer });
     }
 
     private T CreateDefaultEnumerable<T, K>(IEqualityComparer<K>? equalityComparer)
@@ -297,7 +297,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
         IEnumerableTypeShape<T, K> shape = this.GetEnumerableShape<T, K>();
         Assert.Equal(CollectionComparerOptions.EqualityComparer, shape.SupportedComparer);
         Assert.Equal(CollectionConstructionStrategy.Mutable, shape.ConstructionStrategy);
-        return shape.GetMutableConstructor()(new() { EqualityComparer = equalityComparer });
+        return shape.GetDefaultConstructor()(new() { EqualityComparer = equalityComparer });
     }
 
     private T CreateParameterizedEnumerable<T, K>(ReadOnlySpan<K> values, IComparer<K>? comparer)

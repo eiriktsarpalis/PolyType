@@ -84,11 +84,11 @@ public interface IDictionaryTypeShape<TDictionary, TKey, TValue> : ITypeShape<TD
     Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> GetGetDictionary();
 
     /// <summary>
-    /// Creates a delegate for creating an empty, mutable collection.
+    /// Creates a delegate for creating an empty, mutable dictionary.
     /// </summary>
     /// <exception cref="InvalidOperationException">The collection is not <see cref="CollectionConstructionStrategy.Mutable"/>.</exception>
-    /// <returns>A delegate for creating an empty mutable collection.</returns>
-    MutableCollectionConstructor<TKey, TDictionary> GetMutableConstructor();
+    /// <returns>A delegate for creating an empty mutable dictionary.</returns>
+    MutableCollectionConstructor<TKey, TDictionary> GetDefaultConstructor();
 
     /// <summary>
     /// Creates a delegate used for inserting a new key/value pair to a mutable dictionary.

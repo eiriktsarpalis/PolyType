@@ -143,7 +143,7 @@ public static partial class Cloner
             switch (enumerableShape.ConstructionStrategy)
             {
                 case CollectionConstructionStrategy.Mutable:
-                    var defaultCtor = enumerableShape.GetMutableConstructor();
+                    var defaultCtor = enumerableShape.GetDefaultConstructor();
                     var appender = enumerableShape.GetAppender();
                     return new Func<TEnumerable?, TEnumerable?>(source =>
                     {
@@ -192,7 +192,7 @@ public static partial class Cloner
             switch (dictionaryShape.ConstructionStrategy)
             {
                 case CollectionConstructionStrategy.Mutable:
-                    var defaultCtor = dictionaryShape.GetMutableConstructor();
+                    var defaultCtor = dictionaryShape.GetDefaultConstructor();
                     var inserter = dictionaryShape.GetInserter();
                     return new Func<TDictionary?, TDictionary?>(source =>
                     {
