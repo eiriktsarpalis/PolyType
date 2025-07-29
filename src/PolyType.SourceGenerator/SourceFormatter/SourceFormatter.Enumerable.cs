@@ -15,8 +15,8 @@ internal sealed partial class SourceFormatter
                 {
                     ElementType = {{GetShapeModel(enumerableShapeModel.ElementType).SourceIdentifier}},
                     ConstructionStrategy = {{FormatCollectionConstructionStrategy(enumerableShapeModel.ConstructionStrategy)}},
-                    MutableConstructorFunc = {{FormatMutableConstructorFunc(enumerableShapeModel)}},
-                    SpanConstructorFunc = {{FormatSpanConstructorFunc(enumerableShapeModel)}},
+                    DefaultConstructorFunc = {{FormatDefaultConstructorFunc(enumerableShapeModel)}},
+                    ParameterizedConstructorFunc = {{FormatParameterizedConstructorFunc(enumerableShapeModel)}},
                     SupportedComparer = {{FormatComparerOptions(enumerableShapeModel.ConstructorParameters)}},
                     GetEnumerableFunc = {{FormatGetEnumerableFunc(enumerableShapeModel)}},
                     AppenderFunc = {{FormatAppenderFunc(enumerableShapeModel)}},
@@ -45,7 +45,7 @@ internal sealed partial class SourceFormatter
             };
         }
 
-        static string FormatMutableConstructorFunc(EnumerableShapeModel enumerableType)
+        static string FormatDefaultConstructorFunc(EnumerableShapeModel enumerableType)
         {
             if (enumerableType.ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
             {
@@ -73,7 +73,7 @@ internal sealed partial class SourceFormatter
             };
         }
 
-        static string FormatSpanConstructorFunc(EnumerableShapeModel enumerableType)
+        static string FormatParameterizedConstructorFunc(EnumerableShapeModel enumerableType)
         {
             if (enumerableType.ConstructionStrategy is not CollectionConstructionStrategy.Parameterized)
             {

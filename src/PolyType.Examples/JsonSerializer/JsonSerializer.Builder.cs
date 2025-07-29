@@ -91,7 +91,7 @@ public static partial class JsonSerializerTS
                     new JsonMutableEnumerableConverter<TEnumerable, TElement>(
                         elementConverter,
                         enumerableShape,
-                        enumerableShape.GetMutableConstructor(),
+                        enumerableShape.GetDefaultConstructor(),
                         enumerableShape.GetAppender()),
 
                 CollectionConstructionStrategy.Parameterized => 
@@ -115,7 +115,7 @@ public static partial class JsonSerializerTS
                         keyConverter,
                         valueConverter,
                         dictionaryShape,
-                        dictionaryShape.GetMutableConstructor(),
+                        dictionaryShape.GetDefaultConstructor(),
                         dictionaryShape.GetInserter(DictionaryInsertionMode.Overwrite)),
 
                 CollectionConstructionStrategy.Parameterized => 

@@ -53,7 +53,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
         }
     }
 
-    public virtual MutableCollectionConstructor<TElement, TEnumerable> GetMutableConstructor()
+    public virtual MutableCollectionConstructor<TElement, TEnumerable> GetDefaultConstructor()
     {
         if (ConstructionStrategy is not CollectionConstructionStrategy.Mutable)
         {

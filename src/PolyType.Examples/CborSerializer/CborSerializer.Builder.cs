@@ -93,7 +93,7 @@ public static partial class CborSerializer
                     new CborMutableEnumerableConverter<TEnumerable, TElement>(
                         elementConverter,
                         getEnumerable,
-                        enumerableShape.GetMutableConstructor(),
+                        enumerableShape.GetDefaultConstructor(),
                         enumerableShape.GetAppender()),
 
                 CollectionConstructionStrategy.Parameterized =>
@@ -119,7 +119,7 @@ public static partial class CborSerializer
                         keyConverter,
                         valueConverter,
                         getDictionary,
-                        dictionaryShape.GetMutableConstructor(),
+                        dictionaryShape.GetDefaultConstructor(),
                         dictionaryShape.GetInserter(DictionaryInsertionMode.Discard)),
 
                 CollectionConstructionStrategy.Parameterized =>

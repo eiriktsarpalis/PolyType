@@ -399,8 +399,8 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
 
             if (dictionaryShape.ConstructionStrategy is CollectionConstructionStrategy.Mutable)
             {
-                var defaultCtor = dictionaryShape.GetMutableConstructor();
-                Assert.Same(dictionaryShape.GetMutableConstructor(), dictionaryShape.GetMutableConstructor());
+                var defaultCtor = dictionaryShape.GetDefaultConstructor();
+                Assert.Same(dictionaryShape.GetDefaultConstructor(), dictionaryShape.GetDefaultConstructor());
 
                 ReadOnlySpan<DictionaryInsertionMode> allInsertionModes = [
                     DictionaryInsertionMode.None,
@@ -446,7 +446,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             }
             else
             {
-                Assert.Throws<InvalidOperationException>(() => dictionaryShape.GetMutableConstructor());
+                Assert.Throws<InvalidOperationException>(() => dictionaryShape.GetDefaultConstructor());
                 Assert.Throws<InvalidOperationException>(() => dictionaryShape.GetInserter());
             }
 
@@ -555,9 +555,9 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             
             if (enumerableShape.ConstructionStrategy is CollectionConstructionStrategy.Mutable)
             {
-                var defaultCtor = enumerableShape.GetMutableConstructor();
+                var defaultCtor = enumerableShape.GetDefaultConstructor();
                 var appender = enumerableShape.GetAppender();
-                Assert.Same(enumerableShape.GetMutableConstructor(), enumerableShape.GetMutableConstructor());
+                Assert.Same(enumerableShape.GetDefaultConstructor(), enumerableShape.GetDefaultConstructor());
                 Assert.Same(enumerableShape.GetAppender(), enumerableShape.GetAppender());
 
                 enumerable = defaultCtor();
@@ -580,7 +580,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             }
             else
             {
-                Assert.Throws<InvalidOperationException>(() => enumerableShape.GetMutableConstructor());
+                Assert.Throws<InvalidOperationException>(() => enumerableShape.GetDefaultConstructor());
                 Assert.Throws<InvalidOperationException>(() => enumerableShape.GetAppender());
             }
 

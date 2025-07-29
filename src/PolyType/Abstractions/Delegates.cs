@@ -30,7 +30,7 @@ public delegate void Setter<TDeclaringType, TPropertyType>(ref TDeclaringType ob
 public delegate TDeclaringType Constructor<TArgumentState, TDeclaringType>(ref TArgumentState state);
 
 /// <summary>
-/// Delegate representing a constructor for a mutable collection.
+/// Delegate representing a default constructor for a mutable collection.
 /// </summary>
 /// <typeparam name="TKey">The type of keys or elements in the collection.</typeparam>
 /// <typeparam name="TDeclaringType">The type of the collection to be constructed.</typeparam>

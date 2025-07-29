@@ -84,7 +84,7 @@ public static partial class XmlSerializer
                     new XmlMutableEnumerableConverter<TEnumerable, TElement>(
                         elementConverter,
                         getEnumerable,
-                        enumerableShape.GetMutableConstructor(),
+                        enumerableShape.GetDefaultConstructor(),
                         enumerableShape.GetAppender()),
                 CollectionConstructionStrategy.Parameterized => 
                     new XmlParameterizedEnumerableConverter<TEnumerable, TElement>(
@@ -108,7 +108,7 @@ public static partial class XmlSerializer
                         keyConverter,
                         valueConverter,
                         getEnumerable,
-                        dictionaryShape.GetMutableConstructor(),
+                        dictionaryShape.GetDefaultConstructor(),
                         dictionaryShape.GetInserter(DictionaryInsertionMode.Throw)),
 
                 CollectionConstructionStrategy.Parameterized => 

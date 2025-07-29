@@ -249,7 +249,7 @@ public static partial class Mapper
                 switch (enumerableShape.ConstructionStrategy)
                 {
                     case CollectionConstructionStrategy.Mutable:
-                        var defaultCtor = enumerableShape.GetMutableConstructor();
+                        var defaultCtor = enumerableShape.GetDefaultConstructor();
                         var appender = enumerableShape.GetAppender();
                         return new Mapper<TSourceEnumerable, TTargetEnumerable>(source =>
                         {
@@ -299,7 +299,7 @@ public static partial class Mapper
                 switch (targetDictionary.ConstructionStrategy)
                 {
                     case CollectionConstructionStrategy.Mutable:
-                        var defaultCtor = targetDictionary.GetMutableConstructor();
+                        var defaultCtor = targetDictionary.GetDefaultConstructor();
                         var inserter = targetDictionary.GetInserter();
                         return new Mapper<TSourceDictionary, TTargetDictionary>(source =>
                         {
