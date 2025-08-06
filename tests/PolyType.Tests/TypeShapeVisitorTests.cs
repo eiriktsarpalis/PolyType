@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 
 namespace PolyType.Tests;
 
@@ -57,6 +56,9 @@ public class TypeShapeVisitorTests(ITestOutputHelper logger)
 
     [Fact]
     public void VisitUnionCase() => AssertVisitor(v => v.VisitUnionCase<object, object>(default!));
+
+    [Fact]
+    public void VisitMethod() => AssertVisitor(v => v.VisitMethod<object, IArgumentState, object>(default!));
 
     private void AssertVisitor(Action<TypeShapeVisitor> test, [CallerMemberName] string? methodName = null)
     {

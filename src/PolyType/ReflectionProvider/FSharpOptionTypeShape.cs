@@ -7,8 +7,8 @@ namespace PolyType.ReflectionProvider;
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
-internal sealed class FSharpOptionTypeShape<TOptional, TElement>(FSharpUnionInfo unionInfo, ReflectionTypeShapeProvider provider)
-    : ReflectionTypeShape<TOptional>(provider), IOptionalTypeShape<TOptional, TElement>
+internal sealed class FSharpOptionTypeShape<TOptional, TElement>(FSharpUnionInfo unionInfo, ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+    : ReflectionTypeShape<TOptional>(provider, options), IOptionalTypeShape<TOptional, TElement>
     where TOptional : IEquatable<TOptional>
 {
     public override TypeShapeKind Kind => TypeShapeKind.Optional;

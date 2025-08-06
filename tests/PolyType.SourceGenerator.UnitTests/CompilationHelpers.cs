@@ -97,6 +97,7 @@ public static class CompilationHelpers
             MetadataReference.CreateFromFile(typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.Runtime.CompilerServices.Unsafe).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.Collections.Immutable.ImmutableArray).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(System.Threading.Tasks.ValueTask).Assembly.Location),
 #endif
             MetadataReference.CreateFromFile(typeof(PolyType.Abstractions.ITypeShape).Assembly.Location),
             .. additionalReferences,
@@ -106,7 +107,7 @@ public static class CompilationHelpers
             assemblyName,
             syntaxTrees: syntaxTrees,
             references: references,
-            options: new CSharpCompilationOptions(outputKind, nullableContextOptions: nullableContextOptions)
+            options: new CSharpCompilationOptions(outputKind, nullableContextOptions: nullableContextOptions, allowUnsafe: true)
         );
     }
 

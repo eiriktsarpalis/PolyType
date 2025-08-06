@@ -370,6 +370,30 @@ internal static class RoslynHelpers
     public static IEnumerable<ISymbol> GetAllMembers(this ITypeSymbol type)
         => type.GetSortedTypeHierarchy().SelectMany(t => t.GetMembers());
 
+    public static IEnumerable<IMethodSymbol> GetAllMethods(this ITypeSymbol type)
+    {
+        HashSet<string> seenMethods = new();
+        foreach (ITypeSymbol current in type.GetSortedTypeHierarchy())
+        {
+            foreach (IMethodSymbol method in current.GetMembers().OfType<IMethodSymbol>())
+            {
+                // Create a signature key that includes name, parameters, and return type
+                string signature = GetMethodSignature(method);
+                if (seenMethods.Add(signature))
+                {
+                    yield return method;
+                }
+            }
+        }
+
+        static string GetMethodSignature(IMethodSymbol method)
+        {
+            string parameters = string.Join(",", method.Parameters.Select(p => p.Type.ToDisplayString()));
+            return $"{method.ReturnType.ToDisplayString()} {method.Name}({parameters})";
+        }
+    }
+
+
     public static bool IsAssignableFrom([NotNullWhen(true)] this ITypeSymbol? baseType, [NotNullWhen(true)] ITypeSymbol? type)
     {
         if (baseType is null || type is null)

@@ -7,6 +7,8 @@ internal sealed partial class SourceFormatter
 {
     private void FormatOptionalTypeShapeFactory(SourceWriter writer, string methodName, OptionalShapeModel optionalShapeModel)
     {
+        string? methodFactoryMethodName = CreateMethodsFactoryName(optionalShapeModel);
+
         // Disable CS8622 to avoid a dependency on MaybeNullWhenAttribute in netfx
         writer.WriteLine("#pragma warning disable CS8622 // Nullability warning for out parameter mismatch", disableIndentation: true);
         writer.WriteLine($$"""
@@ -18,11 +20,18 @@ internal sealed partial class SourceFormatter
                     NoneConstructor = {{FormatNoneCtor()}},
                     SomeConstructor = {{FormatSomeCtor()}},
                     Deconstructor = {{FormatDeconstructor()}},
+                    CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
                     Provider = this,
                 };
             }
             """);
         writer.WriteLine("#pragma warning restore CS8767", disableIndentation: true);
+
+        if (methodFactoryMethodName is not null)
+        {
+            writer.WriteLine();
+            FormatMethodsFactory(writer, methodFactoryMethodName, optionalShapeModel);
+        }
 
         string FormatNoneCtor() =>
             optionalShapeModel.Kind switch

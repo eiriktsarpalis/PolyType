@@ -228,30 +228,35 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         }
     }
 
-    public Func<TDeclaringType> CreateDefaultConstructor<TDeclaringType>(IConstructorShapeInfo ctorInfo)
+    public Func<TDeclaringType> CreateDefaultConstructor<TDeclaringType>(IMethodShapeInfo ctorInfo)
     {
         Debug.Assert(ctorInfo.Parameters is []);
-        Debug.Assert(ctorInfo is MethodConstructorShapeInfo);
-        return ((MethodConstructorShapeInfo)ctorInfo).ConstructorMethod is { } cI
+        Debug.Assert(ctorInfo is MethodShapeInfo);
+        return ((MethodShapeInfo)ctorInfo).Method is { } cI
             ? () => (TDeclaringType)cI.Invoke(null)!
             : static () => default(TDeclaringType)!;
     }
 
-    public Type CreateConstructorArgumentStateType(IConstructorShapeInfo ctorInfo)
+    public Type CreateConstructorArgumentStateType(IMethodShapeInfo ctorInfo)
     {
         return ctorInfo switch
         {
             { Parameters: [] } => typeof(EmptyArgumentState),
-            MethodConstructorShapeInfo { MemberInitializers.Length: > 0 } => typeof(LargeArgumentState<(object?[], object?[])>),
+            MethodShapeInfo { MemberInitializers.Length: > 0 } => typeof(LargeArgumentState<(object?[], object?[])>),
             _ => typeof(LargeArgumentState<object?[]>),
         };
     }
 
-    public Func<TArgumentState> CreateConstructorArgumentStateCtor<TArgumentState>(IConstructorShapeInfo ctorInfo)
+    public Func<TArgumentState> CreateConstructorArgumentStateCtor<TArgumentState>(IMethodShapeInfo ctorInfo)
         where TArgumentState : IArgumentState
     {
-        Debug.Assert(ctorInfo.Parameters.Length > 0);
-        if (ctorInfo is MethodConstructorShapeInfo { MemberInitializers.Length: > 0 } ctor)
+        if (ctorInfo.Parameters is [])
+        {
+            Debug.Assert(typeof(TArgumentState) == typeof(EmptyArgumentState));
+            return (Func<TArgumentState>)(object)(static () => EmptyArgumentState.Instance);
+        }
+
+        if (ctorInfo is MethodShapeInfo { MemberInitializers.Length: > 0 } ctor)
         {
             Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<(object?[], object?[])>));
             Func<object?[]> createCtorParameterArray = CreateConstructorArgumentArrayFunc(ctor.ConstructorParameters);
@@ -269,7 +274,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                 () => new(createCtorParameterArray(), ctorInfo.Parameters.Length, requiredPropertiesMask));
         }
 
-        static ValueBitArray CreateRequiredParametersMask(IConstructorShapeInfo ctorInfo)
+        static ValueBitArray CreateRequiredParametersMask(IMethodShapeInfo ctorInfo)
         {
             ValueBitArray mask = new(ctorInfo.Parameters.Length);
             for (int i = 0; i < ctorInfo.Parameters.Length; i++)
@@ -302,11 +307,11 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         }
     }
 
-    public Setter<TArgumentState, TParameter> CreateConstructorArgumentStateSetter<TArgumentState, TParameter>(IConstructorShapeInfo ctorInfo, int parameterIndex)
+    public Setter<TArgumentState, TParameter> CreateArgumentStateSetter<TArgumentState, TParameter>(IMethodShapeInfo ctorInfo, int parameterIndex)
         where TArgumentState : IArgumentState
     {
         Debug.Assert(ctorInfo.Parameters.Length > 0);
-        if (ctorInfo is MethodConstructorShapeInfo { MemberInitializers.Length: > 0 } ctor)
+        if (ctorInfo is MethodShapeInfo { MemberInitializers.Length: > 0 } ctor)
         {
             Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<(object?[], object?[])>));
             int initializerIndex = parameterIndex - ctor.ConstructorParameters.Length;
@@ -337,7 +342,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         }
     }
 
-    public Constructor<TArgumentState, TDeclaringType> CreateParameterizedConstructor<TArgumentState, TDeclaringType>(IConstructorShapeInfo ctorInfo)
+    public Constructor<TArgumentState, TDeclaringType> CreateParameterizedConstructor<TArgumentState, TDeclaringType>(IMethodShapeInfo ctorInfo)
         where TArgumentState : IArgumentState
     {
         Debug.Assert(ctorInfo.Parameters.Length > 0);
@@ -386,11 +391,11 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
             });
         }
 
-        if (ctorInfo is MethodConstructorShapeInfo { MemberInitializers.Length: > 0 } methodCtor)
+        if (ctorInfo is MethodShapeInfo { MemberInitializers.Length: > 0 } methodCtor)
         {
             Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<(object?[], object?[])>));
             MemberInitializerShapeInfo[] memberInitializers = methodCtor.MemberInitializers;
-            if (methodCtor.ConstructorMethod is { } ctor)
+            if (methodCtor.Method is { } ctor)
             {
                 int ctorArity = methodCtor.ConstructorParameters.Length;
                 return (Constructor<TArgumentState, TDeclaringType>)(object)new Constructor<LargeArgumentState<(object?[], object?[])>, TDeclaringType>(
@@ -436,11 +441,74 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
             }
         }
 
-        Debug.Assert(ctorInfo is MethodConstructorShapeInfo { ConstructorMethod: not null });
+        Debug.Assert(ctorInfo is MethodShapeInfo { Method: not null });
         Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<object?[]>));
-        var cI = ((MethodConstructorShapeInfo)ctorInfo).ConstructorMethod!;
+        var cI = ((MethodShapeInfo)ctorInfo).Method!;
         return (Constructor<TArgumentState, TDeclaringType>)(object)new Constructor<LargeArgumentState<object?[]>, TDeclaringType>(
             (ref LargeArgumentState<object?[]> state) => (TDeclaringType)cI.Invoke(state.Arguments)!);
+    }
+
+    public MethodInvoker<TDeclaringType, TArgumentState, TResult> CreateMethodInvoker<TDeclaringType, TArgumentState, TResult>(MethodShapeInfo ctorInfo) where TArgumentState : IArgumentState
+    {
+        DebugExt.Assert(ctorInfo.Method is MethodInfo);
+        var methodInfo = (MethodInfo)ctorInfo.Method;
+
+        Func<object?, ValueTask<TResult>> returnMarshaller = CreateResultMarshaller(methodInfo.ReturnType);
+        if (ctorInfo.Parameters is [])
+        {
+            Debug.Assert(typeof(TArgumentState) == typeof(EmptyArgumentState));
+            return (ref TDeclaringType? target, ref TArgumentState _) =>
+            {
+                object? boxedTarget = target;
+                object? result = methodInfo.Invoke(boxedTarget, []);
+                target = (TDeclaringType?)boxedTarget;
+                return returnMarshaller(result);
+            };
+        }
+
+        Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<object?[]>));
+        return (MethodInvoker<TDeclaringType, TArgumentState, TResult>)(object)new MethodInvoker<TDeclaringType, LargeArgumentState<object?[]>, TResult>(
+            (ref TDeclaringType? target, ref LargeArgumentState<object?[]> state) =>
+            {
+                object? boxedTarget = target;
+                object? result = methodInfo.Invoke(boxedTarget, state.Arguments);
+                target = (TDeclaringType?)boxedTarget;
+                return returnMarshaller(result);
+            });
+
+        static Func<object?, ValueTask<TResult>> CreateResultMarshaller(Type methodReturnType)
+        {
+            if (methodReturnType == typeof(void))
+            {
+                Debug.Assert(typeof(TResult) == typeof(Unit));
+                return (Func<object?, ValueTask<TResult>>)(object)(static (object? _) => new ValueTask<Unit>(Unit.Value));
+            }
+
+            if (methodReturnType == typeof(Task))
+            {
+                Debug.Assert(typeof(TResult) == typeof(Unit));
+                return (Func<object?, ValueTask<TResult>>)(object)new Func<object?, ValueTask<Unit>>(static value => Unit.FromTaskAsync((Task)value!));
+            }
+
+            if (methodReturnType == typeof(ValueTask))
+            {
+                Debug.Assert(typeof(TResult) == typeof(Unit));
+                return (Func<object?, ValueTask<TResult>>)(object)new Func<object?, ValueTask<Unit>>(static (object? value) => Unit.FromValueTaskAsync((ValueTask)value!));
+            }
+
+            if (methodReturnType == typeof(ValueTask<TResult>))
+            {
+                return static value => (ValueTask<TResult>)value!;
+            }
+
+            if (methodReturnType == typeof(Task<TResult>))
+            {
+                return static value => new ValueTask<TResult>((Task<TResult>)value!);
+            }
+
+            Debug.Assert(methodReturnType == typeof(TResult) || (methodReturnType.IsByRef && methodReturnType.GetElementType() == typeof(TResult)));
+            return static value => new ValueTask<TResult>((TResult)value!);
+        }
     }
 
     public Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeInfo[] derivedTypeInfos)

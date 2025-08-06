@@ -36,5 +36,5 @@ public sealed class PropertyShapeAttribute : Attribute
     /// <summary>
     /// Gets a value indicating whether <see cref="IsRequired"/> was explicitly set.
     /// </summary>
-    public bool IsRequiredSpecified => _isRequired.HasValue;
+    internal bool IsRequiredSpecified => _isRequired.HasValue;
 }

@@ -7,7 +7,7 @@ namespace PolyType.SourceGenerator.Model;
 /// <summary>
 /// Captures the data collected from all the TypeShapeExtensionAttribute attributes that target a particular type.
 /// </summary>
-public sealed record TypeExtensionModel
+internal sealed record TypeExtensionModel
 {
     /// <summary>
     /// The target type of the extension.
@@ -15,17 +15,27 @@ public sealed record TypeExtensionModel
     public required INamedTypeSymbol Target { get; init; }
 
     /// <summary>
-    /// An aggregate of all the associated types registered with the <see cref="Target"/>.
+    /// The kind of type shape that should be generated for the <see cref="Target"/> type.
     /// </summary>
-    public ImmutableArray<AssociatedTypeModel> AssociatedTypes { get; init; } = ImmutableArray<AssociatedTypeModel>.Empty;
+    public required TypeShapeKind? Kind { get; init; }
 
     /// <summary>
     /// Gets an optional marshaller type that can be used to convert the <see cref="Target"/> type to a surrogate type.
     /// </summary>
-    public INamedTypeSymbol? Marshaller { get; init; }
+    public required INamedTypeSymbol? Marshaller { get; init; }
+
+    /// <summary>
+    /// Gets the binding flags that determine what method shapes should be included in the type shape.
+    /// </summary>
+    public required MethodShapeFlags? IncludeMethods { get; init; }
+
+    /// <summary>
+    /// An aggregate of all the associated types registered with the <see cref="Target"/>.
+    /// </summary>
+    public required ImmutableArray<AssociatedTypeModel> AssociatedTypes { get; init; } = ImmutableArray<AssociatedTypeModel>.Empty;
 
     /// <summary>
     /// Gets the locations of the <see cref="TypeShapeExtensionAttribute"/> attributes that target the <see cref="Target"/> type.
     /// </summary>
-    public ImmutableArray<Location> Locations { get; init; } = ImmutableArray<Location>.Empty;
+    public required ImmutableArray<Location> Locations { get; init; } = ImmutableArray<Location>.Empty;
 }

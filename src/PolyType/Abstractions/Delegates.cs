@@ -30,6 +30,17 @@ public delegate void Setter<TDeclaringType, TPropertyType>(ref TDeclaringType ob
 public delegate TDeclaringType Constructor<TArgumentState, TDeclaringType>(ref TArgumentState state);
 
 /// <summary>
+/// Delegate representing a parameterized method invocation.
+/// </summary>
+/// <typeparam name="TDeclaringType">The declaring type containing the method.</typeparam>
+/// <typeparam name="TArgumentState">Type of the state object containing all method arguments.</typeparam>
+/// <typeparam name="TResult">Type of the value returned by the method.</typeparam>
+/// <param name="target">The instance on which the method should be invoked, or <see langword="default"/> if targeting static methods.</param>
+/// <param name="state">State object containing all method arguments.</param>
+/// <returns>The value returned by the method.</returns>
+public delegate ValueTask<TResult> MethodInvoker<TDeclaringType, TArgumentState, TResult>(ref TDeclaringType? target, ref TArgumentState state);
+
+/// <summary>
 /// Delegate representing a default constructor for a mutable collection.
 /// </summary>
 /// <typeparam name="TKey">The type of keys or elements in the collection.</typeparam>

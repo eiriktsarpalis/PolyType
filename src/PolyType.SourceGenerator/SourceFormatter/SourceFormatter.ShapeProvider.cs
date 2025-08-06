@@ -24,6 +24,9 @@ internal sealed partial class SourceFormatter
                 global::System.Reflection.BindingFlags.NonPublic | 
                 global::System.Reflection.BindingFlags.Instance;
 
+            private const global::System.Reflection.BindingFlags {{AllBindingFlagsConstMember}} = 
+                {{InstanceBindingFlagsConstMember}} | global::System.Reflection.BindingFlags.Static;
+
             /// <summary>Gets the default instance of the <see cref="{{provider.ProviderDeclaration.Name}}"/> class.</summary>
             public static {{provider.ProviderDeclaration.Name}} {{ProviderSingletonProperty}} { get; } = new();
 

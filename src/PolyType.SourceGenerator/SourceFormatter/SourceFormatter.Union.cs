@@ -10,6 +10,7 @@ internal sealed partial class SourceFormatter
     {
         string createUnionCasesMethodName = $"__Create_UnionCases_{unionShapeModel.SourceIdentifier}";
         string getUnionCaseIndexMethod = $"__GetUnionCaseIndex_{unionShapeModel.SourceIdentifier}";
+        string? methodFactoryMethodName = CreateMethodsFactoryName(unionShapeModel);
 
         writer.WriteLine($$"""
             private global::PolyType.Abstractions.ITypeShape<{{unionShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
@@ -29,6 +30,12 @@ internal sealed partial class SourceFormatter
 
         writer.WriteLine();
         FormatUnionCaseIndexMethod(writer, unionShapeModel, getUnionCaseIndexMethod);
+
+        if (methodFactoryMethodName is not null)
+        {
+            writer.WriteLine();
+            FormatMethodsFactory(writer, methodFactoryMethodName, unionShapeModel);
+        }
     }
 
     private void FormatUnionCasesFactory(SourceWriter writer, UnionShapeModel unionShapeModel, string methodName)

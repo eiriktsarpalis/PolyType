@@ -7,6 +7,8 @@ internal sealed partial class SourceFormatter
 {
     private void FormatSurrogateTypeShapeFactory(SourceWriter writer, string methodName, SurrogateShapeModel surrogateShapeModel)
     {
+        string? methodFactoryMethodName = CreateMethodsFactoryName(surrogateShapeModel);
+
         writer.WriteLine($$"""
            private global::PolyType.Abstractions.ITypeShape<{{surrogateShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
            {
@@ -14,9 +16,16 @@ internal sealed partial class SourceFormatter
                {
                    Marshaller = new {{surrogateShapeModel.MarshallerType.FullyQualifiedName}}(),
                    SurrogateType = {{GetShapeModel(surrogateShapeModel.SurrogateType).SourceIdentifier}},
+                   CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
                    Provider = this,
                };
            }
            """);
+
+        if (methodFactoryMethodName is not null)
+        {
+            writer.WriteLine();
+            FormatMethodsFactory(writer, methodFactoryMethodName, surrogateShapeModel);
+        }
     }
 }

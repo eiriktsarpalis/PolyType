@@ -1,5 +1,4 @@
-﻿using PolyType.Abstractions;
-using System.Diagnostics;
+﻿using PolyType.ReflectionProvider;
 
 namespace PolyType;
 
@@ -17,6 +16,9 @@ namespace PolyType;
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
 public class TypeShapeExtensionAttribute(Type target) : Attribute
 {
+    private TypeShapeKind? _kind;
+    private MethodShapeFlags? _includeMethods;
+
     /// <summary>
     /// Gets the target type.
     /// </summary>
@@ -41,6 +43,24 @@ public class TypeShapeExtensionAttribute(Type target) : Attribute
     /// </remarks>
     public TypeShapeRequirements Requirements { get; init; } = TypeShapeRequirements.Full;
 
+    /// <inheritdoc cref="TypeShapeAttribute.Kind" />
+    public TypeShapeKind Kind
+    {
+        get => _kind ?? TypeShapeKind.None;
+        init
+        {
+            if (!ReflectionHelpers.IsEnumDefined(value))
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The specified value is not a valid TypeShapeKind.");
+            }
+
+            _kind = value;
+        }
+    }
+
+    /// <inheritdoc cref="TypeShapeAttribute.IncludeMethods" />
+    public MethodShapeFlags IncludeMethods { get => _includeMethods ?? MethodShapeFlags.None; init => _includeMethods = value; }
+
     /// <summary>
     /// Types for which a shape should be generated when a type shape is generated for <see cref="Target"/>.
     /// </summary>
@@ -49,4 +69,7 @@ public class TypeShapeExtensionAttribute(Type target) : Attribute
     /// with the same number of generic type parameters.
     /// </remarks>
     public Type[] AssociatedTypes { get; init; } = [];
+
+    internal TypeShapeKind? GetRequestedKind() => _kind;
+    internal MethodShapeFlags? GetRequestedIncludeMethods() => _includeMethods;
 }

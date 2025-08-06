@@ -5,7 +5,8 @@ namespace PolyType.ReflectionProvider;
 
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
-internal sealed class ReflectionNullableTypeShape<T>(ReflectionTypeShapeProvider provider) : ReflectionTypeShape<T?>(provider), IOptionalTypeShape<T?, T>
+internal sealed class ReflectionNullableTypeShape<T>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+    : ReflectionTypeShape<T?>(provider, options), IOptionalTypeShape<T?, T>
     where T : struct
 {
     public override TypeShapeKind Kind => TypeShapeKind.Optional;

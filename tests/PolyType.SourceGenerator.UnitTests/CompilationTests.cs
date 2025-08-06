@@ -4,7 +4,7 @@ using Xunit;
 
 namespace PolyType.SourceGenerator.UnitTests;
 
-public static class CompilationTests
+public static partial class CompilationTests
 {
     [Fact]
     public static void CompileSimplePoco_NoErrors()

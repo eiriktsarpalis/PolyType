@@ -10,8 +10,8 @@ public sealed class PolyTypeKnownSymbols(Compilation compilation) : KnownSymbols
     /// </summary>
     public static class TypeShapeExtensionAttributePropertyNames
     {
-        public const string Requirements = "Requirements";
         public const string AssociatedTypes = "AssociatedTypes";
+        public const string AssociatedTypeRequirements = "AssociatedTypeRequirements";
         public const string Marshaller = "Marshaller";
     }
 
@@ -40,6 +40,9 @@ public sealed class PolyTypeKnownSymbols(Compilation compilation) : KnownSymbols
     public INamedTypeSymbol? TypeShapeAttribute => GetOrResolveType("PolyType.TypeShapeAttribute", ref _TypeShapeAttribute);
     private Option<INamedTypeSymbol?> _TypeShapeAttribute;
 
+    public INamedTypeSymbol? UnitType => GetOrResolveType("PolyType.Abstractions.Unit", ref _UnitType);
+    private Option<INamedTypeSymbol?> _UnitType;
+
     public INamedTypeSymbol? TypeShapeExtensionAttribute => GetOrResolveType("PolyType.TypeShapeExtensionAttribute", ref _TypeShapeExtensionAttribute);
     private Option<INamedTypeSymbol?> _TypeShapeExtensionAttribute;
 
@@ -57,6 +60,9 @@ public sealed class PolyTypeKnownSymbols(Compilation compilation) : KnownSymbols
 
     public INamedTypeSymbol? ConstructorShapeAttribute => GetOrResolveType("PolyType.ConstructorShapeAttribute", ref _ConstructorShapeAttribute);
     private Option<INamedTypeSymbol?> _ConstructorShapeAttribute;
+
+    public INamedTypeSymbol? MethodShapeAttribute => GetOrResolveType("PolyType.MethodShapeAttribute", ref _MethodShapeAttribute);
+    private Option<INamedTypeSymbol?> _MethodShapeAttribute;
 
     public INamedTypeSymbol? ParameterShapeAttribute => GetOrResolveType("PolyType.ParameterShapeAttribute", ref _ParameterShapeAttribute);
     private Option<INamedTypeSymbol?> _ParameterShapeAttribute;

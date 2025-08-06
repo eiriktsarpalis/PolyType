@@ -7,12 +7,12 @@ namespace PolyType.ReflectionProvider;
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
-internal sealed class FSharpUnionTypeShape<TUnion>(FSharpUnionInfo unionInfo, ReflectionTypeShapeProvider provider)
-    : ReflectionTypeShape<TUnion>(provider), IUnionTypeShape<TUnion>
+internal sealed class FSharpUnionTypeShape<TUnion>(FSharpUnionInfo unionInfo, ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+    : ReflectionTypeShape<TUnion>(provider, options), IUnionTypeShape<TUnion>
 {
     public override TypeShapeKind Kind => TypeShapeKind.Union;
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnion(this, state);
-    public ITypeShape<TUnion> BaseType { get; } = new FSharpUnionCaseTypeShape<TUnion>(null, provider);
+    public ITypeShape<TUnion> BaseType { get; } = new FSharpUnionCaseTypeShape<TUnion>(null, provider, options);
 
     public IReadOnlyList<IUnionCaseShape> UnionCases => _unionCases ?? CommonHelpers.ExchangeIfNull(ref _unionCases, CreateUnionCaseShapes().AsReadOnlyList());
     private IReadOnlyList<IUnionCaseShape>? _unionCases;
@@ -44,18 +44,18 @@ internal sealed class FSharpUnionTypeShape<TUnion>(FSharpUnionInfo unionInfo, Re
         foreach (FSharpUnionCaseInfo unionCaseInfo in unionInfo.UnionCases)
         {
             Type fsharpUnionCaseTy = typeof(FSharpUnionCaseShape<,>).MakeGenericType(unionCaseInfo.DeclaringType, typeof(TUnion));
-            yield return (IUnionCaseShape)Activator.CreateInstance(fsharpUnionCaseTy, unionCaseInfo, Provider)!;
+            yield return (IUnionCaseShape)Activator.CreateInstance(fsharpUnionCaseTy, unionCaseInfo, Provider, Options)!;
         }
     }
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
-internal sealed class FSharpUnionCaseShape<TUnionCase, TUnion>(FSharpUnionCaseInfo unionCaseInfo, ReflectionTypeShapeProvider provider)
+internal sealed class FSharpUnionCaseShape<TUnionCase, TUnion>(FSharpUnionCaseInfo unionCaseInfo, ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
     : IUnionCaseShape<TUnionCase, TUnion>
     where TUnionCase : TUnion
 {
-    public ITypeShape<TUnionCase> Type { get; } = new FSharpUnionCaseTypeShape<TUnionCase>(unionCaseInfo, provider);
+    public ITypeShape<TUnionCase> Type { get; } = new FSharpUnionCaseTypeShape<TUnionCase>(unionCaseInfo, provider, options);
     public string Name => unionCaseInfo.Name;
     public int Tag => unionCaseInfo.Tag;
     public bool IsTagSpecified => false; // F# tags are inferred from the union case ordering
@@ -66,8 +66,8 @@ internal sealed class FSharpUnionCaseShape<TUnionCase, TUnion>(FSharpUnionCaseIn
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
-internal sealed class FSharpUnionCaseTypeShape<TUnionCase>(FSharpUnionCaseInfo? unionCaseInfo, ReflectionTypeShapeProvider provider)
-    : ReflectionObjectTypeShape<TUnionCase>(provider)
+internal sealed class FSharpUnionCaseTypeShape<TUnionCase>(FSharpUnionCaseInfo? unionCaseInfo, ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+    : ReflectionObjectTypeShape<TUnionCase>(provider, options)
 {
     protected override IConstructorShape? GetConstructor()
     {
@@ -81,7 +81,7 @@ internal sealed class FSharpUnionCaseTypeShape<TUnionCase>(FSharpUnionCaseInfo? 
             .Select((p, i) => new MethodParameterShapeInfo(p, isNonNullable: p.IsNonNullableAnnotation(nullabilityCtx), logicalName: unionCaseInfo.Properties[i].Name))
             .ToArray();
 
-        MethodConstructorShapeInfo constructorShapeInfo = new(typeof(TUnionCase), unionCaseInfo.Constructor, methodParameterShapes);
+        MethodShapeInfo constructorShapeInfo = new(typeof(TUnionCase), unionCaseInfo.Constructor, methodParameterShapes);
         return Provider.CreateConstructor(this, constructorShapeInfo);
     }
 

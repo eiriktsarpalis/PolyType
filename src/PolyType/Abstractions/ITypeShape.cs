@@ -29,6 +29,12 @@ public interface ITypeShape
     public ICustomAttributeProvider? AttributeProvider { get; }
 
     /// <summary>
+    /// Gets all available method shapes for the given type.
+    /// </summary>
+    /// <returns>An enumeration of all available method shapes.</returns>
+    IReadOnlyList<IMethodShape> Methods { get; }
+
+    /// <summary>
     /// Accepts an <see cref="TypeShapeVisitor"/> for strongly-typed traversal.
     /// </summary>
     /// <param name="visitor">The visitor to accept.</param>

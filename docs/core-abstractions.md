@@ -633,5 +633,110 @@ The constructor-returning methods on the enumerable and dictionary shapes take a
 This struct can specify an @System.Collections.Generic.IEqualityComparer`1 or @System.Collections.Generic.IComparer`1 to be provided when constructing the collection to override the default comparer.
 This can be useful for keyed collections (i.e. sorted or hashed) when you're performing a structural copy or deserializing untrusted data and need to use a secure hash algorithm.
 
+## Method shapes
+
+PolyType exposes an `IMethodShape` abstraction that provides strongly typed representations of .NET methods. This enables automatic shape generation for all parameter and return types in a method signature, making it easy to implement RPC-like libraries and other method invocation scenarios. Method shapes are accessible via the `Methods` property on `ITypeShape`:
+
+```C#
+public partial interface ITypeShape
+{
+    IReadOnlyList<IMethodShape> Methods { get; }
+}
+```
+
+The core `IMethodShape` interface looks as follows:
+
+```C#
+public partial interface IMethodShape<TDeclaringType, TArgumentState, TResult> : IMethodShape
+    where TArgumentState : IArgumentState
+{
+    ITypeShape<TResult> ReturnType { get; }
+    IReadOnlyList<IParameterShape> Parameters { get; }
+    
+    Func<TArgumentState> GetArgumentStateConstructor();
+    MethodInvoker<TDeclaringType, TArgumentState, TResult> GetMethodInvoker();
+}
+
+public delegate ValueTask<TResult> MethodInvoker<TDeclaringType, TArgumentState, TResult>(
+    ref TDeclaringType? instance, 
+    ref TArgumentState argumentState);
+```
+
+Similar to constructor shapes, method shapes use an opaque `TArgumentState` type to encapsulate method parameters, and expose strongly typed setters via the `IParameterShape` abstraction. The visitor pattern supports method shapes:
+
+```C#
+public abstract partial class TypeShapeVisitor
+{
+    object? VisitMethod<TDeclaringType, TArgumentState, TResult>(IMethodShape<TDeclaringType, TArgumentState, TResult> methodShape, object? state = null);
+}
+```
+
+Here's a simple example that creates a weakly typed logging wrapper around method calls:
+
+```C#
+partial class LoggingVisitor : TypeShapeVisitor
+{
+    public override object? VisitMethod<TDeclaringType, TArgumentState, TResult>(
+        IMethodShape<TDeclaringType, TArgumentState, TResult> methodShape, object? state)
+    {
+        StrongBox<TDeclaringType?> instance = new(methodShape.IsStatic ? default : (TDeclaringType)state!);
+        var parameterSetters = methodShape.Parameters
+            .Select(param => (Setter<TArgumentState, IReadOnlyDictionary<string, object?>>)param.Accept(this, null)!)
+            .ToArray();
+
+        var argumentStateCtor = methodShape.GetArgumentStateConstructor();
+        var invoker = methodShape.GetMethodInvoker();
+
+        return new Func<IReadOnlyDictionary<string, object?>, ValueTask<object?>>(async arguments =>
+        {
+            Console.WriteLine($"Invoking {methodShape.Name}");
+            TArgumentState argumentState = argumentStateCtor();
+            foreach (var parameterSetter in parameterSetters)
+            {
+                parameterSetter(ref argumentState, arguments);
+            }
+
+            TResult result = await invoker(ref instance.Value, ref argumentState);
+            Console.WriteLine($"Completed {methodShape.Name} with result {result}");
+            return result;
+        });
+    }
+
+    public override object? VisitParameter<TArgumentState, TParameterType>(
+        IParameterShape<TArgumentState, TParameterType> parameterShape, object? state)
+    {
+        Setter<TArgumentState, TParameterType> setter = parameterShape.GetSetter();
+        return new Setter<TArgumentState, IReadOnlyDictionary<string, object?>>((ref TArgumentState argumentState, IReadOnlyDictionary<string, object?> parameters) =>
+        {
+            if (parameters.TryGetValue(parameterShape.Name, out object? value))
+            {
+                setter(ref argumentState, (TParameterType)value!);
+            }
+        });
+    }
+}
+```
+
+This logging wrapper can be applied to any method shape:
+
+```C#
+ITypeShape<Calculator> shape = TypeShapeProvider.Resolve<Calculator>();
+IMethodShape addMethodShape = shape.Methods.First(m => m.Name == "Add");
+var addMethod = (Func<IReadOnlyDictionary<string, object?>, ValueTask<object?>>)addMethodShape.Accept(new LoggingVisitor(), new Calculator())!;
+await addMethod(new Dictionary<string, object?> { { "x", 2 }, { "y", 3 } });
+// Invoking Add
+// Completed Add with result 5
+
+[GenerateShape, TypeShape(IncludeMethods = MethodShapeFlags.AllPublic)]
+partial class Calculator
+{
+    public static int Add(int x, int y) => x + y;
+    public async Task<int> MultiplyAsync(int x, int y)
+    {
+        await Task.Delay(100);
+        return x * y;
+    }
+}
+```
 
 This concludes the tutorial for the core PolyType programming model. For more detailed examples, please refer to the [`PolyType.Examples`](https://github.com/eiriktsarpalis/PolyType/tree/main/src/PolyType.Examples) project folder.

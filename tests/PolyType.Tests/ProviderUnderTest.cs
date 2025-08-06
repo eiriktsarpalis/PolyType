@@ -51,7 +51,7 @@ public sealed class SourceGenProviderUnderTest(SourceGenTypeShapeProvider source
 
 public sealed class ReflectionProviderUnderTest(ReflectionTypeShapeProviderOptions options) : ProviderUnderTest
 {
-    private static readonly ImmutableArray<Assembly> TypeShapeExtensionAssemblies = [typeof(TestCase).Assembly];
+    private static readonly ImmutableArray<Assembly> TypeShapeExtensionAssemblies = [typeof(TestCase).Assembly, Assembly.GetExecutingAssembly()];
 
     public static ReflectionProviderUnderTest Emit { get; } = new(new() { UseReflectionEmit = true, TypeShapeExtensionAssemblies = TypeShapeExtensionAssemblies });
     public static ReflectionProviderUnderTest NoEmit { get; } = new(new() { UseReflectionEmit = false, TypeShapeExtensionAssemblies = TypeShapeExtensionAssemblies });

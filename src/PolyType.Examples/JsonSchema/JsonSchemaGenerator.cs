@@ -24,6 +24,47 @@ public static class JsonSchemaGenerator
     public static JsonObject Generate(ITypeShape typeShape)
         => new Generator().GenerateSchema(typeShape);
 
+    /// <summary>
+    /// Generates a JSON schema using the specified method shape.
+    /// </summary>
+    public static JsonObject Generate(IMethodShape methodShape)
+    {
+        JsonObject? parameterSchemas = null;
+        JsonArray? requiredParams = null;
+        foreach (var parameter in methodShape.Parameters)
+        {
+            if (parameter.ParameterType.Type == typeof(CancellationToken))
+            {
+                continue;
+            }
+
+            (parameterSchemas ??= []).Add(parameter.Name, Generate(parameter.ParameterType));
+            if (parameter.IsRequired)
+            {
+                (requiredParams ??= []).Add((JsonNode)parameter.Name);
+            }
+        }
+
+        JsonObject functionSchema = new JsonObject
+        {
+            ["name"] = methodShape.Name,
+            ["type"] = "object",
+        };
+
+        if (parameterSchemas is not null)
+        {
+            functionSchema["properties"] = parameterSchemas;
+        }
+
+        if (requiredParams is not null)
+        {
+            functionSchema["required"] = requiredParams;
+        }
+
+        functionSchema["output"] = Generate(methodShape.ReturnType);
+        return functionSchema;
+    }
+
 #if NET
     /// <summary>
     /// Generates a JSON schema using an externally provided <see cref="IShapeable{T}"/> implementation.

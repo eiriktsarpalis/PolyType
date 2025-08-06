@@ -1,3 +1,4 @@
+using PolyType;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -75,4 +76,7 @@ internal static class ReflectionHelpers
 
     public static bool IsImmutableArray(this Type type)
         => type.IsValueType && type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ImmutableArray<>);
+
+    public static TypeShapeKind? GetRequestedKind(this TypeShapeAttribute attribute) => (TypeShapeKind?)s_kindField.GetValue(attribute);
+    private static readonly FieldInfo s_kindField = typeof(TypeShapeAttribute).GetField("_kind", BindingFlags.NonPublic | BindingFlags.Instance)!;
 }

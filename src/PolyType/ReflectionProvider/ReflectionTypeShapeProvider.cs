@@ -19,7 +19,6 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
     internal const string RequiresDynamicCodeMessage = "PolyType Reflection provider requires dynamic code.";
 
     private static readonly ConcurrentDictionary<ReflectionTypeShapeProviderOptions, ReflectionTypeShapeProvider> s_providers = new();
-    private static readonly Lazy<IReadOnlyDictionary<Type, ReflectionTypeShapeExtensionModel>> EmptyTypeShapeExtensions = new(() => new Dictionary<Type, ReflectionTypeShapeExtensionModel>());
 
     /// <summary>
     /// Gets the default provider instance using configuration supported by the current platform.
@@ -45,7 +44,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
     private readonly ConcurrentDictionary<Type, ITypeShape> _cache = new();
     private readonly Func<Type, ITypeShape> _typeShapeFactory;
-    private readonly Lazy<IReadOnlyDictionary<Type, ReflectionTypeShapeExtensionModel>> _typeShapeExtensions;
+    private readonly TypeShapeExtensionAttribute[] _typeShapeExtensions;
 
     private ReflectionTypeShapeProvider(ReflectionTypeShapeProviderOptions options)
     {
@@ -59,9 +58,10 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             ? new ReflectionEmitMemberAccessor()
             : new ReflectionMemberAccessor();
 
-        _typeShapeExtensions = options.TypeShapeExtensionAssemblies is []
-            ? EmptyTypeShapeExtensions
-            : new(() => DiscoverTypeShapeExtensions(options.TypeShapeExtensionAssemblies));
+        _typeShapeExtensions = options.TypeShapeExtensionAssemblies
+            .SelectMany(assembly => assembly.GetCustomAttributes<TypeShapeExtensionAttribute>())
+            .ToArray();
+
         _typeShapeFactory = type => CreateTypeShapeCore(type);
     }
 
@@ -105,32 +105,31 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             throw new ArgumentException("Type cannot be a generic parameter", nameof(type));
         }
 
-        _typeShapeExtensions.Value.TryGetValue(type, out ReflectionTypeShapeExtensionModel typeShapeExtension);
-
-        return DetermineTypeKind(type, allowUnionShapes, typeShapeExtension, out TypeShapeAttribute? typeShapeAttribute, out FSharpUnionInfo? fSharpUnionInfo) switch
+        ReflectionTypeShapeOptions options = ResolveTypeShapeOptions(type);
+        return DetermineTypeKind(type, allowUnionShapes, options, out FSharpUnionInfo? fSharpUnionInfo) switch
         {
-            TypeShapeKind.Enumerable => CreateEnumerableShape(type),
-            TypeShapeKind.Dictionary => CreateDictionaryShape(type),
-            TypeShapeKind.Enum => CreateEnumShape(type),
-            TypeShapeKind.Optional => CreateOptionalShape(type, fSharpUnionInfo),
-            TypeShapeKind.Object => CreateObjectShape(type, disableMemberResolution: false),
-            TypeShapeKind.Surrogate => CreateSurrogateShape(type, typeShapeAttribute, typeShapeExtension),
-            TypeShapeKind.Union => CreateUnionTypeShape(type, fSharpUnionInfo),
-            TypeShapeKind.None or _ => CreateObjectShape(type, disableMemberResolution: true),
+            TypeShapeKind.Enumerable => CreateEnumerableShape(type, options),
+            TypeShapeKind.Dictionary => CreateDictionaryShape(type, options),
+            TypeShapeKind.Enum => CreateEnumShape(type, options),
+            TypeShapeKind.Optional => CreateOptionalShape(type, fSharpUnionInfo, options),
+            TypeShapeKind.Object => CreateObjectShape(type, disableMemberResolution: false, options),
+            TypeShapeKind.Surrogate => CreateSurrogateShape(type, options),
+            TypeShapeKind.Union => CreateUnionTypeShape(type, fSharpUnionInfo, options),
+            TypeShapeKind.None or _ => CreateObjectShape(type, disableMemberResolution: true, options),
         };
     }
 
-    private ITypeShape CreateObjectShape(Type type, bool disableMemberResolution)
+    private ITypeShape CreateObjectShape(Type type, bool disableMemberResolution, ReflectionTypeShapeOptions options)
     {
         Type objectShapeTy = typeof(DefaultReflectionObjectTypeShape<>).MakeGenericType(type);
-        return (ITypeShape)Activator.CreateInstance(objectShapeTy, this, disableMemberResolution)!;
+        return (ITypeShape)Activator.CreateInstance(objectShapeTy, this, disableMemberResolution, options)!;
     }
 
-    private ITypeShape CreateSurrogateShape(Type type, TypeShapeAttribute? typeShapeAttribute, ReflectionTypeShapeExtensionModel typeShapeExtension)
+    private ITypeShape CreateSurrogateShape(Type type, ReflectionTypeShapeOptions options)
     {
-        Type? marshallerType = typeShapeAttribute?.Marshaller ?? typeShapeExtension.Marshaller;
-        DebugExt.Assert(marshallerType != null);
+        DebugExt.Assert(options.Marshaller != null);
 
+        Type marshallerType = options.Marshaller;
         if (marshallerType.IsGenericTypeDefinition)
         {
             // Generic marshallers are applied the type parameters from the declaring type.
@@ -163,10 +162,10 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
         object bijection = Activator.CreateInstance(marshallerType)!;
         Type surrogateTypeShapeTy = typeof(ReflectionSurrogateTypeShape<,>).MakeGenericType(type, matchingSurrogate);
-        return (ITypeShape)Activator.CreateInstance(surrogateTypeShapeTy, bijection, this)!;
+        return (ITypeShape)Activator.CreateInstance(surrogateTypeShapeTy, bijection, this, options)!;
     }
 
-    private IEnumerableTypeShape CreateEnumerableShape(Type type)
+    private IEnumerableTypeShape CreateEnumerableShape(Type type, ReflectionTypeShapeOptions options)
     {
         if (type.IsArray)
         {
@@ -176,12 +175,12 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             if (rank == 1)
             {
                 Type enumerableTypeTy = typeof(ReflectionArrayTypeShape<>).MakeGenericType(elementType);
-                return (IEnumerableTypeShape)Activator.CreateInstance(enumerableTypeTy, this)!;
+                return (IEnumerableTypeShape)Activator.CreateInstance(enumerableTypeTy, this, options)!;
             }
             else
             {
                 Type enumerableTypeTy = typeof(MultiDimensionalArrayTypeShape<,>).MakeGenericType(type, elementType);
-                return (IEnumerableTypeShape)Activator.CreateInstance(enumerableTypeTy, this, rank)!;
+                return (IEnumerableTypeShape)Activator.CreateInstance(enumerableTypeTy, this, rank, options)!;
             }
         }
 
@@ -194,14 +193,14 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             {
                 Type elementType = interfaceTy.GetGenericArguments()[0];
                 Type enumerableTypeTy = typeof(ReflectionEnumerableTypeOfTShape<,>).MakeGenericType(type, elementType);
-                return (IEnumerableTypeShape)Activator.CreateInstance(enumerableTypeTy, this)!;
+                return (IEnumerableTypeShape)Activator.CreateInstance(enumerableTypeTy, this, options)!;
             }
 
             if (genericInterfaceTypeDef.FullName == "System.Collections.Generic.IAsyncEnumerable`1")
             {
                 Type elementType = interfaceTy.GetGenericArguments()[0];
                 Type enumerableTypeTy = typeof(ReflectionAsyncEnumerableShape<,>).MakeGenericType(type, elementType);
-                return (IEnumerableTypeShape)Activator.CreateInstance(enumerableTypeTy, this)!;
+                return (IEnumerableTypeShape)Activator.CreateInstance(enumerableTypeTy, this, options)!;
             }
         }
 
@@ -209,14 +208,14 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         {
             Type shapeType = isReadOnlyMemory ? typeof(ReadOnlyMemoryTypeShape<>) : typeof(MemoryTypeShape<>);
             Type enumerableTypeTy = shapeType.MakeGenericType(memoryElementType);
-            return (IEnumerableTypeShape)Activator.CreateInstance(enumerableTypeTy, this)!;
+            return (IEnumerableTypeShape)Activator.CreateInstance(enumerableTypeTy, this, options)!;
         }
 
         Type enumerableType = typeof(ReflectionNonGenericEnumerableTypeShape<>).MakeGenericType(type);
-        return (IEnumerableTypeShape)Activator.CreateInstance(enumerableType, this)!;
+        return (IEnumerableTypeShape)Activator.CreateInstance(enumerableType, this, options)!;
     }
 
-    private IDictionaryTypeShape CreateDictionaryShape(Type type)
+    private IDictionaryTypeShape CreateDictionaryShape(Type type, ReflectionTypeShapeOptions options)
     {
         Type? dictionaryTypeTy = null;
 
@@ -248,36 +247,36 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             dictionaryTypeTy = typeof(ReflectionNonGenericDictionaryShape<>).MakeGenericType(type);
         }
 
-        return (IDictionaryTypeShape)Activator.CreateInstance(dictionaryTypeTy, this)!;
+        return (IDictionaryTypeShape)Activator.CreateInstance(dictionaryTypeTy, this, options)!;
     }
 
-    private IEnumTypeShape CreateEnumShape(Type enumType)
+    private IEnumTypeShape CreateEnumShape(Type enumType, ReflectionTypeShapeOptions options)
     {
         Debug.Assert(enumType.IsEnum);
         Type enumTypeTy = typeof(ReflectionEnumTypeShape<,>).MakeGenericType(enumType, Enum.GetUnderlyingType(enumType));
-        return (IEnumTypeShape)Activator.CreateInstance(enumTypeTy, this)!;
+        return (IEnumTypeShape)Activator.CreateInstance(enumTypeTy, this, options)!;
     }
 
-    private IOptionalTypeShape CreateOptionalShape(Type optionalType, FSharpUnionInfo? fsharpUnionInfo)
+    private IOptionalTypeShape CreateOptionalShape(Type optionalType, FSharpUnionInfo? fsharpUnionInfo, ReflectionTypeShapeOptions options)
     {
         if (fsharpUnionInfo is not null)
         {
             Debug.Assert(fsharpUnionInfo.IsOptional && optionalType.IsGenericType);
             Type fsharpOptionalType = typeof(FSharpOptionTypeShape<,>).MakeGenericType(optionalType, optionalType.GetGenericArguments()[0]);
-            return (IOptionalTypeShape)Activator.CreateInstance(fsharpOptionalType, fsharpUnionInfo, this)!;
+            return (IOptionalTypeShape)Activator.CreateInstance(fsharpOptionalType, fsharpUnionInfo, this, options)!;
         }
 
         Debug.Assert(optionalType.IsNullableStruct());
         Type nullableTypeTy = typeof(ReflectionNullableTypeShape<>).MakeGenericType(optionalType.GetGenericArguments());
-        return (IOptionalTypeShape)Activator.CreateInstance(nullableTypeTy, this)!;
+        return (IOptionalTypeShape)Activator.CreateInstance(nullableTypeTy, this, options)!;
     }
 
-    private IUnionTypeShape CreateUnionTypeShape(Type unionType, FSharpUnionInfo? fSharpUnionInfo)
+    private IUnionTypeShape CreateUnionTypeShape(Type unionType, FSharpUnionInfo? fSharpUnionInfo, ReflectionTypeShapeOptions options)
     {
         if (fSharpUnionInfo is not null)
         {
             Type fsharpUnionTypeTy = typeof(FSharpUnionTypeShape<>).MakeGenericType(unionType);
-            return (IUnionTypeShape)Activator.CreateInstance(fsharpUnionTypeTy, fSharpUnionInfo, this)!;
+            return (IUnionTypeShape)Activator.CreateInstance(fsharpUnionTypeTy, fSharpUnionInfo, this, options)!;
         }
 
         DerivedTypeShapeAttribute[] derivedTypeAttributes = unionType.GetCustomAttributes<DerivedTypeShapeAttribute>().ToArray();
@@ -341,32 +340,66 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         }
 
         Type unionTypeTy = typeof(ReflectionUnionTypeShape<>).MakeGenericType(unionType);
-        return (IUnionTypeShape)Activator.CreateInstance(unionTypeTy, derivedTypeInfos.ToArray(), this)!;
+        return (IUnionTypeShape)Activator.CreateInstance(unionTypeTy, derivedTypeInfos.ToArray(), this, options)!;
     }
 
-    private static Dictionary<Type, ReflectionTypeShapeExtensionModel> DiscoverTypeShapeExtensions(IReadOnlyList<Assembly> assemblies)
+    private ReflectionTypeShapeOptions ResolveTypeShapeOptions(Type type)
     {
-        Dictionary<Type, ReflectionTypeShapeExtensionModel> typeShapeExtensions = new();
-        foreach (Assembly assembly in assemblies)
+        Type? genericTypeDef = type.IsGenericType ? type.GetGenericTypeDefinition() : null;
+        TypeShapeAttribute? typeShapeAttr = type.GetCustomAttribute<TypeShapeAttribute>();
+        TypeShapeKind? requestedKind = typeShapeAttr?.GetRequestedKind();
+        MethodShapeFlags? methodFlags = typeShapeAttr?.GetRequestedIncludeMethods();
+        Type? marshaller = typeShapeAttr?.Marshaller;
+
+        foreach (TypeShapeExtensionAttribute extensionAttr in _typeShapeExtensions)
         {
-            foreach (TypeShapeExtensionAttribute attribute in assembly.GetCustomAttributes<TypeShapeExtensionAttribute>())
+            if (extensionAttr.Target == type || extensionAttr.Target == genericTypeDef)
             {
-                ReflectionTypeShapeExtensionModel model = new(attribute);
-                typeShapeExtensions[attribute.Target] = typeShapeExtensions.TryGetValue(attribute.Target, out ReflectionTypeShapeExtensionModel existing)
-                    ? existing.Merge(model)
-                    : model;
+                if (extensionAttr.Marshaller is not null)
+                {
+                    if (marshaller is not null && marshaller != extensionAttr.Marshaller)
+                    {
+                        throw new InvalidOperationException($"Conflicting marshallers for '{type}': '{marshaller}' vs '{extensionAttr.Marshaller}'.");
+                    }
+
+                    marshaller = extensionAttr.Marshaller;
+                }
+
+                if (extensionAttr.GetRequestedIncludeMethods() is { } includeMethods)
+                {
+                    if (methodFlags is not null && methodFlags != includeMethods)
+                    {
+                        throw new InvalidOperationException($"Conflicting method inclusion flags for '{type}': {methodFlags} vs {includeMethods}.");
+                    }
+
+                    methodFlags = includeMethods;
+                }
+
+                if (extensionAttr.GetRequestedKind() is { } extensionRequestedKind)
+                {
+                    if (requestedKind is not null && extensionRequestedKind != requestedKind)
+                    {
+                        throw new InvalidOperationException($"Conflicting requested shape kinds for '{type}': {requestedKind} vs {extensionRequestedKind}.");
+                    }
+
+                    requestedKind = extensionRequestedKind;
+                }
             }
         }
 
-        return typeShapeExtensions;
+        return new ReflectionTypeShapeOptions
+        {
+            RequestedKind = requestedKind,
+            Marshaller = marshaller,
+            IncludeMethods = methodFlags ?? MethodShapeFlags.None,
+        };
     }
 
-    private static TypeShapeKind DetermineTypeKind(Type type, bool allowUnionShapes, ReflectionTypeShapeExtensionModel typeShapeExtension, out TypeShapeAttribute? typeShapeAttribute, out FSharpUnionInfo? fsharpUnionInfo)
+    private static TypeShapeKind DetermineTypeKind(Type type, bool allowUnionShapes, ReflectionTypeShapeOptions typeShapeOptions, out FSharpUnionInfo? fsharpUnionInfo)
     {
-        typeShapeAttribute = type.GetCustomAttribute<TypeShapeAttribute>();
-        TypeShapeKind builtInKind = DetermineBuiltInTypeKind(type, allowUnionShapes, typeShapeAttribute, typeShapeExtension, out fsharpUnionInfo);
+        TypeShapeKind builtInKind = DetermineBuiltInTypeKind(type, allowUnionShapes, typeShapeOptions, out fsharpUnionInfo);
 
-        if (typeShapeAttribute?.GetRequestedKind() is TypeShapeKind requestedKind && requestedKind != builtInKind)
+        if (typeShapeOptions.RequestedKind is TypeShapeKind requestedKind && requestedKind != builtInKind)
         {
             Debug.Assert(
                 builtInKind is TypeShapeKind.Dictionary or TypeShapeKind.Enumerable or TypeShapeKind.Object or TypeShapeKind.Union,
@@ -391,11 +424,11 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         return builtInKind;
     }
 
-    private static TypeShapeKind DetermineBuiltInTypeKind(Type type, bool allowUnionShapes, TypeShapeAttribute? typeShapeAttribute, ReflectionTypeShapeExtensionModel? typeShapeExtension, out FSharpUnionInfo? fsharpUnionInfo)
+    private static TypeShapeKind DetermineBuiltInTypeKind(Type type, bool allowUnionShapes, ReflectionTypeShapeOptions? options, out FSharpUnionInfo? fsharpUnionInfo)
     {
         fsharpUnionInfo = null;
 
-        if (typeShapeAttribute?.Marshaller is not null || typeShapeExtension?.Marshaller is not null)
+        if (options?.Marshaller is not null)
         {
             return TypeShapeKind.Surrogate;
         }
@@ -465,14 +498,21 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         return (IPropertyShape)Activator.CreateInstance(reflectionPropertyType, this, declaringType, propertyShapeInfo, position)!;
     }
 
-    internal IConstructorShape CreateConstructor(IObjectTypeShape declaringType, IConstructorShapeInfo ctorInfo)
+    internal IMethodShape CreateMethod(ITypeShape declaringType, MethodShapeInfo methodShapeInfo)
+    {
+        Type argumentStateType = MemberAccessor.CreateConstructorArgumentStateType(methodShapeInfo);
+        Type reflectionMethodShapeType = typeof(ReflectionMethodShape<,,>).MakeGenericType(declaringType.Type, argumentStateType, methodShapeInfo.ReturnType);
+        return (IMethodShape)Activator.CreateInstance(reflectionMethodShapeType, methodShapeInfo, this)!;
+    }
+
+    internal IConstructorShape CreateConstructor(IObjectTypeShape declaringType, IMethodShapeInfo ctorInfo)
     {
         Type argumentStateType = MemberAccessor.CreateConstructorArgumentStateType(ctorInfo);
-        Type reflectionConstructorType = typeof(ReflectionConstructorShape<,>).MakeGenericType(ctorInfo.ConstructedType, argumentStateType);
+        Type reflectionConstructorType = typeof(ReflectionConstructorShape<,>).MakeGenericType(ctorInfo.ReturnType, argumentStateType);
         return (IConstructorShape)Activator.CreateInstance(reflectionConstructorType, this, declaringType, ctorInfo)!;
     }
 
-    internal IParameterShape CreateParameter(Type constructorArgumentState, IConstructorShapeInfo ctorInfo, int position)
+    internal IParameterShape CreateParameter(Type constructorArgumentState, IMethodShapeInfo ctorInfo, int position)
     {
         IParameterShapeInfo parameterInfo = ctorInfo.Parameters[position];
         Type constructorParameterType = typeof(ReflectionParameterShape<,>).MakeGenericType(constructorArgumentState, parameterInfo.Type);
@@ -485,13 +525,13 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         return (IUnionCaseShape)Activator.CreateInstance(unionCaseType, unionTypeShape, derivedTypeInfo, this)!;
     }
 
-    internal static IConstructorShapeInfo CreateTupleConstructorShapeInfo(Type tupleType)
+    internal static IMethodShapeInfo CreateTupleConstructorShapeInfo(Type tupleType)
     {
         Debug.Assert(tupleType.IsTupleType());
 
         if (tupleType == typeof(ValueTuple))
         {
-            return new MethodConstructorShapeInfo(tupleType, constructorMethod: null, parameters: []);
+            return new MethodShapeInfo(tupleType, method: null, parameters: []);
         }
 
         if (!tupleType.IsNestedTupleRepresentation())
@@ -503,7 +543,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
                 .Select((p, i) => new MethodParameterShapeInfo(p, isNonNullable: false, logicalName: $"Item{i + 1}"))
                 .ToArray();
 
-            return new MethodConstructorShapeInfo(tupleType, ctorInfo, parameters);
+            return new MethodShapeInfo(tupleType, ctorInfo, parameters);
         }
 
         return CreateNestedTupleCtorInfo(tupleType, offset: 0);

@@ -6,7 +6,7 @@ namespace PolyType.Roslyn;
 
 public partial class TypeDataModelGenerator
 {
-    private bool TryMapDictionary(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
+    private bool TryMapDictionary(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, ImmutableArray<MethodDataModel> methodModels, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
     {
         model = null;
         status = default;
@@ -74,11 +74,12 @@ public partial class TypeDataModelGenerator
         model = new DictionaryDataModel
         {
             Type = type,
-            Depth = TypeShapeRequirements.Full,
+            Requirements = TypeShapeRequirements.Full,
             KeyType = keyType,
             ValueType = valueType,
             DictionaryKind = kind,
             DerivedTypes = IncludeDerivedTypes(type, ref ctx, TypeShapeRequirements.Full),
+            Methods = methodModels,
             FactoryMethod = factoryMethod,
             FactorySignature = factorySignature?.ToImmutableArray() ?? ImmutableArray<CollectionConstructorParameter>.Empty,
             AvailableInsertionModes = availableInsertionModes,

@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using PolyType.Roslyn.Helpers;
 using System.Collections.Immutable;
+using System.Reflection;
 
 namespace PolyType.Roslyn;
 
@@ -91,6 +92,7 @@ public partial class TypeDataModelGenerator
     /// Gets the list of equatable diagnostics that have been recorded by this model generator.
     /// </summary>
     public List<EquatableDiagnostic> Diagnostics => _diagnostics ??= [];
+
     /// <summary>
     /// Adds a new diagnostic to the <see cref="Diagnostics"/> property.
     /// </summary>
@@ -119,7 +121,15 @@ public partial class TypeDataModelGenerator
     protected virtual IEnumerable<DerivedTypeModel> ResolveDerivedTypes(ITypeSymbol type) => [];
 
     /// <summary>
-    /// Wraps the <see cref="MapType(ITypeSymbol, TypeDataKind?, ImmutableArray{AssociatedTypeModel}, ref TypeDataModelGenerationContext, TypeShapeRequirements, out TypeDataModel?)"/> method
+    ///  Resolves the method symbols that should be included for the given type.
+    /// </summary>
+    /// <param name="type">The declaring type from which to resolve the methods.</param>
+    /// <param name="bindingFlags">The binding flags of the methods to include.</param>
+    /// <returns>A key/value pair containing the method and its declared name.</returns>
+    protected virtual IEnumerable<KeyValuePair<string, IMethodSymbol>> ResolveMethods(ITypeSymbol type, BindingFlags bindingFlags) => [];
+
+    /// <summary>
+    /// Wraps the <see cref="MapType(ITypeSymbol, TypeDataKind?, BindingFlags?, ImmutableArray{AssociatedTypeModel}, ref TypeDataModelGenerationContext, TypeShapeRequirements, out TypeDataModel?)"/> method
     /// with pre- and post-processing steps necessary for a type graph traversal.
     /// </summary>
     /// <param name="type">The type for which to generate a data model.</param>
@@ -129,13 +139,12 @@ public partial class TypeDataModelGenerator
     protected TypeDataModelGenerationStatus IncludeNestedType(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements requirements = TypeShapeRequirements.Full)
     {
         CancellationToken.ThrowIfCancellationRequested();
-
         type = NormalizeType(type);
 
         if (ctx.GeneratedModels.TryGetValue(type, out TypeDataModel? model))
         {
-            // Consider that a prior request may have produced a shape with less than the depth requested on this run.
-            if ((requirements & ~model.Depth) == TypeShapeRequirements.None)
+            // Consider that a prior request may have produced a shape with fewer requirements than this run.
+            if ((requirements & ~model.Requirements) == TypeShapeRequirements.None)
             {
                 model.IsRootType |= ctx.Stack.IsEmpty;
                 return TypeDataModelGenerationStatus.Success;
@@ -145,7 +154,7 @@ public partial class TypeDataModelGenerator
                 // Although we've generated a shape for this type already,
                 // it is missing some of the requirements our caller requires.
                 // Regenerate it with a union of the flags between the two requests.
-                requirements |= model.Depth;
+                requirements |= model.Requirements;
             }
         }
 
@@ -168,7 +177,7 @@ public partial class TypeDataModelGenerator
         // Create a new snapshot with the current type pushed onto the stack.
         // Only commit the generated model if the type is successfully mapped.
         TypeDataModelGenerationContext scopedCtx = ctx.Push(type);
-        TypeDataModelGenerationStatus status = MapType(type, requestedKind: null, ImmutableArray<AssociatedTypeModel>.Empty, ref scopedCtx, requirements, out model);
+        TypeDataModelGenerationStatus status = MapType(type, requestedKind: null, methodBindingFlags: null, ImmutableArray<AssociatedTypeModel>.Empty, ref scopedCtx, requirements, out model);
 
         if (status is TypeDataModelGenerationStatus.Success != model is not null)
         {
@@ -189,9 +198,10 @@ public partial class TypeDataModelGenerator
     /// </summary>
     /// <param name="type">The type for which to generate a data model.</param>
     /// <param name="requestedKind">The target kind as specified in configuration.</param>
+    /// <param name="methodBindingFlags">The binding flags used to resolve method shapes.</param>
+    /// <param name="requirements">The detail to include in the shape.</param>
     /// <param name="associatedTypes">Associated types for this shape.</param>
     /// <param name="ctx">The context token holding state for the current type graph traversal.</param>
-    /// <param name="requirements">The detail to include in the shape.</param>
     /// <param name="model">The model that the current symbol is being mapped to.</param>
     /// <returns>The model generation status for the given type.</returns>
     /// <remarks>
@@ -201,14 +211,16 @@ public partial class TypeDataModelGenerator
     protected virtual TypeDataModelGenerationStatus MapType(
         ITypeSymbol type,
         TypeDataKind? requestedKind,
+        BindingFlags? methodBindingFlags,
         ImmutableArray<AssociatedTypeModel> associatedTypes,
         ref TypeDataModelGenerationContext ctx,
         TypeShapeRequirements requirements,
         out TypeDataModel? model)
     {
         TypeDataModelGenerationStatus status;
-
         IncludeAssociatedShapes(type, associatedTypes, ref ctx);
+        ImmutableArray<MethodDataModel> methodModels = MapMethods(type, ref ctx, methodBindingFlags);
+
         switch (requestedKind)
         {
             // If the configuration specifies an explicit kind, try to resolve that or fall back to no shape.
@@ -220,35 +232,35 @@ public partial class TypeDataModelGenerator
                 goto None;
 
             case TypeDataKind.Optional:
-                if (TryMapOptional(type, ref ctx, requirements, out model, out status))
+                if (TryMapOptional(type, ref ctx, methodModels, requirements, out model, out status))
                 {
                     return status;
                 }
                 goto None;
 
             case TypeDataKind.Dictionary:
-                if (TryMapDictionary(type, ref ctx, out model, out status))
+                if (TryMapDictionary(type, ref ctx, methodModels, out model, out status))
                 {
                     return status;
                 }
                 goto None;
 
             case TypeDataKind.Enumerable:
-                if (TryMapEnumerable(type, ref ctx, out model, out status))
+                if (TryMapEnumerable(type, ref ctx, methodModels, out model, out status))
                 {
                     return status;
                 }
                 goto None;
 
             case TypeDataKind.Tuple:
-                if (TryMapTuple(type, ref ctx, out model, out status))
+                if (TryMapTuple(type, ref ctx, methodModels, out model, out status))
                 {
                     return status;
                 }
                 goto None;
 
             case TypeDataKind.Object:
-                if (TryMapObject(type, ref ctx, requirements, out model, out status))
+                if (TryMapObject(type, ref ctx, methodModels, requirements, out model, out status))
                 {
                     return status;
                 }
@@ -263,29 +275,29 @@ public partial class TypeDataModelGenerator
             return status;
         }
 
-        if (TryMapOptional(type, ref ctx, requirements, out model, out status))
+        if (TryMapOptional(type, ref ctx, methodModels, requirements, out model, out status))
         {
             return status;
         }
 
         // Important: Dictionary resolution goes before Enumerable
         // since Dictionary also implements IEnumerable
-        if (TryMapDictionary(type, ref ctx, out model, out status))
+        if (TryMapDictionary(type, ref ctx, methodModels, out model, out status))
         {
             return status;
         }
 
-        if (TryMapEnumerable(type, ref ctx, out model, out status))
+        if (TryMapEnumerable(type, ref ctx, methodModels, out model, out status))
         {
             return status;
         }
 
-        if (TryMapTuple(type, ref ctx, out model, out status))
+        if (TryMapTuple(type, ref ctx, methodModels, out model, out status))
         {
             return status;
         }
 
-        if (TryMapObject(type, ref ctx, requirements, out model, out status))
+        if (TryMapObject(type, ref ctx, methodModels, requirements, out model, out status))
         {
             return status;
         }
@@ -296,7 +308,8 @@ public partial class TypeDataModelGenerator
         {
             Type = type,
             DerivedTypes = IncludeDerivedTypes(type, ref ctx, requirements),
-            Depth = TypeShapeRequirements.Full,
+            Methods = methodModels,
+            Requirements = TypeShapeRequirements.Full,
         };
 
         return TypeDataModelGenerationStatus.Success;
@@ -376,5 +389,117 @@ public partial class TypeDataModelGenerator
 
             return derivedTypes;
         }
+    }
+
+    /// <summary>
+    /// Maps the methods resolved from the current type and their parameters to an array of <see cref="MethodDataModel"/>.
+    /// </summary>
+    /// <param name="type">The type from which to resolve methods.</param>
+    /// <param name="ctx">The current model generation context.</param>
+    /// <param name="bindingFlags">The binding flags to use when resolving methods.</param>
+    /// <returns>An array of mapped method data models.</returns>
+    protected ImmutableArray<MethodDataModel> MapMethods(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, BindingFlags? bindingFlags)
+    {
+        ImmutableArray<MethodDataModel>.Builder results = ImmutableArray.CreateBuilder<MethodDataModel>();
+        foreach (KeyValuePair<string, IMethodSymbol> kvp in ResolveMethods(type, bindingFlags ?? BindingFlags.Default))
+        {
+            TypeDataModelGenerationContext scopedCtx = ctx;
+            if (MapMethod(kvp.Value, kvp.Key, ref scopedCtx, out MethodDataModel methodDataModel) is TypeDataModelGenerationStatus.Success)
+            {
+                results.Add(methodDataModel);
+                ctx = scopedCtx;
+            }
+        }
+
+        return results.ToImmutable();
+    }
+
+    /// <summary>
+    /// Maps the given <paramref name="method"/> and its parameters to a <see cref="MethodDataModel"/>.
+    /// </summary>
+    /// <param name="method">The method to try to map.</param>
+    /// <param name="name">The name identifying the method.</param>
+    /// <param name="ctx">The current model generation context.</param>
+    /// <param name="result">The mapped method data model.</param>
+    /// <returns>The result of the mapping operation.</returns>
+    protected virtual TypeDataModelGenerationStatus MapMethod(IMethodSymbol method, string name, ref TypeDataModelGenerationContext ctx, out MethodDataModel result)
+    {
+        TypeDataModelGenerationStatus status;
+
+        var parameters = ImmutableArray.CreateBuilder<ParameterDataModel>(method.Parameters.Length);
+        foreach (IParameterSymbol parameter in method.Parameters)
+        {
+            if (parameter.RefKind is RefKind.Out)
+            {
+                result = default;
+                return TypeDataModelGenerationStatus.UnsupportedType;
+            }
+
+            if ((status = IncludeNestedType(parameter.Type, ref ctx)) != TypeDataModelGenerationStatus.Success)
+            {
+                result = default;
+                return status;
+            }
+
+            ParameterDataModel parameterModel = MapParameter(parameter);
+            parameters.Add(parameterModel);
+        }
+
+        ITypeSymbol? returnType = GetEffectiveReturnType(method, out MethodReturnTypeKind returnTypeKind);
+        if (returnType is not null && (status = IncludeNestedType(returnType, ref ctx)) != TypeDataModelGenerationStatus.Success)
+        {
+            result = default;
+            return status;
+        }
+
+        result = new MethodDataModel
+        {
+            Name = name,
+            Method = method,
+            ReturnedValueType = returnType,
+            ReturnTypeKind = returnTypeKind,
+            Parameters = parameters.ToImmutable(),
+        };
+
+        return TypeDataModelGenerationStatus.Success;
+    }
+
+    private ITypeSymbol? GetEffectiveReturnType(IMethodSymbol method, out MethodReturnTypeKind kind)
+    {
+        ITypeSymbol? returnType = method.ReturnType;
+        kind = MethodReturnTypeKind.Unrecognized;
+
+        if (returnType.SpecialType is SpecialType.System_Void)
+        {
+            returnType = null;
+            kind = MethodReturnTypeKind.Void;
+        }
+        else if (KnownSymbols.TaskType.IsAssignableFrom(returnType))
+        {
+            if (returnType is INamedTypeSymbol { IsGenericType: true } namedType)
+            {
+                returnType = namedType.TypeArguments[0]; // Task<T>
+                kind = MethodReturnTypeKind.TaskOfT;
+            }
+            else
+            {
+                returnType = null; // Task
+                kind = MethodReturnTypeKind.Task;
+            }
+        }
+        else if (SymbolEqualityComparer.Default.Equals(returnType, KnownSymbols.ValueTaskType))
+        {
+            // ValueTask
+            returnType = null;
+            kind = MethodReturnTypeKind.ValueTask;
+        }
+        else if (returnType.GetCompatibleGenericBaseType(KnownSymbols.ValueTaskOfTType) is { } valueTaskOf)
+        {
+            // ValueTask<T>
+            returnType = valueTaskOf.TypeArguments[0];
+            kind = MethodReturnTypeKind.ValueTaskOfT;
+        }
+
+        return returnType;
     }
 }

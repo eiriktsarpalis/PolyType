@@ -7,7 +7,8 @@ namespace PolyType.ReflectionProvider;
 
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
-internal sealed class ReflectionEnumTypeShape<TEnum, TUnderlying>(ReflectionTypeShapeProvider provider) : ReflectionTypeShape<TEnum>(provider), IEnumTypeShape<TEnum, TUnderlying>
+internal sealed class ReflectionEnumTypeShape<TEnum, TUnderlying>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+    : ReflectionTypeShape<TEnum>(provider, options), IEnumTypeShape<TEnum, TUnderlying>
     where TEnum : struct, Enum
     where TUnderlying : unmanaged
 {

@@ -9,7 +9,8 @@ namespace PolyType.ReflectionProvider;
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
-internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>(ReflectionTypeShapeProvider provider) : ReflectionTypeShape<TDictionary>(provider), IDictionaryTypeShape<TDictionary, TKey, TValue>
+internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+    : ReflectionTypeShape<TDictionary>(provider, options), IDictionaryTypeShape<TDictionary, TKey, TValue>
     where TKey : notnull
 {
     private CollectionConstructorInfo? _constructorInfo;
@@ -330,7 +331,8 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
-internal sealed class ReflectionDictionaryOfTShape<TDictionary, TKey, TValue>(ReflectionTypeShapeProvider provider) : ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>(provider)
+internal sealed class ReflectionDictionaryOfTShape<TDictionary, TKey, TValue>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+    : ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>(provider, options)
     where TDictionary : IDictionary<TKey, TValue>
     where TKey : notnull
 {
@@ -342,7 +344,8 @@ internal sealed class ReflectionDictionaryOfTShape<TDictionary, TKey, TValue>(Re
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
-internal sealed class ReflectionReadOnlyDictionaryShape<TDictionary, TKey, TValue>(ReflectionTypeShapeProvider provider) : ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>(provider)
+internal sealed class ReflectionReadOnlyDictionaryShape<TDictionary, TKey, TValue>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+    : ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>(provider, options)
     where TDictionary : IReadOnlyDictionary<TKey, TValue>
     where TKey : notnull
 {
@@ -354,7 +357,8 @@ internal sealed class ReflectionReadOnlyDictionaryShape<TDictionary, TKey, TValu
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
-internal sealed class ReflectionNonGenericDictionaryShape<TDictionary>(ReflectionTypeShapeProvider provider) : ReflectionDictionaryTypeShape<TDictionary, object, object?>(provider)
+internal sealed class ReflectionNonGenericDictionaryShape<TDictionary>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+    : ReflectionDictionaryTypeShape<TDictionary, object, object?>(provider, options)
     where TDictionary : IDictionary
 {
     public override Func<TDictionary, IReadOnlyDictionary<object, object?>> GetGetDictionary()

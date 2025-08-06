@@ -1,5 +1,4 @@
 ﻿using PolyType.Roslyn;
-using System.Collections.Immutable;
 
 namespace PolyType.SourceGenerator.Model;
 
@@ -13,7 +12,12 @@ public abstract record TypeShapeModel
     public required string SourceIdentifier { get; init; }
 
     /// <summary>
+    /// The methods shapes declared by the current type.
+    /// </summary>
+    public required ImmutableEquatableArray<MethodShapeModel> Methods { get; init; }
+
+    /// <summary>
     /// A map of type IDs for associated types and their requirements.
     /// </summary>
-    public required ImmutableEquatableDictionary<AssociatedTypeId, EquatableEnum<TypeShapeRequirements>> AssociatedTypes { get; init; }
+    public required ImmutableEquatableSet<AssociatedTypeId> AssociatedTypes { get; init; }
 }

@@ -211,6 +211,48 @@ internal static class ReflectionHelpers
         return parameterType.IsByRef ? parameterType.GetElementType()! : parameterType;
     }
 
+    public static Type? GetEffectiveReturnType(this MethodInfo methodInfo)
+    {
+        Type returnType = methodInfo.ReturnType;
+        if (returnType == typeof(void) || returnType == typeof(ValueTask) || returnType == typeof(Task))
+        {
+            return null;
+        }
+
+        if (returnType.IsByRef)
+        {
+            return returnType.GetElementType();
+        }
+
+        if (returnType.IsGenericType)
+        {
+            Type genericTypeDefinition = returnType.GetGenericTypeDefinition();
+            if (genericTypeDefinition == typeof(ValueTask<>) || genericTypeDefinition == typeof(Task<>))
+            {
+                return returnType.GetGenericArguments()[0];
+            }
+        }
+
+        return returnType;
+    }
+
+    public static bool IsAsyncMethod(this MethodInfo methodInfo)
+    {
+        Type returnType = methodInfo.ReturnType;
+        if (typeof(Task).IsAssignableFrom(returnType) || returnType == typeof(ValueTask))
+        {
+            return true;
+        }
+
+        if (methodInfo.ReturnType.IsGenericType)
+        {
+            Type genericTypeDefinition = methodInfo.ReturnType.GetGenericTypeDefinition();
+            return genericTypeDefinition == typeof(ValueTask<>);
+        }
+
+        return false;
+    }
+
     [UnconditionalSuppressMessage("Trimming", "IL2075:'this' argument does not satisfy 'DynamicallyAccessedMembersAttribute' in call to target method. The return value of the source method does not have matching annotations.", Justification = "Looking up the generic member definition of the input.")]
     public static MemberInfo GetGenericMemberDefinition(this MemberInfo member)
     {
@@ -243,7 +285,7 @@ internal static class ReflectionHelpers
         where TEnum : struct, Enum
     {
 #if NET
-        return Enum.IsDefined<TEnum>(value);
+        return Enum.IsDefined(value);
 #else
         return Enum.IsDefined(typeof(TEnum), value);
 #endif
@@ -411,6 +453,35 @@ internal static class ReflectionHelpers
         foreach (Type interfaceType in type.GetInterfaces())
         {
             yield return interfaceType;
+        }
+    }
+
+    [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
+    public static IEnumerable<MethodInfo> GetAllMethods(this Type type, BindingFlags flags)
+    {
+        if (type.IsInterface)
+        {
+            // For interfaces, we need to include all methods, including those from base interfaces.
+            foreach (Type interfaceType in type.GetAllInterfaces())
+            {
+                foreach (MethodInfo method in interfaceType.GetMethods(flags))
+                {
+                    if (method is { IsStatic: true, IsAbstract: true })
+                    {
+                        continue; // Skip static abstract methods in interfaces.
+                    }
+
+                    yield return method;
+                }
+            }
+        }
+        else
+        {
+            // For classes, we can just get the methods directly.
+            foreach (MethodInfo method in type.GetMethods(flags | BindingFlags.FlattenHierarchy))
+            {
+                yield return method;
+            }
         }
     }
 

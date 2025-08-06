@@ -2,12 +2,13 @@
 using PolyType.Roslyn.Helpers;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace PolyType.Roslyn;
 
 public partial class TypeDataModelGenerator
 {
-    private bool TryMapEnumerable(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
+    private bool TryMapEnumerable(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, ImmutableArray<MethodDataModel> methodModels, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
     {
         model = null;
         status = default;
@@ -133,10 +134,11 @@ public partial class TypeDataModelGenerator
         model = new EnumerableDataModel
         {
             Type = type,
-            Depth = TypeShapeRequirements.Full,
+            Requirements = TypeShapeRequirements.Full,
             ElementType = elementType,
             EnumerableKind = kind,
             DerivedTypes = IncludeDerivedTypes(type, ref ctx, TypeShapeRequirements.Full),
+            Methods = methodModels,
             AppendMethod = isParameterizedFactory ? null : appendMethod,
             InsertionMode = isParameterizedFactory ? EnumerableInsertionMode.None : insertionMode,
             FactoryMethod = factoryMethod,

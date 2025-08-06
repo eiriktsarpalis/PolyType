@@ -138,8 +138,24 @@ public sealed partial class Parser
     internal static DiagnosticDescriptor UnsanctionedShape { get; } = new DiagnosticDescriptor(
         id: "PT0019",
         title: "No external shape implementations.",
-        messageFormat: "The type \"{0}\" implements \"{1}\", which is a reserved interface that should only be implemented by PolyType itself.",
+        messageFormat: "The type '{0}' implements '{1}', which is a reserved interface that should only be implemented by PolyType itself.",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    internal static DiagnosticDescriptor GenericMethodShapesNotSupported { get; } = new DiagnosticDescriptor(
+        id: "PT0020",
+        title: "Generic method shapes not supported.",
+        messageFormat: "The method '{0}' is generic and does not support shape generation. Consider moving the generic parameter to the type level.",
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    internal static DiagnosticDescriptor MethodParametersNotSupported { get; } = new DiagnosticDescriptor(
+        id: "PT0021",
+        title: "Method parameters not supported.",
+        messageFormat: "The method '{0}' contains parameters that do not support shape generation.",
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 }

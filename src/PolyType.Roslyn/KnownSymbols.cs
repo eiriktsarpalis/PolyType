@@ -19,6 +19,11 @@ public class KnownSymbols(Compilation compilation)
     public IAssemblySymbol CoreLibAssembly => _CoreLibAssembly ??= Compilation.GetSpecialType(SpecialType.System_Int32).ContainingAssembly;
     private IAssemblySymbol? _CoreLibAssembly;
 
+    /// <summary>
+    /// The type symbol for <see cref="System.ValueType"/>.
+    /// </summary>
+    public INamedTypeSymbol SystemValueType => _ValueTypeType ??= Compilation.GetSpecialType(SpecialType.System_ValueType);
+    private INamedTypeSymbol? _ValueTypeType;
 
     /// <summary>
     /// The type symbol for <see cref="System.Reflection.MemberInfo"/>.
@@ -37,6 +42,24 @@ public class KnownSymbols(Compilation compilation)
     /// </summary>
     public INamedTypeSymbol? TaskType => GetOrResolveType("System.Threading.Tasks.Task", ref _TaskType);
     private Option<INamedTypeSymbol?> _TaskType;
+
+    /// <summary>
+    /// The type symbol for <see cref="System.Runtime.CompilerServices.CompilerGeneratedAttribute"/>.
+    /// </summary>
+    public INamedTypeSymbol? CompilerGeneratedAttribute => GetOrResolveType("System.Runtime.CompilerServices.CompilerGeneratedAttribute", ref _CompilerGeneratedAttribute);
+    private Option<INamedTypeSymbol?> _CompilerGeneratedAttribute;
+
+    /// <summary>
+    /// The type symbol for <see cref="System.Threading.Tasks.ValueTask"/>.
+    /// </summary>
+    public INamedTypeSymbol? ValueTaskType => GetOrResolveType("System.Threading.Tasks.ValueTask", ref _ValueTaskType);
+    private Option<INamedTypeSymbol?> _ValueTaskType;
+
+    /// <summary>
+    /// The type symbol for <see cref="System.Threading.Tasks.ValueTask{T}"/>.
+    /// </summary>
+    public INamedTypeSymbol? ValueTaskOfTType => GetOrResolveType("System.Threading.Tasks.ValueTask`1", ref _ValueTaskOfTType);
+    private Option<INamedTypeSymbol?> _ValueTaskOfTType;
 
     /// <summary>
     /// The type symbol for <see cref="IReadOnlyDictionary{TKey, TValue}"/>.
@@ -331,6 +354,7 @@ public class KnownSymbols(Compilation compilation)
                 "System.Uri",
                 "System.Text.Rune",
                 "System.Numerics.BigInteger",
+                "System.Threading.CancellationToken",
             ];
 
             var simpleTypes = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);

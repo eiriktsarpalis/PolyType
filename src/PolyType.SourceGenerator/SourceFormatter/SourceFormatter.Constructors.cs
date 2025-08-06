@@ -44,10 +44,16 @@ internal sealed partial class SourceFormatter
             FormatParameterFactory(writer, type, constructorParameterFactoryName, constructor, constructorArgumentStateFQN);
         }
 
-        if (constructor.TotalArity > 0)
+        if (FormatRequiredParametersMaskFieldName(type) is { } requiredParametersMaskFieldName)
         {
+            Debug.Assert(constructor.TotalArity > 0);
             writer.WriteLine();
-            FormatRequiredParametersMaskField(writer, type, constructor);
+            FormatRequiredParametersMaskField(
+                writer,
+                requiredParametersMaskFieldName,
+                constructor.TotalArity,
+                constructor.ArgumentStateType,
+                constructor.GetAllParameters());
         }
         
         static string FormatAttributeProviderFunc(ObjectShapeModel type, ConstructorShapeModel constructor)
@@ -59,7 +65,7 @@ internal sealed partial class SourceFormatter
 
             string parameterTypes = constructor.Parameters.Length == 0
                 ? "global::System.Type.EmptyTypes"
-                : $$"""new global::System.Type[] { {{string.Join(", ", constructor.Parameters.Select(p => $"typeof({p.ParameterType.FullyQualifiedName})"))}} }""";
+                : $$"""new global::System.Type[] { {{string.Join(", ", constructor.Parameters.Select(FormatParameterTypeExpr))}} }""";
 
             return $"static () => typeof({constructor.DeclaringType.FullyQualifiedName}).GetConstructor({InstanceBindingFlagsConstMember}, null, {parameterTypes}, null)";
         }
@@ -71,7 +77,7 @@ internal sealed partial class SourceFormatter
                 return "null";
             }
 
-            string requiredMembersMaskFieldName = FormatRequiredParametersMaskFieldName(type);
+            string requiredMembersMaskFieldName = FormatRequiredParametersMaskFieldName(type)!;
             string stateValueExpr = constructor.TotalArity switch
             {
                 _ when !constructor.Parameters.Any(p => p.HasDefaultValue) => "default!",
@@ -249,63 +255,14 @@ internal sealed partial class SourceFormatter
             };
         }
 
-        static string FormatRequiredParametersMaskFieldName(ObjectShapeModel objectModel)
+        static string? FormatRequiredParametersMaskFieldName(ObjectShapeModel objectModel)
         {
-            Debug.Assert(objectModel.Constructor?.TotalArity > 0);
-            return $"__RequiredMembersMask_{objectModel.SourceIdentifier}";
-        }
-
-        static void FormatRequiredParametersMaskField(SourceWriter writer, ObjectShapeModel type, ConstructorShapeModel constructor)
-        {
-            Debug.Assert(constructor.TotalArity > 0);
-            string requiredMembersMaskType = constructor.ArgumentStateType switch
+            if (objectModel.Constructor?.TotalArity is > 0)
             {
-                ArgumentStateType.SmallArgumentState => "const ulong",
-                ArgumentStateType.LargeArgumentState => "static readonly global::PolyType.SourceGenModel.ValueBitArray",
-                _ => throw new InvalidOperationException(constructor.ArgumentStateType.ToString()),
-            };
-
-            string requiredMembersMaskFieldName = FormatRequiredParametersMaskFieldName(type);
-            string requiredMembersMaskExpr = FormatRequiredParametersMaskExpr();
-            writer.WriteLine($"private {requiredMembersMaskType} {requiredMembersMaskFieldName} = {requiredMembersMaskExpr};");
-
-            string FormatRequiredParametersMaskExpr()
-            {
-                if (constructor.ArgumentStateType is ArgumentStateType.SmallArgumentState)
-                {
-                    int i = 0;
-                    ulong mask = 0UL;
-                    foreach (ParameterShapeModel parameter in constructor.GetAllParameters())
-                    {
-                        if (parameter.IsRequired)
-                        {
-                            mask |= 1UL << i;
-                        }
-
-                        i++;
-                    }
-
-                    return $"0x{mask:X}UL";
-                }
-                else
-                {
-                    Debug.Assert(constructor.ArgumentStateType is ArgumentStateType.LargeArgumentState);
-                    ValueBitArray requiredMask = new(constructor.TotalArity);
-                    int i = 0;
-                    foreach (ParameterShapeModel parameter in constructor.GetAllParameters())
-                    {
-                        if (parameter.IsRequired)
-                        {
-                            requiredMask[i] = true;
-                        }
-
-                        i++;
-                    }
-
-                    byte[] bytes = requiredMask.Bytes.ToArray();
-                    return $"new(new byte[] {{ {string.Join(", ", bytes.Select(i => $"0x{i:X2}"))} }}, {requiredMask.Length})";
-                }
+                return $"__RequiredMembersMask_{objectModel.SourceIdentifier}";
             }
+
+            return null;
         }
     }
 
@@ -360,7 +317,7 @@ internal sealed partial class SourceFormatter
 
                 string parameterTypes = constructor.Parameters.Length == 0
                     ? "global::System.Type.EmptyTypes"
-                    : $$"""new global::System.Type[] { {{string.Join(", ", constructor.Parameters.Select(p => $"typeof({p.ParameterType.FullyQualifiedName})"))}} }""";
+                    : $$"""new global::System.Type[] { {{string.Join(", ", constructor.Parameters.Select(FormatParameterTypeExpr))}} }""";
 
                 return $"static () => typeof({constructor.DeclaringType.FullyQualifiedName}).GetConstructor({InstanceBindingFlagsConstMember}, null, {parameterTypes}, null)?.GetParameters()[{parameter.Position}]";
             }
@@ -432,7 +389,6 @@ internal sealed partial class SourceFormatter
 
             return constructorModel.TotalArity switch
             {
-                0 => "object?",
                 1 => constructorModel.GetAllParameters().First().ParameterType.FullyQualifiedName,
                 _ => FormatTupleType(constructorModel.GetAllParameters().Select(p => p.ParameterType.FullyQualifiedName)),
             };
@@ -477,14 +433,7 @@ internal sealed partial class SourceFormatter
             // Emit a reflection-based workaround.
             string parameterTypes = constructorModel.Parameters.Length == 0
                 ? "global::System.Type.EmptyTypes"
-                : $$"""new global::System.Type[] { {{string.Join(", ", constructorModel.Parameters.Select(FormatParameterType))}} }""";
-
-            static string FormatParameterType(ParameterShapeModel parameter)
-            {
-                return parameter.RefKind is RefKind.None 
-                    ? $"typeof({parameter.ParameterType.FullyQualifiedName})"
-                    : $"typeof({parameter.ParameterType.FullyQualifiedName}).MakeByRefType()";
-            }
+                : $$"""new global::System.Type[] { {{string.Join(", ", constructorModel.Parameters.Select(FormatParameterTypeExpr))}} }""";
 
             writer.WriteLine($$"""
                 private static global::System.Reflection.ConstructorInfo? __s_{{accessorName}}_CtorInfo;
@@ -504,4 +453,70 @@ internal sealed partial class SourceFormatter
             private static extern {constructorModel.DeclaringType.FullyQualifiedName} {accessorName}({parameterSignature});
             """);
     }
+
+    private static void FormatRequiredParametersMaskField(
+        SourceWriter writer,
+        string fieldName,
+        int totalArity,
+        ArgumentStateType argumentStateType,
+        IEnumerable<ParameterShapeModel> parameters)
+    {
+        Debug.Assert(argumentStateType is ArgumentStateType.SmallArgumentState or ArgumentStateType.LargeArgumentState);
+        Debug.Assert(totalArity > 0 && totalArity == parameters.Count());
+
+        string requiredMembersMaskType = argumentStateType switch
+        {
+            ArgumentStateType.SmallArgumentState => "const ulong",
+            ArgumentStateType.LargeArgumentState => "static readonly global::PolyType.SourceGenModel.ValueBitArray",
+            _ => throw new InvalidOperationException(argumentStateType.ToString()),
+        };
+
+        string requiredMembersMaskExpr = FormatRequiredParametersMaskExpr();
+        writer.WriteLine($"private {requiredMembersMaskType} {fieldName} = {requiredMembersMaskExpr};");
+
+        string FormatRequiredParametersMaskExpr()
+        {
+            if (argumentStateType is ArgumentStateType.SmallArgumentState)
+            {
+                int i = 0;
+                ulong mask = 0UL;
+                foreach (ParameterShapeModel parameter in parameters)
+                {
+                    if (parameter.IsRequired)
+                    {
+                        mask |= 1UL << i;
+                    }
+
+                    i++;
+                }
+
+                return $"0x{mask:X}UL";
+            }
+            else
+            {
+                ValueBitArray requiredMask = new(totalArity);
+                int i = 0;
+                foreach (ParameterShapeModel parameter in parameters)
+                {
+                    if (parameter.IsRequired)
+                    {
+                        requiredMask[i] = true;
+                    }
+
+                    i++;
+                }
+
+                byte[] bytes = requiredMask.Bytes.ToArray();
+                return $"new(new byte[] {{ {string.Join(", ", bytes.Select(i => $"0x{i:X2}"))} }}, {requiredMask.Length})";
+            }
+        }
+    }
+
+    private static string FormatParameterTypeExpr(ParameterShapeModel parameter)
+    {
+        return parameter.RefKind is RefKind.None
+            ? $"typeof({parameter.ParameterType.FullyQualifiedName})"
+            : $"typeof({parameter.ParameterType.FullyQualifiedName}).MakeByRefType()";
+    }
+
 }
