@@ -1,6 +1,5 @@
 ﻿using PolyType.Roslyn;
 using PolyType.SourceGenerator.Model;
-using System.Text;
 
 namespace PolyType.SourceGenerator;
 
@@ -10,6 +9,7 @@ internal sealed partial class SourceFormatter
     {
         string? propertiesFactoryMethodName = objectShapeModel.Properties.Length > 0 ? $"__CreateProperties_{objectShapeModel.SourceIdentifier}" : null;
         string? constructorFactoryMethodName = objectShapeModel.Constructor != null ? $"__CreateConstructor_{objectShapeModel.SourceIdentifier}" : null;
+        string? methodFactoryMethodName = CreateMethodsFactoryName(objectShapeModel);
 
         writer.WriteLine($$"""
             private global::PolyType.Abstractions.ITypeShape<{{objectShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
@@ -18,6 +18,7 @@ internal sealed partial class SourceFormatter
                 {
                     CreatePropertiesFunc = {{FormatNullOrThrowPartial(propertiesFactoryMethodName, !objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Properties))}},
                     CreateConstructorFunc = {{FormatNullOrThrowPartial(constructorFactoryMethodName, !objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Constructor))}},
+                    CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
                     IsRecordType = {{FormatBool(objectShapeModel.IsRecordType)}},
                     IsTupleType = {{FormatBool(objectShapeModel.IsTupleType)}},
                     Provider = this,
@@ -36,6 +37,12 @@ internal sealed partial class SourceFormatter
         {
             writer.WriteLine();
             FormatConstructorFactory(writer, constructorFactoryMethodName, objectShapeModel, objectShapeModel.Constructor!);
+        }
+
+        if (methodFactoryMethodName is not null)
+        {
+            writer.WriteLine();
+            FormatMethodsFactory(writer, methodFactoryMethodName, objectShapeModel);
         }
 
         FormatMemberAccessors(writer, objectShapeModel);

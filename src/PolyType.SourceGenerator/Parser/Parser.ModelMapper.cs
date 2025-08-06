@@ -5,7 +5,7 @@ using PolyType.SourceGenerator.Helpers;
 using PolyType.SourceGenerator.Model;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Reflection.Metadata;
+using System.Reflection;
 
 namespace PolyType.SourceGenerator;
 
@@ -19,7 +19,7 @@ public sealed partial class Parser
 
     private TypeShapeModel MapModelCore(TypeDataModel model, TypeId typeId, string sourceIdentifier, bool isFSharpUnionCase = false)
     {
-        ImmutableEquatableDictionary<AssociatedTypeId, EquatableEnum<TypeShapeRequirements>> associatedTypes = CollectAssociatedTypes(model);
+        ImmutableEquatableSet<AssociatedTypeId> associatedTypes = CollectAssociatedTypes(model);
 
         return model switch
         {
@@ -29,6 +29,7 @@ public sealed partial class Parser
                 SourceIdentifier = sourceIdentifier,
                 UnderlyingType = CreateTypeId(enumModel.UnderlyingType),
                 AssociatedTypes = associatedTypes,
+                Methods = [],
                 Members = enumModel.Members.ToImmutableEquatableDictionary(m => m.Key, m => EnumValueToString(m.Value)),
             },
 
@@ -43,6 +44,7 @@ public sealed partial class Parser
                     _ => throw new InvalidOperationException(),
                 },
                 SourceIdentifier = sourceIdentifier,
+                Methods = MapMethods(model, typeId),
                 ElementType = CreateTypeId(optionalModel.ElementType),
                 AssociatedTypes = associatedTypes,
             },
@@ -53,6 +55,7 @@ public sealed partial class Parser
                 SourceIdentifier = sourceIdentifier,
                 SurrogateType = CreateTypeId(surrogateModel.SurrogateType),
                 MarshallerType = CreateTypeId(surrogateModel.MarshallerType),
+                Methods = MapMethods(model, typeId),
                 AssociatedTypes = associatedTypes,
             },
 
@@ -82,6 +85,7 @@ public sealed partial class Parser
 
                 StaticFactoryMethod = enumerableModel.FactoryMethod is { IsStatic: true } m ? m.GetFullyQualifiedName() : null,
                 ConstructorParameters = enumerableModel.FactorySignature.ToImmutableEquatableArray(),
+                Methods = MapMethods(model, typeId),
 
                 Kind = enumerableModel.EnumerableKind,
                 Rank = enumerableModel.Rank,
@@ -98,6 +102,7 @@ public sealed partial class Parser
                 SourceIdentifier = sourceIdentifier,
                 KeyType = CreateTypeId(dictionaryModel.KeyType),
                 ValueType = CreateTypeId(dictionaryModel.ValueType),
+                Methods = MapMethods(model, typeId),
                 ConstructionStrategy = dictionaryModel switch
                 {
                     { FactoryMethod: not null } => 
@@ -139,6 +144,7 @@ public sealed partial class Parser
                     .OrderBy(p => p.Order)
                     .ToImmutableEquatableArray(),
 
+                Methods = MapMethods(model, typeId),
                 IsValueTupleType = false,
                 IsTupleType = false,
                 IsRecordType = model.Type.IsRecord,
@@ -151,6 +157,7 @@ public sealed partial class Parser
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
                 Constructor = MapTupleConstructor(typeId, tupleModel),
+                Methods = MapMethods(model, typeId),
                 Properties = tupleModel.Elements
                     .Select((e, i) => MapProperty(model.Type, typeId, e, tupleElementIndex: i, isClassTupleType: !tupleModel.IsValueTuple))
                     .ToImmutableEquatableArray(),
@@ -165,6 +172,7 @@ public sealed partial class Parser
             {
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
+                Methods = MapMethods(model, typeId),
                 TagReader = unionModel.TagReader switch
                 {
                     { MethodKind: MethodKind.PropertyGet } tagReader => tagReader.AssociatedSymbol!.Name,
@@ -177,6 +185,7 @@ public sealed partial class Parser
                     Requirements = TypeShapeRequirements.Full,
                     Type = typeId,
                     Constructor = null,
+                    Methods = MapMethods(model, typeId),
                     Properties = [],
                     SourceIdentifier = sourceIdentifier + "__Underlying",
                     IsValueTupleType = false,
@@ -198,6 +207,7 @@ public sealed partial class Parser
                 Requirements = TypeShapeRequirements.Full,
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
+                Methods = MapMethods(model, typeId),
                 Constructor = null,
                 Properties = [],
                 IsValueTupleType = false,
@@ -220,7 +230,7 @@ public sealed partial class Parser
         return null;
     }
 
-    private ImmutableEquatableDictionary<AssociatedTypeId, EquatableEnum<TypeShapeRequirements>> CollectAssociatedTypes(TypeDataModel model)
+    private ImmutableEquatableSet<AssociatedTypeId> CollectAssociatedTypes(TypeDataModel model)
     {
         var associatedTypeSymbols = model.AssociatedTypes;
 
@@ -230,7 +240,7 @@ public sealed partial class Parser
             associatedTypeSymbols = associatedTypeSymbols.AddRange(extensionModel.AssociatedTypes);
         }
 
-        Dictionary<AssociatedTypeId, EquatableEnum<TypeShapeRequirements>> associatedTypesBuilder = new();
+        Dictionary<AssociatedTypeId, TypeShapeRequirements> associatedTypesBuilder = new();
         ITypeSymbol[] typeArgs = namedType?.GetRecursiveTypeArguments() ?? [];
         foreach ((INamedTypeSymbol openType, IAssemblySymbol associatedAssembly, Location? location, TypeShapeRequirements requirements) in associatedTypeSymbols)
         {
@@ -268,18 +278,15 @@ public sealed partial class Parser
 
             void AddOrMerge(AssociatedTypeId typeId, TypeShapeRequirements newRequirements)
             {
-                TypeShapeRequirements existingRequirements = associatedTypesBuilder.TryGetValue(typeId, out EquatableEnum<TypeShapeRequirements> existingRequirementsWrapper)
-                    ? existingRequirementsWrapper.Value
-                    : TypeShapeRequirements.None;
-                associatedTypesBuilder[typeId] = new(existingRequirements | newRequirements);
+                TypeShapeRequirements existingRequirements = associatedTypesBuilder.TryGetValue(typeId, out TypeShapeRequirements rs) ? rs : TypeShapeRequirements.None;
+                associatedTypesBuilder[typeId] = existingRequirements | newRequirements;
             }
         }
 
-        ImmutableEquatableDictionary<AssociatedTypeId, EquatableEnum<TypeShapeRequirements>> associatedTypes = associatedTypesBuilder.ToImmutableEquatableDictionary();
-        return associatedTypes;
+        return associatedTypesBuilder.Keys.ToImmutableEquatableSet();
     }
 
-    private static UnionShapeModel MapUnionModel(TypeDataModel model, TypeShapeModel underlyingIncrementalModel)
+    private UnionShapeModel MapUnionModel(TypeDataModel model, TypeShapeModel underlyingIncrementalModel)
     {
         Debug.Assert(model.DerivedTypes.Length > 0);
 
@@ -292,6 +299,7 @@ public sealed partial class Parser
                 SourceIdentifier = underlyingIncrementalModel.SourceIdentifier + "__Underlying",
             },
 
+            Methods = MapMethods(model, underlyingIncrementalModel.Type),
             UnionCases = model.DerivedTypes
                 .Select(derived => new UnionCaseModel
                 {
@@ -303,7 +311,7 @@ public sealed partial class Parser
                     IsBaseType = derived.IsBaseType,
                 })
                 .ToImmutableEquatableArray(),
-            AssociatedTypes = ImmutableEquatableDictionary<AssociatedTypeId, EquatableEnum<TypeShapeRequirements>>.Empty,
+            AssociatedTypes = [],
         };
     }
 
@@ -415,7 +423,7 @@ public sealed partial class Parser
             Parameters = constructor.Parameters.Select(p => MapParameter(objectModel, declaringTypeId, p, isFSharpUnionCase)).ToImmutableEquatableArray(),
             RequiredMembers = requiredMembers?.ToImmutableEquatableArray() ?? [],
             OptionalMembers = optionalMembers?.ToImmutableEquatableArray() ?? [],
-            ArgumentStateType = (constructor.Parameters.Length + constructor.MemberInitializers.Length) switch
+            ArgumentStateType = (constructor.Parameters.Length + (requiredMembers?.Count ?? 0) + (optionalMembers?.Count ?? 0)) switch
             {
                 0 => ArgumentStateType.EmptyArgumentState,
                 <= 64 => ArgumentStateType.SmallArgumentState,
@@ -441,7 +449,48 @@ public sealed partial class Parser
         };
     }
 
-    private ParameterShapeModel MapParameter(ObjectDataModel objectModel, TypeId declaringTypeId, ParameterDataModel parameter, bool isFSharpUnionCase)
+    private ImmutableEquatableArray<MethodShapeModel> MapMethods(TypeDataModel typeModel, TypeId typeId)
+    {
+        return typeModel.Methods
+            .Select((m, i) => new MethodShapeModel
+            {
+                Name = m.Name,
+                UnderlyingMethodName = m.Method.Name,
+                Position = i,
+                IsPublic = m.Method.DeclaredAccessibility is Accessibility.Public,
+                IsStatic = m.Method.IsStatic,
+                ReturnTypeKind = m.ReturnTypeKind,
+                DeclaringType = !SymbolEqualityComparer.Default.Equals(m.Method.ContainingType, typeModel.Type)
+                    ? CreateTypeId(m.Method.ContainingType)
+                    : typeId,
+
+                UnderlyingReturnType = CreateTypeId(m.Method.ReturnType),
+                ReturnType = CreateTypeId(m.ReturnedValueType ?? _knownSymbols.UnitType!),
+                ReturnsByRef = m.Method.ReturnsByRef || m.Method.ReturnsByRefReadonly,
+                Parameters = m.Parameters
+                    .Select(p => MapParameter(declaringObjectForConstructor: null, CreateTypeId(m.Method.ContainingType), p, false))
+                    .ToImmutableEquatableArray(),
+
+                ArgumentStateType = m.Parameters.Length switch
+                {
+                    0 => ArgumentStateType.EmptyArgumentState,
+                    <= 64 => ArgumentStateType.SmallArgumentState,
+                    _ => ArgumentStateType.LargeArgumentState,
+                },
+
+                IsAccessible = IsAccessibleSymbol(m.Method),
+                CanUseUnsafeAccessors = _knownSymbols.TargetFramework switch
+                {
+                    // .NET 8 or later supports unsafe accessors for methods of non-generic types.
+                    // .NET 10 or later supports unsafe accessors for static methods cf. https://github.com/eiriktsarpalis/PolyType/issues/220
+                    var target when target >= TargetFramework.Net80 => !m.Method.ContainingType.IsGenericType && !m.Method.IsStatic,
+                    _ => false
+                },
+            })
+            .ToImmutableEquatableArray();
+    }
+
+    private ParameterShapeModel MapParameter(ObjectDataModel? declaringObjectForConstructor, TypeId declaringTypeId, ParameterDataModel parameter, bool isFSharpUnionCase)
     {
         string name = parameter.Parameter.Name;
         bool isRequired = !parameter.HasDefaultValue;
@@ -460,13 +509,13 @@ public sealed partial class Parser
         }
         else if (isFSharpUnionCase &&
                  name.StartsWith("_", StringComparison.Ordinal) &&
-                 objectModel.Properties.All(p => p.Name != name))
+                 declaringObjectForConstructor?.Properties.All(p => p.Name != name) is true)
         {
             name = name[1..];
         }
-        else
+        else if (declaringObjectForConstructor is not null)
         {
-            foreach (PropertyDataModel property in objectModel.Properties)
+            foreach (PropertyDataModel property in declaringObjectForConstructor.Properties)
             {
                 // Match property names to parameters up to Pascal/camel case conversion.
                 if (SymbolEqualityComparer.Default.Equals(property.PropertyType, parameter.Parameter.Type) &&
@@ -528,9 +577,12 @@ public sealed partial class Parser
             Parameters = tupleModel.Elements.Select((p, i) => MapTupleConstructorParameter(typeId, p, i)).ToImmutableEquatableArray(),
             RequiredMembers = [],
             OptionalMembers = [],
-            ArgumentStateType = tupleModel.Elements.Length <= 64
-                ? ArgumentStateType.SmallArgumentState
-                : ArgumentStateType.LargeArgumentState,
+            ArgumentStateType = tupleModel.Elements.Length switch
+            {
+                0 => ArgumentStateType.EmptyArgumentState,
+                <= 64 => ArgumentStateType.SmallArgumentState,
+                _ => ArgumentStateType.LargeArgumentState,
+            },
             StaticFactoryName = null,
             StaticFactoryIsProperty = false,
             ResultRequiresCast = false,
@@ -567,7 +619,7 @@ public sealed partial class Parser
 
     private record struct CustomAttributeAssociatedTypeProvider(ImmutableDictionary<string, TypeShapeRequirements> NamesAndRequirements);
 
-    private readonly Dictionary<INamedTypeSymbol, CustomAttributeAssociatedTypeProvider> customAttributes = new(SymbolEqualityComparer.Default);
+    private readonly Dictionary<INamedTypeSymbol, CustomAttributeAssociatedTypeProvider> _customAttributes = new(SymbolEqualityComparer.Default);
 
     protected override void ParseCustomAssociatedTypeAttributes(
         ISymbol symbol,
@@ -582,9 +634,9 @@ public sealed partial class Parser
             }
 
             // Is this attribute a custom one that provides associated types?
-            if (!customAttributes.TryGetValue(att.AttributeClass, out CustomAttributeAssociatedTypeProvider provider))
+            if (!_customAttributes.TryGetValue(att.AttributeClass, out CustomAttributeAssociatedTypeProvider provider))
             {
-                customAttributes[att.AttributeClass] = provider = GetAttributeProviderData(att.AttributeClass);
+                _customAttributes[att.AttributeClass] = provider = GetAttributeProviderData(att.AttributeClass);
             }
 
             if (provider.NamesAndRequirements.IsEmpty)
@@ -680,11 +732,13 @@ public sealed partial class Parser
         ITypeSymbol typeSymbol,
         out TypeShapeKind? kind,
         out ITypeSymbol? marshaller,
+        out MethodShapeFlags? includeMethodFlags,
         out Location? location)
     {
         kind = null;
         marshaller = null;
         location = null;
+        includeMethodFlags = null;
 
         if (typeSymbol.GetAttribute(_knownSymbols.TypeShapeAttribute) is AttributeData propertyAttr)
         {
@@ -698,6 +752,9 @@ public sealed partial class Parser
                         break;
                     case "Marshaller":
                         marshaller = namedArgument.Value.Value as ITypeSymbol;
+                        break;
+                    case "IncludeMethods":
+                        includeMethodFlags = (MethodShapeFlags)namedArgument.Value.Value!;
                         break;
                 }
             }
@@ -741,6 +798,27 @@ public sealed partial class Parser
             TypeShapeKind.Object => TypeDataKind.Object,
             _ => TypeDataKind.None,
         };
+    }
+
+    private static BindingFlags? MapMethodShapeFlagsToBindingFlags(MethodShapeFlags? flags)
+    {
+        if (flags is null)
+        {
+            return null;
+        }
+
+        BindingFlags bindingFlags = BindingFlags.Default;
+        if ((flags.Value & MethodShapeFlags.PublicInstance) != 0)
+        {
+            bindingFlags |= BindingFlags.Public | BindingFlags.Instance;
+        }
+
+        if ((flags.Value & MethodShapeFlags.PublicStatic) != 0)
+        {
+            bindingFlags |= BindingFlags.Public | BindingFlags.Static;
+        }
+
+        return bindingFlags;
     }
 
     private static bool IsParameterizedConstructor(ImmutableArray<CollectionConstructorParameter> signature)

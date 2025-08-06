@@ -1,11 +1,9 @@
-﻿using System.Collections;
-using System.Collections.Immutable;
-using System.Reflection;
-using System.Text.Json;
-using PolyType.Abstractions;
-using PolyType.Examples.RandomGenerator;
+﻿using PolyType.Examples.RandomGenerator;
 using PolyType.ReflectionProvider;
-using Xunit;
+using System.Collections;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
 
 namespace PolyType.Tests;
 
@@ -693,7 +691,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                     bool hasDefaultValue = actualParameter.TryGetDefaultValueNormalized(out object? defaultValue);
                     Assert.Equal(hasDefaultValue, ctorParam.HasDefaultValue);
                     Assert.Equal(defaultValue, ctorParam.DefaultValue);
-                    Assert.Equal(shapeAttr?.IsRequiredSpecified is true ? shapeAttr.IsRequired : !hasDefaultValue, ctorParam.IsRequired);
+                    Assert.Equal(shapeAttr?.IsRequiredSpecified() is true ? shapeAttr.IsRequired : !hasDefaultValue, ctorParam.IsRequired);
                     Assert.Equal(ParameterKind.MethodParameter, ctorParam.Kind);
                     Assert.True(ctorParam.IsPublic);
 
@@ -714,7 +712,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                     Assert.Equal(i, ctorParam.Position);
                     Assert.False(ctorParam.HasDefaultValue);
                     Assert.Null(ctorParam.DefaultValue);
-                    Assert.Equal(attr?.IsRequiredSpecified is true ? attr.IsRequired : (!hasSetsRequiredMembersAttribute && memberInfo.IsRequired()), ctorParam.IsRequired);
+                    Assert.Equal(attr?.IsRequiredSpecified() is true ? attr.IsRequired : (!hasSetsRequiredMembersAttribute && memberInfo.IsRequired()), ctorParam.IsRequired);
                     Assert.Equal(ParameterKind.MemberInitializer, ctorParam.Kind);
 
                     if (memberInfo is PropertyInfo p)
@@ -790,6 +788,191 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             }
         }
     }
+
+    [Theory]
+    [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
+    public void TestMethodShapes<T>(TestCase<T> testCase)
+    {
+        if (testCase.Value is null)
+        {
+            return;
+        }
+
+        ITypeShape<T> shape = providerUnderTest.ResolveShape(testCase);
+        Assert.NotNull(shape.Methods);
+        Assert.Equal(typeof(T).GetExpectedMethodShapeCount(), shape.Methods.Count);
+
+        foreach (IMethodShape method in shape.Methods)
+        {
+            Assert.Equal(typeof(T), method.DeclaringType.Type);
+            var methodInfo = Assert.IsType<MethodInfo>(method.AttributeProvider, exactMatch: false);
+            var methodShapeAttribute = methodInfo.GetCustomAttribute<MethodShapeAttribute>();
+            Type? effectiveReturnType = methodInfo.GetEffectiveReturnType();
+
+            Assert.Equal(methodInfo.IsStatic, method.IsStatic);
+            Assert.Equal(methodInfo.IsPublic, method.IsPublic);
+            Assert.Equal(effectiveReturnType is null, method.IsVoidLike);
+            Assert.Equal(methodInfo.IsAsyncMethod(), method.IsAsync);
+            Assert.Equal(methodShapeAttribute?.Name ?? methodInfo.Name, method.Name);
+            Assert.Equal(effectiveReturnType ?? typeof(Unit), method.ReturnType.Type);
+
+            ParameterInfo[] parameters = methodInfo.GetParameters();
+            Assert.Equal(parameters.Length, method.Parameters.Count);
+
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                IParameterShape paramShape = method.Parameters[i];
+                ParameterInfo actualParameter = parameters[i];
+                ParameterShapeAttribute? shapeAttr = actualParameter.GetCustomAttribute<ParameterShapeAttribute>();
+
+                Assert.Equal(actualParameter.Position, paramShape.Position);
+                Assert.Equal(actualParameter.GetEffectiveParameterType(), paramShape.ParameterType.Type);
+                Assert.Equal(shapeAttr?.Name ?? actualParameter.Name, paramShape.Name);
+
+                bool hasDefaultValue = actualParameter.TryGetDefaultValueNormalized(out object? defaultValue);
+                Assert.Equal(hasDefaultValue, paramShape.HasDefaultValue);
+                Assert.Equal(defaultValue, paramShape.DefaultValue);
+                Assert.Equal(shapeAttr?.IsRequiredSpecified() is true ? shapeAttr.IsRequired : !hasDefaultValue, paramShape.IsRequired);
+                Assert.Equal(ParameterKind.MethodParameter, paramShape.Kind);
+                Assert.True(paramShape.IsPublic);
+
+                ParameterInfo paramInfo = Assert.IsAssignableFrom<ParameterInfo>(paramShape.AttributeProvider);
+                Assert.Equal(actualParameter.Position, paramInfo.Position);
+                Assert.Equal(actualParameter.Name, paramInfo.Name);
+                Assert.Equal(actualParameter.ParameterType, paramInfo.ParameterType);
+            }
+
+            MethodTestVisitor visitor = new(providerUnderTest);
+            method.Accept(visitor, state: testCase.Value);
+        }
+    }
+
+    private sealed class MethodTestVisitor(ProviderUnderTest providerUnderTest) : TypeShapeVisitor
+    {
+        public override object? VisitMethod<TDeclaringType, TArgumentState, TResult>(IMethodShape<TDeclaringType, TArgumentState, TResult> methodShape, object? state)
+        {
+            Assert.Equal(typeof(TDeclaringType), methodShape.DeclaringType.Type);
+            Assert.Equal(typeof(TResult), methodShape.ReturnType.Type);
+            TDeclaringType? instance = methodShape.IsStatic ? default : Assert.IsType<TDeclaringType>(state, exactMatch: false);
+
+            int i = 0;
+            var argumentStateCtor = methodShape.GetArgumentStateConstructor();
+            Assert.NotNull(argumentStateCtor);
+            Assert.Same(methodShape.GetArgumentStateConstructor(), methodShape.GetArgumentStateConstructor());
+
+            TArgumentState argumentState = argumentStateCtor();
+            Assert.Equal(argumentState.Count, methodShape.Parameters.Count);
+            int lastRequiredIndex = methodShape.Parameters.LastOrDefault(p => p.IsRequired)?.Position ?? -1;
+            Assert.Equal(lastRequiredIndex == -1, argumentState.AreRequiredArgumentsSet);
+
+            foreach (IParameterShape parameter in methodShape.Parameters)
+            {
+                Assert.Equal(i++, parameter.Position);
+                argumentState = (TArgumentState)parameter.Accept(this, argumentState)!;
+                Assert.Equal(lastRequiredIndex is -1 || parameter.Position >= lastRequiredIndex, argumentState.AreRequiredArgumentsSet);
+            }
+
+            Assert.True(argumentState.AreRequiredArgumentsSet);
+            var parameterizedCtor = methodShape.GetMethodInvoker();
+            Assert.NotNull(parameterizedCtor);
+            Assert.Same(methodShape.GetMethodInvoker(), methodShape.GetMethodInvoker());
+
+#if !NET
+            if (methodShape.AttributeProvider is MethodInfo { ReturnType.IsByRef: true } method && IsReflectionInvokedMethod(method, providerUnderTest))
+            {
+                var ex = Assert.Throws<NotSupportedException>(() => parameterizedCtor.Invoke(ref instance, ref argumentState).Result);
+                Assert.Contains("ByRef return value not supported in reflection invocation", ex.Message);
+                return null;
+            }
+#endif
+            TResult value = parameterizedCtor.Invoke(ref instance, ref argumentState).Result;
+            Assert.Equal(methodShape.IsVoidLike, value is Unit);
+            return null;
+        }
+
+        public override object? VisitParameter<TArgumentState, TParameter>(IParameterShape<TArgumentState, TParameter> parameter, object? state)
+        {
+            var argState = (TArgumentState)state!;
+            var setter = parameter.GetSetter();
+            Assert.Same(parameter.GetSetter(), parameter.GetSetter());
+
+            TParameter? value = parameter.HasDefaultValue ? parameter.DefaultValue : default;
+            Assert.False(argState.IsArgumentSet(parameter.Position));
+            setter(ref argState, value!);
+            Assert.True(argState.IsArgumentSet(parameter.Position));
+            return argState;
+        }
+    }
+
+    [Theory]
+    [InlineData(typeof(ClassWithMethodShapes), 25)]
+    [InlineData(typeof(StructWithMethodShapes), 25)]
+    [InlineData(typeof(InterfaceWithMethodShapes), 7, typeof(ClassWithMethodShapes))]
+    public async Task MethodShapeInvoker(Type declaringType, int expectedMethodCount, Type? implementationType = null)
+    {
+        ITypeShape shape = providerUnderTest.Provider.Resolve(declaringType);
+        InterfaceWithMethodShapes instance = (InterfaceWithMethodShapes)Activator.CreateInstance(implementationType ?? declaringType)!;
+        var invokerBuilder = new MethodShapeInvokerBuilder();
+        Assert.Equal(expectedMethodCount, shape.Methods.Count);
+        foreach (IMethodShape methodShape in shape.Methods)
+        {
+            var invoker = (Func<int, int, ValueTask<int>>)methodShape.Accept(invokerBuilder, instance)!;
+#if !NET
+            if (methodShape.AttributeProvider is MethodInfo { ReturnType.IsByRef: true } method && IsReflectionInvokedMethod(method, providerUnderTest))
+            {
+                var ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await invoker(7, 5));
+                Assert.Contains("ByRef return value not supported in reflection invocation", ex.Message);
+                continue;
+            }
+#endif
+            Assert.Equal(12, await invoker(7, 5));
+        }
+    }
+
+    private static bool IsReflectionInvokedMethod(MethodInfo method, ProviderUnderTest providerUnderTest) =>
+        providerUnderTest.Kind is ProviderKind.ReflectionNoEmit ||
+        (providerUnderTest.Kind is ProviderKind.SourceGen && !method.IsPublic);
+
+    private sealed class MethodShapeInvokerBuilder : TypeShapeVisitor
+    {
+        public override object? VisitMethod<TDeclaringType, TArgumentState, TResult>(IMethodShape<TDeclaringType, TArgumentState, TResult> methodShape, object? state)
+        {
+            Assert.Equal(2, methodShape.Parameters.Count);
+            var target = Assert.IsType<TDeclaringType>(state, exactMatch: false);
+            var p1 = Assert.IsType<IParameterShape<TArgumentState, int>>(methodShape.Parameters[0], exactMatch: false);
+            var p2 = Assert.IsType<IParameterShape<TArgumentState, int>>(methodShape.Parameters[1], exactMatch: false);
+            var s1 = p1.GetSetter();
+            var s2 = p2.GetSetter();
+            var argStateFactory = methodShape.GetArgumentStateConstructor();
+            var invoker = methodShape.GetMethodInvoker();
+            return new Func<int, int, ValueTask<int>>(async (x1, x2) =>
+            {
+                var state = argStateFactory();
+                s1(ref state, x1);
+                s2(ref state, x2);
+
+                StrongBox<int>? voidResultBox = target switch
+                {
+                    ClassWithMethodShapes when methodShape.IsVoidLike => ClassWithMethodShapes.LastVoidResultBox.Value!,
+                    StructWithMethodShapes when methodShape.IsVoidLike => StructWithMethodShapes.LastVoidResultBox.Value!,
+                    _ => null,
+                };
+
+                var result = await invoker(ref target, ref state);
+
+                switch (result)
+                {
+                    case int intResult:
+                        Assert.Null(voidResultBox);
+                        return intResult;
+                    default:
+                        Assert.IsType<Unit>(result);
+                        Assert.NotNull(voidResultBox);
+                        return voidResultBox.Value;
+                }
+            });
+        }
+    }
 }
 
 public static class ReflectionExtensions
@@ -831,6 +1014,48 @@ public static class ReflectionExtensions
 
         return null;
     }
+
+    public static int GetExpectedMethodShapeCount(this Type type)
+    {
+        MethodShapeFlags flags = type.GetCustomAttribute<TypeShapeAttribute>()?.IncludeMethods ?? MethodShapeFlags.None;
+        return type.GetAllMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+            .Count(IsIncludedMethod);
+
+        bool IsIncludedMethod(MethodInfo methodInfo)
+        {
+            MethodShapeAttribute? shapeAttr = methodInfo.GetCustomAttribute<MethodShapeAttribute>();
+            if (shapeAttr is not null)
+            {
+                return !shapeAttr.Ignore; // Skip methods explicitly marked as ignored.
+            }
+
+            if (!methodInfo.IsPublic || methodInfo.IsSpecialName)
+            {
+                return false; // Skip methods that are not public or special names (like property getters/setters).
+            }
+
+            if (methodInfo.DeclaringType == typeof(object) || methodInfo.DeclaringType == typeof(ValueType))
+            {
+                return false; // Skip GetHashCode, ToString, Equals, and other object methods.
+            }
+
+            MethodShapeFlags requiredFlag = methodInfo.IsStatic ? MethodShapeFlags.PublicStatic : MethodShapeFlags.PublicInstance;
+            if ((flags & requiredFlag) == 0)
+            {
+                return false; // Skip methods that are not included in the shape by default.
+            }
+
+            return true;
+        }
+    }
+
+    public static bool IsRequiredSpecified(this ParameterShapeAttribute parameter) => (bool)s_isRequiredParamProp.GetValue(parameter)!;
+    private static readonly PropertyInfo s_isRequiredParamProp =
+        typeof(ParameterShapeAttribute).GetProperty("IsRequiredSpecified", BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+    public static bool IsRequiredSpecified(this PropertyShapeAttribute property) => (bool)s_isRequiredPropProp.GetValue(property)!;
+    private static readonly PropertyInfo s_isRequiredPropProp =
+        typeof(PropertyShapeAttribute).GetProperty("IsRequiredSpecified", BindingFlags.NonPublic | BindingFlags.Instance)!;
 }
 
 public sealed class TypeShapeProviderTests_Reflection() : TypeShapeProviderTests(ReflectionProviderUnderTest.NoEmit);

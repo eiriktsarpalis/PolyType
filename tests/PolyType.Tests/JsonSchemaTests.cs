@@ -136,6 +136,49 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
                 """);
         }
     }
+
+    [Fact]
+    public void TestMethodShapeSchema()
+    {
+        ITypeShape serviceShape = providerUnderTest.Provider.Resolve<RpcService>();
+        IMethodShape getEventsAsync = serviceShape.Methods.Single(m => m.Name == nameof(RpcService.GetEventsAsync));
+        IMethodShape resetAsync = serviceShape.Methods.Single(m => m.Name == nameof(RpcService.ResetAsync));
+
+        JsonNode? actualSchema = JsonSchemaGenerator.Generate(getEventsAsync);
+        JsonNode? expectedSchema = JsonNode.Parse("""
+            {
+                "name": "GetEventsAsync",
+                "type": "object",
+                "properties": {
+                    "count": { "type": "integer" }
+                },
+                "required": ["count"],
+                "output": {
+                    "type": ["array","null"],
+                    "items": {
+                        "type": ["object","null"],
+                        "properties": {
+                            "id": { "type": "integer" }
+                        },
+                        "required": ["id"]
+                    }
+                }
+            }
+            """);
+
+        Assert.True(JsonNode.DeepEquals(expectedSchema, actualSchema));
+
+        actualSchema = JsonSchemaGenerator.Generate(resetAsync);
+        expectedSchema = JsonNode.Parse("""
+            {
+                "name": "ResetAsync",
+                "type": "object",
+                "output": { }
+            }
+            """);
+
+        Assert.True(JsonNode.DeepEquals(expectedSchema, actualSchema));
+    }
 }
 
 public sealed class JsonSchemaTests_Reflection() : JsonSchemaTests(ReflectionProviderUnderTest.NoEmit);

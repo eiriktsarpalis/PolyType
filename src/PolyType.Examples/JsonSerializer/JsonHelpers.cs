@@ -1,4 +1,5 @@
-﻿using PolyType.Examples.Utilities;
+﻿using PolyType.Abstractions;
+using PolyType.Examples.Utilities;
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -155,6 +156,9 @@ internal static class JsonHelpers
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "WriteAsObject")]
     public static extern void WriteAsObject(this JsonConverter converter, Utf8JsonWriter writer, object? value, JsonSerializerOptions options);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "GetRawValue")]
+    public static extern ReadOnlyMemory<byte> GetRawValue(ref this JsonElement element);
 #else
     public static void Reset(this Utf8JsonWriter writer, IBufferWriter<byte> bufferWriter, JsonWriterOptions options)
     {
@@ -176,7 +180,18 @@ internal static class JsonHelpers
         }
     }
 
+    public static ReadOnlyMemory<byte> GetRawValue(this JsonElement element)
+    {
+        return (s_getRawValue ??= CreateGetRawValueMethod())(ref element);
+        static Constructor<JsonElement, ReadOnlyMemory<byte>> CreateGetRawValueMethod()
+        {
+            MethodInfo getRawValueMethod = typeof(JsonElement).GetMethod("GetRawValue", BindingFlags.Instance | BindingFlags.NonPublic, null, Type.EmptyTypes, null)!;
+            return (Constructor<JsonElement, ReadOnlyMemory<byte>>)Delegate.CreateDelegate(typeof(Constructor<JsonElement, ReadOnlyMemory<byte>>), getRawValueMethod);
+        }
+    }
+
     private static Action<Utf8JsonWriter, IBufferWriter<byte>, JsonWriterOptions>? s_resetMethod;
     private static Action<JsonConverter, Utf8JsonWriter, object?, JsonSerializerOptions>? s_writeAsObjectMethod;
+    private static Constructor<JsonElement, ReadOnlyMemory<byte>>? s_getRawValue;
 #endif
 }

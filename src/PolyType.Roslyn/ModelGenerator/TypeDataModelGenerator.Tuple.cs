@@ -19,7 +19,7 @@ public partial class TypeDataModelGenerator
     /// </remarks>
     protected virtual bool FlattenSystemTupleTypes => false;
 
-    private bool TryMapTuple(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
+    private bool TryMapTuple(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, ImmutableArray<MethodDataModel> methodModels, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
     {
         status = default;
         model = null;
@@ -48,8 +48,9 @@ public partial class TypeDataModelGenerator
             model = new TupleDataModel
             {
                 Type = type,
-                Depth = TypeShapeRequirements.Full,
+                Requirements = TypeShapeRequirements.Full,
                 Elements = elements.ToImmutableArray(),
+                Methods = methodModels,
                 IsValueTuple = true,
             };
 
@@ -77,7 +78,7 @@ public partial class TypeDataModelGenerator
             model = new TupleDataModel
             {
                 Type = type,
-                Depth = TypeShapeRequirements.Full,
+                Requirements = TypeShapeRequirements.Full,
                 Elements = elements.ToImmutableArray(),
                 IsValueTuple = false,
             };

@@ -5,9 +5,10 @@ namespace PolyType.SourceGenerator;
 
 internal sealed partial class SourceFormatter
 {
-    private static void FormatFSharpUnionTypeShapeFactory(SourceWriter writer, string methodName, FSharpUnionShapeModel unionShapeModel)
+    private void FormatFSharpUnionTypeShapeFactory(SourceWriter writer, string methodName, FSharpUnionShapeModel unionShapeModel)
     {
         string createUnionCasesMethodName = $"__Create_UnionCases_{unionShapeModel.SourceIdentifier}";
+        string? methodFactoryMethodName = CreateMethodsFactoryName(unionShapeModel);
 
         writer.WriteLine($$"""
             private global::PolyType.Abstractions.ITypeShape<{{unionShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
@@ -17,6 +18,7 @@ internal sealed partial class SourceFormatter
                     BaseType = {{unionShapeModel.UnderlyingModel.SourceIdentifier}},
                     CreateUnionCasesFunc = {{createUnionCasesMethodName}},
                     GetUnionCaseIndexFunc = {{FormatFSharpUnionTagReader(unionShapeModel)}},
+                    CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
                     Provider = this,
                 };
             }
@@ -24,6 +26,12 @@ internal sealed partial class SourceFormatter
 
         writer.WriteLine();
         FormatFSharpUnionCasesFactory(writer, unionShapeModel, createUnionCasesMethodName);
+
+        if (methodFactoryMethodName is not null)
+        {
+            writer.WriteLine();
+            FormatMethodsFactory(writer, methodFactoryMethodName, unionShapeModel);
+        }
     }
 
     private static void FormatFSharpUnionCasesFactory(SourceWriter writer, FSharpUnionShapeModel unionShapeModel, string methodName)

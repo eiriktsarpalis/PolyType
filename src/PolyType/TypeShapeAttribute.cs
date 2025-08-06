@@ -9,8 +9,8 @@ namespace PolyType;
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Interface | AttributeTargets.Enum, AllowMultiple = false, Inherited = false)]
 public sealed class TypeShapeAttribute : Attribute
 {
-    private const TypeShapeKind Undefined = (TypeShapeKind)(-1);
-    private readonly TypeShapeKind _kind = Undefined;
+    private readonly TypeShapeKind? _kind;
+    private readonly MethodShapeFlags? _includeMethods;
 
     /// <summary>
     /// Gets a type implementing an <see cref="IMarshaller{T,TSurrogate}"/> to a surrogate type.
@@ -33,7 +33,7 @@ public sealed class TypeShapeAttribute : Attribute
     /// <exception cref="ArgumentOutOfRangeException">The specified value is not a valid <see cref="TypeShapeKind"/>.</exception>
     public TypeShapeKind Kind
     {
-        get => _kind;
+        get => _kind ?? TypeShapeKind.None;
         init
         {
             if (!ReflectionHelpers.IsEnumDefined(value))
@@ -45,5 +45,19 @@ public sealed class TypeShapeAttribute : Attribute
         }
     }
 
-    internal TypeShapeKind? GetRequestedKind() => _kind == Undefined ? null : _kind;
+    /// <summary>
+    /// Gets the binding flags that determine what method shapes should be included in the type shape.
+    /// </summary>
+    /// <remarks>
+    /// <para>If left unspecified, only methods annotated with <see cref="MethodShapeAttribute"/> will be included.</para>
+    /// <para>
+    /// This type can only be used to control inclusion of public methods in the shape models.
+    /// Non-public methods can only be included individually via explicit <see cref="MethodShapeAttribute"/>
+    /// annotations.
+    /// </para>
+    /// </remarks>
+    public MethodShapeFlags IncludeMethods { get => _includeMethods ?? MethodShapeFlags.None; init => _includeMethods = value; }
+
+    internal TypeShapeKind? GetRequestedKind() => _kind;
+    internal MethodShapeFlags? GetRequestedIncludeMethods() => _includeMethods;
 }

@@ -313,12 +313,12 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         }
     }
 
-    public Func<TDeclaringType> CreateDefaultConstructor<TDeclaringType>(IConstructorShapeInfo ctorInfo)
+    public Func<TDeclaringType> CreateDefaultConstructor<TDeclaringType>(IMethodShapeInfo ctorInfo)
     {
-        Debug.Assert(ctorInfo is MethodConstructorShapeInfo { Parameters: [] });
+        Debug.Assert(ctorInfo is MethodShapeInfo { Parameters: [] });
 
-        var methodCtor = (MethodConstructorShapeInfo)ctorInfo;
-        if (methodCtor.ConstructorMethod is null)
+        var methodCtor = (MethodShapeInfo)ctorInfo;
+        if (methodCtor.Method is null)
         {
             return static () => default!;
         }
@@ -327,12 +327,12 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         ILGenerator generator = dynamicMethod.GetILGenerator();
 
         // return new TDeclaringType();
-        EmitCall(generator, methodCtor.ConstructorMethod);
+        EmitCall(generator, methodCtor.Method);
         generator.Emit(OpCodes.Ret);
         return CreateDelegate<Func<TDeclaringType>>(dynamicMethod);
     }
 
-    public Type CreateConstructorArgumentStateType(IConstructorShapeInfo ctorInfo)
+    public Type CreateConstructorArgumentStateType(IMethodShapeInfo ctorInfo)
     {
         if (ctorInfo.Parameters is [])
         {
@@ -342,7 +342,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         Type argumentType = ctorInfo switch
         {
             { Parameters: [IParameterShapeInfo p] } => p.Type, // use the type itself for single parameter ctors.
-            TupleConstructorShapeInfo { IsValueTuple: true } => ctorInfo.ConstructedType, // Use the type itself as the argument state for value tuples.
+            TupleConstructorShapeInfo { IsValueTuple: true } => ctorInfo.ReturnType, // Use the type itself as the argument state for value tuples.
             _ => ReflectionHelpers.CreateValueTupleType(ctorInfo.Parameters.Select(p => p.Type).ToArray()), // use a value tuple for multiple parameters.
         };
 
@@ -351,19 +351,29 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
             : typeof(LargeArgumentState<>).MakeGenericType(argumentType);
     }
 
-    public Func<TArgumentState> CreateConstructorArgumentStateCtor<TArgumentState>(IConstructorShapeInfo ctorInfo)
+    public Func<TArgumentState> CreateConstructorArgumentStateCtor<TArgumentState>(IMethodShapeInfo ctorInfo)
         where TArgumentState : IArgumentState
     {
-        Debug.Assert(ctorInfo.Parameters.Length > 0);
+        DynamicMethod dynamicMethod = CreateDynamicMethod("argumentStateCtor", typeof(TArgumentState), [typeof(StrongBox<ValueBitArray>)]);
+        ILGenerator generator = dynamicMethod.GetILGenerator();
+
+        if (ctorInfo.Parameters is [])
+        {
+            Debug.Assert(typeof(TArgumentState) == typeof(EmptyArgumentState));
+
+            // return EmptyArgumentState.Instance;
+            PropertyInfo singletonState = typeof(EmptyArgumentState).GetProperty(nameof(EmptyArgumentState.Instance), BindingFlags.Public | BindingFlags.Static)!;
+            generator.Emit(OpCodes.Call, singletonState.GetGetMethod(true)!);
+            generator.Emit(OpCodes.Ret);
+            return CreateDelegate<Func<TArgumentState>>(dynamicMethod);
+        }
+
         Debug.Assert(typeof(TArgumentState).IsGenericType);
         Type argumentsType = typeof(TArgumentState).GetGenericArguments()[0];
 
         if (ctorInfo.Parameters is [IParameterShapeInfo singleParameter])
         {
             Debug.Assert(argumentsType == singleParameter.Type);
-
-            DynamicMethod dynamicMethod = CreateDynamicMethod("ctorArgumentStateCtor", typeof(TArgumentState), []);
-            ILGenerator generator = dynamicMethod.GetILGenerator();
             ulong requiredMask = singleParameter.IsRequired ? 1UL : 0UL;
 
             // new SmallArgumentState<T>(defaultValue, count: 1, requiredMask);
@@ -388,9 +398,6 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         {
             Debug.Assert(typeof(TArgumentState).GetGenericTypeDefinition() == typeof(SmallArgumentState<>));
             Debug.Assert(argumentsType.IsValueTupleType());
-
-            DynamicMethod dynamicMethod = CreateDynamicMethod("ctorArgumentStateCtor", typeof(TArgumentState), []);
-            ILGenerator generator = dynamicMethod.GetILGenerator();
             ulong requiredMask = ComputeRequiredMask(ctorInfo);
 
             // new SmallArgumentState<T>(argumentTuple, length, requiredMask);
@@ -403,7 +410,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
             generator.Emit(OpCodes.Ret);
             return CreateDelegate<Func<TArgumentState>>(dynamicMethod);
 
-            static ulong ComputeRequiredMask(IConstructorShapeInfo ctorInfo)
+            static ulong ComputeRequiredMask(IMethodShapeInfo ctorInfo)
             {
                 ulong mask = 0;
                 for (int i = 0; i < ctorInfo.Parameters.Length; i++)
@@ -422,8 +429,6 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
             Debug.Assert(typeof(TArgumentState).GetGenericTypeDefinition() == typeof(LargeArgumentState<>));
             Debug.Assert(argumentsType.IsValueTupleType());
 
-            DynamicMethod dynamicMethod = CreateDynamicMethod("ctorArgumentStateCtor", typeof(TArgumentState), [typeof(StrongBox<ValueBitArray>)]);
-            ILGenerator generator = dynamicMethod.GetILGenerator();
             // We need to box the ValueBitArray so that it can be captured by the dynamic method delegate.
             StrongBox<ValueBitArray> requiredMask = new(ComputeRequiredMask(ctorInfo));
 
@@ -440,7 +445,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
             // Create a delegate that captures the precomputed BitArray
             return CreateDelegate<Func<TArgumentState>>(dynamicMethod, requiredMask);
 
-            static ValueBitArray ComputeRequiredMask(IConstructorShapeInfo ctorInfo)
+            static ValueBitArray ComputeRequiredMask(IMethodShapeInfo ctorInfo)
             {
                 ValueBitArray mask = new(ctorInfo.Parameters.Length);
                 for (int i = 0; i < ctorInfo.Parameters.Length; i++)
@@ -455,7 +460,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
             }
         }
 
-        static void LdDefaultArgsAsTuple(ILGenerator generator, IConstructorShapeInfo ctorInfo, Type tupleType)
+        static void LdDefaultArgsAsTuple(ILGenerator generator, IMethodShapeInfo ctorInfo, Type tupleType)
         {
             Debug.Assert(tupleType.IsValueTupleType());
 
@@ -498,7 +503,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         }
     }
 
-    public Setter<TArgumentState, TParameter> CreateConstructorArgumentStateSetter<TArgumentState, TParameter>(IConstructorShapeInfo ctorInfo, int parameterIndex)
+    public Setter<TArgumentState, TParameter> CreateArgumentStateSetter<TArgumentState, TParameter>(IMethodShapeInfo ctorInfo, int parameterIndex)
         where TArgumentState : IArgumentState
     {
         Debug.Assert(ctorInfo.Parameters.Length > 0);
@@ -538,14 +543,14 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         return CreateDelegate<Setter<TArgumentState, TParameter>>(dynamicMethod);
     }
 
-    public Constructor<TArgumentState, TDeclaringType> CreateParameterizedConstructor<TArgumentState, TDeclaringType>(IConstructorShapeInfo ctorInfo)
+    public Constructor<TArgumentState, TDeclaringType> CreateParameterizedConstructor<TArgumentState, TDeclaringType>(IMethodShapeInfo ctorInfo)
         where TArgumentState : IArgumentState
     {
         Debug.Assert(ctorInfo.Parameters.Length > 0);
         return CreateDelegate<Constructor<TArgumentState, TDeclaringType>>(EmitParameterizedConstructorMethod(typeof(TDeclaringType), typeof(TArgumentState), ctorInfo));
     }
 
-    private static DynamicMethod EmitParameterizedConstructorMethod(Type declaringType, Type argumentStateType, IConstructorShapeInfo ctorInfo)
+    private static DynamicMethod EmitParameterizedConstructorMethod(Type declaringType, Type argumentStateType, IMethodShapeInfo ctorInfo)
     {
         Debug.Assert(ctorInfo.Parameters.Length > 0);
         Debug.Assert(argumentStateType.IsGenericType);
@@ -559,22 +564,24 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
             ? ReflectionHelpers.EnumerateTupleMemberPaths(argumentsType).Select(f => ((string, MemberInfo, MemberInfo[]?)?)f).ToArray()
             : [null];
 
-        if (ctorInfo is MethodConstructorShapeInfo methodCtor)
+        if (ctorInfo is MethodShapeInfo methodCtor)
         {
             if (methodCtor.MemberInitializers.Length == 0)
             {
                 // No member initializers -- just load all tuple elements and call the constructor
-                DebugExt.Assert(methodCtor.ConstructorMethod is not null, "Structs without a constructor must have member initializers.");
+                DebugExt.Assert(methodCtor.Method is not null, "Structs without a constructor must have member initializers.");
 
                 // return new TDeclaringType(state.Item1, state.Item2, ...);
                 int i = 0;
                 foreach (var elementPath in elementPaths)
                 {
                     bool isByRefParam = methodCtor.Parameters[i++].IsByRef;
-                    LdArgument(elementPath, isByRefParameter: isByRefParam);
+
+                    generator.Emit(OpCodes.Ldarg_0);
+                    LdFromArgState(generator, ctorInfo, argumentsField, elementPath, isByRefParameter: isByRefParam);
                 }
 
-                EmitCall(generator, methodCtor.ConstructorMethod);
+                EmitCall(generator, methodCtor.Method);
                 generator.Emit(OpCodes.Ret);
             }
             else
@@ -583,7 +590,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
 
                 // var local = new TDeclaringType(state.Item1, state.Item2, ...);
                 LocalBuilder local = generator.DeclareLocal(declaringType);
-                if (methodCtor.ConstructorMethod is null)
+                if (methodCtor.Method is null)
                 {
                     Debug.Assert(declaringType.IsValueType);
                     generator.Emit(OpCodes.Ldloca_S, local);
@@ -592,17 +599,18 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                 int i = 0;
                 for (; i < methodCtor.ConstructorParameters.Length; i++)
                 {
-                    LdArgument(elementPaths[i], isByRefParameter: methodCtor.ConstructorParameters[i].IsByRef);
+                    generator.Emit(OpCodes.Ldarg_0);
+                    LdFromArgState(generator, ctorInfo, argumentsField, elementPaths[i], isByRefParameter: methodCtor.ConstructorParameters[i].IsByRef);
                 }
 
-                if (methodCtor.ConstructorMethod is null)
+                if (methodCtor.Method is null)
                 {
                     Debug.Assert(declaringType.IsValueType);
                     generator.Emit(OpCodes.Initobj, declaringType);
                 }
                 else
                 {
-                    EmitCall(generator, methodCtor.ConstructorMethod);
+                    EmitCall(generator, methodCtor.Method);
                     generator.Emit(OpCodes.Stloc, local);
                 }
 
@@ -621,7 +629,8 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
 
                     // local.member = state.ItemN;
                     generator.Emit(declaringType.IsValueType ? OpCodes.Ldloca_S : OpCodes.Ldloc, local);
-                    LdArgument(elementPaths[i], isByRefParameter: false);
+                    generator.Emit(OpCodes.Ldarg_0);
+                    LdFromArgState(generator, ctorInfo, argumentsField, elementPaths[i], isByRefParameter: false);
                     StMember(member);
                     generator.MarkLabel(label);
 
@@ -648,7 +657,8 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
             // return new Tuple<..,Tuple<..,Tuple<..>>>(state.Item1, state.Item2, ...);
             foreach (var elementPath in elementPaths)
             {
-                LdArgument(elementPath, isByRefParameter: false);
+                generator.Emit(OpCodes.Ldarg_0);
+                LdFromArgState(generator, ctorInfo, argumentsField, elementPath, isByRefParameter: false);
             }
 
             var constructors = new Stack<ConstructorInfo>();
@@ -686,33 +696,119 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                     break;
             }
         }
+    }
 
-        void LdArgument((string LogicalName, MemberInfo Member, MemberInfo[]? ParentMembers)? tupleElement, bool isByRefParameter)
+    public MethodInvoker<TDeclaringType, TArgumentState, TResult> CreateMethodInvoker<TDeclaringType, TArgumentState, TResult>(MethodShapeInfo ctorInfo) where TArgumentState : IArgumentState
+    {
+        return CreateDelegate<MethodInvoker<TDeclaringType, TArgumentState, TResult>>(EmitMethodInvoker<TResult>(typeof(TDeclaringType), typeof(TArgumentState), ctorInfo));
+    }
+
+    private DynamicMethod EmitMethodInvoker<TResult>(Type declaringType, Type argumentStateType, MethodShapeInfo methodShapeInfo)
+    {
+        Debug.Assert(methodShapeInfo.Method is MethodInfo);
+        var methodInfo = (MethodInfo)methodShapeInfo.Method!;
+
+        DynamicMethod dynamicMethod = CreateDynamicMethod("methodInvoker", typeof(ValueTask<TResult>), [declaringType.MakeByRefType(), argumentStateType.MakeByRefType()]);
+        ILGenerator generator = dynamicMethod.GetILGenerator();
+
+        if (!methodInfo.IsStatic)
         {
-            OpCode ldfldOpCode = isByRefParameter ? OpCodes.Ldflda : OpCodes.Ldfld;
             generator.Emit(OpCodes.Ldarg_0);
-
-            if (tupleElement is null)
-            {
-                Debug.Assert(ctorInfo.Parameters.Length == 1);
-                generator.Emit(ldfldOpCode, argumentsField);
-                return;
-            }
-
-            Debug.Assert(tupleElement.Value.Member is FieldInfo);
-            Debug.Assert(tupleElement.Value.ParentMembers is null or FieldInfo[]);
-
-            generator.Emit(OpCodes.Ldflda, argumentsField);
-            if (tupleElement.Value.ParentMembers is FieldInfo[] parentMembers)
-            {
-                foreach (FieldInfo parent in parentMembers)
-                {
-                    generator.Emit(OpCodes.Ldflda, parent);
-                }
-            }
-
-            generator.Emit(ldfldOpCode, (FieldInfo)tupleElement.Value.Member);
+            LdRef(generator, declaringType);
         }
+
+        if (methodShapeInfo.Parameters.Length > 0)
+        {
+            Debug.Assert(argumentStateType.IsGenericType);
+            Type argumentsType = argumentStateType.GetGenericArguments()[0];
+            FieldInfo argumentsField = argumentStateType.GetField("Arguments", BindingFlags.Public | BindingFlags.Instance)!;
+            (string LogicalName, MemberInfo Member, MemberInfo[]? ParentMembers)?[] elementPaths = methodShapeInfo.Parameters.Length > 1
+                ? ReflectionHelpers.EnumerateTupleMemberPaths(argumentsType).Select(f => ((string, MemberInfo, MemberInfo[]?)?)f).ToArray()
+                : [null];
+
+            int i = 0;
+            foreach (var elementPath in elementPaths)
+            {
+                bool isByRefParam = methodShapeInfo.Parameters[i++].IsByRef;
+                generator.Emit(OpCodes.Ldarg_1); // The argument state is the second argument
+                LdFromArgState(generator, methodShapeInfo, argumentsField, elementPath, isByRefParameter: isByRefParam);
+            }
+        }
+
+        EmitCall(generator, methodInfo);
+
+        // Map the result to a ValueTask<TResult>
+        if (methodInfo.ReturnType == typeof(void))
+        {
+            Debug.Assert(Unit.Value == default);
+            LdDefaultValue(generator, typeof(Unit));
+        }
+        else if (methodInfo.ReturnType == typeof(Task))
+        {
+            // Wrap the result in a Task<Unit>
+            MethodInfo fromTaskAsyncMethod = typeof(Unit).GetMethod(nameof(Unit.FromTaskAsync), BindingFlags.Public | BindingFlags.Static)!;
+            generator.Emit(OpCodes.Call, fromTaskAsyncMethod);
+        }
+        else if (methodInfo.ReturnType == typeof(ValueTask))
+        {
+            // Wrap the result in a ValueTask<Unit>
+            MethodInfo fromValueTaskAsyncMethod = typeof(Unit).GetMethod(nameof(Unit.FromValueTaskAsync), BindingFlags.Public | BindingFlags.Static)!;
+            generator.Emit(OpCodes.Call, fromValueTaskAsyncMethod);
+        }
+        else if (methodInfo.ReturnType == typeof(Task<TResult>))
+        {
+            // Wrap the result in a ValueTask<TResult>
+            ConstructorInfo ctor = typeof(ValueTask<TResult>).GetConstructor([typeof(Task<TResult>)])!;
+            generator.Emit(OpCodes.Newobj, ctor);
+        }
+        else if (methodInfo.ReturnType != typeof(ValueTask<TResult>))
+        {
+            Type returnType = methodInfo.ReturnType;
+            if (returnType.IsByRef)
+            {
+                returnType = returnType.GetElementType()!;
+                LdRef(generator, returnType, copyValueTypes: true);
+            }
+
+            Debug.Assert(returnType == typeof(TResult));
+            // Wrap the result in a ValueTask<TResult>
+            ConstructorInfo ctor = typeof(ValueTask<TResult>).GetConstructor([typeof(TResult)])!;
+            generator.Emit(OpCodes.Newobj, ctor);
+        }
+
+        generator.Emit(OpCodes.Ret);
+        return dynamicMethod;
+    }
+
+    private static void LdFromArgState(
+        ILGenerator generator,
+        IMethodShapeInfo methodInfo,
+        FieldInfo argumentsField,
+        (string LogicalName, MemberInfo Member, MemberInfo[]? ParentMembers)? tupleElement,
+        bool isByRefParameter)
+    {
+        OpCode ldfldOpCode = isByRefParameter ? OpCodes.Ldflda : OpCodes.Ldfld;
+
+        if (tupleElement is null)
+        {
+            Debug.Assert(methodInfo.Parameters.Length == 1);
+            generator.Emit(ldfldOpCode, argumentsField);
+            return;
+        }
+
+        Debug.Assert(tupleElement.Value.Member is FieldInfo);
+        Debug.Assert(tupleElement.Value.ParentMembers is null or FieldInfo[]);
+
+        generator.Emit(OpCodes.Ldflda, argumentsField);
+        if (tupleElement.Value.ParentMembers is FieldInfo[] parentMembers)
+        {
+            foreach (FieldInfo parent in parentMembers)
+            {
+                generator.Emit(OpCodes.Ldflda, parent);
+            }
+        }
+
+        generator.Emit(ldfldOpCode, (FieldInfo)tupleElement.Value.Member);
     }
 
     public Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeInfo[] derivedTypeInfos)

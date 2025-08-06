@@ -1,6 +1,5 @@
 ﻿using PolyType.Roslyn;
 using PolyType.SourceGenerator.Model;
-using System.Collections.Immutable;
 
 namespace PolyType.SourceGenerator;
 
@@ -8,6 +7,7 @@ internal sealed partial class SourceFormatter
 {
     private void FormatEnumerableTypeShapeFactory(SourceWriter writer, string methodName, EnumerableShapeModel enumerableShapeModel)
     {
+        string? methodFactoryMethodName = CreateMethodsFactoryName(enumerableShapeModel);
         writer.WriteLine($$"""
             private global::PolyType.Abstractions.ITypeShape<{{enumerableShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
             {
@@ -20,6 +20,7 @@ internal sealed partial class SourceFormatter
                     SupportedComparer = {{FormatComparerOptions(enumerableShapeModel.ConstructorParameters)}},
                     GetEnumerableFunc = {{FormatGetEnumerableFunc(enumerableShapeModel)}},
                     AppenderFunc = {{FormatAppenderFunc(enumerableShapeModel)}},
+                    CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
                     IsAsyncEnumerable = {{FormatBool(enumerableShapeModel.Kind is EnumerableKind.IAsyncEnumerableOfT)}},
                     IsSetType = {{FormatBool(enumerableShapeModel.IsSetType)}},
                     Rank = {{enumerableShapeModel.Rank}},
@@ -28,6 +29,12 @@ internal sealed partial class SourceFormatter
                };
             }
             """, trimNullAssignmentLines: true);
+
+        if (methodFactoryMethodName is not null)
+        {
+            writer.WriteLine();
+            FormatMethodsFactory(writer, methodFactoryMethodName, enumerableShapeModel);
+        }
 
         static string FormatGetEnumerableFunc(EnumerableShapeModel enumerableType)
         {

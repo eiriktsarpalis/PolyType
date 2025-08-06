@@ -22,8 +22,6 @@ public sealed record TestCase<T, TProvider>(T? Value) : TestCase<T>(Value, TProv
 /// <param name="DefaultShape">The default type shape of the value, typically source generated.</param>
 public record TestCase<T> : ITestCase
 {
-    private TypeShapeAttribute? _shapeAttribute;
-
     /// <summary>
     /// Initializes a new instance of the <see cref="TestCase{T}"/> class.
     /// </summary>
@@ -121,19 +119,12 @@ public record TestCase<T> : ITestCase
     /// <summary>
     /// Gets a value indicating whether the type is defined with a surrogate marshaller.
     /// </summary>
-    public bool UsesMarshaller => (_shapeAttribute ??= typeof(T).GetCustomAttribute<TypeShapeAttribute>())?.Marshaller is not null;
+    public bool UsesMarshaller => typeof(T).GetCustomAttribute<TypeShapeAttribute>()?.Marshaller is not null;
 
     /// <summary>
     /// Gets a value indicating whether the type configuration specifies a custom kind.
     /// </summary>
-    public TypeShapeKind? CustomKind
-    {
-        get
-        {
-            TypeShapeKind? kind = (_shapeAttribute ??= typeof(T).GetCustomAttribute<TypeShapeAttribute>())?.Kind;
-            return kind == (TypeShapeKind)(-1) ? null : kind;
-        }
-    }
+    public TypeShapeKind? CustomKind => typeof(T).GetCustomAttribute<TypeShapeAttribute>()?.GetRequestedKind();
 
     Type ITestCase.Type => typeof(T);
     object? ITestCase.Value => Value;

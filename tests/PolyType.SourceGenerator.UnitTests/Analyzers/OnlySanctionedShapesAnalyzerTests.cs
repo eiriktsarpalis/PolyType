@@ -2,7 +2,6 @@
 
 namespace PolyType.SourceGenerator.UnitTests.Analyzers;
 
-using Microsoft.CodeAnalysis;
 using Xunit;
 using VerifyCS = CodeFixVerifier<OnlySanctionedShapesAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
@@ -23,6 +22,7 @@ public class OnlySanctionedShapesAnalyzerTests
         string source = /* lang=c#-test */ """
             using System;
             using System.Reflection;
+            using System.Collections.Generic;
             using PolyType;
             using PolyType.Abstractions;
 
@@ -32,6 +32,7 @@ public class OnlySanctionedShapesAnalyzerTests
                 public TypeShapeKind Kind => throw new NotImplementedException();
                 public ITypeShapeProvider Provider => throw new NotImplementedException();
                 public ICustomAttributeProvider AttributeProvider => throw new NotImplementedException();
+                public IReadOnlyList<IMethodShape> Methods => throw new NotImplementedException();
                 public object Accept(TypeShapeVisitor visitor, object state = null) => throw new NotImplementedException();
                 public ITypeShape GetAssociatedTypeShape(Type associatedType) => throw new NotImplementedException();
                 public object Invoke(ITypeShapeFunc func, object state = null) => throw new NotImplementedException();

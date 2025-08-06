@@ -426,6 +426,43 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         Assert.Equal(expectedValues, result?.Values);
     }
 
+    [Fact]
+    public async Task JsonFunc_InvokedAsExpected()
+    {
+        var serviceShape = providerUnderTest.Provider.Resolve<RpcService>();
+        var instance = new RpcService();
+
+        var getEventsFunc = JsonSerializerTS.CreateJsonFunc(serviceShape.Methods.First(m => m.Name == nameof(RpcService.GetEventsAsync)), instance);
+        var greetFunc = JsonSerializerTS.CreateJsonFunc(serviceShape.Methods.First(m => m.Name == "Private greet function"), instance);    
+        var resetFunc = JsonSerializerTS.CreateJsonFunc(serviceShape.Methods.First(m => m.Name == nameof(RpcService.ResetAsync)), instance);
+
+        JsonElement result;
+        result = await getEventsFunc.Invoke("""{ "count" : 5 }""", TestContext.Current.CancellationToken);
+        Assert.Equal("""[{"id":0},{"id":1},{"id":2},{"id":3},{"id":4}]""", result.GetRawText());
+        
+        result = await getEventsFunc.Invoke("""{ "count" : 2 }""", TestContext.Current.CancellationToken);
+        Assert.Equal("""[{"id":5},{"id":6}]""", result.GetRawText());
+
+        result = await resetFunc.Invoke("""{}""", TestContext.Current.CancellationToken);
+        Assert.Equal("""{}""", result.GetRawText());
+
+        result = await getEventsFunc.Invoke("""{ "count" : 1 }""", TestContext.Current.CancellationToken);
+        Assert.Equal("""[{"id":0}]""", result.GetRawText());
+
+        result = await greetFunc.Invoke("""{ }""", TestContext.Current.CancellationToken);
+        Assert.Equal("\"Hello, stranger!\"", result.GetRawText());
+
+        JsonException ex;
+        ex = await Assert.ThrowsAsync<JsonException>(async () => await getEventsFunc.Invoke("{}", TestContext.Current.CancellationToken));
+        Assert.Contains("missing required parameters", ex.Message);
+
+        ex = await Assert.ThrowsAsync<JsonException>(async () => await getEventsFunc.Invoke("""{ "unrelatedParam" : 100 }""", TestContext.Current.CancellationToken));
+        Assert.Contains("missing required parameters", ex.Message);
+
+        await Assert.ThrowsAsync<ArgumentException>(async () => await getEventsFunc.Invoke("""{ "count" : -1 }""", TestContext.Current.CancellationToken));
+        await Assert.ThrowsAsync<TaskCanceledException>(async () => await getEventsFunc.Invoke("""{ "count" : 100 }""", new(canceled: true)));
+    }
+
     public class PocoWithGenericProperty<T>
     { 
         public T? Value { get; set; }

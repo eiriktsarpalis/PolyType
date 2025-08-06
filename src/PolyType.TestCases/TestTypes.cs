@@ -621,6 +621,13 @@ public static class TestTypes
         yield return TestCase.Create(FSharpSingleCaseStructUnion.NewCase(42), isUnion: true, provider: p);
         yield return TestCase.Create(GenericFSharpStructUnion<string>.NewA("str"), additionalValues: [GenericFSharpStructUnion<string>.B, GenericFSharpStructUnion<string>.NewC(42)], isUnion: true, provider: p);
         yield return TestCase.Create(FSharpExpr.True, additionalValues: [FSharpExpr.False, FSharpExpr.Y], isUnion: true, provider: p);
+
+        // RPC types
+        yield return TestCase.Create(new ClassWithMethodShapes());
+        yield return TestCase.Create(new StructWithMethodShapes());
+        yield return TestCase.Create<InterfaceWithMethodShapes>(new ClassWithMethodShapes(), additionalValues: [new StructWithMethodShapes()]);
+        yield return TestCase.Create(new BaseClassWithMethodShapes(), additionalValues: [new ClassWithMethodShapes()]);
+        yield return TestCase.Create(new RpcService());
     }
 
     private static ExpandoObject CreateExpandoObject(IEnumerable<KeyValuePair<string, object?>> values)
@@ -2497,6 +2504,431 @@ public partial class AsyncEnumerableClass(IEnumerable<int> values) : IAsyncEnume
             yield return value;
         }
     }
+}
+
+[GenerateShape, TypeShape(IncludeMethods = MethodShapeFlags.PublicStatic | MethodShapeFlags.PublicInstance)]
+public partial class BaseClassWithMethodShapes
+{
+    public int BaseMethod(int x, int y) => x + y;
+}
+
+[GenerateShape, TypeShape(IncludeMethods = MethodShapeFlags.AllPublic)]
+public partial class ClassWithMethodShapes : BaseClassWithMethodShapes, InterfaceWithMethodShapes, IDisposable
+{
+    public static ThreadLocal<StrongBox<int>> LastVoidResultBox { get; } = new(static () => new());
+
+    public int UnusedProperty { get; set; }
+
+    public int SyncInstanceMethod(int x, int y)
+    {
+        return x + y;
+    }
+
+    public static int SyncStaticMethod(int x, int y)
+    {
+        return x + y;
+    }
+
+    public async Task<int> AsyncInstanceMethod(int x, int y)
+    {
+        await Task.Yield();
+        return x + y;
+    }
+
+    public static async Task<int> AsyncStaticMethod(int x, int y)
+    {
+        await Task.Yield();
+        return x + y;
+    }
+
+    public async ValueTask<int> ValueTaskInstanceMethod(int x, int y)
+    {
+        await Task.Yield();
+        return x + y;
+    }
+
+    public static async ValueTask<int> ValueTaskStaticMethod(int x, int y)
+    {
+        await Task.Yield();
+        return x + y;
+    }
+
+    [MethodShape(Name = "custom method name")]
+    public void InstanceVoidMethod(int x, int y)
+    {
+        LastVoidResultBox.Value!.Value = x + y;
+    }
+
+    public void StaticVoidMethod(int x, [ParameterShape(IsRequired = true)] int y = -1)
+    {
+        LastVoidResultBox.Value!.Value = x + y;
+    }
+
+    public async Task InstanceTaskMethod(int x, [ParameterShape(Name = "y")] int z)
+    {
+        var currentVoidResultBox = LastVoidResultBox.Value!;
+        await Task.Yield();
+        currentVoidResultBox.Value = x + z;
+    }
+
+    public static async Task StaticTaskMethod(int x, int y)
+    {
+        var currentVoidResultBox = LastVoidResultBox.Value!;
+        await Task.Yield();
+        currentVoidResultBox.Value = x + y;
+    }
+
+    public async ValueTask InstanceValueTaskMethod(int x, int y)
+    {
+        var currentVoidResultBox = LastVoidResultBox.Value!;
+        await Task.Yield();
+        currentVoidResultBox.Value = x + y;
+    }
+
+    public static async ValueTask StaticValueTaskMethod(int x, int y)
+    {
+        var currentVoidResultBox = LastVoidResultBox.Value!;
+        await Task.Yield();
+        currentVoidResultBox.Value = x + y;
+    }
+
+    [MethodShape]
+    private ref int PrivateInstanceMethod(ref int x, in int y)
+    {
+        x += y;
+        return ref x;
+    }
+
+    [MethodShape]
+    private static ref readonly int PrivateStaticMethod(ref int x, ref readonly int y)
+    {
+        x += y;
+        return ref x;
+    }
+
+    [MethodShape]
+    private async Task<int> PrivateTaskMethod(int x, int y)
+    {
+        await Task.Yield();
+        return x + y;
+    }
+
+    [MethodShape]
+    private static async Task<int> PrivateStaticTaskMethod(int x, int y)
+    {
+        await Task.Yield();
+        return x + y;
+    }
+
+    [MethodShape]
+    private async ValueTask<int> PrivateValueTaskMethod(int x, int y)
+    {
+        await Task.Yield();
+        return x + y;
+    }
+
+    [MethodShape]
+    private static async ValueTask<int> PrivateStaticValueTaskMethod(int x, int y)
+    {
+        await Task.Yield();
+        return x + y;
+    }
+
+    [MethodShape]
+    private void PrivateInstanceVoidMethod(int x, int y)
+    {
+        LastVoidResultBox.Value!.Value = x + y;
+    }
+
+    [MethodShape]
+    private static void PrivateStaticVoidMethod(int x, int y)
+    {
+        LastVoidResultBox.Value!.Value = x + y;
+    }
+
+    [MethodShape]
+    private async Task PrivateInstanceTaskMethod(int x, int y)
+    {
+        var currentVoidResultBox = LastVoidResultBox.Value!;
+        await Task.Yield();
+        currentVoidResultBox.Value = x + y;
+    }
+
+    [MethodShape]
+    private static async Task PrivateStaticVoidTaskMethod(int x, int y)
+    {
+        var currentVoidResultBox = LastVoidResultBox.Value!;
+        await Task.Yield();
+        currentVoidResultBox.Value = x + y;
+    }
+
+    [MethodShape]
+    private async ValueTask PrivateInstanceVoidValueTaskMethod(int x, int y)
+    {
+        var currentVoidResultBox = LastVoidResultBox.Value!;
+        await Task.Yield();
+        currentVoidResultBox.Value = x + y;
+    }
+
+    [MethodShape]
+    private static async ValueTask PrivateStaticVoidValueTaskMethod(int x, int y)
+    {
+        var currentVoidResultBox = LastVoidResultBox.Value!;
+        await Task.Yield();
+        currentVoidResultBox.Value = x + y;
+    }
+
+    [MethodShape(Ignore = true)]
+    public void MethodWithOutParameterType(out int x) { x = 42; }
+
+    [MethodShape(Ignore = true)]
+    public int MethodWithInvalidParameterType(ReadOnlySpan<byte> values) => values.Length;
+
+    [MethodShape(Ignore = true)]
+    public ReadOnlySpan<byte> MethodWithInvalidReturnType() => [1,2,3];
+
+    void IDisposable.Dispose() => GC.SuppressFinalize(this);
+}
+
+[GenerateShape, TypeShape(IncludeMethods = MethodShapeFlags.PublicInstance | MethodShapeFlags.PublicStatic)]
+public partial struct StructWithMethodShapes : InterfaceWithMethodShapes, IDisposable
+{
+    public static ThreadLocal<StrongBox<int>> LastVoidResultBox { get; } = new(static () => new());
+
+    public int UnusedProperty { get; set; }
+
+    public int BaseMethod(int x, int y) => x + y;
+
+    public int SyncInstanceMethod(int x, int y)
+    {
+        return x + y;
+    }
+
+    public static int SyncStaticMethod(int x, int y)
+    {
+        return x + y;
+    }
+
+    public async Task<int> AsyncInstanceMethod(int x, int y)
+    {
+        await Task.Yield();
+        return x + y;
+    }
+
+    public static async Task<int> AsyncStaticMethod(int x, int y)
+    {
+        await Task.Yield();
+        return x + y;
+    }
+
+    public async ValueTask<int> ValueTaskInstanceMethod(int x, int y)
+    {
+        await Task.Yield();
+        return x + y;
+    }
+
+    public static async ValueTask<int> ValueTaskStaticMethod(int x, int y)
+    {
+        await Task.Yield();
+        return x + y;
+    }
+
+    [MethodShape(Name = "InstanceVoidMethod_Customized")]
+    public void InstanceVoidMethod(int x, int y)
+    {
+        LastVoidResultBox.Value!.Value = x + y;
+    }
+
+    public void StaticVoidMethod(int x, [ParameterShape(IsRequired = true)] int y = -1)
+    {
+        LastVoidResultBox.Value!.Value = x + y;
+    }
+
+    public async Task InstanceTaskMethod(int x, [ParameterShape(Name = "y")] int z)
+    {
+        var currentVoidResultBox = LastVoidResultBox.Value!;
+        await Task.Yield();
+        currentVoidResultBox.Value = x + z;
+    }
+
+    public static async Task StaticTaskMethod(int x, int y)
+    {
+        var currentVoidResultBox = LastVoidResultBox.Value!;
+        await Task.Yield();
+        currentVoidResultBox.Value = x + y;
+    }
+
+    public async ValueTask InstanceValueTaskMethod(int x, int y)
+    {
+        var currentVoidResultBox = LastVoidResultBox.Value!;
+        await Task.Yield();
+        currentVoidResultBox.Value = x + y;
+    }
+
+    public static async ValueTask StaticValueTaskMethod(int x, int y)
+    {
+        var currentVoidResultBox = LastVoidResultBox.Value!;
+        await Task.Yield();
+        currentVoidResultBox.Value = x + y;
+    }
+
+    [MethodShape]
+    private ref int PrivateInstanceMethod(ref int x, in int y)
+    {
+        x += y;
+        return ref x;
+    }
+
+    [MethodShape]
+    private static ref readonly int PrivateStaticMethod(ref int x, ref readonly int y)
+    {
+        x += y;
+        return ref x;
+    }
+
+    [MethodShape]
+    private async Task<int> PrivateTaskMethod(int x, int y)
+    {
+        await Task.Yield();
+        return x + y;
+    }
+
+    [MethodShape]
+    private static async Task<int> PrivateStaticTaskMethod(int x, int y)
+    {
+        await Task.Yield();
+        return x + y;
+    }
+
+    [MethodShape]
+    private async ValueTask<int> PrivateValueTaskMethod(int x, int y)
+    {
+        await Task.Yield();
+        return x + y;
+    }
+
+    [MethodShape]
+    private static async ValueTask<int> PrivateStaticValueTaskMethod(int x, int y)
+    {
+        await Task.Yield();
+        return x + y;
+    }
+
+    [MethodShape]
+    private void PrivateInstanceVoidMethod(int x, int y)
+    {
+        LastVoidResultBox.Value!.Value = x + y;
+    }
+
+    [MethodShape]
+    private static void PrivateStaticVoidMethod(int x, int y)
+    {
+        LastVoidResultBox.Value!.Value = x + y;
+    }
+
+    [MethodShape]
+    private async Task PrivateInstanceTaskMethod(int x, int y)
+    {
+        var currentVoidResultBox = LastVoidResultBox.Value!;
+        await Task.Yield();
+        currentVoidResultBox.Value = x + y;
+    }
+
+    [MethodShape]
+    private static async Task PrivateStaticVoidTaskMethod(int x, int y)
+    {
+        var currentVoidResultBox = LastVoidResultBox.Value!;
+        await Task.Yield();
+        currentVoidResultBox.Value = x + y;
+    }
+
+    [MethodShape]
+    private async ValueTask PrivateInstanceVoidValueTaskMethod(int x, int y)
+    {
+        var currentVoidResultBox = LastVoidResultBox.Value!;
+        await Task.Yield();
+        currentVoidResultBox.Value = x + y;
+    }
+
+    [MethodShape]
+    private static async ValueTask PrivateStaticVoidValueTaskMethod(int x, int y)
+    {
+        var currentVoidResultBox = LastVoidResultBox.Value!;
+        await Task.Yield();
+        currentVoidResultBox.Value = x + y;
+    }
+
+    [MethodShape(Ignore = true)]
+    public void MethodWithOutParameterType(out int x) { x = 42; }
+
+    [MethodShape(Ignore = true)]
+    public int MethodWithInvalidParameterType(ReadOnlySpan<byte> values) => values.Length;
+
+    [MethodShape(Ignore = true)]
+    public ReadOnlySpan<byte> MethodWithInvalidReturnType() => [1, 2, 3];
+
+    void IDisposable.Dispose() { }
+}
+
+public partial interface BaseInterfaceWithMethodShapes
+{
+    int BaseMethod(int x, int y);
+}
+
+[GenerateShape, TypeShape(IncludeMethods = MethodShapeFlags.PublicInstance | MethodShapeFlags.PublicStatic)]
+public partial interface InterfaceWithMethodShapes : BaseInterfaceWithMethodShapes
+{
+    int UnusedProperty { get; set; }
+    int SyncInstanceMethod(int x, int y);
+    Task<int> AsyncInstanceMethod(int x, int y);
+    ValueTask<int> ValueTaskInstanceMethod(int x, int y);
+    [MethodShape(Name = "InstanceVoidMethod_Customized")]
+    void InstanceVoidMethod(int x, [ParameterShape(IsRequired = true)] int y = -1);
+    Task InstanceTaskMethod(int x, [ParameterShape(Name = "x")] int z);
+    ValueTask InstanceValueTaskMethod(int x, int y);
+
+    [MethodShape(Ignore = true)]
+    void MethodWithOutParameterType(out int x);
+
+    [MethodShape(Ignore = true)]
+    int MethodWithInvalidParameterType(ReadOnlySpan<byte> values);
+
+    [MethodShape(Ignore = true)]
+    ReadOnlySpan<byte> MethodWithInvalidReturnType();
+}
+
+[GenerateShape, TypeShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+public partial class RpcService
+{
+    private int _totalEvents;
+
+    public async IAsyncEnumerable<Event> GetEventsAsync(int count, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        if (count < 0)
+        {
+            throw new ArgumentException("Negative counts are not permitted.");
+        }
+
+        for (int i = 0; i < count; i++)
+        {
+            await Task.Delay(20, cancellationToken).ConfigureAwait(false);
+            yield return new Event(_totalEvents++);
+        }
+    }
+
+    [MethodShape(Name = "Private greet function")]
+    private ValueTask<string> GreetAsync(string name = "stranger")
+    {
+        return new($"Hello, {name}!");
+    }
+
+    public async ValueTask ResetAsync()
+    {
+        await Task.CompletedTask.ConfigureAwait(false);
+        _totalEvents = 0;
+    }
+
+    public record Event(int id);
 }
 
 [GenerateShapeFor<object>]

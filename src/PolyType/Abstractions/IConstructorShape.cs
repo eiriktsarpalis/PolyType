@@ -45,7 +45,7 @@ public interface IConstructorShape
 /// Provides a strongly typed shape model for a given .NET constructor.
 /// </summary>
 /// <typeparam name="TDeclaringType">The declaring type of the underlying constructor.</typeparam>
-/// <typeparam name="TArgumentState">The state type used for aggregating constructor arguments.</typeparam>
+/// <typeparam name="TArgumentState">The mutable state type used for aggregating constructor arguments.</typeparam>
 [InternalImplementationsOnly]
 public interface IConstructorShape<TDeclaringType, TArgumentState> : IConstructorShape
 {

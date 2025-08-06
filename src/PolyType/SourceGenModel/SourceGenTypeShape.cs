@@ -1,4 +1,5 @@
 ﻿using PolyType.Abstractions;
+using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 
@@ -24,6 +25,11 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
     ICustomAttributeProvider? ITypeShape.AttributeProvider => typeof(T);
 
     /// <summary>
+    /// Gets the factory method for creating method shapes.
+    /// </summary>
+    public Func<IEnumerable<IMethodShape>>? CreateMethodsFunc { get; init; }
+
+    /// <summary>
     /// Gets the shape of an associated type, by its name.
     /// </summary>
     public Func<string, ITypeShape?>? AssociatedTypeShapes { get; init; }
@@ -38,6 +44,12 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
 
     /// <inheritdoc/>
     object? ITypeShape.Invoke(ITypeShapeFunc func, object? state) => func.Invoke(this, state);
+
+    /// <inheritdoc/>
+    public IReadOnlyList<IMethodShape> Methods => _methods ?? CommonHelpers.ExchangeIfNull(ref _methods, (CreateMethodsFunc?.Invoke()).AsReadOnlyList());
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private IReadOnlyList<IMethodShape>? _methods;
 
     /// <inheritdoc/>
     public ITypeShape? GetAssociatedTypeShape(Type associatedType)

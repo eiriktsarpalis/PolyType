@@ -7,7 +7,7 @@ namespace PolyType.ReflectionProvider;
 
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
-internal abstract class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider provider) : ReflectionTypeShape<T>(provider), IObjectTypeShape<T>
+internal abstract class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options) : ReflectionTypeShape<T>(provider, options), IObjectTypeShape<T>
 {
     public sealed override TypeShapeKind Kind => TypeShapeKind.Object;
     public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);
@@ -46,7 +46,8 @@ internal abstract class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
-internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider provider, bool disableMemberResolution) : ReflectionObjectTypeShape<T>(provider)
+internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider provider, bool disableMemberResolution, ReflectionTypeShapeOptions options)
+    : ReflectionObjectTypeShape<T>(provider, options)
 {
     public override bool IsRecordType => _isRecord ??= typeof(T).IsRecordType();
     private bool? _isRecord;
@@ -66,7 +67,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
 
         if (IsTupleType)
         {
-            IConstructorShapeInfo ctorInfo = ReflectionTypeShapeProvider.CreateTupleConstructorShapeInfo(typeof(T));
+            IMethodShapeInfo ctorInfo = ReflectionTypeShapeProvider.CreateTupleConstructorShapeInfo(typeof(T));
             return Provider.CreateConstructor(this, ctorInfo);
         }
 
@@ -83,7 +84,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                 allMembers = [.. GetMembers(nullabilityCtx)];
                 settableMembers = GetSettableMembers(allMembers, ctorSetsRequiredMembers: false);
                 bool hasRequiredOrInitOnlyMembers = settableMembers.Any(m => m.IsRequired || m.IsInitOnly);
-                MethodConstructorShapeInfo defaultCtorInfo = CreateDefaultConstructor(hasRequiredOrInitOnlyMembers ? settableMembers : []);
+                MethodShapeInfo defaultCtorInfo = CreateDefaultConstructor(hasRequiredOrInitOnlyMembers ? settableMembers : []);
                 return Provider.CreateConstructor(this, defaultCtorInfo);
             }
 
@@ -173,11 +174,11 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
             }
         }
 
-        var ctorShapeInfo = new MethodConstructorShapeInfo(typeof(T), constructorInfo, parameterShapeInfos, memberInitializers?.ToArray());
+        var ctorShapeInfo = new MethodShapeInfo(typeof(T), constructorInfo, parameterShapeInfos, memberInitializers?.ToArray());
         return Provider.CreateConstructor(this, ctorShapeInfo);
 
-        static MethodConstructorShapeInfo CreateDefaultConstructor(MemberInitializerShapeInfo[]? memberInitializers)
-            => new(typeof(T), constructorMethod: null, parameters: [], memberInitializers: memberInitializers);
+        static MethodShapeInfo CreateDefaultConstructor(MemberInitializerShapeInfo[]? memberInitializers)
+            => new(typeof(T), method: null, parameters: [], memberInitializers: memberInitializers);
 
         static MemberInitializerShapeInfo[] GetSettableMembers(PropertyShapeInfo[] allMembers, bool ctorSetsRequiredMembers)
         {
@@ -375,9 +376,12 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
             type == typeof(TimeOnly) ||
             type == typeof(System.Text.Rune) ||
 #endif
+            type == typeof(System.Threading.CancellationToken) ||
             typeof(MemberInfo).IsAssignableFrom(type) ||
             typeof(Delegate).IsAssignableFrom(type) ||
             typeof(Exception).IsAssignableFrom(type) ||
-            typeof(Task).IsAssignableFrom(type);
+            typeof(Task).IsAssignableFrom(type) ||
+            type == typeof(System.Threading.Tasks.ValueTask) ||
+            (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(System.Threading.Tasks.ValueTask<>));
     }
 }

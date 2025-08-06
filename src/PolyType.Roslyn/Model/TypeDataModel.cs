@@ -14,9 +14,14 @@ public class TypeDataModel
     public required ITypeSymbol Type { get; init; }
 
     /// <summary>
-    /// The depth that was applied when this shape was generated.
+    /// The requirements for what needs to be generated for the type shape.
     /// </summary>
-    public required TypeShapeRequirements Depth { get; init; }
+    public required TypeShapeRequirements Requirements { get; init; }
+
+    /// <summary>
+    /// Any methods that the type defines whose parameters should be included in the type graph traversal.
+    /// </summary>
+    public ImmutableArray<MethodDataModel> Methods { get; init; } = ImmutableArray<MethodDataModel>.Empty;
 
     /// <summary>
     /// The list of known derived types for the given type in topological order from most to least derived.

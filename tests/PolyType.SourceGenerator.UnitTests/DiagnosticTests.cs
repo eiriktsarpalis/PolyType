@@ -834,4 +834,55 @@ public static class DiagnosticTests
         Assert.Equal((3, 1), diagnostic.Location.GetStartPosition());
         Assert.Equal((3, 36), diagnostic.Location.GetEndPosition());
     }
+
+    [Fact]
+    public static void MethodShape_GenericMethod_ProducesError()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [GenerateShape]
+            public partial class MyPoco
+            {
+                [MethodShape]
+                public void GenericMethod<T>(T value) { }
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+
+        Assert.Equal("PT0020", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Equal((6, 16), diagnostic.Location.GetStartPosition());
+        Assert.Equal((6, 29), diagnostic.Location.GetEndPosition());
+    }
+
+    [Theory]
+    [InlineData("public System.Span<int> MethodWithSpanReturn() => default;")]
+    [InlineData("public void MethodWithReadOnlySpanParameter(System.ReadOnlySpan<byte> span) { }")]
+    [InlineData("public void MethodWithOutParameter(out int value) { value = 0; }")]
+    [InlineData("public unsafe int* MethodWithPointerReturn() => null;")]
+    [InlineData("public unsafe void MethodWithPointerParameter(int* ptr) { }")]
+    public static void MethodShape_UnsupportedParameterOrReturnType_ProducesWarning(string methodSignature)
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation($$"""
+            using PolyType;
+
+            [GenerateShape]
+            public partial class MyPoco
+            {
+                [MethodShape]
+                {{methodSignature}}
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+
+        Assert.Equal("PT0021", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+    }
 }

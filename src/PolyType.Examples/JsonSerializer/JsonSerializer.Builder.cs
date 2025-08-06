@@ -2,6 +2,8 @@
 using PolyType.Examples.JsonSerializer.Converters;
 using PolyType.Utilities;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
@@ -71,8 +73,30 @@ public static partial class JsonSerializerTS
 
         public override object? VisitParameter<TArgumentState, TParameter>(IParameterShape<TArgumentState, TParameter> parameter, object? state)
         {
-            JsonConverter<TParameter> paramConverter = GetOrAddConverter(parameter.ParameterType);
-            return new JsonPropertyConverter<TArgumentState, TParameter>(parameter, paramConverter);
+            if (state is IMethodShape)
+            {
+                if (parameter.ParameterType.Type == typeof(CancellationToken))
+                {
+                    var tokenSetter = (Setter<TArgumentState, CancellationToken>)(object)parameter.GetSetter();
+                    return new MethodParameterSetter<TArgumentState>((ref TArgumentState state, IReadOnlyDictionary<string, JsonElement> _, CancellationToken token) =>
+                    {
+                        tokenSetter(ref state, token);
+                    });
+                }
+
+                JsonConverter<TParameter> paramConverter = GetOrAddConverter(parameter.ParameterType);
+                var setter = parameter.GetSetter();
+                return new MethodParameterSetter<TArgumentState>((ref TArgumentState state, IReadOnlyDictionary<string, JsonElement> parameters, CancellationToken cancellationToken) =>
+                {
+                    if (parameters.TryGetValue(parameter.Name, out JsonElement value))
+                    {
+                        TParameter? parameter = paramConverter.Deserialize(value);
+                        setter(ref state, parameter!);
+                    }
+                });
+            }
+
+            return new JsonPropertyConverter<TArgumentState, TParameter>(parameter, GetOrAddConverter(parameter.ParameterType));
         }
 
         public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state)
@@ -166,6 +190,69 @@ public static partial class JsonSerializerTS
             var caseConverter = (JsonConverter<TUnionCase>)unionCaseShape.Type.Accept(this)!;
             return new JsonUnionCaseConverter<TUnionCase, TUnion>(unionCaseShape.Name, caseConverter);
         }
+
+        public override object? VisitMethod<TDeclaringType, TArgumentState, TResult>(IMethodShape<TDeclaringType, TArgumentState, TResult> methodShape, object? state = null)
+        {
+            // Store the target instance as a boxed value to ensure appropriate handling of struct methods.
+            StrongBox<TDeclaringType?> boxedTarget;
+            if (methodShape.IsStatic)
+            {
+                boxedTarget = new(default);
+            }
+            else
+            {
+                if (state is not TDeclaringType instance)
+                {
+                    throw new InvalidOperationException($"Expected a target of type {typeof(TDeclaringType).FullName}, but got {state?.GetType().FullName ?? "null"}.");
+                }
+
+                boxedTarget = new(instance);
+            }
+
+            var argumentStateCtor = methodShape.GetArgumentStateConstructor();
+            var invoker = methodShape.GetMethodInvoker();
+            var resultConverter = GetOrAddConverter(methodShape.ReturnType);
+            var parameterSetters = methodShape.Parameters
+                .Select(p => (MethodParameterSetter<TArgumentState>)p.Accept(this, methodShape)!)
+                .ToArray();
+
+            return new JsonFunc(async (parameters, cancellationToken) =>
+            {
+                TArgumentState argumentState = argumentStateCtor();
+
+                foreach (var setter in parameterSetters)
+                {
+                    setter(ref argumentState, parameters, cancellationToken);
+                }
+
+                if (!argumentState.AreRequiredArgumentsSet)
+                {
+                    ThrowMissingRequiredArguments(ref argumentState);
+                }
+
+                TResult result = await invoker(ref boxedTarget.Value, ref argumentState).ConfigureAwait(false);
+                return resultConverter.SerializeToElement(result);
+            });
+
+            void ThrowMissingRequiredArguments(ref TArgumentState argumentState)
+            {
+                List<string>? missingParameters = [];
+                foreach (var parameter in methodShape.Parameters)
+                {
+                    if (parameter.IsRequired && !argumentState.IsArgumentSet(parameter.Position))
+                    {
+                        missingParameters.Add(parameter.Name);
+                    }
+                }
+
+                throw new JsonException($"Method invocation is missing required parameters: {string.Join(", ", missingParameters)}");
+            }
+        }
+
+        private delegate void MethodParameterSetter<TArgumentState>(
+            ref TArgumentState argumentState,
+            IReadOnlyDictionary<string, JsonElement> parameters,
+            CancellationToken cancellationToken);
 
         private static readonly Dictionary<Type, JsonConverter> s_defaultConverters = new JsonConverter[]
         {

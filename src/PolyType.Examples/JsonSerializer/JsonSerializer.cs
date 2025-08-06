@@ -47,6 +47,19 @@ public static partial class JsonSerializerTS
     public static JsonConverter<T> CreateConverterUsingReflection<T>() => CreateConverter<T>(ReflectionProvider.ReflectionTypeShapeProvider.Default);
 
     /// <summary>
+    /// Creates a JSON marshalling delegate that wraps the specified method shape.
+    /// </summary>
+    /// <param name="methodShape">The method shape to wrap.</param>
+    /// <param name="target">The target object used by the delegate.</param>
+    /// <returns>A JSON marshalling delegate.</returns>
+    public static JsonFunc CreateJsonFunc(IMethodShape methodShape, object? target = null)
+    {
+        TypeCache scopedCache = s_converterCaches.GetScopedCache(methodShape.DeclaringType.Provider);
+        TypeGenerationContext ctx = scopedCache.CreateGenerationContext();
+        return (JsonFunc)methodShape.Accept((Builder)ctx.ValueBuilder!, state: target)!;
+    }
+
+    /// <summary>
     /// Serializes a value to a JSON string using the provided converter.
     /// </summary>
     /// <typeparam name="T">The type of the value to serialize.</typeparam>
@@ -61,6 +74,29 @@ public static partial class JsonSerializerTS
         {
             converter.Serialize(writer, value);
             return JsonHelpers.DecodeFromUtf8(bufferWriter.WrittenSpan);
+        }
+        finally
+        {
+            JsonHelpers.ReturnPooledJsonWriter(writer, bufferWriter);
+        }
+    }
+
+    /// <summary>
+    /// Serializes a value to a JSON element using the provided converter.
+    /// </summary>
+    /// <typeparam name="T">The type of the value to serialize.</typeparam>
+    /// <param name="converter">The converter used to serialize the value.</param>
+    /// <param name="value">The value to be serialized.</param>
+    /// <param name="options">The options object guiding JSON formatting.</param>
+    /// <returns>A JSON encoded element containing the serialized value.</returns>
+    public static JsonElement SerializeToElement<T>(this JsonConverter<T> converter, T? value, JsonWriterOptions options = default)
+    {
+        Utf8JsonWriter writer = JsonHelpers.GetPooledJsonWriter(options, out ByteBufferWriter bufferWriter);
+        try
+        {
+            converter.Serialize(writer, value);
+            Utf8JsonReader reader = new(bufferWriter.WrittenSpan);
+            return JsonElement.ParseValue(ref reader);
         }
         finally
         {
@@ -112,6 +148,19 @@ public static partial class JsonSerializerTS
         }
     }
 
+    /// <summary>
+    /// Deserializes a value from a JSON element using the provided converter.
+    /// </summary>
+    /// <typeparam name="T">The type of the value to deserialize.</typeparam>
+    /// <param name="converter">The converter used to deserialize the value.</param>
+    /// <param name="element">The JSON element to be deserialized.</param>
+    /// <returns>The deserialized value.</returns>
+    public static T? Deserialize<T>(this JsonConverter<T> converter, JsonElement element)
+    {
+        ReadOnlySpan<byte> rawBytes = element.GetRawValue().Span;
+        return converter.Deserialize(rawBytes);
+    }
+
 #if !NET
     /// <summary>
     /// Deserializes a value from a JSON string using the provided converter.
@@ -138,6 +187,19 @@ public static partial class JsonSerializerTS
         Utf8JsonReader reader = new(utf8Json, options);
         reader.EnsureRead();
         return default(T) is null && reader.TokenType is JsonTokenType.Null ? default : converter.Read(ref reader, typeof(T), s_options);
+    }
+
+    /// <summary>
+    /// Invokes the JSON function using parameters defined in a JSON string.
+    /// </summary>
+    /// <param name="function">The function to invoke.</param>
+    /// <param name="json">A JSON object containing the function parameters.</param>
+    /// <param name="cancellationToken">An optional cancellation token.</param>
+    /// <returns>A <see cref="JsonElement"/> containing the serialized result.</returns>
+    public static ValueTask<JsonElement> Invoke(this JsonFunc function, [StringSyntax(StringSyntaxAttribute.Json)] string json, CancellationToken cancellationToken = default)
+    {
+        using JsonDocument document = JsonDocument.Parse(json);
+        return function(document.RootElement.EnumerateObject().ToDictionary(p => p.Name, p => p.Value), cancellationToken);
     }
 
 #if NET

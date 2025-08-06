@@ -22,7 +22,9 @@ public partial class TypeDataModelGenerator
             type.SpecialType is SpecialType.System_Object or SpecialType.System_Nullable_T or SpecialType.System_Delegate or SpecialType.System_MulticastDelegate ||
             KnownSymbols.MemberInfoType.IsAssignableFrom(type) ||
             KnownSymbols.ExceptionType.IsAssignableFrom(type) ||
-            KnownSymbols.TaskType.IsAssignableFrom(type);
+            KnownSymbols.TaskType.IsAssignableFrom(type) ||
+            SymbolEqualityComparer.Default.Equals(type, KnownSymbols.ValueTaskType) ||
+            (type.IsGenericType && SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, KnownSymbols.ValueTaskType));
     }
 
     /// <summary>
@@ -81,7 +83,7 @@ public partial class TypeDataModelGenerator
     /// <inheritdoc cref="IsRequiredByPolicy(IPropertySymbol)"/>
     protected virtual bool? IsRequiredByPolicy(IFieldSymbol member) => null;
 
-    private bool TryMapObject(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements requirements, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
+    private bool TryMapObject(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, ImmutableArray<MethodDataModel> methodModels, TypeShapeRequirements requirements, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
     {
         status = default;
         model = null;
@@ -100,11 +102,11 @@ public partial class TypeDataModelGenerator
 
         model = new ObjectDataModel
         {
-            Requirements = requirements,
             Type = type,
-            Depth = requirements,
+            Requirements = requirements,
             Constructors = constructors,
             Properties = properties,
+            Methods = methodModels,
             DerivedTypes = derivedTypes,
         };
 

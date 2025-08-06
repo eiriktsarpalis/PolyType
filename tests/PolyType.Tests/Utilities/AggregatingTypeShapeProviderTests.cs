@@ -1,6 +1,6 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using PolyType.Utilities;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using PolyType.Utilities;
 
 namespace PolyType.Tests.Utilities;
 
@@ -174,6 +174,8 @@ public class AggregatingTypeShapeProviderTests
         public ITypeShapeProvider Provider => throw new NotImplementedException();
 
         public ICustomAttributeProvider? AttributeProvider => throw new NotImplementedException();
+
+        public IReadOnlyList<IMethodShape> Methods => throw new NotImplementedException();
 
         public object? Accept(TypeShapeVisitor visitor, object? state = null)
         {

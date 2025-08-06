@@ -7,8 +7,9 @@ namespace PolyType.ReflectionProvider;
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 internal sealed class ReflectionSurrogateTypeShape<T, TSurrogate>(
     IMarshaller<T, TSurrogate> marshaller,
-    ReflectionTypeShapeProvider provider)
-    : ReflectionTypeShape<T>(provider), ISurrogateTypeShape<T, TSurrogate>
+    ReflectionTypeShapeProvider provider,
+    ReflectionTypeShapeOptions options)
+    : ReflectionTypeShape<T>(provider, options), ISurrogateTypeShape<T, TSurrogate>
 {
     public override TypeShapeKind Kind => TypeShapeKind.Surrogate;
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitSurrogate(this, state);

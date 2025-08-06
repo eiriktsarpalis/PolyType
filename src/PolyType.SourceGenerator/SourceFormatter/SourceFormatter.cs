@@ -2,7 +2,6 @@
 using Microsoft.CodeAnalysis.CSharp;
 using PolyType.Roslyn;
 using PolyType.SourceGenerator.Model;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
@@ -14,6 +13,7 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
     public static string[] ReservedIdentifiers { get; } = [ProviderSingletonProperty, GetShapeMethodName];
 
     private const string InstanceBindingFlagsConstMember = "__BindingFlags_Instance_All";
+    private const string AllBindingFlagsConstMember = "__BindingFlags_All";
     private const string InitializeMethodName = "__Init_Singleton";
     private const string ProviderSingletonProperty = "Default";
     private const string GetShapeMethodName = "GetShape";
@@ -218,17 +218,14 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
 
     private string FormatAssociatedTypeShapes(TypeShapeModel objectShapeModel)
     {
-        AssociatedTypeId[] associatedTypeShapes = [..
-            from associatedType in objectShapeModel.AssociatedTypes
-            select associatedType.Key];
-        if (associatedTypeShapes.Length == 0)
+        if (objectShapeModel.AssociatedTypes.Count == 0)
         {
             return "null";
         }
 
         StringBuilder builder = new();
         builder.Append("static associatedType => associatedType switch { ");
-        foreach (AssociatedTypeId associatedType in associatedTypeShapes)
+        foreach (AssociatedTypeId associatedType in objectShapeModel.AssociatedTypes)
         {
             builder.Append($"\"{associatedType.Open}\" or \"{associatedType.Closed}\" => {provider.ProviderDeclaration.Id.FullyQualifiedName}.{ProviderSingletonProperty}.{GetShapeModel(associatedType.ClosedTypeId).SourceIdentifier}, ");
         }

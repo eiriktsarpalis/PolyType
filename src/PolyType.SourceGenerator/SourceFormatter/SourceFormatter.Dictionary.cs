@@ -1,6 +1,5 @@
 ﻿using PolyType.Roslyn;
 using PolyType.SourceGenerator.Model;
-using System.Collections.Immutable;
 
 namespace PolyType.SourceGenerator;
 
@@ -8,6 +7,7 @@ internal sealed partial class SourceFormatter
 {
     private void FormatDictionaryTypeShapeFactory(SourceWriter writer, string methodName, DictionaryShapeModel dictionaryShapeModel)
     {
+        string? methodFactoryMethodName = CreateMethodsFactoryName(dictionaryShapeModel);
         bool requiresCS8631Suppression = dictionaryShapeModel.KeyValueTypesContainNullableAnnotations && dictionaryShapeModel.Kind is DictionaryKind.IDictionaryOfKV;
         if (requiresCS8631Suppression)
         {
@@ -30,6 +30,7 @@ internal sealed partial class SourceFormatter
                     DiscardingInserter = {{FormatDiscardingInserter(dictionaryShapeModel)}},
                     ThrowingInserter = {{FormatThrowingInserter(dictionaryShapeModel)}},
                     ParameterizedConstructorFunc = {{FormatParameterizedConstructorFunc(dictionaryShapeModel)}},
+                    CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
                     AssociatedTypeShapes = {{FormatAssociatedTypeShapes(dictionaryShapeModel)}},
                     Provider = this,
                 };
@@ -39,6 +40,12 @@ internal sealed partial class SourceFormatter
         if (requiresCS8631Suppression)
         {
             writer.WriteLine("#pragma warning restore CS8631 // Nullability of type argument doesn't match constraint type.", disableIndentation: true);
+        }
+
+        if (methodFactoryMethodName is not null)
+        {
+            writer.WriteLine();
+            FormatMethodsFactory(writer, methodFactoryMethodName, dictionaryShapeModel);
         }
 
         static string FormatGetDictionaryFunc(DictionaryShapeModel dictionaryType)

@@ -7,8 +7,8 @@ namespace PolyType.ReflectionProvider;
 
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
-internal sealed class ReflectionUnionTypeShape<TUnion>(DerivedTypeInfo[] derivedTypeInfos, ReflectionTypeShapeProvider provider)
-    : ReflectionTypeShape<TUnion>(provider), IUnionTypeShape<TUnion>
+internal sealed class ReflectionUnionTypeShape<TUnion>(DerivedTypeInfo[] derivedTypeInfos, ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+    : ReflectionTypeShape<TUnion>(provider, options), IUnionTypeShape<TUnion>
 {
     public override TypeShapeKind Kind => TypeShapeKind.Union;
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnion(this, state);

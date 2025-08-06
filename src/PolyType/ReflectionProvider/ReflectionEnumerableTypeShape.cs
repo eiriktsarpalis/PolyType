@@ -9,7 +9,8 @@ namespace PolyType.ReflectionProvider;
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
-internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(ReflectionTypeShapeProvider provider) : ReflectionTypeShape<TEnumerable>(provider), IEnumerableTypeShape<TEnumerable, TElement>
+internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+    : ReflectionTypeShape<TEnumerable>(provider, options), IEnumerableTypeShape<TEnumerable, TElement>
 {
     private CollectionConstructorInfo? _constructorInfo;
     private EnumerableAppender<TEnumerable, TElement>? _addDelegate;
@@ -260,8 +261,8 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
-internal sealed class ReflectionEnumerableTypeOfTShape<TEnumerable, TElement>(ReflectionTypeShapeProvider provider)
-    : ReflectionEnumerableTypeShape<TEnumerable, TElement>(provider)
+internal sealed class ReflectionEnumerableTypeOfTShape<TEnumerable, TElement>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+    : ReflectionEnumerableTypeShape<TEnumerable, TElement>(provider, options)
     where TEnumerable : IEnumerable<TElement>
 {
     public override Func<TEnumerable, IEnumerable<TElement>> GetGetEnumerable()
@@ -270,8 +271,8 @@ internal sealed class ReflectionEnumerableTypeOfTShape<TEnumerable, TElement>(Re
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
-internal sealed class ReflectionNonGenericEnumerableTypeShape<TEnumerable>(ReflectionTypeShapeProvider provider)
-    : ReflectionEnumerableTypeShape<TEnumerable, object?>(provider)
+internal sealed class ReflectionNonGenericEnumerableTypeShape<TEnumerable>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+    : ReflectionEnumerableTypeShape<TEnumerable, object?>(provider, options)
     where TEnumerable : IEnumerable
 {
     public override Func<TEnumerable, IEnumerable<object?>> GetGetEnumerable()
@@ -280,8 +281,8 @@ internal sealed class ReflectionNonGenericEnumerableTypeShape<TEnumerable>(Refle
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
-internal sealed class ReflectionArrayTypeShape<TElement>(ReflectionTypeShapeProvider provider)
-    : ReflectionEnumerableTypeShape<TElement[], TElement>(provider)
+internal sealed class ReflectionArrayTypeShape<TElement>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+    : ReflectionEnumerableTypeShape<TElement[], TElement>(provider, options)
 {
     public override CollectionComparerOptions SupportedComparer => CollectionComparerOptions.None;
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Parameterized;
@@ -291,8 +292,8 @@ internal sealed class ReflectionArrayTypeShape<TElement>(ReflectionTypeShapeProv
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
-internal sealed class MultiDimensionalArrayTypeShape<TEnumerable, TElement>(ReflectionTypeShapeProvider provider, int rank)
-    : ReflectionEnumerableTypeShape<TEnumerable, TElement>(provider)
+internal sealed class MultiDimensionalArrayTypeShape<TEnumerable, TElement>(ReflectionTypeShapeProvider provider, int rank, ReflectionTypeShapeOptions options)
+    : ReflectionEnumerableTypeShape<TEnumerable, TElement>(provider, options)
     where TEnumerable : IEnumerable
 {
     public override CollectionComparerOptions SupportedComparer => CollectionComparerOptions.None;
@@ -304,8 +305,8 @@ internal sealed class MultiDimensionalArrayTypeShape<TEnumerable, TElement>(Refl
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
-internal sealed class ReadOnlyMemoryTypeShape<TElement>(ReflectionTypeShapeProvider provider)
-    : ReflectionEnumerableTypeShape<ReadOnlyMemory<TElement>, TElement>(provider)
+internal sealed class ReadOnlyMemoryTypeShape<TElement>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+    : ReflectionEnumerableTypeShape<ReadOnlyMemory<TElement>, TElement>(provider, options)
 {
     public override CollectionComparerOptions SupportedComparer => CollectionComparerOptions.None;
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Parameterized;
@@ -315,8 +316,8 @@ internal sealed class ReadOnlyMemoryTypeShape<TElement>(ReflectionTypeShapeProvi
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
-internal sealed class MemoryTypeShape<TElement>(ReflectionTypeShapeProvider provider)
-    : ReflectionEnumerableTypeShape<Memory<TElement>, TElement>(provider)
+internal sealed class MemoryTypeShape<TElement>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+    : ReflectionEnumerableTypeShape<Memory<TElement>, TElement>(provider, options)
 {
     public override CollectionComparerOptions SupportedComparer => CollectionComparerOptions.None;
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Parameterized;
@@ -326,8 +327,8 @@ internal sealed class MemoryTypeShape<TElement>(ReflectionTypeShapeProvider prov
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
-internal sealed class ReflectionAsyncEnumerableShape<TEnumerable, TElement>(ReflectionTypeShapeProvider provider)
-    : ReflectionEnumerableTypeShape<TEnumerable, TElement>(provider)
+internal sealed class ReflectionAsyncEnumerableShape<TEnumerable, TElement>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+    : ReflectionEnumerableTypeShape<TEnumerable, TElement>(provider, options)
 {
     public override CollectionComparerOptions SupportedComparer => CollectionComparerOptions.None;
     public override bool IsAsyncEnumerable => true;

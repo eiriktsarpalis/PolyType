@@ -32,7 +32,7 @@ public abstract class TypeShapeVisitor
         => ThrowNotImplementedException();
 
     /// <summary>
-    /// Visits an <see cref="IParameterShape{TArgumentState,TParameterType}"/> instance.
+    /// Visits an <see cref="IConstructorShape{TDeclaringType,TArgumentState}"/> instance.
     /// </summary>
     /// <typeparam name="TDeclaringType">The declaring type of the visited constructor.</typeparam>
     /// <typeparam name="TArgumentState">The constructor argument state type used for aggregating constructor arguments.</typeparam>
@@ -40,6 +40,19 @@ public abstract class TypeShapeVisitor
     /// <param name="state">Defines user-provided state.</param>
     /// <returns>The result produced by the visitor.</returns>
     public virtual object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructorShape, object? state = null)
+        where TArgumentState : IArgumentState
+        => ThrowNotImplementedException();
+
+    /// <summary>
+    /// Visits an <see cref="IMethodShape{TDeclaringType, TArgumentState,TReturnType}"/> instance.
+    /// </summary>
+    /// <typeparam name="TDeclaringType">The declaring type for the method.</typeparam>
+    /// <typeparam name="TArgumentState">The method argument state type used for aggregating method arguments.</typeparam>
+    /// <typeparam name="TResult">The return type of the visited method.</typeparam>
+    /// <param name="methodShape">The method shape to visit.</param>
+    /// <param name="state">Defines user-provided state.</param>
+    /// <returns>The result produced by the visitor.</returns>
+    public virtual object? VisitMethod<TDeclaringType, TArgumentState, TResult>(IMethodShape<TDeclaringType, TArgumentState, TResult> methodShape, object? state = null)
         where TArgumentState : IArgumentState
         => ThrowNotImplementedException();
 

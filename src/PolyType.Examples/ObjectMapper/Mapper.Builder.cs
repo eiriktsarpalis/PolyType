@@ -1,9 +1,9 @@
 ﻿using PolyType.Abstractions;
+using PolyType.Examples.Utilities;
 using PolyType.Utilities;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using PolyType.Examples.Utilities;
 
 namespace PolyType.Examples.ObjectMapper;
 
@@ -352,6 +352,7 @@ public static partial class Mapper
         public ITypeShapeProvider Provider => source.Provider;
         public Type Type => typeof(Mapper<TSource, TTarget>);
         public ICustomAttributeProvider? AttributeProvider => typeof(Mapper<TSource, TTarget>);
+        public IReadOnlyList<IMethodShape> Methods => [];
         public object? Accept(TypeShapeVisitor visitor, object? state = null) => ((MapperTypeShapeVisitor)visitor).VisitMapper(source, target, state);
         public object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
         public Func<object>? GetAssociatedTypeFactory(Type relatedType) => throw new NotImplementedException();
