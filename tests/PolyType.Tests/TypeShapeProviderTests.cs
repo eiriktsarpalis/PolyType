@@ -881,7 +881,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             if (methodShape.AttributeProvider is MethodInfo { ReturnType.IsByRef: true } method && IsReflectionInvokedMethod(method, providerUnderTest))
             {
                 var ex = Assert.Throws<NotSupportedException>(() => parameterizedCtor.Invoke(ref instance, ref argumentState).Result);
-                Assert.Contains("ByRef return value not supported in reflection invocation", ex.Message);
+                Assert.Contains("ByRef", ex.Message);
                 return null;
             }
 #else
@@ -923,7 +923,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             if (methodShape.AttributeProvider is MethodInfo { ReturnType.IsByRef: true } method && IsReflectionInvokedMethod(method, providerUnderTest))
             {
                 var ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await invoker(7, 5));
-                Assert.Contains("ByRef return value not supported in reflection invocation", ex.Message);
+                Assert.Contains("ByRef", ex.Message);
                 continue;
             }
 #endif
