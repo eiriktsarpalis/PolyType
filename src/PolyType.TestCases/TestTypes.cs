@@ -2733,7 +2733,7 @@ public partial struct StructWithMethodShapes : InterfaceWithMethodShapes, IDispo
         return x + y;
     }
 
-    [MethodShape(Name = "InstanceVoidMethod_Customized")]
+    [MethodShape(Name = "custom method name")]
     public void InstanceVoidMethod(int x, int y)
     {
         LastVoidResultBox.Value!.Value = x + y;
@@ -2882,7 +2882,7 @@ public partial interface InterfaceWithMethodShapes : BaseInterfaceWithMethodShap
     int SyncInstanceMethod(int x, int y);
     Task<int> AsyncInstanceMethod(int x, int y);
     ValueTask<int> ValueTaskInstanceMethod(int x, int y);
-    [MethodShape(Name = "InstanceVoidMethod_Customized")]
+    [MethodShape(Name = "custom method name")]
     void InstanceVoidMethod(int x, [ParameterShape(IsRequired = true)] int y = -1);
     Task InstanceTaskMethod(int x, [ParameterShape(Name = "x")] int z);
     ValueTask InstanceValueTaskMethod(int x, int y);

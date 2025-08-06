@@ -741,7 +741,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         if (methodInfo.ReturnType == typeof(void))
         {
             Debug.Assert(Unit.Value == default);
-            LdDefaultValue(generator, typeof(Unit));
+            LdDefaultValue(generator, typeof(ValueTask<TResult>));
         }
         else if (methodInfo.ReturnType == typeof(Task))
         {
