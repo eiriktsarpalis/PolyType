@@ -884,6 +884,8 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                 Assert.Contains("ByRef return value not supported in reflection invocation", ex.Message);
                 return null;
             }
+#else
+            _ = providerUnderTest; // Avoid unused variable warnings.
 #endif
             TResult value = parameterizedCtor.Invoke(ref instance, ref argumentState).Result;
             Assert.Equal(methodShape.IsVoidLike, value is Unit);
