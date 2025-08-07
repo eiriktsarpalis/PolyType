@@ -1,32 +1,17 @@
 using PolyType.Examples.JsonSerializer;
 using PolyType.Examples.JsonSchema;
 using PolyType.Examples.CborSerializer;
+using TUnit.Core;
 
 namespace PolyType.Tests.NativeAOT;
 
 /// <summary>
 /// Smoke tests for JSON serialization in Native AOT.
 /// </summary>
-public static class JsonSerializationSmokeTests
+public class JsonSerializationSmokeTests
 {
-    public static bool RunAllTests()
-    {
-        try
-        {
-            CanSerializeAndDeserializeSimpleData();
-            CanSerializeAndDeserializeTodosData();
-            CanGenerateJsonSchema();
-            JsonSerializationHandlesNullValues();
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"JSON tests failed: {ex.Message}");
-            return false;
-        }
-    }
-
-    private static void CanSerializeAndDeserializeSimpleData()
+    [Test]
+    public void CanSerializeAndDeserializeSimpleData()
     {
         // Arrange
         var originalData = TestDataFactory.CreateSimpleData();
@@ -44,7 +29,8 @@ public static class JsonSerializationSmokeTests
         if (deserializedData.DateValue != originalData.DateValue) throw new Exception("DateValue mismatch");
     }
 
-    private static void CanSerializeAndDeserializeTodosData()
+    [Test]
+    public void CanSerializeAndDeserializeTodosData()
     {
         // Arrange
         var originalTodos = TestDataFactory.CreateSampleTodos();
@@ -69,7 +55,8 @@ public static class JsonSerializationSmokeTests
         }
     }
 
-    private static void CanGenerateJsonSchema()
+    [Test]
+    public void CanGenerateJsonSchema()
     {
         // Act
         var schema = JsonSchemaGenerator.Generate<TestTodos>();
@@ -80,7 +67,8 @@ public static class JsonSerializationSmokeTests
         if (string.IsNullOrEmpty(schemaJson)) throw new Exception("Schema JSON is empty");
     }
 
-    private static void JsonSerializationHandlesNullValues()
+    [Test]
+    public void JsonSerializationHandlesNullValues()
     {
         // Arrange
         var dataWithNulls = new TestTodos([
@@ -102,26 +90,10 @@ public static class JsonSerializationSmokeTests
 /// <summary>
 /// Smoke tests for CBOR serialization in Native AOT.
 /// </summary>
-public static class CborSerializationSmokeTests
+public class CborSerializationSmokeTests
 {
-    public static bool RunAllTests()
-    {
-        try
-        {
-            CanSerializeAndDeserializeSimpleData();
-            CanSerializeAndDeserializeTodosData();
-            CborSerializationHandlesNullValues();
-            CborSerializationProducesValidHexString();
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"CBOR tests failed: {ex.Message}");
-            return false;
-        }
-    }
-
-    private static void CanSerializeAndDeserializeSimpleData()
+    [Test]
+    public void CanSerializeAndDeserializeSimpleData()
     {
         // Arrange
         var originalData = TestDataFactory.CreateSimpleData();
@@ -139,7 +111,8 @@ public static class CborSerializationSmokeTests
         if (deserializedData.DateValue != originalData.DateValue) throw new Exception("DateValue mismatch");
     }
 
-    private static void CanSerializeAndDeserializeTodosData()
+    [Test]
+    public void CanSerializeAndDeserializeTodosData()
     {
         // Arrange
         var originalTodos = TestDataFactory.CreateSampleTodos();
@@ -164,7 +137,8 @@ public static class CborSerializationSmokeTests
         }
     }
 
-    private static void CborSerializationHandlesNullValues()
+    [Test]
+    public void CborSerializationHandlesNullValues()
     {
         // Arrange
         var dataWithNulls = new TestTodos([
@@ -182,7 +156,8 @@ public static class CborSerializationSmokeTests
         if (deserialized.Items[0].DueBy != null) throw new Exception("DueBy should be null");
     }
 
-    private static void CborSerializationProducesValidHexString()
+    [Test]
+    public void CborSerializationProducesValidHexString()
     {
         // Arrange
         var data = TestDataFactory.CreateSimpleData();

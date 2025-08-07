@@ -1,28 +1,15 @@
 using PolyType.Examples.XmlSerializer;
+using TUnit.Core;
 
 namespace PolyType.Tests.NativeAOT;
 
 /// <summary>
 /// Smoke tests for XML serialization in Native AOT.
 /// </summary>
-public static class XmlSerializationSmokeTests
+public class XmlSerializationSmokeTests
 {
-    public static bool RunAllTests()
-    {
-        try
-        {
-            CanSerializeAndDeserializeSimpleData();
-            CanSerializeAndDeserializeTodosData();
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"XML tests failed: {ex.Message}");
-            return false;
-        }
-    }
-
-    private static void CanSerializeAndDeserializeSimpleData()
+    [Test]
+    public void CanSerializeAndDeserializeSimpleData()
     {
         var originalData = TestDataFactory.CreateSimpleData();
         var xml = XmlSerializer.Serialize(originalData);
@@ -32,7 +19,8 @@ public static class XmlSerializationSmokeTests
         if (deserializedData.IntValue != originalData.IntValue) throw new Exception("IntValue mismatch");
     }
 
-    private static void CanSerializeAndDeserializeTodosData()
+    [Test]
+    public void CanSerializeAndDeserializeTodosData()
     {
         var originalTodos = TestDataFactory.CreateSampleTodos();
         var xml = XmlSerializer.Serialize(originalTodos);
@@ -43,24 +31,10 @@ public static class XmlSerializationSmokeTests
     }
 }
 
-public static class StructuralEqualitySmokeTests
+public class StructuralEqualitySmokeTests
 {
-    public static bool RunAllTests()
-    {
-        try
-        {
-            CanCompareEqualSimpleData();
-            CanCompareDifferentSimpleData();
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Structural equality tests failed: {ex.Message}");
-            return false;
-        }
-    }
-
-    private static void CanCompareEqualSimpleData()
+    [Test]
+    public void CanCompareEqualSimpleData()
     {
         var data1 = TestDataFactory.CreateSimpleData();
         var data2 = TestDataFactory.CreateSimpleData();
@@ -68,7 +42,8 @@ public static class StructuralEqualitySmokeTests
         if (!areEqual) throw new Exception("Equal data should be equal");
     }
 
-    private static void CanCompareDifferentSimpleData()
+    [Test]
+    public void CanCompareDifferentSimpleData()
     {
         var data1 = TestDataFactory.CreateSimpleData();
         var data2 = new SimpleTestData(999, "Different", false, 2.71828, DateTime.Now);
@@ -77,24 +52,10 @@ public static class StructuralEqualitySmokeTests
     }
 }
 
-public static class RandomGenerationSmokeTests
+public class RandomGenerationSmokeTests
 {
-    public static bool RunAllTests()
-    {
-        try
-        {
-            CanGenerateSimpleDataInstances();
-            CanGenerateTodosDataInstances();
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Random generation tests failed: {ex.Message}");
-            return false;
-        }
-    }
-
-    private static void CanGenerateSimpleDataInstances()
+    [Test]
+    public void CanGenerateSimpleDataInstances()
     {
         // Generate multiple values to test the generator
         var instances = PolyType.Examples.RandomGenerator.RandomGenerator.GenerateValues<SimpleTestData>()
@@ -107,7 +68,8 @@ public static class RandomGenerationSmokeTests
         if (instances[0].StringValue == null) throw new Exception("Generated string is null");
     }
 
-    private static void CanGenerateTodosDataInstances()
+    [Test]
+    public void CanGenerateTodosDataInstances()
     {
         // Generate multiple values to test the generator
         var todosList = PolyType.Examples.RandomGenerator.RandomGenerator.GenerateValues<TestTodos>()
@@ -122,24 +84,10 @@ public static class RandomGenerationSmokeTests
     }
 }
 
-public static class ValidationSmokeTests
+public class ValidationSmokeTests
 {
-    public static bool RunAllTests()
-    {
-        try
-        {
-            CanValidateValidData();
-            CanValidateValidTodos();
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Validation tests failed: {ex.Message}");
-            return false;
-        }
-    }
-
-    private static void CanValidateValidData()
+    [Test]
+    public void CanValidateValidData()
     {
         var validData = TestDataFactory.CreateSimpleData();
         // Use the Validate method which throws on validation failure
@@ -147,7 +95,8 @@ public static class ValidationSmokeTests
         // If we reach here, validation passed
     }
 
-    private static void CanValidateValidTodos()
+    [Test]
+    public void CanValidateValidTodos()
     {
         var validTodos = TestDataFactory.CreateSampleTodos();
         // Use the Validate method which throws on validation failure  
@@ -156,24 +105,10 @@ public static class ValidationSmokeTests
     }
 }
 
-public static class PrettyPrinterSmokeTests
+public class PrettyPrinterSmokeTests
 {
-    public static bool RunAllTests()
-    {
-        try
-        {
-            CanPrettyPrintSimpleData();
-            CanPrettyPrintTodosData();
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Pretty printer tests failed: {ex.Message}");
-            return false;
-        }
-    }
-
-    private static void CanPrettyPrintSimpleData()
+    [Test]
+    public void CanPrettyPrintSimpleData()
     {
         var data = TestDataFactory.CreateSimpleData();
         var prettyString = PolyType.Examples.PrettyPrinter.PrettyPrinter.Print(data);
@@ -182,7 +117,8 @@ public static class PrettyPrinterSmokeTests
         if (!prettyString.Contains("SimpleTestData")) throw new Exception("Pretty string doesn't contain type name");
     }
 
-    private static void CanPrettyPrintTodosData()
+    [Test]
+    public void CanPrettyPrintTodosData()
     {
         var todos = TestDataFactory.CreateSampleTodos();
         var prettyString = PolyType.Examples.PrettyPrinter.PrettyPrinter.Print(todos);
