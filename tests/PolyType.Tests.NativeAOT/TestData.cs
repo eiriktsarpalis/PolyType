@@ -31,7 +31,7 @@ public static class TestDataFactory
 {
     public static TestTodos CreateSampleTodos()
     {
-        var today = DateOnly.FromDateTime(DateTime.Now);
+        var today = DateOnly.FromDateTime(new DateTime(2025, 1, 15, 14, 30, 45));
         return new TestTodos([
             new(Id: 1, "Test task 1", today, TestStatus.Done),
             new(Id: 2, "Test task 2", today, TestStatus.InProgress),

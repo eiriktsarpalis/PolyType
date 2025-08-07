@@ -1,30 +1,38 @@
+using PolyType.Examples.CborSerializer;
 using PolyType.Examples.StructuralEquality;
-using PolyType.Examples.XmlSerializer;
 
 namespace PolyType.Tests.NativeAOT;
 
 /// <summary>
-/// Tests for XML serialization in Native AOT.
+/// Tests for CBOR serialization in Native AOT.
 /// </summary>
-public class XmlSerializationTests
+public class CborSerializationTests
 {
     [Test]
     public async Task CanSerializeAndDeserializeSimpleData()
     {
+        // Arrange
         var originalData = TestDataFactory.CreateSimpleData();
-        var xml = XmlSerializer.Serialize(originalData);
-        var deserializedData = XmlSerializer.Deserialize<SimpleTestData>(xml);
 
+        // Act
+        var cborHex = CborSerializer.EncodeToHex(originalData);
+        var deserializedData = CborSerializer.DecodeFromHex<SimpleTestData>(cborHex);
+
+        // Assert
         await Assert.That(StructuralEqualityComparer.Equals(originalData, deserializedData)).IsTrue();
     }
 
     [Test]
     public async Task CanSerializeAndDeserializeTodosData()
     {
+        // Arrange
         var originalTodos = TestDataFactory.CreateSampleTodos();
-        var xml = XmlSerializer.Serialize(originalTodos);
-        var deserializedTodos = XmlSerializer.Deserialize<TestTodos>(xml);
 
+        // Act
+        var cborHex = CborSerializer.EncodeToHex(originalTodos);
+        var deserializedTodos = CborSerializer.DecodeFromHex<TestTodos>(cborHex);
+
+        // Assert
         await Assert.That(StructuralEqualityComparer.Equals(originalTodos, deserializedTodos)).IsTrue();
     }
 }

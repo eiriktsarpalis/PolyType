@@ -1,3 +1,4 @@
+using PolyType.Examples.RandomGenerator;
 using TUnit.Core;
 
 namespace PolyType.Tests.NativeAOT;
@@ -8,31 +9,24 @@ namespace PolyType.Tests.NativeAOT;
 public class RandomGenerationTests
 {
     [Test]
-    public void CanGenerateSimpleDataInstances()
+    public async Task CanGenerateSimpleDataInstances()
     {
         // Generate multiple values to test the generator
-        var instances = PolyType.Examples.RandomGenerator.RandomGenerator.GenerateValues<SimpleTestData>()
-            .Take(2)
-            .ToList();
+        var instances = RandomGenerator.GenerateValues<SimpleTestData>()
+            .Take(10)
+            .ToArray();
 
-        Assert.That(instances.Count).IsGreaterThanOrEqualTo(2);
-        Assert.That(instances[0]).IsNotNull();
-        Assert.That(instances[1]).IsNotNull();
-        Assert.That(instances[0].StringValue).IsNotNull();
+        await Assert.That(instances).HasCount().EqualTo(10);
     }
 
     [Test]
-    public void CanGenerateTodosDataInstances()
+    public async Task CanGenerateTodosDataInstances()
     {
         // Generate multiple values to test the generator
-        var todosList = PolyType.Examples.RandomGenerator.RandomGenerator.GenerateValues<TestTodos>()
-            .Take(2)
-            .ToList();
+        var todosList = RandomGenerator.GenerateValues<TestTodos>()
+            .Take(10)
+            .ToArray();
 
-        Assert.That(todosList.Count).IsGreaterThanOrEqualTo(2);
-        Assert.That(todosList[0]).IsNotNull();
-        Assert.That(todosList[1]).IsNotNull();
-        Assert.That(todosList[0].Items).IsNotNull();
-        Assert.That(todosList[1].Items).IsNotNull();
+        await Assert.That(todosList).HasCount().EqualTo(10);
     }
 }
