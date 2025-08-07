@@ -32,7 +32,8 @@ test: build
 		RunConfiguration.CollectSourceInformation=true
 
 test-aot: build
-	dotnet test tests/PolyType.Tests.NativeAOT/PolyType.Tests.NativeAOT.csproj --configuration $(CONFIGURATION) --no-build
+	dotnet publish tests/PolyType.Tests.NativeAOT/PolyType.Tests.NativeAOT.csproj --configuration $(CONFIGURATION) --no-build
+	tests/PolyType.Tests.NativeAOT/bin/$(CONFIGURATION)/net8.0/publish/PolyType.Tests.NativeAOT
 
 all-tests: test test-aot
 
