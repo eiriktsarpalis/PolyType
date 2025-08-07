@@ -52,5 +52,6 @@
     <Project Path="tests/PolyType.Roslyn.Tests/PolyType.Roslyn.Tests.csproj" />
     <Project Path="tests/PolyType.SourceGenerator.UnitTests/PolyType.SourceGenerator.UnitTests.csproj" />
     <Project Path="tests/PolyType.Tests/PolyType.Tests.csproj" />
+    <Project Path="tests/PolyType.Tests.NativeAOT/PolyType.Tests.NativeAOT.csproj" />
   </Folder>
 </Solution>

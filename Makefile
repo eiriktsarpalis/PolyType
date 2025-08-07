@@ -31,7 +31,12 @@ test: build
 		-- \
 		RunConfiguration.CollectSourceInformation=true
 
-pack: test
+test-aot: build
+	dotnet run --project tests/PolyType.Tests.NativeAOT/PolyType.Tests.NativeAOT.csproj --configuration $(CONFIGURATION) --no-build
+
+all-tests: test test-aot
+
+pack: all-tests
 	dotnet pack --configuration Release $(ADDITIONAL_ARGS)
 
 push:
