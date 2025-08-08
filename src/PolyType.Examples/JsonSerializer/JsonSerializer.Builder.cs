@@ -171,7 +171,7 @@ public static partial class JsonSerializerTS
         public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state)
         {
             JsonConverter<TSurrogate> surrogateConverter = GetOrAddConverter(surrogateShape.SurrogateType);
-            return new JsonSurrogateConverter<T, TSurrogate>(surrogateShape.Marshaller, surrogateConverter);
+            return new JsonSurrogateConverter<T, TSurrogate>(surrogateShape.Marshaler, surrogateConverter);
         }
 
         public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state)
@@ -188,7 +188,7 @@ public static partial class JsonSerializerTS
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state)
         {
             var caseConverter = (JsonConverter<TUnionCase>)unionCaseShape.Type.Accept(this)!;
-            return new JsonUnionCaseConverter<TUnionCase, TUnion>(unionCaseShape.Name, caseConverter);
+            return new JsonUnionCaseConverter<TUnionCase, TUnion>(unionCaseShape.Name, unionCaseShape.Marshaler, caseConverter);
         }
 
         public override object? VisitMethod<TDeclaringType, TArgumentState, TResult>(IMethodShape<TDeclaringType, TArgumentState, TResult> methodShape, object? state = null)

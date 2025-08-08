@@ -9,9 +9,7 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TElement">The type of the value encapsulated by the option type.</typeparam>
 public sealed class SourceGenOptionalTypeShape<TOptional, TElement> : SourceGenTypeShape<TOptional>, IOptionalTypeShape<TOptional, TElement>
 {
-    /// <summary>
-    /// Gets the shape of the element type.
-    /// </summary>
+    /// <inheritdoc/>
     public required ITypeShape<TElement> ElementType { get; init; }
 
     /// <summary>

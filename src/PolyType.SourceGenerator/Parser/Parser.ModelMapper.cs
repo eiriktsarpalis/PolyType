@@ -54,7 +54,7 @@ public sealed partial class Parser
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
                 SurrogateType = CreateTypeId(surrogateModel.SurrogateType),
-                MarshallerType = CreateTypeId(surrogateModel.MarshallerType),
+                MarshalerType = CreateTypeId(surrogateModel.MarshalerType),
                 Methods = MapMethods(model, typeId),
                 AssociatedTypes = associatedTypes,
             },
@@ -731,12 +731,12 @@ public sealed partial class Parser
     private void ParseTypeShapeAttribute(
         ITypeSymbol typeSymbol,
         out TypeShapeKind? kind,
-        out ITypeSymbol? marshaller,
+        out ITypeSymbol? marshaler,
         out MethodShapeFlags? includeMethodFlags,
         out Location? location)
     {
         kind = null;
-        marshaller = null;
+        marshaler = null;
         location = null;
         includeMethodFlags = null;
 
@@ -750,8 +750,8 @@ public sealed partial class Parser
                     case "Kind":
                         kind = (TypeShapeKind)namedArgument.Value.Value!;
                         break;
-                    case "Marshaller":
-                        marshaller = namedArgument.Value.Value as ITypeSymbol;
+                    case "Marshaler":
+                        marshaler = namedArgument.Value.Value as ITypeSymbol;
                         break;
                     case "IncludeMethods":
                         includeMethodFlags = (MethodShapeFlags)namedArgument.Value.Value!;

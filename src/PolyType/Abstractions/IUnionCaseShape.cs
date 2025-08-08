@@ -59,10 +59,19 @@ public interface IUnionCaseShape
 /// <typeparam name="TUnion">The type of the underlying union.</typeparam>
 [InternalImplementationsOnly]
 public interface IUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShape
-    where TUnionCase : TUnion
 {
     /// <summary>
     /// Gets the underlying type shape of the union case.
     /// </summary>
     new ITypeShape<TUnionCase> Type { get; }
+
+    /// <summary>
+    /// Gets a bidirectional mapper between <typeparamref name="TUnionCase"/> and <typeparamref name="TUnion"/>.
+    /// </summary>
+    /// <remarks>
+    /// Converting from <typeparamref name="TUnionCase"/> to <typeparamref name="TUnion"/> is a reversible operation,
+    /// however mapping from <typeparamref name="TUnion"/> to <typeparamref name="TUnionCase"/> can fail if the
+    /// value is not a member of the current union case.
+    /// </remarks>
+    IMarshaler<TUnionCase, TUnion> Marshaler { get; }
 }

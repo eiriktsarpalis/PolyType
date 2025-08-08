@@ -127,27 +127,27 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
     private ITypeShape CreateSurrogateShape(Type type, ReflectionTypeShapeOptions options)
     {
-        DebugExt.Assert(options.Marshaller != null);
+        DebugExt.Assert(options.Marshaler != null);
 
-        Type marshallerType = options.Marshaller;
-        if (marshallerType.IsGenericTypeDefinition)
+        Type marshalerType = options.Marshaler;
+        if (marshalerType.IsGenericTypeDefinition)
         {
-            // Generic marshallers are applied the type parameters from the declaring type.
-            marshallerType = marshallerType.MakeGenericType(type.GetGenericArguments());
+            // Generic marshalers are applied the type parameters from the declaring type.
+            marshalerType = marshalerType.MakeGenericType(type.GetGenericArguments());
         }
 
-        // First check that the marshaller implements exactly one IMarshaller<,> for the source type.
+        // First check that the marshaler implements exactly one IMarshaler<,> for the source type.
         Type? matchingSurrogate = null;
-        foreach (Type interfaceType in marshallerType.GetAllInterfaces())
+        foreach (Type interfaceType in marshalerType.GetAllInterfaces())
         {
-            if (interfaceType.IsGenericType && interfaceType.GetGenericTypeDefinition() == typeof(IMarshaller<,>))
+            if (interfaceType.IsGenericType && interfaceType.GetGenericTypeDefinition() == typeof(IMarshaler<,>))
             {
                 Type[] genericArgs = interfaceType.GetGenericArguments();
                 if (genericArgs[0] == type)
                 {
                     if (matchingSurrogate != null)
                     {
-                        throw new InvalidOperationException($"The type '{marshallerType}' defines conflicting surrogate marshallers from type '{type}'.");
+                        throw new InvalidOperationException($"The type '{marshalerType}' defines conflicting surrogate marshalers from type '{type}'.");
                     }
 
                     matchingSurrogate = genericArgs[1];
@@ -157,10 +157,10 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
         if (matchingSurrogate is null)
         {
-            throw new InvalidOperationException($"The type '{marshallerType}' does not define any surrogate marshallers from type '{type}'.");
+            throw new InvalidOperationException($"The type '{marshalerType}' does not define any surrogate marshalers from type '{type}'.");
         }
 
-        object bijection = Activator.CreateInstance(marshallerType)!;
+        object bijection = Activator.CreateInstance(marshalerType)!;
         Type surrogateTypeShapeTy = typeof(ReflectionSurrogateTypeShape<,>).MakeGenericType(type, matchingSurrogate);
         return (ITypeShape)Activator.CreateInstance(surrogateTypeShapeTy, bijection, this, options)!;
     }
@@ -349,20 +349,20 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         TypeShapeAttribute? typeShapeAttr = type.GetCustomAttribute<TypeShapeAttribute>();
         TypeShapeKind? requestedKind = typeShapeAttr?.GetRequestedKind();
         MethodShapeFlags? methodFlags = typeShapeAttr?.GetRequestedIncludeMethods();
-        Type? marshaller = typeShapeAttr?.Marshaller;
+        Type? marshaler = typeShapeAttr?.Marshaler;
 
         foreach (TypeShapeExtensionAttribute extensionAttr in _typeShapeExtensions)
         {
             if (extensionAttr.Target == type || extensionAttr.Target == genericTypeDef)
             {
-                if (extensionAttr.Marshaller is not null)
+                if (extensionAttr.Marshaler is not null)
                 {
-                    if (marshaller is not null && marshaller != extensionAttr.Marshaller)
+                    if (marshaler is not null && marshaler != extensionAttr.Marshaler)
                     {
-                        throw new InvalidOperationException($"Conflicting marshallers for '{type}': '{marshaller}' vs '{extensionAttr.Marshaller}'.");
+                        throw new InvalidOperationException($"Conflicting Marshalers for '{type}': '{marshaler}' vs '{extensionAttr.Marshaler}'.");
                     }
 
-                    marshaller = extensionAttr.Marshaller;
+                    marshaler = extensionAttr.Marshaler;
                 }
 
                 if (extensionAttr.GetRequestedIncludeMethods() is { } includeMethods)
@@ -390,7 +390,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         return new ReflectionTypeShapeOptions
         {
             RequestedKind = requestedKind,
-            Marshaller = marshaller,
+            Marshaler = marshaler,
             IncludeMethods = methodFlags ?? MethodShapeFlags.None,
         };
     }
@@ -428,7 +428,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
     {
         fsharpUnionInfo = null;
 
-        if (options?.Marshaller is not null)
+        if (options?.Marshaler is not null)
         {
             return TypeShapeKind.Surrogate;
         }

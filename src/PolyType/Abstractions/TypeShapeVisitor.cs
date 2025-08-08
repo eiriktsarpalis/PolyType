@@ -145,7 +145,7 @@ public abstract class TypeShapeVisitor
     /// <param name="unionCaseShape">The union case shape to visit.</param>
     /// <param name="state">Defines user-provided state.</param>
     /// <returns>The result produced by the visitor.</returns>
-    public virtual object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null) where TUnionCase : TUnion
+    public virtual object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
         => ThrowNotImplementedException();
 
     private object? ThrowNotImplementedException([CallerMemberName] string? methodName = null)

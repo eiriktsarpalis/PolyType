@@ -76,12 +76,12 @@ public sealed partial class Parser
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    private static DiagnosticDescriptor InvalidMarshaller { get; } = new DiagnosticDescriptor(
+    private static DiagnosticDescriptor InvalidMarshaler { get; } = new DiagnosticDescriptor(
         id: "PT0010",
-        title: "Type contains invalid marshaller configuration.",
+        title: "Type contains invalid marshaler configuration.",
         messageFormat:
-            "The type '{0}' contains invalid marshaller configuration. " +
-            "A valid marshaller must be an accessible type with a default constructor and exactly one IMarshaller<,> implementation for the current type.",
+            "The type '{0}' contains invalid marshaler configuration. " +
+            "A valid marshaler must be an accessible type with a default constructor and exactly one IMarshaler<,> implementation for the current type.",
 
         category: "PolyType.SourceGenerator",
         defaultSeverity: DiagnosticSeverity.Error,
@@ -127,10 +127,10 @@ public sealed partial class Parser
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    internal static DiagnosticDescriptor ConflictingMarshallers { get; } = new DiagnosticDescriptor(
+    internal static DiagnosticDescriptor ConflictingMarshalers { get; } = new DiagnosticDescriptor(
         id: "PT0018",
-        title: "Multiple marshallers specified.",
-        messageFormat: "Multiple TypeShapeExtensionAttribute attributes specified for target type '{0}' with conflicting marshallers specified. At most one marshaller can be specified.",
+        title: "Multiple marshalers specified.",
+        messageFormat: "Multiple TypeShapeExtensionAttribute attributes specified for target type '{0}' with conflicting Marshalers specified. At most one Marshaler can be specified.",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);

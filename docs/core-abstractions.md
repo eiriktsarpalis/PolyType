@@ -330,7 +330,7 @@ partial class CounterVisitor : TypeShapeVisitor
 
 ### Surrogate types
 
-PolyType lets users customize the shape of a given type by marshalling its data to a surrogate type. This is done by declaring an implementation of the `IMarshaller<T, TSurrogate>` interface on the type, which defines a bidirectional mapping between the instances of the type itself and the surrogate. Such types are mapped to the following abstraction:
+PolyType lets users customize the shape of a given type by marshaling its data to a surrogate type. This is done by declaring an implementation of the `IMarshaler<T, TSurrogate>` interface on the type, which defines a bidirectional mapping between the instances of the type itself and the surrogate. Such types are mapped to the following abstraction:
 
 ```C#
 public interface ISurrogateTypeShape<T, TSurrogate> : ITypeShape<T>
@@ -339,13 +339,13 @@ public interface ISurrogateTypeShape<T, TSurrogate> : ITypeShape<T>
     ITypeShape<TSurrogate> SurrogateType { get; }
     
     // The bidirectional mapping between T and TSurrogate
-    IMarshaller<T, TSurrogate> Marshaller { get; }
+    IMarshaler<T, TSurrogate> Marshaler { get; }
 }
 
-public interface IMarshaller<T, TSurrogate>
+public interface IMarshaler<T, TSurrogate>
 {
-    TSurrogate? ToSurrogate(T? value);
-    T? FromSurrogate(TSurrogate? value);
+    TSurrogate? Marshal(T? value);
+    T? Unmarshal(TSurrogate? value);
 }
 ```
 
@@ -366,8 +366,8 @@ partial class CounterVisitor : TypeShapeVisitor
     public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? _)
     {
         var surrogateCounter = (Func<TSurrogate, int>)surrogateShape.SurrogateType.Accept(this)!;
-        var marshaller = surrogateShape.Marshaller;
-        return new Func<T, int>(t => surrogateCounter(marshaller.ToSurrogate(t)));
+        var marshaler = surrogateShape.Marshaler;
+        return new Func<T, int>(t => surrogateCounter(marshaler.Marshal(t)));
     }
 }
 ```
@@ -454,7 +454,6 @@ public partial interface IObjectTypeShape<T>
 
 public partial interface IConstructorShape<TDeclaringType, TArgumentState> : IConstructorShape
 {
-    int ParameterCount { get; }
     Func<TArgumentState> GetArgumentStateConstructor();
     Func<TArgumentState, TDeclaringType> GetParameterizedConstructor();
 }
@@ -472,7 +471,6 @@ record MyPoco(int x = 42, string y);
 
 class MyPocoConstructorShape : IConstructorShape<MyPoco, (int, string)>
 {
-    public int ParameterCount => 2;
     public Func<(int, string)> GetArgumentStateConstructor() => () => (42, null!);
     public Func<(int, string), MyPoco> GetParameterizedConstructor() => state => new MyPoco(state.Item1, state.Item2);
 }

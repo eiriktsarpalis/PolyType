@@ -11,14 +11,10 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="T">The type that the shape describes.</typeparam>
 public abstract class SourceGenTypeShape<T> : ITypeShape<T>
 {
-    /// <summary>
-    /// Gets the <see cref="TypeShapeKind"/> that the current shape supports.
-    /// </summary>
+    /// <inheritdoc/>
     public abstract TypeShapeKind Kind { get; }
 
-    /// <summary>
-    /// Gets the provider used to generate this instance.
-    /// </summary>
+    /// <inheritdoc/>
     public required ITypeShapeProvider Provider { get; init; }
 
     Type ITypeShape.Type => typeof(T);
@@ -34,12 +30,7 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
     /// </summary>
     public Func<string, ITypeShape?>? AssociatedTypeShapes { get; init; }
 
-    /// <summary>
-    /// Accepts an <see cref="TypeShapeVisitor"/> for strongly-typed traversal.
-    /// </summary>
-    /// <param name="visitor">The visitor to accept.</param>
-    /// <param name="state">The state parameter to pass to the underlying visitor.</param>
-    /// <returns>The <see cref="object"/> result returned by the visitor.</returns>
+    /// <inheritdoc/>
     public abstract object? Accept(TypeShapeVisitor visitor, object? state = null);
 
     /// <inheritdoc/>

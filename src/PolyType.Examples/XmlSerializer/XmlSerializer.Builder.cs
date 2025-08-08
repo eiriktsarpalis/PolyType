@@ -139,7 +139,7 @@ public static partial class XmlSerializer
         public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state)
         {
             XmlConverter<TSurrogate> surrogateConverter = GetOrAddConverter(surrogateShape.SurrogateType);
-            return new XmlSurrogateConverter<T, TSurrogate>(surrogateShape.Marshaller, surrogateConverter);
+            return new XmlSurrogateConverter<T, TSurrogate>(surrogateShape.Marshaler, surrogateConverter);
         }
 
         public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state)
@@ -161,7 +161,7 @@ public static partial class XmlSerializer
         {
             // NB: don't use the cached converter for TUnionCase, as it might equal TUnion.
             var caseConverter = (XmlConverter<TUnionCase>)unionCaseShape.Type.Invoke(this)!;
-            return new XmlUnionCaseConverter<TUnionCase, TUnion>(caseConverter);
+            return new XmlUnionCaseConverter<TUnionCase, TUnion>(caseConverter, unionCaseShape.Marshaler);
         }
 
         private static readonly Dictionary<Type, IXmlConverter> s_defaultConverters = new IXmlConverter[]

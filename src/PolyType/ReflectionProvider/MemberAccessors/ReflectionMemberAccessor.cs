@@ -453,7 +453,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         DebugExt.Assert(ctorInfo.Method is MethodInfo);
         var methodInfo = (MethodInfo)ctorInfo.Method;
 
-        Func<object?, ValueTask<TResult>> returnMarshaller = CreateResultMarshaller(methodInfo.ReturnType);
+        Func<object?, ValueTask<TResult>> returnMarshaler = CreateResultMarshaler(methodInfo.ReturnType);
         if (ctorInfo.Parameters is [])
         {
             Debug.Assert(typeof(TArgumentState) == typeof(EmptyArgumentState));
@@ -462,7 +462,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                 object? boxedTarget = target;
                 object? result = methodInfo.Invoke(boxedTarget, []);
                 target = (TDeclaringType?)boxedTarget;
-                return returnMarshaller(result);
+                return returnMarshaler(result);
             };
         }
 
@@ -473,10 +473,10 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                 object? boxedTarget = target;
                 object? result = methodInfo.Invoke(boxedTarget, state.Arguments);
                 target = (TDeclaringType?)boxedTarget;
-                return returnMarshaller(result);
+                return returnMarshaler(result);
             });
 
-        static Func<object?, ValueTask<TResult>> CreateResultMarshaller(Type methodReturnType)
+        static Func<object?, ValueTask<TResult>> CreateResultMarshaler(Type methodReturnType)
         {
             if (methodReturnType == typeof(void))
             {

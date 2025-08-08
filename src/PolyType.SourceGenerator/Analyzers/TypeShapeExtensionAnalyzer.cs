@@ -11,7 +11,7 @@ namespace PolyType.SourceGenerator.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public class TypeShapeExtensionAnalyzer : DiagnosticAnalyzer
 {
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Parser.ConflictingMarshallers);
+    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Parser.ConflictingMarshalers);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -31,7 +31,7 @@ public class TypeShapeExtensionAnalyzer : DiagnosticAnalyzer
                     return;
                 }
 
-                Dictionary<INamedTypeSymbol, (INamedTypeSymbol Marshaller, Location AttributeLocation)> extensionMarshaler = new(SymbolEqualityComparer.Default);
+                Dictionary<INamedTypeSymbol, (INamedTypeSymbol Marshaler, Location AttributeLocation)> extensionMarshaler = new(SymbolEqualityComparer.Default);
                 context.RegisterSyntaxNodeAction(
                     context =>
                     {
@@ -63,40 +63,40 @@ public class TypeShapeExtensionAnalyzer : DiagnosticAnalyzer
                             return;
                         }
 
-                        // Find the marshaller argument, if present, and check for conflicts.
-                        INamedTypeSymbol? marshaller = null;
-                        Location? marshallerLocation = null;
+                        // Find the marshaler argument, if present, and check for conflicts.
+                        INamedTypeSymbol? marshaler = null;
+                        Location? marshalerLocation = null;
                         if (att.ArgumentList?.Arguments.Count > 1)
                         {
-                            // Look for a named argument: Marshaller = typeof(...)
+                            // Look for a named argument: marshaler = typeof(...)
                             foreach (var arg in att.ArgumentList.Arguments)
                             {
-                                if (arg.NameEquals?.Name.Identifier.Text == PolyTypeKnownSymbols.TypeShapeExtensionAttributePropertyNames.Marshaller &&
-                                    arg.Expression is TypeOfExpressionSyntax marshallerTypeOf)
+                                if (arg.NameEquals?.Name.Identifier.Text == PolyTypeKnownSymbols.TypeShapeExtensionAttributePropertyNames.Marshaler &&
+                                    arg.Expression is TypeOfExpressionSyntax marshalerTypeOf)
                                 {
-                                    var marshallerType = context.SemanticModel.GetTypeInfo(marshallerTypeOf.Type, context.CancellationToken).Type as INamedTypeSymbol;
-                                    if (marshallerType is not null)
+                                    var marshalerType = context.SemanticModel.GetTypeInfo(marshalerTypeOf.Type, context.CancellationToken).Type as INamedTypeSymbol;
+                                    if (marshalerType is not null)
                                     {
-                                        marshaller = marshallerType;
-                                        marshallerLocation = marshallerTypeOf.GetLocation();
+                                        marshaler = marshalerType;
+                                        marshalerLocation = marshalerTypeOf.GetLocation();
                                         break;
                                     }
                                 }
                             }
                         }
 
-                        if (marshaller is not null && marshallerLocation is not null)
+                        if (marshaler is not null && marshalerLocation is not null)
                         {
-                            if (extensionMarshaler.TryGetValue(target, out var existingMarshaller) &&
-                                !SymbolEqualityComparer.Default.Equals(existingMarshaller.Marshaller, marshaller))
+                            if (extensionMarshaler.TryGetValue(target, out var existingMarshaler) &&
+                                !SymbolEqualityComparer.Default.Equals(existingMarshaler.Marshaler, marshaler))
                             {
                                 // We have a conflicting attribute.
-                                Location[] addlLocations = [existingMarshaller.AttributeLocation];
-                                context.ReportDiagnostic(Diagnostic.Create(Parser.ConflictingMarshallers, marshallerLocation, additionalLocations: addlLocations, target.MetadataName));
+                                Location[] addlLocations = [existingMarshaler.AttributeLocation];
+                                context.ReportDiagnostic(Diagnostic.Create(Parser.ConflictingMarshalers, marshalerLocation, additionalLocations: addlLocations, target.MetadataName));
                             }
                             else
                             {
-                                extensionMarshaler[target] = (marshaller, marshallerLocation);
+                                extensionMarshaler[target] = (marshaler, marshalerLocation);
                             }
                         }
                     },

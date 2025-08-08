@@ -231,9 +231,9 @@ public static partial class Mapper
             {
                 var sourceShape = (ISurrogateTypeShape<T1, TSurrogate1>)state!;
                 var surrogateMapper = baseVisitor.GetOrAddMapper(sourceShape.SurrogateType, targetShape.SurrogateType);
-                var leftMarshaller = sourceShape.Marshaller;
-                var rightMarshaller = targetShape.Marshaller;
-                return new Mapper<T1, T2>(source => rightMarshaller.FromSurrogate(surrogateMapper(leftMarshaller.ToSurrogate(source))));
+                var leftMarshaler = sourceShape.Marshaler;
+                var rightMarshaler = targetShape.Marshaler;
+                return new Mapper<T1, T2>(source => rightMarshaler.Unmarshal(surrogateMapper(leftMarshaler.Marshal(source))));
             }
         }
 

@@ -1,4 +1,5 @@
 ﻿using PolyType.Abstractions;
+using PolyType.SourceGenModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -56,6 +57,7 @@ internal sealed class FSharpUnionCaseShape<TUnionCase, TUnion>(FSharpUnionCaseIn
     where TUnionCase : TUnion
 {
     public ITypeShape<TUnionCase> Type { get; } = new FSharpUnionCaseTypeShape<TUnionCase>(unionCaseInfo, provider, options);
+    public IMarshaler<TUnionCase, TUnion> Marshaler => SubtypeMarshaler<TUnionCase, TUnion>.Instance;
     public string Name => unionCaseInfo.Name;
     public int Tag => unionCaseInfo.Tag;
     public bool IsTagSpecified => false; // F# tags are inferred from the union case ordering

@@ -47,11 +47,11 @@ public static partial class JsonSerializerTS
     public static JsonConverter<T> CreateConverterUsingReflection<T>() => CreateConverter<T>(ReflectionProvider.ReflectionTypeShapeProvider.Default);
 
     /// <summary>
-    /// Creates a JSON marshalling delegate that wraps the specified method shape.
+    /// Creates a JSON marshaling delegate that wraps the specified method shape.
     /// </summary>
     /// <param name="methodShape">The method shape to wrap.</param>
     /// <param name="target">The target object used by the delegate.</param>
-    /// <returns>A JSON marshalling delegate.</returns>
+    /// <returns>A JSON marshaling delegate.</returns>
     public static JsonFunc CreateJsonFunc(IMethodShape methodShape, object? target = null)
     {
         TypeCache scopedCache = s_converterCaches.GetScopedCache(methodShape.DeclaringType.Provider);

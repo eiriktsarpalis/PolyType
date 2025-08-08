@@ -12,7 +12,7 @@ public sealed class PolyTypeKnownSymbols(Compilation compilation) : KnownSymbols
     {
         public const string AssociatedTypes = "AssociatedTypes";
         public const string AssociatedTypeRequirements = "AssociatedTypeRequirements";
-        public const string Marshaller = "Marshaller";
+        public const string Marshaler = "Marshaler";
     }
 
     /// <summary>
@@ -70,8 +70,8 @@ public sealed class PolyTypeKnownSymbols(Compilation compilation) : KnownSymbols
     public INamedTypeSymbol? DerivedTypeShapeAttribute => GetOrResolveType("PolyType.DerivedTypeShapeAttribute", ref _DerivedTypeShapeAttribute);
     private Option<INamedTypeSymbol?> _DerivedTypeShapeAttribute;
 
-    public INamedTypeSymbol? MarshallerType => GetOrResolveType("PolyType.IMarshaller`2", ref _Marshaller);
-    private Option<INamedTypeSymbol?> _Marshaller;
+    public INamedTypeSymbol? MarshalerType => GetOrResolveType("PolyType.IMarshaler`2", ref _Marshaler);
+    private Option<INamedTypeSymbol?> _Marshaler;
 
     public INamedTypeSymbol? FSharpCompilationMappingAttribute => GetOrResolveType("Microsoft.FSharp.Core.CompilationMappingAttribute", ref _FSharpCompilationMappingAttribute);
     private Option<INamedTypeSymbol?> _FSharpCompilationMappingAttribute;

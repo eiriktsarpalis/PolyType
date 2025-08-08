@@ -11,39 +11,25 @@ namespace PolyType.SourceGenModel;
 public sealed class SourceGenParameterShape<TArgumentState, TParameter> : IParameterShape<TArgumentState, TParameter>
     where TArgumentState : IArgumentState
 {
-    /// <summary>
-    /// Gets the position of the parameter in the constructor signature.
-    /// </summary>
+    /// <inheritdoc/>
     public required int Position { get; init; }
 
-    /// <summary>
-    /// Gets the name of the parameter.
-    /// </summary>
+    /// <inheritdoc/>
     public required string Name { get; init; }
 
-    /// <summary>
-    /// Gets the kind of the parameter.
-    /// </summary>
+    /// <inheritdoc/>
     public required ParameterKind Kind { get; init; }
 
-    /// <summary>
-    /// Gets a value indicating whether the parameter is required.
-    /// </summary>
+    /// <inheritdoc/>
     public required bool IsRequired { get; init; }
 
-    /// <summary>
-    /// Gets a value indicating whether the parameter is non-nullable.
-    /// </summary>
+    /// <inheritdoc/>
     public required bool IsNonNullable { get; init; }
 
-    /// <summary>
-    /// Gets a value indicating whether the parameter is declared public.
-    /// </summary>
+    /// <inheritdoc/>
     public required bool IsPublic { get; init; }
 
-    /// <summary>
-    /// Gets the type shape of the parameter.
-    /// </summary>
+    /// <inheritdoc/>
     public required ITypeShape<TParameter> ParameterType { get; init; }
 
     /// <summary>
@@ -56,14 +42,10 @@ public sealed class SourceGenParameterShape<TArgumentState, TParameter> : IParam
     /// </summary>
     public Func<ICustomAttributeProvider?>? AttributeProviderFunc { get; init; }
 
-    /// <summary>
-    /// Gets a value indicating whether the parameter has a default value.
-    /// </summary>
+    /// <inheritdoc/>
     public bool HasDefaultValue { get; init; }
 
-    /// <summary>
-    /// Gets the default value of the parameter.
-    /// </summary>
+    /// <inheritdoc/>
     public TParameter? DefaultValue { get; init; }
 
     object? IParameterShape.DefaultValue => HasDefaultValue ? DefaultValue : null;

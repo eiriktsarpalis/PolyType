@@ -101,16 +101,16 @@ record MyPoco(int Value);
 
 #### Surrogate types
 
-The `TypeShape` attribute can also be used to specify marshallers to surrogate types:
+The `TypeShape` attribute can also be used to specify marshalers to surrogate types:
 
 ```C#
-[TypeShape(Marshaller = typeof(EnvelopeMarshaller))]
+[TypeShape(Marshaler = typeof(EnvelopeMarshaler))]
 record Envelope(string Value);
 
-class EnvelopeMarshaller : IMarshaller<Envelope, string>
+class EnvelopeMarshaler : IMarshaler<Envelope, string>
 {
-    public string? ToSurrogate(Envelope? envelope) => envelope?.Value;
-    public Envelope? FromSurrogate(string? surrogateString) => surrogateString is null ? null : new(surrogateString);
+    public string? Marshal(Envelope? envelope) => envelope?.Value;
+    public Envelope? Unmarshal(string? surrogateString) => surrogateString is null ? null : new(surrogateString);
 }
 ```
 
@@ -119,7 +119,7 @@ The above configures `Envelope` to admit a string-based shape using the specifie
 In the following example, we marshal the internal state of an object to a surrogate struct:
 
 ```C#
-[TypeShape(Marshaller = typeof(Marshaller))]
+[TypeShape(Marshaler = typeof(Marshaler))]
 public class PocoWithInternalState(int value1, string value2)
 {
     private readonly int _value1 = value1;
@@ -127,37 +127,37 @@ public class PocoWithInternalState(int value1, string value2)
 
     public record struct Surrogate(int Value1, string Value2);
 
-    public sealed class Marshaller : IMarshaller<PocoWithInternalState, Surrogate>
+    public sealed class Marshaler : IMarshaler<PocoWithInternalState, Surrogate>
     {
-        public Surrogate ToSurrogate(PocoWithInternalState? poco) => poco is null ? default : new(poco._value1, poco._value2);
-        public PocoWithInternalState FromSurrogate(Surrogate surrogate) => new(surrogate._value1, surrogate._value2 ?? "");
+        public Surrogate Marshal(PocoWithInternalState? poco) => poco is null ? default : new(poco._value1, poco._value2);
+        public PocoWithInternalState Unmarshal(Surrogate surrogate) => new(surrogate._value1, surrogate._value2 ?? "");
     }
 }
 ```
 
-It's possible to define marshallers for generic types, provided that the type parameters of the marshaller match the type parameters of declaring type:
+It's possible to define marshalers for generic types, provided that the type parameters of the Marshaler match the type parameters of declaring type:
 
 ```C#
-[TypeShape(Marshaller = typeof(Marshaller<>))]
+[TypeShape(Marshaler = typeof(Marshaler<>))]
 public record MyPoco<T>(T Value);
 
-public class Marshaller<T> : IMarshaller<MyPoco<T>, T>
+public class Marshaler<T> : IMarshaler<MyPoco<T>, T>
 {
-    public T? ToSurrogate(MyPoco<T>? value) => value is null ? default : value.Value;
-    public MyPoco<T>? FromSurrogate(T? value) => value is null ? null : new(value);
+    public T? Marshal(MyPoco<T>? value) => value is null ? default : value.Value;
+    public MyPoco<T>? Unmarshal(T? value) => value is null ? null : new(value);
 }
 
 [GenerateShapeFor<MyPoco<string>>]
 public partial class Witness;
 ```
 
-The above will configure `MyPoco<string>` with a marshaller of type `Marshaller<string>`. Nested generic marshallers are also supported:
+The above will configure `MyPoco<string>` with a Marshaler of type `Marshaler<string>`. Nested generic Marshalers are also supported:
 
 ```C#
-[TypeShape(Marshaller = typeof(MyPoco<>.Marshaller))]
+[TypeShape(Marshaler = typeof(MyPoco<>.Marshaler))]
 public record MyPoco<T>(T Value)
 {
-    public class Marshaller : IMarshaller<MyPoco<T>, T>
+    public class Marshaler : IMarshaler<MyPoco<T>, T>
     {
         /* Implementation goes here */
     }

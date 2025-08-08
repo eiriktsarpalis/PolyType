@@ -12,39 +12,25 @@ namespace PolyType.SourceGenModel;
 public sealed class SourceGenMethodShape<TDeclaringType, TArgumentState, TResult> : IMethodShape<TDeclaringType, TArgumentState, TResult>
     where TArgumentState : IArgumentState
 {
-    /// <summary>
-    /// Gets the name of the method.
-    /// </summary>
+    /// <inheritdoc/>
     public required string Name { get; init; }
 
-    /// <summary>
-    /// Gets a value indicating whether the method is declared public.
-    /// </summary>
+    /// <inheritdoc/>
     public required bool IsPublic { get; init; }
 
-    /// <summary>
-    /// Gets a value indicating whether the method is static.
-    /// </summary>
+    /// <inheritdoc/>
     public required bool IsStatic { get; init; }
 
-    /// <summary>
-    /// Gets a value indicating whether the underlying method returns void, Task, or ValueTask.
-    /// </summary>
+    /// <inheritdoc/>
     public required bool IsVoidLike { get; init; }
 
-    /// <summary>
-    /// Gets a value indicating whether the underlying method returns a Task or ValueTask.
-    /// </summary>
+    /// <inheritdoc/>
     public required bool IsAsync { get; init; }
 
-    /// <summary>
-    /// Gets the shape of the declaring type for the method.
-    /// </summary>
+    /// <inheritdoc/>
     public required ITypeShape<TDeclaringType> DeclaringType { get; init; }
 
-    /// <summary>
-    /// Gets the shape of the return type of the method.
-    /// </summary>
+    /// <inheritdoc/>
     public required ITypeShape<TResult> ReturnType { get; init; }
 
     /// <summary>

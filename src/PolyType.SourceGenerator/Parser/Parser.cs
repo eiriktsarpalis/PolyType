@@ -69,7 +69,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
 
         // In combining extensions from multiple sources, type extensions may be merged.
-        // Non-mergeable details (e.g. the marshaller to use) will be resolved by preferring the first definition found.
+        // Non-mergeable details (e.g. the marshaler to use) will be resolved by preferring the first definition found.
         // We always scan the compilation itself first, so the project always has the ability to resolve a conflict by defining the attribute directly.
         return (typeShapeExtensions, diagnostics);
 
@@ -92,7 +92,7 @@ public sealed partial class Parser : TypeDataModelGenerator
                 MethodShapeFlags? includeMethodFlags = null;
                 TypeShapeRequirements requirements = TypeShapeRequirements.Full;
                 ImmutableArray<TypedConstant>? associatedTypesExpr = null;
-                INamedTypeSymbol? marshaller = null;
+                INamedTypeSymbol? marshaler = null;
                 ImmutableArray<Location> locations = attribute.GetLocation() is Location loc
                     ? ImmutableArray.Create(loc)
                     : ImmutableArray<Location>.Empty;
@@ -104,10 +104,10 @@ public sealed partial class Parser : TypeDataModelGenerator
                         case "Kind":
                             kind = (TypeShapeKind)namedArgument.Value.Value!;
                             break;
-                        case "Marshaller":
+                        case "Marshaler":
                             if (namedArgument.Value.Value is INamedTypeSymbol m)
                             {
-                                marshaller = m;
+                                marshaler = m;
                             }
                             break;
                         case "IncludeMethods":
@@ -148,7 +148,7 @@ public sealed partial class Parser : TypeDataModelGenerator
                     Target = targetType,
                     Kind = existing?.Kind ?? kind,
                     IncludeMethods = includeMethodFlags,
-                    Marshaller = existing?.Marshaller ?? marshaller,
+                    Marshaler = existing?.Marshaler ?? marshaler,
                     AssociatedTypes = existing?.AssociatedTypes.AddRange(associatedTypeModels) ?? associatedTypeModels,
                     Locations = existing?.Locations.AddRange(locations) ?? locations,
                 };
@@ -448,7 +448,7 @@ public sealed partial class Parser : TypeDataModelGenerator
 
         ParseTypeShapeAttribute(type,
             out TypeShapeKind? attrDeclaredKind,
-            out ITypeSymbol? marshaller,
+            out ITypeSymbol? marshaler,
             out MethodShapeFlags? attrMethodBindingFlags,
             out Location? typeShapeLocation);
 
@@ -457,7 +457,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         {
             // Merge shape configuration with any extension model that targets the type.
             attrDeclaredKind ??= typeExtensionModel.Kind;
-            marshaller ??= typeExtensionModel.Marshaller;
+            marshaler ??= typeExtensionModel.Marshaler;
             attrMethodBindingFlags ??= typeExtensionModel.IncludeMethods;
         }
 
@@ -473,9 +473,9 @@ public sealed partial class Parser : TypeDataModelGenerator
             .ToImmutableArray();
 
         methodBindingFlags ??= MapMethodShapeFlagsToBindingFlags(attrMethodBindingFlags);
-        if (marshaller is not null || attrDeclaredKind is TypeShapeKind.Surrogate)
+        if (marshaler is not null || attrDeclaredKind is TypeShapeKind.Surrogate)
         {
-            return MapSurrogateType(type, marshaller, associatedTypes, ref ctx, requirements, methodBindingFlags, out model);
+            return MapSurrogateType(type, marshaler, associatedTypes, ref ctx, requirements, methodBindingFlags, out model);
         }
 
         if (_knownSymbols.ResolveFSharpUnionMetadata(type) is FSharpUnionInfo unionInfo)
@@ -498,44 +498,44 @@ public sealed partial class Parser : TypeDataModelGenerator
         return status;
     }
 
-    private TypeDataModelGenerationStatus MapSurrogateType(ITypeSymbol type, ITypeSymbol? marshaller, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements requirements, BindingFlags? methodFlags, out TypeDataModel? model)
+    private TypeDataModelGenerationStatus MapSurrogateType(ITypeSymbol type, ITypeSymbol? marshaler, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements requirements, BindingFlags? methodFlags, out TypeDataModel? model)
     {
         model = null;
 
-        if (marshaller is not INamedTypeSymbol namedMarshaller)
+        if (marshaler is not INamedTypeSymbol namedMarshaler)
         {
-            return ReportInvalidMarshallerAndExit();
+            return ReportInvalidMarshalerAndExit();
         }
 
-        if (namedMarshaller.IsUnboundGenericType)
+        if (namedMarshaler.IsUnboundGenericType)
         {
-            // If the marshaller type is an unbound generic,
+            // If the marshaler type is an unbound generic,
             // apply type arguments from the declaring type.
             ITypeSymbol[] typeArgs = ((INamedTypeSymbol)type).GetRecursiveTypeArguments();
-            INamedTypeSymbol? specializedMarshaller = namedMarshaller.OriginalDefinition.ConstructRecursive(typeArgs);
-            if (specializedMarshaller is null)
+            INamedTypeSymbol? specializedMarshaler = namedMarshaler.OriginalDefinition.ConstructRecursive(typeArgs);
+            if (specializedMarshaler is null)
             {
-                return ReportInvalidMarshallerAndExit();
+                return ReportInvalidMarshalerAndExit();
             }
 
-            namedMarshaller = specializedMarshaller;
+            namedMarshaler = specializedMarshaler;
         }
 
-        IMethodSymbol? defaultCtor = namedMarshaller.GetMembers()
+        IMethodSymbol? defaultCtor = namedMarshaler.GetMembers()
             .OfType<IMethodSymbol>()
             .FirstOrDefault(method => method is { MethodKind: MethodKind.Constructor, IsStatic: false, Parameters: [] });
 
         if (defaultCtor is null || !IsAccessibleSymbol(defaultCtor))
         {
-            return ReportInvalidMarshallerAndExit();
+            return ReportInvalidMarshalerAndExit();
         }
 
-        // Check that the surrogate marshaller implements exactly one IMarshaller<,> for the source type.
+        // Check that the surrogate marshaler implements exactly one IMarshaler<,> for the source type.
         ITypeSymbol? surrogateType = null;
-        foreach (INamedTypeSymbol interfaceType in namedMarshaller.AllInterfaces)
+        foreach (INamedTypeSymbol interfaceType in namedMarshaler.AllInterfaces)
         {
             if (interfaceType.IsGenericType &&
-                SymbolEqualityComparer.Default.Equals(interfaceType.OriginalDefinition, _knownSymbols.MarshallerType))
+                SymbolEqualityComparer.Default.Equals(interfaceType.OriginalDefinition, _knownSymbols.MarshalerType))
             {
                 var typeArgs = interfaceType.TypeArguments;
                 if (SymbolEqualityComparer.Default.Equals(typeArgs[0], type))
@@ -543,7 +543,7 @@ public sealed partial class Parser : TypeDataModelGenerator
                     if (surrogateType is not null)
                     {
                         // We have conflicting implementations.
-                        return ReportInvalidMarshallerAndExit();
+                        return ReportInvalidMarshalerAndExit();
                     }
 
                     surrogateType = typeArgs[1];
@@ -553,7 +553,7 @@ public sealed partial class Parser : TypeDataModelGenerator
 
         if (surrogateType is null)
         {
-            return ReportInvalidMarshallerAndExit();
+            return ReportInvalidMarshalerAndExit();
         }
 
         // Generate the shape for the surrogate type.
@@ -565,16 +565,16 @@ public sealed partial class Parser : TypeDataModelGenerator
                 Type = type,
                 Requirements = TypeShapeRequirements.Full,
                 SurrogateType = surrogateType,
-                MarshallerType = namedMarshaller,
+                MarshalerType = namedMarshaler,
                 Methods = MapMethods(type, ref ctx, methodFlags),
             };
         }
 
         return status;
 
-        TypeDataModelGenerationStatus ReportInvalidMarshallerAndExit()
+        TypeDataModelGenerationStatus ReportInvalidMarshalerAndExit()
         {
-            ReportDiagnostic(InvalidMarshaller, type.Locations.FirstOrDefault(), type.ToDisplayString());
+            ReportDiagnostic(InvalidMarshaler, type.Locations.FirstOrDefault(), type.ToDisplayString());
             return TypeDataModelGenerationStatus.UnsupportedType;
         }
     }

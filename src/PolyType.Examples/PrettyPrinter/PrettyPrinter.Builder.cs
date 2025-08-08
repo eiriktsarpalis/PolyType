@@ -213,8 +213,8 @@ public static partial class PrettyPrinter
         public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
         {
             PrettyPrinter<TSurrogate> surrogatePrinter = GetOrAddPrettyPrinter(surrogateShape.SurrogateType);
-            var marshaller = surrogateShape.Marshaller;
-            return new PrettyPrinter<T>((sb, indentation, t) => surrogatePrinter(sb, indentation, marshaller.ToSurrogate(t)));
+            var marshaler = surrogateShape.Marshaler;
+            return new PrettyPrinter<T>((sb, indentation, t) => surrogatePrinter(sb, indentation, marshaler.Marshal(t)));
         }
 
         public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
@@ -242,7 +242,8 @@ public static partial class PrettyPrinter
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
         {
             var underlying = (PrettyPrinter<TUnionCase>)unionCaseShape.Type.Accept(this)!;
-            return new PrettyPrinter<TUnion>((sb, indentation, value) => underlying(sb, indentation, (TUnionCase?)value));
+            var marshaler = unionCaseShape.Marshaler;
+            return new PrettyPrinter<TUnion>((sb, indentation, value) => underlying(sb, indentation, marshaler.Unmarshal(value)));
         }
 
         private static void WriteLine(TextWriter builder, int indentation)

@@ -20,9 +20,9 @@ internal sealed record TypeExtensionModel
     public required TypeShapeKind? Kind { get; init; }
 
     /// <summary>
-    /// Gets an optional marshaller type that can be used to convert the <see cref="Target"/> type to a surrogate type.
+    /// Gets an optional marshaler type that can be used to convert the <see cref="Target"/> type to a surrogate type.
     /// </summary>
-    public required INamedTypeSymbol? Marshaller { get; init; }
+    public required INamedTypeSymbol? Marshaler { get; init; }
 
     /// <summary>
     /// Gets the binding flags that determine what method shapes should be included in the type shape.
