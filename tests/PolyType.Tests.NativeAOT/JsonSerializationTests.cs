@@ -20,6 +20,8 @@ public class JsonSerializationTests
         var deserializedData = JsonSerializerTS.Deserialize<SimpleTestData>(json);
 
         // Assert
+        var expectedJson = """{"IntValue":42,"StringValue":"Hello, Native AOT!","BoolValue":true,"DoubleValue":3.14159,"DateValue":"2024-01-15T14:30:45"}""";
+        await Assert.That(json).IsEqualTo(expectedJson);
         await Assert.That(StructuralEqualityComparer.Equals(originalData, deserializedData)).IsTrue();
     }
 
@@ -34,6 +36,8 @@ public class JsonSerializationTests
         var deserializedTodos = JsonSerializerTS.Deserialize<TestTodos>(json);
 
         // Assert
+        var expectedJson = """{"Items":[{"Id":1,"Title":"Test task 1","DueBy":"2025-01-15","Status":"Done"},{"Id":2,"Title":"Test task 2","DueBy":"2025-01-15","Status":"InProgress"},{"Id":3,"Title":"Test task 3","DueBy":"2025-01-16","Status":"NotStarted"}]}""";
+        await Assert.That(json).IsEqualTo(expectedJson);
         await Assert.That(StructuralEqualityComparer.Equals(originalTodos, deserializedTodos)).IsTrue();
     }
 
@@ -45,5 +49,7 @@ public class JsonSerializationTests
 
         // Assert
         await Assert.That(schema).IsNotNull();
+        await Assert.That(schema).Contains("\"type\":");
+        await Assert.That(schema).Contains("\"properties\":");
     }
 }
