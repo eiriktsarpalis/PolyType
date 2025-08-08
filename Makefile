@@ -23,15 +23,25 @@ build: restore
 	dotnet build --no-restore --configuration $(CONFIGURATION) $(ADDITIONAL_ARGS)
 
 test: build
-	dotnet test --no-build --configuration $(CONFIGURATION) $(ADDITIONAL_ARGS) \
+	dotnet test --configuration $(CONFIGURATION) $(ADDITIONAL_ARGS) \
 		--blame \
+		-p:SkipTUnitTestRuns=true \
 		--results-directory $(ARTIFACT_PATH)/testResults \
 		--collect "Code Coverage;Format=cobertura" \
 		--logger "trx" \
 		-- \
 		RunConfiguration.CollectSourceInformation=true
 
-pack: test
+test-aot: build
+	dotnet publish $(SOURCE_DIRECTORY)/tests/PolyType.Tests.NativeAOT/PolyType.Tests.NativeAOT.csproj \
+		$(ADDITIONAL_ARGS) \
+		-o $(ARTIFACT_PATH)/native-aot-tests
+
+	$(ARTIFACT_PATH)/native-aot-tests/PolyType.Tests.NativeAOT
+
+all-tests: test test-aot
+
+pack: all-tests
 	dotnet pack --configuration Release $(ADDITIONAL_ARGS)
 
 push:
@@ -62,4 +72,4 @@ docker-build: clean
 
 	docker rmi -f $(DOCKER_IMAGE_NAME)
 
-.DEFAULT_GOAL := test
+.DEFAULT_GOAL := all-tests
