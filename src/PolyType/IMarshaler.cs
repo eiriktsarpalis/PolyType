@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace PolyType;
 
 /// <summary>
@@ -17,6 +19,7 @@ public interface IMarshaler<TSource, TTarget>
     /// </summary>
     /// <param name="value">The input of type <typeparamref name="TSource"/>.</param>
     /// <returns>A value of type <typeparamref name="TTarget"/> corresponding to <paramref name="value"/>.</returns>
+    [return: NotNullIfNotNull(nameof(value))]
     TTarget? Marshal(TSource? value);
 
     /// <summary>
@@ -24,5 +27,6 @@ public interface IMarshaler<TSource, TTarget>
     /// </summary>
     /// <param name="value">The input of type <typeparamref name="TTarget"/>.</param>
     /// <returns>A value of type <typeparamref name="TSource"/> corresponding to <paramref name="value"/>.</returns>
+    [return: NotNullIfNotNull(nameof(value))]
     TSource? Unmarshal(TTarget? value);
 }
