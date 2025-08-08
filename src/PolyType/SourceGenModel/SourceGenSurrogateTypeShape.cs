@@ -9,14 +9,10 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TSurrogate">The surrogate type used by the shape.</typeparam>
 public sealed class SourceGenSurrogateTypeShape<T, TSurrogate> : SourceGenTypeShape<T>, ISurrogateTypeShape<T, TSurrogate>
 {
-    /// <summary>
-    /// Gets the marshaller to <typeparamref name="TSurrogate"/>.
-    /// </summary>
-    public required IMarshaller<T, TSurrogate> Marshaller { get; init; }
+    /// <inheritdoc/>
+    public required IMarshaler<T, TSurrogate> Marshaler { get; init; }
 
-    /// <summary>
-    /// Gets the shape of the surrogate type.
-    /// </summary>
+    /// <inheritdoc/>
     public required ITypeShape<TSurrogate> SurrogateType { get; init; }
 
     /// <inheritdoc/>

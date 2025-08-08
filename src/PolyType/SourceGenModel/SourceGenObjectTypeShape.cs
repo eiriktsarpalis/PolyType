@@ -10,14 +10,10 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TObject">The type whose shape is described.</typeparam>
 public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObject>, IObjectTypeShape<TObject>
 {
-    /// <summary>
-    /// Gets a value indicating whether the type represents a record.
-    /// </summary>
+    /// <inheritdoc/>
     public required bool IsRecordType { get; init; }
 
-    /// <summary>
-    /// Gets a value indicating whether the type represents a tuple.
-    /// </summary>
+    /// <inheritdoc/>
     public required bool IsTupleType { get; init; }
 
     /// <summary>

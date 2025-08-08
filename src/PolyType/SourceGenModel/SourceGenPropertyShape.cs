@@ -10,14 +10,10 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TPropertyType">The type of the property value.</typeparam>
 public sealed class SourceGenPropertyShape<TDeclaringType, TPropertyType> : IPropertyShape<TDeclaringType, TPropertyType>
 {
-    /// <summary>
-    /// Gets the 0-based position of the property in the declaring type.
-    /// </summary>
+    /// <inheritdoc/>
     public required int Position { get; init; }
 
-    /// <summary>
-    /// Gets the name of the property.
-    /// </summary>
+    /// <inheritdoc/>
     public required string Name { get; init; }
 
     /// <summary>
@@ -25,14 +21,10 @@ public sealed class SourceGenPropertyShape<TDeclaringType, TPropertyType> : IPro
     /// </summary>
     public Func<ICustomAttributeProvider?>? AttributeProviderFunc { get; init; }
 
-    /// <summary>
-    /// Gets the shape of the declaring type.
-    /// </summary>
+    /// <inheritdoc/>
     public required IObjectTypeShape<TDeclaringType> DeclaringType { get; init; }
 
-    /// <summary>
-    /// Gets the shape of the property type.
-    /// </summary>
+    /// <inheritdoc/>
     public required ITypeShape<TPropertyType> PropertyType { get; init; }
 
     /// <summary>
@@ -45,29 +37,19 @@ public sealed class SourceGenPropertyShape<TDeclaringType, TPropertyType> : IPro
     /// </summary>
     public Setter<TDeclaringType, TPropertyType>? Setter { get; init; }
 
-    /// <summary>
-    /// Gets a value indicating whether the getter is declared public.
-    /// </summary>
+    /// <inheritdoc/>
     public required bool IsGetterPublic { get; init; }
 
-    /// <summary>
-    /// Gets a value indicating whether the setter is declared public.
-    /// </summary>
+    /// <inheritdoc/>
     public required bool IsSetterPublic { get; init; }
 
-    /// <summary>
-    /// Gets a value indicating whether the getter is non-nullable.
-    /// </summary>
+    /// <inheritdoc/>
     public required bool IsGetterNonNullable { get; init; }
 
-    /// <summary>
-    /// Gets a value indicating whether the setter is non-nullable.
-    /// </summary>
+    /// <inheritdoc/>
     public required bool IsSetterNonNullable { get; init; }
 
-    /// <summary>
-    /// Gets a value indicating whether the shape represents a field.
-    /// </summary>
+    /// <inheritdoc/>
     public bool IsField { get; init; }
 
     Getter<TDeclaringType, TPropertyType> IPropertyShape<TDeclaringType, TPropertyType>.GetGetter()

@@ -12,20 +12,11 @@ namespace PolyType.SourceGenModel;
 public sealed class SourceGenConstructorShape<TDeclaringType, TArgumentState> : IConstructorShape<TDeclaringType, TArgumentState>
     where TArgumentState : IArgumentState
 {
-    /// <summary>
-    /// Gets a value indicating whether the constructor is public.
-    /// </summary>
+    /// <inheritdoc/>
     public required bool IsPublic { get; init; }
 
-    /// <summary>
-    /// Gets the shape of the declaring type.
-    /// </summary>
+    /// <inheritdoc/>
     public required IObjectTypeShape<TDeclaringType> DeclaringType { get; init; }
-
-    /// <summary>
-    /// Gets the number of parameters the constructor takes.
-    /// </summary>
-    public required int ParameterCount { get; init; }
 
     /// <summary>
     /// Gets the attribute provider for the constructor.

@@ -9,24 +9,16 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TElement">The element type of the collection.</typeparam>
 public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : SourceGenTypeShape<TEnumerable>, IEnumerableTypeShape<TEnumerable, TElement>
 {
-    /// <summary>
-    /// Gets the shape of the element type.
-    /// </summary>
+    /// <inheritdoc/>
     public required ITypeShape<TElement> ElementType { get; init; }
 
-    /// <summary>
-    /// Gets the rank of the enumerable collection.
-    /// </summary>
+    /// <inheritdoc/>
     public required int Rank { get; init; }
 
-    /// <summary>
-    /// Indicates whether the underlying type is an IAsyncEnumerable or not.
-    /// </summary>
+    /// <inheritdoc/>
     public required bool IsAsyncEnumerable { get; init; }
 
-    /// <summary>
-    /// Indicates whether the enumerable is one of the recognized set collection types.
-    /// </summary>
+    /// <inheritdoc/>
     public required bool IsSetType { get; init; }
 
     /// <summary>

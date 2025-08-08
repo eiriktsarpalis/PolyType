@@ -127,9 +127,9 @@ public sealed partial class ServiceProviderContext
         {
             if (GetOrAddFactory(surrogateShape.SurrogateType) is { } surrogateFactory)
             {
-                var marshaller = surrogateShape.Marshaller;
+                var marshaler = surrogateShape.Marshaler;
                 var lifetime = CombineLifetimes(ResolveLifetime(state), surrogateFactory.Lifetime);
-                return ServiceFactory.FromFunc(provider => marshaller.FromSurrogate(surrogateFactory.Factory(provider)), lifetime);
+                return ServiceFactory.FromFunc(provider => marshaler.Unmarshal(surrogateFactory.Factory(provider)), lifetime);
             }
 
             return null;

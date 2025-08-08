@@ -64,6 +64,7 @@ internal sealed partial class SourceFormatter
                 new global::PolyType.SourceGenModel.SourceGenUnionCaseShape<{{unionCase.Type.FullyQualifiedName}}, {{unionShapeModel.Type.FullyQualifiedName}}>
                 {
                     Type = {{unionCaseType.SourceIdentifier}},
+                    Marshaler = global::PolyType.SourceGenModel.SubtypeMarshaler<{{unionCase.Type.FullyQualifiedName}}, {{unionShapeModel.Type.FullyQualifiedName}}>.Instance,
                     Name = {{FormatStringLiteral(unionCase.Name)}},
                     Tag = {{unionCase.Tag}},
                     IsTagSpecified = {{FormatBool(unionCase.IsTagSpecified)}},

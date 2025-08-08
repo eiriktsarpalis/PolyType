@@ -117,9 +117,9 @@ public record TestCase<T> : ITestCase
     public bool IsAbstract => typeof(T).IsAbstract || typeof(T).IsInterface;
 
     /// <summary>
-    /// Gets a value indicating whether the type is defined with a surrogate marshaller.
+    /// Gets a value indicating whether the type is defined with a surrogate Marshaler.
     /// </summary>
-    public bool UsesMarshaller => typeof(T).GetCustomAttribute<TypeShapeAttribute>()?.Marshaller is not null;
+    public bool UsesMarshaler => typeof(T).GetCustomAttribute<TypeShapeAttribute>()?.Marshaler is not null;
 
     /// <summary>
     /// Gets a value indicating whether the type configuration specifies a custom kind.

@@ -13,15 +13,15 @@ public sealed class TypeShapeAttribute : Attribute
     private readonly MethodShapeFlags? _includeMethods;
 
     /// <summary>
-    /// Gets a type implementing an <see cref="IMarshaller{T,TSurrogate}"/> to a surrogate type.
+    /// Gets a type implementing an <see cref="IMarshaler{T,TSurrogate}"/> to a surrogate type.
     /// </summary>
     /// <remarks>
-    /// The type should have a parameterless constructor and must implement <see cref="IMarshaller{T,TSurrogate}"/>
+    /// The type should have a parameterless constructor and must implement <see cref="IMarshaler{T,TSurrogate}"/>
     /// where either of the two generic types should match the annotated type.
     ///
-    /// Types that specify a <see cref="Marshaller"/> will be of shape <see cref="ISurrogateTypeShape"/>.
+    /// Types that specify a <see cref="Marshaler"/> will be of shape <see cref="ISurrogateTypeShape"/>.
     /// </remarks>
-    public Type? Marshaller { get; init; }
+    public Type? Marshaler { get; init; }
 
     /// <summary>
     /// Gets the kind that should be generated for the annotated type.

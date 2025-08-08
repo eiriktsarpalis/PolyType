@@ -61,8 +61,8 @@ public static partial class Counter
         public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
         {
             var surrogateCounter = (Func<TSurrogate?, long>)surrogateShape.SurrogateType.Accept(this)!;
-            var marshaller = surrogateShape.Marshaller;
-            return new Func<T?, long>(t => surrogateCounter(marshaller.ToSurrogate(t)));
+            var marshaler = surrogateShape.Marshaler;
+            return new Func<T?, long>(t => surrogateCounter(marshaler.Marshal(t)));
         }
 
         public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state)
@@ -133,7 +133,8 @@ public static partial class Counter
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCase, object? state = null)
         {
             var underlyingCounter = (Func<TUnionCase, long>)unionCase.Type.Accept(this)!;
-            return new Func<TUnion, long>(union => underlyingCounter((TUnionCase)union!));
+            var marshaler = unionCase.Marshaler;
+            return new Func<TUnion, long>(union => underlyingCounter(marshaler.Unmarshal(union)!));
         }
     }
 

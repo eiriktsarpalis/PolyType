@@ -9,8 +9,7 @@ internal abstract class JsonUnionCaseConverter<TUnion> : JsonConverter<TUnion>
     public abstract string Name { get; }
 }
 
-internal sealed class JsonUnionCaseConverter<TUnionCase, TUnion>(string name, JsonConverter<TUnionCase> underlying) : JsonUnionCaseConverter<TUnion>
-    where TUnionCase : TUnion
+internal sealed class JsonUnionCaseConverter<TUnionCase, TUnion>(string name, IMarshaler<TUnionCase, TUnion> marshaler, JsonConverter<TUnionCase> underlying) : JsonUnionCaseConverter<TUnion>
 {
     private static ReadOnlySpan<byte> ValuesPropertyName => "$values"u8;
     private readonly IJsonObjectConverter<TUnionCase>? _objectConverter = underlying as IJsonObjectConverter<TUnionCase>;
@@ -21,7 +20,7 @@ internal sealed class JsonUnionCaseConverter<TUnionCase, TUnion>(string name, Js
     {
         if (_objectConverter is not null)
         {
-            return underlying.Read(ref reader, typeToConvert, options);
+            return marshaler.Marshal(underlying.Read(ref reader, typeToConvert, options));
         }
 
         if (!JsonHelpers.TryAdvanceToProperty(ref reader, ValuesPropertyName))
@@ -30,7 +29,7 @@ internal sealed class JsonUnionCaseConverter<TUnionCase, TUnion>(string name, Js
         }
 
         reader.EnsureRead();
-        TUnion? result = underlying.Read(ref reader, typeToConvert, options);
+        TUnion? result = marshaler.Marshal(underlying.Read(ref reader, typeToConvert, options));
         reader.EnsureRead();
 
         while (reader.TokenType != JsonTokenType.EndObject)
@@ -47,12 +46,12 @@ internal sealed class JsonUnionCaseConverter<TUnionCase, TUnion>(string name, Js
         DebugExt.Assert(value is TUnionCase);
         if (_objectConverter is { } objConv)
         {
-            objConv.WriteProperties(writer, (TUnionCase)value, options);
+            objConv.WriteProperties(writer, marshaler.Unmarshal(value)!, options);
         }
         else
         {
             writer.WritePropertyName(ValuesPropertyName);
-            underlying.Write(writer, (TUnionCase)value, options);
+            underlying.Write(writer, marshaler.Unmarshal(value)!, options);
         }
     }
 }

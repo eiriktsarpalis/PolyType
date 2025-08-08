@@ -401,7 +401,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
     }
 
     [Fact]
-    public void Roundtrip_ClassWithMarshaller()
+    public void Roundtrip_ClassWithMarshaler()
     {
         const string ExpectedJson = "\"the actual value\"";
         var converter = JsonSerializerTS.CreateConverter<TypeWithStringSurrogate>(providerUnderTest.Provider);
@@ -496,7 +496,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         value.IsLongTuple ||
         value.HasRefConstructorParameters ||
         value.CustomKind is not null ||
-        value.UsesMarshaller ||
+        value.UsesMarshaler ||
         value.IsUnion && (!typeof(T).GetCustomAttributes<JsonDerivedTypeAttribute>().Any() || value.IsAbstract) ||
         (ReflectionHelpers.IsMonoRuntime && value.Value is IDiamondInterface) ||
         value.Value is DerivedClassWithVirtualProperties; // https://github.com/dotnet/runtime/issues/96996

@@ -21,9 +21,9 @@ public interface ISurrogateTypeShape : ITypeShape
 public interface ISurrogateTypeShape<T, TSurrogate> : ITypeShape<T>, ISurrogateTypeShape
 {
     /// <summary>
-    /// Gets the bidirectional mapper between <typeparamref name="T"/> and <typeparamref name="TSurrogate"/>.
+    /// Gets a bidirectional mapper between <typeparamref name="T"/> and <typeparamref name="TSurrogate"/>.
     /// </summary>
-    IMarshaller<T, TSurrogate> Marshaller { get; }
+    IMarshaler<T, TSurrogate> Marshaler { get; }
 
     /// <summary>
     /// Gets the shape of the element type of the nullable.

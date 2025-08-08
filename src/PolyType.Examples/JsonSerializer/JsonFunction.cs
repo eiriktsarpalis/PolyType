@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace PolyType.Examples.JsonSerializer;
 
 /// <summary>
-/// Defines a JSON marshalling wrapper for a regular .NET function.
+/// Defines a JSON marshaling wrapper for a regular .NET function.
 /// </summary>
 /// <param name="parameters">A JSON object containing named function parameters.</param>
 /// <param name="cancellationToken">The cancellation token governing cancellation.</param>

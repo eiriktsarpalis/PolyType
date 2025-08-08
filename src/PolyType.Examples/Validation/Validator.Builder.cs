@@ -163,11 +163,11 @@ public static partial class Validator
         public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
         {
             var surrogateValidator = GetOrAddValidator(surrogateShape.SurrogateType);
-            var marshaller = surrogateShape.Marshaller;
+            var marshaler = surrogateShape.Marshaler;
 
             return surrogateValidator is null ? null : 
                 new Validator<T>((T? value, List<string> path, ref List<string>? errors) => 
-                    surrogateValidator(marshaller.ToSurrogate(value), path, ref errors));
+                    surrogateValidator(marshaler.Marshal(value), path, ref errors));
         }
 
         public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
@@ -209,7 +209,8 @@ public static partial class Validator
                 return null;
             }
 
-            return new Validator<TUnion>((TUnion? value, List<string> path, ref List<string>? errors) => underlying((TUnionCase?)value, path, ref errors));
+            var marshaler = unionCaseShape.Marshaler;
+            return new Validator<TUnion>((TUnion? value, List<string> path, ref List<string>? errors) => underlying(marshaler.Unmarshal(value), path, ref errors));
         }
 
         /// <summary>

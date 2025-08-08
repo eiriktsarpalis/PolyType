@@ -73,9 +73,9 @@ public interface ITestCase
     public bool IsAbstract { get; }
     
     /// <summary>
-    /// Gets a value indicating whether the type is defined with a surrogate marshaller.
+    /// Gets a value indicating whether the type is defined with a surrogate Marshaler.
     /// </summary>
-    public bool UsesMarshaller { get; } 
+    public bool UsesMarshaler { get; } 
 
     /// <summary>
     /// Gets the value specified in <see cref="TypeShapeAttribute.Kind"/>.

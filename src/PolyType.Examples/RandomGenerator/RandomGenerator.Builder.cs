@@ -286,9 +286,9 @@ public partial class RandomGenerator
 
         public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state)
         {
-            IMarshaller<T, TSurrogate> marshaller = surrogateShape.Marshaller;
+            IMarshaler<T, TSurrogate> marshaler = surrogateShape.Marshaler;
             RandomGenerator<TSurrogate> surrogateGenerator = GetOrAddGenerator(surrogateShape.SurrogateType);
-            return new RandomGenerator<T>((Random random, int size) => marshaller.FromSurrogate(surrogateGenerator(random, size))!);
+            return new RandomGenerator<T>((Random random, int size) => marshaler.Unmarshal(surrogateGenerator(random, size))!);
         }
 
         public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state)

@@ -1,4 +1,5 @@
 ﻿using PolyType.Abstractions;
+using PolyType.SourceGenModel;
 
 namespace PolyType.ReflectionProvider;
 
@@ -7,6 +8,8 @@ internal sealed class ReflectionUnionCaseShape<TUnionCase, TUnion>(IUnionTypeSha
 {
     public ITypeShape<TUnionCase> Type => _type ?? CommonHelpers.ExchangeIfNull(ref _type, typeof(TUnionCase) == typeof(TUnion) ? (ITypeShape<TUnionCase>)unionType.BaseType : provider.GetShape<TUnionCase>());
     private ITypeShape<TUnionCase>? _type;
+
+    public IMarshaler<TUnionCase, TUnion> Marshaler => SubtypeMarshaler<TUnionCase, TUnion>.Instance;
 
     public string Name => derivedTypeInfo.Name;
     public int Tag => derivedTypeInfo.Tag;

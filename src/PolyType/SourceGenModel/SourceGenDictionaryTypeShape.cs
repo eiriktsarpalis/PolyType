@@ -11,14 +11,10 @@ namespace PolyType.SourceGenModel;
 public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : SourceGenTypeShape<TDictionary>, IDictionaryTypeShape<TDictionary, TKey, TValue>
     where TKey : notnull
 {
-    /// <summary>
-    /// Gets the type shape of the dictionary key.
-    /// </summary>
+    /// <inheritdoc/>
     public required ITypeShape<TKey> KeyType { get; init; }
 
-    /// <summary>
-    /// Gets the type shape of the dictionary value.
-    /// </summary>
+    /// <inheritdoc/>
     public required ITypeShape<TValue> ValueType { get; init; }
 
     /// <summary>

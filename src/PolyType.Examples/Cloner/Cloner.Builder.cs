@@ -250,9 +250,9 @@ public static partial class Cloner
 
         public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? _)
         {
-            var marshaller = surrogateShape.Marshaller;
+            var marshaler = surrogateShape.Marshaler;
             var surrogateCloner = GetOrAddCloner(surrogateShape.SurrogateType);
-            return new Func<T?, T?>(t => marshaller.FromSurrogate(surrogateCloner(marshaller.ToSurrogate(t))));
+            return new Func<T?, T?>(t => marshaler.Unmarshal(surrogateCloner(marshaler.Marshal(t))));
         }
 
         public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
@@ -279,7 +279,8 @@ public static partial class Cloner
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
         {
             var cloner = (Func<TUnionCase?, TUnionCase?>)unionCaseShape.Type.Invoke(this)!;
-            return new Func<TUnion?, TUnion?>(t => cloner((TUnionCase?)t));
+            var marshaler = unionCaseShape.Marshaler;
+            return new Func<TUnion?, TUnion?>(t => marshaler.Marshal(cloner(marshaler.Unmarshal(t))));
         }
 
         private static IEnumerable<KeyValuePair<Type, object>> GetBuiltInCloners()

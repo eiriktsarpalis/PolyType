@@ -11,9 +11,7 @@ public sealed class SourceGenEnumTypeShape<TEnum, TUnderlying> : SourceGenTypeSh
     where TEnum : struct, Enum
     where TUnderlying : unmanaged
 {
-    /// <summary>
-    /// Gets the shape of the underlying type of the enum.
-    /// </summary>
+    /// <inheritdoc/>
     public required ITypeShape<TUnderlying> UnderlyingType { get; init; }
 
     /// <inheritdoc/>

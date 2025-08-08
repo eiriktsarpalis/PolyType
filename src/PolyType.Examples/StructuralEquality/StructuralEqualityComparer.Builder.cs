@@ -65,7 +65,7 @@ public static partial class StructuralEqualityComparer
         public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
         {
             var surrogateComparer = GetOrAddEqualityComparer(surrogateShape.SurrogateType);
-            return new SurrogateEqualityComparer<T, TSurrogate>(surrogateComparer, surrogateShape.Marshaller);
+            return new SurrogateEqualityComparer<T, TSurrogate>(surrogateComparer, surrogateShape.Marshaler);
         }
 
         public override object? VisitDictionary<TDictionary, TKey, TValue>(IDictionaryTypeShape<TDictionary, TKey, TValue> dictionaryShape, object? state)
@@ -114,7 +114,7 @@ public static partial class StructuralEqualityComparer
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
         {
             var underlyingComparer = (EqualityComparer<TUnionCase>)unionCaseShape.Type.Accept(this)!;
-            return new UnionCaseEqualityComparer<TUnionCase, TUnion>(underlyingComparer);
+            return new UnionCaseEqualityComparer<TUnionCase, TUnion>(underlyingComparer, unionCaseShape.Marshaler);
         }
     }
 }

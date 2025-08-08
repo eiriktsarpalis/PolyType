@@ -556,8 +556,8 @@ public static class TestTypes
         yield return TestCase.Create(new TypeWithStringSurrogate("string"));
         yield return TestCase.Create(new TypeWithRecordSurrogate(42, "string"));
         yield return TestCase.Create(EnumWithRecordSurrogate.A, p);
-        yield return TestCase.Create(new TypeWithGenericMarshaller<string>("str"), p);
-        yield return TestCase.Create(new GenericDictionaryWithMarshaller<string, int>() { ["key"] = 42 }, p);
+        yield return TestCase.Create(new TypeWithGenericMarshaler<string>("str"), p);
+        yield return TestCase.Create(new GenericDictionaryWithMarshaler<string, int>() { ["key"] = 42 }, p);
 
         // Union types
         yield return TestCase.Create(new PolymorphicClass(42),
@@ -2201,17 +2201,17 @@ partial class @class
     public bool @yield { get; set; }
 }
 
-[GenerateShape, TypeShape(Marshaller = typeof(Marshaller))]
+[GenerateShape, TypeShape(Marshaler = typeof(Marshaler))]
 public partial record TypeWithStringSurrogate(string Value)
 {
-    public class Marshaller : IMarshaller<TypeWithStringSurrogate, string>
+    public class Marshaler : IMarshaler<TypeWithStringSurrogate, string>
     {
-        public string? ToSurrogate(TypeWithStringSurrogate? value) => value?.Value;
-        public TypeWithStringSurrogate? FromSurrogate(string? surrogate) => surrogate is null ? null : new(surrogate);
+        public string? Marshal(TypeWithStringSurrogate? value) => value?.Value;
+        public TypeWithStringSurrogate? Unmarshal(string? surrogate) => surrogate is null ? null : new(surrogate);
     }
 }
 
-[GenerateShape, TypeShape(Marshaller = typeof(Marshaller))]
+[GenerateShape, TypeShape(Marshaler = typeof(Marshaler))]
 public partial class TypeWithRecordSurrogate(int value1, string value2)
 {
     private readonly int _value1 = value1;
@@ -2219,51 +2219,51 @@ public partial class TypeWithRecordSurrogate(int value1, string value2)
     
     public record Surrogate(int Value1, string Value2);
 
-    public sealed class Marshaller : IMarshaller<TypeWithRecordSurrogate, Surrogate>
+    public sealed class Marshaler : IMarshaler<TypeWithRecordSurrogate, Surrogate>
     {
-        public Surrogate? ToSurrogate(TypeWithRecordSurrogate? value) =>
+        public Surrogate? Marshal(TypeWithRecordSurrogate? value) =>
             value is null ? null : new(value._value1, value._value2);
 
-        public TypeWithRecordSurrogate? FromSurrogate(Surrogate? surrogate) =>
+        public TypeWithRecordSurrogate? Unmarshal(Surrogate? surrogate) =>
             surrogate is null ? null : new(surrogate.Value1, surrogate.Value2);
     }
 }
 
-[TypeShape(Marshaller = typeof(EnumMarshaller))]
+[TypeShape(Marshaler = typeof(EnumMarshaler))]
 public enum EnumWithRecordSurrogate { A, B, C }
 public record EnumSurrogate(int Value);
-public sealed class EnumMarshaller : IMarshaller<EnumWithRecordSurrogate, EnumSurrogate>
+public sealed class EnumMarshaler : IMarshaler<EnumWithRecordSurrogate, EnumSurrogate>
 {
-    public EnumSurrogate ToSurrogate(EnumWithRecordSurrogate value) => new((int)value);
-    public EnumWithRecordSurrogate FromSurrogate(EnumSurrogate? surrogate) => (EnumWithRecordSurrogate)(surrogate?.Value ?? 0);
+    public EnumSurrogate Marshal(EnumWithRecordSurrogate value) => new((int)value);
+    public EnumWithRecordSurrogate Unmarshal(EnumSurrogate? surrogate) => (EnumWithRecordSurrogate)(surrogate?.Value ?? 0);
 }
 
-[TypeShape(Marshaller = typeof(GenericMarshaller<>))]
-public record TypeWithGenericMarshaller<T>(T Value);
+[TypeShape(Marshaler = typeof(GenericMarshaler<>))]
+public record TypeWithGenericMarshaler<T>(T Value);
 
-public sealed class GenericMarshaller<T> : IMarshaller<TypeWithGenericMarshaller<T>, T>
+public sealed class GenericMarshaler<T> : IMarshaler<TypeWithGenericMarshaler<T>, T>
 {
-    public T? ToSurrogate(TypeWithGenericMarshaller<T>? value) => value is null ? default : value.Value;
-    public TypeWithGenericMarshaller<T>? FromSurrogate(T? surrogate) => EqualityComparer<T>.Default.Equals(surrogate!, default!) ? null : new(surrogate!);
+    public T? Marshal(TypeWithGenericMarshaler<T>? value) => value is null ? default : value.Value;
+    public TypeWithGenericMarshaler<T>? Unmarshal(T? value) => EqualityComparer<T>.Default.Equals(value!, default!) ? null : new(value!);
 }
 
-[TypeShape(Marshaller = typeof(GenericDictionaryWithMarshaller<,>.Marshaller))]
-public class GenericDictionaryWithMarshaller<TKey, TValue> : Dictionary<TKey, TValue>
+[TypeShape(Marshaler = typeof(GenericDictionaryWithMarshaler<,>.Marshaler))]
+public class GenericDictionaryWithMarshaler<TKey, TValue> : Dictionary<TKey, TValue>
     where TKey : notnull
 {
-    public sealed class Marshaller : IMarshaller<GenericDictionaryWithMarshaller<TKey, TValue>, KeyValuePair<TKey, TValue>[]>
+    public sealed class Marshaler : IMarshaler<GenericDictionaryWithMarshaler<TKey, TValue>, KeyValuePair<TKey, TValue>[]>
     {
-        public KeyValuePair<TKey, TValue>[]? ToSurrogate(GenericDictionaryWithMarshaller<TKey, TValue>? value) =>
+        public KeyValuePair<TKey, TValue>[]? Marshal(GenericDictionaryWithMarshaler<TKey, TValue>? value) =>
             value?.ToArray();
 
-        public GenericDictionaryWithMarshaller<TKey, TValue>? FromSurrogate(KeyValuePair<TKey, TValue>[]? surrogate)
+        public GenericDictionaryWithMarshaler<TKey, TValue>? Unmarshal(KeyValuePair<TKey, TValue>[]? surrogate)
         {
             if (surrogate is null)
             {
                 return null;
             }
 
-            GenericDictionaryWithMarshaller<TKey, TValue> result = new();
+            GenericDictionaryWithMarshaler<TKey, TValue> result = new();
             foreach (var pair in surrogate)
             {
                 result[pair.Key] = pair.Value;
@@ -3128,9 +3128,9 @@ public partial class RpcService
 [GenerateShapeFor<GenericStructWithPrivateIncludedMembers<int>>]
 [GenerateShapeFor<GenericStructWithPrivateIncludedMembers<string>>]
 [GenerateShapeFor<EnumWithRecordSurrogate>]
-[GenerateShapeFor<TypeWithGenericMarshaller<int>>]
-[GenerateShapeFor<TypeWithGenericMarshaller<string>>]
-[GenerateShapeFor<GenericDictionaryWithMarshaller<string, int>>]
+[GenerateShapeFor<TypeWithGenericMarshaler<int>>]
+[GenerateShapeFor<TypeWithGenericMarshaler<string>>]
+[GenerateShapeFor<GenericDictionaryWithMarshaler<string, int>>]
 [GenerateShapeFor<GenericTree<string>>]
 [GenerateShapeFor<GenericTree<int>>]
 [GenerateShapeFor<IAsyncEnumerable<int>>]

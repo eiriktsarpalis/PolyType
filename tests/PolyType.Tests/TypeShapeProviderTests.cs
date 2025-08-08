@@ -19,8 +19,8 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
 
         Assert.Equal(typeof(T), shape.Type);
         Assert.Equal(typeof(T), shape.AttributeProvider);
-        Assert.Equal(typeof(T).IsRecordType() && testCase is { UsesMarshaller: false, IsUnion: false }, shape is IObjectTypeShape { IsRecordType: true });
-        Assert.Equal(typeof(T).IsTupleType() && testCase is { UsesMarshaller: false, IsUnion: false }, shape is IObjectTypeShape { IsTupleType: true });
+        Assert.Equal(typeof(T).IsRecordType() && testCase is { UsesMarshaler: false, IsUnion: false }, shape is IObjectTypeShape { IsRecordType: true });
+        Assert.Equal(typeof(T).IsTupleType() && testCase is { UsesMarshaler: false, IsUnion: false }, shape is IObjectTypeShape { IsTupleType: true });
 
         Assert.Same(providerUnderTest.Provider, shape.Provider);
         Assert.Same(shape, shape.Provider.GetShape(shape.Type));
@@ -35,7 +35,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                 return kind;
             }
 
-            if (testCase.UsesMarshaller)
+            if (testCase.UsesMarshaler)
             {
                 return TypeShapeKind.Surrogate;
             }
@@ -304,16 +304,16 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
     {
         public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
         {
-            Type? marshallerType = typeof(T).GetCustomAttribute<TypeShapeAttribute>()?.Marshaller;
-            Assert.NotNull(marshallerType);
-            if (marshallerType.IsGenericTypeDefinition)
+            Type? MarshalerType = typeof(T).GetCustomAttribute<TypeShapeAttribute>()?.Marshaler;
+            Assert.NotNull(MarshalerType);
+            if (MarshalerType.IsGenericTypeDefinition)
             {
-                marshallerType = marshallerType.MakeGenericType(typeof(T).GetGenericArguments());
+                MarshalerType = MarshalerType.MakeGenericType(typeof(T).GetGenericArguments());
             }
 
             Assert.Equal(typeof(T), surrogateShape.Type);
             Assert.Equal(typeof(TSurrogate), surrogateShape.SurrogateType.Type);
-            Assert.IsType(marshallerType, surrogateShape.Marshaller);
+            Assert.IsType(MarshalerType, surrogateShape.Marshaler);
             return null;
         }
     }
@@ -1125,38 +1125,38 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
     private class ClassWithSurrogateKind;
 
     [Theory]
-    [InlineData(typeof(ClassWithInvalidMarshaller))]
-    [InlineData(typeof(ClassWithMismatchingMarshaller))]
-    [InlineData(typeof(ClassWithConflictingMarshallers))]
-    public void ClassWithInvalidMarshallers_ThrowsInvalidOperationException(Type type)
+    [InlineData(typeof(ClassWithInvalidMarshaler))]
+    [InlineData(typeof(ClassWithMismatchingMarshaler))]
+    [InlineData(typeof(ClassWithConflictingMarshalers))]
+    public void ClassWithInvalidMarshalers_ThrowsInvalidOperationException(Type type)
     {
         var ex = Assert.Throws<InvalidOperationException>(() => Provider.GetShape(type));
         Assert.Contains("surrogate", ex.Message);
     }
 
-    [TypeShape(Marshaller = typeof(int))]
-    private class ClassWithInvalidMarshaller;
+    [TypeShape(Marshaler = typeof(int))]
+    private class ClassWithInvalidMarshaler;
 
-    [TypeShape(Marshaller = typeof(Marshaller))]
-    private class ClassWithMismatchingMarshaller
+    [TypeShape(Marshaler = typeof(Marshaler))]
+    private class ClassWithMismatchingMarshaler
     {
-        class Marshaller : IMarshaller<int, ClassWithMismatchingMarshaller>
+        class Marshaler : IMarshaler<int, ClassWithMismatchingMarshaler>
         {
-            public ClassWithMismatchingMarshaller? ToSurrogate(int value) => throw new NotImplementedException();
-            public int FromSurrogate(ClassWithMismatchingMarshaller? surrogate) => throw new NotImplementedException();
+            public ClassWithMismatchingMarshaler? Marshal(int value) => throw new NotImplementedException();
+            public int Unmarshal(ClassWithMismatchingMarshaler? surrogate) => throw new NotImplementedException();
         }
     }
 
-    [TypeShape(Marshaller = typeof(Marshaller))]
-    private class ClassWithConflictingMarshallers
+    [TypeShape(Marshaler = typeof(Marshaler))]
+    private class ClassWithConflictingMarshalers
     {
-        class Marshaller : IMarshaller<ClassWithConflictingMarshallers, int>,
-              IMarshaller<ClassWithConflictingMarshallers, string>
+        class Marshaler : IMarshaler<ClassWithConflictingMarshalers, int>,
+              IMarshaler<ClassWithConflictingMarshalers, string>
         {
-            public int ToSurrogate(ClassWithConflictingMarshallers? value) => throw new NotImplementedException();
-            public ClassWithConflictingMarshallers? FromSurrogate(string? surrogate) => throw new NotImplementedException();
-            public ClassWithConflictingMarshallers? FromSurrogate(int surrogate) => throw new NotImplementedException();
-            string? IMarshaller<ClassWithConflictingMarshallers, string>.ToSurrogate(ClassWithConflictingMarshallers? value) => throw new NotImplementedException();
+            public int Marshal(ClassWithConflictingMarshalers? value) => throw new NotImplementedException();
+            public ClassWithConflictingMarshalers? Unmarshal(string? surrogate) => throw new NotImplementedException();
+            public ClassWithConflictingMarshalers? Unmarshal(int surrogate) => throw new NotImplementedException();
+            string? IMarshaler<ClassWithConflictingMarshalers, string>.Marshal(ClassWithConflictingMarshalers? value) => throw new NotImplementedException();
         }
     }
 

@@ -268,13 +268,13 @@ public partial class DependencyInjectionTests
         public int Value { get; }
     }
 
-    [GenerateShape, TypeShape(Marshaller = typeof(Marshaller))]
+    [GenerateShape, TypeShape(Marshaler = typeof(Marshaler))]
     public partial record ClassWithSurrogate(int Value)
     {
-        public sealed class Marshaller : IMarshaller<ClassWithSurrogate, IFoo>
+        public sealed class Marshaler : IMarshaler<ClassWithSurrogate, IFoo>
         {
-            public ClassWithSurrogate? FromSurrogate(IFoo? surrogate) => surrogate is null ? null : new ClassWithSurrogate(surrogate.Value);
-            public IFoo? ToSurrogate(ClassWithSurrogate? value) => value is null ? null : new FooImpl { Value = value.Value };
+            public ClassWithSurrogate? Unmarshal(IFoo? surrogate) => surrogate is null ? null : new ClassWithSurrogate(surrogate.Value);
+            public IFoo? Marshal(ClassWithSurrogate? value) => value is null ? null : new FooImpl { Value = value.Value };
         }
     }
 

@@ -15,14 +15,14 @@ public class TypeShapeExtensionAnalyzerTests
             using System.Drawing;
             using PolyType;
 
-            [assembly: TypeShapeExtension(typeof(Point), Marshaller = typeof(PointMarshaller))]
-            [assembly: TypeShapeExtension(typeof(Point), Marshaller = {|PT0018:typeof(PointMarshaller2)|})]
+            [assembly: TypeShapeExtension(typeof(Point), Marshaler = typeof(PointMarshaler))]
+            [assembly: TypeShapeExtension(typeof(Point), Marshaler = {|PT0018:typeof(PointMarshaler2)|})]
 
-            public class PointMarshaller : IMarshaller<Point, PointMarshaller.PointSurrogate>
+            public class PointMarshaler : IMarshaler<Point, PointMarshaler.PointSurrogate>
             {
-                public Point FromSurrogate(PointSurrogate surrogate) => throw new System.NotImplementedException();
+                public Point Unmarshal(PointSurrogate value) => throw new System.NotImplementedException();
 
-                public PointSurrogate ToSurrogate(Point value) => throw new System.NotImplementedException();
+                public PointSurrogate Marshal(Point value) => throw new System.NotImplementedException();
 
                 public struct PointSurrogate
                 {
@@ -32,11 +32,11 @@ public class TypeShapeExtensionAnalyzerTests
                 }
             }
 
-            public class PointMarshaller2: IMarshaller<Point, PointMarshaller2.PointSurrogate>
+            public class PointMarshaler2: IMarshaler<Point, PointMarshaler2.PointSurrogate>
             {
-                public Point FromSurrogate(PointSurrogate surrogate) => throw new System.NotImplementedException();
+                public Point Unmarshal(PointSurrogate value) => throw new System.NotImplementedException();
 
-                public PointSurrogate ToSurrogate(Point value) => throw new System.NotImplementedException();
+                public PointSurrogate Marshal(Point value) => throw new System.NotImplementedException();
 
                 public struct PointSurrogate
                 {
@@ -60,14 +60,14 @@ public class TypeShapeExtensionAnalyzerTests
             using System.Drawing;
             using PolyType;
 
-            [assembly: TypeShapeExtension(typeof(Point), Marshaller = typeof(PointMarshaller))]
-            [assembly: TypeShapeExtension(typeof(Size), Marshaller = typeof(SizeMarshaller))]
+            [assembly: TypeShapeExtension(typeof(Point), Marshaler = typeof(PointMarshaler))]
+            [assembly: TypeShapeExtension(typeof(Size), Marshaler = typeof(SizeMarshaler))]
 
-            public class PointMarshaller : IMarshaller<Point, PointMarshaller.PointSurrogate>
+            public class PointMarshaler : IMarshaler<Point, PointMarshaler.PointSurrogate>
             {
-                public Point FromSurrogate(PointSurrogate surrogate) => throw new System.NotImplementedException();
+                public Point Unmarshal(PointSurrogate value) => throw new System.NotImplementedException();
 
-                public PointSurrogate ToSurrogate(Point value) => throw new System.NotImplementedException();
+                public PointSurrogate Marshal(Point value) => throw new System.NotImplementedException();
 
                 public struct PointSurrogate
                 {
@@ -77,11 +77,11 @@ public class TypeShapeExtensionAnalyzerTests
                 };
             }
 
-            public class SizeMarshaller: IMarshaller<Size, SizeMarshaller.SizeSurrogate>
+            public class SizeMarshaler: IMarshaler<Size, SizeMarshaler.SizeSurrogate>
             {
-                public Size FromSurrogate(SizeSurrogate surrogate) => throw new System.NotImplementedException();
+                public Size Unmarshal(SizeSurrogate value) => throw new System.NotImplementedException();
 
-                public SizeSurrogate ToSurrogate(Size value) => throw new System.NotImplementedException();
+                public SizeSurrogate Marshal(Size value) => throw new System.NotImplementedException();
 
                 public struct SizeSurrogate
                 {
@@ -106,14 +106,14 @@ public class TypeShapeExtensionAnalyzerTests
             using System.Drawing;
             using PolyType;
 
-            [assembly: TypeShapeExtension(typeof(Point), Marshaller = typeof(PointMarshaller))]
+            [assembly: TypeShapeExtension(typeof(Point), Marshaler = typeof(PointMarshaler))]
             [assembly: TypeShapeExtension(typeof(Point), AssociatedTypes = new Type[] { typeof(SomeOtherType) })]
 
-            public class PointMarshaller : IMarshaller<Point, PointMarshaller.PointSurrogate>
+            public class PointMarshaler : IMarshaler<Point, PointMarshaler.PointSurrogate>
             {
-                public Point FromSurrogate(PointSurrogate surrogate) => throw new System.NotImplementedException();
+                public Point Unmarshal(PointSurrogate value) => throw new System.NotImplementedException();
 
-                public PointSurrogate ToSurrogate(Point value) => throw new System.NotImplementedException();
+                public PointSurrogate Marshal(Point value) => throw new System.NotImplementedException();
 
                 public struct PointSurrogate
                 {

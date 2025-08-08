@@ -519,7 +519,7 @@ public static class DiagnosticTests
     [InlineData("""
         using PolyType;
 
-        [GenerateShape, TypeShape(Marshaller = typeof(int))]
+        [GenerateShape, TypeShape(Marshaler = typeof(int))]
         partial class MyPoco { }
         """)]
     [InlineData("""
@@ -531,61 +531,61 @@ public static class DiagnosticTests
     [InlineData("""
         using PolyType;
 
-        [GenerateShape, TypeShape(Marshaller = typeof(Marshaller))]
+        [GenerateShape, TypeShape(Marshaler = typeof(Marshaler))]
         partial class MyPoco
         {
-            private class Marshaller : IMarshaller<MyPoco, object>
+            private class Marshaler : IMarshaler<MyPoco, object>
             {
-                public object? ToSurrogate(MyPoco? source) => source;
-                public MyPoco? FromSurrogate(object? value) => (MyPoco?)value;
+                public object? Marshal(MyPoco? source) => source;
+                public MyPoco? Unmarshal(object? value) => (MyPoco?)value;
             }
         }
         """)]
     [InlineData("""
          using PolyType;
 
-         [GenerateShape, TypeShape(Marshaller = typeof(Marshaller))]
+         [GenerateShape, TypeShape(Marshaler = typeof(Marshaler))]
          public partial class MyPoco
          {
-             public class Marshaller : IMarshaller<MyPoco, object>
+             public class Marshaler : IMarshaler<MyPoco, object>
              {
-                 private Marshaller() { }
-                 public object? ToSurrogate(MyPoco? source) => source;
-                 public MyPoco? FromSurrogate(object? value) => (MyPoco?)value;
+                 private Marshaler() { }
+                 public object? Marshal(MyPoco? source) => source;
+                 public MyPoco? Unmarshal(object? value) => (MyPoco?)value;
              }
          }
          """)]
     [InlineData("""
         using PolyType;
 
-        [GenerateShape, TypeShape(Marshaller = typeof(Marshaller))]
+        [GenerateShape, TypeShape(Marshaler = typeof(Marshaler))]
         public partial class MyPoco
         {
-            public class Marshaller : IMarshaller<int, object>
+            public class Marshaler : IMarshaler<int, object>
             {
-                public object? ToSurrogate(int source) => null;
-                public int FromSurrogate(object? value) => 0;
+                public object? Marshal(int source) => null;
+                public int Unmarshal(object? value) => 0;
             }
         }
         """)]
     [InlineData("""
         using PolyType;
 
-        [GenerateShape, TypeShape(Marshaller = typeof(Marshaller))]
+        [GenerateShape, TypeShape(Marshaler = typeof(Marshaler))]
         public partial class MyPoco
         {
-            public class Marshaller :
-                IMarshaller<MyPoco, object>,
-                IMarshaller<MyPoco, int>
+            public class Marshaler :
+                IMarshaler<MyPoco, object>,
+                IMarshaler<MyPoco, int>
             {
-                public object? ToSurrogate(MyPoco? source) => null;
-                public MyPoco? FromSurrogate(object? value) => null;
-                int IMarshaller<MyPoco, int>.ToSurrogate(MyPoco? source) => 0;
-                MyPoco? IMarshaller<MyPoco, int>.FromSurrogate(int value) => null;
+                public object? Marshal(MyPoco? source) => null;
+                public MyPoco? Unmarshal(object? value) => null;
+                int IMarshaler<MyPoco, int>.Marshal(MyPoco? source) => 0;
+                MyPoco? IMarshaler<MyPoco, int>.Unmarshal(int value) => null;
             }
         }
         """)]
-    public static void InvalidMarshaller_ErrorDiagnostic(string source)
+    public static void InvalidMarshaler_ErrorDiagnostic(string source)
     {
         Compilation compilation = CompilationHelpers.CreateCompilation(source);
         Assert.Empty(compilation.GetDiagnostics(TestContext.Current.CancellationToken));
@@ -599,18 +599,18 @@ public static class DiagnosticTests
     }
 
     [Fact]
-    public static void ValidMarshaller_NoDiagnostic()
+    public static void ValidMarshaler_NoDiagnostic()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            [GenerateShape, TypeShape(Marshaller = typeof(Marshaller))]
+            [GenerateShape, TypeShape(Marshaler = typeof(Marshaler))]
             public partial class MyPoco
             {
-                public class Marshaller : IMarshaller<MyPoco, object>
+                public class Marshaler : IMarshaler<MyPoco, object>
                 {
-                    public object? ToSurrogate(MyPoco? source) => source;
-                    public MyPoco? FromSurrogate(object? value) => (MyPoco?)value;
+                    public object? Marshal(MyPoco? source) => source;
+                    public MyPoco? Unmarshal(object? value) => (MyPoco?)value;
                 }
             }
             """);
@@ -625,13 +625,13 @@ public static class DiagnosticTests
     [InlineData("""
         using PolyType;
 
-        [TypeShape(Marshaller = typeof(Marshaller<>))]
+        [TypeShape(Marshaler = typeof(Marshaler<>))]
         public record MyPoco<T>(T Value);
 
-        public class Marshaller<T> : IMarshaller<MyPoco<T>, T>
+        public class Marshaler<T> : IMarshaler<MyPoco<T>, T>
         {
-            public T? ToSurrogate(MyPoco<T>? source) => source is null ? default : source.Value;
-            public MyPoco<T>? FromSurrogate(T? value) => value is null ? null : new(value);
+            public T? Marshal(MyPoco<T>? source) => source is null ? default : source.Value;
+            public MyPoco<T>? Unmarshal(T? value) => value is null ? null : new(value);
         }
 
         [GenerateShapeFor(typeof(MyPoco<int>))]
@@ -640,13 +640,13 @@ public static class DiagnosticTests
     [InlineData("""
         using PolyType;
 
-        [TypeShape(Marshaller = typeof(MyPoco<>.Marshaller))]
+        [TypeShape(Marshaler = typeof(MyPoco<>.Marshaler))]
         public record MyPoco<T>(T Value)
         {
-            public class Marshaller : IMarshaller<MyPoco<T>, T>
+            public class Marshaler : IMarshaler<MyPoco<T>, T>
             {
-                public T? ToSurrogate(MyPoco<T>? source) => source is null ? default : source.Value;
-                public MyPoco<T>? FromSurrogate(T? value) => value is null ? null : new(value);
+                public T? Marshal(MyPoco<T>? source) => source is null ? default : source.Value;
+                public MyPoco<T>? Unmarshal(T? value) => value is null ? null : new(value);
             }
         }
 
@@ -656,17 +656,17 @@ public static class DiagnosticTests
     [InlineData("""
         using PolyType;
 
-        [TypeShape(Marshaller = typeof(Container<>.Container2.Marshaller<>))]
+        [TypeShape(Marshaler = typeof(Container<>.Container2.Marshaler<>))]
         public record MyPoco<T1, T2>(T1 Value1, T2 Value2);
 
         public static class Container<T1>
         {
             public class Container2
             {
-                public class Marshaller<T2> : IMarshaller<MyPoco<T1, T2>, (T1, T2)>
+                public class Marshaler<T2> : IMarshaler<MyPoco<T1, T2>, (T1, T2)>
                 {
-                    public (T1, T2) ToSurrogate(MyPoco<T1, T2>? source) => source is null ? default : (source.Value1, source.Value2);
-                    public MyPoco<T1, T2>? FromSurrogate((T1, T2) pair) => new(pair.Item1, pair.Item2);
+                    public (T1, T2) Marshal(MyPoco<T1, T2>? source) => source is null ? default : (source.Value1, source.Value2);
+                    public MyPoco<T1, T2>? Unmarshal((T1, T2) pair) => new(pair.Item1, pair.Item2);
                 }
             }
         }
@@ -674,7 +674,7 @@ public static class DiagnosticTests
         [GenerateShapeFor(typeof(MyPoco<int, string>))]
         public partial class Witness { }
         """)]
-    public static void ValidGenericMarshaller_NoDiagnostic(string source)
+    public static void ValidGenericMarshaler_NoDiagnostic(string source)
     {
         Compilation compilation = CompilationHelpers.CreateCompilation(source);
 

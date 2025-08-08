@@ -8,9 +8,7 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TUnion">The type whose shape is described.</typeparam>
 public sealed class SourceGenUnionTypeShape<TUnion> : SourceGenTypeShape<TUnion>, IUnionTypeShape<TUnion>
 {
-    /// <summary>
-    /// Gets the underlying type shape of the union base type.
-    /// </summary>
+    /// <inheritdoc/>
     public required ITypeShape<TUnion> BaseType { get; init; }
 
     /// <summary>

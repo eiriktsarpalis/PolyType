@@ -151,7 +151,7 @@ public static partial class CborSerializer
         public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state)
         {
             CborConverter<TSurrogate> surrogateConverter = GetOrAddConverter(surrogateShape.SurrogateType);
-            return new CborSurrogateConverter<T, TSurrogate>(surrogateShape.Marshaller, surrogateConverter);
+            return new CborSurrogateConverter<T, TSurrogate>(surrogateShape.Marshaler, surrogateConverter);
         }
 
         public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state)
@@ -173,7 +173,7 @@ public static partial class CborSerializer
         {
             // NB: don't use the cached converter for TUnionCase, as it might equal TUnion.
             var caseConverter = (CborConverter<TUnionCase>)unionCaseShape.Type.Invoke(this)!;
-            return new CborUnionCaseConverter<TUnionCase, TUnion>(caseConverter);
+            return new CborUnionCaseConverter<TUnionCase, TUnion>(caseConverter, unionCaseShape.Marshaler);
         }
 
         private static readonly Dictionary<Type, CborConverter> s_builtInConverters = new CborConverter[]
