@@ -1,5 +1,4 @@
 using PolyType.Examples.StructuralEquality;
-using TUnit.Core;
 
 namespace PolyType.Tests.NativeAOT;
 

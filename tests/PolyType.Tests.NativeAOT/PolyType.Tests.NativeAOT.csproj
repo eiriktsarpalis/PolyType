@@ -4,9 +4,23 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
     <PublishAot>true</PublishAot>
+    <UseCurrentRuntimeIdentifier>true</UseCurrentRuntimeIdentifier>
+    <!-- https://github.com/thomhurst/TUnit/issues/2410 -->
+    <NoWarn>($NoWarn);IL2026;IL3053;IL2104;IL3000</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(SkipTUnitTestRuns)' == 'true'">
+    <!-- TUnit doesn't like it when run together with other xunit projects & codecov enabled -->
+    <DefineConstants>$(DefineConstants);POLYFILL_TUNIT_CORE</DefineConstants>
+    <OutputType>Library</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="TUnit.Assertions" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(SkipTUnitTestRuns)' != 'true'">
+    <!-- TUnit doesn't like it when run together with other xunit projects & codecov enabled -->
     <PackageReference Include="TUnit" />
     <PackageReference Include="TUnit.Engine" />
   </ItemGroup>
