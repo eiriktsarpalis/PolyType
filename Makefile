@@ -34,7 +34,7 @@ test: build
 
 test-aot: build
 	dotnet publish $(SOURCE_DIRECTORY)/tests/PolyType.Tests.NativeAOT/PolyType.Tests.NativeAOT.csproj \
-		--configuration $(CONFIGURATION) $(ADDITIONAL_ARGS) \
+		$(ADDITIONAL_ARGS) \
 		-o $(ARTIFACT_PATH)/native-aot-tests
 
 	$(ARTIFACT_PATH)/native-aot-tests/PolyType.Tests.NativeAOT
