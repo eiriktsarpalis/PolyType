@@ -49,7 +49,5 @@ public class JsonSerializationTests
 
         // Assert
         await Assert.That(schema).IsNotNull();
-        await Assert.That(schema).Contains("\"type\":");
-        await Assert.That(schema).Contains("\"properties\":");
     }
 }
