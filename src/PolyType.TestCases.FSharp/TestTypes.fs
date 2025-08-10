@@ -107,3 +107,8 @@ with
         Lam("f", App(
             Lam ("x", App(Var "f", App(Var "x", Var "x"))),
             Lam ("x", App(Var "f", App(Var "x", Var "x")))))
+
+[<CompilationRepresentation(CompilationRepresentationFlags.UseNullAsTrueValue)>]
+type NullaryUnion =
+    | A
+    | B of int

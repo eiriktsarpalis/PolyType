@@ -621,6 +621,7 @@ public static class TestTypes
         yield return TestCase.Create(FSharpSingleCaseStructUnion.NewCase(42), isUnion: true, provider: p);
         yield return TestCase.Create(GenericFSharpStructUnion<string>.NewA("str"), additionalValues: [GenericFSharpStructUnion<string>.B, GenericFSharpStructUnion<string>.NewC(42)], isUnion: true, provider: p);
         yield return TestCase.Create(FSharpExpr.True, additionalValues: [FSharpExpr.False, FSharpExpr.Y], isUnion: true, provider: p);
+        yield return TestCase.Create(NullaryUnion.A, additionalValues: [NullaryUnion.NewB(42)], isUnion: true, provider: p);
 
         // RPC types
         yield return TestCase.Create(new ClassWithMethodShapes());
@@ -3160,5 +3161,6 @@ public partial class RpcService
 [GenerateShapeFor<GenericFSharpStructUnion<string>>]
 [GenerateShapeFor<FSharpResult<string, int>>]
 [GenerateShapeFor<FSharpExpr>]
+[GenerateShapeFor<NullaryUnion>]
 [GenerateShapeFor<ExpandoObject>]
 public partial class Witness;
