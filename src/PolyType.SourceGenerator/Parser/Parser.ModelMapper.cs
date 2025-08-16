@@ -218,16 +218,17 @@ public sealed partial class Parser
         };
     }
 
-    private TypeExtensionModel? GetExtensionModel(ITypeSymbol symbol)
+    private TypeExtensionModel? GetExtensionModel(ITypeSymbol type)
     {
-        if (symbol is INamedTypeSymbol namedType && (
-            _typeShapeExtensions.TryGetValue(namedType, out TypeExtensionModel? extensionModel) ||
-            (namedType.IsGenericType && _typeShapeExtensions.TryGetValue(namedType.ConstructUnboundGenericType(), out extensionModel))))
+        _typeShapeExtensions.TryGetValue(type, out TypeExtensionModel? exactMatch);
+
+        TypeExtensionModel? genericTypeMatch = null;
+        if (type is INamedTypeSymbol { IsGenericType: true } namedType)
         {
-            return extensionModel;
+            _typeShapeExtensions.TryGetValue(namedType.ConstructUnboundGenericType(), out genericTypeMatch);
         }
 
-        return null;
+        return TypeExtensionModel.Combine(primary: exactMatch, secondary: genericTypeMatch);
     }
 
     private ImmutableEquatableSet<AssociatedTypeId> CollectAssociatedTypes(TypeDataModel model)

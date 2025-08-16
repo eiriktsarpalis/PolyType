@@ -1219,7 +1219,7 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
     }
 }
 
-public sealed class TypeShapeProviderTests_SourceGen() : TypeShapeProviderTests(SourceGenProviderUnderTest.Default)
+public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProviderTests(SourceGenProviderUnderTest.Default)
 {
     [Fact]
     public void WitnessType_ShapeProvider_IsSingleton()
@@ -1249,4 +1249,109 @@ public sealed class TypeShapeProviderTests_SourceGen() : TypeShapeProviderTests(
         Assert.Same(Provider.GetShape(typeof(T)), TProvider.GetShape());
     }
 #endif
+
+    [Fact]
+    public void GenerateShape_CanConfigureMarshaler()
+    {
+        ITypeShape<ClassWithMarshaler> typeShape = LocalWitness.ShapeProvider.Resolve<ClassWithMarshaler>();
+        var surrogateShape = Assert.IsType<ISurrogateTypeShape<ClassWithMarshaler, int>>(typeShape, exactMatch: false);
+        Assert.Equal(TypeShapeKind.Surrogate, typeShape.Kind);
+        Assert.IsType<ClassWithMarshaler.Marshaler>(surrogateShape.Marshaler);
+
+        // Because we're configuring through GenerateShape, this does not flow through to the reflection provider.
+        ITypeShape reflectionShape = ReflectionTypeShapeProvider.Default.Resolve<ClassWithMarshaler>();
+        Assert.NotEqual(TypeShapeKind.Surrogate, reflectionShape.Kind);
+    }
+
+    [Fact]
+    public void GenerateShape_CanConfigureMethods()
+    {
+        ITypeShape<ClassWithMethod> typeShape = LocalWitness.ShapeProvider.Resolve<ClassWithMethod>();
+        var method = Assert.Single(typeShape.Methods);
+        Assert.Equal("Add", method.Name);
+    }
+
+    [Fact]
+    public void GenerateShape_CanConfigureKind()
+    {
+        ITypeShape<ClassWithTrivialShape> typeShape = LocalWitness.ShapeProvider.Resolve<ClassWithTrivialShape>();
+        var objectShape = Assert.IsType<IObjectTypeShape<ClassWithTrivialShape>>(typeShape, exactMatch: false);
+        Assert.Empty(objectShape.Properties);
+        Assert.Null(objectShape.Constructor);
+    }
+
+    [Fact]
+    public void GenerateShapeFor_CanConfigureMarshaler()
+    {
+        ITypeShape<ClassWithMarshalerExternal> typeShape = LocalWitness.ShapeProvider.Resolve<ClassWithMarshalerExternal>();
+        var surrogateShape = Assert.IsType<ISurrogateTypeShape<ClassWithMarshalerExternal, int>>(typeShape, exactMatch: false);
+        Assert.Equal(TypeShapeKind.Surrogate, typeShape.Kind);
+        Assert.IsType<ClassWithMarshalerExternal.Marshaler>(surrogateShape.Marshaler);
+
+        // Because we're configuring through GenerateShapeFor, this does not flow through to the reflection provider.
+        ITypeShape reflectionShape = ReflectionTypeShapeProvider.Default.Resolve<ClassWithMarshalerExternal>();
+        Assert.NotEqual(TypeShapeKind.Surrogate, reflectionShape.Kind);
+    }
+
+    [Fact]
+    public void GenerateShapeFor_CanConfigureMethods()
+    {
+        ITypeShape<ClassWithMethodExternal> typeShape = LocalWitness.ShapeProvider.Resolve<ClassWithMethodExternal>();
+        var method = Assert.Single(typeShape.Methods);
+        Assert.Equal("Add", method.Name);
+    }
+
+    [Fact]
+    public void GenerateShapeFor_CanConfigureKind()
+    {
+        ITypeShape<ClassWithTrivialShapeExternal> typeShape = LocalWitness.ShapeProvider.Resolve<ClassWithTrivialShapeExternal>();
+        var objectShape = Assert.IsType<IObjectTypeShape<ClassWithTrivialShapeExternal>>(typeShape, exactMatch: false);
+        Assert.Empty(objectShape.Properties);
+        Assert.Null(objectShape.Constructor);
+    }
+
+
+    [GenerateShape(Marshaler = typeof(Marshaler))]
+    public partial class ClassWithMarshaler
+    {
+        public int Value { get; set; }
+
+        public sealed class Marshaler : IMarshaler<ClassWithMarshaler, int>
+        {
+            public int Marshal(ClassWithMarshaler? value) => value?.Value ?? 0;
+            public ClassWithMarshaler? Unmarshal(int value) => new() { Value = value };
+        }
+    }
+
+    [GenerateShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+    public partial class ClassWithMethod
+    {
+        public int Add(int x, int y) => x + y;
+    }
+
+    [GenerateShape(Kind = TypeShapeKind.None)]
+    public partial record ClassWithTrivialShape(int x, string y);
+
+    public partial class ClassWithMarshalerExternal
+    {
+        public int Value { get; set; }
+
+        public sealed class Marshaler : IMarshaler<ClassWithMarshalerExternal, int>
+        {
+            public int Marshal(ClassWithMarshalerExternal? value) => value?.Value ?? 0;
+            public ClassWithMarshalerExternal? Unmarshal(int value) => new() { Value = value };
+        }
+    }
+
+    public partial class ClassWithMethodExternal
+    {
+        public int Add(int x, int y) => x + y;
+    }
+
+    public partial record ClassWithTrivialShapeExternal(int x, string y);
+
+    [GenerateShapeFor<ClassWithMarshalerExternal>(Marshaler = typeof(ClassWithMarshalerExternal.Marshaler))]
+    [GenerateShapeFor(typeof(ClassWithMethodExternal), IncludeMethods = MethodShapeFlags.PublicInstance)]
+    [GenerateShapeFor(typeof(ClassWithTrivialShapeExternal), Kind = TypeShapeKind.None)]
+    public partial class LocalWitness;
 }

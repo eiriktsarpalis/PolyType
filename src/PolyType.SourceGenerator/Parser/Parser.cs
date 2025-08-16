@@ -42,40 +42,71 @@ public sealed partial class Parser : TypeDataModelGenerator
             return null;
         }
 
-        (Dictionary<ITypeSymbol, TypeExtensionModel> typeShapeExtensions, IReadOnlyList<EquatableDiagnostic> extensionDiagnostics) =
-            DiscoverTypeShapeExtensions(knownSymbols, cancellationToken);
+        Dictionary<ITypeSymbol, TypeExtensionModel> typeShapeExtensions = DiscoverTypeShapeExtensions(generateShapeDeclarations, knownSymbols, cancellationToken);
         Parser parser = new(knownSymbols.Compilation.Assembly, typeShapeExtensions, knownSymbols, cancellationToken);
-        parser.Diagnostics.AddRange(extensionDiagnostics);
         TypeDeclarationModel shapeProviderDeclaration = CreateShapeProviderDeclaration(knownSymbols.Compilation);
         ImmutableEquatableArray<TypeDeclarationModel> generateShapeTypes = parser.IncludeTypesUsingGenerateShapeAttributes(generateShapeDeclarations);
         return parser.ExportTypeShapeProviderModel(shapeProviderDeclaration, generateShapeTypes);
     }
 
-    private static (Dictionary<ITypeSymbol, TypeExtensionModel> extensions, IReadOnlyList<EquatableDiagnostic> diagnostics) DiscoverTypeShapeExtensions(PolyTypeKnownSymbols knownSymbols, CancellationToken cancellationToken)
+    private static Dictionary<ITypeSymbol, TypeExtensionModel> DiscoverTypeShapeExtensions(
+        ImmutableArray<TypeWithAttributeDeclarationContext> generateShapeDeclarations,
+        PolyTypeKnownSymbols knownSymbols,
+        CancellationToken cancellationToken)
     {
-        List<EquatableDiagnostic> diagnostics = new();
         Dictionary<ITypeSymbol, TypeExtensionModel> typeShapeExtensions = new(SymbolEqualityComparer.Default);
 
         // The compilation itself.
-        DiscoverTypeShapeExtensionsInAssembly(knownSymbols.Compilation.Assembly);
+        DiscoverTypeShapeExtensionsInAssembly(knownSymbols.Compilation.Assembly, isCurrentCompilation: true);
 
         // Full referenced assemblies.
         foreach (MetadataReference metadataReference in knownSymbols.Compilation.References)
         {
             if (knownSymbols.Compilation.GetAssemblyOrModuleSymbol(metadataReference) is IAssemblySymbol referencedAssembly)
             {
-                DiscoverTypeShapeExtensionsInAssembly(referencedAssembly);
+                DiscoverTypeShapeExtensionsInAssembly(referencedAssembly, isCurrentCompilation: false);
             }
         }
 
         // In combining extensions from multiple sources, type extensions may be merged.
-        // Non-mergeable details (e.g. the marshaler to use) will be resolved by preferring the first definition found.
-        // We always scan the compilation itself first, so the project always has the ability to resolve a conflict by defining the attribute directly.
-        return (typeShapeExtensions, diagnostics);
+        // Non-mergeable details (e.g. the marshaler to use) will be resolved by preferring
+        // the first definition found. We always scan the compilation itself first, so the
+        // project always has the ability to resolve a conflict by defining the attribute directly.
+        return typeShapeExtensions;
 
-        void DiscoverTypeShapeExtensionsInAssembly(IAssemblySymbol assemblySymbol)
+        void DiscoverTypeShapeExtensionsInAssembly(IAssemblySymbol assembly, bool isCurrentCompilation)
         {
-            foreach (AttributeData attribute in assemblySymbol.GetAttributes())
+            if (isCurrentCompilation)
+            {
+                // If processing the current compilation, also incorporate all configuration from
+                // the [GenerateShape(For)] attributes applied to types in the compilation.
+                foreach (TypeWithAttributeDeclarationContext typeWithAttr in generateShapeDeclarations)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    foreach (AttributeData attributeData in typeWithAttr.TypeSymbol.GetAttributes())
+                    {
+                        if (SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, knownSymbols.GenerateShapeAttribute))
+                        {
+                            ProcessExtensionAttribute(typeWithAttr.TypeSymbol, attributeData, assembly);
+                        }
+                        else if (
+                            SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, knownSymbols.GenerateShapeForAttribute) &&
+                            attributeData.ConstructorArguments is [{ Kind: TypedConstantKind.Type, Value: ITypeSymbol nonGenericTypeArgument }])
+                        {
+                            ProcessExtensionAttribute(nonGenericTypeArgument, attributeData, assembly);
+                        }
+                        else if (
+                            attributeData.AttributeClass is { TypeArguments: [ITypeSymbol typeArgument] } &&
+                            SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass.ConstructedFrom, knownSymbols.GenerateShapeForAttributeOfT))
+                        {
+                            ProcessExtensionAttribute(typeArgument, attributeData, assembly);
+                        }
+                    }
+                }
+            }
+
+            foreach (AttributeData attribute in assembly.GetAttributes())
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 if (!SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, knownSymbols.TypeShapeExtensionAttribute))
@@ -83,78 +114,82 @@ public sealed partial class Parser : TypeDataModelGenerator
                     continue;
                 }
 
-                if (attribute.ConstructorArguments is not [{ Value: INamedTypeSymbol targetType }])
+                if (attribute.ConstructorArguments is not [{ Value: ITypeSymbol targetType }])
                 {
                     continue;
                 }
 
-                TypeShapeKind? kind = null;
-                MethodShapeFlags? includeMethodFlags = null;
-                TypeShapeRequirements requirements = TypeShapeRequirements.Full;
-                ImmutableArray<TypedConstant>? associatedTypesExpr = null;
-                INamedTypeSymbol? marshaler = null;
-                ImmutableArray<Location> locations = attribute.GetLocation() is Location loc
-                    ? ImmutableArray.Create(loc)
-                    : ImmutableArray<Location>.Empty;
-
-                foreach (KeyValuePair<string, TypedConstant> namedArgument in attribute.NamedArguments)
-                {
-                    switch (namedArgument.Key)
-                    {
-                        case "Kind":
-                            kind = (TypeShapeKind)namedArgument.Value.Value!;
-                            break;
-                        case "Marshaler":
-                            if (namedArgument.Value.Value is INamedTypeSymbol m)
-                            {
-                                marshaler = m;
-                            }
-                            break;
-                        case "IncludeMethods":
-                            includeMethodFlags = (MethodShapeFlags)namedArgument.Value.Value!;
-                            break;
-                        case "AssociatedTypes":
-                            associatedTypesExpr = namedArgument.Value.Values!;
-                            break;
-                        case "Requirements":
-                            requirements = (TypeShapeRequirements)namedArgument.Value.Value!;
-                            break;
-                    }
-                }
-
-                ImmutableArray<AssociatedTypeModel> associatedTypeModels;
-                if (associatedTypesExpr is not null)
-                {
-                    ImmutableArray<AssociatedTypeModel>.Builder builder = ImmutableArray.CreateBuilder<AssociatedTypeModel>(associatedTypesExpr?.Length ?? 0);
-                    foreach (TypedConstant tc in associatedTypesExpr ?? ImmutableArray<TypedConstant>.Empty)
-                    {
-                        if (tc.Value is INamedTypeSymbol associatedType)
-                        {
-                            builder.Add(new AssociatedTypeModel(associatedType, assemblySymbol, attribute.GetLocation(), requirements));
-                        }
-                    }
-
-                    associatedTypeModels = builder.ToImmutable();
-                }
-                else
-                {
-                    associatedTypeModels = ImmutableArray<AssociatedTypeModel>.Empty;
-                }
-
-                // Merge with any pre-existing models for the same type.
-                typeShapeExtensions.TryGetValue(targetType, out TypeExtensionModel? existing);
-                TypeExtensionModel extensionModel = new TypeExtensionModel
-                {
-                    Target = targetType,
-                    Kind = existing?.Kind ?? kind,
-                    IncludeMethods = includeMethodFlags,
-                    Marshaler = existing?.Marshaler ?? marshaler,
-                    AssociatedTypes = existing?.AssociatedTypes.AddRange(associatedTypeModels) ?? associatedTypeModels,
-                    Locations = existing?.Locations.AddRange(locations) ?? locations,
-                };
-
-                typeShapeExtensions[targetType] = extensionModel;
+                ProcessExtensionAttribute(targetType, attribute, assembly);
             }
+        }
+
+        void ProcessExtensionAttribute(ITypeSymbol targetType, AttributeData attribute, IAssemblySymbol assembly)
+        {
+            TypeShapeKind? kind = null;
+            MethodShapeFlags? includeMethodFlags = null;
+            TypeShapeRequirements requirements = TypeShapeRequirements.Full;
+            ImmutableArray<TypedConstant>? associatedTypesExpr = null;
+            INamedTypeSymbol? marshaler = null;
+            ImmutableArray<Location> locations = attribute.GetLocation() is Location loc
+                ? ImmutableArray.Create(loc)
+                : ImmutableArray<Location>.Empty;
+
+            foreach (KeyValuePair<string, TypedConstant> namedArgument in attribute.NamedArguments)
+            {
+                switch (namedArgument.Key)
+                {
+                    case "Kind":
+                        kind = (TypeShapeKind)namedArgument.Value.Value!;
+                        break;
+                    case "Marshaler":
+                        if (namedArgument.Value.Value is INamedTypeSymbol m)
+                        {
+                            marshaler = m;
+                        }
+                        break;
+                    case "IncludeMethods":
+                        includeMethodFlags = (MethodShapeFlags)namedArgument.Value.Value!;
+                        break;
+                    case "AssociatedTypes":
+                        associatedTypesExpr = namedArgument.Value.Values!;
+                        break;
+                    case "Requirements":
+                        requirements = (TypeShapeRequirements)namedArgument.Value.Value!;
+                        break;
+                }
+            }
+
+            ImmutableArray<AssociatedTypeModel> associatedTypeModels;
+            if (associatedTypesExpr is not null)
+            {
+                ImmutableArray<AssociatedTypeModel>.Builder builder = ImmutableArray.CreateBuilder<AssociatedTypeModel>(associatedTypesExpr?.Length ?? 0);
+                foreach (TypedConstant tc in associatedTypesExpr ?? ImmutableArray<TypedConstant>.Empty)
+                {
+                    if (tc.Value is INamedTypeSymbol associatedType)
+                    {
+                        builder.Add(new AssociatedTypeModel(associatedType, assembly, attribute.GetLocation(), requirements));
+                    }
+                }
+
+                associatedTypeModels = builder.ToImmutable();
+            }
+            else
+            {
+                associatedTypeModels = ImmutableArray<AssociatedTypeModel>.Empty;
+            }
+
+            // Merge with any pre-existing models for the same type.
+            typeShapeExtensions.TryGetValue(targetType, out TypeExtensionModel? existing);
+            TypeExtensionModel extensionModel = new()
+            {
+                Kind = existing?.Kind ?? kind,
+                IncludeMethods = includeMethodFlags,
+                Marshaler = existing?.Marshaler ?? marshaler,
+                AssociatedTypes = existing?.AssociatedTypes.AddRange(associatedTypeModels) ?? associatedTypeModels,
+                Locations = existing?.Locations.AddRange(locations) ?? locations,
+            };
+
+            typeShapeExtensions[targetType] = extensionModel;
         }
     }
 

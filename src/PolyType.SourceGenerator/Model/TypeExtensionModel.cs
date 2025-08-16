@@ -10,11 +10,6 @@ namespace PolyType.SourceGenerator.Model;
 internal sealed record TypeExtensionModel
 {
     /// <summary>
-    /// The target type of the extension.
-    /// </summary>
-    public required INamedTypeSymbol Target { get; init; }
-
-    /// <summary>
     /// The kind of type shape that should be generated for the <see cref="Target"/> type.
     /// </summary>
     public required TypeShapeKind? Kind { get; init; }
@@ -38,4 +33,24 @@ internal sealed record TypeExtensionModel
     /// Gets the locations of the <see cref="TypeShapeExtensionAttribute"/> attributes that target the <see cref="Target"/> type.
     /// </summary>
     public required ImmutableArray<Location> Locations { get; init; } = ImmutableArray<Location>.Empty;
+
+    /// <summary>
+    /// Creates a new <see cref="TypeExtensionModel"/> that combines two instances.
+    /// </summary>
+    public static TypeExtensionModel? Combine(TypeExtensionModel? primary, TypeExtensionModel? secondary)
+    {
+        if (primary is null || secondary is null)
+        {
+            return primary ?? secondary;
+        }
+
+        return new TypeExtensionModel
+        {
+            Kind = primary.Kind ?? secondary.Kind,
+            Marshaler = primary.Marshaler ?? secondary.Marshaler,
+            IncludeMethods = primary.IncludeMethods ?? secondary.IncludeMethods,
+            AssociatedTypes = primary.AssociatedTypes.AddRange(secondary.AssociatedTypes),
+            Locations = primary.Locations.AddRange(secondary.Locations)
+        };
+    }
 }
