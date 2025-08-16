@@ -284,7 +284,8 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     {
         if (partialShapesSupported)
         {
-            Exception ex = Assert.Throws<NotImplementedException>(partialThrows);
+            Exception ex = Assert.Throws<InvalidOperationException>(partialThrows);
+            Assert.Contains("TypeShapeRequirements", ex.Message);
             TestContext.Current.TestOutputHelper?.WriteLine(ex.ToString());
         }
         else
