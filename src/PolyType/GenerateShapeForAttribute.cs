@@ -21,13 +21,23 @@ namespace PolyType;
 /// <seealso cref="GenerateShapeAttribute"/>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
 [Conditional("NEVER")] // only the source generator uses this, and avoiding generic attributes avoid .NET Framework and Unity issues.
-public sealed class GenerateShapeForAttribute<T> : Attribute;
+public sealed class GenerateShapeForAttribute<T> : Attribute
+{
+    /// <inheritdoc cref="TypeShapeAttribute.Marshaler"/>
+    public Type? Marshaler { get; init; }
+
+    /// <inheritdoc cref="TypeShapeAttribute.Kind" />
+    public TypeShapeKind Kind { get; init; }
+
+    /// <inheritdoc cref="TypeShapeAttribute.IncludeMethods" />
+    public MethodShapeFlags IncludeMethods { get; init; }
+}
 
 /// <summary>
-/// Instructs the PolyType source generator to include <paramref name="type"/>
+/// Instructs the PolyType source generator to include <paramref name="target"/>
 /// in the <see cref="ITypeShapeProvider"/> that it generates.
 /// </summary>
-/// <param name="type">The type for which shape metadata will be generated. This must not be an open-generic type.</param>
+/// <param name="target">The type for which shape metadata will be generated. This must not be an open-generic type.</param>
 /// <remarks>
 /// <para>
 /// The source generator will include a static property in the annotated class pointing
@@ -35,13 +45,26 @@ public sealed class GenerateShapeForAttribute<T> : Attribute;
 /// </para>
 /// <para>
 /// For projects targeting .NET 8 or later, this additionally augments the class
-/// with an implementation of IShapeable for <paramref name="type"/>.
+/// with an implementation of IShapeable for <paramref name="target"/>.
 /// </para>
 /// </remarks>
 /// <seealso cref="GenerateShapeForAttribute{T}"/>
 /// <seealso cref="GenerateShapeAttribute"/>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
 [Conditional("NEVER")] // only the source generator uses this.
-#pragma warning disable CS9113 // Parameter is unread.
-public sealed class GenerateShapeForAttribute(Type type) : Attribute;
-#pragma warning restore CS9113 // Parameter is unread.
+public sealed class GenerateShapeForAttribute(Type target) : Attribute
+{
+    /// <summary>
+    /// Gets the target type being generated.
+    /// </summary>
+    public Type Target { get; } = target;
+
+    /// <inheritdoc cref="TypeShapeAttribute.Marshaler"/>
+    public Type? Marshaler { get; init; }
+
+    /// <inheritdoc cref="TypeShapeAttribute.Kind" />
+    public TypeShapeKind Kind { get; init; }
+
+    /// <inheritdoc cref="TypeShapeAttribute.IncludeMethods" />
+    public MethodShapeFlags IncludeMethods { get; init; }
+}

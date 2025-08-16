@@ -17,4 +17,14 @@ namespace PolyType;
 /// </remarks>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
 [Conditional("NEVER")] // only the source generator uses this.
-public sealed class GenerateShapeAttribute : Attribute;
+public sealed class GenerateShapeAttribute : Attribute
+{
+    /// <inheritdoc cref="TypeShapeAttribute.Marshaler"/>
+    public Type? Marshaler { get; init; }
+
+    /// <inheritdoc cref="TypeShapeAttribute.Kind" />
+    public TypeShapeKind Kind { get; init; }
+
+    /// <inheritdoc cref="TypeShapeAttribute.IncludeMethods" />
+    public MethodShapeFlags IncludeMethods { get; init; }
+}

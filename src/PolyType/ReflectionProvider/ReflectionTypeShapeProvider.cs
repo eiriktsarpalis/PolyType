@@ -359,7 +359,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
                 {
                     if (marshaler is not null && marshaler != extensionAttr.Marshaler)
                     {
-                        throw new InvalidOperationException($"Conflicting Marshalers for '{type}': '{marshaler}' vs '{extensionAttr.Marshaler}'.");
+                        throw new InvalidOperationException($"Conflicting marshalers for '{type}': '{marshaler}' vs '{extensionAttr.Marshaler}'.");
                     }
 
                     marshaler = extensionAttr.Marshaler;
