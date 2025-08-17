@@ -16,8 +16,8 @@ internal sealed partial class SourceFormatter
             {
                 return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<{{objectShapeModel.Type.FullyQualifiedName}}>
                 {
-                    CreatePropertiesFunc = {{FormatNullOrThrowPartial(propertiesFactoryMethodName, !objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Properties))}},
-                    CreateConstructorFunc = {{FormatNullOrThrowPartial(constructorFactoryMethodName, !objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Constructor))}},
+                    CreatePropertiesFunc = {{FormatNullOrThrowPartial("CreatePropertiesFunc", propertiesFactoryMethodName, !objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Properties))}},
+                    CreateConstructorFunc = {{FormatNullOrThrowPartial("CreateConstructorFunc", constructorFactoryMethodName, !objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Constructor))}},
                     CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
                     IsRecordType = {{FormatBool(objectShapeModel.IsRecordType)}},
                     IsTupleType = {{FormatBool(objectShapeModel.IsTupleType)}},
@@ -48,8 +48,16 @@ internal sealed partial class SourceFormatter
         FormatMemberAccessors(writer, objectShapeModel);
     }
 
-    private static string FormatNullOrThrowPartial(string? stringExpr, bool missing)
-        => missing ? "() => throw new global::System.NotImplementedException(\"This shape is not fully implemented.\")" : FormatNull(stringExpr);
+    private static string FormatNullOrThrowPartial(string id, string? stringExpr, bool missing)
+    {
+        if (missing)
+        {
+            string errorMessage = $"Type shape does not implement '{id}'. This indicates that a partial TypeShapeRequirements setting has been specified for the type.";
+            return $"""() => throw new global::System.InvalidOperationException("{errorMessage}")""";
+        }
+
+        return FormatNull(stringExpr);
+    }
 
     private static void FormatMemberAccessors(SourceWriter writer, ObjectShapeModel objectShapeModel)
     {
