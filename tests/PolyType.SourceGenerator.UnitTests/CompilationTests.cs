@@ -1416,6 +1416,31 @@ public static partial class CompilationTests
     }
 
     [Fact]
+    public static void ImportedTypes()
+    {
+        Compilation referencedProject = CompilationHelpers.CreateCompilation("""
+            public class SomeType { }
+            """);
+
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            #pragma warning disable CS0436 // user code would have this pragma to deal with their conflicting type
+
+            public class SomeType { } // local declaration that collides with an imported type.
+
+            [GenerateShape]
+            public partial class ServiceWithImportedTypes
+            {
+                public SomeType? SomeProperty { get; set; }
+            }
+            """,
+            [referencedProject.ToMetadataReference()]);
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
     public static void NamedTupleProperties()
     {
         // Regression test for https://github.com/eiriktsarpalis/PolyType/issues/241
