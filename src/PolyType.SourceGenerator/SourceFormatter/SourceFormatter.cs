@@ -68,19 +68,14 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
 
         foreach (TypeDeclarationModel typeDeclaration in provider.AnnotatedTypes)
         {
-            if (typeDeclaration.IsWitnessTypeDeclaration)
+            if (!typeDeclaration.IsWitnessTypeDeclaration && typeDeclaration.ShapeableOfTImplementations.Count == 0)
             {
-                context.AddSource($"{typeDeclaration.SourceFilenamePrefix}.g.cs", FormatWitnessTypeMainFile(typeDeclaration, provider));
+                // If the type is not a witness type or does not implement any IShapeable<T> interfaces, skip it.
+                continue;
             }
-
-            foreach (TypeId typeToImplement in typeDeclaration.ShapeableOfTImplementations)
-            {
-                context.CancellationToken.ThrowIfCancellationRequested();
-                string sourceFile = typeToImplement == typeDeclaration.Id
-                    ? $"{typeDeclaration.SourceFilenamePrefix}.IShapeable.g.cs"
-                    : $"{typeDeclaration.SourceFilenamePrefix}.IShapeable.{GetShapeModel(typeToImplement).SourceIdentifier}.g.cs";
-                context.AddSource(sourceFile, FormatIShapeableOfTStub(typeDeclaration, typeToImplement, provider));
-            }
+            
+            context.CancellationToken.ThrowIfCancellationRequested();
+            context.AddSource($"{typeDeclaration.SourceFilenamePrefix}.g.cs", FormatGeneratedTypeMainFile(typeDeclaration));
         }
     }
 

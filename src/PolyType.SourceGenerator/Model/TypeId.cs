@@ -13,7 +13,7 @@ public readonly struct TypeId : IEquatable<TypeId>
 
     public bool Equals(TypeId other) => FullyQualifiedName == other.FullyQualifiedName;
     public override int GetHashCode() => FullyQualifiedName.GetHashCode();
-    public override bool Equals(object obj) => obj is TypeId other && Equals(other);
+    public override bool Equals(object? obj) => obj is TypeId other && Equals(other);
     public static bool operator ==(TypeId left, TypeId right) => left.Equals(right);
     public static bool operator !=(TypeId left, TypeId right) => !(left == right);
     public override string ToString() => FullyQualifiedName;
