@@ -1053,8 +1053,8 @@ public sealed partial class Parser : TypeDataModelGenerator
     private static TypeDeclarationModel CreateShapeProviderDeclaration(Compilation compilation)
     {
         string typeName = !string.IsNullOrWhiteSpace(compilation.AssemblyName)
-            ? "ShapeProvider_" + s_escapeAssemblyName.Replace(compilation.AssemblyName, "_")
-            : "ShapeProvider";
+            ? "ShapeProvider_" + s_escapeAssemblyName.Replace(compilation.AssemblyName!, "_")
+            : "ShapeProvider_AnonAssembly";
 
         return new()
         {
@@ -1074,12 +1074,5 @@ public sealed partial class Parser : TypeDataModelGenerator
         };
     }
 
-    private static readonly Regex s_escapeAssemblyName = new(@"[^\w]", RegexOptions.Compiled);
-
-    private sealed class AssociateTypeModelSymbolEqualityComparer : IEqualityComparer<AssociatedTypeModel>
-    {
-        public static readonly AssociateTypeModelSymbolEqualityComparer Instance = new();
-        public bool Equals(AssociatedTypeModel x, AssociatedTypeModel y) => x.Requirements == y.Requirements && SymbolEqualityComparer.Default.Equals(x.AssociatedType, y.AssociatedType);
-        public int GetHashCode(AssociatedTypeModel obj) => SymbolEqualityComparer.Default.GetHashCode(obj.AssociatedType);
-    }
+    private static readonly Regex s_escapeAssemblyName = new(@"\W+", RegexOptions.Compiled);
 }

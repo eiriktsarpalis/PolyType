@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis.Text;
+﻿using System.Diagnostics;
+using Microsoft.CodeAnalysis.Text;
 using PolyType.Roslyn;
 using PolyType.SourceGenerator.Model;
 
@@ -74,44 +75,69 @@ internal sealed partial class SourceFormatter
         writer.WriteLine('}');
     }
 
-    private SourceText FormatIShapeableOfTStub(TypeDeclarationModel typeDeclaration, TypeId typeToImplement, TypeShapeProviderModel provider)
+    private SourceText FormatGeneratedTypeMainFile(TypeDeclarationModel typeDeclaration)
     {
+        Debug.Assert(typeDeclaration.IsWitnessTypeDeclaration || typeDeclaration.ShapeableOfTImplementations.Count > 0,
+            "Type declaration must be a witness type or implement at least one IShapeable<T> interface.");
+        
         var writer = new SourceWriter();
         StartFormatSourceFile(writer, typeDeclaration);
 
-        writer.WriteLine("#nullable disable annotations // Use nullable-oblivious interface implementation", disableIndentation: true);
-        writer.WriteLine($"{typeDeclaration.TypeDeclarationHeader} : global::PolyType.IShapeable<{typeToImplement.FullyQualifiedName}>");
-        writer.WriteLine("#nullable enable annotations // Use nullable-oblivious interface implementation", disableIndentation: true);
-        writer.WriteLine('{');
+        switch (typeDeclaration.ShapeableOfTImplementations.Count)
+        {
+            case 0:
+                writer.WriteLine(typeDeclaration.TypeDeclarationHeader);
+                break;
+
+            case 1:
+                writer.WriteLine("#nullable disable annotations // Use nullable-oblivious interface implementation", disableIndentation: true);
+                writer.WriteLine($"{typeDeclaration.TypeDeclarationHeader} : global::PolyType.IShapeable<{typeDeclaration.ShapeableOfTImplementations.First().FullyQualifiedName}>");
+                writer.WriteLine("#nullable enable annotations // Use nullable-oblivious interface implementation", disableIndentation: true);
+                break;
+                
+            case var count:
+                writer.WriteLine($"{typeDeclaration.TypeDeclarationHeader} :");
+                writer.WriteLine("#nullable disable annotations // Use nullable-oblivious interface implementation", disableIndentation: true);
+                writer.Indentation++;
+                foreach (TypeId typeToImplement in typeDeclaration.ShapeableOfTImplementations)
+                {
+                    string separator = --count == 0 ? "" : ",";
+                    writer.WriteLine($"global::PolyType.IShapeable<{typeToImplement.FullyQualifiedName}>{separator}");
+                }
+                writer.Indentation--;
+                writer.WriteLine("#nullable enable annotations // Use nullable-oblivious interface implementation", disableIndentation: true);
+                break;            
+        }
+        
+        writer.WriteLine("{");
         writer.Indentation++;
 
-        writer.WriteLine($"""
-            static global::PolyType.Abstractions.ITypeShape<{typeToImplement.FullyQualifiedName}> global::PolyType.IShapeable<{typeToImplement.FullyQualifiedName}>.GetShape() 
-                => {provider.ProviderDeclaration.Id.FullyQualifiedName}.{ProviderSingletonProperty}.{GetShapeModel(typeToImplement).SourceIdentifier};
-            """);
-
-        writer.Indentation--;
-        writer.WriteLine('}');
-        EndFormatSourceFile(writer);
-
-        return writer.ToSourceText();
-    }
-
-    private static SourceText FormatWitnessTypeMainFile(TypeDeclarationModel typeDeclaration, TypeShapeProviderModel provider)
-    {
-        var writer = new SourceWriter();
-        StartFormatSourceFile(writer, typeDeclaration);
-        writer.WriteLine("[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute]");
-        writer.WriteLine($$"""
-            {{typeDeclaration.TypeDeclarationHeader}}
-            {
+        int emittedMembers = 0;
+        if (typeDeclaration.IsWitnessTypeDeclaration)
+        {
+            writer.WriteLine($$"""
                 /// <summary>Gets the source generated <see cref="global::PolyType.SourceGenModel.SourceGenTypeShapeProvider"/> corresponding to the current witness type.</summary>
-                public static global::PolyType.SourceGenModel.SourceGenTypeShapeProvider ShapeProvider => {{provider.ProviderDeclaration.Id.FullyQualifiedName}}.{{ProviderSingletonProperty}};
+                public static global::PolyType.SourceGenModel.SourceGenTypeShapeProvider ShapeProvider =>
+                    {{provider.ProviderDeclaration.Id.FullyQualifiedName}}.{{ProviderSingletonProperty}};
+                """);
+
+            emittedMembers++;
+        }
+        
+        foreach (TypeId typeToImplement in typeDeclaration.ShapeableOfTImplementations)
+        {
+            if (emittedMembers++ > 0)
+            {
+                writer.WriteLine();
             }
-            """);
+
+            writer.WriteLine($"""
+                static global::PolyType.Abstractions.ITypeShape<{typeToImplement.FullyQualifiedName}> global::PolyType.IShapeable<{typeToImplement.FullyQualifiedName}>.GetShape() =>
+                    {provider.ProviderDeclaration.Id.FullyQualifiedName}.{ProviderSingletonProperty}.{GetShapeModel(typeToImplement).SourceIdentifier};
+                """);
+        }
 
         EndFormatSourceFile(writer);
-
         return writer.ToSourceText();
     }
 }
