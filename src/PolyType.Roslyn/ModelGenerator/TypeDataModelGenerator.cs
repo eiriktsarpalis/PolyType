@@ -126,7 +126,7 @@ public partial class TypeDataModelGenerator
     /// <param name="type">The declaring type from which to resolve the methods.</param>
     /// <param name="bindingFlags">The binding flags of the methods to include.</param>
     /// <returns>A key/value pair containing the method and its declared name.</returns>
-    protected virtual IEnumerable<KeyValuePair<string, IMethodSymbol>> ResolveMethods(ITypeSymbol type, BindingFlags bindingFlags) => [];
+    protected virtual IEnumerable<ResolvedMethodSymbol> ResolveMethods(ITypeSymbol type, BindingFlags bindingFlags) => [];
 
     /// <summary>
     /// Wraps the <see cref="MapType(ITypeSymbol, TypeDataKind?, BindingFlags?, ImmutableArray{AssociatedTypeModel}, ref TypeDataModelGenerationContext, TypeShapeRequirements, out TypeDataModel?)"/> method
@@ -401,10 +401,10 @@ public partial class TypeDataModelGenerator
     protected ImmutableArray<MethodDataModel> MapMethods(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, BindingFlags? bindingFlags)
     {
         ImmutableArray<MethodDataModel>.Builder results = ImmutableArray.CreateBuilder<MethodDataModel>();
-        foreach (KeyValuePair<string, IMethodSymbol> kvp in ResolveMethods(type, bindingFlags ?? BindingFlags.Default))
+        foreach (ResolvedMethodSymbol resolvedMethod in ResolveMethods(type, bindingFlags ?? BindingFlags.Default))
         {
             TypeDataModelGenerationContext scopedCtx = ctx;
-            if (MapMethod(kvp.Value, kvp.Key, ref scopedCtx, out MethodDataModel methodDataModel) is TypeDataModelGenerationStatus.Success)
+            if (MapMethod(resolvedMethod, ref scopedCtx, out MethodDataModel methodDataModel) is TypeDataModelGenerationStatus.Success)
             {
                 results.Add(methodDataModel);
                 ctx = scopedCtx;
@@ -415,19 +415,18 @@ public partial class TypeDataModelGenerator
     }
 
     /// <summary>
-    /// Maps the given <paramref name="method"/> and its parameters to a <see cref="MethodDataModel"/>.
+    /// Maps the given <paramref name="resolvedMethod"/> and its parameters to a <see cref="MethodDataModel"/>.
     /// </summary>
-    /// <param name="method">The method to try to map.</param>
-    /// <param name="name">The name identifying the method.</param>
+    /// <param name="resolvedMethod">The method to try to map.</param>
     /// <param name="ctx">The current model generation context.</param>
     /// <param name="result">The mapped method data model.</param>
     /// <returns>The result of the mapping operation.</returns>
-    protected virtual TypeDataModelGenerationStatus MapMethod(IMethodSymbol method, string name, ref TypeDataModelGenerationContext ctx, out MethodDataModel result)
+    protected virtual TypeDataModelGenerationStatus MapMethod(ResolvedMethodSymbol resolvedMethod, ref TypeDataModelGenerationContext ctx, out MethodDataModel result)
     {
         TypeDataModelGenerationStatus status;
 
-        var parameters = ImmutableArray.CreateBuilder<ParameterDataModel>(method.Parameters.Length);
-        foreach (IParameterSymbol parameter in method.Parameters)
+        var parameters = ImmutableArray.CreateBuilder<ParameterDataModel>(resolvedMethod.MethodSymbol.Parameters.Length);
+        foreach (IParameterSymbol parameter in resolvedMethod.MethodSymbol.Parameters)
         {
             if (parameter.RefKind is RefKind.Out)
             {
@@ -445,7 +444,7 @@ public partial class TypeDataModelGenerator
             parameters.Add(parameterModel);
         }
 
-        ITypeSymbol? returnType = GetEffectiveReturnType(method, out MethodReturnTypeKind returnTypeKind);
+        ITypeSymbol? returnType = GetEffectiveReturnType(resolvedMethod.MethodSymbol, out MethodReturnTypeKind returnTypeKind);
         if (returnType is not null && (status = IncludeNestedType(returnType, ref ctx)) != TypeDataModelGenerationStatus.Success)
         {
             result = default;
@@ -454,11 +453,12 @@ public partial class TypeDataModelGenerator
 
         result = new MethodDataModel
         {
-            Name = name,
-            Method = method,
+            Name = resolvedMethod.CustomName ?? resolvedMethod.MethodSymbol.Name,
+            Method = resolvedMethod.MethodSymbol,
             ReturnedValueType = returnType,
             ReturnTypeKind = returnTypeKind,
             Parameters = parameters.ToImmutable(),
+            IsDiamondAmbiguous = resolvedMethod.IsDiamondAmbiguous,
         };
 
         return TypeDataModelGenerationStatus.Success;

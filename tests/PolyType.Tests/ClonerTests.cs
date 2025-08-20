@@ -13,7 +13,7 @@ public abstract class ClonerTests(ProviderUnderTest providerUnderTest)
     {
         (Func<T?, T?> cloner, IEqualityComparer<T> comparer) = GetClonerAndEqualityComparer(testCase);
 
-        if (testCase.Value is not null && !providerUnderTest.HasConstructor(testCase) && testCase.CustomKind is not TypeShapeKind.None)
+        if (testCase.Value is not null && !providerUnderTest.HasConstructor(testCase))
         {
             Assert.Throws<NotSupportedException>(() => cloner(testCase.Value));
             return;

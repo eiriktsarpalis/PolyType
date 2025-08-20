@@ -468,6 +468,7 @@ public sealed partial class Parser
                 UnderlyingReturnType = CreateTypeId(m.Method.ReturnType),
                 ReturnType = CreateTypeId(m.ReturnedValueType ?? _knownSymbols.UnitType!),
                 ReturnsByRef = m.Method.ReturnsByRef || m.Method.ReturnsByRefReadonly,
+                InstanceMethodRequiresCast = m.IsDiamondAmbiguous,
                 Parameters = m.Parameters
                     .Select(p => MapParameter(declaringObjectForConstructor: null, CreateTypeId(m.Method.ContainingType), p, false))
                     .ToImmutableEquatableArray(),

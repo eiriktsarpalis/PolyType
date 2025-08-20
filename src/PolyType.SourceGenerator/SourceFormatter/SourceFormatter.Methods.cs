@@ -158,13 +158,14 @@ internal sealed partial class SourceFormatter
             };
 
             string refPrefix = method.DeclaringType.IsValueType ? "ref " : "";
+            string targetExpr = method.InstanceMethodRequiresCast ? $"(({method.DeclaringType.FullyQualifiedName}){targetVar}!)" : $"{targetVar}!";
             string invokeExpr = method switch
             {
                 { IsStatic: true, IsAccessible: true } => $"{declaringType.Type.FullyQualifiedName}.{method.UnderlyingMethodName}({parametersExpression})",
                 { IsStatic: true, IsAccessible: false } => $"{GetMethodAccessorName(declaringType, method)}({parametersExpression})",
-                { IsStatic: false, IsAccessible: true } => $"{targetVar}!.{method.UnderlyingMethodName}({parametersExpression})",
-                { IsStatic: false, IsAccessible: false } when method.Parameters is [] => $"{GetMethodAccessorName(declaringType, method)}({refPrefix}{targetVar}!)",
-                { IsStatic: false, IsAccessible: false } => $"{GetMethodAccessorName(declaringType, method)}({refPrefix}{targetVar}!, {parametersExpression})",
+                { IsStatic: false, IsAccessible: true } => $"{targetExpr}.{method.UnderlyingMethodName}({parametersExpression})",
+                { IsStatic: false, IsAccessible: false } when method.Parameters is [] => $"{GetMethodAccessorName(declaringType, method)}({refPrefix}{targetExpr})",
+                { IsStatic: false, IsAccessible: false } => $"{GetMethodAccessorName(declaringType, method)}({refPrefix}{targetExpr}, {parametersExpression})",
             };
 
             // Handle async methods and void returns
@@ -325,7 +326,7 @@ internal sealed partial class SourceFormatter
         if (!method.IsStatic)
         {
             string refPrefix = method.DeclaringType.IsValueType ? "ref " : "";
-            parameterSignature.Append($"{refPrefix}{declaringType.Type.FullyQualifiedName} target, ");
+            parameterSignature.Append($"{refPrefix}{method.DeclaringType.FullyQualifiedName} target, ");
         }
 
         foreach (ParameterShapeModel parameter in method.Parameters)
@@ -360,7 +361,7 @@ internal sealed partial class SourceFormatter
                 private static global::System.Reflection.MethodInfo? __s_{{accessorName}}_MethodInfo;
                 private static {{method.UnderlyingReturnType.FullyQualifiedName}} {{accessorName}}({{allParameters}})
                 {
-                    global::System.Reflection.MethodInfo methodInfo = __s_{{accessorName}}_MethodInfo ??= typeof({{declaringType.Type.FullyQualifiedName}}).GetMethod({{FormatStringLiteral(method.UnderlyingMethodName)}}, {{AllBindingFlagsConstMember}}, null, {{parameterTypes}}, null)!;
+                    global::System.Reflection.MethodInfo methodInfo = __s_{{accessorName}}_MethodInfo ??= typeof({{method.DeclaringType}}).GetMethod({{FormatStringLiteral(method.UnderlyingMethodName)}}, {{AllBindingFlagsConstMember}}, null, {{parameterTypes}}, null)!;
                     object?[] paramArray = new object?[] { {{string.Join(", ", method.Parameters.Select(p => p.Name))}} };
                     {{(method.ReturnTypeKind is MethodReturnTypeKind.Void
                         ? CreateInvokeMethodExpr()

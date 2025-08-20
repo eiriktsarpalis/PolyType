@@ -15,6 +15,7 @@ public sealed record MethodShapeModel
     public required bool CanUseUnsafeAccessors { get; init; }
     public required bool IsStatic { get; init; }
     public required bool ReturnsByRef { get; init; }
+    public required bool InstanceMethodRequiresCast { get; init; }
     public required MethodReturnTypeKind ReturnTypeKind { get; init; }
     public required ImmutableEquatableArray<ParameterShapeModel> Parameters { get; init; }
     public required ArgumentStateType ArgumentStateType { get; init; }

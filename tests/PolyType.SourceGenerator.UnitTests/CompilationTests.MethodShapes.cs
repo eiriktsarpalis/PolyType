@@ -406,4 +406,30 @@ public static partial class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
+
+    [Fact]
+    public static void MethodDiamondAmbiguity_NoErrors()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+        using PolyType;
+
+        public interface IBase1
+        {
+            void DoSomething();
+        }
+
+        public interface IBase2
+        {
+            void DoSomething();
+        }
+
+        [GenerateShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+        public partial interface IDerived : IBase1, IBase2
+        {
+        }
+        """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
 }

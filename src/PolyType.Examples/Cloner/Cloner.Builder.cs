@@ -30,7 +30,7 @@ public static partial class Cloner
                 return CreatePolymorphicCloner(generationContext.ParentCache!);
             }
             
-            if (typeShape is { Properties: [], Constructor: null })
+            if (typeShape is { Type.IsValueType: true, Properties: [], Constructor: null })
             {
                 return new Func<T?, T?>(t => t);
             }
