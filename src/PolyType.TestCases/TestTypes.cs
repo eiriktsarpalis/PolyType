@@ -629,6 +629,7 @@ public static class TestTypes
         yield return TestCase.Create<InterfaceWithMethodShapes>(new ClassWithMethodShapes(), additionalValues: [new StructWithMethodShapes()]);
         yield return TestCase.Create(new BaseClassWithMethodShapes(), additionalValues: [new ClassWithMethodShapes()]);
         yield return TestCase.Create(new RpcService());
+        yield return TestCase.Create<InterfaceWithDiamondMethodShapes>(new InterfaceWithDiamondMethodShapes.Impl());
     }
 
     private static ExpandoObject CreateExpandoObject(IEnumerable<KeyValuePair<string, object?>> values)
@@ -2930,6 +2931,28 @@ public partial class RpcService
     }
 
     public record Event(int id);
+}
+
+[GenerateShape, TypeShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+public partial interface InterfaceWithDiamondMethodShapes : IBase1WithMethod, IBase2WithMethod
+{
+    int Add3(int x, int y);
+
+    public sealed class Impl : InterfaceWithDiamondMethodShapes
+    {
+        public int Add(int x, int y) => x + y;
+        public int Add3(int x, int y) => x + y;
+    }
+}
+
+public interface IBase1WithMethod
+{
+    int Add(int x, int y);
+}
+
+public interface IBase2WithMethod
+{
+    int Add(int x, int y);
 }
 
 [GenerateShapeFor<object>]

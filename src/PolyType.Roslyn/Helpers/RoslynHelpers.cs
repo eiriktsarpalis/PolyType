@@ -348,9 +348,9 @@ internal static class RoslynHelpers
 
     public static ICollection<ITypeSymbol> GetSortedTypeHierarchy(this ITypeSymbol type)
     {
-        if (type.TypeKind != TypeKind.Interface)
+        if (type.TypeKind is not TypeKind.Interface)
         {
-            var list = new List<ITypeSymbol>();
+            List<ITypeSymbol> list = [];
             for (ITypeSymbol? current = type; current != null; current = current.BaseType)
             {
                 list.Add(current);
@@ -370,21 +370,39 @@ internal static class RoslynHelpers
     public static IEnumerable<ISymbol> GetAllMembers(this ITypeSymbol type)
         => type.GetSortedTypeHierarchy().SelectMany(t => t.GetMembers());
 
-    public static IEnumerable<IMethodSymbol> GetAllMethods(this ITypeSymbol type)
+    public static IEnumerable<(IMethodSymbol Symbol, bool IsAmbiguous)> GetAllMethods(this ITypeSymbol type)
     {
-        HashSet<string> seenMethods = new();
+        List<(IMethodSymbol Symbol, bool IsAmbiguous)> methods = [];
+        Dictionary<string, int> foundSignatures = new();
+
         foreach (ITypeSymbol current in type.GetSortedTypeHierarchy())
         {
             foreach (IMethodSymbol method in current.GetMembers().OfType<IMethodSymbol>())
             {
                 // Create a signature key that includes name, parameters, and return type
                 string signature = GetMethodSignature(method);
-                if (seenMethods.Add(signature))
+                if (foundSignatures.TryGetValue(signature, out int index))
                 {
-                    yield return method;
+                    IMethodSymbol conflictingMethod = methods[index].Symbol;
+                    if (!current.IsAssignableFrom(conflictingMethod.ContainingType))
+                    {
+                        // We have a method with the same signature in an unrelated type,
+                        // due to diamond ambiguity in an interface hierarchy.
+
+                        Debug.Assert(type.TypeKind is TypeKind.Interface);
+                        methods[index] = (conflictingMethod, IsAmbiguous: true);
+                        methods.Add((method, IsAmbiguous: true));
+                    }
+
+                    continue; // This method is shadowed by a derived type, skip it.
                 }
+
+                foundSignatures.Add(signature, methods.Count);
+                methods.Add((method, IsAmbiguous: false));
             }
         }
+
+        return methods;
 
         static string GetMethodSignature(IMethodSymbol method)
         {

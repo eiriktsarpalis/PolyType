@@ -32,6 +32,11 @@ public readonly struct MethodDataModel
     /// The parameters of the method.
     /// </summary>
     public required ImmutableArray<ParameterDataModel> Parameters { get; init; }
+
+    /// <summary>
+    /// Whether the method is ambiguous due to diamond inheritance.
+    /// </summary>
+    public required bool IsDiamondAmbiguous { get; init; }
 }
 
 /// <summary>
@@ -68,4 +73,25 @@ public enum MethodReturnTypeKind
     /// The method returns a <see cref="System.Threading.Tasks.Task{TResult}"/>.
     /// </summary>
     TaskOfT,
+}
+
+/// <summary>
+/// A resolved method symbol that includes additional metadata.
+/// </summary>
+public readonly struct ResolvedMethodSymbol
+{
+    /// <summary>
+    /// Gets the resolved method symbol.
+    /// </summary>
+    public required IMethodSymbol MethodSymbol { get; init; }
+
+    /// <summary>
+    /// Gets a custom name to be applied to the method, if specified.
+    /// </summary>
+    public string? CustomName { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the method is ambiguous due to diamond inheritance.
+    /// </summary>
+    public bool IsDiamondAmbiguous { get; init; }
 }

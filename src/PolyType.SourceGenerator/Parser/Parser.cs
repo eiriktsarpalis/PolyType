@@ -304,13 +304,13 @@ public sealed partial class Parser : TypeDataModelGenerator
             .Take(1);
     }
 
-    protected override IEnumerable<KeyValuePair<string, IMethodSymbol>> ResolveMethods(ITypeSymbol type, BindingFlags bindingFlags)
+    protected override IEnumerable<ResolvedMethodSymbol> ResolveMethods(ITypeSymbol type, BindingFlags bindingFlags)
     {
-        foreach (IMethodSymbol method in type.GetAllMethods())
+        foreach ((IMethodSymbol method, bool isAmbiguous) in type.GetAllMethods())
         {
             if (IncludeMethod(method, out string? customName))
             {
-                yield return new(customName ?? method.Name, method);
+                yield return new() { CustomName = customName, MethodSymbol = method, IsDiamondAmbiguous = isAmbiguous };
             }
         }
 
@@ -377,19 +377,19 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
     }
 
-    protected override TypeDataModelGenerationStatus MapMethod(IMethodSymbol method, string name, ref TypeDataModelGenerationContext ctx, out MethodDataModel result)
+    protected override TypeDataModelGenerationStatus MapMethod(ResolvedMethodSymbol resolvedMethod, ref TypeDataModelGenerationContext ctx, out MethodDataModel result)
     {
-        if (method is { IsGenericMethod: true, IsDefinition: true })
+        if (resolvedMethod.MethodSymbol is { IsGenericMethod: true, IsDefinition: true } method)
         {
             ReportDiagnostic(GenericMethodShapesNotSupported, method.Locations.FirstOrDefault(), [method.ToDisplayString()]);
             result = default;
             return TypeDataModelGenerationStatus.UnsupportedType;
         }
 
-        TypeDataModelGenerationStatus status = base.MapMethod(method, name, ref ctx, out result);
+        TypeDataModelGenerationStatus status = base.MapMethod(resolvedMethod, ref ctx, out result);
         if (status is not TypeDataModelGenerationStatus.Success)
         {
-            ReportDiagnostic(MethodParametersNotSupported, method.Locations.FirstOrDefault(), [method.ToDisplayString()]);
+            ReportDiagnostic(MethodParametersNotSupported, resolvedMethod.MethodSymbol.Locations.FirstOrDefault(), [resolvedMethod.MethodSymbol.ToDisplayString()]);
             return status;
         }
 
