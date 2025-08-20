@@ -99,6 +99,7 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
 
         writer.WriteLine("""
             #pragma warning disable CS0612, CS0618 // Use of obsolete APIs is natural when we're emitting delegates for obsolete properties.
+            #pragma warning disable CS0436 // Use of local types when imported types by the same name exist.
 
             """);
 
