@@ -7,6 +7,7 @@ using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing;
 using System.Dynamic;
 using System.Globalization;
 using System.Numerics;
@@ -552,6 +553,8 @@ public static class TestTypes
         yield return TestCase.Create(new StructWithIncludedPrivateMembers());
         yield return TestCase.Create(GenericStructWithPrivateIncludedMembers<int>.Create(1, 2), p);
         yield return TestCase.Create(GenericStructWithPrivateIncludedMembers<string>.Create("1", "2"), p);
+        yield return TestCase.Create(new Vector3D(1, 2, 3));
+        yield return TestCase.Create(new Point(1, 2), p);
         yield return TestCase.Create(new @class(@string: "string", @__makeref: 42, @yield: true));
         yield return TestCase.Create(new TypeWithStringSurrogate("string"));
         yield return TestCase.Create(new TypeWithRecordSurrogate(42, "string"));
@@ -2185,6 +2188,18 @@ struct GenericStructWithPrivateIncludedMembers<T>
         _ = value.Field;
         return value;
     }
+}
+
+// Repro for https://github.com/eiriktsarpalis/PolyType/issues/238
+[GenerateShape]
+public partial struct Vector3D
+{
+    public float X;
+    public float Y;
+    public float Z;
+
+    public Vector3D(float value) => (X, Y, Z) = (value, value, value);
+    public Vector3D(float x, float y, float z) => (X, Y, Z) = (x, y, z);
 }
 
 // A type using escaped keywords as its identifiers

@@ -101,23 +101,23 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
         }
         else
         {
-            // In case of ambiguity, pick the constructor that maximizes
-            // the number of parameters matching read-only members.
+            // If the type defines more than one constructors, pick one according to the following priority:
+            // 1. Pick the constructor annotated with [ConstructorShape], if one exists.
+            // 2. Pick the constructor that has the fewest parameters not corresponding to a readable property or field.
+            // 3. In the event of a tie, pick the constructor with the fewest parameters.
 
-            HashSet<(Type, string)> readonlyMembers = new(
+            HashSet<(Type, string)> readableMembers = new(
                 collection: allMembers
-                    .Where(m => m.MemberInfo is PropertyInfo { CanWrite: false } or FieldInfo { IsInitOnly: true })
+                    .Where(m => m.MemberInfo is PropertyInfo { CanRead: true } or FieldInfo)
                     .Select(m => (m.MemberInfo.GetMemberType(), m.MemberInfo.Name)),
 
                 comparer: ReflectionTypeShapeProvider.CtorParameterEqualityComparer);
 
             (constructorInfo, parameters, _) = ctorCandidates
-                .OrderByDescending(ctor =>
+                .OrderBy(ctor =>
                 {
-                    int paramsMatchingReadOnlyMembers = ctor.Parameters.Count(p => readonlyMembers.Contains((p.ParameterType, p.Name!)));
-
-                    // In the event of a tie, favor the ctor with the smallest arity.
-                    return (ctor.HasShapeAttribute, paramsMatchingReadOnlyMembers, -ctor.Parameters.Length);
+                    int unmatchedParameters = ctor.Parameters.Count(p => !readableMembers.Contains((p.ParameterType, p.Name!)));
+                    return (!ctor.HasShapeAttribute, unmatchedParameters, ctor.Parameters.Length);
                 })
                 .FirstOrDefault();
         }

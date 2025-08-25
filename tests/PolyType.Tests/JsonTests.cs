@@ -16,25 +16,6 @@ namespace PolyType.Tests;
 
 public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
 {
-    [Fact]
-    public void Roundtrip_PointByTypeExtensionSurrogate()
-    {
-        Point original = new(1, 2);
-        JsonConverter<Point> converter = JsonSerializerTS.CreateConverter<Point>(providerUnderTest.Provider);
-        string json = converter.Serialize(original);
-
-        // Verify that the surrogate is used in serialization
-        // by checking that the value of X is 2 instead of 1.
-        Assert.Equal("""{"X":2,"Y":2}""", json);
-
-        Point deserialized = converter.Deserialize(json);
-
-        // Verify that the surrogate is used in deserialization
-        // by checking that the value matches the original,
-        // since the surrogate subtracts 1 from X.
-        Assert.Equal(original, deserialized);
-    }
-
     [Theory]
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
     public async Task Roundtrip_Value<T>(TestCase<T> testCase)

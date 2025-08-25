@@ -286,20 +286,22 @@ public sealed partial class Parser : TypeDataModelGenerator
                 .ToArray();
         }
 
-        // In case of ambiguity, return the constructor that maximizes
-        // the number of parameters corresponding to read-only properties.
-        HashSet<(ITypeSymbol, string)> readOnlyProperties = new(
+        // If the type defines more than one constructors, pick one according to the following priority:
+        // 1. Pick the constructor annotated with [ConstructorShape], if one exists.
+        // 2. Pick the constructor that has the fewest parameters not corresponding to a readable property or field.
+        // 3. In the event of a tie, pick the constructor with the fewest parameters.
+
+        HashSet<(ITypeSymbol, string)> readableMembers = new(
             properties
-                .Where(p => !p.IncludeSetter)
+                .Where(p => p.IncludeGetter)
                 .Select(p => (p.PropertyType, p.Name)),
             s_ctorParamComparer);
 
         return constructors
-            .OrderByDescending(ctor =>
+            .OrderBy(ctor =>
             {
-                int paramsMatchingReadOnlyMembers = ctor.Parameters.Count(p => readOnlyProperties.Contains((p.Type, p.Name)));
-                // In case of a tie, pick the ctor with the smallest arity.
-                return (paramsMatchingReadOnlyMembers, -ctor.Parameters.Length);
+                int unmatchedParameters = ctor.Parameters.Count(p => !readableMembers.Contains((p.Type, p.Name)));
+                return (unmatchedParameters, ctor.Parameters.Length);
             })
             .Take(1);
     }
