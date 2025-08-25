@@ -286,20 +286,39 @@ public sealed partial class Parser : TypeDataModelGenerator
                 .ToArray();
         }
 
-        // In case of ambiguity, return the constructor that maximizes
-        // the number of parameters corresponding to read-only properties.
-        HashSet<(ITypeSymbol, string)> readOnlyProperties = new(
-            properties
-                .Where(p => !p.IncludeSetter)
-                .Select(p => (p.PropertyType, p.Name)),
-            s_ctorParamComparer);
+        // If the type defines more than one constructors, pick one using the following rules:
+        // 1. Maximize the number of parameters that match read-only properties/fields.
+        // 2. Minimize the number of parameters not corresponding to any readable property/field.
+
+        Dictionary<(ITypeSymbol, string), bool> readableProperties = properties
+            .Where(prop => prop.IncludeGetter)
+            .ToDictionary(
+                keySelector: p => (p.PropertyType, p.Name),
+                elementSelector: p => !p.IncludeSetter,
+                comparer: s_ctorParamComparer);
 
         return constructors
             .OrderByDescending(ctor =>
             {
-                int paramsMatchingReadOnlyMembers = ctor.Parameters.Count(p => readOnlyProperties.Contains((p.Type, p.Name)));
-                // In case of a tie, pick the ctor with the smallest arity.
-                return (paramsMatchingReadOnlyMembers, -ctor.Parameters.Length);
+                int matchingReadOnlyMemberParamCount = 0;
+                int unmatchedParamCount = 0;
+                foreach (IParameterSymbol param in ctor.Parameters)
+                {
+                    if (readableProperties.TryGetValue((param.Type, param.Name), out bool isReadOnly))
+                    {
+                        // Do not count settable members as they can set after any constructor.
+                        if (isReadOnly)
+                        {
+                            matchingReadOnlyMemberParamCount++;
+                        }
+                    }
+                    else
+                    {
+                        unmatchedParamCount++;
+                    }
+                }
+
+                return (matchingReadOnlyMemberParamCount, -unmatchedParamCount);
             })
             .Take(1);
     }

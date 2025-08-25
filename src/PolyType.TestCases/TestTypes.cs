@@ -7,6 +7,7 @@ using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing;
 using System.Dynamic;
 using System.Globalization;
 using System.Numerics;
@@ -248,7 +249,7 @@ public static class TestTypes
         }, p);
 
         yield return TestCase.Create(new ClassWithNotNullProperty<string> { Property = "Value" }, p);
-        yield return TestCase.Create(new ClassWithStructNullabilityAttributes());
+        yield return TestCase.Create(new StructWithNullabilityAttributes());
         yield return TestCase.Create(new ClassWithInternalConstructor(42));
         yield return TestCase.Create(new NonNullStringRecord("str"));
         yield return TestCase.Create(new NullableStringRecord(null));
@@ -552,6 +553,8 @@ public static class TestTypes
         yield return TestCase.Create(new StructWithIncludedPrivateMembers());
         yield return TestCase.Create(GenericStructWithPrivateIncludedMembers<int>.Create(1, 2), p);
         yield return TestCase.Create(GenericStructWithPrivateIncludedMembers<string>.Create("1", "2"), p);
+        yield return TestCase.Create(new Vector3D(1, 2, 3));
+        yield return TestCase.Create(new Point(1, 2), p);
         yield return TestCase.Create(new @class(@string: "string", @__makeref: 42, @yield: true));
         yield return TestCase.Create(new TypeWithStringSurrogate("string"));
         yield return TestCase.Create(new TypeWithRecordSurrogate(42, "string"));
@@ -1311,28 +1314,28 @@ public partial class ClassWithNullabilityAttributes
     }
 
     [MaybeNull]
-    public string MaybeNullProperty
+    public string MaybeNull
     {
         get => _maybeNull;
         set => _maybeNull = value;
     }
 
     [AllowNull]
-    public string AllowNullProperty
+    public string AllowNull
     {
         get => _allowNull ?? "str";
         set => _allowNull = value;
     }
 
     [NotNull]
-    public string? NotNullProperty
+    public string? NotNull
     {
         get => _notNull ?? "str";
         set => _notNull = value;
     }
 
     [DisallowNull]
-    public string? DisallowNullProperty
+    public string? DisallowNull
     {
         get => _disallowNull;
         set => _disallowNull = value;
@@ -1369,30 +1372,30 @@ public class ClassWithNotNullProperty<T> where T : notnull
 }
 
 [GenerateShape]
-public partial class ClassWithStructNullabilityAttributes
+public partial struct StructWithNullabilityAttributes
 {
     private int? _maybeNull = 0;
     private int? _allowNull = 0;
     private int? _notNull = 0;
     private int? _disallowNull = 0;
 
-    public ClassWithStructNullabilityAttributes() { }
+    public StructWithNullabilityAttributes() { }
 
-    public ClassWithStructNullabilityAttributes([AllowNull] int? allowNull, [DisallowNull] int? disallowNull)
+    public StructWithNullabilityAttributes([AllowNull] int? allowNull, [DisallowNull] int? disallowNull)
     {
         _allowNull = allowNull;
         _disallowNull = disallowNull;
     }
 
     [MaybeNull]
-    public int? MaybeNullProperty
+    public int? MaybeNull
     {
         get => _maybeNull;
         set => _maybeNull = value;
     }
 
     [AllowNull]
-    public int? AllowNullProperty
+    public int? AllowNull
     {
         get => _allowNull ?? 0;
         set => _allowNull = value;
@@ -1406,7 +1409,7 @@ public partial class ClassWithStructNullabilityAttributes
     }
 
     [DisallowNull]
-    public int? DisallowNullProperty
+    public int? DisallowNull
     {
         get => _disallowNull;
         set => _disallowNull = value;
@@ -2185,6 +2188,20 @@ struct GenericStructWithPrivateIncludedMembers<T>
         _ = value.Field;
         return value;
     }
+}
+
+// Repro for https://github.com/eiriktsarpalis/PolyType/issues/238
+[GenerateShape]
+public partial struct Vector3D
+{
+    public float X;
+    public float Y;
+    public float Z;
+
+    public Vector3D(float value) => (X, Y, Z) = (value, value, value);
+
+    [JsonConstructor] // PolyType should automatically pick this ctor
+    public Vector3D(float x, float y, float z) => (X, Y, Z) = (x, y, z);
 }
 
 // A type using escaped keywords as its identifiers

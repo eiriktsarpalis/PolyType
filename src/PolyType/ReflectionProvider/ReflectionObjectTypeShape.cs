@@ -101,23 +101,44 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
         }
         else
         {
-            // In case of ambiguity, pick the constructor that maximizes
-            // the number of parameters matching read-only members.
+            // If the type defines more than one constructors, pick one using the following rules:
+            // 1. Prefer [ConstructorShape] annotated constructors.
+            // 2. Maximize the number of parameters that match read-only properties/fields.
+            // 3. Minimize the number of parameters not corresponding to any property/field.
 
-            HashSet<(Type, string)> readonlyMembers = new(
-                collection: allMembers
-                    .Where(m => m.MemberInfo is PropertyInfo { CanWrite: false } or FieldInfo { IsInitOnly: true })
-                    .Select(m => (m.MemberInfo.GetMemberType(), m.MemberInfo.Name)),
-
-                comparer: ReflectionTypeShapeProvider.CtorParameterEqualityComparer);
+            Dictionary<(Type, string), bool> readableMembers = allMembers
+                .Where(member => member.MemberInfo is PropertyInfo { CanRead: true } or FieldInfo)
+                .ToDictionary(
+                    keySelector: member => (member.MemberInfo.GetMemberType(), member.MemberInfo.Name),
+                    elementSelector: member => member.MemberInfo switch
+                    {
+                        PropertyInfo prop => !prop.CanWrite,
+                        var field => ((FieldInfo)field).IsInitOnly,
+                    },
+                    comparer: ReflectionTypeShapeProvider.CtorParameterEqualityComparer);
 
             (constructorInfo, parameters, _) = ctorCandidates
                 .OrderByDescending(ctor =>
                 {
-                    int paramsMatchingReadOnlyMembers = ctor.Parameters.Count(p => readonlyMembers.Contains((p.ParameterType, p.Name!)));
+                    int matchingReadOnlyMemberParamCount = 0;
+                    int unmatchedParamCount = 0;
+                    foreach (ParameterInfo param in ctor.Parameters)
+                    {
+                        if (readableMembers.TryGetValue((param.ParameterType, param.Name!), out bool isReadOnly))
+                        {
+                            // Do not count settable members as they can set after any constructor.
+                            if (isReadOnly)
+                            {
+                                matchingReadOnlyMemberParamCount++;
+                            }
+                        }
+                        else
+                        {
+                            unmatchedParamCount++;
+                        }
+                    }
 
-                    // In the event of a tie, favor the ctor with the smallest arity.
-                    return (ctor.HasShapeAttribute, paramsMatchingReadOnlyMembers, -ctor.Parameters.Length);
+                    return (ctor.HasShapeAttribute, matchingReadOnlyMemberParamCount, -unmatchedParamCount);
                 })
                 .FirstOrDefault();
         }
