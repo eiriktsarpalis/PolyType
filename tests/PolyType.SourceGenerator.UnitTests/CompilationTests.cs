@@ -1414,4 +1414,25 @@ public static partial class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
+
+    [Fact]
+    public static void NamedTupleProperties()
+    {
+        // Regression test for https://github.com/eiriktsarpalis/PolyType/issues/241
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+            using System.Collections.Generic;
+
+            [GenerateShape]
+            public sealed partial class Message
+            {
+                public (string A, string B) Foo { get; set; }
+                public List<(string X, int Y)>? Bar { get; set; }
+                public Dictionary<(int I, string S), (string U, string V)>? Baz { get; set; }
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
 }

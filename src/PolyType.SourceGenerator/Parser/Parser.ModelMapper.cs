@@ -338,7 +338,7 @@ public sealed partial class Parser
                 _ => false
             },
 
-            PropertyType = CreateTypeId(property.PropertyType),
+            PropertyType = CreateTypeId(NormalizeType(property.PropertyType)),
             IsGetterNonNullable = emitGetter && property.IsGetterNonNullable,
             IsSetterNonNullable = emitSetter && property.IsSetterNonNullable,
             PropertyTypeContainsNullabilityAnnotations = property.PropertyType.ContainsNullabilityAnnotations(),
