@@ -1051,7 +1051,7 @@ public sealed partial class Parser : TypeDataModelGenerator
 
     private TypeId CreateTypeId(ITypeSymbol type)
     {
-        type = NormalizeType(type);
+        type = KnownSymbols.Compilation.EraseCompilerMetadata(type, useForSymbolDisplayOnly: true);
         return new TypeId
         {
             FullyQualifiedName = type.GetFullyQualifiedName(),

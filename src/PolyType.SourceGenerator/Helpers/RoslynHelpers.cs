@@ -29,77 +29,93 @@ internal static partial class RoslynHelpers
     /// <summary>
     /// Removes erased compiler metadata such as tuple names and nullable annotations.
     /// </summary>
-    public static ITypeSymbol EraseCompilerMetadata(this Compilation compilation, ITypeSymbol type)
+    public static ITypeSymbol EraseCompilerMetadata(this Compilation compilation, ITypeSymbol type, bool useForSymbolDisplayOnly = false)
     {
-        if (!RequiresErasure(type))
+        if (useForSymbolDisplayOnly && !SymbolDisplayRequiresErasure(type))
         {
             return type;
         }
 
-        if (type.NullableAnnotation != NullableAnnotation.None)
-        {
-            type = type.WithNullableAnnotation(NullableAnnotation.None);
-        }
+        return EraseCore(type);
 
-        if (type is IArrayTypeSymbol arrayType)
+        ITypeSymbol EraseCore(ITypeSymbol type)
         {
-            ITypeSymbol elementType = compilation.EraseCompilerMetadata(arrayType.ElementType);
-            return compilation.CreateArrayTypeSymbol(elementType, arrayType.Rank);
-        }
-
-        if (type is INamedTypeSymbol namedType)
-        {
-            if (namedType is { IsTupleType: true, TupleElements.Length: >= 2 })
+            if (type.NullableAnnotation is not NullableAnnotation.None)
             {
-                ImmutableArray<ITypeSymbol> erasedElements = namedType.TupleElements
-                    .Select(e => compilation.EraseCompilerMetadata(e.Type))
-                    .ToImmutableArray();
-
-                type = compilation.CreateTupleTypeSymbol(erasedElements);
+                type = type.WithNullableAnnotation(NullableAnnotation.None);
             }
-            else if (namedType.IsGenericType)
-            {
-                ImmutableArray<ITypeSymbol> typeArguments = namedType.TypeArguments;
-                INamedTypeSymbol? containingType = namedType.ContainingType;
 
-                if (containingType?.IsGenericType == true)
-                {
-                    containingType = (INamedTypeSymbol)compilation.EraseCompilerMetadata(containingType);
-                    type = namedType = containingType.GetTypeMembers().First(t => t.Name == namedType.Name && t.Arity == namedType.Arity);
-                }
-
-                if (typeArguments.Length > 0)
-                {
-                    ITypeSymbol[] erasedTypeArgs = typeArguments
-                        .Select(compilation.EraseCompilerMetadata)
-                        .ToArray();
-
-                    type = namedType.ConstructedFrom.Construct(erasedTypeArgs);
-                }
-            }
-        }
-
-        return type;
-
-        static bool RequiresErasure(ITypeSymbol type)
-        {
-            if (type.NullableAnnotation != NullableAnnotation.None)
-            {
-                return true;
-            }
             if (type is IArrayTypeSymbol arrayType)
             {
-                return RequiresErasure(arrayType.ElementType);
+                ITypeSymbol elementType = compilation.EraseCompilerMetadata(arrayType.ElementType);
+                return compilation.CreateArrayTypeSymbol(elementType, arrayType.Rank);
+            }
+
+            if (type is INamedTypeSymbol namedType)
+            {
+                if (namedType is { IsTupleType: true, TupleElements.Length: >= 2 })
+                {
+                    ImmutableArray<ITypeSymbol> erasedElements = namedType.TupleElements
+                        .Select(e => compilation.EraseCompilerMetadata(e.Type))
+                        .ToImmutableArray();
+
+                    type = compilation.CreateTupleTypeSymbol(erasedElements);
+                }
+                else if (namedType.IsGenericType)
+                {
+                    ImmutableArray<ITypeSymbol> typeArguments = namedType.TypeArguments;
+                    INamedTypeSymbol? containingType = namedType.ContainingType;
+
+                    if (containingType?.IsGenericType is true)
+                    {
+                        containingType = (INamedTypeSymbol)EraseCore(containingType);
+                        type = namedType = containingType.GetTypeMembers().First(t => t.Name == namedType.Name && t.Arity == namedType.Arity);
+                    }
+
+                    if (typeArguments.Length > 0)
+                    {
+                        ITypeSymbol[] erasedTypeArgs = typeArguments
+                            .Select(EraseCore)
+                            .ToArray();
+
+                        type = namedType.ConstructedFrom.Construct(erasedTypeArgs);
+                    }
+                }
+            }
+
+            return type;
+        }
+
+        static bool SymbolDisplayRequiresErasure(ITypeSymbol type)
+        {
+            // No need to check for type.NullableAnnotation since SymbolDisplayFormat.FullyQualifiedFormat
+            // does not enable IncludeNullableReferenceTypeModifier.
+
+            if (type is IArrayTypeSymbol arrayType)
+            {
+                return SymbolDisplayRequiresErasure(arrayType.ElementType);
             }
             if (type is INamedTypeSymbol namedType)
             {
                 if (namedType.IsTupleType)
                 {
-                    return namedType.TupleElements.Any(e => RequiresErasure(e.Type));
+                    foreach (IFieldSymbol e in namedType.TupleElements)
+                    {
+                        if (!string.IsNullOrEmpty(e.Name) || SymbolDisplayRequiresErasure(e.Type))
+                        {
+                            return true;
+                        }
+                    }
                 }
-                if (namedType.TypeArguments.Length > 0)
+                else if (namedType.TypeArguments.Length > 0)
                 {
-                    return namedType.TypeArguments.Any(RequiresErasure);
+                    foreach (ITypeSymbol t in namedType.TypeArguments)
+                    {
+                        if (SymbolDisplayRequiresErasure(t))
+                        {
+                            return true;
+                        }
+                    }
                 }
             }
 
