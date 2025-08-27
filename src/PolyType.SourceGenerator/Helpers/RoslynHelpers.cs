@@ -31,6 +31,11 @@ internal static partial class RoslynHelpers
     /// </summary>
     public static ITypeSymbol EraseCompilerMetadata(this Compilation compilation, ITypeSymbol type)
     {
+        if (!RequiresErasure(type))
+        {
+            return type;
+        }
+
         if (type.NullableAnnotation != NullableAnnotation.None)
         {
             type = type.WithNullableAnnotation(NullableAnnotation.None);
@@ -44,13 +49,8 @@ internal static partial class RoslynHelpers
 
         if (type is INamedTypeSymbol namedType)
         {
-            if (namedType.IsTupleType)
+            if (namedType is { IsTupleType: true, TupleElements.Length: >= 2 })
             {
-                if (namedType.TupleElements.Length < 2)
-                {
-                    return type;
-                }
-
                 ImmutableArray<ITypeSymbol> erasedElements = namedType.TupleElements
                     .Select(e => compilation.EraseCompilerMetadata(e.Type))
                     .ToImmutableArray();
@@ -80,6 +80,31 @@ internal static partial class RoslynHelpers
         }
 
         return type;
+
+        static bool RequiresErasure(ITypeSymbol type)
+        {
+            if (type.NullableAnnotation != NullableAnnotation.None)
+            {
+                return true;
+            }
+            if (type is IArrayTypeSymbol arrayType)
+            {
+                return RequiresErasure(arrayType.ElementType);
+            }
+            if (type is INamedTypeSymbol namedType)
+            {
+                if (namedType.IsTupleType)
+                {
+                    return namedType.TupleElements.Any(e => RequiresErasure(e.Type));
+                }
+                if (namedType.TypeArguments.Length > 0)
+                {
+                    return namedType.TypeArguments.Any(RequiresErasure);
+                }
+            }
+
+            return false;
+        }
     }
 
     public static bool ContainsNullabilityAnnotations(this ITypeSymbol type)
