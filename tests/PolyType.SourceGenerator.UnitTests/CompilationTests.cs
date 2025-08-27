@@ -1429,8 +1429,33 @@ public static partial class CompilationTests
                 public (string A, string B) Foo { get; set; }
                 public List<(string X, int Y)>? Bar { get; set; }
                 public Dictionary<(int I, string S), (string U, string V)>? Baz { get; set; }
+                public (string A, (string X, int Y)) Qux { get; set; }
             }
             """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void NamedTupleParameters()
+    {
+        // Regression test for https://github.com/eiriktsarpalis/PolyType/issues/244
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+            using System.Collections.Generic;
+
+            [GenerateShape]
+            public partial record Message(
+                (string A, string B) foo,
+                List<(string X, int Y)> bar,
+                Dictionary<(int I, string S), (string U, string V)> baz,
+                (string A, (string X, int Y)) qux)
+            {
+                public required (string A, string B) RequiredProp { get; set; }
+            }
+            """,
+            parseOptions: new(LanguageVersion.CSharp12));
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);

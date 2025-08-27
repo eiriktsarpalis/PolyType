@@ -338,7 +338,7 @@ public sealed partial class Parser
                 _ => false
             },
 
-            PropertyType = CreateTypeId(NormalizeType(property.PropertyType)),
+            PropertyType = CreateTypeId(property.PropertyType),
             IsGetterNonNullable = emitGetter && property.IsGetterNonNullable,
             IsSetterNonNullable = emitSetter && property.IsSetterNonNullable,
             PropertyTypeContainsNullabilityAnnotations = property.PropertyType.ContainsNullabilityAnnotations(),
@@ -571,7 +571,7 @@ public sealed partial class Parser
             _ => underlyingValue.ToString(),
         };
 
-    private static ConstructorShapeModel MapTupleConstructor(TypeId typeId, TupleDataModel tupleModel)
+    private ConstructorShapeModel MapTupleConstructor(TypeId typeId, TupleDataModel tupleModel)
     {
         return new ConstructorShapeModel
         {
@@ -593,7 +593,7 @@ public sealed partial class Parser
             IsPublic = true,
         };
 
-        static ParameterShapeModel MapTupleConstructorParameter(TypeId typeId, PropertyDataModel tupleElement, int position)
+        ParameterShapeModel MapTupleConstructorParameter(TypeId typeId, PropertyDataModel tupleElement, int position)
         {
             string name = $"Item{position + 1}";
             return new ParameterShapeModel

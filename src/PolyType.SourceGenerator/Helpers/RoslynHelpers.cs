@@ -29,57 +29,98 @@ internal static partial class RoslynHelpers
     /// <summary>
     /// Removes erased compiler metadata such as tuple names and nullable annotations.
     /// </summary>
-    public static ITypeSymbol EraseCompilerMetadata(this Compilation compilation, ITypeSymbol type)
+    public static ITypeSymbol EraseCompilerMetadata(this Compilation compilation, ITypeSymbol type, bool useForSymbolDisplayOnly = false)
     {
-        if (type.NullableAnnotation != NullableAnnotation.None)
+        if (useForSymbolDisplayOnly && !SymbolDisplayRequiresErasure(type))
         {
-            type = type.WithNullableAnnotation(NullableAnnotation.None);
+            return type;
         }
 
-        if (type is IArrayTypeSymbol arrayType)
-        {
-            ITypeSymbol elementType = compilation.EraseCompilerMetadata(arrayType.ElementType);
-            return compilation.CreateArrayTypeSymbol(elementType, arrayType.Rank);
-        }
+        return EraseCore(type);
 
-        if (type is INamedTypeSymbol namedType)
+        ITypeSymbol EraseCore(ITypeSymbol type)
         {
-            if (namedType.IsTupleType)
+            if (type.NullableAnnotation is not NullableAnnotation.None)
             {
-                if (namedType.TupleElements.Length < 2)
-                {
-                    return type;
-                }
-
-                ImmutableArray<ITypeSymbol> erasedElements = namedType.TupleElements
-                    .Select(e => compilation.EraseCompilerMetadata(e.Type))
-                    .ToImmutableArray();
-
-                type = compilation.CreateTupleTypeSymbol(erasedElements);
+                type = type.WithNullableAnnotation(NullableAnnotation.None);
             }
-            else if (namedType.IsGenericType)
+
+            if (type is IArrayTypeSymbol arrayType)
             {
-                ImmutableArray<ITypeSymbol> typeArguments = namedType.TypeArguments;
-                INamedTypeSymbol? containingType = namedType.ContainingType;
+                ITypeSymbol elementType = compilation.EraseCompilerMetadata(arrayType.ElementType);
+                return compilation.CreateArrayTypeSymbol(elementType, arrayType.Rank);
+            }
 
-                if (containingType?.IsGenericType == true)
+            if (type is INamedTypeSymbol namedType)
+            {
+                if (namedType is { IsTupleType: true, TupleElements.Length: >= 2 })
                 {
-                    containingType = (INamedTypeSymbol)compilation.EraseCompilerMetadata(containingType);
-                    type = namedType = containingType.GetTypeMembers().First(t => t.Name == namedType.Name && t.Arity == namedType.Arity);
+                    ImmutableArray<ITypeSymbol> erasedElements = namedType.TupleElements
+                        .Select(e => compilation.EraseCompilerMetadata(e.Type))
+                        .ToImmutableArray();
+
+                    type = compilation.CreateTupleTypeSymbol(erasedElements);
                 }
-
-                if (typeArguments.Length > 0)
+                else if (namedType.IsGenericType)
                 {
-                    ITypeSymbol[] erasedTypeArgs = typeArguments
-                        .Select(compilation.EraseCompilerMetadata)
-                        .ToArray();
+                    ImmutableArray<ITypeSymbol> typeArguments = namedType.TypeArguments;
+                    INamedTypeSymbol? containingType = namedType.ContainingType;
 
-                    type = namedType.ConstructedFrom.Construct(erasedTypeArgs);
+                    if (containingType?.IsGenericType is true)
+                    {
+                        containingType = (INamedTypeSymbol)EraseCore(containingType);
+                        type = namedType = containingType.GetTypeMembers().First(t => t.Name == namedType.Name && t.Arity == namedType.Arity);
+                    }
+
+                    if (typeArguments.Length > 0)
+                    {
+                        ITypeSymbol[] erasedTypeArgs = typeArguments
+                            .Select(EraseCore)
+                            .ToArray();
+
+                        type = namedType.ConstructedFrom.Construct(erasedTypeArgs);
+                    }
                 }
             }
+
+            return type;
         }
 
-        return type;
+        static bool SymbolDisplayRequiresErasure(ITypeSymbol type)
+        {
+            // No need to check for type.NullableAnnotation since SymbolDisplayFormat.FullyQualifiedFormat
+            // does not enable IncludeNullableReferenceTypeModifier.
+
+            if (type is IArrayTypeSymbol arrayType)
+            {
+                return SymbolDisplayRequiresErasure(arrayType.ElementType);
+            }
+            if (type is INamedTypeSymbol namedType)
+            {
+                if (namedType.IsTupleType)
+                {
+                    foreach (IFieldSymbol e in namedType.TupleElements)
+                    {
+                        if (!string.IsNullOrEmpty(e.Name) || SymbolDisplayRequiresErasure(e.Type))
+                        {
+                            return true;
+                        }
+                    }
+                }
+                else if (namedType.TypeArguments.Length > 0)
+                {
+                    foreach (ITypeSymbol t in namedType.TypeArguments)
+                    {
+                        if (SymbolDisplayRequiresErasure(t))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
     }
 
     public static bool ContainsNullabilityAnnotations(this ITypeSymbol type)

@@ -973,7 +973,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
     }
 
-    private static AssociatedTypeId CreateAssociatedTypeId(INamedTypeSymbol open, INamedTypeSymbol closed)
+    private AssociatedTypeId CreateAssociatedTypeId(INamedTypeSymbol open, INamedTypeSymbol closed)
     {
         StringBuilder builder = new();
 
@@ -1049,8 +1049,9 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
     }
 
-    private static TypeId CreateTypeId(ITypeSymbol type)
+    private TypeId CreateTypeId(ITypeSymbol type)
     {
+        type = KnownSymbols.Compilation.EraseCompilerMetadata(type, useForSymbolDisplayOnly: true);
         return new TypeId
         {
             FullyQualifiedName = type.GetFullyQualifiedName(),
