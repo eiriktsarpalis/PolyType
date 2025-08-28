@@ -287,8 +287,9 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
 
         // If the type defines more than one constructors, pick one using the following rules:
-        // 1. Maximize the number of parameters that match read-only properties/fields.
-        // 2. Minimize the number of parameters not corresponding to any readable property/field.
+        // 1. Minimize the number of required parameters not corresponding to any readable property/field.
+        // 2. Maximize the number of parameters that match read-only properties/fields.
+        // 3. Minimize the total number of constructor parameters.
 
         Dictionary<(ITypeSymbol, string), bool> readableProperties = properties
             .Where(prop => prop.IncludeGetter)
@@ -301,24 +302,24 @@ public sealed partial class Parser : TypeDataModelGenerator
             .OrderByDescending(ctor =>
             {
                 int matchingReadOnlyMemberParamCount = 0;
-                int unmatchedParamCount = 0;
+                int unmatchedRequiredParamCount = 0;
                 foreach (IParameterSymbol param in ctor.Parameters)
                 {
                     if (readableProperties.TryGetValue((param.Type, param.Name), out bool isReadOnly))
                     {
-                        // Do not count settable members as they can set after any constructor.
+                        // Do not count settable members as they can be set after any constructor.
                         if (isReadOnly)
                         {
                             matchingReadOnlyMemberParamCount++;
                         }
                     }
-                    else
+                    else if (!param.IsOptional)
                     {
-                        unmatchedParamCount++;
+                        unmatchedRequiredParamCount++;
                     }
                 }
 
-                return (matchingReadOnlyMemberParamCount, -unmatchedParamCount);
+                return (-unmatchedRequiredParamCount, matchingReadOnlyMemberParamCount, -ctor.Parameters.Length);
             })
             .Take(1);
     }

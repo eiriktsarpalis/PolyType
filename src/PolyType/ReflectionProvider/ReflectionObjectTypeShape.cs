@@ -75,8 +75,8 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
         MemberInitializerShapeInfo[] settableMembers;
         NullabilityInfoContext? nullabilityCtx = ReflectionTypeShapeProvider.CreateNullabilityInfoContext();
 
-        (ConstructorInfo Ctor, ParameterInfo[] Parameters, bool HasShapeAttribute)[] ctorCandidates = [.. GetCandidateConstructors()];
-        if (ctorCandidates.Length == 0)
+        List<(ConstructorInfo Ctor, ParameterInfo[] Parameters)> ctorCandidates = GetCandidateConstructors();
+        if (ctorCandidates.Count == 0)
         {
             if (typeof(T).IsValueType)
             {
@@ -95,16 +95,16 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
         ParameterInfo[] parameters;
         allMembers = [.. GetMembers(nullabilityCtx)];
 
-        if (ctorCandidates.Length == 1)
+        if (ctorCandidates.Count == 1)
         {
-            (constructorInfo, parameters, _) = ctorCandidates[0];
+            (constructorInfo, parameters) = ctorCandidates[0];
         }
         else
         {
             // If the type defines more than one constructors, pick one using the following rules:
-            // 1. Prefer [ConstructorShape] annotated constructors.
+            // 1. Minimize the number of required parameters not corresponding to any property/field.
             // 2. Maximize the number of parameters that match read-only properties/fields.
-            // 3. Minimize the number of parameters not corresponding to any property/field.
+            // 3. Minimize the total number of constructor parameters.
 
             Dictionary<(Type, string), bool> readableMembers = allMembers
                 .Where(member => member.MemberInfo is PropertyInfo { CanRead: true } or FieldInfo)
@@ -117,28 +117,28 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                     },
                     comparer: ReflectionTypeShapeProvider.CtorParameterEqualityComparer);
 
-            (constructorInfo, parameters, _) = ctorCandidates
+            (constructorInfo, parameters) = ctorCandidates
                 .OrderByDescending(ctor =>
                 {
                     int matchingReadOnlyMemberParamCount = 0;
-                    int unmatchedParamCount = 0;
+                    int unmatchedRequiredParamCount = 0;
                     foreach (ParameterInfo param in ctor.Parameters)
                     {
                         if (readableMembers.TryGetValue((param.ParameterType, param.Name!), out bool isReadOnly))
                         {
-                            // Do not count settable members as they can set after any constructor.
+                            // Do not count settable members as they can be set after any constructor.
                             if (isReadOnly)
                             {
                                 matchingReadOnlyMemberParamCount++;
                             }
                         }
-                        else
+                        else if (!param.IsOptional)
                         {
-                            unmatchedParamCount++;
+                            unmatchedRequiredParamCount++;
                         }
                     }
 
-                    return (ctor.HasShapeAttribute, matchingReadOnlyMemberParamCount, -unmatchedParamCount);
+                    return (-unmatchedRequiredParamCount, matchingReadOnlyMemberParamCount, -ctor.Parameters.Length);
                 })
                 .FirstOrDefault();
         }
@@ -210,8 +210,9 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                 .ToArray();
         }
 
-        IEnumerable<(ConstructorInfo, ParameterInfo[], bool HasShapeAttribute)> GetCandidateConstructors()
+        List<(ConstructorInfo, ParameterInfo[])> GetCandidateConstructors()
         {
+            List<(ConstructorInfo, ParameterInfo[])> results = [];
             bool foundCtorWithShapeAttribute = false;
             foreach (ConstructorInfo constructorInfo in typeof(T).GetConstructors(AllInstanceMembers))
             {
@@ -225,6 +226,12 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                     }
 
                     foundCtorWithShapeAttribute = true;
+                    results.Clear(); // Clear out any unannotated ctors we've already added.
+                }
+                else if (foundCtorWithShapeAttribute)
+                {
+                    // Skip unannotated constructors if we've already found one with the attribute.
+                    continue;
                 }
                 else if (!constructorInfo.IsPublic)
                 {
@@ -246,8 +253,10 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                     continue;
                 }
 
-                yield return (constructorInfo, parameters, hasShapeAttribute);
+                results.Add((constructorInfo, parameters));
             }
+
+            return results;
         }
     }
 
