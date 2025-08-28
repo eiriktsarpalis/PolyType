@@ -554,6 +554,9 @@ public static class TestTypes
         yield return TestCase.Create(GenericStructWithPrivateIncludedMembers<int>.Create(1, 2), p);
         yield return TestCase.Create(GenericStructWithPrivateIncludedMembers<string>.Create("1", "2"), p);
         yield return TestCase.Create(new Vector3D(1, 2, 3));
+        yield return TestCase.Create(new ClassWithAmbiguousCtors1(1, 2, 3));
+        yield return TestCase.Create(new ClassWithAmbiguousCtors2(1, 2, 3));
+        yield return TestCase.Create(new ClassWithAmbiguousCtors3(1, 2));
         yield return TestCase.Create(new Point(1, 2), p);
         yield return TestCase.Create(new @class(@string: "string", @__makeref: 42, @yield: true));
         yield return TestCase.Create(new TypeWithStringSurrogate("string"));
@@ -2198,10 +2201,52 @@ public partial struct Vector3D
     public float Y;
     public float Z;
 
-    public Vector3D(float value) => (X, Y, Z) = (value, value, value);
+    public Vector3D(float value) => throw new NotSupportedException();
 
     [JsonConstructor] // PolyType should automatically pick this ctor
     public Vector3D(float x, float y, float z) => (X, Y, Z) = (x, y, z);
+}
+
+[GenerateShape]
+public partial class ClassWithAmbiguousCtors1
+{
+    // PolyType should pick this constructor
+    [JsonConstructor]
+    public ClassWithAmbiguousCtors1(int x, int y, int z) => (X, Y, Z) = (x, y, z);
+
+    public ClassWithAmbiguousCtors1(int x, int y, int z, int unmatched) => throw new NotSupportedException();
+
+    public int X { get; }
+    public int Y { get; }
+    public int Z { get; }
+}
+
+[GenerateShape]
+public partial class ClassWithAmbiguousCtors2
+{
+    // optional unmatched constructors take precedence over constructors with unmatched required parameters
+    [JsonConstructor]
+    public ClassWithAmbiguousCtors2(int x, int y, int z, string? unmatched = null) => (X, Y, Z) = (x, y, z);
+
+    public ClassWithAmbiguousCtors2(int x, int y, int z, bool unmatched) => throw new NotSupportedException();
+
+    public int X { get; }
+    public int Y { get; }
+    public int Z { get; }
+}
+
+[GenerateShape]
+public partial class ClassWithAmbiguousCtors3
+{
+    // PolyType should pick this constructor
+    [JsonConstructor]
+    public ClassWithAmbiguousCtors3(int x, int y) => (X, Y) = (x, y);
+
+    public ClassWithAmbiguousCtors3(int x, int y, int z, int unmatched) => throw new NotSupportedException();
+
+    public int X { get; }
+    public int Y { get; }
+    public int Z { get; }
 }
 
 // A type using escaped keywords as its identifiers
