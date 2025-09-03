@@ -59,6 +59,9 @@ public static partial class Mapper
                 case TypeShapeKind.Enum:
                     return new Mapper<TSource, TTarget>(source => (TTarget)(object)source!);
 
+                case TypeShapeKind.Function:
+                    return new Mapper<TSource, TTarget>(source => (TTarget)(object)source!);
+
                 default:
                     return (Mapper<TSource, TTarget>?)sourceShape.Accept(this, state: targetShape);
             }
@@ -353,6 +356,7 @@ public static partial class Mapper
         public Type Type => typeof(Mapper<TSource, TTarget>);
         public ICustomAttributeProvider? AttributeProvider => typeof(Mapper<TSource, TTarget>);
         public IReadOnlyList<IMethodShape> Methods => [];
+        public IReadOnlyList<IEventShape> Events => [];
         public object? Accept(TypeShapeVisitor visitor, object? state = null) => ((MapperTypeShapeVisitor)visitor).VisitMapper(source, target, state);
         public object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
         public Func<object>? GetAssociatedTypeFactory(Type relatedType) => throw new NotImplementedException();

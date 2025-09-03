@@ -125,8 +125,16 @@ public partial class TypeDataModelGenerator
     /// </summary>
     /// <param name="type">The declaring type from which to resolve the methods.</param>
     /// <param name="bindingFlags">The binding flags of the methods to include.</param>
-    /// <returns>A key/value pair containing the method and its declared name.</returns>
+    /// <returns>A struct containing resolved method information.</returns>
     protected virtual IEnumerable<ResolvedMethodSymbol> ResolveMethods(ITypeSymbol type, BindingFlags bindingFlags) => [];
+
+    /// <summary>
+    ///  Resolves the event symbols that should be included for the given type.
+    /// </summary>
+    /// <param name="type">The declaring type from which to resolve the methods.</param>
+    /// <param name="bindingFlags">The binding flags of the methods to include.</param>
+    /// <returns>A struct containing resolved event information.</returns>
+    protected virtual IEnumerable<ResolvedEventSymbol> ResolveEvents(ITypeSymbol type, BindingFlags bindingFlags) => [];
 
     /// <summary>
     /// Wraps the <see cref="MapType(ITypeSymbol, TypeDataKind?, BindingFlags?, ImmutableArray{AssociatedTypeModel}, ref TypeDataModelGenerationContext, TypeShapeRequirements, out TypeDataModel?)"/> method
@@ -220,6 +228,7 @@ public partial class TypeDataModelGenerator
         TypeDataModelGenerationStatus status;
         IncludeAssociatedShapes(type, associatedTypes, ref ctx);
         ImmutableArray<MethodDataModel> methodModels = MapMethods(type, ref ctx, methodBindingFlags);
+        ImmutableArray<EventDataModel> eventModels = MapEvents(type, ref ctx, methodBindingFlags);
 
         switch (requestedKind)
         {
@@ -232,21 +241,21 @@ public partial class TypeDataModelGenerator
                 goto None;
 
             case TypeDataKind.Optional:
-                if (TryMapOptional(type, ref ctx, methodModels, requirements, out model, out status))
+                if (TryMapOptional(type, ref ctx, methodModels, eventModels, requirements, out model, out status))
                 {
                     return status;
                 }
                 goto None;
 
             case TypeDataKind.Dictionary:
-                if (TryMapDictionary(type, ref ctx, methodModels, out model, out status))
+                if (TryMapDictionary(type, ref ctx, methodModels, eventModels, out model, out status))
                 {
                     return status;
                 }
                 goto None;
 
             case TypeDataKind.Enumerable:
-                if (TryMapEnumerable(type, ref ctx, methodModels, out model, out status))
+                if (TryMapEnumerable(type, ref ctx, methodModels, eventModels, out model, out status))
                 {
                     return status;
                 }
@@ -259,8 +268,15 @@ public partial class TypeDataModelGenerator
                 }
                 goto None;
 
+            case TypeDataKind.Delegate:
+                if (TryMapDelegate(type, ref ctx, methodModels, out model, out status))
+                {
+                    return status;
+                }
+                goto None;
+
             case TypeDataKind.Object:
-                if (TryMapObject(type, ref ctx, methodModels, requirements, out model, out status))
+                if (TryMapObject(type, ref ctx, methodModels, eventModels, requirements, out model, out status))
                 {
                     return status;
                 }
@@ -275,19 +291,19 @@ public partial class TypeDataModelGenerator
             return status;
         }
 
-        if (TryMapOptional(type, ref ctx, methodModels, requirements, out model, out status))
+        if (TryMapOptional(type, ref ctx, methodModels, eventModels, requirements, out model, out status))
         {
             return status;
         }
 
         // Important: Dictionary resolution goes before Enumerable
         // since Dictionary also implements IEnumerable
-        if (TryMapDictionary(type, ref ctx, methodModels, out model, out status))
+        if (TryMapDictionary(type, ref ctx, methodModels, eventModels, out model, out status))
         {
             return status;
         }
 
-        if (TryMapEnumerable(type, ref ctx, methodModels, out model, out status))
+        if (TryMapEnumerable(type, ref ctx, methodModels, eventModels, out model, out status))
         {
             return status;
         }
@@ -297,7 +313,12 @@ public partial class TypeDataModelGenerator
             return status;
         }
 
-        if (TryMapObject(type, ref ctx, methodModels, requirements, out model, out status))
+        if (TryMapDelegate(type, ref ctx, methodModels, out model, out status))
+        {
+            return status;
+        }
+
+        if (TryMapObject(type, ref ctx, methodModels, eventModels, requirements, out model, out status))
         {
             return status;
         }
@@ -309,6 +330,7 @@ public partial class TypeDataModelGenerator
             Type = type,
             DerivedTypes = IncludeDerivedTypes(type, ref ctx, requirements),
             Methods = methodModels,
+            Events = eventModels,
             Requirements = TypeShapeRequirements.Full,
         };
 
@@ -501,5 +523,53 @@ public partial class TypeDataModelGenerator
         }
 
         return returnType;
+    }
+
+    /// <summary>
+    /// Maps the events resolved from the current type and their parameters to an array of <see cref="EventDataModel"/>.
+    /// </summary>
+    /// <param name="type">The type from which to resolve methods.</param>
+    /// <param name="ctx">The current model generation context.</param>
+    /// <param name="bindingFlags">The binding flags to use when resolving methods.</param>
+    /// <returns>An array of mapped method data models.</returns>
+    protected ImmutableArray<EventDataModel> MapEvents(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, BindingFlags? bindingFlags)
+    {
+        ImmutableArray<EventDataModel>.Builder results = ImmutableArray.CreateBuilder<EventDataModel>();
+        foreach (ResolvedEventSymbol resolvedEvent in ResolveEvents(type, bindingFlags ?? BindingFlags.Default))
+        {
+            TypeDataModelGenerationContext scopedCtx = ctx;
+            if (MapEvent(resolvedEvent, ref scopedCtx, out EventDataModel eventDataModel) is TypeDataModelGenerationStatus.Success)
+            {
+                results.Add(eventDataModel);
+                ctx = scopedCtx;
+            }
+        }
+
+        return results.ToImmutable();
+    }
+
+    /// <summary>
+    /// Maps the given <paramref name="resolvedEvent"/> and its parameters to a <see cref="EventDataModel"/>.
+    /// </summary>
+    /// <param name="resolvedEvent">The event to try to map.</param>
+    /// <param name="ctx">The current model generation context.</param>
+    /// <param name="result">The mapped event data model.</param>
+    /// <returns>The result of the mapping operation.</returns>
+    protected virtual TypeDataModelGenerationStatus MapEvent(ResolvedEventSymbol resolvedEvent, ref TypeDataModelGenerationContext ctx, out EventDataModel result)
+    {
+        TypeDataModelGenerationStatus status = IncludeNestedType(resolvedEvent.Event.Type, ref ctx);
+        if (status != TypeDataModelGenerationStatus.Success)
+        {
+            result = default;
+            return status;
+        }
+
+        result = new EventDataModel
+        {
+            Name = resolvedEvent.CustomName ?? resolvedEvent.Event.Name,
+            Event = resolvedEvent.Event,
+        };
+
+        return status;
     }
 }

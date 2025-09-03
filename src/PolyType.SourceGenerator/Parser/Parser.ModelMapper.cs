@@ -30,6 +30,7 @@ public sealed partial class Parser
                 UnderlyingType = CreateTypeId(enumModel.UnderlyingType),
                 AssociatedTypes = associatedTypes,
                 Methods = [],
+                Events = [],
                 Members = enumModel.Members.ToImmutableEquatableDictionary(m => m.Key, m => EnumValueToString(m.Value)),
             },
 
@@ -45,6 +46,7 @@ public sealed partial class Parser
                 },
                 SourceIdentifier = sourceIdentifier,
                 Methods = MapMethods(model, typeId),
+                Events = MapEvents(model, typeId),
                 ElementType = CreateTypeId(optionalModel.ElementType),
                 AssociatedTypes = associatedTypes,
             },
@@ -56,6 +58,7 @@ public sealed partial class Parser
                 SurrogateType = CreateTypeId(surrogateModel.SurrogateType),
                 MarshalerType = CreateTypeId(surrogateModel.MarshalerType),
                 Methods = MapMethods(model, typeId),
+                Events = MapEvents(model, typeId),
                 AssociatedTypes = associatedTypes,
             },
 
@@ -86,6 +89,7 @@ public sealed partial class Parser
                 StaticFactoryMethod = enumerableModel.FactoryMethod is { IsStatic: true } m ? m.GetFullyQualifiedName() : null,
                 ConstructorParameters = enumerableModel.FactorySignature.ToImmutableEquatableArray(),
                 Methods = MapMethods(model, typeId),
+                Events = MapEvents(model, typeId),
 
                 Kind = enumerableModel.EnumerableKind,
                 Rank = enumerableModel.Rank,
@@ -103,6 +107,7 @@ public sealed partial class Parser
                 KeyType = CreateTypeId(dictionaryModel.KeyType),
                 ValueType = CreateTypeId(dictionaryModel.ValueType),
                 Methods = MapMethods(model, typeId),
+                Events = MapEvents(model, typeId),
                 ConstructionStrategy = dictionaryModel switch
                 {
                     { FactoryMethod: not null } => 
@@ -145,6 +150,7 @@ public sealed partial class Parser
                     .ToImmutableEquatableArray(),
 
                 Methods = MapMethods(model, typeId),
+                Events = MapEvents(model, typeId),
                 IsValueTupleType = false,
                 IsTupleType = false,
                 IsRecordType = model.Type.IsRecord,
@@ -158,6 +164,7 @@ public sealed partial class Parser
                 SourceIdentifier = sourceIdentifier,
                 Constructor = MapTupleConstructor(typeId, tupleModel),
                 Methods = MapMethods(model, typeId),
+                Events = [],
                 Properties = tupleModel.Elements
                     .Select((e, i) => MapProperty(model.Type, typeId, e, tupleElementIndex: i, isClassTupleType: !tupleModel.IsValueTuple))
                     .ToImmutableEquatableArray(),
@@ -173,6 +180,7 @@ public sealed partial class Parser
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
                 Methods = MapMethods(model, typeId),
+                Events = MapEvents(model, typeId),
                 TagReader = unionModel.TagReader switch
                 {
                     { MethodKind: MethodKind.PropertyGet } tagReader => tagReader.AssociatedSymbol!.Name,
@@ -186,6 +194,7 @@ public sealed partial class Parser
                     Type = typeId,
                     Constructor = null,
                     Methods = MapMethods(model, typeId),
+                    Events = MapEvents(model, typeId),
                     Properties = [],
                     SourceIdentifier = sourceIdentifier + "__Underlying",
                     IsValueTupleType = false,
@@ -202,12 +211,36 @@ public sealed partial class Parser
                 AssociatedTypes = associatedTypes,
             },
 
+            DelegateDataModel delegateModel => new FunctionShapeModel
+            {
+                Type = typeId,
+                SourceIdentifier = sourceIdentifier,
+                Methods = MapMethods(model, typeId),
+                Events = MapEvents(model, typeId),
+                ReturnType = CreateTypeId(delegateModel.ReturnedValueType ?? _knownSymbols.UnitType!),
+                ReturnTypeKind = delegateModel.ReturnTypeKind,
+                UnderlyingReturnType = CreateTypeId(delegateModel.InvokeMethod.ReturnType),
+                ReturnsByRef = delegateModel.InvokeMethod.ReturnsByRef || delegateModel.InvokeMethod.ReturnsByRefReadonly,
+                AssociatedTypes = associatedTypes,
+                Parameters = delegateModel.Parameters
+                    .Select(p => MapParameter(declaringObjectForConstructor: null, typeId, p, false))
+                    .ToImmutableEquatableArray(),
+
+                ArgumentStateType = delegateModel.Parameters.Length switch
+                {
+                    0 => ArgumentStateType.EmptyArgumentState,
+                    <= 64 => ArgumentStateType.SmallArgumentState,
+                    _ => ArgumentStateType.LargeArgumentState,
+                },
+            },
+
             _ => new ObjectShapeModel
             {
                 Requirements = TypeShapeRequirements.Full,
                 Type = typeId,
                 SourceIdentifier = sourceIdentifier,
                 Methods = MapMethods(model, typeId),
+                Events = MapEvents(model, typeId),
                 Constructor = null,
                 Properties = [],
                 IsValueTupleType = false,
@@ -301,6 +334,7 @@ public sealed partial class Parser
             },
 
             Methods = MapMethods(model, underlyingIncrementalModel.Type),
+            Events = MapEvents(model, underlyingIncrementalModel.Type),
             UnionCases = model.DerivedTypes
                 .Select(derived => new UnionCaseModel
                 {
@@ -396,6 +430,7 @@ public sealed partial class Parser
                 Kind = propertyModel.IsRequiredBySyntax || propertyModel.IsRequiredByPolicy is true ? ParameterKind.RequiredMember : ParameterKind.OptionalMember,
                 RefKind = RefKind.None,
                 IsNonNullable = propertyModel.IsSetterNonNullable,
+                NullableAnnotation = propertyModel.PropertyType.NullableAnnotation,
                 ParameterTypeContainsNullabilityAnnotations = propertyModel.PropertyType.ContainsNullabilityAnnotations(),
                 IsPublic = propertyModel.PropertySymbol.DeclaredAccessibility is Accessibility.Public,
                 IsField = propertyModel.IsField,
@@ -492,6 +527,30 @@ public sealed partial class Parser
             .ToImmutableEquatableArray();
     }
 
+    private ImmutableEquatableArray<EventShapeModel> MapEvents(TypeDataModel typeModel, TypeId typeId)
+    {
+        return typeModel.Events
+            .Select((e, i) => new EventShapeModel
+            {
+                Name = e.Name,
+                UnderlyingMemberName = e.Event.Name,
+                IsPublic = e.Event.DeclaredAccessibility is Accessibility.Public,
+                IsStatic = e.Event.IsStatic,
+                DeclaringType = !SymbolEqualityComparer.Default.Equals(e.Event.ContainingType, typeModel.Type)
+                    ? CreateTypeId(e.Event.ContainingType)
+                    : typeId,
+                HandlerType = CreateTypeId(e.Event.Type),
+                IsAccessible = IsAccessibleSymbol(e.Event),
+                CanUseUnsafeAccessors = _knownSymbols.TargetFramework switch
+                {
+                    // .NET 8 or later supports unsafe accessors for events of non-generic types.
+                    var target when target >= TargetFramework.Net80 => !e.Event.ContainingType.IsGenericType && !e.Event.IsStatic,
+                    _ => false
+                },
+            })
+            .ToImmutableEquatableArray();
+    }
+
     private ParameterShapeModel MapParameter(ObjectDataModel? declaringObjectForConstructor, TypeId declaringTypeId, ParameterDataModel parameter, bool isFSharpUnionCase)
     {
         string name = parameter.Parameter.Name;
@@ -555,6 +614,7 @@ public sealed partial class Parser
             CanUseUnsafeAccessors = false,
             IsInitOnlyProperty = false,
             IsNonNullable = parameter.IsNonNullable,
+            NullableAnnotation = parameter.Parameter.NullableAnnotation,
             ParameterTypeContainsNullabilityAnnotations = parameter.Parameter.Type.ContainsNullabilityAnnotations(),
             IsPublic = true,
             IsField = false,
@@ -613,6 +673,7 @@ public sealed partial class Parser
                 IsPublic = true,
                 IsField = true,
                 IsNonNullable = tupleElement.IsSetterNonNullable,
+                NullableAnnotation = NullableAnnotation.NotAnnotated,
                 ParameterTypeContainsNullabilityAnnotations = tupleElement.PropertyType.ContainsNullabilityAnnotations(),
                 DefaultValueExpr = null,
             };
@@ -825,7 +886,6 @@ public sealed partial class Parser
 
     private static bool IsParameterizedConstructor(ImmutableArray<CollectionConstructorParameter> signature)
     {
-
         foreach (var param in signature)
         {
             switch (param)

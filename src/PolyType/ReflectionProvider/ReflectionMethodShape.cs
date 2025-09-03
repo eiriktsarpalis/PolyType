@@ -12,7 +12,7 @@ internal sealed class ReflectionMethodShape<TDeclaringType, TArgumentState, TRes
     private readonly MethodShapeInfo _methodShapeInfo;
     private IReadOnlyList<IParameterShape>? _parameters;
     private Func<TArgumentState>? _argumentStateConstructor;
-    private MethodInvoker<TDeclaringType, TArgumentState, TResult>? _methodInvoker;
+    private MethodInvoker<TDeclaringType?, TArgumentState, TResult>? _methodInvoker;
 
     public ReflectionMethodShape(MethodShapeInfo methodShapeInfo, ReflectionTypeShapeProvider provider)
     {
@@ -40,7 +40,7 @@ internal sealed class ReflectionMethodShape<TDeclaringType, TArgumentState, TRes
         return _argumentStateConstructor ?? CommonHelpers.ExchangeIfNull(ref _argumentStateConstructor, _provider.MemberAccessor.CreateConstructorArgumentStateCtor<TArgumentState>(_methodShapeInfo));
     }
 
-    public MethodInvoker<TDeclaringType, TArgumentState, TResult> GetMethodInvoker()
+    public MethodInvoker<TDeclaringType?, TArgumentState, TResult> GetMethodInvoker()
     {
         return _methodInvoker ?? CommonHelpers.ExchangeIfNull(ref _methodInvoker, _provider.MemberAccessor.CreateMethodInvoker<TDeclaringType, TArgumentState, TResult>(_methodShapeInfo));
     }

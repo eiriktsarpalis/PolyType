@@ -1,4 +1,5 @@
 ﻿using PolyType.Abstractions;
+using System.Diagnostics;
 
 namespace PolyType.SourceGenModel;
 
@@ -62,11 +63,10 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     ITypeShape IDictionaryTypeShape.KeyType => KeyType;
     ITypeShape IDictionaryTypeShape.ValueType => ValueType;
 
-    Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetGetDictionary()
-        => GetDictionaryFunc;
+    Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetGetDictionary() => GetDictionaryFunc;
 
-    MutableCollectionConstructor<TKey, TDictionary> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetDefaultConstructor()
-        => DefaultConstructorFunc ?? throw new InvalidOperationException("Dictionary shape does not specify a default constructor.");
+    MutableCollectionConstructor<TKey, TDictionary> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetDefaultConstructor() =>
+        DefaultConstructorFunc ?? throw new InvalidOperationException("Dictionary shape does not specify a default constructor.");
 
     /// <inheritdoc/>
     public DictionaryInsertionMode AvailableInsertionModes
@@ -97,6 +97,7 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
         }
     }
 
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private DictionaryInsertionMode? _availableInsertionModes;
 
     DictionaryInserter<TDictionary, TKey, TValue> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetInserter(DictionaryInsertionMode insertionMode)
@@ -125,6 +126,6 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
             throw new ArgumentOutOfRangeException(nameof(insertionMode), "Unsupported dictionary insertion mode.");
     }
 
-    ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetParameterizedConstructor()
-        => ParameterizedConstructorFunc ?? throw new InvalidOperationException("Dictionary shape does not specify a span constructor.");
+    ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetParameterizedConstructor() =>
+        ParameterizedConstructorFunc ?? throw new InvalidOperationException("Dictionary shape does not specify a span constructor.");
 }

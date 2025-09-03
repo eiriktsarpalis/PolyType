@@ -176,6 +176,11 @@ public static partial class CborSerializer
             return new CborUnionCaseConverter<TUnionCase, TUnion>(caseConverter, unionCaseShape.Marshaler);
         }
 
+        public override object? VisitFunction<TFunction, TArgumentState, TResult>(IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state = null)
+        {
+            return new CborObjectConverter<TFunction>([]);
+        }
+
         private static readonly Dictionary<Type, CborConverter> s_builtInConverters = new CborConverter[]
         {
             new BoolConverter(),

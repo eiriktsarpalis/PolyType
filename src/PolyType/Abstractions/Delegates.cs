@@ -38,7 +38,7 @@ public delegate TDeclaringType Constructor<TArgumentState, TDeclaringType>(ref T
 /// <param name="target">The instance on which the method should be invoked, or <see langword="default"/> if targeting static methods.</param>
 /// <param name="state">State object containing all method arguments.</param>
 /// <returns>The value returned by the method.</returns>
-public delegate ValueTask<TResult> MethodInvoker<TDeclaringType, TArgumentState, TResult>(ref TDeclaringType? target, ref TArgumentState state);
+public delegate ValueTask<TResult> MethodInvoker<TDeclaringType, TArgumentState, TResult>(ref TDeclaringType target, ref TArgumentState state);
 
 /// <summary>
 /// Delegate representing a default constructor for a mutable collection.
@@ -91,3 +91,12 @@ public delegate bool DictionaryInserter<TDictionary, TKey, TValue>(ref TDictiona
 /// <param name="value">The value potentially contained in <paramref name="optional"/>.</param>
 /// <returns><see langword="true"/> if the <paramref name="optional"/> contains a value, or <see langword="false"/> if it does not.</returns>
 public delegate bool OptionDeconstructor<TOptional, TElement>(TOptional? optional, [MaybeNullWhen(false)] out TElement value);
+
+/// <summary>
+/// Delegate representing a function that takes a single argument by reference and returns a value.
+/// </summary>
+/// <typeparam name="T">The parameter type of the delegate.</typeparam>
+/// <typeparam name="TResult">The result type of the delegate.</typeparam>
+/// <param name="arg">The parameter of the method that this delegate encapsulates.</param>
+/// <returns>The return value of the method that this delegate encapsulates.</returns>
+public delegate TResult RefFunc<T, TResult>(ref T arg);

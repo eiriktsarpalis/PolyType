@@ -35,6 +35,12 @@ public interface ITypeShape
     IReadOnlyList<IMethodShape> Methods { get; }
 
     /// <summary>
+    /// Gets all available event shapes for the given type.
+    /// </summary>
+    /// <returns>An enumeration of all available method shapes.</returns>
+    IReadOnlyList<IEventShape> Events { get; }
+
+    /// <summary>
     /// Accepts an <see cref="TypeShapeVisitor"/> for strongly-typed traversal.
     /// </summary>
     /// <param name="visitor">The visitor to accept.</param>

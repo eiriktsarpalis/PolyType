@@ -1,5 +1,6 @@
 using PolyType.Abstractions;
 using PolyType.Examples.JsonSerializer;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 namespace PolyType.Tests.NativeAOT;
@@ -46,6 +47,38 @@ public class JsonFunctionTests
         await Assert.That(result.GetRawText()).IsEqualTo("\"Person John added successfully.\"");
         await Assert.That(service.InvocationCount).IsEqualTo(1);
     }
+
+    [Test]
+    public async Task SubscribeJsonEventHandler()
+    {
+        // Arrange
+        var service = new TestRpcService();
+        var serviceShape = TypeShapeProvider.Resolve<TestRpcService>();
+        var onInvokedEvent = serviceShape.Events.First(m => m.Name == nameof(TestRpcService.OnInvoked));
+        var jsonEvent = JsonSerializerTS.CreateAsyncJsonEvent(onInvokedEvent, service);
+        int eventTriggerCount = 0;
+        using CancellationTokenSource cts = new();
+        IDisposable sub = jsonEvent.Subscribe(async (sender, args, ct) =>
+        {
+            await Assert.That(sender).IsSameReferenceAs(service);
+            await Assert.That(ct).IsEquatableOrEqualTo(cts.Token);
+            eventTriggerCount++;
+            return JsonDocument.Parse("{}").RootElement;
+        });
+
+        // Act
+        await service.AddPersonAsync(new TestPerson("Me", 24), cts.Token);
+
+        // Assert
+        await Assert.That(eventTriggerCount).IsEqualTo(1);
+
+        // Act - trigger event again after disposing
+        sub.Dispose();
+        await service.AddPersonAsync(new TestPerson("Me", 24), cts.Token);
+
+        // Assert - event handler should not be called again
+        await Assert.That(eventTriggerCount).IsEqualTo(1);
+    }
 }
 
 /// <summary>
@@ -56,23 +89,37 @@ public partial class TestRpcService
 {
     public int InvocationCount { get; private set; }
 
-    public async IAsyncEnumerable<TestPerson> GetPeopleAsync(int count)
+    public event AsyncEventHandler<int>? OnInvoked;
+
+    public async IAsyncEnumerable<TestPerson> GetPeopleAsync(int count, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        await TriggerEvent(cancellationToken);
+        InvocationCount++;
+
         for (int i = 0; i < count; i++)
         {
             await Task.Yield();
             yield return new TestPerson($"Person {i + 1}", 20 + i);
         }
-
-        InvocationCount++;
     }
 
-    public async ValueTask<string> AddPersonAsync(TestPerson person)
+    public async ValueTask<string> AddPersonAsync(TestPerson person, CancellationToken cancellationToken = default)
     {
+        await TriggerEvent(cancellationToken);
         await Task.Delay(10); // Simulate some processing
         InvocationCount++;
         return $"Person {person.Name} added successfully.";
     }
+
+    private async ValueTask TriggerEvent(CancellationToken cancellationToken)
+    {
+        if (OnInvoked is not null)
+        {
+            await OnInvoked(this, InvocationCount, cancellationToken);
+        }
+    }
 }
 
 public record TestPerson(string Name, int Age);
+
+public delegate ValueTask AsyncEventHandler<TEventArgs>(object? sender, TEventArgs e, CancellationToken cancellationToken);

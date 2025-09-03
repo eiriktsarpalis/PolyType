@@ -10,6 +10,7 @@ internal sealed class ReflectionParameterShape<TArgumentState, TParameter> : IPa
     private readonly ReflectionTypeShapeProvider _provider;
     private readonly IMethodShapeInfo _ctorInfo;
     private readonly IParameterShapeInfo _parameterInfo;
+    private Getter<TArgumentState, TParameter>? _getter;
     private Setter<TArgumentState, TParameter>? _setter;
 
     public ReflectionParameterShape(
@@ -40,6 +41,13 @@ internal sealed class ReflectionParameterShape<TArgumentState, TParameter> : IPa
     public ICustomAttributeProvider? AttributeProvider => _parameterInfo.AttributeProvider;
     ITypeShape IParameterShape.ParameterType => ParameterType;
     object? IParameterShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitParameter(this, state);
+
+    public Getter<TArgumentState, TParameter> GetGetter()
+    {
+        return _getter ?? CommonHelpers.ExchangeIfNull(ref _getter, CreateGetter());
+        Getter<TArgumentState, TParameter> CreateGetter() =>
+            _provider.MemberAccessor.CreateArgumentStateGetter<TArgumentState, TParameter>(_ctorInfo, Position);
+    }
 
     public Setter<TArgumentState, TParameter> GetSetter()
     {

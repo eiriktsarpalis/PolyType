@@ -411,6 +411,20 @@ internal static class RoslynHelpers
         }
     }
 
+    public static IEnumerable<IEventSymbol> GetAllEvents(this ITypeSymbol type)
+    {
+        HashSet<string> foundNames = [];
+        foreach (ITypeSymbol current in type.GetSortedTypeHierarchy())
+        {
+            foreach (IEventSymbol eventSymbol in current.GetMembers().OfType<IEventSymbol>())
+            {
+                if (foundNames.Add(eventSymbol.Name))
+                {
+                    yield return eventSymbol;
+                }
+            }
+        }
+    }
 
     public static bool IsAssignableFrom([NotNullWhen(true)] this ITypeSymbol? baseType, [NotNullWhen(true)] ITypeSymbol? type)
     {

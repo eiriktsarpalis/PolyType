@@ -16,7 +16,7 @@ public abstract partial class StructuralEqualityTests(ProviderUnderTest provider
             {
                 Assert.Null(right.Value);
             }
-            else if (!left.IsUnion) // Some union cases can be singletons
+            else if (!left.IsUnion && !left.IsFunctionType) // Some union cases or function types can be singletons
             {
                 Assert.NotSame((object?)left.Value, (object?)right.Value);
             }

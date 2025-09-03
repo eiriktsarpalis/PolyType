@@ -293,6 +293,7 @@ internal sealed partial class SourceFormatter
                     IsPublic = {{FormatBool(parameter.IsPublic)}},
                     HasDefaultValue = {{FormatBool(parameter.HasDefaultValue)}},
                     DefaultValue = {{FormatDefaultValueExpr(parameter)}},
+                    Getter = static (ref {{constructorArgumentStateFQN}} state) => {{FormatGetterBody(constructor, parameter)}},
                     Setter = static (ref {{constructorArgumentStateFQN}} state, {{parameter.ParameterType.FullyQualifiedName}} value) => {{FormatSetterBody(constructor, parameter)}},
                     AttributeProviderFunc = {{FormatAttributeProviderFunc(type, constructor, parameter)}},
                 },
@@ -319,6 +320,22 @@ internal sealed partial class SourceFormatter
                     : $$"""new global::System.Type[] { {{string.Join(", ", constructor.Parameters.Select(FormatParameterTypeExpr))}} }""";
 
                 return $"static () => typeof({constructor.DeclaringType.FullyQualifiedName}).GetConstructor({InstanceBindingFlagsConstMember}, null, {parameterTypes}, null)?.GetParameters()[{parameter.Position}]";
+            }
+
+            static string FormatGetterBody(ConstructorShapeModel constructor, ParameterShapeModel parameter)
+            {
+                // Suppress non-nullable Nullable<T> property getters (i.e. setters with [DisallowNull] annotation)
+                bool suppressGetter = parameter.ParameterTypeContainsNullabilityAnnotations || parameter is
+                {
+                    ParameterType.SpecialType: SpecialType.System_Nullable_T,
+                    IsNonNullable: true,
+                };
+
+                return constructor.TotalArity switch
+                {
+                    1 => $"state.Arguments{(suppressGetter ? "!" : "")}",
+                    _ => $"state.Arguments.Item{parameter.Position + 1}{(suppressGetter ? "!" : "")}",
+                };
             }
 
             static string FormatSetterBody(ConstructorShapeModel constructor, ParameterShapeModel parameter)

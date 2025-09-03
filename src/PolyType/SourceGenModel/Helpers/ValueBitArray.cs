@@ -109,6 +109,22 @@ public readonly struct ValueBitArray
     }
 
     /// <summary>
+    /// Sets all bits in the array to the specified value.
+    /// </summary>
+    /// <param name="value">The value to set all bits to.</param>
+    public void SetAll(bool value)
+    {
+        byte fill = value ? (byte)0xFF : (byte)0x00;
+        _array.AsSpan().Fill(fill);
+        int remainder = (int)(_length & 7);
+        if (remainder > 0)
+        {
+            // Normalize by clearing any trailing bits.
+            _array[^1] &= (byte)((1 << remainder) - 1);
+        }
+    }
+
+    /// <summary>
     /// Checks if this bit array defines a subset over the other bit array.
     /// </summary>
     /// <param name="other">The other bit array to compare against.</param>

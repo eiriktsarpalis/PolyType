@@ -53,6 +53,10 @@ internal sealed partial class SourceFormatter
                 FormatDictionaryTypeShapeFactory(writer, generatedFactoryMethodName, dictionaryShapeModel);
                 break;
 
+            case FunctionShapeModel functionShapeModel:
+                FormatFunctionTypeShapeFactory(writer, generatedFactoryMethodName, functionShapeModel);
+                break;
+
             case UnionShapeModel unionShapeModel:
                 FormatUnionTypeShapeFactory(writer, generatedFactoryMethodName, unionShapeModel);
                 break;

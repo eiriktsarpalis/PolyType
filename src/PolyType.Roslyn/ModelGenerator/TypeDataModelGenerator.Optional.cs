@@ -5,7 +5,14 @@ namespace PolyType.Roslyn;
 
 public partial class TypeDataModelGenerator
 {
-    private bool TryMapOptional(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, ImmutableArray<MethodDataModel> methodModels, TypeShapeRequirements requirements, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
+    private bool TryMapOptional(
+        ITypeSymbol type,
+        ref TypeDataModelGenerationContext ctx,
+        ImmutableArray<MethodDataModel> methodModels,
+        ImmutableArray<EventDataModel> eventModels,
+        TypeShapeRequirements requirements,
+        out TypeDataModel? model,
+        out TypeDataModelGenerationStatus status)
     {
         model = null;
         status = default;
@@ -27,6 +34,7 @@ public partial class TypeDataModelGenerator
             Type = type,
             Requirements = TypeShapeRequirements.Full,
             Methods = methodModels,
+            Events = eventModels,
             ElementType = elementType,
         };
 

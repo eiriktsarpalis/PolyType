@@ -83,7 +83,14 @@ public partial class TypeDataModelGenerator
     /// <inheritdoc cref="IsRequiredByPolicy(IPropertySymbol)"/>
     protected virtual bool? IsRequiredByPolicy(IFieldSymbol member) => null;
 
-    private bool TryMapObject(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, ImmutableArray<MethodDataModel> methodModels, TypeShapeRequirements requirements, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
+    private bool TryMapObject(
+        ITypeSymbol type,
+        ref TypeDataModelGenerationContext ctx,
+        ImmutableArray<MethodDataModel> methodModels,
+        ImmutableArray<EventDataModel> eventModels,
+        TypeShapeRequirements requirements,
+        out TypeDataModel? model,
+        out TypeDataModelGenerationStatus status)
     {
         status = default;
         model = null;
@@ -107,6 +114,7 @@ public partial class TypeDataModelGenerator
             Constructors = constructors,
             Properties = properties,
             Methods = methodModels,
+            Events = eventModels,
             DerivedTypes = derivedTypes,
         };
 

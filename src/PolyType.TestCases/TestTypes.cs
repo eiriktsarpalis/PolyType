@@ -1,5 +1,6 @@
 ﻿using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
+using PolyType.Abstractions;
 using PolyType.Tests.FSharp;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -629,6 +630,59 @@ public static class TestTypes
         yield return TestCase.Create(FSharpExpr.True, additionalValues: [FSharpExpr.False, FSharpExpr.Y], isUnion: true, provider: p);
         yield return TestCase.Create(NullaryUnion.A, additionalValues: [NullaryUnion.NewB(42)], isUnion: true, provider: p);
 
+        // Delegate types
+        yield return TestCase.Create(new Action(() => { }), p);
+        yield return TestCase.Create(new Action<int>(_ => { }), p);
+        yield return TestCase.Create(new Action<int, int>((_, _) => { }), p);
+        yield return TestCase.Create(new Func<int>(() => 42), p);
+        yield return TestCase.Create(new Func<int, int>(x => x), p);
+        yield return TestCase.Create(new Func<int, int, int>((x, y) => x + y), p);
+        yield return TestCase.Create(new Func<int, int, int, int, int, int, int>((x1, x2, x3, x4, x5, x6) => x1 + x2 + x3 + x4 + x5 + x6), p);
+        yield return TestCase.Create(new Func<int, Task>(_ => Task.CompletedTask), p);
+        yield return TestCase.Create(new Func<int, Task<int>>(x => Task.FromResult(x)), p);
+        yield return TestCase.Create(new Func<int, int, Task<int>>((x, y) => Task.FromResult(x + y)), p);
+        yield return TestCase.Create(new Func<int, ValueTask>(_ => default), p);
+        yield return TestCase.Create(new Func<int, ValueTask<int>>(x => new(x)), p);
+        yield return TestCase.Create(new Func<int, int, ValueTask<int>>((x, y) => new(x + y)), p);
+        yield return TestCase.Create(new Func<int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, ValueTask<int>>(
+            (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16) => new(x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11 + x12 + x13 + x14 + x15 + x16)), p);
+
+        yield return TestCase.Create(new Getter<int, int>((ref int x) => x), p);
+        yield return TestCase.Create(new Setter<int, int>((ref int x, int value) => { x += value; }), p);
+        yield return TestCase.Create(new EventHandler((sender, args) => { }), p);
+        yield return TestCase.Create(new CustomDelegate((ref string? x, int y) => x?.Length ?? 0 + y), p);
+        yield return TestCase.Create(new LargeDelegate(
+            (p01, p02, p03, p04, p05, p06, p07, p08, p09, p10,
+             p11, p12, p13, p14, p15, p16, p17, p18, p19, p20,
+             p21, p22, p23, p24, p25, p26, p27, p28, p29, p30,
+             p31, p32, p33, p34, p35, p36, p37, p38, p39, p40,
+             p41, p42, p43, p44, p45, p46, p47, p48, p49, p50,
+             p51, p52, p53, p54, p55, p56, p57, p58, p59, p60,
+             p61, p62, p63, p64, p65, p66, p67, p68, p69, p70) =>
+            p01 + p02 + p03 + p04 + p05 + p06 + p07 + p08 + p09 + p10 +
+            p11 + p12 + p13 + p14 + p15 + p16 + p17 + p18 + p19 + p20 +
+            p21 + p22 + p23 + p24 + p25 + p26 + p27 + p28 + p29 + p30 +
+            p31 + p32 + p33 + p34 + p35 + p36 + p37 + p38 + p39 + p40 +
+            p41 + p42 + p43 + p44 + p45 + p46 + p47 + p48 + p49 + p50 +
+            p51 + p52 + p53 + p54 + p55 + p56 + p57 + p58 + p59 + p60 +
+            p61 + p62 + p63 + p64 + p65 + p66 + p67 + p68 + p69 + p70), p);
+        yield return TestCase.Create(new LargeAsyncDelegate(
+            (p01, p02, p03, p04, p05, p06, p07, p08, p09, p10,
+             p11, p12, p13, p14, p15, p16, p17, p18, p19, p20,
+             p21, p22, p23, p24, p25, p26, p27, p28, p29, p30,
+             p31, p32, p33, p34, p35, p36, p37, p38, p39, p40,
+             p41, p42, p43, p44, p45, p46, p47, p48, p49, p50,
+             p51, p52, p53, p54, p55, p56, p57, p58, p59, p60,
+             p61, p62, p63, p64, p65, p66, p67, p68, p69, p70) =>
+           Task.FromResult(
+            p01 + p02 + p03 + p04 + p05 + p06 + p07 + p08 + p09 + p10 +
+            p11 + p12 + p13 + p14 + p15 + p16 + p17 + p18 + p19 + p20 +
+            p21 + p22 + p23 + p24 + p25 + p26 + p27 + p28 + p29 + p30 +
+            p31 + p32 + p33 + p34 + p35 + p36 + p37 + p38 + p39 + p40 +
+            p41 + p42 + p43 + p44 + p45 + p46 + p47 + p48 + p49 + p50 +
+            p51 + p52 + p53 + p54 + p55 + p56 + p57 + p58 + p59 + p60 +
+            p61 + p62 + p63 + p64 + p65 + p66 + p67 + p68 + p69 + p70)), p);
+
         // RPC types
         yield return TestCase.Create(new ClassWithMethodShapes());
         yield return TestCase.Create(new StructWithMethodShapes());
@@ -636,6 +690,14 @@ public static class TestTypes
         yield return TestCase.Create(new BaseClassWithMethodShapes(), additionalValues: [new ClassWithMethodShapes()]);
         yield return TestCase.Create(new RpcService());
         yield return TestCase.Create<InterfaceWithDiamondMethodShapes>(new InterfaceWithDiamondMethodShapes.Impl());
+
+        // Type with events
+        yield return TestCase.Create(new ClassWithEvent());
+        yield return TestCase.Create(new StructWithEvent());
+        yield return TestCase.Create(new DerivedClassWithEvent());
+        yield return TestCase.Create(new ClassWithStaticEvent());
+        yield return TestCase.Create(new ClassWithPrivateEvent());
+        yield return TestCase.Create(new ClassWithPrivateStaticEvent());
     }
 
     private static ExpandoObject CreateExpandoObject(IEnumerable<KeyValuePair<string, object?>> values)
@@ -2965,9 +3027,13 @@ public partial interface InterfaceWithMethodShapes : BaseInterfaceWithMethodShap
 public partial class RpcService
 {
     private int _totalEvents;
+    public event EventHandler<DateTimeOffset>? OnMethodCalled;
+    public event AsyncEventHandler<DateTimeOffset>? OnMethodCalledAsync;
 
     public async IAsyncEnumerable<Event> GetEventsAsync(int count, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        await TriggerEvents(cancellationToken).ConfigureAwait(false);
+
         if (count < 0)
         {
             throw new ArgumentException("Negative counts are not permitted.");
@@ -2981,18 +3047,32 @@ public partial class RpcService
     }
 
     [MethodShape(Name = "Private greet function")]
-    private ValueTask<string> GreetAsync(string name = "stranger")
+    private async ValueTask<string> GreetAsync(string name = "stranger")
     {
-        return new($"Hello, {name}!");
+        await TriggerEvents().ConfigureAwait(false);
+        return $"Hello, {name}!";
     }
 
     public async ValueTask ResetAsync()
     {
+        await TriggerEvents().ConfigureAwait(false);
         await Task.CompletedTask.ConfigureAwait(false);
         _totalEvents = 0;
     }
 
+    private async ValueTask TriggerEvents(CancellationToken cancellationToken = default)
+    {
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        OnMethodCalled?.Invoke(this, now);
+        if (OnMethodCalledAsync is not null)
+        {
+            await OnMethodCalledAsync(this, now, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
     public record Event(int id);
+
+    public delegate ValueTask AsyncEventHandler<T>(object? sender, T e, CancellationToken cancellationToken);
 }
 
 [GenerateShape, TypeShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
@@ -3016,6 +3096,82 @@ public interface IBase2WithMethod
 {
     int Add(int x, int y);
 }
+
+[GenerateShape, TypeShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+public partial class ClassWithEvent : ITriggerable
+{
+    public event Action<int>? OnChange;
+    protected virtual void Trigger(int x) => OnChange?.Invoke(x);
+    void ITriggerable.Trigger(int x) => Trigger(x);
+}
+
+[GenerateShape, TypeShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+public partial class DerivedClassWithEvent : ClassWithEvent, ITriggerable
+{
+    public event Action<int>? OnChange2;
+    protected override void Trigger(int x)
+    {
+        base.Trigger(x);
+        OnChange2?.Invoke(x);
+    }
+}
+
+[GenerateShape]
+public partial struct StructWithEvent : ITriggerable
+{
+    [EventShape]
+    public event Action<int>? OnChange;
+    void ITriggerable.Trigger(int x) => OnChange?.Invoke(x);
+}
+
+[GenerateShape, TypeShape(IncludeMethods = MethodShapeFlags.PublicStatic)]
+public partial class ClassWithStaticEvent : ITriggerable
+{
+    public static event Action<int>? OnChange;
+
+    void ITriggerable.Trigger(int x) => OnChange?.Invoke(x);
+}
+
+[GenerateShape]
+public partial class ClassWithPrivateEvent : ITriggerable
+{
+    [EventShape(Name = "PrivateEvent")]
+    private event Action<int>? OnChange;
+    void ITriggerable.Trigger(int x) => OnChange?.Invoke(x);
+}
+
+[GenerateShape]
+public partial class ClassWithPrivateStaticEvent : ITriggerable
+{
+    [EventShape(Name = "PrivateStaticEvent")]
+    private static event Action<int>? OnChange;
+    void ITriggerable.Trigger(int x) => OnChange?.Invoke(x);
+}
+
+public interface ITriggerable
+{
+    void Trigger(int x);
+}
+
+public delegate int CustomDelegate([ParameterShape(Name = "First", IsRequired = false)]ref string? x, [ParameterShape(Name = "Second")]int y = 42);
+
+public delegate int LargeDelegate(
+    int p01, int p02, int p03, int p04, int p05, int p06, int p07, int p08, int p09, int p10,
+    int p11, int p12, int p13, int p14, int p15, int p16, int p17, int p18, int p19, int p20,
+    int p21, int p22, int p23, int p24, int p25, int p26, int p27, int p28, int p29, int p30,
+    int p31, int p32, int p33, int p34, int p35, int p36, int p37, int p38, int p39, int p40,
+    int p41, int p42, int p43, int p44, int p45, int p46, int p47, int p48, int p49, int p50,
+    int p51, int p52, int p53, int p54, int p55, int p56, int p57, int p58, int p59, int p60,
+    int p61, int p62, int p63, int p64, int p65, int p66, int p67, int p68, int p69, int p70);
+
+public delegate Task<int> LargeAsyncDelegate(
+    int p01, int p02, int p03, int p04, int p05, int p06, int p07, int p08, int p09, int p10,
+    int p11, int p12, int p13, int p14, int p15, int p16, int p17, int p18, int p19, int p20,
+    int p21, int p22, int p23, int p24, int p25, int p26, int p27, int p28, int p29, int p30,
+    int p31, int p32, int p33, int p34, int p35, int p36, int p37, int p38, int p39, int p40,
+    int p41, int p42, int p43, int p44, int p45, int p46, int p47, int p48, int p49, int p50,
+    int p51, int p52, int p53, int p54, int p55, int p56, int p57, int p58, int p59, int p60,
+    int p61, int p62, int p63, int p64, int p65, int p66, int p67, int p68, int p69, int p70);
 
 [GenerateShapeFor<object>]
 [GenerateShapeFor<bool>]
@@ -3248,4 +3404,24 @@ public interface IBase2WithMethod
 [GenerateShapeFor<FSharpExpr>]
 [GenerateShapeFor<NullaryUnion>]
 [GenerateShapeFor<ExpandoObject>]
+[GenerateShapeFor<Action>]
+[GenerateShapeFor<Action<int>>]
+[GenerateShapeFor<Action<int, int>>]
+[GenerateShapeFor<Func<int>>]
+[GenerateShapeFor<Func<int, int>>]
+[GenerateShapeFor<Func<int, int, int>>]
+[GenerateShapeFor<Func<int, int, int, int, int, int, int>>]
+[GenerateShapeFor<Func<int, Task>>]
+[GenerateShapeFor<Func<int, Task<int>>>]
+[GenerateShapeFor<Func<int, int, Task<int>>>]
+[GenerateShapeFor<Func<int, ValueTask>>]
+[GenerateShapeFor<Func<int, ValueTask<int>>>]
+[GenerateShapeFor<Func<int, int, ValueTask<int>>>]
+[GenerateShapeFor<Func<int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, ValueTask<int>>>]
+[GenerateShapeFor<Getter<int, int>>]
+[GenerateShapeFor<Setter<int, int>>]
+[GenerateShapeFor<EventHandler>]
+[GenerateShapeFor<CustomDelegate>]
+[GenerateShapeFor<LargeDelegate>]
+[GenerateShapeFor<LargeAsyncDelegate>]
 public partial class Witness;

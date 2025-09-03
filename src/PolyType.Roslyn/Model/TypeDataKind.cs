@@ -39,4 +39,9 @@ public enum TypeDataKind
     /// Type is a <see cref="TupleDataModel"/>.
     /// </summary>
     Tuple,
+
+    /// <summary>
+    /// Type is a <see cref="DelegateDataModel"/>.
+    /// </summary>
+    Delegate,
 }

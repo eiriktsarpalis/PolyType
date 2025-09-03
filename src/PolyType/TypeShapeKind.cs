@@ -53,4 +53,9 @@ enum TypeShapeKind
     /// Shape that maps to a union type using <see cref="IUnionTypeShape"/>.
     /// </summary>
     Union = 7,
+
+    /// <summary>
+    /// Shape that maps to a delegate or function type using <see cref="IFunctionTypeShape"/>.
+    /// </summary>
+    Function = 8,
 }

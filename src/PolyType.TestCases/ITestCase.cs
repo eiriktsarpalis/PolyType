@@ -75,7 +75,12 @@ public interface ITestCase
     /// <summary>
     /// Gets a value indicating whether the type is defined with a surrogate Marshaler.
     /// </summary>
-    public bool UsesMarshaler { get; } 
+    public bool UsesMarshaler { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the type is a function type.
+    /// </summary>
+    public bool IsFunctionType { get; }
 
     /// <summary>
     /// Gets the value specified in <see cref="TypeShapeAttribute.Kind"/>.

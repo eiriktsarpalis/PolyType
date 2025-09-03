@@ -8,7 +8,13 @@ namespace PolyType.Roslyn;
 
 public partial class TypeDataModelGenerator
 {
-    private bool TryMapEnumerable(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, ImmutableArray<MethodDataModel> methodModels, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
+    private bool TryMapEnumerable(
+        ITypeSymbol type,
+        ref TypeDataModelGenerationContext ctx,
+        ImmutableArray<MethodDataModel> methodModels,
+        ImmutableArray<EventDataModel> eventModels,
+        out TypeDataModel? model,
+        out TypeDataModelGenerationStatus status)
     {
         model = null;
         status = default;
@@ -139,6 +145,7 @@ public partial class TypeDataModelGenerator
             EnumerableKind = kind,
             DerivedTypes = IncludeDerivedTypes(type, ref ctx, TypeShapeRequirements.Full),
             Methods = methodModels,
+            Events = eventModels,
             AppendMethod = isParameterizedFactory ? null : appendMethod,
             InsertionMode = isParameterizedFactory ? EnumerableInsertionMode.None : insertionMode,
             FactoryMethod = factoryMethod,

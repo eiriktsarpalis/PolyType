@@ -139,6 +139,18 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         };
     }
 
+    public Setter<TDeclaringType?, TEventHandler> CreateEventAccessor<TDeclaringType, TEventHandler>(MethodInfo accessor)
+    {
+        return !typeof(TDeclaringType).IsValueType
+            ? (ref TDeclaringType? target, TEventHandler handler) => accessor.Invoke(target, [handler])
+            : (ref TDeclaringType? target, TEventHandler handler) =>
+            {
+                object? boxedTarget = target;
+                accessor.Invoke(boxedTarget, [handler]);
+                target = (TDeclaringType?)boxedTarget;
+            };
+    }
+
     public EnumerableAppender<TEnumerable, TElement> CreateEnumerableAppender<TEnumerable, TElement>(MethodInfo addMethod)
     {
         return !typeof(TEnumerable).IsValueType
@@ -307,6 +319,30 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         }
     }
 
+    public Getter<TArgumentState, TParameter> CreateArgumentStateGetter<TArgumentState, TParameter>(IMethodShapeInfo ctorInfo, int parameterIndex)
+        where TArgumentState : IArgumentState
+    {
+        Debug.Assert(ctorInfo.Parameters.Length > 0);
+        if (ctorInfo is MethodShapeInfo { MemberInitializers.Length: > 0 } ctor)
+        {
+            Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<(object?[], object?[])>));
+            int initializerIndex = parameterIndex - ctor.ConstructorParameters.Length;
+            return (Getter<TArgumentState, TParameter>)(object)new Getter<LargeArgumentState<(object?[], object?[])>, TParameter>(
+                (ref LargeArgumentState<(object?[] ctorArgs, object?[] memberArgs)> state) =>
+                {
+                    return Cast(initializerIndex < 0 ? state.Arguments.ctorArgs[parameterIndex] : state.Arguments.memberArgs[initializerIndex]);
+                });
+        }
+        else
+        {
+            Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<object?[]>));
+            return (Getter<TArgumentState, TParameter>)(object)new Getter<LargeArgumentState<object?[]>, TParameter>(
+                (ref LargeArgumentState<object?[]> state) => Cast(state.Arguments[parameterIndex]));
+        }
+
+        static TParameter Cast(object? value) => typeof(TParameter).IsValueType && value is null ? default! : (TParameter)value!;
+    }
+
     public Setter<TArgumentState, TParameter> CreateArgumentStateSetter<TArgumentState, TParameter>(IMethodShapeInfo ctorInfo, int parameterIndex)
         where TArgumentState : IArgumentState
     {
@@ -448,7 +484,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
             (ref LargeArgumentState<object?[]> state) => (TDeclaringType)cI.Invoke(state.Arguments)!);
     }
 
-    public MethodInvoker<TDeclaringType, TArgumentState, TResult> CreateMethodInvoker<TDeclaringType, TArgumentState, TResult>(MethodShapeInfo ctorInfo) where TArgumentState : IArgumentState
+    public MethodInvoker<TDeclaringType?, TArgumentState, TResult> CreateMethodInvoker<TDeclaringType, TArgumentState, TResult>(MethodShapeInfo ctorInfo) where TArgumentState : IArgumentState
     {
         DebugExt.Assert(ctorInfo.Method is MethodInfo);
         var methodInfo = (MethodInfo)ctorInfo.Method;
@@ -467,7 +503,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         }
 
         Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<object?[]>));
-        return (MethodInvoker<TDeclaringType, TArgumentState, TResult>)(object)new MethodInvoker<TDeclaringType, LargeArgumentState<object?[]>, TResult>(
+        return (MethodInvoker<TDeclaringType?, TArgumentState, TResult>)(object)new MethodInvoker<TDeclaringType?, LargeArgumentState<object?[]>, TResult>(
             (ref TDeclaringType? target, ref LargeArgumentState<object?[]> state) =>
             {
                 object? boxedTarget = target;
@@ -509,6 +545,13 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
             Debug.Assert(methodReturnType == typeof(TResult) || (methodReturnType.IsByRef && methodReturnType.GetElementType() == typeof(TResult)));
             return static value => new ValueTask<TResult>((TResult)value!);
         }
+    }
+
+    public Func<RefFunc<TArgumentState, TResult>, TDelegate> CreateDelegateWrapper<TDelegate, TArgumentState, TResult>(MethodShapeInfo shapeInfo)
+        where TDelegate : Delegate
+        where TArgumentState : IArgumentState
+    {
+        throw new NotSupportedException("Delegate creation is not supported when reflection emit is disabled.");
     }
 
     public Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeInfo[] derivedTypeInfos)

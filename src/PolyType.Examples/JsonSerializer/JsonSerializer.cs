@@ -60,6 +60,34 @@ public static partial class JsonSerializerTS
     }
 
     /// <summary>
+    /// Creates a JSON marshaling event wrapping the specified event shape.
+    /// </summary>
+    /// <param name="eventShape">The event shape to wrap.</param>
+    /// <param name="target">The target object used by the delegate.</param>
+    /// <returns>A JSON event instance.</returns>
+    public static JsonEvent CreateJsonEvent(IEventShape eventShape, object? target = null)
+    {
+        (bool RequireAsync, object? Target) state = (RequireAsync: false, Target: target);
+        TypeCache scopedCache = s_converterCaches.GetScopedCache(eventShape.DeclaringType.Provider);
+        TypeGenerationContext ctx = scopedCache.CreateGenerationContext();
+        return (JsonEvent)eventShape.Accept((Builder)ctx.ValueBuilder!, state)!;
+    }
+
+    /// <summary>
+    /// Creates an asynchronous JSON marshaling event wrapping the specified event shape.
+    /// </summary>
+    /// <param name="eventShape">The event shape to wrap.</param>
+    /// <param name="target">The target object used by the delegate.</param>
+    /// <returns>A JSON event instance.</returns>
+    public static AsyncJsonEvent CreateAsyncJsonEvent(IEventShape eventShape, object? target = null)
+    {
+        (bool RequireAsync, object? Target) state = (RequireAsync: true, Target: target);
+        TypeCache scopedCache = s_converterCaches.GetScopedCache(eventShape.DeclaringType.Provider);
+        TypeGenerationContext ctx = scopedCache.CreateGenerationContext();
+        return (AsyncJsonEvent)eventShape.Accept((Builder)ctx.ValueBuilder!, state)!;
+    }
+
+    /// <summary>
     /// Serializes a value to a JSON string using the provided converter.
     /// </summary>
     /// <typeparam name="T">The type of the value to serialize.</typeparam>

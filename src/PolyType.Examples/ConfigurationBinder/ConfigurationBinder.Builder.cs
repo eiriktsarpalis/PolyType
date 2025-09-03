@@ -293,6 +293,11 @@ public static partial class ConfigurationBinderTS
             return new Func<IConfiguration, TUnion>(cfg => cfg.GetSection(ValuesProperty) is { } section ? caseBinder(section) : default!);
         }
 
+        public override object? VisitFunction<TFunction, TArgumentState, TResult>(IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state = null)
+        {
+            return CreateNotSupportedBinder<TFunction>();
+        }
+
         private static IEnumerable<KeyValuePair<Type, object>> GetBuiltInParsers()
         {
             yield return Create(bool.Parse);

@@ -444,6 +444,80 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         await Assert.ThrowsAsync<TaskCanceledException>(async () => await getEventsFunc.Invoke("""{ "count" : 100 }""", new(canceled: true)));
     }
 
+    [Fact]
+    public async Task JsonEvent_InvokedAsExpected()
+    {
+        if (providerUnderTest.Kind is ProviderKind.ReflectionNoEmit)
+        {
+            // Reflection without emit does not support arbitrary delegate creation.
+            return;
+        }
+
+        var serviceShape = providerUnderTest.Provider.Resolve<RpcService>();
+        var instance = new RpcService();
+
+        JsonEvent onMethodCalledEvent = JsonSerializerTS.CreateJsonEvent(serviceShape.Events.First(m => m.Name == nameof(RpcService.OnMethodCalled)), instance);
+        AsyncJsonEvent onMethodCalledAsyncEvent = JsonSerializerTS.CreateAsyncJsonEvent(serviceShape.Events.First(m => m.Name == nameof(RpcService.OnMethodCalledAsync)), instance);
+
+        using CancellationTokenSource cts = new();
+        CancellationToken cancellationToken = cts.Token;
+
+        int methodCalledCount = 0;
+        int methodCalledAsyncCount = 0;
+
+        await InvokeServiceAsync();
+        Assert.Equal(0, methodCalledCount);
+        Assert.Equal(0, methodCalledAsyncCount);
+
+        IDisposable unsub1 = onMethodCalledEvent.Subscribe((sender, eventArgs) =>
+        {
+            Assert.Same(instance, sender);
+            Assert.True(eventArgs.TryGetValue("e", out JsonElement result));
+            Assert.Equal(JsonValueKind.String, result.ValueKind);
+            methodCalledCount++;
+            return JsonDocument.Parse("{}").RootElement;
+        });
+
+        await InvokeServiceAsync();
+        Assert.Equal(1, methodCalledCount);
+        Assert.Equal(0, methodCalledAsyncCount);
+
+        IDisposable unsub2 = onMethodCalledAsyncEvent.Subscribe(async (sender, eventArgs, ct) =>
+        {
+            await Task.Yield();
+            Assert.Same(instance, sender);
+            Assert.Equal(cancellationToken, ct);
+            Assert.True(eventArgs.TryGetValue("e", out JsonElement result));
+            Assert.Equal(JsonValueKind.String, result.ValueKind);
+            methodCalledAsyncCount++;
+            return JsonDocument.Parse("{}").RootElement;
+        });
+
+        await InvokeServiceAsync();
+        Assert.Equal(2, methodCalledCount);
+        Assert.Equal(1, methodCalledAsyncCount);
+
+        unsub1.Dispose();
+
+        await InvokeServiceAsync();
+        Assert.Equal(2, methodCalledCount);
+        Assert.Equal(2, methodCalledAsyncCount);
+
+        unsub2.Dispose();
+
+        await InvokeServiceAsync();
+        Assert.Equal(2, methodCalledCount);
+        Assert.Equal(2, methodCalledAsyncCount);
+
+        async ValueTask InvokeServiceAsync()
+        {
+            await foreach (var _ in instance.GetEventsAsync(10, cancellationToken))
+            {
+                // Consume the events to trigger the event handlers.
+            }
+        }
+    }
+
     public class PocoWithGenericProperty<T>
     { 
         public T? Value { get; set; }
@@ -475,6 +549,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
     private protected static bool IsUnsupportedBySTJ<T>(TestCase<T> value) => 
         value.IsMultiDimensionalArray ||
         value.IsLongTuple ||
+        value.IsFunctionType ||
         value.HasRefConstructorParameters ||
         value.CustomKind is not null ||
         value.UsesMarshaler ||

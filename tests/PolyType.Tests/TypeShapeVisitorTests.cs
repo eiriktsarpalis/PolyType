@@ -60,6 +60,12 @@ public class TypeShapeVisitorTests(ITestOutputHelper logger)
     [Fact]
     public void VisitMethod() => AssertVisitor(v => v.VisitMethod<object, IArgumentState, object>(default!));
 
+    [Fact]
+    public void VisitFunction() => AssertVisitor(v => v.VisitFunction<object, IArgumentState, object>(default!));
+
+    [Fact]
+    public void VisitEvent() => AssertVisitor(v => v.VisitEvent<object, object>(default!));
+
     private void AssertVisitor(Action<TypeShapeVisitor> test, [CallerMemberName] string? methodName = null)
     {
         NotImplementedException ex = Assert.Throws<NotImplementedException>(() => test(this.visitor));

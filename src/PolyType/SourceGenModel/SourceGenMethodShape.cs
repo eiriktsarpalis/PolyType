@@ -1,5 +1,6 @@
-using System.Reflection;
 using PolyType.Abstractions;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace PolyType.SourceGenModel;
 
@@ -51,28 +52,23 @@ public sealed class SourceGenMethodShape<TDeclaringType, TArgumentState, TResult
     /// <summary>
     /// Gets a delegate for invoking the method.
     /// </summary>
-    public required MethodInvoker<TDeclaringType, TArgumentState, TResult> MethodInvoker { get; init; }
+    public required MethodInvoker<TDeclaringType?, TArgumentState, TResult> MethodInvoker { get; init; }
 
     /// <inheritdoc/>
     public IReadOnlyList<IParameterShape> Parameters => _parameters ?? CommonHelpers.ExchangeIfNull(ref _parameters, (CreateParametersFunc?.Invoke()).AsReadOnlyList());
 
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private IReadOnlyList<IParameterShape>? _parameters;
 
-    /// <inheritdoc/>
     ITypeShape IMethodShape.DeclaringType => DeclaringType;
 
-    /// <inheritdoc/>
     ITypeShape IMethodShape.ReturnType => ReturnType;
 
-    /// <inheritdoc/>
-    public ICustomAttributeProvider? AttributeProvider => AttributeProviderFunc?.Invoke();
+    ICustomAttributeProvider? IMethodShape.AttributeProvider => AttributeProviderFunc?.Invoke();
 
-    /// <inheritdoc/>
-    public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitMethod(this, state);
+    object? IMethodShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitMethod(this, state);
 
-    /// <inheritdoc/>
-    public Func<TArgumentState> GetArgumentStateConstructor() => ArgumentStateConstructor;
+    Func<TArgumentState> IMethodShape<TDeclaringType, TArgumentState, TResult>.GetArgumentStateConstructor() => ArgumentStateConstructor;
 
-    /// <inheritdoc/>
-    public MethodInvoker<TDeclaringType, TArgumentState, TResult> GetMethodInvoker() => MethodInvoker;
+    MethodInvoker<TDeclaringType?, TArgumentState, TResult> IMethodShape<TDeclaringType, TArgumentState, TResult>.GetMethodInvoker() => MethodInvoker;
 }

@@ -46,14 +46,16 @@ public sealed class TypeShapeAttribute : Attribute
     }
 
     /// <summary>
-    /// Gets the binding flags that determine what method shapes should be included in the type shape.
+    /// Gets the binding flags that determine what method or event shapes should be included in the type shape.
     /// </summary>
     /// <remarks>
-    /// <para>If left unspecified, only methods annotated with <see cref="MethodShapeAttribute"/> will be included.</para>
+    /// <para>
+    /// This property controls how the <see cref="ITypeShape.Methods"/> and <see cref="ITypeShape.Events"/>
+    /// collections will be populated. If left unspecified, only methods annotated with <see cref="MethodShapeAttribute"/> or
+    /// <see cref="EventShapeAttribute"/> will be included.</para>
     /// <para>
     /// This type can only be used to control inclusion of public methods in the shape models.
-    /// Non-public methods can only be included individually via explicit <see cref="MethodShapeAttribute"/>
-    /// annotations.
+    /// Non-public methods can only be included individually via explicit attribute annotations.
     /// </para>
     /// </remarks>
     public MethodShapeFlags IncludeMethods { get => _includeMethods ?? MethodShapeFlags.None; init => _includeMethods = value; }
