@@ -384,7 +384,7 @@ public partial interface IFunctionTypeShape<TFunction, TArguments, TResult> : IT
 }
 ```
 
-Visitors accessing function shapes can be used to invoke instances of type `TFunction` or to create new instances of type `TFunction` by wrapping a generic `Func<TArgumentState, TResult>` delegate. For more information on how function or method shapes work, please refer to the [method shapes](##method-shapes) section below.
+Visitors accessing function shapes can be used to invoke instances of type `TFunction` or to create new instances of type `TFunction` by wrapping a generic `Func<TArgumentState, TResult>` delegate. For more information on how function or method shapes work, please refer to the [method shapes](#method-shapes) section below.
 
 
 To recap, the `ITypeShape` model splits .NET types into seven separate kinds:
