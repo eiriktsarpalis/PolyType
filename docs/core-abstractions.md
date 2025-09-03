@@ -790,10 +790,7 @@ partial class DecoratorVisitor : TypeShapeVisitor
     public override object? VisitFunction<TFunction, TArgumentState, TResult>(
         IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state)
     {
-        // Capture the original delegate instance from 'state'.
-        var original = (TFunction)state!;
         var invoker = functionShape.GetFunctionInvoker();
-
         if (!functionShape.IsAsync)
         {
             return new Func<TFunction, TFunction>(inner => functionShape.FromDelegate((ref TArgumentState arg) =>
