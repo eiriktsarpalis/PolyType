@@ -120,13 +120,7 @@ internal sealed partial class SourceFormatter
                     IsNonNullable: true
                 };
 
-                string refPrefix = parameter.RefKind switch
-                {
-                    RefKind.Ref or RefReadOnlyParameter => "ref ",
-                    RefKind.In => "in ",
-                    RefKind.Out => "out ",
-                    _ => ""
-                };
+                string refPrefix = FormatRefPrefix(parameter);
 
                 return isSingleParameter
                     ? $"{refPrefix}state.Arguments{(requiresSuppression ? "!" : "")}"
@@ -142,7 +136,7 @@ internal sealed partial class SourceFormatter
             }
 
             string delegateSignature = string.Join(", ", functionShapeModel.Parameters
-                .Select(parameter => $"{(parameter.RefKind is RefKind.None ? "" : "ref ")}{parameter.ParameterType.FullyQualifiedName}{GetNullableSuffix(parameter)} {parameter.Name}"));
+                .Select(parameter => $"{FormatRefPrefix(parameter)}{parameter.ParameterType.FullyQualifiedName}{GetNullableSuffix(parameter)} {parameter.Name}"));
 
             string argumentStateCtorExpr = functionShapeModel.Parameters switch
             {
@@ -295,5 +289,16 @@ internal sealed partial class SourceFormatter
 
         writer.Indentation--;
         writer.WriteLine("};");
+    }
+
+    private static string FormatRefPrefix(ParameterShapeModel parameter)
+    {
+        return parameter.RefKind switch
+        {
+            RefKind.Ref or RefReadOnlyParameter => "ref ",
+            RefKind.In => "in ",
+            RefKind.Out => "out ",
+            _ => ""
+        };
     }
 }
