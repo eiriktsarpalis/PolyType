@@ -283,6 +283,11 @@ public static partial class Cloner
             return new Func<TUnion?, TUnion?>(t => marshaler.Marshal(cloner(marshaler.Unmarshal(t))));
         }
 
+        public override object? VisitFunction<TFunction, TArgumentState, TResult>(IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state = null)
+        {
+            return CreateUnsupportedTypeCloner<TFunction>();
+        }
+
         private static IEnumerable<KeyValuePair<Type, object>> GetBuiltInCloners()
         {
             yield return Create<string>(str => str);

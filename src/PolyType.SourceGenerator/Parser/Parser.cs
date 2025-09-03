@@ -205,6 +205,9 @@ public sealed partial class Parser : TypeDataModelGenerator
     protected override ITypeSymbol NormalizeType(ITypeSymbol type) =>
         KnownSymbols.Compilation.EraseCompilerMetadata(type);
 
+    // Include delegate parameter types into generated shapes.
+    protected override bool IncludeDelegateParameters => true;
+
     // Ignore properties with the [PropertyShape] attribute set to Ignore = true.
     protected override bool IncludeProperty(IPropertySymbol property, out bool includeGetter, out bool includeSetter)
     {
@@ -376,6 +379,65 @@ public sealed partial class Parser : TypeDataModelGenerator
             name = null;
             ignore = null;
             if (method.GetAttribute(_knownSymbols.MethodShapeAttribute) is not AttributeData methodShapeAttr)
+            {
+                return false;
+            }
+
+            foreach (KeyValuePair<string, TypedConstant> namedArgument in methodShapeAttr.NamedArguments)
+            {
+                switch (namedArgument.Key)
+                {
+                    case "Name":
+                        name = (string)namedArgument.Value.Value!;
+                        break;
+                    case "Ignore":
+                        ignore = (bool)namedArgument.Value.Value!;
+                        break;
+                }
+            }
+
+            return true;
+        }
+    }
+
+    protected override IEnumerable<ResolvedEventSymbol> ResolveEvents(ITypeSymbol type, BindingFlags bindingFlags)
+    {
+        if (type is not INamedTypeSymbol namedType)
+        {
+            yield break;
+        }
+
+        foreach (IEventSymbol eventSymbol in namedType.GetAllEvents())
+        {
+            if (IncludeEvent(eventSymbol, out string? customName))
+            {
+                yield return new() { CustomName = customName, Event = eventSymbol };
+            }
+        }
+
+        bool IncludeEvent(IEventSymbol eventSymbol, out string? customName)
+        {
+            customName = null;
+
+            if (ParseEventShapeAttribute(eventSymbol, out customName, out bool? ignore))
+            {
+                return ignore is not true; // Skip events explicitly marked as ignored.
+            }
+
+            BindingFlags requiredFlags = eventSymbol.IsStatic ? BindingFlags.Public | BindingFlags.Static : BindingFlags.Public | BindingFlags.Instance;
+            if ((bindingFlags & requiredFlags) == 0)
+            {
+                return false; // Skip events that are not included in the shape by default.
+            }
+
+            return true;
+        }
+
+        bool ParseEventShapeAttribute(IEventSymbol eventSymbol, out string? name, out bool? ignore)
+        {
+            name = null;
+            ignore = null;
+            if (eventSymbol.GetAttribute(_knownSymbols.EventShapeAttribute) is not AttributeData methodShapeAttr)
             {
                 return false;
             }
@@ -622,6 +684,7 @@ public sealed partial class Parser : TypeDataModelGenerator
                 SurrogateType = surrogateType,
                 MarshalerType = namedMarshaler,
                 Methods = MapMethods(type, ref ctx, methodFlags),
+                Events = MapEvents(type, ref ctx, methodFlags),
             };
         }
 
@@ -649,6 +712,7 @@ public sealed partial class Parser : TypeDataModelGenerator
             Requirements = TypeShapeRequirements.Full,
             ElementType = optionInfo.ElementType,
             Methods = MapMethods(optionInfo.Type, ref ctx, methodFlags),
+            Events = MapEvents(optionInfo.Type, ref ctx, methodFlags),
         };
 
         return status;
@@ -682,6 +746,7 @@ public sealed partial class Parser : TypeDataModelGenerator
             Requirements = TypeShapeRequirements.Full,
             UnionCases = unionCaseModels.ToImmutableArray(),
             Methods = MapMethods(unionInfo.Type, ref ctx, methodFlags),
+            Events = MapEvents(unionInfo.Type, ref ctx, methodFlags),
             TagReader = unionInfo.TagReader,
         };
 

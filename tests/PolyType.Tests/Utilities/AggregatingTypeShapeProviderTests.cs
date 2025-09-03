@@ -177,6 +177,8 @@ public class AggregatingTypeShapeProviderTests
 
         public IReadOnlyList<IMethodShape> Methods => throw new NotImplementedException();
 
+        public IReadOnlyList<IEventShape> Events => throw new NotImplementedException();
+
         public object? Accept(TypeShapeVisitor visitor, object? state = null)
         {
             throw new NotImplementedException();

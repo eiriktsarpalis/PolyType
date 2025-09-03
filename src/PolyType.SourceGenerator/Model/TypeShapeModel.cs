@@ -12,9 +12,14 @@ public abstract record TypeShapeModel
     public required string SourceIdentifier { get; init; }
 
     /// <summary>
-    /// The methods shapes declared by the current type.
+    /// The method shapes declared by the current type.
     /// </summary>
     public required ImmutableEquatableArray<MethodShapeModel> Methods { get; init; }
+
+    /// <summary>
+    /// The event shapes declared by the current type.
+    /// </summary>
+    public required ImmutableEquatableArray<EventShapeModel> Events { get; init; }
 
     /// <summary>
     /// A map of type IDs for associated types and their requirements.

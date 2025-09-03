@@ -8,6 +8,8 @@ internal sealed partial class SourceFormatter
     private void FormatEnumerableTypeShapeFactory(SourceWriter writer, string methodName, EnumerableShapeModel enumerableShapeModel)
     {
         string? methodFactoryMethodName = CreateMethodsFactoryName(enumerableShapeModel);
+        string? eventFactoryMethodName = CreateEventsFactoryName(enumerableShapeModel);
+
         writer.WriteLine($$"""
             private global::PolyType.Abstractions.ITypeShape<{{enumerableShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
             {
@@ -21,6 +23,7 @@ internal sealed partial class SourceFormatter
                     GetEnumerableFunc = {{FormatGetEnumerableFunc(enumerableShapeModel)}},
                     AppenderFunc = {{FormatAppenderFunc(enumerableShapeModel)}},
                     CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
+                    CreateEventsFunc = {{FormatNull(eventFactoryMethodName)}},
                     IsAsyncEnumerable = {{FormatBool(enumerableShapeModel.Kind is EnumerableKind.IAsyncEnumerableOfT)}},
                     IsSetType = {{FormatBool(enumerableShapeModel.IsSetType)}},
                     Rank = {{enumerableShapeModel.Rank}},
@@ -34,6 +37,12 @@ internal sealed partial class SourceFormatter
         {
             writer.WriteLine();
             FormatMethodsFactory(writer, methodFactoryMethodName, enumerableShapeModel);
+        }
+
+        if (eventFactoryMethodName is not null)
+        {
+            writer.WriteLine();
+            FormatEventsFactory(writer, eventFactoryMethodName, enumerableShapeModel);
         }
 
         static string FormatGetEnumerableFunc(EnumerableShapeModel enumerableType)

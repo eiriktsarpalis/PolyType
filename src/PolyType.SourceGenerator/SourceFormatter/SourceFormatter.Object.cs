@@ -10,6 +10,7 @@ internal sealed partial class SourceFormatter
         string? propertiesFactoryMethodName = objectShapeModel.Properties.Length > 0 ? $"__CreateProperties_{objectShapeModel.SourceIdentifier}" : null;
         string? constructorFactoryMethodName = objectShapeModel.Constructor != null ? $"__CreateConstructor_{objectShapeModel.SourceIdentifier}" : null;
         string? methodFactoryMethodName = CreateMethodsFactoryName(objectShapeModel);
+        string? eventFactoryMethodName = CreateEventsFactoryName(objectShapeModel);
 
         writer.WriteLine($$"""
             private global::PolyType.Abstractions.ITypeShape<{{objectShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
@@ -19,10 +20,11 @@ internal sealed partial class SourceFormatter
                     CreatePropertiesFunc = {{FormatNullOrThrowPartial("CreatePropertiesFunc", propertiesFactoryMethodName, !objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Properties))}},
                     CreateConstructorFunc = {{FormatNullOrThrowPartial("CreateConstructorFunc", constructorFactoryMethodName, !objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Constructor))}},
                     CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
+                    CreateEventsFunc = {{FormatNull(eventFactoryMethodName)}},
                     IsRecordType = {{FormatBool(objectShapeModel.IsRecordType)}},
                     IsTupleType = {{FormatBool(objectShapeModel.IsTupleType)}},
-                    Provider = this,
                     AssociatedTypeShapes = {{FormatAssociatedTypeShapes(objectShapeModel)}},
+                    Provider = this,
                 };
             }
             """, trimNullAssignmentLines: true);
@@ -43,6 +45,12 @@ internal sealed partial class SourceFormatter
         {
             writer.WriteLine();
             FormatMethodsFactory(writer, methodFactoryMethodName, objectShapeModel);
+        }
+
+        if (eventFactoryMethodName is not null)
+        {
+            writer.WriteLine();
+            FormatEventsFactory(writer, eventFactoryMethodName, objectShapeModel);
         }
 
         FormatMemberAccessors(writer, objectShapeModel);

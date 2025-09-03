@@ -33,6 +33,11 @@ public sealed class SourceGenParameterShape<TArgumentState, TParameter> : IParam
     public required ITypeShape<TParameter> ParameterType { get; init; }
 
     /// <summary>
+    /// Gets the getter for the parameter.
+    /// </summary>
+    public required Getter<TArgumentState, TParameter> Getter { get; init; }
+
+    /// <summary>
     /// Gets the setter for the parameter.
     /// </summary>
     public required Setter<TArgumentState, TParameter> Setter { get; init; }
@@ -52,5 +57,6 @@ public sealed class SourceGenParameterShape<TArgumentState, TParameter> : IParam
     ITypeShape IParameterShape.ParameterType => ParameterType;
     ICustomAttributeProvider? IParameterShape.AttributeProvider => AttributeProviderFunc?.Invoke();
     object? IParameterShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitParameter(this, state);
+    Getter<TArgumentState, TParameter> IParameterShape<TArgumentState, TParameter>.GetGetter() => Getter;
     Setter<TArgumentState, TParameter> IParameterShape<TArgumentState, TParameter>.GetSetter() => Setter;
 }

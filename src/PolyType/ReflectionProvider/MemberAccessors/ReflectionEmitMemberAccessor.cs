@@ -132,6 +132,24 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         return CreateDelegate<Setter<TDeclaringType, TPropertyType>>(dynamicMethod);
     }
 
+    public Setter<TDeclaringType?, TEventHandler> CreateEventAccessor<TDeclaringType, TEventHandler>(MethodInfo accessor)
+    {
+        DynamicMethod dynamicMethod = CreateDynamicMethod(accessor.Name, typeof(void), [typeof(TDeclaringType).MakeByRefType(), typeof(TEventHandler)]);
+        ILGenerator generator = dynamicMethod.GetILGenerator();
+
+        if (!accessor.IsStatic)
+        {
+            generator.Emit(OpCodes.Ldarg_0);
+            LdRef(generator, typeof(TDeclaringType));
+        }
+
+        generator.Emit(OpCodes.Ldarg_1);
+        generator.Emit(OpCodes.Call, accessor);
+        generator.Emit(OpCodes.Ret);
+
+        return CreateDelegate<Setter<TDeclaringType?, TEventHandler>>(dynamicMethod);
+    }
+
     public EnumerableAppender<TEnumerable, TElement> CreateEnumerableAppender<TEnumerable, TElement>(MethodInfo methodInfo)
     {
         DynamicMethod dynamicMethod = CreateDynamicMethod(methodInfo.Name, typeof(bool), [typeof(TEnumerable).MakeByRefType(), typeof(TElement)]);
@@ -389,7 +407,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
             generator.Emit(OpCodes.Ldc_I4_1); // Argument state count
             LdLiteral(generator, typeof(ulong), requiredMask); // Required mask
 
-            ConstructorInfo cI = typeof(TArgumentState).GetConstructors()[0]!;
+            ConstructorInfo cI = typeof(TArgumentState).GetConstructor([argumentsType, typeof(int), typeof(ulong)])!;
             generator.Emit(OpCodes.Newobj, cI);
             generator.Emit(OpCodes.Ret);
             return CreateDelegate<Func<TArgumentState>>(dynamicMethod);
@@ -405,7 +423,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
             LdLiteral(generator, typeof(int), ctorInfo.Parameters.Length);
             LdLiteral(generator, typeof(ulong), requiredMask);
 
-            ConstructorInfo cI = typeof(TArgumentState).GetConstructors()[0]!;
+            ConstructorInfo cI = typeof(TArgumentState).GetConstructor([argumentsType, typeof(int), typeof(ulong)])!;
             generator.Emit(OpCodes.Newobj, cI);
             generator.Emit(OpCodes.Ret);
             return CreateDelegate<Func<TArgumentState>>(dynamicMethod);
@@ -438,7 +456,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
             generator.Emit(OpCodes.Ldarg_0); // Load the StrongBox parameter
             generator.Emit(OpCodes.Ldfld, requiredMask.GetType().GetField("Value")!);
 
-            ConstructorInfo cI = typeof(TArgumentState).GetConstructors()[0]!;
+            ConstructorInfo cI = typeof(TArgumentState).GetConstructor([argumentsType, typeof(int), typeof(ValueBitArray)])!;
             generator.Emit(OpCodes.Newobj, cI);
             generator.Emit(OpCodes.Ret);
 
@@ -501,6 +519,36 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                 generator.Emit(OpCodes.Newobj, ctorInfo);
             }
         }
+    }
+
+    public Getter<TArgumentState, TParameter> CreateArgumentStateGetter<TArgumentState, TParameter>(IMethodShapeInfo ctorInfo, int parameterIndex)
+        where TArgumentState : IArgumentState
+    {
+        Debug.Assert(ctorInfo.Parameters.Length > 0);
+        Debug.Assert(typeof(TArgumentState).IsGenericType);
+        Type argumentsType = typeof(TArgumentState).GetGenericArguments()[0];
+        Debug.Assert(ctorInfo.Parameters.Length == 1 ? argumentsType == ctorInfo.Parameters[0].Type : argumentsType.IsValueTupleType());
+
+        DynamicMethod dynamicMethod = CreateDynamicMethod("argumentStateGetter", typeof(TParameter), [typeof(TArgumentState).MakeByRefType()]);
+        ILGenerator generator = dynamicMethod.GetILGenerator();
+
+        // return arg0.Arguments(.ItemN)*;
+        FieldInfo argumentsField = typeof(TArgumentState).GetField("Arguments", BindingFlags.Public | BindingFlags.Instance)!;
+        if (ctorInfo.Parameters.Length == 1)
+        {
+            generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Ldfld, argumentsField);
+        }
+        else
+        {
+            generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Ldflda, argumentsField);
+            FieldInfo nestedField = LdNestedTuple(generator, argumentsType, parameterIndex);
+            generator.Emit(OpCodes.Ldfld, nestedField);
+        }
+
+        generator.Emit(OpCodes.Ret);
+        return CreateDelegate<Getter<TArgumentState, TParameter>>(dynamicMethod);
     }
 
     public Setter<TArgumentState, TParameter> CreateArgumentStateSetter<TArgumentState, TParameter>(IMethodShapeInfo ctorInfo, int parameterIndex)
@@ -698,9 +746,9 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         }
     }
 
-    public MethodInvoker<TDeclaringType, TArgumentState, TResult> CreateMethodInvoker<TDeclaringType, TArgumentState, TResult>(MethodShapeInfo ctorInfo) where TArgumentState : IArgumentState
+    public MethodInvoker<TDeclaringType?, TArgumentState, TResult> CreateMethodInvoker<TDeclaringType, TArgumentState, TResult>(MethodShapeInfo ctorInfo) where TArgumentState : IArgumentState
     {
-        return CreateDelegate<MethodInvoker<TDeclaringType, TArgumentState, TResult>>(EmitMethodInvoker<TResult>(typeof(TDeclaringType), typeof(TArgumentState), ctorInfo));
+        return CreateDelegate<MethodInvoker<TDeclaringType?, TArgumentState, TResult>>(EmitMethodInvoker<TResult>(typeof(TDeclaringType), typeof(TArgumentState), ctorInfo));
     }
 
     private DynamicMethod EmitMethodInvoker<TResult>(Type declaringType, Type argumentStateType, MethodShapeInfo methodShapeInfo)
@@ -778,6 +826,224 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
 
         generator.Emit(OpCodes.Ret);
         return dynamicMethod;
+    }
+
+    public Func<RefFunc<TArgumentState, TResult>, TDelegate> CreateDelegateWrapper<TDelegate, TArgumentState, TResult>(MethodShapeInfo shapeInfo)
+        where TDelegate : Delegate
+        where TArgumentState : IArgumentState
+    {
+        // Get the delegate invoke method to determine parameter types
+        var outerDelegateInvoker = (MethodInfo)shapeInfo.Method!;
+        var innerDelegateInvoker = typeof(RefFunc<TArgumentState, TResult>).GetMethod("Invoke", BindingFlags.Public | BindingFlags.Instance)!;
+
+        Type[] parameterTypes = [typeof(DelegateWrapperEnvironment<TArgumentState, TResult>), .. outerDelegateInvoker.GetParameters().Select(p => p.ParameterType)];
+        DynamicMethod dynamicMethod = CreateDynamicMethod("delegateWrapper", outerDelegateInvoker.ReturnType, parameterTypes);
+        ILGenerator generator = dynamicMethod.GetILGenerator();
+        LocalBuilder argStateLocal = generator.DeclareLocal(typeof(TArgumentState));
+        ValueBitArray largeRequiredArgumentMask = default;
+
+        // 1. Map parameters to a TArgumentState instance.
+        switch (shapeInfo.Parameters)
+        {
+            case []:
+            {
+                // argStateLocal = EmptyArgumentState.Instance;
+                Debug.Assert(typeof(TArgumentState) == typeof(EmptyArgumentState));
+                PropertyInfo singletonState = typeof(EmptyArgumentState).GetProperty(nameof(EmptyArgumentState.Instance), BindingFlags.Public | BindingFlags.Static)!;
+                generator.Emit(OpCodes.Call, singletonState.GetGetMethod(true)!);
+                generator.Emit(OpCodes.Stloc, argStateLocal);
+                break;
+            }
+
+            case [IParameterShapeInfo singleParameter]:
+            {
+                // argStateLocal = new SmallArgumentState<T>(arg_1, count: 1, requiredMask, markAllArgumentsSet: true);
+                Debug.Assert(typeof(TArgumentState).IsGenericType);
+                Debug.Assert(typeof(TArgumentState).GetGenericTypeDefinition() == typeof(SmallArgumentState<>));
+
+                Type parameterType = singleParameter.Type;
+                Debug.Assert(parameterType == typeof(TArgumentState).GetGenericArguments()[0]);
+                ulong requiredMask = singleParameter.IsRequired ? 1UL : 0UL;
+
+                generator.Emit(OpCodes.Ldarg_1); // Load the single parameter (arg_1)
+                if (singleParameter.IsByRef)
+                {
+                    LdRef(generator, parameterType, copyValueTypes: true);
+                }
+
+                generator.Emit(OpCodes.Ldc_I4_1); // Load the count (1)
+                LdLiteral(generator, typeof(ulong), requiredMask); // Load the requiredMask
+                generator.Emit(OpCodes.Ldc_I4_1); // Load the markAllArgumentsSet (true)
+                ConstructorInfo ctor = typeof(TArgumentState).GetConstructor([parameterType, typeof(int), typeof(ulong), typeof(bool)])!;
+                generator.Emit(OpCodes.Newobj, ctor);
+                generator.Emit(OpCodes.Stloc, argStateLocal);
+                break;
+            }
+
+            case { Length: <= 64 }:
+            {
+                // argStateLocal = new SmallArgumentState<(t1, t2, ..., tn)>((arg_1, arg_2, ... arg_N), count: 1, requiredMask, markAllArgumentsSet: true);
+                Debug.Assert(typeof(TArgumentState).IsGenericType);
+                Debug.Assert(typeof(TArgumentState).GetGenericTypeDefinition() == typeof(SmallArgumentState<>));
+
+                Type argumentType = typeof(TArgumentState).GetGenericArguments()[0];
+                Debug.Assert(argumentType.IsValueTupleType());
+                ulong requiredMask = ComputeRequiredMask(shapeInfo);
+
+                LdArgsAsTuple(generator, shapeInfo, argumentType); // Load the arguments as a tuple
+                LdLiteral(generator, typeof(int), shapeInfo.Parameters.Length); // Load the count
+                LdLiteral(generator, typeof(ulong), requiredMask); // Load the requiredMask
+                LdLiteral(generator, typeof(bool), true); // Load the markAllArgumentsSet (true)
+                ConstructorInfo ctor = typeof(TArgumentState).GetConstructor([argumentType, typeof(int), typeof(ulong), typeof(bool)])!;
+                generator.Emit(OpCodes.Newobj, ctor);
+                generator.Emit(OpCodes.Stloc, argStateLocal);
+                break;
+
+                static ulong ComputeRequiredMask(IMethodShapeInfo shapeInfo)
+                {
+                    ulong mask = 0;
+                    for (int i = 0; i < shapeInfo.Parameters.Length; i++)
+                    {
+                        if (shapeInfo.Parameters[i].IsRequired)
+                        {
+                            mask |= 1UL << i;
+                        }
+                    }
+
+                    return mask;
+                }
+            }
+
+            default:
+            {
+                // argStateLocal = new LargeArgumentState<(t1, t2, ..., tn)>((arg_2, arg_3, ... arg_N), count: 1, requiredMask, markAllArgumentsSet: true);
+                Debug.Assert(typeof(TArgumentState).IsGenericType);
+                Debug.Assert(typeof(TArgumentState).GetGenericTypeDefinition() == typeof(LargeArgumentState<>));
+
+                Type argumentType = typeof(TArgumentState).GetGenericArguments()[0];
+                Debug.Assert(argumentType.IsValueTupleType());
+
+                largeRequiredArgumentMask = ComputeRequiredMask(shapeInfo);
+
+                LdArgsAsTuple(generator, shapeInfo, argumentType); // Load the arguments as a tuple
+                LdLiteral(generator, typeof(int), shapeInfo.Parameters.Length); // Load the count
+                generator.Emit(OpCodes.Ldarg_0); // Load the argument mask from the environment
+                generator.Emit(OpCodes.Ldfld, typeof(DelegateWrapperEnvironment<TArgumentState, TResult>).GetField(nameof(DelegateWrapperEnvironment<TArgumentState, TResult>.LargeRequiredParametersMask))!);
+                LdLiteral(generator, typeof(bool), true); // Load the markAllArgumentsSet (true)
+
+                ConstructorInfo cI = typeof(TArgumentState).GetConstructor([argumentType, typeof(int), typeof(ValueBitArray), typeof(bool)])!;
+                generator.Emit(OpCodes.Newobj, cI);
+                generator.Emit(OpCodes.Stloc, argStateLocal);
+                break;
+
+                static ValueBitArray ComputeRequiredMask(IMethodShapeInfo ctorInfo)
+                {
+                    ValueBitArray mask = new(ctorInfo.Parameters.Length);
+                    for (int i = 0; i < ctorInfo.Parameters.Length; i++)
+                    {
+                        if (ctorInfo.Parameters[i].IsRequired)
+                        {
+                            mask[i] = true;
+                        }
+                    }
+
+                    return mask;
+                }
+            }
+        }
+
+        // 2. Invoke the inner delegate
+        generator.Emit(OpCodes.Ldarg_0); // Load the inner delegate from the environment argument
+        generator.Emit(OpCodes.Ldfld, typeof(DelegateWrapperEnvironment<TArgumentState, TResult>).GetField(nameof(DelegateWrapperEnvironment<TArgumentState, TResult>.InnerFunc))!);
+        generator.Emit(OpCodes.Ldloca_S, argStateLocal); // Load the argument state
+        generator.Emit(OpCodes.Callvirt, innerDelegateInvoker); // Call the inner delegate
+
+        // 3. Handle the return parameter
+        Type delegateReturnType = outerDelegateInvoker.ReturnType;
+        if (delegateReturnType == typeof(void))
+        {
+            Debug.Assert(typeof(TResult) == typeof(Unit));
+            generator.Emit(OpCodes.Pop);
+            generator.Emit(OpCodes.Ret);
+        }
+        else if (delegateReturnType == typeof(Task))
+        {
+            Debug.Assert(typeof(TResult) == typeof(ValueTask<Unit>));
+            MethodInfo toTaskMethod = typeof(Unit).GetMethod(nameof(Unit.ToTaskAsync))!;
+            generator.Emit(OpCodes.Call, toTaskMethod);
+            generator.Emit(OpCodes.Ret);
+        }
+        else if (delegateReturnType == typeof(ValueTask))
+        {
+            Debug.Assert(typeof(TResult) == typeof(ValueTask<Unit>));
+            MethodInfo toValueTaskMethod = typeof(Unit).GetMethod(nameof(Unit.ToValueTaskAsync))!;
+            generator.Emit(OpCodes.Call, toValueTaskMethod);
+            generator.Emit(OpCodes.Ret);
+        }
+        else if (delegateReturnType.IsGenericType && delegateReturnType.GetGenericTypeDefinition() == typeof(Task<>))
+        {
+            Debug.Assert(typeof(TResult).IsGenericType && typeof(TResult).GetGenericTypeDefinition() == typeof(ValueTask<>));
+            MethodInfo asTaskMethod = typeof(TResult).GetMethod("AsTask")!;
+            LocalBuilder valueTaskLocal = generator.DeclareLocal(typeof(TResult));
+            generator.Emit(OpCodes.Stloc, valueTaskLocal);
+            generator.Emit(OpCodes.Ldloca_S, valueTaskLocal);
+            generator.Emit(OpCodes.Call, asTaskMethod);
+            generator.Emit(OpCodes.Ret);
+        }
+        else
+        {
+            Debug.Assert(typeof(TResult) == delegateReturnType);
+            generator.Emit(OpCodes.Ret);
+        }
+
+        return innerFunc =>
+        {
+            DelegateWrapperEnvironment<TArgumentState, TResult> environment = new()
+            {
+                InnerFunc = innerFunc,
+                LargeRequiredParametersMask = largeRequiredArgumentMask,
+            };
+
+            return CreateDelegate<TDelegate>(dynamicMethod, target: environment);
+        };
+
+        static void LdArgsAsTuple(ILGenerator generator, IMethodShapeInfo shapeInfo, Type tupleType)
+        {
+            Debug.Assert(tupleType.IsValueTupleType());
+            // Load individual arguments
+            for (int i = 0; i < shapeInfo.Parameters.Length; i++)
+            {
+                generator.Emit(OpCodes.Ldarg, i + 1); // Ldarg_0 represents the environment parameter
+                if (shapeInfo.Parameters[i].IsByRef)
+                {
+                    LdRef(generator, shapeInfo.Parameters[i].Type, copyValueTypes: true);
+                }
+            }
+
+            // Call the final tuple ctor(s).
+            EmitTupleCtor(generator, tupleType, shapeInfo.Parameters.Length);
+
+            static void EmitTupleCtor(ILGenerator generator, Type tupleType, int arity)
+            {
+                if (arity > 7)
+                {
+                    // the tuple nests more tuple types
+                    // NB emit NewObj calls starting with innermost type first
+                    EmitTupleCtor(generator, tupleType.GetGenericArguments()[7], arity - 7);
+                }
+
+                ConstructorInfo ctorInfo = tupleType.GetConstructors()[0]!;
+                generator.Emit(OpCodes.Newobj, ctorInfo);
+            }
+        }
+    }
+
+    private sealed class DelegateWrapperEnvironment<TArgumentState, TResult>
+    {
+#pragma warning disable SA1401 // Fields should be private
+        public required RefFunc<TArgumentState, TResult> InnerFunc;
+        public required ValueBitArray LargeRequiredParametersMask;
+#pragma warning restore SA1401 // Fields should be private
     }
 
     private static void LdFromArgState(

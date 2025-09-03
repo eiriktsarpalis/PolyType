@@ -1,0 +1,17 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace PolyType.SourceGenerator.Model;
+
+public sealed record EventShapeModel
+{
+    public required string Name { get; init; }
+    public required string UnderlyingMemberName { get; init; }
+    public required TypeId HandlerType { get; init; }
+    public required TypeId DeclaringType { get; init; }
+    public required bool IsAccessible { get; init; }
+    public required bool CanUseUnsafeAccessors { get; init; }
+    public required bool IsPublic { get; init; }
+    public required bool IsStatic { get; init; }
+}

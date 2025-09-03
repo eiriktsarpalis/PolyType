@@ -372,6 +372,21 @@ partial class CounterVisitor : TypeShapeVisitor
 }
 ```
 
+### Function types
+
+PolyType models delegate types as well as F# function types using the `IFunctionTypeShape` interface:
+
+```C#
+public partial interface IFunctionTypeShape<TFunction, TArguments, TResult> : ITypeShape<TFunction>
+{
+    ITypeShape<TResult> ReturnType { get; }
+    IReadOnlyList<IParameterShape> Parameters { get; }
+}
+```
+
+Visitors accessing function shapes can be used to invoke instances of type `TFunction` or to create new instances of type `TFunction` by wrapping a generic `Func<TArgumentState, TResult>` delegate. For more information on how function or method shapes work, please refer to the ##method-shapes section below.
+
+
 To recap, the `ITypeShape` model splits .NET types into seven separate kinds:
 
 * `IObjectTypeShape` instances which may or may not define properties,
@@ -381,6 +396,7 @@ To recap, the `ITypeShape` model splits .NET types into seven separate kinds:
 * `IOptionalTypeShape` instances describing optional types such as `Nullable<T>` or F# option types,
 * `IUnionTypeShape` instances describing union types such as polymorphic type hierarchies or F# discriminated unions, and
 * `ISurrogateTypeShape` instances that delegate their shape declaration to surrogate types.
+* `IFunctionTypeShape` instances describing delegate types, F# function types, or other single-method interfaces.
 
 ## Constructing and mutating types
 
@@ -735,6 +751,89 @@ partial class Calculator
         return x * y;
     }
 }
+```
+
+```C#
+
+### Function type shapes
+
+The `IFunctionTypeShape` abstraction has many similarities with the `IMethodShape` abstraction, exposing the same facilities enabling generic function invocation:
+
+```C#
+public partial interface IFunctionTypeShape<TFunction, TArgumentState, TResult> : ITypeShape<TFunction>
+    where TArgumentState : IArgumentState
+{
+    ITypeShape<TResult> ReturnType { get; }
+    IReadOnlyList<IParameterShape> Parameters { get; }
+    
+    Func<TArgumentState> GetArgumentStateConstructor();
+    MethodInvoker<TFunction, TArgumentState, TResult> GetMethodInvoker();
+}
+```
+
+Additionally, the abstraction exposes facilities for creating `TFunction` instances by wrapping generic delegates:
+
+```C#
+public partial interface IFunctionTypeShape<TFunction, TArgumentState, TResult>
+{
+    bool IsAsync { get; }
+    TFunction FromDelegate(RefFunc<TArgumentState, TResult> innerFunc);
+    TFunction FromAsyncDelegate(RefFunc<TArgumentState, ValueTask<TResult>> innerFunc);
+}
+```
+
+#### Example: building a decorated delegate
+
+In some cases you want to return a strongly typed delegate of the same shape after adding cross-cutting behavior:
+
+```C#
+partial class DecoratorVisitor : TypeShapeVisitor
+{
+    public override object? VisitFunction<TFunction, TArgumentState, TResult>(
+        IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state)
+    {
+        // Capture the original delegate instance from 'state'.
+        var original = (TFunction)state!;
+        var invoker = functionShape.GetFunctionInvoker();
+
+        if (!functionShape.IsAsync)
+        {
+            return new Func<TFunction, TFunction>(inner => functionShape.FromDelegate((ref TArgumentState arg) =>
+            {
+                Console.WriteLine($"Before {functionShape.Type.Name}");
+                ValueTask<TResult> resultTask = invoker(ref inner, ref arg);
+                Debug.Assert(resultTask.IsCompleted, "The underlying function is synchronous.");
+                Console.WriteLine($"After {functionShape.Type.Name}");
+                return resultTask.Result;
+            }));
+        }
+
+        return new Func<TFunction, TFunction>(inner => functionShape.FromAsyncDelegate((ref TArgumentState arg) =>
+        {
+            Console.WriteLine($"Before {functionShape.Type.Name}");
+            var resultTask = invoker(ref inner, ref arg);
+            return Complete(resultTask);
+            async ValueTask<TResult> Complete(ValueTask<TResult> resultTask)
+            {
+                TResult result = await resultTask.ConfigureAwait(false);
+                Console.WriteLine($"After {functionShape.Type.Name}");
+                return result;
+            }
+        }));
+    }
+}
+```
+
+Which can be used to decorate any delegate type:
+
+```C#
+// Usage
+ITypeShape<Adder> addShape = ...;
+var decorator = (Func<Adder, Adder>)addShape.Accept(new DecoratorVisitor())!;
+Adder decorated = decorator((x, y) => x + y);
+int sum = decorated(1, 2); // Writes logs, returns 3
+
+delegate int Adder(int x, int y);
 ```
 
 This concludes the tutorial for the core PolyType programming model. For more detailed examples, please refer to the [`PolyType.Examples`](https://github.com/eiriktsarpalis/PolyType/tree/main/src/PolyType.Examples) project folder.

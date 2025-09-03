@@ -64,6 +64,9 @@ public sealed class PolyTypeKnownSymbols(Compilation compilation) : KnownSymbols
     public INamedTypeSymbol? MethodShapeAttribute => GetOrResolveType("PolyType.MethodShapeAttribute", ref _MethodShapeAttribute);
     private Option<INamedTypeSymbol?> _MethodShapeAttribute;
 
+    public INamedTypeSymbol? EventShapeAttribute => GetOrResolveType("PolyType.EventShapeAttribute", ref _EventShapeAttribute);
+    private Option<INamedTypeSymbol?> _EventShapeAttribute;
+
     public INamedTypeSymbol? ParameterShapeAttribute => GetOrResolveType("PolyType.ParameterShapeAttribute", ref _ParameterShapeAttribute);
     private Option<INamedTypeSymbol?> _ParameterShapeAttribute;
 

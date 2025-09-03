@@ -33,6 +33,7 @@ public class OnlySanctionedShapesAnalyzerTests
                 public ITypeShapeProvider Provider => throw new NotImplementedException();
                 public ICustomAttributeProvider AttributeProvider => throw new NotImplementedException();
                 public IReadOnlyList<IMethodShape> Methods => throw new NotImplementedException();
+                public IReadOnlyList<IEventShape> Events => throw new NotImplementedException();
                 public object Accept(TypeShapeVisitor visitor, object state = null) => throw new NotImplementedException();
                 public ITypeShape GetAssociatedTypeShape(Type associatedType) => throw new NotImplementedException();
                 public object Invoke(ITypeShapeFunc func, object state = null) => throw new NotImplementedException();

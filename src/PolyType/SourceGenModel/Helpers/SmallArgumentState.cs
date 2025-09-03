@@ -36,6 +36,22 @@ public struct SmallArgumentState<TArguments> : IArgumentState
     }
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="SmallArgumentState{TArguments}"/> struct.
+    /// </summary>
+    /// <param name="arguments">The initial argument state object.</param>
+    /// <param name="count">The total number of arguments.</param>
+    /// <param name="requiredArgumentsMask">A bitmask indicating which arguments are required.</param>
+    /// <param name="markAllArgumentsSet">If <c>true</c>, all arguments are marked as set.</param>
+    public SmallArgumentState(TArguments arguments, int count, ulong requiredArgumentsMask, bool markAllArgumentsSet)
+        : this(arguments, count, requiredArgumentsMask)
+    {
+        if (markAllArgumentsSet)
+        {
+            _setArguments = (1UL << count) - 1;
+        }
+    }
+
+    /// <summary>
     /// The actual arguments being tracked by this state.
     /// </summary>
 #pragma warning disable CA1051 // Do not declare visible instance fields

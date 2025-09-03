@@ -4,6 +4,7 @@ using PolyType.Utilities;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
@@ -93,6 +94,47 @@ public static partial class JsonSerializerTS
                         TParameter? parameter = paramConverter.Deserialize(value);
                         setter(ref state, parameter!);
                     }
+                });
+            }
+
+            if (state is IFunctionTypeShape)
+            {
+                if (parameter.ParameterType.Type == typeof(object) && parameter.Name == "sender")
+                {
+                    var senderGetter = (Getter<TArgumentState, object?>)(object)parameter.GetGetter();
+                    return new FunctionParameterGetter<TArgumentState>((
+                        ref TArgumentState state,
+                        Dictionary<string, JsonElement> _,
+                        ref object? sender,
+                        ref CancellationToken _) =>
+                    {
+                        sender = senderGetter(ref state);
+                    });
+                }
+
+                if (parameter.ParameterType.Type == typeof(CancellationToken))
+                {
+                    var senderGetter = (Getter<TArgumentState, CancellationToken>)(object)parameter.GetGetter();
+                    return new FunctionParameterGetter<TArgumentState>((
+                        ref TArgumentState state,
+                        Dictionary<string, JsonElement> _,
+                        ref object? _, 
+                        ref CancellationToken cancellationToken) =>
+                    {
+                        cancellationToken = senderGetter(ref state);
+                    });
+                }
+
+                JsonConverter<TParameter> paramConverter = GetOrAddConverter(parameter.ParameterType);
+                var getter = parameter.GetGetter();
+                return new FunctionParameterGetter<TArgumentState>((
+                    ref TArgumentState state,
+                    Dictionary<string, JsonElement> parameters,
+                    ref object? _,
+                    ref CancellationToken _) =>
+                {
+                    TParameter value = getter(ref state);
+                    parameters[parameter.Name] = paramConverter.SerializeToElement(value);
                 });
             }
 
@@ -249,10 +291,98 @@ public static partial class JsonSerializerTS
             }
         }
 
+        public override object? VisitEvent<TDeclaringType, TEventHandler>(IEventShape<TDeclaringType, TEventHandler> eventShape, object? state = null)
+        {
+            var config = ((bool RequireAsync, object? Target))state!;
+            if (config.RequireAsync != eventShape.HandlerType.IsAsync)
+            {
+                throw new ArgumentException("The event handler type does not match the expected async state.", nameof(eventShape));
+            }
+
+            if (!eventShape.IsStatic && config.Target is null)
+            {
+                throw new ArgumentException("A target instance must be provided for instance events.");
+            }
+
+            var addHandler = eventShape.GetAddHandler();
+            var removeHandler = eventShape.GetRemoveHandler();
+
+            if (config.RequireAsync)
+            {
+                var wrapEventHandler = (Func<AsyncJsonEventHandler, TEventHandler>)eventShape.HandlerType.Accept(this, state: eventShape)!;
+                return new AsyncJsonEvent<TDeclaringType, TEventHandler>(config.Target, wrapEventHandler, addHandler, removeHandler);
+            }
+            else
+            {
+                var wrapEventHandler = (Func<JsonEventHandler, TEventHandler>)eventShape.HandlerType.Accept(this, state: eventShape)!;
+                return new JsonEvent<TDeclaringType, TEventHandler>(config.Target, wrapEventHandler, addHandler, removeHandler);
+            }
+        }
+
+        public override object? VisitFunction<TFunction, TArgumentState, TResult>(IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state = null)
+        {
+            if (state is IEventShape)
+            {
+                JsonConverter<TResult> resultConverter = GetOrAddConverter(functionShape.ReturnType);
+                FunctionParameterGetter<TArgumentState>[] getParameters = functionShape.Parameters
+                    .Select(p => (FunctionParameterGetter<TArgumentState>)p.Accept(this, functionShape)!)
+                    .ToArray();
+
+                if (functionShape.IsAsync)
+                {
+                    return new Func<AsyncJsonEventHandler, TFunction>(jsonHandler =>
+                        functionShape.FromAsyncDelegate((ref TArgumentState argState) =>
+                        {
+                            object? sender = null;
+                            CancellationToken cancellationToken = default;
+                            Dictionary<string, JsonElement> parameters = new(getParameters.Length);
+                            foreach (var getter in getParameters)
+                            {
+                                getter(ref argState, parameters, ref sender, ref cancellationToken);
+                            }
+
+                            ValueTask<JsonElement> result = jsonHandler(sender, parameters, cancellationToken);
+                            return DeserializeResult(result);
+
+                            // Work around CS1988 - Async methods cannot return by-ref-like types.
+                            async ValueTask<TResult> DeserializeResult(ValueTask<JsonElement> task) =>
+                                resultConverter.Deserialize(await task.ConfigureAwait(false))!;
+                        })
+                    );
+                }
+                else
+                {
+                    return new Func<JsonEventHandler, TFunction>(jsonHandler =>
+                        functionShape.FromDelegate((ref TArgumentState argState) =>
+                        {
+                            object? sender = null;
+                            CancellationToken cancellationToken = default;
+                            Dictionary<string, JsonElement> parameters = new(getParameters.Length);
+                            foreach (var getter in getParameters)
+                            {
+                                getter(ref argState, parameters, ref sender, ref cancellationToken);
+                            }
+
+                            JsonElement result = jsonHandler(sender, parameters);
+                            return resultConverter.Deserialize(result)!;
+                        })
+                    );
+                }
+            }
+
+            return new JsonObjectConverter<TFunction>([]);
+        }
+
         private delegate void MethodParameterSetter<TArgumentState>(
             ref TArgumentState argumentState,
             IReadOnlyDictionary<string, JsonElement> parameters,
             CancellationToken cancellationToken);
+
+        private delegate void FunctionParameterGetter<TArgumentState>(
+            ref TArgumentState argumentState,
+            Dictionary<string, JsonElement> parameters,
+            ref object? sender,
+            ref CancellationToken cancellationToken);
 
         private static readonly Dictionary<Type, JsonConverter> s_defaultConverters = new JsonConverter[]
         {

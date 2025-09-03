@@ -8,6 +8,8 @@ internal sealed partial class SourceFormatter
     private void FormatDictionaryTypeShapeFactory(SourceWriter writer, string methodName, DictionaryShapeModel dictionaryShapeModel)
     {
         string? methodFactoryMethodName = CreateMethodsFactoryName(dictionaryShapeModel);
+        string? eventFactoryMethodName = CreateEventsFactoryName(dictionaryShapeModel);
+
         bool requiresCS8631Suppression = dictionaryShapeModel.KeyValueTypesContainNullableAnnotations && dictionaryShapeModel.Kind is DictionaryKind.IDictionaryOfKV;
         if (requiresCS8631Suppression)
         {
@@ -31,6 +33,7 @@ internal sealed partial class SourceFormatter
                     ThrowingInserter = {{FormatThrowingInserter(dictionaryShapeModel)}},
                     ParameterizedConstructorFunc = {{FormatParameterizedConstructorFunc(dictionaryShapeModel)}},
                     CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
+                    CreateEventsFunc = {{FormatNull(eventFactoryMethodName)}},
                     AssociatedTypeShapes = {{FormatAssociatedTypeShapes(dictionaryShapeModel)}},
                     Provider = this,
                 };
@@ -46,6 +49,12 @@ internal sealed partial class SourceFormatter
         {
             writer.WriteLine();
             FormatMethodsFactory(writer, methodFactoryMethodName, dictionaryShapeModel);
+        }
+
+        if (eventFactoryMethodName is not null)
+        {
+            writer.WriteLine();
+            FormatEventsFactory(writer, eventFactoryMethodName, dictionaryShapeModel);
         }
 
         static string FormatGetDictionaryFunc(DictionaryShapeModel dictionaryType)

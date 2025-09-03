@@ -9,6 +9,7 @@ internal sealed partial class SourceFormatter
     {
         string createUnionCasesMethodName = $"__Create_UnionCases_{unionShapeModel.SourceIdentifier}";
         string? methodFactoryMethodName = CreateMethodsFactoryName(unionShapeModel);
+        string? eventFactoryMethodName = CreateEventsFactoryName(unionShapeModel);
 
         writer.WriteLine($$"""
             private global::PolyType.Abstractions.ITypeShape<{{unionShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
@@ -19,6 +20,7 @@ internal sealed partial class SourceFormatter
                     CreateUnionCasesFunc = {{createUnionCasesMethodName}},
                     GetUnionCaseIndexFunc = {{FormatFSharpUnionTagReader(unionShapeModel)}},
                     CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
+                    CreateEventsFunc = {{FormatNull(eventFactoryMethodName)}},
                     Provider = this,
                 };
             }
@@ -31,6 +33,12 @@ internal sealed partial class SourceFormatter
         {
             writer.WriteLine();
             FormatMethodsFactory(writer, methodFactoryMethodName, unionShapeModel);
+        }
+
+        if (eventFactoryMethodName is not null)
+        {
+            writer.WriteLine();
+            FormatEventsFactory(writer, eventFactoryMethodName, unionShapeModel);
         }
     }
 
@@ -53,7 +61,7 @@ internal sealed partial class SourceFormatter
                 {
                     Type = {{unionCase.TypeModel.SourceIdentifier}},
                     Marshaler = global::PolyType.SourceGenModel.SubtypeMarshaler<{{unionCase.TypeModel.Type.FullyQualifiedName}}, {{unionShapeModel.Type.FullyQualifiedName}}>.Instance,
-                    Name = "{{unionCase.Name}}",
+                    Name = {{FormatStringLiteral(unionCase.Name)}},
                     Tag = {{unionCase.Tag}},
                     IsTagSpecified = false,
                     Index = {{unionCase.Tag}},

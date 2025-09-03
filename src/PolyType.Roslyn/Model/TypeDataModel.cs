@@ -24,6 +24,11 @@ public class TypeDataModel
     public ImmutableArray<MethodDataModel> Methods { get; init; } = ImmutableArray<MethodDataModel>.Empty;
 
     /// <summary>
+    /// Any events that the type defines whose event type should be included in the type graph traversal.
+    /// </summary>
+    public ImmutableArray<EventDataModel> Events { get; init; } = ImmutableArray<EventDataModel>.Empty;
+
+    /// <summary>
     /// The list of known derived types for the given type in topological order from most to least derived.
     /// </summary>
     public ImmutableArray<DerivedTypeModel> DerivedTypes { get; init; } = ImmutableArray<DerivedTypeModel>.Empty;

@@ -18,6 +18,9 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
     public IReadOnlyList<IMethodShape> Methods => _methods ?? CommonHelpers.ExchangeIfNull(ref _methods, GetMethods().AsReadOnlyList());
     private IReadOnlyList<IMethodShape>? _methods;
 
+    public IReadOnlyList<IEventShape> Events => _events ?? CommonHelpers.ExchangeIfNull(ref _events, GetEvents().AsReadOnlyList());
+    private IReadOnlyList<IEventShape>? _events;
+
     ITypeShapeProvider ITypeShape.Provider => provider;
     ICustomAttributeProvider? ITypeShape.AttributeProvider => typeof(T);
     object? ITypeShape.Invoke(ITypeShapeFunc func, object? state) => func.Invoke(this, state);
@@ -53,7 +56,7 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
             MethodShapeAttribute? shapeAttribute = methodInfo.GetCustomAttribute<MethodShapeAttribute>();
             if (IncludeMethod(methodInfo, shapeAttribute, Options.IncludeMethods))
             {
-                yield return CreateMethodShapeInfo(methodInfo, shapeAttribute, ctx);
+                yield return ReflectionTypeShapeProvider.CreateMethodShapeInfo(methodInfo, shapeAttribute, ctx);
             }
         }
 
@@ -87,50 +90,40 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
 
             return true;
         }
+    }
 
-        static MethodShapeInfo CreateMethodShapeInfo(
-            MethodInfo methodInfo,
-            MethodShapeAttribute? shapeAttribute,
-            NullabilityInfoContext? nullabilityCtx)
+    private IEnumerable<IEventShape> GetEvents()
+    {
+        const BindingFlags AllEvents = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+        foreach (EventInfo eventInfo in typeof(T).GetEvents(AllEvents))
         {
-            if (methodInfo.IsGenericMethodDefinition)
+            EventShapeAttribute? eventAttr = eventInfo.GetCustomAttribute<EventShapeAttribute>();
+            if (IncludeEvent(eventInfo, eventAttr))
             {
-                throw new NotSupportedException($"Cannot generate shape for generic method '{methodInfo}'.");
+                yield return Provider.CreateEvent(this, eventInfo, eventAttr?.Name ?? eventInfo.Name);
+            }
+        }
+
+        bool IncludeEvent(EventInfo eventInfo, EventShapeAttribute? eventAttr)
+        {
+            if (eventAttr is not null)
+            {
+                return !eventAttr.Ignore;
             }
 
-            ParameterInfo[] parameters = methodInfo.GetParameters();
-            if (parameters.FirstOrDefault(param => param.IsOut || !param.GetEffectiveParameterType().CanBeGenericArgument()) is { } param)
+            MethodInfo? accessor = eventInfo.AddMethod ?? eventInfo.RemoveMethod;
+            if (accessor is not { IsPublic: true })
             {
-                throw new NotSupportedException($"Method '{methodInfo}' contains unsupported parameter type '{param.Name}'.");
+                return false;
             }
 
-            if (methodInfo.ReturnType != typeof(void) && !methodInfo.ReturnParameter.GetEffectiveParameterType().CanBeGenericArgument())
+            MethodShapeFlags requiredFlag = accessor.IsStatic ? MethodShapeFlags.PublicStatic : MethodShapeFlags.PublicInstance;
+            if ((Options.IncludeMethods & requiredFlag) == 0)
             {
-                throw new NotSupportedException($"Method '{methodInfo}' has an unsupported return type '{methodInfo.ReturnType}'.");
+                return false; // Skip events that are not included in the shape by default.
             }
 
-            int i = 0;
-            var parameterShapeInfos = new MethodParameterShapeInfo[parameters.Length];
-            foreach (ParameterInfo parameter in parameters)
-            {
-                ParameterShapeAttribute? parameterShapeAttribute = parameter.GetCustomAttribute<ParameterShapeAttribute>();
-                string? paramName = parameterShapeAttribute?.Name ?? parameter.Name;
-                if (string.IsNullOrEmpty(paramName))
-                {
-                    throw new NotSupportedException($"The method '{typeof(T)}.{methodInfo.Name}' has had its parameter names trimmed.");
-                }
-
-                bool? isRequired = parameterShapeAttribute?.IsRequiredSpecified is true ? parameterShapeAttribute.IsRequired : null;
-                parameterShapeInfos[i++] = new MethodParameterShapeInfo(
-                    parameter,
-                    isNonNullable: parameter.IsNonNullableAnnotation(nullabilityCtx),
-                    logicalName: paramName,
-                    isRequired: isRequired);
-            }
-
-            string name = shapeAttribute?.Name ?? methodInfo.Name;
-            Type returnType = methodInfo.GetEffectiveReturnType() ?? typeof(Unit);
-            return new MethodShapeInfo(returnType, methodInfo, parameterShapeInfos, name: name);
+            return true;
         }
     }
 }

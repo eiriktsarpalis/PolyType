@@ -57,6 +57,7 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
         }
     }
 
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private bool _isConstructorResolved;
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]

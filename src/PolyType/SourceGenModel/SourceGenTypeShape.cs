@@ -26,6 +26,11 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
     public Func<IEnumerable<IMethodShape>>? CreateMethodsFunc { get; init; }
 
     /// <summary>
+    /// Gets the factory method for creating event shapes.
+    /// </summary>
+    public Func<IEnumerable<IEventShape>>? CreateEventsFunc { get; init; }
+
+    /// <summary>
     /// Gets the shape of an associated type, by its name.
     /// </summary>
     public Func<string, ITypeShape?>? AssociatedTypeShapes { get; init; }
@@ -43,7 +48,12 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
     private IReadOnlyList<IMethodShape>? _methods;
 
     /// <inheritdoc/>
-    public ITypeShape? GetAssociatedTypeShape(Type associatedType)
+    public IReadOnlyList<IEventShape> Events => _events ?? CommonHelpers.ExchangeIfNull(ref _events, (CreateEventsFunc?.Invoke()).AsReadOnlyList());
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private IReadOnlyList<IEventShape>? _events;
+
+    ITypeShape? ITypeShape.GetAssociatedTypeShape(Type associatedType)
     {
         if (associatedType.IsGenericTypeDefinition && typeof(T).GenericTypeArguments.Length != associatedType.GetTypeInfo().GenericTypeParameters.Length)
         {

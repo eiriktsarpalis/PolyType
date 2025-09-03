@@ -116,5 +116,10 @@ public static partial class StructuralEqualityComparer
             var underlyingComparer = (EqualityComparer<TUnionCase>)unionCaseShape.Type.Accept(this)!;
             return new UnionCaseEqualityComparer<TUnionCase, TUnion>(underlyingComparer, unionCaseShape.Marshaler);
         }
+
+        public override object? VisitFunction<TFunction, TArgumentState, TResult>(IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state = null)
+        {
+            return EqualityComparer<TFunction>.Default;
+        }
     }
 }

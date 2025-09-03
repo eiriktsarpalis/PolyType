@@ -239,6 +239,7 @@ internal sealed partial class SourceFormatter
                     IsPublic = {{FormatBool(parameter.IsPublic)}},
                     HasDefaultValue = {{FormatBool(parameter.HasDefaultValue)}},
                     DefaultValue = {{FormatDefaultValueExpr(parameter)}},
+                    Getter = static (ref {{methodArgumentStateFQN}} state) => {{FormatGetterBody(method, parameter)}},
                     Setter = static (ref {{methodArgumentStateFQN}} state, {{parameter.ParameterType.FullyQualifiedName}} value) => {{FormatSetterBody(method, parameter)}},
                     AttributeProviderFunc = {{FormatAttributeProviderFunc(declaringType, method, parameter)}},
                 },
@@ -251,6 +252,22 @@ internal sealed partial class SourceFormatter
                     : $$"""new global::System.Type[] { {{string.Join(", ", method.Parameters.Select(FormatParameterTypeExpr))}} }""";
 
                 return $"static () => typeof({method.DeclaringType.FullyQualifiedName}).GetMethod({FormatStringLiteral(method.UnderlyingMethodName)}, {AllBindingFlagsConstMember}, null, {parameterTypes}, null)?.GetParameters()[{parameter.Position}]";
+            }
+
+            static string FormatGetterBody(MethodShapeModel method, ParameterShapeModel parameter)
+            {
+                // Suppress non-nullable Nullable<T> property getters (i.e. setters with [DisallowNull] annotation)
+                bool suppressGetter = parameter.ParameterTypeContainsNullabilityAnnotations || parameter is
+                {
+                    ParameterType.SpecialType: SpecialType.System_Nullable_T,
+                    IsNonNullable: true,
+                };
+
+                return method.Parameters.Length switch
+                {
+                    1 => $"state.Arguments{(suppressGetter ? "!" : "")}",
+                    _ => $"state.Arguments.Item{parameter.Position + 1}{(suppressGetter ? "!" : "")}",
+                };
             }
 
             static string FormatSetterBody(MethodShapeModel method, ParameterShapeModel parameter)

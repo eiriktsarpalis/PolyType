@@ -14,6 +14,7 @@ public sealed record ParameterShapeModel
     public required bool IsRequired { get; init; }
     public required bool IsInitOnlyProperty { get; init; }
     public required bool IsNonNullable { get; init; }
+    public required NullableAnnotation NullableAnnotation { get; init; }
     public required bool IsAccessible { get; init; }
     public required bool CanUseUnsafeAccessors { get; init; }
     public required bool ParameterTypeContainsNullabilityAnnotations { get; init; }

@@ -339,6 +339,11 @@ public partial class RandomGenerator
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state) =>
             throw new NotImplementedException();
 
+        public override object? VisitFunction<TFunction, TArgumentState, TResult>(IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state = null)
+        {
+            return CreateNotSupportedGenerator<TFunction>();
+        }
+
         private static RandomGenerator<T> CreateNotSupportedGenerator<T>() =>
             (_, _) => throw new NotSupportedException($"Type '{typeof(T)}' does not support random generation.");
 
@@ -381,6 +386,7 @@ public partial class RandomGenerator
             });
             yield return Create((random, size) => new Uri($"https://github.com/{WebUtility.UrlEncode(NextString(random, size))}"));
             yield return Create((random, _) => new Version(random.Next(), random.Next(), random.Next(), random.Next()));
+            yield return Create((random, _) => new CancellationToken(random.Next(1) == 0));
             yield return Create((random, _) =>
             {
 #if NET

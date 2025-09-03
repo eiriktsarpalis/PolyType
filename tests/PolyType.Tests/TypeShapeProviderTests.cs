@@ -45,6 +45,11 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                 return TypeShapeKind.Union;
             }
 
+            if (testCase.IsFunctionType)
+            {
+                return TypeShapeKind.Function;
+            }
+
             if (typeof(T).IsEnum)
             {
                 return TypeShapeKind.Enum;
@@ -209,14 +214,22 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
 
         public override object? VisitParameter<TArgumentState, TParameter>(IParameterShape<TArgumentState, TParameter> parameter, object? state)
         {
+            RandomGenerator<TParameter> randomGenerator = RandomGenerator.Create(parameter.ParameterType);
+
             var argState = (TArgumentState)state!;
+            var getter = parameter.GetGetter();
+            Assert.Same(parameter.GetSetter(), parameter.GetSetter());
             var setter = parameter.GetSetter();
             Assert.Same(parameter.GetSetter(), parameter.GetSetter());
 
             TParameter? value = parameter.HasDefaultValue ? parameter.DefaultValue : default;
+            Assert.Equal(getter(ref argState), value);
             Assert.False(argState.IsArgumentSet(parameter.Position));
-            setter(ref argState, value!);
+
+            TParameter newValue = randomGenerator.GenerateValue(size: 1000, seed: 50);
+            setter(ref argState, newValue);
             Assert.True(argState.IsArgumentSet(parameter.Position));
+            Assert.Equal(getter(ref argState), newValue);
             return argState;
         }
     }
@@ -609,6 +622,163 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
 
     [Theory]
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
+    public void GetFunctionType<T>(TestCase<T> testCase)
+    {
+        if (testCase.Value is null)
+        {
+            return;
+        }
+
+        ITypeShape<T> shape = providerUnderTest.ResolveShape(testCase);
+        if (shape.Kind is TypeShapeKind.Function)
+        {
+            Assert.True(testCase.IsFunctionType);
+            IFunctionTypeShape functionShape = Assert.IsAssignableFrom<IFunctionTypeShape>(shape);
+            Assert.Equal(typeof(T), functionShape.Type);
+            MethodInfo invokeMethod = typeof(T).GetMethod("Invoke")!;
+            ParameterInfo[] parameterInfos = invokeMethod.GetParameters();
+
+            Type? effectiveReturnType = invokeMethod.GetEffectiveReturnType();
+            Assert.Equal(effectiveReturnType is null, functionShape.IsVoidLike);
+            Assert.Equal(invokeMethod.IsAsyncMethod(), functionShape.IsAsync);
+            Assert.Equal(effectiveReturnType ?? typeof(Unit), functionShape.ReturnType.Type);
+            Assert.Equal(parameterInfos.Length, functionShape.Parameters.Count);
+
+            for (int i = 0; i < parameterInfos.Length; i++)
+            {
+                IParameterShape paramShape = functionShape.Parameters[i];
+                ParameterInfo actualParameter = parameterInfos[i];
+                ParameterShapeAttribute? shapeAttr = actualParameter.GetCustomAttribute<ParameterShapeAttribute>();
+
+                Assert.Equal(actualParameter.Position, paramShape.Position);
+                Assert.Equal(actualParameter.GetEffectiveParameterType(), paramShape.ParameterType.Type);
+                Assert.Equal(shapeAttr?.Name ?? actualParameter.Name, paramShape.Name);
+
+                bool hasDefaultValue = actualParameter.TryGetDefaultValueNormalized(out object? defaultValue);
+                Assert.Equal(hasDefaultValue, paramShape.HasDefaultValue);
+                Assert.Equal(defaultValue, paramShape.DefaultValue);
+                Assert.Equal(shapeAttr?.IsRequiredSpecified() is true ? shapeAttr.IsRequired : !hasDefaultValue, paramShape.IsRequired);
+                Assert.Equal(ParameterKind.MethodParameter, paramShape.Kind);
+                Assert.True(paramShape.IsPublic);
+
+                ParameterInfo paramInfo = Assert.IsAssignableFrom<ParameterInfo>(paramShape.AttributeProvider);
+                Assert.Equal(actualParameter.Position, paramInfo.Position);
+                Assert.Equal(actualParameter.Name, paramInfo.Name);
+                Assert.Equal(actualParameter.ParameterType, paramInfo.ParameterType);
+            }
+
+            var visitor = new FunctionTestVisitor(providerUnderTest);
+            functionShape.Accept(visitor, state: testCase.Value);
+        }
+        else
+        {
+            Assert.False(shape is IFunctionTypeShape);
+            Assert.False(testCase.IsFunctionType);
+        }
+    }
+
+    private sealed class FunctionTestVisitor(ProviderUnderTest providerUnderTest) : TypeShapeVisitor
+    {
+        public override object? VisitFunction<TFunction, TArgumentState, TResult>(IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state = null)
+        {
+            Assert.Equal(typeof(TFunction), functionShape.Type);
+            Assert.Equal(typeof(TResult), functionShape.ReturnType.Type);
+            var func = Assert.IsType<TFunction>(state, exactMatch: false);
+
+            int i = 0;
+            var argumentStateCtor = functionShape.GetArgumentStateConstructor();
+            Assert.NotNull(argumentStateCtor);
+            Assert.Same(functionShape.GetArgumentStateConstructor(), functionShape.GetArgumentStateConstructor());
+
+            TArgumentState argumentState = argumentStateCtor();
+            Assert.Equal(argumentState.Count, functionShape.Parameters.Count);
+            int lastRequiredIndex = functionShape.Parameters.LastOrDefault(p => p.IsRequired)?.Position ?? -1;
+            Assert.Equal(lastRequiredIndex == -1, argumentState.AreRequiredArgumentsSet);
+
+            foreach (IParameterShape parameter in functionShape.Parameters)
+            {
+                Assert.Equal(i++, parameter.Position);
+                argumentState = (TArgumentState)parameter.Accept(this, argumentState)!;
+                Assert.Equal(lastRequiredIndex is -1 || parameter.Position >= lastRequiredIndex, argumentState.AreRequiredArgumentsSet);
+            }
+
+            Assert.True(argumentState.AreRequiredArgumentsSet);
+            var functionInvoker = functionShape.GetFunctionInvoker();
+            Assert.NotNull(functionInvoker);
+            Assert.Same(functionShape.GetFunctionInvoker(), functionShape.GetFunctionInvoker());
+
+            TResult result = functionInvoker.Invoke(ref func, ref argumentState).Result;
+            Assert.Equal(functionShape.IsVoidLike, result is Unit);
+
+            // FromDelegate/FromAsyncDelegate round-trip test
+            RefFunc<TArgumentState, TResult> wrappedInvoker = (ref TArgumentState arg) =>
+            {
+                Assert.True(arg.AreRequiredArgumentsSet);
+                return functionInvoker(ref func, ref arg).GetAwaiter().GetResult();
+            };
+
+            RefFunc<TArgumentState, ValueTask<TResult>> wrappedInvokerAsync = (ref TArgumentState arg) =>
+            {
+                Assert.True(arg.AreRequiredArgumentsSet);
+                return functionInvoker(ref func, ref arg);
+            };
+
+            if (functionShape.IsAsync)
+            {
+                Assert.Throws<InvalidOperationException>(() => functionShape.FromDelegate(wrappedInvoker));
+                if (providerUnderTest.Kind is ProviderKind.ReflectionNoEmit)
+                {
+                    Assert.Throws<NotSupportedException>(() => functionShape.FromAsyncDelegate(wrappedInvokerAsync));
+                }
+                else
+                {
+                    TFunction wrapped = functionShape.FromAsyncDelegate(wrappedInvokerAsync);
+                    TResult newResult = functionInvoker.Invoke(ref wrapped, ref argumentState).GetAwaiter().GetResult();
+                    Assert.Equal(result, newResult);
+                }
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => functionShape.FromAsyncDelegate(wrappedInvokerAsync));
+                if (providerUnderTest.Kind is ProviderKind.ReflectionNoEmit)
+                {
+                    Assert.Throws<NotSupportedException>(() => functionShape.FromDelegate(wrappedInvoker));
+                }
+                else
+                {
+                    TFunction wrapped = functionShape.FromDelegate(wrappedInvoker);
+                    TResult newResult = functionInvoker.Invoke(ref wrapped, ref argumentState).Result;
+                    Assert.Equal(result, newResult);
+                }
+            }
+
+            return null;
+        }
+
+        public override object? VisitParameter<TArgumentState, TParameter>(IParameterShape<TArgumentState, TParameter> parameter, object? state)
+        {
+            RandomGenerator<TParameter> randomGenerator = RandomGenerator.Create(parameter.ParameterType);
+
+            var argState = (TArgumentState)state!;
+            var getter = parameter.GetGetter();
+            Assert.Same(parameter.GetSetter(), parameter.GetSetter());
+            var setter = parameter.GetSetter();
+            Assert.Same(parameter.GetSetter(), parameter.GetSetter());
+
+            TParameter? value = parameter.HasDefaultValue ? parameter.DefaultValue : default;
+            Assert.Equal(getter(ref argState), value);
+            Assert.False(argState.IsArgumentSet(parameter.Position));
+
+            TParameter newValue = randomGenerator.GenerateValue(size: 1000, seed: 50);
+            setter(ref argState, newValue);
+            Assert.True(argState.IsArgumentSet(parameter.Position));
+            Assert.Equal(getter(ref argState), newValue);
+            return argState;
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
     public void ReturnsExpectedAttributeProviders<T>(TestCase<T> testCase)
     {
         if (testCase.IsTuple)
@@ -894,14 +1064,22 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
 
         public override object? VisitParameter<TArgumentState, TParameter>(IParameterShape<TArgumentState, TParameter> parameter, object? state)
         {
+            RandomGenerator<TParameter> randomGenerator = RandomGenerator.Create(parameter.ParameterType);
+
             var argState = (TArgumentState)state!;
+            var getter = parameter.GetGetter();
+            Assert.Same(parameter.GetSetter(), parameter.GetSetter());
             var setter = parameter.GetSetter();
             Assert.Same(parameter.GetSetter(), parameter.GetSetter());
 
             TParameter? value = parameter.HasDefaultValue ? parameter.DefaultValue : default;
+            Assert.Equal(getter(ref argState), value);
             Assert.False(argState.IsArgumentSet(parameter.Position));
-            setter(ref argState, value!);
+
+            TParameter newValue = randomGenerator.GenerateValue(size: 1000, seed: 50);
+            setter(ref argState, newValue);
             Assert.True(argState.IsArgumentSet(parameter.Position));
+            Assert.Equal(getter(ref argState), newValue);
             return argState;
         }
     }
@@ -975,6 +1153,95 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             });
         }
     }
+
+    [Theory]
+    [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
+    public void TestEventShapes<T>(TestCase<T> testCase)
+    {
+        if (testCase.Value is null)
+        {
+            return;
+        }
+
+        ITypeShape<T> shape = providerUnderTest.ResolveShape(testCase);
+        Assert.NotNull(shape.Events);
+        Assert.Equal(typeof(T).GetExpectedEventShapeCount(), shape.Events.Count);
+
+        foreach (IEventShape eventShape in shape.Events)
+        {
+            Assert.Equal(typeof(T), eventShape.DeclaringType.Type);
+            EventInfo eventInfo = Assert.IsType<EventInfo>(eventShape.AttributeProvider, exactMatch: false);
+            Assert.True(eventInfo.DeclaringType!.IsAssignableFrom(eventShape.DeclaringType.Type));
+            Assert.Equal(eventInfo.EventHandlerType, eventShape.HandlerType.Type);
+
+            EventShapeAttribute? eventShapeAttribute = eventInfo.GetCustomAttribute<EventShapeAttribute>();
+            Assert.Equal(eventShapeAttribute?.Name ?? eventInfo.Name, eventShape.Name);
+
+            Assert.NotNull(eventInfo.AddMethod);
+            Assert.Equal(eventInfo.AddMethod.IsStatic, eventShape.IsStatic);
+            Assert.Equal(eventInfo.AddMethod.IsPublic, eventShape.IsPublic);
+
+            EventTestVisitor visitor = new();
+            eventShape.Accept(visitor, state: testCase.Value);
+        }
+    }
+
+    private sealed class EventTestVisitor : TypeShapeVisitor
+    {
+        public override object? VisitEvent<TDeclaringType, THandler>(IEventShape<TDeclaringType, THandler> eventShape, object? state)
+        {
+            var instance = (TDeclaringType?)state;
+            Assert.Equal(typeof(TDeclaringType), eventShape.DeclaringType.Type);
+            Assert.Equal(typeof(THandler), eventShape.HandlerType.Type);
+            
+            var addHandler = eventShape.GetAddHandler();
+            Assert.Same(addHandler, eventShape.GetAddHandler());
+            var removeHandler = eventShape.GetRemoveHandler();
+            Assert.Same(removeHandler, eventShape.GetRemoveHandler());
+
+            if (instance is ITriggerable)
+            {
+                lock (typeof(TDeclaringType)) // Avoid races when subscribing to static events.
+                {
+                    Assert.Equal(typeof(Action<int>), typeof(THandler));
+                    int counter1 = 0;
+                    int counter2 = 0;
+                    var handler1 = (THandler)(object)new Action<int>(x => counter1 += x);
+                    var handler2 = (THandler)(object)new Action<int>(x => counter2 += x);
+
+                    ((ITriggerable)instance).Trigger(1);
+                    Assert.Equal(0, counter1);
+                    Assert.Equal(0, counter2);
+
+                    addHandler(ref instance, handler1);
+
+                    ((ITriggerable)instance!).Trigger(1);
+                    Assert.Equal(1, counter1);
+                    Assert.Equal(0, counter2);
+
+                    addHandler(ref instance, handler2);
+
+                    ((ITriggerable)instance!).Trigger(1);
+                    Assert.Equal(2, counter1);
+                    Assert.Equal(1, counter2);
+
+                    removeHandler(ref instance, handler1);
+
+                    ((ITriggerable)instance!).Trigger(1);
+                    Assert.Equal(2, counter1);
+                    Assert.Equal(2, counter2);
+
+                    removeHandler(ref instance, handler2);
+
+                    ((ITriggerable)instance!).Trigger(1);
+                    Assert.Equal(2, counter1);
+                    Assert.Equal(2, counter2);
+                }
+            }
+
+            return null;
+        }
+    }
 }
 
 public static class ReflectionExtensions
@@ -1042,6 +1309,37 @@ public static class ReflectionExtensions
             }
 
             MethodShapeFlags requiredFlag = methodInfo.IsStatic ? MethodShapeFlags.PublicStatic : MethodShapeFlags.PublicInstance;
+            if ((flags & requiredFlag) == 0)
+            {
+                return false; // Skip methods that are not included in the shape by default.
+            }
+
+            return true;
+        }
+    }
+
+    public static int GetExpectedEventShapeCount(this Type type)
+    {
+        MethodShapeFlags flags = type.GetCustomAttribute<TypeShapeAttribute>()?.IncludeMethods ?? MethodShapeFlags.None;
+        return type.GetEvents(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+            .Count(IsIncludedEvent);
+
+        bool IsIncludedEvent(EventInfo eventInfo)
+        {
+            EventShapeAttribute? shapeAttr = eventInfo.GetCustomAttribute<EventShapeAttribute>();
+            if (shapeAttr is not null)
+            {
+                return !shapeAttr.Ignore; // Skip events explicitly marked as ignored.
+            }
+
+            MethodInfo? accessor = eventInfo.AddMethod ?? eventInfo.RemoveMethod;
+            Assert.NotNull(accessor);
+            if (!accessor.IsPublic)
+            {
+                return false; // Skip events that are not public.
+            }
+
+            MethodShapeFlags requiredFlag = accessor.IsStatic ? MethodShapeFlags.PublicStatic : MethodShapeFlags.PublicInstance;
             if ((flags & requiredFlag) == 0)
             {
                 return false; // Skip methods that are not included in the shape by default.

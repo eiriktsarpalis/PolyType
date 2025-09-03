@@ -122,6 +122,11 @@ public record TestCase<T> : ITestCase
     public bool UsesMarshaler => typeof(T).GetCustomAttribute<TypeShapeAttribute>()?.Marshaler is not null;
 
     /// <summary>
+    /// Gets a value indicating whether the type is a function type.
+    /// </summary>
+    public bool IsFunctionType => typeof(Delegate).IsAssignableFrom(typeof(T));
+
+    /// <summary>
     /// Gets a value indicating whether the type configuration specifies a custom kind.
     /// </summary>
     public TypeShapeKind? CustomKind => typeof(T).GetCustomAttribute<TypeShapeAttribute>()?.GetRequestedKind();

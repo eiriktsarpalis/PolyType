@@ -213,6 +213,11 @@ public static partial class Validator
             return new Validator<TUnion>((TUnion? value, List<string> path, ref List<string>? errors) => underlying(marshaler.Unmarshal(value), path, ref errors));
         }
 
+        public override object? VisitFunction<TFunction, TArgumentState, TResult>(IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state = null)
+        {
+            return null;
+        }
+
         /// <summary>
         /// Creates a trivial validator that always succeeds.
         /// </summary>

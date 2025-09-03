@@ -164,6 +164,11 @@ public static partial class XmlSerializer
             return new XmlUnionCaseConverter<TUnionCase, TUnion>(caseConverter, unionCaseShape.Marshaler);
         }
 
+        public override object? VisitFunction<TFunction, TArgumentState, TResult>(IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state = null)
+        {
+            return new XmlObjectConverter<TFunction>([]);
+        }
+
         private static readonly Dictionary<Type, IXmlConverter> s_defaultConverters = new IXmlConverter[]
         {
             new BoolConverter(),

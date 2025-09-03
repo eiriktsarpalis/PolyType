@@ -136,6 +136,11 @@ public static partial class Counter
             var marshaler = unionCase.Marshaler;
             return new Func<TUnion, long>(union => underlyingCounter(marshaler.Unmarshal(union)!));
         }
+
+        public override object? VisitFunction<TFunction, TArgumentState, TResult>(IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state = null)
+        {
+            return new Func<TFunction?, long>(func => func is null ? 0 : 1);
+        }
     }
 
     private sealed class DelayedCounterFactory : IDelayedValueFactory

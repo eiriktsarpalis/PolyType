@@ -148,6 +148,30 @@ public abstract class TypeShapeVisitor
     public virtual object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
         => ThrowNotImplementedException();
 
+    /// <summary>
+    /// Visits an <see cref="IFunctionTypeShape{TFunction, TArgumentState, TResult}"/> instance representing a function type.
+    /// </summary>
+    /// <typeparam name="TFunction">The type of the function.</typeparam>
+    /// <typeparam name="TArgumentState">The function argument state type used for aggregating function arguments.</typeparam>
+    /// <typeparam name="TResult">The return type of the visited function.</typeparam>
+    /// <param name="functionShape">The function shape to visit.</param>
+    /// <param name="state">Defines user-provided state.</param>
+    /// <returns>The result produced by the visitor.</returns>
+    public virtual object? VisitFunction<TFunction, TArgumentState, TResult>(IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state = null)
+        where TArgumentState : IArgumentState
+        => ThrowNotImplementedException();
+
+    /// <summary>
+    /// Visits an <see cref="IEventShape{TDeclaringType, TEventHandler}"/> instance representing an event.
+    /// </summary>
+    /// <typeparam name="TDeclaringType">The declaring type of the visited event.</typeparam>
+    /// <typeparam name="TEventHandler">The event handler type of the visited event.</typeparam>
+    /// <param name="eventShape">The event shape to visit.</param>
+    /// <param name="state">Defines user-provided state.</param>
+    /// <returns>The result produced by the visitor.</returns>
+    public virtual object? VisitEvent<TDeclaringType, TEventHandler>(IEventShape<TDeclaringType, TEventHandler> eventShape, object? state = null)
+        => ThrowNotImplementedException();
+
     private object? ThrowNotImplementedException([CallerMemberName] string? methodName = null)
         => throw new NotImplementedException($"The visitor method {GetType().Name}.{methodName} has not been implemented.");
 }

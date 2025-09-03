@@ -103,6 +103,12 @@ public interface IParameterShape<TArgumentState, TParameterType> : IParameterSha
     new TParameterType? DefaultValue { get; }
 
     /// <summary>
+    /// Creates a getter delegate extracting a parameter value from a state object.
+    /// </summary>
+    /// <returns>A <see cref="Getter{TDeclaringType, TPropertyType}"/> delegate.</returns>
+    Getter<TArgumentState, TParameterType> GetGetter();
+
+    /// <summary>
     /// Creates a setter delegate for configuring a state object
     /// with a value for the current argument.
     /// </summary>

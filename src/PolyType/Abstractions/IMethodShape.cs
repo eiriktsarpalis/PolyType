@@ -77,7 +77,6 @@ public interface IMethodShape
 /// </remarks>
 [InternalImplementationsOnly]
 public interface IMethodShape<TDeclaringType, TArgumentState, TResult> : IMethodShape
-    where TArgumentState : IArgumentState
 {
     /// <summary>
     /// Gets the shape of the declaring type for the method.
@@ -100,5 +99,5 @@ public interface IMethodShape<TDeclaringType, TArgumentState, TResult> : IMethod
     /// Gets a delegate for invoking the method with the provided argument state.
     /// </summary>
     /// <returns>A <see cref="MethodInvoker{TDeclaringType, ArgumentState, TReturnType}"/> delegate.</returns>
-    MethodInvoker<TDeclaringType, TArgumentState, TResult> GetMethodInvoker();
+    MethodInvoker<TDeclaringType?, TArgumentState, TResult> GetMethodInvoker();
 }

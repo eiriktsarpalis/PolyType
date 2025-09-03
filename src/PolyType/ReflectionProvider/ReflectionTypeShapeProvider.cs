@@ -115,6 +115,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             TypeShapeKind.Object => CreateObjectShape(type, disableMemberResolution: false, options),
             TypeShapeKind.Surrogate => CreateSurrogateShape(type, options),
             TypeShapeKind.Union => CreateUnionTypeShape(type, fSharpUnionInfo, options),
+            TypeShapeKind.Function => CreateFunctionTypeShape(type, options),
             TypeShapeKind.None or _ => CreateObjectShape(type, disableMemberResolution: true, options),
         };
     }
@@ -343,6 +344,16 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         return (IUnionTypeShape)Activator.CreateInstance(unionTypeTy, derivedTypeInfos.ToArray(), this, options)!;
     }
 
+    private IFunctionTypeShape CreateFunctionTypeShape(Type functionType, ReflectionTypeShapeOptions options)
+    {
+        DebugExt.Assert(typeof(Delegate).IsAssignableFrom(functionType));
+        MethodInfo invokeMethod = functionType.GetMethod("Invoke")!;
+        MethodShapeInfo methodShapeInfo = CreateMethodShapeInfo(invokeMethod, shapeAttribute: null, nullabilityCtx: CreateNullabilityInfoContext());
+        Type argumentStateType = MemberAccessor.CreateConstructorArgumentStateType(methodShapeInfo);
+        Type functionShapeTy = typeof(ReflectionDelegateTypeShape<,,>).MakeGenericType(functionType, argumentStateType, methodShapeInfo.ReturnType);
+        return (IFunctionTypeShape)Activator.CreateInstance(functionShapeTy, methodShapeInfo, this, options)!;
+    }
+
     private ReflectionTypeShapeOptions ResolveTypeShapeOptions(Type type)
     {
         Type? genericTypeDef = type.IsGenericType ? type.GetGenericTypeDefinition() : null;
@@ -401,15 +412,10 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
         if (typeShapeOptions.RequestedKind is TypeShapeKind requestedKind && requestedKind != builtInKind)
         {
-            Debug.Assert(
-                builtInKind is TypeShapeKind.Dictionary or TypeShapeKind.Enumerable or TypeShapeKind.Object or TypeShapeKind.Union,
-                "Custom kinds can only be specified on types that are objects, interfaces, or structs.");
-
             bool isCustomKindSupported = requestedKind switch
             {
-                TypeShapeKind.Enum or TypeShapeKind.Optional or TypeShapeKind.Surrogate or TypeShapeKind.Union => false,
-                TypeShapeKind.Dictionary => builtInKind is TypeShapeKind.Dictionary,
-                TypeShapeKind.Enumerable => builtInKind is TypeShapeKind.Dictionary or TypeShapeKind.Enumerable,
+                TypeShapeKind.Enum or TypeShapeKind.Optional or TypeShapeKind.Surrogate or TypeShapeKind.Union or TypeShapeKind.Function or TypeShapeKind.Dictionary => false,
+                TypeShapeKind.Enumerable => builtInKind is TypeShapeKind.Dictionary,
                 TypeShapeKind.Object or TypeShapeKind.None or _ => true,
             };
 
@@ -441,6 +447,11 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         if (Nullable.GetUnderlyingType(type) is not null)
         {
             return TypeShapeKind.Optional;
+        }
+
+        if (typeof(Delegate).IsAssignableFrom(type))
+        {
+            return TypeShapeKind.Function;
         }
 
         if (FSharpReflectionHelpers.TryResolveFSharpUnionMetadata(type, out fsharpUnionInfo))
@@ -503,6 +514,12 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         Type argumentStateType = MemberAccessor.CreateConstructorArgumentStateType(methodShapeInfo);
         Type reflectionMethodShapeType = typeof(ReflectionMethodShape<,,>).MakeGenericType(declaringType.Type, argumentStateType, methodShapeInfo.ReturnType);
         return (IMethodShape)Activator.CreateInstance(reflectionMethodShapeType, methodShapeInfo, this)!;
+    }
+
+    internal IEventShape CreateEvent(ITypeShape declaringType, EventInfo eventInfo, string name)
+    {
+        Type eventShapeTy = typeof(ReflectionEventShape<,>).MakeGenericType(declaringType.Type, eventInfo.EventHandlerType!);
+        return (IEventShape)Activator.CreateInstance(eventShapeTy, eventInfo, name, this)!;
     }
 
     internal IConstructorShape CreateConstructor(IObjectTypeShape declaringType, IMethodShapeInfo ctorInfo)
@@ -832,6 +849,51 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
                      (!ReflectionHelpers.IsNetFramework || collectionType.Name is not "ConcurrentDictionary`2"));
             }
         }
+    }
+
+    internal static MethodShapeInfo CreateMethodShapeInfo(
+        MethodInfo methodInfo,
+        MethodShapeAttribute? shapeAttribute,
+        NullabilityInfoContext? nullabilityCtx)
+    {
+        if (methodInfo.IsGenericMethodDefinition)
+        {
+            throw new NotSupportedException($"Cannot generate shape for generic method '{methodInfo}'.");
+        }
+
+        ParameterInfo[] parameters = methodInfo.GetParameters();
+        if (parameters.FirstOrDefault(param => param.IsOut || !param.GetEffectiveParameterType().CanBeGenericArgument()) is { } param)
+        {
+            throw new NotSupportedException($"Method '{methodInfo}' contains unsupported parameter type '{param.Name}'.");
+        }
+
+        if (methodInfo.ReturnType != typeof(void) && !methodInfo.ReturnParameter.GetEffectiveParameterType().CanBeGenericArgument())
+        {
+            throw new NotSupportedException($"Method '{methodInfo}' has an unsupported return type '{methodInfo.ReturnType}'.");
+        }
+
+        int i = 0;
+        var parameterShapeInfos = new MethodParameterShapeInfo[parameters.Length];
+        foreach (ParameterInfo parameter in parameters)
+        {
+            ParameterShapeAttribute? parameterShapeAttribute = parameter.GetCustomAttribute<ParameterShapeAttribute>();
+            string? paramName = parameterShapeAttribute?.Name ?? parameter.Name;
+            if (string.IsNullOrEmpty(paramName))
+            {
+                throw new NotSupportedException($"The method '{methodInfo.DeclaringType}.{methodInfo.Name}' has had its parameter names trimmed.");
+            }
+
+            bool? isRequired = parameterShapeAttribute?.IsRequiredSpecified is true ? parameterShapeAttribute.IsRequired : null;
+            parameterShapeInfos[i++] = new MethodParameterShapeInfo(
+                parameter,
+                isNonNullable: parameter.IsNonNullableAnnotation(nullabilityCtx),
+                logicalName: paramName,
+                isRequired: isRequired);
+        }
+
+        string name = shapeAttribute?.Name ?? methodInfo.Name;
+        Type returnType = methodInfo.GetEffectiveReturnType() ?? typeof(Unit);
+        return new MethodShapeInfo(returnType, methodInfo, parameterShapeInfos, name: name);
     }
 
     internal static NullabilityInfoContext? CreateNullabilityInfoContext()
