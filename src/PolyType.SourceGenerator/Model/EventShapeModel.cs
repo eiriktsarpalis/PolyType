@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PolyType.SourceGenerator.Model;
+﻿namespace PolyType.SourceGenerator.Model;
 
 public sealed record EventShapeModel
 {
