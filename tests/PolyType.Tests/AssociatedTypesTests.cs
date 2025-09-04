@@ -1,7 +1,5 @@
 ﻿using PolyType;
 using PolyType.Tests;
-using System.ComponentModel;
-using Xunit.Internal;
 
 [assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), Requirements = TypeShapeRequirements.Constructor, AssociatedTypes = [typeof(AssociatedTypesTests.GenericDataTypeVerifier<,>)])]
 [assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericDataType<,>), Requirements = TypeShapeRequirements.Full, AssociatedTypes = [typeof(AssociatedTypesTests.ExtraShape<,>)])]
@@ -14,6 +12,8 @@ using Xunit.Internal;
 // This tests generating of associated types from enumerable types.
 [assembly: TypeShapeExtension(typeof(IEnumerable<>), AssociatedTypes = [typeof(AssociatedTypesTests.GenericWrapper<>)])]
 [assembly: TypeShapeExtension(typeof(Dictionary<,>), AssociatedTypes = [typeof(AssociatedTypesTests.GenericWrapper<>.GenericNested<>)])]
+
+[assembly: TypeShapeExtension(typeof(AssociatedTypesTests.GenericClassWithMarshallerAndAssociatedTypes<>), Marshaler = typeof(AssociatedTypesTests.GenericMarshaler<>), AssociatedTypes = [typeof(List<>)])]
 
 namespace PolyType.Tests;
 
@@ -277,6 +277,16 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
         Assert.Equal(typeof(GenericWrapper<SpecialKey>.GenericNested<string>), associatedShape.Type);
     }
 
+    [Fact]
+    public void GenericClassWithMarshallerAndAssociatedTypes_ReturnsExpectedShape()
+    {
+        // Regression test for https://github.com/eiriktsarpalis/PolyType/issues/239
+        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericClassWithMarshallerAndAssociatedTypes<(Guid, bool)>));
+        Assert.IsType<ISurrogateTypeShape>(typeShape, exactMatch: false);
+        ITypeShape? associatedShape = typeShape.GetAssociatedTypeShape(typeof(List<>));
+        Assert.IsType<ITypeShape<List<(Guid, bool)>>>(associatedShape, exactMatch: false);
+    }
+
     private static Func<object>? GetAssociatedTypeFactory(ITypeShape typeShape, Type associatedType)
         => (typeShape.GetAssociatedTypeShape(associatedType) as IObjectTypeShape)?.GetDefaultConstructor();
 
@@ -292,6 +302,14 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
         {
             partialThrows();
         }
+    }
+
+    public class GenericClassWithMarshallerAndAssociatedTypes<T1>;
+
+    public class GenericMarshaler<T1> : IMarshaler<GenericClassWithMarshallerAndAssociatedTypes<T1>, object?>
+    {
+        public object? Marshal(GenericClassWithMarshallerAndAssociatedTypes<T1>? _) => null;
+        public GenericClassWithMarshallerAndAssociatedTypes<T1>? Unmarshal(object? _) => new();
     }
 
     [GenerateShape]
@@ -353,6 +371,7 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     [GenerateShapeFor<GenericDataTypeFullAndPartialPaths<int, string>>]
     [GenerateShapeFor<IEnumerable<SpecialKey>>]
     [GenerateShapeFor<Dictionary<SpecialKey, string>>]
+    [GenerateShapeFor<GenericClassWithMarshallerAndAssociatedTypes<(Guid, bool)>>]
     internal partial class Witness;
 
     [GenerateShape]

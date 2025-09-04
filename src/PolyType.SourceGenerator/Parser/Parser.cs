@@ -685,9 +685,12 @@ public sealed partial class Parser : TypeDataModelGenerator
                 MarshalerType = namedMarshaler,
                 Methods = MapMethods(type, ref ctx, methodFlags),
                 Events = MapEvents(type, ref ctx, methodFlags),
+                AssociatedTypes = associatedTypes,
             };
         }
 
+        // Include any associated shapes.
+        IncludeAssociatedShapes(type, associatedTypes, ref ctx);
         return status;
 
         TypeDataModelGenerationStatus ReportInvalidMarshalerAndExit()

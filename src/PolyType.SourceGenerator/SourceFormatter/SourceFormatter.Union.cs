@@ -23,10 +23,11 @@ internal sealed partial class SourceFormatter
                     GetUnionCaseIndexFunc = {{getUnionCaseIndexMethod}},
                     CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
                     CreateEventsFunc = {{FormatNull(eventFactoryMethodName)}},
+                    AssociatedTypeShapes = {{FormatAssociatedTypeShapes(unionShapeModel)}},
                     Provider = this,
                 };
             }
-            """);
+            """, trimNullAssignmentLines: true);
 
         writer.WriteLine();
         FormatUnionCasesFactory(writer, unionShapeModel, createUnionCasesMethodName);
