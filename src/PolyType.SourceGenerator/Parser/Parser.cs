@@ -621,7 +621,8 @@ public sealed partial class Parser : TypeDataModelGenerator
 
         if (marshaler is not INamedTypeSymbol namedMarshaler)
         {
-            return ReportInvalidMarshalerAndExit();
+            ReportDiagnostic(InvalidMarshaler, type.Locations.FirstOrDefault(), type.ToDisplayString());
+            return base.MapType(type, requestedKind: null, methodFlags, associatedTypes, ref ctx, requirements, out model);
         }
 
         if (namedMarshaler.IsUnboundGenericType)
@@ -632,7 +633,8 @@ public sealed partial class Parser : TypeDataModelGenerator
             INamedTypeSymbol? specializedMarshaler = namedMarshaler.OriginalDefinition.ConstructRecursive(typeArgs);
             if (specializedMarshaler is null)
             {
-                return ReportInvalidMarshalerAndExit();
+                ReportDiagnostic(InvalidMarshaler, type.Locations.FirstOrDefault(), type.ToDisplayString());
+                return base.MapType(type, requestedKind: null, methodFlags, associatedTypes, ref ctx, requirements, out model);
             }
 
             namedMarshaler = specializedMarshaler;
@@ -644,7 +646,8 @@ public sealed partial class Parser : TypeDataModelGenerator
 
         if (defaultCtor is null || !IsAccessibleSymbol(defaultCtor))
         {
-            return ReportInvalidMarshalerAndExit();
+            ReportDiagnostic(InvalidMarshaler, type.Locations.FirstOrDefault(), type.ToDisplayString());
+            return base.MapType(type, requestedKind: null, methodFlags, associatedTypes, ref ctx, requirements, out model);
         }
 
         // Check that the surrogate marshaler implements exactly one IMarshaler<,> for the source type.
@@ -660,7 +663,8 @@ public sealed partial class Parser : TypeDataModelGenerator
                     if (surrogateType is not null)
                     {
                         // We have conflicting implementations.
-                        return ReportInvalidMarshalerAndExit();
+                        ReportDiagnostic(InvalidMarshaler, type.Locations.FirstOrDefault(), type.ToDisplayString());
+                        return base.MapType(type, requestedKind: null, methodFlags, associatedTypes, ref ctx, requirements, out model);
                     }
 
                     surrogateType = typeArgs[1];
@@ -670,7 +674,8 @@ public sealed partial class Parser : TypeDataModelGenerator
 
         if (surrogateType is null)
         {
-            return ReportInvalidMarshalerAndExit();
+            ReportDiagnostic(InvalidMarshaler, type.Locations.FirstOrDefault(), type.ToDisplayString());
+            return base.MapType(type, requestedKind: null, methodFlags, associatedTypes, ref ctx, requirements, out model);
         }
 
         // Generate the shape for the surrogate type.
@@ -689,12 +694,6 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
 
         return status;
-
-        TypeDataModelGenerationStatus ReportInvalidMarshalerAndExit()
-        {
-            ReportDiagnostic(InvalidMarshaler, type.Locations.FirstOrDefault(), type.ToDisplayString());
-            return TypeDataModelGenerationStatus.UnsupportedType;
-        }
     }
 
     private TypeDataModelGenerationStatus MapFSharpOptionDataModel(FSharpOptionInfo optionInfo, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements requirements, BindingFlags? methodFlags, out TypeDataModel? model)

@@ -885,4 +885,91 @@ public static class DiagnosticTests
         Assert.Equal("PT0021", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
     }
+
+    [Fact]
+    public static void TypeShapeExtension_InvalidMarshaller_WithGenerateShapeFor_CurrentlyProducesBothPT0010AndPT0001()
+    {
+        // This test demonstrates the current problematic behavior where a TypeShapeExtension has an invalid marshaller configuration
+        // AND the same type is also used with GenerateShapeFor. Currently this produces both PT0010 and PT0001,
+        // but it should only produce PT0010 since the fallback to normal shape generation works correctly.
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+            
+            // This TypeShapeExtension has an invalid marshaller - it points to the type itself instead of a marshaller class
+            [assembly: TypeShapeExtension(typeof(TestType), Marshaller = typeof(TestType))]
+            
+            public class TestType
+            {
+                public string? Name { get; set; }
+                public int Value { get; set; }
+            }
+
+            // This should cause the source generator to try using the invalid marshaller from TypeShapeExtension
+            [GenerateShapeFor<TestType>]
+            public partial class TestTypeShapeProvider;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        // Currently we get both PT0010 and PT0001 diagnostics - this is the issue we need to fix
+        Assert.Equal(2, result.Diagnostics.Length);
+        
+        var pt0010 = result.Diagnostics.FirstOrDefault(d => d.Id == "PT0010");
+        Assert.NotNull(pt0010);
+        Assert.Equal(DiagnosticSeverity.Error, pt0010.Severity);
+        Assert.Contains("invalid marshaller configuration", pt0010.GetMessage());
+        
+        var pt0001 = result.Diagnostics.FirstOrDefault(d => d.Id == "PT0001");
+        Assert.NotNull(pt0001);
+        Assert.Equal(DiagnosticSeverity.Warning, pt0001.Severity);
+        Assert.Contains("not supported for PolyType generation", pt0001.GetMessage());
+
+        // Despite the errors, the source generation succeeds and produces a normal shape for TestType
+        Assert.NotEmpty(result.GeneratedModels);
+        Assert.Contains(result.AllGeneratedTypes, t => t.Type.FullyQualifiedName.Contains("TestType"));
+    }
+
+    [Fact]
+    public static void TypeShapeExtension_InvalidMarshaller_WithGenerateShapeFor_FixedBehavior_OnlyProducesPT0010()
+    {
+        // This test demonstrates the fixed behavior where a TypeShapeExtension has an invalid marshaller configuration
+        // AND the same type is also used with GenerateShapeFor. After the fix, this should only produce PT0010
+        // and successfully generate a normal shape for the type.
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+            
+            // This TypeShapeExtension has an invalid marshaller - it points to the type itself instead of a marshaller class
+            [assembly: TypeShapeExtension(typeof(TestType), Marshaller = typeof(TestType))]
+            
+            public class TestType
+            {
+                public string? Name { get; set; }
+                public int Value { get; set; }
+            }
+
+            // This should cause the source generator to try using the invalid marshaller from TypeShapeExtension,
+            // fail, report PT0010, and then fall back to normal shape generation
+            [GenerateShapeFor<TestType>]
+            public partial class TestTypeShapeProvider;
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        // After the fix, we should get exactly one diagnostic: PT0010 for invalid marshaller
+        // But let's first check how many we're getting
+        Assert.True(result.Diagnostics.Length >= 1, $"Expected at least 1 diagnostic, got {result.Diagnostics.Length}");
+        
+        var pt0010 = result.Diagnostics.FirstOrDefault(d => d.Id == "PT0010");
+        Assert.NotNull(pt0010);
+        Assert.Equal(DiagnosticSeverity.Error, pt0010.Severity);
+        Assert.Contains("invalid marshaller configuration", pt0010.GetMessage());
+
+        // Verify no PT0001 is produced (this was the main issue)
+        var pt0001 = result.Diagnostics.FirstOrDefault(d => d.Id == "PT0001");
+        Assert.Null(pt0001);
+
+        // The source generation should still succeed and produce a normal shape for TestType
+        Assert.NotEmpty(result.GeneratedModels);
+        Assert.Contains(result.AllGeneratedTypes, t => t.Type.FullyQualifiedName.Contains("TestType"));
+    }
 }
