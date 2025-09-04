@@ -121,7 +121,13 @@ public partial class TypeDataModelGenerator
         return true;
     }
 
-    private void IncludeAssociatedShapes(ITypeSymbol type, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx)
+    /// <summary>
+    /// Includes the specified associated types to the type graph traversal.
+    /// </summary>
+    /// <param name="type">The type from which the associated types originate.</param>
+    /// <param name="associatedTypes">The associated types to include.</param>
+    /// <param name="ctx">The type graph traversal context.</param>
+    protected void IncludeAssociatedShapes(ITypeSymbol type, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx)
     {
         _associatedTypes = _associatedTypes.SetItem(
             type,

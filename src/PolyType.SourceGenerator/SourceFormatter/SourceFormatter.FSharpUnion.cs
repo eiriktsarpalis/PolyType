@@ -21,6 +21,7 @@ internal sealed partial class SourceFormatter
                     GetUnionCaseIndexFunc = {{FormatFSharpUnionTagReader(unionShapeModel)}},
                     CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
                     CreateEventsFunc = {{FormatNull(eventFactoryMethodName)}},
+                    AssociatedTypeShapes = {{FormatAssociatedTypeShapes(unionShapeModel)}},
                     Provider = this,
                 };
             }

@@ -15,14 +15,15 @@ internal sealed partial class SourceFormatter
             {
                 return new global::PolyType.SourceGenModel.SourceGenSurrogateTypeShape<{{surrogateShapeModel.Type.FullyQualifiedName}}, {{surrogateShapeModel.SurrogateType.FullyQualifiedName}}>
                 {
-                    Marshaler = new {{surrogateShapeModel.MarshalerType.FullyQualifiedName}}(),
+                    Marshaler = new {{surrogateShapeModel.MarshalerType.FullyQualifiedName}}()!,
                     SurrogateType = {{GetShapeModel(surrogateShapeModel.SurrogateType).SourceIdentifier}},
                     CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
                     CreateEventsFunc = {{FormatNull(eventFactoryMethodName)}},
+                    AssociatedTypeShapes = {{FormatAssociatedTypeShapes(surrogateShapeModel)}},
                     Provider = this,
                 };
             }
-            """);
+            """, trimNullAssignmentLines: true);
 
         if (methodFactoryMethodName is not null)
         {

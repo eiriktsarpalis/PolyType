@@ -26,6 +26,7 @@ internal sealed partial class SourceFormatter
                     FunctionInvoker = {{FormatFunctionInvoker(functionShapeModel, functionArgumentStateFQN)}},
                     FromDelegateFunc = {{FormatNull(FormatFromDelegateFunc(functionShapeModel, functionArgumentStateFQN, requiredParametersMaskFieldName, requireAsync: false))}},
                     FromAsyncDelegateFunc = {{FormatNull(FormatFromDelegateFunc(functionShapeModel, functionArgumentStateFQN, requiredParametersMaskFieldName, requireAsync: true))}},
+                    AssociatedTypeShapes = {{FormatAssociatedTypeShapes(functionShapeModel)}},
                     Provider = this,
                 };
             }

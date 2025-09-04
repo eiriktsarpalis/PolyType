@@ -23,10 +23,11 @@ internal sealed partial class SourceFormatter
                     Deconstructor = {{FormatDeconstructor()}},
                     CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
                     CreateEventsFunc = {{FormatNull(eventFactoryMethodName)}},
+                    AssociatedTypeShapes = {{FormatAssociatedTypeShapes(optionalShapeModel)}},
                     Provider = this,
                 };
             }
-            """);
+            """, trimNullAssignmentLines: true);
         writer.WriteLine("#pragma warning restore CS8767", disableIndentation: true);
 
         if (methodFactoryMethodName is not null)

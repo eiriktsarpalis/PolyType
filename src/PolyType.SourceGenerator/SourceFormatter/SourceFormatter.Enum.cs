@@ -13,6 +13,7 @@ internal sealed partial class SourceFormatter
                 return new global::PolyType.SourceGenModel.SourceGenEnumTypeShape<{{enumShapeType.Type.FullyQualifiedName}}, {{enumShapeType.UnderlyingType.FullyQualifiedName}}>
                 {
                     UnderlyingType = {{GetShapeModel(enumShapeType.UnderlyingType).SourceIdentifier}},
+                    AssociatedTypeShapes = {{FormatAssociatedTypeShapes(enumShapeType)}},
                     Provider = this,
                     Members = new global::System.Collections.Generic.Dictionary<string, {{enumShapeType.UnderlyingType.FullyQualifiedName}}>({{enumShapeType.Members.Count}}, global::System.StringComparer.Ordinal)
                     {
@@ -20,6 +21,6 @@ internal sealed partial class SourceFormatter
                     }
                 };
             }
-            """);
+            """, trimNullAssignmentLines: true);
     }
 }
