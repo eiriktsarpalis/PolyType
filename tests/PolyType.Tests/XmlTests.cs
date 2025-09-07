@@ -43,7 +43,7 @@ public abstract class XmlTests(ProviderUnderTest providerUnderTest)
 
     public static IEnumerable<object?[]> GetValuesAndExpectedEncoding()
     {
-        ITypeShapeProvider p = Witness.ShapeProvider;
+        Witness p = new();
         yield return [TestCase.Create((object?)null, p), """<value nil="true" />"""];
         yield return [TestCase.Create(false, p), "<value>false</value>"];
         yield return [TestCase.Create(true, p), "<value>true</value>"];
@@ -75,12 +75,12 @@ public abstract class XmlTests(ProviderUnderTest providerUnderTest)
         yield return [TestCase.Create(DateOnly.MaxValue, p), "<value>9999-12-31</value>"];
         yield return [TestCase.Create(TimeOnly.MaxValue, p), "<value>23:59:59.9999999</value>"];
 #endif
-        yield return [TestCase.Create(new SimpleRecord(value: 42), p), "<value><value>42</value></value>"];
-        yield return [TestCase.Create(new BaseClass { X = 42 }, p), "<value><X>42</X></value>"];
-        yield return [TestCase.Create(new PolymorphicClass(42), p), """<value type="PolymorphicClass"><Int>42</Int></value>"""];
-        yield return [TestCase.Create<PolymorphicClass>(new PolymorphicClass.DerivedClass(42, "str"), p), """<value type="DerivedClass"><String>str</String><Int>42</Int></value>"""];
-        yield return [TestCase.Create<Tree>(new Tree.Leaf(), p), """<value type="leaf" />"""];
-        yield return [TestCase.Create<Tree>(new Tree.Node(42, new Tree.Leaf(), new Tree.Leaf()), p), """<value type="node"><Value>42</Value><Left type="leaf" /><Right type="leaf" /></value>"""];
+        yield return [TestCase.Create(new SimpleRecord(value: 42)), "<value><value>42</value></value>"];
+        yield return [TestCase.Create(new BaseClass { X = 42 }), "<value><X>42</X></value>"];
+        yield return [TestCase.Create(new PolymorphicClass(42)), """<value type="PolymorphicClass"><Int>42</Int></value>"""];
+        yield return [TestCase.Create<PolymorphicClass>(new PolymorphicClass.DerivedClass(42, "str")), """<value type="DerivedClass"><String>str</String><Int>42</Int></value>"""];
+        yield return [TestCase.Create<Tree>(new Tree.Leaf()), """<value type="leaf" />"""];
+        yield return [TestCase.Create<Tree>(new Tree.Node(42, new Tree.Leaf(), new Tree.Leaf())), """<value type="node"><Value>42</Value><Left type="leaf" /><Right type="leaf" /></value>"""];
     }
 
     [Theory]

@@ -47,6 +47,20 @@ public static partial class JsonSerializerTS
     public static JsonConverter<T> CreateConverterUsingReflection<T>() => CreateConverter<T>(ReflectionProvider.ReflectionTypeShapeProvider.Default);
 
     /// <summary>
+    /// Builds a <see cref="JsonConverter{T}"/> instance from the specified shape.
+    /// </summary>
+    /// <typeparam name="T">The type for which to build the converter.</typeparam>
+    /// <returns>An <see cref="JsonConverter{T}"/> instance.</returns>
+    /// <exception cref="NotSupportedException">No source generated implementation for <typeparamref name="T"/> was found.</exception>
+    public static JsonConverter<T> CreateConverterUsingSourceGen<
+#if NET
+        [DynamicallyAccessedMembers(TypeShapeResolver.ResolveDynamicLinkerRequirements)]
+#endif
+        T>() =>
+
+        CreateConverter(TypeShapeResolver.ResolveDynamic<T>(throwIfMissing: true)!)!;
+
+    /// <summary>
     /// Creates a JSON marshaling delegate that wraps the specified method shape.
     /// </summary>
     /// <param name="methodShape">The method shape to wrap.</param>

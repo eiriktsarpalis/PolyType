@@ -31,7 +31,7 @@ public abstract partial class ValidationTests(ProviderUnderTest providerUnderTes
 
     public static IEnumerable<object?[]> GetValidatorScenaria()
     {
-        ITypeShapeProvider provider = ModelProvider.ShapeProvider;
+        ModelProvider provider = new();
         var validModel = new BindingModel
         {
             Id = "id",
@@ -40,13 +40,13 @@ public abstract partial class ValidationTests(ProviderUnderTest providerUnderTes
             PhoneNumber = "+447777777777",
         };
 
-        yield return Create(TestCase.Create(validModel, provider));
-        yield return Create(TestCase.Create(validModel with { Id = null }, provider), ["$.Id: value is null or empty."]);
-        yield return Create(TestCase.Create(validModel with { Components = ["1"] }, provider), ["$.Components: contains less than 2 or more than 5 elements."]);
-        yield return Create(TestCase.Create(validModel with { Components = ["1", "2", "3", "4", "5", "6"] }, provider), ["$.Components: contains less than 2 or more than 5 elements."]);
-        yield return Create(TestCase.Create(validModel with { Sample = -1 }, provider), ["$.Sample: value is either less than 0 or greater than 1."]);
-        yield return Create(TestCase.Create(validModel with { Sample = 5 }, provider), ["$.Sample: value is either less than 0 or greater than 1."]);
-        yield return Create(TestCase.Create(validModel with { PhoneNumber = "NaN" }, provider), [@"$.PhoneNumber: value does not match regex pattern '^\+?[0-9]{7,14}$'."]);
+        yield return Create(TestCase.Create(validModel));
+        yield return Create(TestCase.Create(validModel with { Id = null }), ["$.Id: value is null or empty."]);
+        yield return Create(TestCase.Create(validModel with { Components = ["1"] }), ["$.Components: contains less than 2 or more than 5 elements."]);
+        yield return Create(TestCase.Create(validModel with { Components = ["1", "2", "3", "4", "5", "6"] }), ["$.Components: contains less than 2 or more than 5 elements."]);
+        yield return Create(TestCase.Create(validModel with { Sample = -1 }), ["$.Sample: value is either less than 0 or greater than 1."]);
+        yield return Create(TestCase.Create(validModel with { Sample = 5 }), ["$.Sample: value is either less than 0 or greater than 1."]);
+        yield return Create(TestCase.Create(validModel with { PhoneNumber = "NaN" }), [@"$.PhoneNumber: value does not match regex pattern '^\+?[0-9]{7,14}$'."]);
 
         yield return Create(TestCase.Create(new BindingModel
         {
@@ -54,7 +54,7 @@ public abstract partial class ValidationTests(ProviderUnderTest providerUnderTes
             Components = ["1"],
             Sample = 1.1,
             PhoneNumber = "NaN"
-        }, provider),
+        }),
         expectedErrors:
         [
             "$.Id: value is null or empty.",

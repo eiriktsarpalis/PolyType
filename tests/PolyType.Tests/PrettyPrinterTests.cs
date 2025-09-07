@@ -20,7 +20,7 @@ public abstract class PrettyPrinterTests(ProviderUnderTest providerUnderTest)
 
     public static IEnumerable<object?[]> GetValues()
     {
-        ITypeShapeProvider p = Witness.ShapeProvider;
+        Witness p = new();
         yield return [TestCase.Create(1, p), "1"];
         yield return [TestCase.Create((string?)null, p), "null"];
         yield return [TestCase.Create("str", p), "\"str\""];
@@ -41,14 +41,14 @@ public abstract class PrettyPrinterTests(ProviderUnderTest providerUnderTest)
             """];
         
         yield return [TestCase.Create(new object(), p), "new Object()"];
-        yield return [TestCase.Create(new SimpleRecord(42), p),
+        yield return [TestCase.Create(new SimpleRecord(42)),
             """
             new SimpleRecord
             {
               value = 42
             }
             """];
-        yield return [TestCase.Create(new DerivedClass { X = 1, Y = 2 }, p),
+        yield return [TestCase.Create(new DerivedClass { X = 1, Y = 2 }),
             """
             new DerivedClass
             {
@@ -87,7 +87,7 @@ public abstract class PrettyPrinterTests(ProviderUnderTest providerUnderTest)
             }
             """];
 
-        yield return [TestCase.Create<PolymorphicClass>(new PolymorphicClass(42), p),
+        yield return [TestCase.Create<PolymorphicClass>(new PolymorphicClass(42)),
             """
             new PolymorphicClass
             {
@@ -95,7 +95,7 @@ public abstract class PrettyPrinterTests(ProviderUnderTest providerUnderTest)
             }
             """];
 
-        yield return [TestCase.Create<PolymorphicClass>(new PolymorphicClass.DerivedClass(42, "str"), p),
+        yield return [TestCase.Create<PolymorphicClass>(new PolymorphicClass.DerivedClass(42, "str")),
             """
             new DerivedClass
             {
@@ -104,7 +104,7 @@ public abstract class PrettyPrinterTests(ProviderUnderTest providerUnderTest)
             }
             """];
 
-        yield return [TestCase.Create<IPolymorphicInterface>(new IPolymorphicInterface.IDerived1.Impl { X = 1, Y = 2 }, p),
+        yield return [TestCase.Create<IPolymorphicInterface>(new IPolymorphicInterface.IDerived1.Impl { X = 1, Y = 2 }),
             """
             new IDerived1
             {

@@ -734,7 +734,7 @@ partial class LoggingVisitor : TypeShapeVisitor
 This logging wrapper can be applied to any method shape:
 
 ```C#
-ITypeShape<Calculator> shape = TypeShapeProvider.Resolve<Calculator>();
+ITypeShape<Calculator> shape = TypeShapeResolver.Resolve<Calculator>();
 IMethodShape addMethodShape = shape.Methods.First(m => m.Name == "Add");
 var addMethod = (Func<IReadOnlyDictionary<string, object?>, ValueTask<object?>>)addMethodShape.Accept(new LoggingVisitor(), new Calculator())!;
 await addMethod(new Dictionary<string, object?> { { "x", 2 }, { "y", 3 } });

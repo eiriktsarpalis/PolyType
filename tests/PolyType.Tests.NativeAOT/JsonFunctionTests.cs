@@ -19,7 +19,7 @@ public class JsonFunctionTests
 
         // Arrange
         var service = new TestRpcService();
-        var serviceShape = TypeShapeProvider.Resolve<TestRpcService>();
+        var serviceShape = TypeShapeResolver.Resolve<TestRpcService>();
         var addMethodShape = serviceShape.Methods.First(m => m.Name == nameof(TestRpcService.GetPeopleAsync));
         var jsonFunc = JsonSerializerTS.CreateJsonFunc(addMethodShape, service);
 
@@ -36,7 +36,7 @@ public class JsonFunctionTests
     {
         // Arrange
         var service = new TestRpcService();
-        var serviceShape = TypeShapeProvider.Resolve<TestRpcService>();
+        var serviceShape = TypeShapeResolver.Resolve<TestRpcService>();
         var addMethodShape = serviceShape.Methods.First(m => m.Name == nameof(TestRpcService.AddPersonAsync));
         var jsonFunc = JsonSerializerTS.CreateJsonFunc(addMethodShape, service);
 
@@ -53,7 +53,7 @@ public class JsonFunctionTests
     {
         // Arrange
         var service = new TestRpcService();
-        var serviceShape = TypeShapeProvider.Resolve<TestRpcService>();
+        var serviceShape = TypeShapeResolver.Resolve<TestRpcService>();
         var onInvokedEvent = serviceShape.Events.First(m => m.Name == nameof(TestRpcService.OnInvoked));
         var jsonEvent = JsonSerializerTS.CreateAsyncJsonEvent(onInvokedEvent, service);
         int eventTriggerCount = 0;

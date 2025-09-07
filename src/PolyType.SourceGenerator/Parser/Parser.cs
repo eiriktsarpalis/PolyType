@@ -821,6 +821,7 @@ public sealed partial class Parser : TypeDataModelGenerator
                     valueSelector: kvp => MapModel(kvp.Value.Model, kvp.Value.TypeId, kvp.Value.SourceIdentifier)),
 
             AnnotatedTypes = generateShapeTypes,
+            TargetSupportsIShapeableOfT = _knownSymbols.TargetFramework >= TargetFramework.Net80,
             Diagnostics = Diagnostics.ToImmutableEquatableSet(),
         };
     }
@@ -878,7 +879,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
 
         TypeId typeId = CreateTypeId(context.TypeSymbol);
-        HashSet<TypeId>? shapeableOfTImplementations = null;
+        HashSet<TypeId>? shapeableImplementations = null;
         bool isWitnessTypeDeclaration = false;
 
         foreach (AttributeData attributeData in context.TypeSymbol.GetAttributes())
@@ -923,11 +924,7 @@ public sealed partial class Parser : TypeDataModelGenerator
                     continue;
             }
 
-            if (_knownSymbols.TargetFramework >= TargetFramework.Net80)
-            {
-                // IShapeable<T> has static abstracts and is only defined in newer TFMs.
-                (shapeableOfTImplementations ??= new()).Add(typeIdToInclude);
-            }
+            (shapeableImplementations ??= new()).Add(typeIdToInclude);
         }
 
         return new TypeDeclarationModel
@@ -939,7 +936,7 @@ public sealed partial class Parser : TypeDataModelGenerator
             Namespace = FormatNamespace(context.TypeSymbol),
             SourceFilenamePrefix = context.TypeSymbol.ToDisplayString(Helpers.RoslynHelpers.QualifiedNameOnlyFormat),
             IsWitnessTypeDeclaration = isWitnessTypeDeclaration,
-            ShapeableOfTImplementations = shapeableOfTImplementations?.ToImmutableEquatableSet() ?? [],
+            ShapeableImplementations = shapeableImplementations?.ToImmutableEquatableSet() ?? [],
         };
 
         static string FormatTypeDeclarationHeader(BaseTypeDeclarationSyntax typeDeclaration, ITypeSymbol typeSymbol, out bool isPartialType)
@@ -1159,7 +1156,7 @@ public sealed partial class Parser : TypeDataModelGenerator
             TypeDeclarationHeader = $"internal sealed partial class {typeName}",
             IsWitnessTypeDeclaration = false,
             ContainingTypes = [],
-            ShapeableOfTImplementations = [],
+            ShapeableImplementations = [],
         };
     }
 

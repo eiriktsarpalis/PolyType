@@ -254,7 +254,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
 
     public static IEnumerable<object?[]> GetLongTuplesAndExpectedJson()
     {
-        ITypeShapeProvider p = Witness.ShapeProvider;
+        Witness p = new();
         yield return [TestCase.Create(
             (x1: 1, x2: 2, x3: 3, x4: 4, x5: 5, x6: 6, x7: 7, x8: 8, x9: 9),p),
             """{"Item1":1,"Item2":2,"Item3":3,"Item4":4,"Item5":5,"Item6":6,"Item7":7,"Item8":8,"Item9":9}"""];
@@ -288,11 +288,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
 
     public static IEnumerable<object?[]> GetMultiDimensionalArraysAndExpectedJson()
     {
-#if NET8_0_OR_GREATER
         Witness p = new();
-#else
-        ITypeShapeProvider p = Witness.ShapeProvider;
-#endif
         yield return [TestCase.Create(new int[,] { }, p), """[]"""];
         yield return [TestCase.Create(new int[,,] { }, p), """[]"""];
         yield return [TestCase.Create(new int[,,,,,] { }, p), """[]"""];
@@ -343,11 +339,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
 
     public static IEnumerable<object[]> GetFSharpUnionsAndExpectedJson()
     {
-#if NET8_0_OR_GREATER
         Witness p = new();
-#else
-        ITypeShapeProvider p = Witness.ShapeProvider;
-#endif
         yield return [TestCase.Create(FSharpOption<int>.None, p), """null"""];
         yield return [TestCase.Create(FSharpOption<int>.Some(42), p), """42"""];
         yield return [TestCase.Create(FSharpUnion.NewA("string", 42), p), """{"$type":"A","bar":"string","baz":42}"""];
