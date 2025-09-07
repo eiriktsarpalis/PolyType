@@ -18,6 +18,11 @@ public partial class ResolveDynamicTests
 
     public record Poco2;
 
+    [GenerateShapeFor<Poco2>]
+    [GenerateShapeFor<NetStandardPoco1>]
+    [GenerateShapeFor<NetStandardPoco2>]
+    public partial class Witness;
+
     [TypeShapeProvider(typeof(Provider))]
     public record NetStandardPoco1
     {
@@ -34,11 +39,8 @@ public partial class ResolveDynamicTests
 
     public record NetStandardPoco2;
 
-    [GenerateShapeFor<Poco2>]
-    [GenerateShapeFor<NetStandardPoco1>]
-    [GenerateShapeFor<NetStandardPoco2>]
     [TypeShapeProvider(typeof(Provider))]
-    public partial class Witness
+    public partial class NetStandardWitness
     {
         // Simulates the source generation strategy
         // used by netstandard2.0 compilations.
