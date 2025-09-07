@@ -32,6 +32,7 @@ namespace System.Diagnostics.CodeAnalysis;
     AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.Method |
     AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Struct,
     Inherited = false)]
+[ExcludeFromCodeCoverage]
 internal sealed class DynamicallyAccessedMembersAttribute : Attribute
 {
     /// <summary>
