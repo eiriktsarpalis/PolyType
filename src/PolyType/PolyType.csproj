@@ -7,6 +7,11 @@
     <DefineConstants>$(DefineConstants);IS_MAIN_POLYTYPE_PROJECT</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <!-- XML comments should not warn in targets where IShapeable{T} is not available -->
+    <NoWarn>CS1574</NoWarn>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
     <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>

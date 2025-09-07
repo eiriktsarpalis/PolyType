@@ -1548,6 +1548,36 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
     }
 #endif
 
+    [Theory]
+    [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
+    public void ResolveDynamic_ReturnsExpectedSingleton<T, TProvider>(TestCase<T, TProvider> testCase)
+#if NET
+        where TProvider : IShapeable<T>
+#endif
+    {
+        ITypeShape<T>? result1 = TypeShapeResolver.ResolveDynamic<T, TProvider>();
+        Assert.NotNull(result1);
+
+        ITypeShape<T>? result2 = TypeShapeResolver.ResolveDynamic<T, TProvider>();
+        Assert.NotNull(result2);
+
+        Assert.Same(result1, result2);
+        Assert.Same(testCase.DefaultShape, result1);
+#if NET
+        Assert.Same(TProvider.GetShape(), result1);
+#endif
+    }
+
+    [Fact]
+    public void ResolveDynamic_ReturnsNullForNonShapeable()
+    {
+        Assert.Null(TypeShapeResolver.ResolveDynamic<object>());
+        Assert.Null(TypeShapeResolver.ResolveDynamic<int, object>());
+
+        Assert.Throws<NotSupportedException>(() => TypeShapeResolver.ResolveDynamic<object>(throwIfMissing: true));
+        Assert.Throws<NotSupportedException>(() => TypeShapeResolver.ResolveDynamic<int, object>(throwIfMissing: true));
+    }
+
     [Fact]
     public void GenerateShape_CanConfigureMarshaler()
     {

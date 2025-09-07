@@ -30,7 +30,7 @@ public static partial class CompilationTests
 
             #if NET8_0_OR_GREATER
                 public static PolyType.Abstractions.ITypeShape<MyPoco> Test()
-                    => PolyType.Abstractions.TypeShapeProvider.Resolve<MyPoco>();
+                    => PolyType.Abstractions.TypeShapeResolver.Resolve<MyPoco>();
             #endif
             }
             """);
@@ -545,8 +545,8 @@ public static partial class CompilationTests
             {
                 public static void TestMethod()
                 {
-                    PolyType.Abstractions.ITypeShape<string> stringShape = PolyType.Abstractions.TypeShapeProvider.Resolve<string, MyWitness>();
-                    PolyType.Abstractions.ITypeShape<int> intShape = PolyType.Abstractions.TypeShapeProvider.Resolve<int, MyWitness>();
+                    PolyType.Abstractions.ITypeShape<string> stringShape = PolyType.Abstractions.TypeShapeResolver.Resolve<string, MyWitness>();
+                    PolyType.Abstractions.ITypeShape<int> intShape = PolyType.Abstractions.TypeShapeResolver.Resolve<int, MyWitness>();
                 }
             }
             #endif
@@ -682,9 +682,9 @@ public static partial class CompilationTests
 
             ITypeShape<MyPoco> shape;
             #if NET8_0_OR_GREATER
-            shape = TypeShapeProvider.Resolve<MyPoco, Witness>();
+            shape = TypeShapeResolver.Resolve<MyPoco, Witness>();
             #endif
-            shape = TypeShapeProvider.Resolve<MyPoco>(Witness.ShapeProvider);
+            shape = TypeShapeResolver.Resolve<MyPoco>(Witness.ShapeProvider);
 
             record MyPoco(string[] Values);
 

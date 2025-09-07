@@ -3,15 +3,17 @@ using System.Reflection;
 
 namespace PolyType.Tests;
 
-#if NET
 /// <summary>
-/// Represents a test case whose shape is provided by an <see cref="IShapeable{T}"/> implementation.
+/// Represents a test case whose shape is provided by a <see cref="TProvider"/> implementation.
 /// </summary>
 /// <typeparam name="T">The type of the value being tested.</typeparam>
 /// <typeparam name="TProvider">The type of the shape provider.</typeparam>
 /// <param name="Value">The value being tested.</param>
-public sealed record TestCase<T, TProvider>(T? Value) : TestCase<T>(Value, TProvider.GetShape())
-    where TProvider : IShapeable<T>;
+public sealed record TestCase<T, TProvider>(T? Value) : TestCase<T>
+#if NET
+    (Value, TProvider.GetShape()) where TProvider : IShapeable<T>;
+#else
+    (Value, TypeShapeResolver.ResolveDynamic<T, TProvider>(throwIfMissing: true)!);
 #endif
 
 /// <summary>

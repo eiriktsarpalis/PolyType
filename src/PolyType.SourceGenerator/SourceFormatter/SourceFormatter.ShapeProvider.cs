@@ -77,21 +77,26 @@ internal sealed partial class SourceFormatter
 
     private SourceText FormatGeneratedTypeMainFile(TypeDeclarationModel typeDeclaration)
     {
-        Debug.Assert(typeDeclaration.IsWitnessTypeDeclaration || typeDeclaration.ShapeableOfTImplementations.Count > 0,
-            "Type declaration must be a witness type or implement at least one IShapeable<T> interface.");
-        
-        var writer = new SourceWriter();
+        const string LocalTypeShapeProviderName = "__LocalTypeShapeProvider__";
+
+        SourceWriter writer = new();
         StartFormatSourceFile(writer, typeDeclaration);
 
-        switch (typeDeclaration.ShapeableOfTImplementations.Count)
+        if (!provider.TargetSupportsIShapeableOfT)
         {
+            writer.WriteLine($"[global::PolyType.Abstractions.TypeShapeProvider(typeof({LocalTypeShapeProviderName}))]");
+        }
+
+        switch (typeDeclaration.ShapeableImplementations.Count)
+        {
+            case var _ when !provider.TargetSupportsIShapeableOfT:
             case 0:
                 writer.WriteLine(typeDeclaration.TypeDeclarationHeader);
                 break;
 
             case 1:
                 writer.WriteLine("#nullable disable annotations // Use nullable-oblivious interface implementation", disableIndentation: true);
-                writer.WriteLine($"{typeDeclaration.TypeDeclarationHeader} : global::PolyType.IShapeable<{typeDeclaration.ShapeableOfTImplementations.First().FullyQualifiedName}>");
+                writer.WriteLine($"{typeDeclaration.TypeDeclarationHeader} : global::PolyType.IShapeable<{typeDeclaration.ShapeableImplementations.First().FullyQualifiedName}>");
                 writer.WriteLine("#nullable enable annotations // Use nullable-oblivious interface implementation", disableIndentation: true);
                 break;
                 
@@ -99,7 +104,7 @@ internal sealed partial class SourceFormatter
                 writer.WriteLine($"{typeDeclaration.TypeDeclarationHeader} :");
                 writer.WriteLine("#nullable disable annotations // Use nullable-oblivious interface implementation", disableIndentation: true);
                 writer.Indentation++;
-                foreach (TypeId typeToImplement in typeDeclaration.ShapeableOfTImplementations)
+                foreach (TypeId typeToImplement in typeDeclaration.ShapeableImplementations)
                 {
                     string separator = --count == 0 ? "" : ",";
                     writer.WriteLine($"global::PolyType.IShapeable<{typeToImplement.FullyQualifiedName}>{separator}");
@@ -124,16 +129,54 @@ internal sealed partial class SourceFormatter
             emittedMembers++;
         }
         
-        foreach (TypeId typeToImplement in typeDeclaration.ShapeableOfTImplementations)
+        if (provider.TargetSupportsIShapeableOfT)
+        {
+            foreach (TypeId typeToImplement in typeDeclaration.ShapeableImplementations)
+            {
+                if (emittedMembers++ > 0)
+                {
+                    writer.WriteLine();
+                }
+
+                writer.WriteLine($"""
+                    static global::PolyType.Abstractions.ITypeShape<{typeToImplement.FullyQualifiedName}> global::PolyType.IShapeable<{typeToImplement.FullyQualifiedName}>.GetShape() =>
+                        {provider.ProviderDeclaration.Id.FullyQualifiedName}.{ProviderSingletonProperty}.{GetShapeModel(typeToImplement).SourceIdentifier};
+                    """);
+            }
+        }
+        else
         {
             if (emittedMembers++ > 0)
             {
                 writer.WriteLine();
             }
 
-            writer.WriteLine($"""
-                static global::PolyType.Abstractions.ITypeShape<{typeToImplement.FullyQualifiedName}> global::PolyType.IShapeable<{typeToImplement.FullyQualifiedName}>.GetShape() =>
-                    {provider.ProviderDeclaration.Id.FullyQualifiedName}.{ProviderSingletonProperty}.{GetShapeModel(typeToImplement).SourceIdentifier};
+            writer.WriteLine($$"""
+                private sealed class {{LocalTypeShapeProviderName}} : global::PolyType.ITypeShapeProvider
+                {
+                    global::PolyType.Abstractions.ITypeShape? global::PolyType.ITypeShapeProvider.GetShape(global::System.Type type)
+                    {
+                """);
+
+            writer.Indentation += 2;
+
+            foreach (TypeId typeToImplement in typeDeclaration.ShapeableImplementations)
+            {
+                writer.WriteLine($$"""
+                    if (type == typeof({{typeToImplement.FullyQualifiedName}}))
+                    {
+                        return {{provider.ProviderDeclaration.Id.FullyQualifiedName}}.{{ProviderSingletonProperty}}.{{GetShapeModel(typeToImplement).SourceIdentifier}};
+                    }
+                    """);
+
+                writer.WriteLine();
+            }
+
+            writer.WriteLine("return null;");
+            writer.Indentation -= 2;
+            writer.WriteLine("""
+                    }
+                }
                 """);
         }
 

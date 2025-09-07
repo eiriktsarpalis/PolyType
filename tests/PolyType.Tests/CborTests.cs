@@ -36,7 +36,7 @@ public abstract partial class CborTests(ProviderUnderTest providerUnderTest)
 
     public static IEnumerable<object?[]> GetValuesAndExpectedEncoding()
     {
-        ITypeShapeProvider p = Witness.ShapeProvider;
+        Witness p = new();
         yield return [TestCase.Create((object)null!, p), "F6"];
         yield return [TestCase.Create(false, p), "F4"];
         yield return [TestCase.Create(true, p), "F5"];
@@ -65,12 +65,12 @@ public abstract partial class CborTests(ProviderUnderTest providerUnderTest)
         yield return [TestCase.Create((int[])[1, 2, 3], p), "83010203"];
         yield return [TestCase.Create((int[][])[[1, 0, 0], [0, 1, 0], [0, 0, 1]], p), "83830100008300010083000001"];
         yield return [TestCase.Create(new Dictionary<string, int> { ["key0"] = 0, ["key1"] = 1 }, p), "A2646B65793000646B65793101"];
-        yield return [TestCase.Create(new SimpleRecord(42), p), "A16576616C7565182A"];
+        yield return [TestCase.Create(new SimpleRecord(42)), "A16576616C7565182A"];
         yield return [TestCase.Create((42, "str"), p), "A2654974656D31182A654974656D3263737472"];
-        yield return [TestCase.Create(new PolymorphicClass(42), p), "D8B9A163496E74182A"];
-        yield return [TestCase.Create<PolymorphicClass>(new PolymorphicClass.DerivedClass(42, "str"), p), "D8BAA266537472696E676373747263496E74182A"];
-        yield return [TestCase.Create<Tree>(new Tree.Leaf(), p), "D9078AA0"];
-        yield return [TestCase.Create<Tree>(new Tree.Node(42, new Tree.Leaf(), new Tree.Leaf()), p), "D8B8821903E8A36556616C7565182A644C656674D9078AA0655269676874D9078AA0"];
+        yield return [TestCase.Create(new PolymorphicClass(42)), "D8B9A163496E74182A"];
+        yield return [TestCase.Create<PolymorphicClass>(new PolymorphicClass.DerivedClass(42, "str")), "D8BAA266537472696E676373747263496E74182A"];
+        yield return [TestCase.Create<Tree>(new Tree.Leaf()), "D9078AA0"];
+        yield return [TestCase.Create<Tree>(new Tree.Node(42, new Tree.Leaf(), new Tree.Leaf())), "D8B8821903E8A36556616C7565182A644C656674D9078AA0655269676874D9078AA0"];
     }
 
     [Theory]

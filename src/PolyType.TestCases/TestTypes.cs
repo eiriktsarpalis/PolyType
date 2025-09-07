@@ -63,11 +63,7 @@ public static class TestTypes
     /// <returns>An enumerable including all test cases defined by this project.</returns>
     public static IEnumerable<ITestCase> GetTestCasesCore()
     {
-#if NET
         Witness p = new();
-#else
-        ITypeShapeProvider p = Witness.ShapeProvider;
-#endif
         yield return TestCase.Create(new object(), p);
         yield return TestCase.Create(true, additionalValues: [true], provider: p);
         yield return TestCase.Create("stringValue", additionalValues: [""], provider: p);

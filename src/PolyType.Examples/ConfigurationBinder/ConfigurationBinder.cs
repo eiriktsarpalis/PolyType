@@ -39,7 +39,19 @@ public static partial class ConfigurationBinderTS
     /// <returns>A configuration binder delegate.</returns>
     [RequiresUnreferencedCode("PolyType reflection provider requires unreferenced code")]
     [RequiresDynamicCode("PolyType reflection provider requires dynamic code")]
-    public static Func<IConfiguration, T?> Create<T>() => Create<T>(ReflectionProvider.ReflectionTypeShapeProvider.Default);
+    public static Func<IConfiguration, T?> CreateUsingReflection<T>() => Create<T>(ReflectionProvider.ReflectionTypeShapeProvider.Default);
+
+    /// <summary>
+    /// Builds a configuration binder delegate instance from the specified shape provider.
+    /// </summary>
+    /// <typeparam name="T">The type for which to build the binder.</typeparam>
+    /// <returns>A configuration binder delegate.</returns>
+    /// <exception cref="NotSupportedException">No source generated implementation for <typeparamref name="T"/> was found.</exception>
+    public static Func<IConfiguration, T?> CreateUsingSourceGen<
+#if NET
+        [DynamicallyAccessedMembers(TypeShapeResolver.ResolveDynamicLinkerRequirements)]
+#endif
+        T>() => Create<T>(TypeShapeResolver.ResolveDynamic<T>(throwIfMissing: true)!);
 
 #if NET
     /// <summary>

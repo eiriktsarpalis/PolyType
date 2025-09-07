@@ -37,7 +37,7 @@ public partial class MethodInvokeBenchmarks
         // Initialize IMethodShape wrappers
         _methodShapeEmitWrapper = CreateMethodShapeWrapper(EmitProvider.GetShape<TestClass>());
         _methodShapeNoEmitWrapper = CreateMethodShapeWrapper(NoEmitProvider.GetShape<TestClass>());
-        _methodShapeSourceGenWrapper = CreateMethodShapeWrapper(TypeShapeProvider.Resolve<TestClass>());
+        _methodShapeSourceGenWrapper = CreateMethodShapeWrapper(TypeShapeResolver.Resolve<TestClass>());
     }
 
     [Benchmark(Baseline = true)]

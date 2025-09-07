@@ -68,12 +68,6 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
 
         foreach (TypeDeclarationModel typeDeclaration in provider.AnnotatedTypes)
         {
-            if (!typeDeclaration.IsWitnessTypeDeclaration && typeDeclaration.ShapeableOfTImplementations.Count == 0)
-            {
-                // If the type is not a witness type or does not implement any IShapeable<T> interfaces, skip it.
-                continue;
-            }
-            
             context.CancellationToken.ThrowIfCancellationRequested();
             context.AddSource($"{typeDeclaration.SourceFilenamePrefix}.g.cs", FormatGeneratedTypeMainFile(typeDeclaration));
         }

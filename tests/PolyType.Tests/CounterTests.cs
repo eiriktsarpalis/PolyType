@@ -18,7 +18,7 @@ public abstract partial class CounterTests(ProviderUnderTest providerUnderTest)
 
     public static IEnumerable<object?[]> GetValuesAndExpectedResult()
     {
-        ITypeShapeProvider p = Witness.ShapeProvider;
+        Witness p = new();
         yield return Create(TestCase.Create("string", p), 1);
         yield return Create(TestCase.Create((string?)null, p), 0);
         yield return Create(TestCase.Create(-5, p), 1);
@@ -27,7 +27,7 @@ public abstract partial class CounterTests(ProviderUnderTest providerUnderTest)
         yield return Create(TestCase.Create((string?[])[null, "str", "str", null, null], p), 3);
         yield return Create(TestCase.Create((List<int>)[1, 2, 3, 4, 5], p), 6);
         yield return Create(TestCase.Create(new Dictionary<string, int> { ["k1"] = 1, ["k2"] = 2 }, p), 5);
-        yield return Create(TestCase.Create(new SimpleRecord(42), p), 2);
+        yield return Create(TestCase.Create(new SimpleRecord(42)), 2);
         yield return Create(TestCase.Create(new MyLinkedList<SimpleRecord> { Value = new SimpleRecord(1), Next = new() { Value = new SimpleRecord(2), Next = null } }, p), 6);
 
         static object?[] Create<T>(TestCase<T> testCase, long expectedCount) => [testCase, expectedCount];

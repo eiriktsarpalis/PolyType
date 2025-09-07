@@ -8,4 +8,5 @@ public sealed record TypeShapeProviderModel
     public required ImmutableEquatableDictionary<TypeId, TypeShapeModel> ProvidedTypes { get; init; }
     public required ImmutableEquatableSet<EquatableDiagnostic> Diagnostics { get; init; }
     public required ImmutableEquatableArray<TypeDeclarationModel> AnnotatedTypes { get; init; }
+    public required bool TargetSupportsIShapeableOfT { get; init; }
 }
