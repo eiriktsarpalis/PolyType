@@ -27,6 +27,24 @@ internal static partial class RoslynHelpers
         method is { MethodKind: MethodKind.Constructor, IsStatic: false } ? method.ContainingType : method.ReturnType;
 
     /// <summary>
+    /// Returns the runtime <see cref="Type.Name"/> value of the specified type symbol.
+    /// </summary>
+    public static string GetReflectionName(this ITypeSymbol type)
+    {
+        if (type is INamedTypeSymbol { TypeArguments: { Length: > 0 } args } namedType)
+        {
+            return $"{namedType.Name}`{args.Length}";
+        }
+
+        if (type is IArrayTypeSymbol arrayType)
+        {
+            return $"{arrayType.ElementType.GetReflectionName()}[{new string(',', arrayType.Rank - 1)}]";
+        }
+
+        return type.Name;
+    }
+
+    /// <summary>
     /// Removes erased compiler metadata such as tuple names and nullable annotations.
     /// </summary>
     public static ITypeSymbol EraseCompilerMetadata(this Compilation compilation, ITypeSymbol type, bool useForSymbolDisplayOnly = false)

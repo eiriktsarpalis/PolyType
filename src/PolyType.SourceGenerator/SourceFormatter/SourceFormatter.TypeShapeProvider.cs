@@ -55,24 +55,56 @@ internal sealed partial class SourceFormatter
             /// <inheritdoc/>
             public override global::PolyType.ITypeShape? GetTypeShape(global::System.Type type)
             {
+                // This method looks up type shapes from the full transitive type graph
+                // of the current assembly, as such it can occasionally grow very large.
+                // In order to avoid performance issues with loading all types at once,
+                // group types by their names and then call a helper method that performs
+                // exact type matching with inlining disabled.
+                switch (type?.Name)
+                {
             """);
 
-        writer.Indentation++;
-
-        foreach (TypeShapeModel generatedType in provider.ProvidedTypes.Values)
+        writer.Indentation += 2;
+        foreach (var grouping in provider.ProvidedTypes.Values.GroupBy(t => t.ReflectionName).OrderBy(t => t.Key))
         {
             writer.WriteLine($$"""
-                if (type == typeof({{generatedType.Type.FullyQualifiedName}}))
+                case {{FormatStringLiteral(grouping.Key)}}:
                 {
-                    return {{generatedType.SourceIdentifier}};
+                    return MatchTypeGroup(type);
+
+                    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+                    ITypeShape? MatchTypeGroup(System.Type type)
+                    {
+                """);
+
+            writer.Indentation += 2;
+            foreach (TypeShapeModel generatedType in grouping)
+            {
+                writer.WriteLine($$"""
+                    if (type == typeof({{generatedType.Type.FullyQualifiedName}}))
+                    {
+                        return {{generatedType.SourceIdentifier}};
+                    }
+
+                    """);
+            }
+
+            writer.Indentation -= 2;
+            writer.WriteLine("""
+                        return null;
+                    }
                 }
 
                 """);
         }
 
-        writer.WriteLine("return null;");
-        writer.Indentation--;
-        writer.WriteLine('}');
+        writer.Indentation -= 2;
+        writer.WriteLine("""
+                    default:
+                        return null;
+                }
+            }
+            """);
     }
 
     private SourceText FormatGeneratedTypeMainFile(TypeDeclarationModel typeDeclaration)
