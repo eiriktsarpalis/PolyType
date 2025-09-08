@@ -5,7 +5,7 @@ public abstract partial class EnumMemberShapeTests(ProviderUnderTest providerUnd
     [Fact]
     public void EnumMemberShapeTest()
     {
-        var enumShape = (IEnumTypeShape<TestEnum, byte>)providerUnderTest.Provider.Resolve<TestEnum>();
+        var enumShape = (IEnumTypeShape<TestEnum, byte>)providerUnderTest.Provider.GetTypeShape<TestEnum>(throwIfMissing: true)!;
         Assert.Equal(3, enumShape.Members.Count);
         Assert.Equal(0, enumShape.Members["FirstValue"]);
         Assert.Equal(5, enumShape.Members["Second"]);
@@ -26,5 +26,5 @@ public abstract partial class EnumMemberShapeTests(ProviderUnderTest providerUnd
 
     public sealed class Reflection() : EnumMemberShapeTests(ReflectionProviderUnderTest.NoEmit);
     public sealed class ReflectionEmit() : EnumMemberShapeTests(ReflectionProviderUnderTest.Emit);
-    public sealed class SourceGen() : EnumMemberShapeTests(new SourceGenProviderUnderTest(Witness.ShapeProvider));
+    public sealed class SourceGen() : EnumMemberShapeTests(new SourceGenProviderUnderTest(Witness.GeneratedTypeShapeProvider));
 }

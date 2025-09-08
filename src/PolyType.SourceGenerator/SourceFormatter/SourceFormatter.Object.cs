@@ -13,7 +13,7 @@ internal sealed partial class SourceFormatter
         string? eventFactoryMethodName = CreateEventsFactoryName(objectShapeModel);
 
         writer.WriteLine($$"""
-            private global::PolyType.Abstractions.ITypeShape<{{objectShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
+            private global::PolyType.ITypeShape<{{objectShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
             {
                 return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<{{objectShapeModel.Type.FullyQualifiedName}}>
                 {

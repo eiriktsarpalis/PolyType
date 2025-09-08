@@ -27,10 +27,10 @@ public static partial class StructuralEqualityComparer
     /// Builds a structural <see cref="IEqualityComparer{T}"/> instance from the specified shape provider.
     /// </summary>
     /// <typeparam name="T">The type for which to build the comparer.</typeparam>
-    /// <param name="shapeProvider">The shape provider guiding comparer construction.</param>
+    /// <param name="typeShapeProvider">The shape provider guiding comparer construction.</param>
     /// <returns>An <see cref="IEqualityComparer{T}"/> instance.</returns>
-    public static IEqualityComparer<T> Create<T>(ITypeShapeProvider shapeProvider) =>
-        (IEqualityComparer<T>)s_converterCaches.GetOrAdd(typeof(T), shapeProvider)!;
+    public static IEqualityComparer<T> Create<T>(ITypeShapeProvider typeShapeProvider) =>
+        (IEqualityComparer<T>)s_converterCaches.GetOrAdd(typeof(T), typeShapeProvider)!;
 
 #if NET
     /// <summary>
@@ -92,7 +92,7 @@ public static partial class StructuralEqualityComparer
 
     private static class EqualityComparerCache<T, TProvider> where TProvider : IShapeable<T>
     {
-        public static IEqualityComparer<T> Value => s_value ??= Create(TProvider.GetShape());
+        public static IEqualityComparer<T> Value => s_value ??= Create(TProvider.GetTypeShape());
         private static IEqualityComparer<T>? s_value;
     }
 #endif

@@ -16,8 +16,8 @@ public partial class CounterBenchmark
         Dict = new() { ["key1"] = 42, ["key2"] = -1 },
     };
 
-    private readonly Func<MyPoco, long> _reflectionEmitCounter = Counter.Create(EmitProvider.GetShape<MyPoco>());
-    private readonly Func<MyPoco, long> _reflectionCounter = Counter.Create(NoEmitProvider.GetShape<MyPoco>());
+    private readonly Func<MyPoco, long> _reflectionEmitCounter = Counter.Create(EmitProvider.GetTypeShape<MyPoco>());
+    private readonly Func<MyPoco, long> _reflectionCounter = Counter.Create(NoEmitProvider.GetTypeShape<MyPoco>());
 
     [Benchmark(Baseline = true)]
     public long Baseline()

@@ -113,7 +113,7 @@ public static partial class StructuralEqualityComparer
 
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
         {
-            var underlyingComparer = (EqualityComparer<TUnionCase>)unionCaseShape.Type.Accept(this)!;
+            var underlyingComparer = (EqualityComparer<TUnionCase>)unionCaseShape.UnionCaseType.Accept(this)!;
             return new UnionCaseEqualityComparer<TUnionCase, TUnion>(underlyingComparer, unionCaseShape.Marshaler);
         }
 

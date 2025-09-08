@@ -15,8 +15,8 @@ public static class JsonSchemaGenerator
     /// Generates a JSON schema using the specified shape provider.
     /// </summary>
     /// <typeparam name="T">The type for which to generate a JSON schema.</typeparam>
-    public static JsonObject Generate<T>(ITypeShapeProvider shapeProvider)
-        => Generate(shapeProvider.Resolve<T>());
+    public static JsonObject Generate<T>(ITypeShapeProvider typeShapeProvider)
+        => Generate(typeShapeProvider.GetTypeShape<T>(throwIfMissing: true)!);
 
     /// <summary>
     /// Generates a JSON schema using the specified shape.
@@ -72,14 +72,14 @@ public static class JsonSchemaGenerator
     /// <typeparam name="T">The type for which to generate a JSON schema.</typeparam>
     /// <typeparam name="TProvider">The type providing an <see cref="IShapeable{T}"/> implementation.</typeparam>
     public static JsonObject Generate<T, TProvider>() where TProvider : IShapeable<T>
-        => Generate(TProvider.GetShape());
+        => Generate(TProvider.GetTypeShape());
 
     /// <summary>
     /// Generates a JSON schema using its <see cref="IShapeable{T}"/> implementation.
     /// </summary>
     /// <typeparam name="T">The type for which to generate a JSON schema.</typeparam>
     public static JsonObject Generate<T>() where T : IShapeable<T>
-        => Generate(T.GetShape());
+        => Generate(T.GetTypeShape());
 #endif
 
     private sealed class Generator
@@ -220,10 +220,10 @@ public static class JsonSchemaGenerator
                     foreach (IUnionCaseShape caseShape in unionShape.UnionCases)
                     {
                         Push($"{anyOf.Count}");
-                        JsonObject caseSchema = GenerateSchema(caseShape.Type, cacheLocation: false);
+                        JsonObject caseSchema = GenerateSchema(caseShape.UnionCaseType, cacheLocation: false);
                         Pop();
 
-                        if (caseShape.Type is IObjectTypeShape or IDictionaryTypeShape)
+                        if (caseShape.UnionCaseType is IObjectTypeShape or IDictionaryTypeShape)
                         {
                             // Schema is already an object schema, embed discriminator inside it
                             JsonObject properties;
@@ -265,7 +265,7 @@ public static class JsonSchemaGenerator
 
                         anyOf.Add((JsonNode)caseSchema);
 
-                        if (caseShape.Type.Type == unionShape.Type)
+                        if (caseShape.UnionCaseType.Type == unionShape.Type)
                         {
                             unionCasesContainBaseType = true;
                         }

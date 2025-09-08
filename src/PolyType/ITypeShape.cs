@@ -1,6 +1,7 @@
-﻿using System.Reflection;
+﻿using PolyType.Abstractions;
+using System.Reflection;
 
-namespace PolyType.Abstractions;
+namespace PolyType;
 
 /// <summary>
 /// Provides a strongly typed shape model for a given .NET type.
@@ -41,7 +42,7 @@ public interface ITypeShape
     IReadOnlyList<IEventShape> Events { get; }
 
     /// <summary>
-    /// Accepts an <see cref="TypeShapeVisitor"/> for strongly-typed traversal.
+    /// Accepts a <see cref="TypeShapeVisitor"/> for type graph traversal.
     /// </summary>
     /// <param name="visitor">The visitor to accept.</param>
     /// <param name="state">The state parameter to pass to the underlying visitor.</param>

@@ -56,13 +56,13 @@ internal sealed class FSharpUnionCaseShape<TUnionCase, TUnion>(FSharpUnionCaseIn
     : IUnionCaseShape<TUnionCase, TUnion>
     where TUnionCase : TUnion
 {
-    public ITypeShape<TUnionCase> Type { get; } = new FSharpUnionCaseTypeShape<TUnionCase>(unionCaseInfo, provider, options);
+    public ITypeShape<TUnionCase> UnionCaseType { get; } = new FSharpUnionCaseTypeShape<TUnionCase>(unionCaseInfo, provider, options);
     public IMarshaler<TUnionCase, TUnion> Marshaler => SubtypeMarshaler<TUnionCase, TUnion>.Instance;
     public string Name => unionCaseInfo.Name;
     public int Tag => unionCaseInfo.Tag;
     public bool IsTagSpecified => false; // F# tags are inferred from the union case ordering
     public int Index => unionCaseInfo.Tag;
-    ITypeShape IUnionCaseShape.Type => Type;
+    ITypeShape IUnionCaseShape.UnionCaseType => UnionCaseType;
     public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnionCase(this, state);
 }
 

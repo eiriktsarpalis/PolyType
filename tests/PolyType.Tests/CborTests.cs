@@ -108,7 +108,7 @@ public abstract partial class CborTests(ProviderUnderTest providerUnderTest)
     [Fact]
     public void ThrowsOnMissingRequiredProperties()
     {
-        var converter = CborSerializer.CreateConverter(providerUnderTest.Provider.Resolve<SimpleRecord>());
+        var converter = CborSerializer.CreateConverter(providerUnderTest.Provider.GetTypeShape<SimpleRecord>(throwIfMissing: true)!);
         var ex = Assert.Throws<KeyNotFoundException>(() => converter.DecodeFromHex("A16376616C182A"));
         Assert.Contains("'value'", ex.Message);
     }
@@ -116,7 +116,7 @@ public abstract partial class CborTests(ProviderUnderTest providerUnderTest)
     [Fact]
     public void ThrowsOnDuplicateProperties_Mutable()
     {
-        var converter = CborSerializer.CreateConverter(providerUnderTest.Provider.Resolve<SimplePoco>());
+        var converter = CborSerializer.CreateConverter(providerUnderTest.Provider.GetTypeShape<SimplePoco>(throwIfMissing: true)!);
         var ex = Assert.Throws<InvalidOperationException>(() => converter.DecodeFromHex("A26556616C7565182A6556616C7565182B"));
         Assert.Contains("Duplicate", ex.Message);
     }
@@ -124,7 +124,7 @@ public abstract partial class CborTests(ProviderUnderTest providerUnderTest)
     [Fact]
     public void ThrowsOnDuplicateProperties_Parameterized()
     {
-        var converter = CborSerializer.CreateConverter(providerUnderTest.Provider.Resolve<SimpleRecord>());
+        var converter = CborSerializer.CreateConverter(providerUnderTest.Provider.GetTypeShape<SimpleRecord>(throwIfMissing: true)!);
         var ex = Assert.Throws<InvalidOperationException>(() => converter.DecodeFromHex("A26576616C7565182A6576616C7565182B"));
         Assert.Contains("Duplicate", ex.Message);
     }
@@ -132,7 +132,7 @@ public abstract partial class CborTests(ProviderUnderTest providerUnderTest)
     [Fact]
     public void DoesNotThrowOnDuplicateUnboundProperties()
     {
-        var converter = CborSerializer.CreateConverter(providerUnderTest.Provider.Resolve<SimplePoco>());
+        var converter = CborSerializer.CreateConverter(providerUnderTest.Provider.GetTypeShape<SimplePoco>(throwIfMissing: true)!);
         var result = converter.DecodeFromHex("A26576616C7565182A6576616C7565182B");
         Assert.Equal(0, result?.Value);
     }

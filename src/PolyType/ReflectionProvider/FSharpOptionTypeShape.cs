@@ -14,7 +14,7 @@ internal sealed class FSharpOptionTypeShape<TOptional, TElement>(FSharpUnionInfo
     public override TypeShapeKind Kind => TypeShapeKind.Optional;
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitOptional(this, state);
 
-    public ITypeShape<TElement> ElementType => Provider.GetShape<TElement>();
+    public ITypeShape<TElement> ElementType => Provider.GetTypeShape<TElement>();
     ITypeShape IOptionalTypeShape.ElementType => ElementType;
 
     public Func<TOptional> GetNoneConstructor() => _noneConstructor ?? CommonHelpers.ExchangeIfNull(ref _noneConstructor, unionInfo.UnionCases[0].Constructor.CreateDelegate<Func<TOptional>>());

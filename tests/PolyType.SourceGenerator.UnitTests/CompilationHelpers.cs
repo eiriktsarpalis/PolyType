@@ -99,7 +99,7 @@ public static class CompilationHelpers
             MetadataReference.CreateFromFile(typeof(System.Collections.Immutable.ImmutableArray).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.Threading.Tasks.ValueTask).Assembly.Location),
 #endif
-            MetadataReference.CreateFromFile(typeof(PolyType.Abstractions.ITypeShape).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(PolyType.ITypeShape).Assembly.Location),
             .. additionalReferences,
         ];
 

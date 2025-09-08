@@ -23,8 +23,8 @@ internal sealed class ReflectionEventShape<TDeclaringType, TEventHandler> : IEve
     public string Name { get; }
     public bool IsStatic => _eventInfo.AddMethod!.IsStatic;
     public bool IsPublic => _eventInfo.AddMethod!.IsPublic;
-    public ITypeShape<TDeclaringType> DeclaringType => _provider.GetShape<TDeclaringType>();
-    public IFunctionTypeShape HandlerType => _handlerType ?? CommonHelpers.ExchangeIfNull(ref _handlerType, (IFunctionTypeShape)_provider.GetShape<TEventHandler>());
+    public ITypeShape<TDeclaringType> DeclaringType => _provider.GetTypeShape<TDeclaringType>();
+    public IFunctionTypeShape HandlerType => _handlerType ?? CommonHelpers.ExchangeIfNull(ref _handlerType, (IFunctionTypeShape)_provider.GetTypeShape<TEventHandler>());
     public ICustomAttributeProvider? AttributeProvider => _eventInfo;
     public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEvent(this, state);
     ITypeShape IEventShape.DeclaringType => DeclaringType;

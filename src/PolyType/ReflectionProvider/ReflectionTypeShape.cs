@@ -36,7 +36,7 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
             ? associatedType.MakeGenericType(Type.GenericTypeArguments)
             : associatedType;
 
-        return provider.GetShape(closedType);
+        return provider.GetTypeShape(closedType);
     }
 
     private IEnumerable<IMethodShape> GetMethods()

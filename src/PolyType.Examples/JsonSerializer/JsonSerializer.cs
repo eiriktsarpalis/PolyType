@@ -33,9 +33,9 @@ public static partial class JsonSerializerTS
     /// Builds an <see cref="JsonConverter{T}"/> instance from the specified shape provider.
     /// </summary>
     /// <typeparam name="T">The type for which to build the converter.</typeparam>
-    /// <param name="shapeProvider">The shape provider guiding converter construction.</param>
+    /// <param name="typeShapeProvider">The shape provider guiding converter construction.</param>
     /// <returns>An <see cref="JsonConverter{T}"/> instance.</returns>
-    public static JsonConverter<T> CreateConverter<T>(ITypeShapeProvider shapeProvider) => (JsonConverter<T>)s_converterCaches.GetOrAdd(typeof(T), shapeProvider)!;
+    public static JsonConverter<T> CreateConverter<T>(ITypeShapeProvider typeShapeProvider) => (JsonConverter<T>)s_converterCaches.GetOrAdd(typeof(T), typeShapeProvider)!;
 
     /// <summary>
     /// Builds a <see cref="JsonConverter"/> instance from the reflection-based shape provider.
@@ -251,7 +251,7 @@ public static partial class JsonSerializerTS
     /// <typeparam name="T">The type for which to build the converter.</typeparam>
     /// <returns>An <see cref="JsonConverter{T}"/> instance.</returns>
     public static JsonConverter<T> CreateConverter<T>() where T : IShapeable<T> =>
-        CreateConverter(T.GetShape());
+        CreateConverter(T.GetTypeShape());
 
     /// <summary>
     /// Serializes a value to a JSON string using its <see cref="IShapeable{T}"/> implementation.
@@ -297,7 +297,7 @@ public static partial class JsonSerializerTS
 
     private static class JsonSerializerCache<T, TProvider> where TProvider : IShapeable<T>
     {
-        public static JsonConverter<T> Value => s_value ??= CreateConverter(TProvider.GetShape());
+        public static JsonConverter<T> Value => s_value ??= CreateConverter(TProvider.GetTypeShape());
         private static JsonConverter<T>? s_value;
     }
 #endif

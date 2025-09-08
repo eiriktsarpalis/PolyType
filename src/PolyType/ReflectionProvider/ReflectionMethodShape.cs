@@ -21,8 +21,8 @@ internal sealed class ReflectionMethodShape<TDeclaringType, TArgumentState, TRes
         _methodShapeInfo = methodShapeInfo;
     }
 
-    public ITypeShape<TDeclaringType> DeclaringType => _provider.GetShape<TDeclaringType>();
-    public ITypeShape<TResult> ReturnType => _provider.GetShape<TResult>();
+    public ITypeShape<TDeclaringType> DeclaringType => _provider.GetTypeShape<TDeclaringType>();
+    public ITypeShape<TResult> ReturnType => _provider.GetTypeShape<TResult>();
     public string Name => _methodShapeInfo.Name;
     public bool IsPublic => _methodShapeInfo.IsPublic;
     public bool IsStatic => _methodShapeInfo.Method!.IsStatic;

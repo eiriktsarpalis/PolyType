@@ -203,7 +203,7 @@ public static partial class Validator
 
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
         {
-            var underlying = (Validator<TUnionCase>?)unionCaseShape.Type.Accept(this);
+            var underlying = (Validator<TUnionCase>?)unionCaseShape.UnionCaseType.Accept(this);
             if (underlying is null)
             {
                 return null;

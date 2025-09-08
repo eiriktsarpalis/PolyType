@@ -7,7 +7,7 @@ namespace PolyType.SourceGenerator;
 
 internal sealed partial class SourceFormatter
 {
-    private static SourceText FormatShapeProviderMainFile(TypeShapeProviderModel provider)
+    private static SourceText FormatTypeShapeProviderMainFile(TypeShapeProviderModel provider)
     {
         var writer = new SourceWriter();
         StartFormatSourceFile(writer, provider.ProviderDeclaration);
@@ -53,7 +53,7 @@ internal sealed partial class SourceFormatter
     {
         writer.WriteLine("""
             /// <inheritdoc/>
-            public override global::PolyType.Abstractions.ITypeShape? GetShape(global::System.Type type)
+            public override global::PolyType.ITypeShape? GetTypeShape(global::System.Type type)
             {
             """);
 
@@ -121,8 +121,8 @@ internal sealed partial class SourceFormatter
         if (typeDeclaration.IsWitnessTypeDeclaration)
         {
             writer.WriteLine($$"""
-                /// <summary>Gets the source generated <see cref="global::PolyType.SourceGenModel.SourceGenTypeShapeProvider"/> corresponding to the current witness type.</summary>
-                public static global::PolyType.SourceGenModel.SourceGenTypeShapeProvider ShapeProvider =>
+                /// <summary>Gets the source generated <see cref="global::PolyType.SourceGenModel.SourceGenTypeShapeProvider"/> corresponding to the current assembly.</summary>
+                public static global::PolyType.SourceGenModel.SourceGenTypeShapeProvider GeneratedTypeShapeProvider =>
                     {{provider.ProviderDeclaration.Id.FullyQualifiedName}}.{{ProviderSingletonProperty}};
                 """);
 
@@ -139,7 +139,7 @@ internal sealed partial class SourceFormatter
                 }
 
                 writer.WriteLine($"""
-                    static global::PolyType.Abstractions.ITypeShape<{typeToImplement.FullyQualifiedName}> global::PolyType.IShapeable<{typeToImplement.FullyQualifiedName}>.GetShape() =>
+                    static global::PolyType.ITypeShape<{typeToImplement.FullyQualifiedName}> global::PolyType.IShapeable<{typeToImplement.FullyQualifiedName}>.GetTypeShape() =>
                         {provider.ProviderDeclaration.Id.FullyQualifiedName}.{ProviderSingletonProperty}.{GetShapeModel(typeToImplement).SourceIdentifier};
                     """);
             }
@@ -152,9 +152,10 @@ internal sealed partial class SourceFormatter
             }
 
             writer.WriteLine($$"""
+                [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
                 private sealed class {{LocalTypeShapeProviderName}} : global::PolyType.ITypeShapeProvider
                 {
-                    global::PolyType.Abstractions.ITypeShape? global::PolyType.ITypeShapeProvider.GetShape(global::System.Type type)
+                    global::PolyType.ITypeShape? global::PolyType.ITypeShapeProvider.GetTypeShape(global::System.Type type)
                     {
                 """);
 

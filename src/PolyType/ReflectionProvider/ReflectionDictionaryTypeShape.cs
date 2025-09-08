@@ -35,8 +35,8 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         ? mutableCtor.AvailableInsertionModes
         : DictionaryInsertionMode.None;
 
-    public ITypeShape<TKey> KeyType => Provider.GetShape<TKey>();
-    public ITypeShape<TValue> ValueType => Provider.GetShape<TValue>();
+    public ITypeShape<TKey> KeyType => Provider.GetTypeShape<TKey>();
+    public ITypeShape<TValue> ValueType => Provider.GetTypeShape<TValue>();
     ITypeShape IDictionaryTypeShape.KeyType => KeyType;
     ITypeShape IDictionaryTypeShape.ValueType => ValueType;
 

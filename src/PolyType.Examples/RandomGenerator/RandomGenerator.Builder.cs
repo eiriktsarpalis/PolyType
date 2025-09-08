@@ -297,14 +297,14 @@ public partial class RandomGenerator
             List<RandomGenerator<TUnion>> unionCaseGenerators = [];
             foreach (var unionCase in unionShape.UnionCases)
             {
-                if (!IsConstructible(unionCase.Type))
+                if (!IsConstructible(unionCase.UnionCaseType))
                 {
                     continue;
                 }
 
                 // Can rely on covariance for this cast to succeed.
-                unionCaseGenerators.Add((RandomGenerator<TUnion>)unionCase.Type.Accept(this)!);
-                foundBaseType |= unionCase.Type.Type == typeof(TUnion);
+                unionCaseGenerators.Add((RandomGenerator<TUnion>)unionCase.UnionCaseType.Accept(this)!);
+                foundBaseType |= unionCase.UnionCaseType.Type == typeof(TUnion);
             }
 
             if (!foundBaseType && IsConstructible(unionShape.BaseType))

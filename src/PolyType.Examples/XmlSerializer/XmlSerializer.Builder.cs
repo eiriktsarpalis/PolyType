@@ -160,7 +160,7 @@ public static partial class XmlSerializer
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state)
         {
             // NB: don't use the cached converter for TUnionCase, as it might equal TUnion.
-            var caseConverter = (XmlConverter<TUnionCase>)unionCaseShape.Type.Invoke(this)!;
+            var caseConverter = (XmlConverter<TUnionCase>)unionCaseShape.UnionCaseType.Invoke(this)!;
             return new XmlUnionCaseConverter<TUnionCase, TUnion>(caseConverter, unionCaseShape.Marshaler);
         }
 

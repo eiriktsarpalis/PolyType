@@ -83,7 +83,7 @@ partial class CounterVisitor : TypeShapeVisitor
 Given an `ITypeShape<T>` instance we can now construct a counter delegate like so:
 
 ```C#
-ITypeShape<MyPoco> shape = provider.GetShape<MyPoco>();
+ITypeShape<MyPoco> shape = provider.GetTypeShape<MyPoco>();
 CounterVisitor visitor = new();
 var pocoCounter = (Func<MyPoco, int>)shape.Accept(visitor)!;
 
@@ -444,7 +444,7 @@ class MutatorVisitor : TypeShapeVisitor
 which can be consumed as follows:
 
 ```C#
-ITypeShape<MyPoco> shape = provider.GetShape<MyPoco>();
+ITypeShape<MyPoco> shape = provider.GetTypeShape<MyPoco>();
 MutatorVisitor visitor = new();
 var mutator = (Mutator<MyPoco>)shape.Accept(visitor)!;
 
@@ -556,7 +556,7 @@ class EmptyConstructorVisitor : TypeShapeVisitor
 We can now use the visitor to construct an empty instance factory:
 
 ```C#
-ITypeShape<MyPoco> shape = provider.GetShape<MyPoco>();
+ITypeShape<MyPoco> shape = provider.GetTypeShape<MyPoco>();
 EmptyConstructorVisitor visitor = new();
 var factory = (Func<MyPoco>)shape.Accept(visitor)!;
 

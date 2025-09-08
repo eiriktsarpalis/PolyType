@@ -29,7 +29,7 @@ public static partial class CompilationTests
                 public Dictionary<string, int>? Dict { get; set; }
 
             #if NET8_0_OR_GREATER
-                public static PolyType.Abstractions.ITypeShape<MyPoco> Test()
+                public static PolyType.ITypeShape<MyPoco> Test()
                     => PolyType.Abstractions.TypeShapeResolver.Resolve<MyPoco>();
             #endif
             }
@@ -545,8 +545,8 @@ public static partial class CompilationTests
             {
                 public static void TestMethod()
                 {
-                    PolyType.Abstractions.ITypeShape<string> stringShape = PolyType.Abstractions.TypeShapeResolver.Resolve<string, MyWitness>();
-                    PolyType.Abstractions.ITypeShape<int> intShape = PolyType.Abstractions.TypeShapeResolver.Resolve<int, MyWitness>();
+                    PolyType.ITypeShape<string> stringShape = PolyType.Abstractions.TypeShapeResolver.Resolve<string, MyWitness>();
+                    PolyType.ITypeShape<int> intShape = PolyType.Abstractions.TypeShapeResolver.Resolve<int, MyWitness>();
                 }
             }
             #endif
@@ -681,10 +681,11 @@ public static partial class CompilationTests
             using PolyType.Abstractions;
 
             ITypeShape<MyPoco> shape;
-            #if NET8_0_OR_GREATER
+            #if NET
             shape = TypeShapeResolver.Resolve<MyPoco, Witness>();
             #endif
-            shape = TypeShapeResolver.Resolve<MyPoco>(Witness.ShapeProvider);
+            shape = TypeShapeResolver.ResolveDynamic<MyPoco, Witness>(throwIfMissing: true)!;
+            shape = Witness.GeneratedTypeShapeProvider.GetTypeShape<MyPoco>(throwIfMissing: true)!;
 
             record MyPoco(string[] Values);
 
@@ -758,7 +759,7 @@ public static partial class CompilationTests
             partial class Default { }
 
             [GenerateShape]
-            partial class GetShape { }
+            partial class GetTypeShape { }
 
             [GenerateShape]
             partial class @class { }

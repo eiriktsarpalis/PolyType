@@ -139,7 +139,7 @@ public static partial class RandomGenerator
 
     private static class RandomGeneratorCache<T, TProvider> where TProvider : IShapeable<T>
     {
-        public static RandomGenerator<T> Value => s_value ??= Create(TProvider.GetShape());
+        public static RandomGenerator<T> Value => s_value ??= Create(TProvider.GetTypeShape());
         private static RandomGenerator<T>? s_value;
     }
 #endif

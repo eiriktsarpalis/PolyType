@@ -79,7 +79,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
     /// <returns>
     /// A <see cref="ITypeShape{T}"/> instance corresponding to the current type.
     /// </returns>
-    public ITypeShape<T> GetShape<T>() => (ITypeShape<T>)GetShape(typeof(T));
+    public ITypeShape<T> GetTypeShape<T>() => (ITypeShape<T>)GetTypeShape(typeof(T));
 
     /// <summary>
     /// Gets a <see cref="ITypeShape"/> instance corresponding to the supplied type.
@@ -90,7 +90,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
     /// </returns>
     /// <exception cref="ArgumentNullException">The <paramref name="type"/> argument is null.</exception>
     /// <exception cref="ArgumentException">The <paramref name="type"/> cannot be a generic argument.</exception>
-    public ITypeShape GetShape(Type type)
+    public ITypeShape GetTypeShape(Type type)
     {
         Throw.IfNull(type);
         return _cache.GetOrAdd(type, _typeShapeFactory);

@@ -16,7 +16,7 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
     private const string AllBindingFlagsConstMember = "__BindingFlags_All";
     private const string InitializeMethodName = "__Init_Singleton";
     private const string ProviderSingletonProperty = "Default";
-    private const string GetShapeMethodName = "GetShape";
+    private const string GetShapeMethodName = "GetTypeShape";
 
     public static void GenerateSourceFiles(SourceProductionContext context, TypeShapeProviderModel provider)
     {
@@ -33,7 +33,7 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
         }
 
         context.CancellationToken.ThrowIfCancellationRequested();
-        context.AddSource($"{provider.ProviderDeclaration.SourceFilenamePrefix}.g.cs", FormatShapeProviderMainFile(provider));
+        context.AddSource($"{provider.ProviderDeclaration.SourceFilenamePrefix}.g.cs", FormatTypeShapeProviderMainFile(provider));
 
         foreach (TypeShapeModel type in provider.ProvidedTypes.Values)
         {
@@ -81,21 +81,18 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
 #if DEBUG
         writer.WriteLine("""
             #nullable enable
+            #pragma warning disable CS0612, CS0618 // Use of obsolete APIs is natural when we're emitting delegates for obsolete properties.
+            #pragma warning disable CS0436 // Use of local types when imported types by the same name exist.
 
             """);
 #else
         writer.WriteLine("""
             #nullable enable annotations
             #nullable disable warnings
+            #pragma warning disable
 
             """);
 #endif
-
-        writer.WriteLine("""
-            #pragma warning disable CS0612, CS0618 // Use of obsolete APIs is natural when we're emitting delegates for obsolete properties.
-            #pragma warning disable CS0436 // Use of local types when imported types by the same name exist.
-
-            """);
 
         if (typeDeclaration.Namespace is string @namespace)
         {

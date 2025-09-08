@@ -33,8 +33,8 @@ public static partial class Validator
     /// <summary>
     /// Builds a validator delegate using a shape provider as input.
     /// </summary>
-    public static Validator<T> Create<T>(ITypeShapeProvider shapeProvider) =>
-        (Validator<T>?)s_cache.GetOrAdd(typeof(T), shapeProvider) ?? Builder.CreateNullValidator<T>();
+    public static Validator<T> Create<T>(ITypeShapeProvider typeShapeProvider) =>
+        (Validator<T>?)s_cache.GetOrAdd(typeof(T), typeShapeProvider) ?? Builder.CreateNullValidator<T>();
 
     /// <summary>
     /// Runs validation against the provided value.
@@ -85,7 +85,7 @@ public static partial class Validator
 
     private static class ValidatorCache<T, TProvider> where TProvider : IShapeable<T>
     {
-        public static Validator<T> Value => s_value ??= Create(TProvider.GetShape());
+        public static Validator<T> Value => s_value ??= Create(TProvider.GetTypeShape());
         private static Validator<T>? s_value;
     }
 #endif

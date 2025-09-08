@@ -27,10 +27,10 @@ public static partial class ConfigurationBinderTS
     /// Builds a configuration binder delegate instance from the specified shape provider.
     /// </summary>
     /// <typeparam name="T">The type for which to build the binder.</typeparam>
-    /// <param name="shapeProvider">The shape provider guiding binder construction.</param>
+    /// <param name="typeShapeProvider">The shape provider guiding binder construction.</param>
     /// <returns>A configuration binder delegate.</returns>
-    public static Func<IConfiguration, T?> Create<T>(ITypeShapeProvider shapeProvider) =>
-        (Func<IConfiguration, T?>)s_cache.GetOrAdd(typeof(T), shapeProvider)!;
+    public static Func<IConfiguration, T?> Create<T>(ITypeShapeProvider typeShapeProvider) =>
+        (Func<IConfiguration, T?>)s_cache.GetOrAdd(typeof(T), typeShapeProvider)!;
 
     /// <summary>
     /// Builds a configuration binder delegate instance from the specified shape provider.
@@ -75,7 +75,7 @@ public static partial class ConfigurationBinderTS
 
     private static class ConfigurationBinderCache<T, TProvider> where TProvider : IShapeable<T>
     {
-        public static Func<IConfiguration, T?> Value => s_value ??= Create(TProvider.GetShape());
+        public static Func<IConfiguration, T?> Value => s_value ??= Create(TProvider.GetTypeShape());
         private static Func<IConfiguration, T?>? s_value;
     }
 #endif

@@ -1,12 +1,12 @@
-﻿using PolyType.Utilities;
+﻿using PolyType.Abstractions;
+using PolyType.Utilities;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace PolyType.Abstractions;
 
 /// <summary>
-/// Helper methods for extracting <see cref="ITypeShape"/> instances from <see cref="IShapeable{T}"/> implementations,
-/// <see cref="TypeShapeProviderAttribute"/> annotations, or <see cref="ITypeShapeProvider"/> implementations.
+/// Defines helpers methods used for resolving <see cref="ITypeShape"/> instances from source generated types.
 /// </summary>
 public static class TypeShapeResolver
 {
@@ -16,7 +16,7 @@ public static class TypeShapeResolver
     /// </summary>
     /// <typeparam name="T">The type from which to extract the shape.</typeparam>
     /// <returns>An <see cref="ITypeShape{T}"/> instance describing <typeparamref name="T"/>.</returns>
-    public static ITypeShape<T> Resolve<T>() where T : IShapeable<T> => T.GetShape();
+    public static ITypeShape<T> Resolve<T>() where T : IShapeable<T> => T.GetTypeShape();
 
     /// <summary>
     /// Resolves the <see cref="ITypeShape{T}"/> from the <see cref="IShapeable{T}"/> implementation of another type.
@@ -24,28 +24,8 @@ public static class TypeShapeResolver
     /// <typeparam name="T">The type for which to extract the shape.</typeparam>
     /// <typeparam name="TProvider">The type providing the <see cref="IShapeable{T}"/> implementation.</typeparam>
     /// <returns>An <see cref="ITypeShape{T}"/> instance describing <typeparamref name="T"/>.</returns>
-    public static ITypeShape<T> Resolve<T, TProvider>() where TProvider : IShapeable<T> => TProvider.GetShape();
+    public static ITypeShape<T> Resolve<T, TProvider>() where TProvider : IShapeable<T> => TProvider.GetTypeShape();
 #endif
-
-    /// <summary>
-    /// Resolves the <see cref="ITypeShape{T}"/> corresponding to <typeparamref name="T"/>.
-    /// </summary>
-    /// <typeparam name="T">The type whose shape we need to resolve.</typeparam>
-    /// <param name="shapeProvider">The provider from which to extract the <see cref="ITypeShape"/>.</param>
-    /// <returns>An <see cref="ITypeShape{T}"/> instance describing <typeparamref name="T"/>.</returns>
-    /// <exception cref="NotSupportedException"><paramref name="shapeProvider"/> does not support <typeparamref name="T"/>.</exception>
-    public static ITypeShape<T> Resolve<T>(this ITypeShapeProvider shapeProvider) =>
-        (ITypeShape<T>)Resolve(shapeProvider, typeof(T));
-
-    /// <summary>
-    /// Resolves the <see cref="ITypeShape"/> corresponding to <paramref name="type"/>.
-    /// </summary>
-    /// <param name="shapeProvider">The provider from which to extract the <see cref="ITypeShape"/>.</param>
-    /// <param name="type">The type whose shape we need to resolve.</param>
-    /// <returns>An <see cref="ITypeShape"/> instance describing <paramref name="type"/>.</returns>
-    /// <exception cref="NotSupportedException"><paramref name="shapeProvider"/> does not support <paramref name="type"/>.</exception>
-    public static ITypeShape Resolve(this ITypeShapeProvider shapeProvider, Type type) =>
-        shapeProvider.GetShape(type) ?? throw new NotSupportedException($"The shape provider '{shapeProvider.GetType()}' does not support type '{type}'.");
 
     /// <summary>
     /// Uses reflection to resolve the source generated <see cref="ITypeShape{T}"/> implementation of the type.
@@ -152,11 +132,11 @@ public static class TypeShapeResolver
         {
             if (typeof(TProvider).GetCustomAttribute<TypeShapeProviderAttribute>() is { } attr)
             {
-                Type shapeProviderType = attr.ShapeProvider;
+                Type typeShapeProviderType = attr.TypeShapeProvider;
                 return () =>
                 {
-                    var shapeProvider = (ITypeShapeProvider)Activator.CreateInstance(shapeProviderType)!;
-                    return shapeProvider.GetShape(typeof(T)) as ITypeShape<T>;
+                    var typeShapeProvider = (ITypeShapeProvider)Activator.CreateInstance(typeShapeProviderType)!;
+                    return typeShapeProvider.GetTypeShape(typeof(T)) as ITypeShape<T>;
                 };
             }
 #if NET
@@ -169,9 +149,9 @@ public static class TypeShapeResolver
                     if (method.IsStatic &&
                         method.ReturnType == typeof(ITypeShape<T>) &&
                         method.GetParameters().Length == 0 &&
-                        (method.Name is "GetShape" ||
+                        (method.Name is "GetTypeShape" ||
                             (method.Name.StartsWith("global::PolyType.IShapeable<", StringComparison.Ordinal) &&
-                             method.Name.EndsWith(".GetShape", StringComparison.Ordinal))))
+                             method.Name.EndsWith(".GetTypeShape", StringComparison.Ordinal))))
                     {
                         return (Func<ITypeShape<T>>)Delegate.CreateDelegate(typeof(Func<ITypeShape<T>>), method)!;
                     }

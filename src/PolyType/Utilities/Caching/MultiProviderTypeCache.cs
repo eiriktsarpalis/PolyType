@@ -45,14 +45,14 @@ public sealed class MultiProviderTypeCache
     public bool CacheExceptions { get; init; }
 
     /// <summary>
-    /// Gets or creates a cache scoped to the specified <paramref name="shapeProvider"/>.
+    /// Gets or creates a cache scoped to the specified <paramref name="typeShapeProvider"/>.
     /// </summary>
-    /// <param name="shapeProvider">The shape provider key.</param>
-    /// <returns>A <see cref="TypeCache"/> scoped to <paramref name="shapeProvider"/>.</returns>
-    public TypeCache GetScopedCache(ITypeShapeProvider shapeProvider)
+    /// <param name="typeShapeProvider">The shape provider key.</param>
+    /// <returns>A <see cref="TypeCache"/> scoped to <paramref name="typeShapeProvider"/>.</returns>
+    public TypeCache GetScopedCache(ITypeShapeProvider typeShapeProvider)
     {
-        Throw.IfNull(shapeProvider);
-        return _providerCaches.GetValue(shapeProvider, _createProviderCache);
+        Throw.IfNull(typeShapeProvider);
+        return _providerCaches.GetValue(typeShapeProvider, _createProviderCache);
     }
 
     /// <summary>

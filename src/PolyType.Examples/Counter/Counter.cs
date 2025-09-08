@@ -23,8 +23,8 @@ public static partial class Counter
     /// <summary>
     /// Creates an object counting delegate using the specified shape provider.
     /// </summary>
-    public static Func<T?, long> Create<T>(ITypeShapeProvider shapeProvider)
-        => (Func<T?, long>)s_cache.GetOrAdd(typeof(T), shapeProvider)!;
+    public static Func<T?, long> Create<T>(ITypeShapeProvider typeShapeProvider)
+        => (Func<T?, long>)s_cache.GetOrAdd(typeof(T), typeShapeProvider)!;
 
 #if NET
     /// <summary>
@@ -41,7 +41,7 @@ public static partial class Counter
 
     private static class CounterCache<T, TProvider> where TProvider : IShapeable<T>
     {
-        public static Func<T?, long> Value => s_value ??= Create(TProvider.GetShape());
+        public static Func<T?, long> Value => s_value ??= Create(TProvider.GetTypeShape());
         private static Func<T?, long>? s_value;
     }
 #endif

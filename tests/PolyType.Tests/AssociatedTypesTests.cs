@@ -23,7 +23,7 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     [Fact]
     public void CanConstructAssociatedType()
     {
-        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
+        ITypeShape? typeShape = providerUnderTest.Provider.GetTypeShape(typeof(GenericDataType<int, string>));
         Assert.NotNull(typeShape);
         Func<object>? factory = GetAssociatedTypeFactory(typeShape, typeof(GenericDataTypeConverter<,>));
         Assert.NotNull(factory);
@@ -35,7 +35,7 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     [Fact]
     public void CanConstructAssociatedType2()
     {
-        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
+        ITypeShape? typeShape = providerUnderTest.Provider.GetTypeShape(typeof(GenericDataType<int, string>));
         Assert.NotNull(typeShape);
         Func<object>? factory = GetAssociatedTypeFactory(typeShape, typeof(GenericDataTypeCloner<,>));
         Assert.NotNull(factory);
@@ -47,7 +47,7 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     [Fact]
     public void CanConstructAssociatedType_WithClosedGeneric()
     {
-        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
+        ITypeShape? typeShape = providerUnderTest.Provider.GetTypeShape(typeof(GenericDataType<int, string>));
         Assert.NotNull(typeShape);
         Func<object>? factory = GetAssociatedTypeFactory(typeShape, typeof(GenericDataTypeConverter<int, string>));
         Assert.NotNull(factory);
@@ -59,7 +59,7 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     [Fact]
     public void CanConstructAssociatedType_ByExtension()
     {
-        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
+        ITypeShape? typeShape = providerUnderTest.Provider.GetTypeShape(typeof(GenericDataType<int, string>));
         Assert.NotNull(typeShape);
         IObjectTypeShape? associatedShape = (IObjectTypeShape?)typeShape.GetAssociatedTypeShape(typeof(GenericDataTypeVerifier<,>));
         Assert.NotNull(associatedShape);
@@ -73,7 +73,7 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     [Fact]
     public void CanConstructAssociatedType_NonGeneric()
     {
-        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(NonGenericDataType));
+        ITypeShape? typeShape = providerUnderTest.Provider.GetTypeShape(typeof(NonGenericDataType));
         Assert.NotNull(typeShape);
         Func<object>? factory = GetAssociatedTypeFactory(typeShape, typeof(NonGenericDataTypeConverter));
         Assert.NotNull(factory);
@@ -83,7 +83,7 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     [Fact]
     public void CanConstructAssociatedType_GenericToNonGeneric()
     {
-        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
+        ITypeShape? typeShape = providerUnderTest.Provider.GetTypeShape(typeof(GenericDataType<int, string>));
         Assert.NotNull(typeShape);
         Func<object>? factory = GetAssociatedTypeFactory(typeShape, typeof(NonGenericDataTypeConverter));
         Assert.NotNull(factory);
@@ -93,7 +93,7 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     [Fact]
     public void CanConstructAssociatedType_TypeArgsSplitAcrossTypes()
     {
-        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
+        ITypeShape? typeShape = providerUnderTest.Provider.GetTypeShape(typeof(GenericDataType<int, string>));
         Assert.NotNull(typeShape);
         Func<object>? factory = GetAssociatedTypeFactory(typeShape, typeof(GenericWrapper<>.GenericNested<>));
         Assert.NotNull(factory);
@@ -103,7 +103,7 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     [Fact]
     public void AssociatedTypeAttribute_MissingConstructor()
     {
-        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
+        ITypeShape? typeShape = providerUnderTest.Provider.GetTypeShape(typeof(GenericDataType<int, string>));
         Assert.NotNull(typeShape);
         IObjectTypeShape<GenericDataTypePropertiesOnly<int, string>>? associatedShape = (IObjectTypeShape<GenericDataTypePropertiesOnly<int, string>>?)typeShape.GetAssociatedTypeShape(typeof(GenericDataTypePropertiesOnly<,>));
         Assert.NotNull(associatedShape);
@@ -114,7 +114,7 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     [Fact]
     public void AssociatedTypeAttribute_MissingEverything()
     {
-        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
+        ITypeShape? typeShape = providerUnderTest.Provider.GetTypeShape(typeof(GenericDataType<int, string>));
         Assert.NotNull(typeShape);
         IObjectTypeShape<GenericDataTypeNoneAtAll<int, string>>? associatedShape = (IObjectTypeShape<GenericDataTypeNoneAtAll<int, string>>?)typeShape.GetAssociatedTypeShape(typeof(GenericDataTypeNoneAtAll<,>));
         Assert.NotNull(associatedShape);
@@ -125,7 +125,7 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     [Fact]
     public void PartialAssociationAndFullReference()
     {
-        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
+        ITypeShape? typeShape = providerUnderTest.Provider.GetTypeShape(typeof(GenericDataType<int, string>));
         Assert.NotNull(typeShape);
         IObjectTypeShape<GenericDataTypeFullAndPartialPaths<int, string>>? associatedShape = (IObjectTypeShape<GenericDataTypeFullAndPartialPaths<int, string>>?)typeShape.GetAssociatedTypeShape(typeof(GenericDataTypeFullAndPartialPaths<,>));
         Assert.NotNull(associatedShape);
@@ -136,7 +136,7 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     [Fact]
     public void AssociatedTypeAttribute_ConstructorParameter()
     {
-        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(CustomTypeWithCustomConverter));
+        ITypeShape? typeShape = providerUnderTest.Provider.GetTypeShape(typeof(CustomTypeWithCustomConverter));
         Assert.NotNull(typeShape);
         IObjectTypeShape<CustomTypeConverter>? associatedShape = (IObjectTypeShape<CustomTypeConverter>?)typeShape.GetAssociatedTypeShape(typeof(CustomTypeConverter));
         Assert.NotNull(associatedShape);
@@ -149,7 +149,7 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     [Fact]
     public void AssociatedTypeAttribute_NamedParameter()
     {
-        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(CustomTypeWithCustomConverter));
+        ITypeShape? typeShape = providerUnderTest.Provider.GetTypeShape(typeof(CustomTypeWithCustomConverter));
         Assert.NotNull(typeShape);
         IObjectTypeShape? associatedShape = (IObjectTypeShape<CustomTypeConverter1>?)typeShape.GetAssociatedTypeShape(typeof(CustomTypeConverter1));
         Assert.NotNull(associatedShape);
@@ -176,11 +176,11 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     public void AssociatedTypeAttribute_OnProperty()
     {
         // Assert that the associated type is available on its own.
-        IObjectTypeShape? associatedShape = (IObjectTypeShape<GenericConverter<SpecialKey2>>?)providerUnderTest.Provider.GetShape(typeof(GenericConverter<SpecialKey2>));
+        IObjectTypeShape? associatedShape = (IObjectTypeShape<GenericConverter<SpecialKey2>>?)providerUnderTest.Provider.GetTypeShape(typeof(GenericConverter<SpecialKey2>));
         Assert.NotNull(associatedShape);
 
         // Assert that it is available as an associated type of the original.
-        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericWrapper<SpecialKey2>));
+        ITypeShape? typeShape = providerUnderTest.Provider.GetTypeShape(typeof(GenericWrapper<SpecialKey2>));
         Assert.NotNull(typeShape);
         associatedShape = (IObjectTypeShape<GenericConverter<SpecialKey2>>?)typeShape.GetAssociatedTypeShape(typeof(GenericConverter<>));
         Assert.NotNull(associatedShape);
@@ -196,11 +196,11 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     public void AssociatedTypeAttribute_OnField()
     {
         // Assert that the associated type is available on its own.
-        IObjectTypeShape? associatedShape = (IObjectTypeShape<GenericConverter<SpecialKey3>>?)providerUnderTest.Provider.GetShape(typeof(GenericConverter<SpecialKey3>));
+        IObjectTypeShape? associatedShape = (IObjectTypeShape<GenericConverter<SpecialKey3>>?)providerUnderTest.Provider.GetTypeShape(typeof(GenericConverter<SpecialKey3>));
         Assert.NotNull(associatedShape);
 
         // Assert that it is available as an associated type of the original.
-        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericWrapper<SpecialKey3>));
+        ITypeShape? typeShape = providerUnderTest.Provider.GetTypeShape(typeof(GenericWrapper<SpecialKey3>));
         Assert.NotNull(typeShape);
         associatedShape = (IObjectTypeShape<GenericConverter<SpecialKey3>>?)typeShape.GetAssociatedTypeShape(typeof(GenericConverter<>));
         Assert.NotNull(associatedShape);
@@ -211,11 +211,11 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     {
         // Get it through the associated type shape API, which accepts an unbound generic type.
         // We do this by first starting with a known shape, then jumping to the associated type.
-        ITypeShape? ordinaryShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
+        ITypeShape? ordinaryShape = providerUnderTest.Provider.GetTypeShape(typeof(GenericDataType<int, string>));
         Assert.NotNull(ordinaryShape);
 
         // Fetch as an independent shape.
-        IObjectTypeShape? associatedShape = (IObjectTypeShape<ExtraShape<int, string>>?)providerUnderTest.Provider.GetShape(typeof(ExtraShape<int, string>));
+        IObjectTypeShape? associatedShape = (IObjectTypeShape<ExtraShape<int, string>>?)providerUnderTest.Provider.GetTypeShape(typeof(ExtraShape<int, string>));
         Assert.NotNull(associatedShape);
 
         // Fetch as an associated shape by its unbound generic.
@@ -235,11 +235,11 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     {
         // Get it through the associated type shape API, which accepts an unbound generic type.
         // We do this by first starting with a known shape, then jumping to the associated type.
-        ITypeShape? ordinaryShape = providerUnderTest.Provider.GetShape(typeof(GenericDataType<int, string>));
+        ITypeShape? ordinaryShape = providerUnderTest.Provider.GetTypeShape(typeof(GenericDataType<int, string>));
         Assert.NotNull(ordinaryShape);
 
         // Fetch as an independent shape.
-        IObjectTypeShape? associatedShape = (IObjectTypeShape<ExtraShape2<int, string>>?)providerUnderTest.Provider.GetShape(typeof(ExtraShape2<int, string>));
+        IObjectTypeShape? associatedShape = (IObjectTypeShape<ExtraShape2<int, string>>?)providerUnderTest.Provider.GetTypeShape(typeof(ExtraShape2<int, string>));
         Assert.NotNull(associatedShape);
 
         // Fetch as an associated shape by its unbound generic.
@@ -258,8 +258,8 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     [Fact]
     public void Enumerables_HaveAssociatedTypes()
     {
-        Assert.NotNull(providerUnderTest.Provider.GetShape(typeof(GenericWrapper<SpecialKey>)));
-        ITypeShape? shape = providerUnderTest.Provider.GetShape(typeof(IEnumerable<SpecialKey>));
+        Assert.NotNull(providerUnderTest.Provider.GetTypeShape(typeof(GenericWrapper<SpecialKey>)));
+        ITypeShape? shape = providerUnderTest.Provider.GetTypeShape(typeof(IEnumerable<SpecialKey>));
         Assert.NotNull(shape);
         ITypeShape? associatedShape = shape.GetAssociatedTypeShape(typeof(GenericWrapper<>));
         Assert.NotNull(associatedShape);
@@ -269,8 +269,8 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     [Fact]
     public void Dictionaries_HaveAssociatedTypes()
     {
-        Assert.NotNull(providerUnderTest.Provider.GetShape(typeof(GenericWrapper<SpecialKey>.GenericNested<string>)));
-        ITypeShape? shape = providerUnderTest.Provider.GetShape(typeof(Dictionary<SpecialKey, string>));
+        Assert.NotNull(providerUnderTest.Provider.GetTypeShape(typeof(GenericWrapper<SpecialKey>.GenericNested<string>)));
+        ITypeShape? shape = providerUnderTest.Provider.GetTypeShape(typeof(Dictionary<SpecialKey, string>));
         Assert.NotNull(shape);
         ITypeShape? associatedShape = shape.GetAssociatedTypeShape(typeof(GenericWrapper<>.GenericNested<>));
         Assert.NotNull(associatedShape);
@@ -281,7 +281,7 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
     public void GenericClassWithMarshallerAndAssociatedTypes_ReturnsExpectedShape()
     {
         // Regression test for https://github.com/eiriktsarpalis/PolyType/issues/239
-        ITypeShape? typeShape = providerUnderTest.Provider.GetShape(typeof(GenericClassWithMarshallerAndAssociatedTypes<(Guid, bool)>));
+        ITypeShape? typeShape = providerUnderTest.Provider.GetTypeShape(typeof(GenericClassWithMarshallerAndAssociatedTypes<(Guid, bool)>));
         Assert.IsType<ISurrogateTypeShape>(typeShape, exactMatch: false);
         ITypeShape? associatedShape = typeShape.GetAssociatedTypeShape(typeof(List<>));
         Assert.IsType<ITypeShape<List<(Guid, bool)>>>(associatedShape, exactMatch: false);
@@ -411,5 +411,5 @@ public abstract partial class AssociatedTypesTests(ProviderUnderTest providerUnd
 
     public sealed class Reflection() : AssociatedTypesTests(ReflectionProviderUnderTest.NoEmit, partialShapesSupported: false);
     public sealed class ReflectionEmit() : AssociatedTypesTests(ReflectionProviderUnderTest.Emit, partialShapesSupported: false);
-    public sealed class SourceGen() : AssociatedTypesTests(new SourceGenProviderUnderTest(Witness.ShapeProvider), partialShapesSupported: true);
+    public sealed class SourceGen() : AssociatedTypesTests(new SourceGenProviderUnderTest(Witness.GeneratedTypeShapeProvider), partialShapesSupported: true);
 }

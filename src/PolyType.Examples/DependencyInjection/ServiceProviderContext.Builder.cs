@@ -22,7 +22,7 @@ public sealed partial class ServiceProviderContext
                 if (descriptor.ImplementationType != typeof(T))
                 {
                     Debug.Assert(typeof(T).IsAssignableFrom(descriptor.ImplementationType));
-                    ITypeShape implShape = typeShape.Provider.Resolve(descriptor.ImplementationType);
+                    ITypeShape implShape = typeShape.Provider.GetTypeShape(descriptor.ImplementationType, throwIfMissing: true)!;
                     var otherFactory = (ServiceFactory)implShape.Invoke(this, state)!;
                     return otherFactory.Cast<T>(descriptor.Lifetime);
                 }

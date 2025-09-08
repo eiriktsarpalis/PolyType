@@ -23,7 +23,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         Assert.Equal(typeof(T).IsTupleType() && testCase is { UsesMarshaler: false, IsUnion: false }, shape is IObjectTypeShape { IsTupleType: true });
 
         Assert.Same(providerUnderTest.Provider, shape.Provider);
-        Assert.Same(shape, shape.Provider.GetShape(shape.Type));
+        Assert.Same(shape, shape.Provider.GetTypeShape(shape.Type));
 
         TypeShapeKind expectedKind = GetExpectedTypeKind(testCase);
         Assert.Equal(expectedKind, shape.Kind);
@@ -346,11 +346,11 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             int i = 0;
             foreach (IUnionCaseShape unionCase in unionShape.UnionCases)
             {
-                Assert.True(typeof(T).IsAssignableFrom(unionCase.Type.Type));
+                Assert.True(typeof(T).IsAssignableFrom(unionCase.UnionCaseType.Type));
                 Assert.NotNull(unionCase.Name);
                 Assert.Equal(i++, unionCase.Index);
 
-                DerivedTypeShapeAttribute? attribute = attributes.FirstOrDefault(a => NormalizeType(a.Type) == NormalizeType(unionCase.Type.Type));
+                DerivedTypeShapeAttribute? attribute = attributes.FirstOrDefault(a => NormalizeType(a.Type) == NormalizeType(unionCase.UnionCaseType.Type));
                 Assert.Equal(attribute is not null && attribute.Tag != -1, unionCase.IsTagSpecified);
 
                 static Type NormalizeType(Type type) => type.IsGenericType ? type.GetGenericTypeDefinition() : type;
@@ -364,7 +364,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                 if (index >= 0)
                 {
                     var matchingCase = unionShape.UnionCases[index];
-                    Assert.True(matchingCase.Type.Type.IsAssignableFrom(value!.GetType()));
+                    Assert.True(matchingCase.UnionCaseType.Type.IsAssignableFrom(value!.GetType()));
                 }
             }
         }
@@ -1090,7 +1090,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
     [InlineData(typeof(InterfaceWithMethodShapes), 7, typeof(ClassWithMethodShapes))]
     public async Task MethodShapeInvoker(Type declaringType, int expectedMethodCount, Type? implementationType = null)
     {
-        ITypeShape shape = providerUnderTest.Provider.Resolve(declaringType);
+        ITypeShape shape = providerUnderTest.Provider.GetTypeShape(declaringType, throwIfMissing: true)!;
         InterfaceWithMethodShapes instance = (InterfaceWithMethodShapes)Activator.CreateInstance(implementationType ?? declaringType)!;
         var invokerBuilder = new MethodShapeInvokerBuilder();
         Assert.Equal(expectedMethodCount, shape.Methods.Count);
@@ -1394,7 +1394,7 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
     [InlineData(typeof(ClassWithSurrogateKind))]
     public void TypesWithInvalidTypeShapeKindAnnotations_ThrowsNotSupportedException(Type type)
     {
-        NotSupportedException ex = Assert.Throws<NotSupportedException>(() => Provider.GetShape(type));
+        NotSupportedException ex = Assert.Throws<NotSupportedException>(() => Provider.GetTypeShape(type));
         Assert.Contains("TypeShapeKind", ex.Message);
     }
 
@@ -1428,7 +1428,7 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
     [InlineData(typeof(ClassWithConflictingMarshalers))]
     public void ClassWithInvalidMarshalers_ThrowsInvalidOperationException(Type type)
     {
-        var ex = Assert.Throws<InvalidOperationException>(() => Provider.GetShape(type));
+        var ex = Assert.Throws<InvalidOperationException>(() => Provider.GetTypeShape(type));
         Assert.Contains("surrogate", ex.Message);
     }
 
@@ -1465,7 +1465,7 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
     [InlineData(typeof(PolymorphicClassWithInvalidDerivedType_ConflictingTags), "42")]
     public void PolymorphicClassWithInvalidDerivedType_ThrowsInvalidOperationException(Type type, string invalidValue)
     {
-        var ex = Assert.Throws<InvalidOperationException>(() => Provider.GetShape(type));
+        var ex = Assert.Throws<InvalidOperationException>(() => Provider.GetTypeShape(type));
         Assert.Contains(invalidValue, ex.Message);
     }
 
@@ -1500,7 +1500,7 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
     [InlineData(typeof(GenericPolymorphicClassWithMismatchingGenericDerivedType<int>), "Derived")]
     public void PolymorphicClassWithGenericDerivedType_ThrowsInvalidOperationException(Type type, string derivedTypeName)
     {
-        var ex = Assert.Throws<InvalidOperationException>(() => Provider.GetShape(type));
+        var ex = Assert.Throws<InvalidOperationException>(() => Provider.GetTypeShape(type));
         Assert.Contains(derivedTypeName, ex.Message);
     }
 
@@ -1522,18 +1522,18 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
     [Fact]
     public void WitnessType_ShapeProvider_IsSingleton()
     {
-        ITypeShapeProvider provider = Witness.ShapeProvider;
+        ITypeShapeProvider provider = Witness.GeneratedTypeShapeProvider;
 
         Assert.NotNull(provider);
-        Assert.Same(provider, Witness.ShapeProvider);
+        Assert.Same(provider, Witness.GeneratedTypeShapeProvider);
     }
 
     [Theory]
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
     public void WitnessType_ShapeProvider_MatchesGeneratedShapes(ITestCase testCase)
     {
-        Assert.Same(Witness.ShapeProvider, testCase.DefaultShape.Provider);
-        Assert.Same(testCase.DefaultShape, Witness.ShapeProvider.GetShape(testCase.Type));
+        Assert.Same(Witness.GeneratedTypeShapeProvider, testCase.DefaultShape.Provider);
+        Assert.Same(testCase.DefaultShape, Witness.GeneratedTypeShapeProvider.GetTypeShape(testCase.Type));
     }
 
 #if NET8_0_OR_GREATER
@@ -1542,9 +1542,9 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
     public void IShapeableOfT_ReturnsExpectedSingleton<T, TProvider>(TestCase<T, TProvider> testCase)
         where TProvider : IShapeable<T>
     {
-        Assert.Same(TProvider.GetShape(), TProvider.GetShape());
-        Assert.Same(testCase.DefaultShape, TProvider.GetShape());
-        Assert.Same(Provider.GetShape(typeof(T)), TProvider.GetShape());
+        Assert.Same(TProvider.GetTypeShape(), TProvider.GetTypeShape());
+        Assert.Same(testCase.DefaultShape, TProvider.GetTypeShape());
+        Assert.Same(Provider.GetTypeShape(typeof(T)), TProvider.GetTypeShape());
     }
 #endif
 
@@ -1564,7 +1564,7 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
         Assert.Same(result1, result2);
         Assert.Same(testCase.DefaultShape, result1);
 #if NET
-        Assert.Same(TProvider.GetShape(), result1);
+        Assert.Same(TProvider.GetTypeShape(), result1);
 #endif
     }
 
@@ -1581,20 +1581,20 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
     [Fact]
     public void GenerateShape_CanConfigureMarshaler()
     {
-        ITypeShape<ClassWithMarshaler> typeShape = LocalWitness.ShapeProvider.Resolve<ClassWithMarshaler>();
+        ITypeShape<ClassWithMarshaler> typeShape = LocalWitness.GeneratedTypeShapeProvider.GetTypeShape<ClassWithMarshaler>(throwIfMissing: true)!;
         var surrogateShape = Assert.IsType<ISurrogateTypeShape<ClassWithMarshaler, int>>(typeShape, exactMatch: false);
         Assert.Equal(TypeShapeKind.Surrogate, typeShape.Kind);
         Assert.IsType<ClassWithMarshaler.Marshaler>(surrogateShape.Marshaler);
 
         // Because we're configuring through GenerateShape, this does not flow through to the reflection provider.
-        ITypeShape reflectionShape = ReflectionTypeShapeProvider.Default.Resolve<ClassWithMarshaler>();
+        ITypeShape reflectionShape = ReflectionTypeShapeProvider.Default.GetTypeShape<ClassWithMarshaler>(throwIfMissing: true)!;
         Assert.NotEqual(TypeShapeKind.Surrogate, reflectionShape.Kind);
     }
 
     [Fact]
     public void GenerateShape_CanConfigureMethods()
     {
-        ITypeShape<ClassWithMethod> typeShape = LocalWitness.ShapeProvider.Resolve<ClassWithMethod>();
+        ITypeShape<ClassWithMethod> typeShape = LocalWitness.GeneratedTypeShapeProvider.GetTypeShape<ClassWithMethod>(throwIfMissing: true)!;
         var method = Assert.Single(typeShape.Methods);
         Assert.Equal("Add", method.Name);
     }
@@ -1602,7 +1602,7 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
     [Fact]
     public void GenerateShape_CanConfigureKind()
     {
-        ITypeShape<ClassWithTrivialShape> typeShape = LocalWitness.ShapeProvider.Resolve<ClassWithTrivialShape>();
+        ITypeShape<ClassWithTrivialShape> typeShape = LocalWitness.GeneratedTypeShapeProvider.GetTypeShape<ClassWithTrivialShape>(throwIfMissing: true)!;
         var objectShape = Assert.IsType<IObjectTypeShape<ClassWithTrivialShape>>(typeShape, exactMatch: false);
         Assert.Empty(objectShape.Properties);
         Assert.Null(objectShape.Constructor);
@@ -1611,20 +1611,20 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
     [Fact]
     public void GenerateShapeFor_CanConfigureMarshaler()
     {
-        ITypeShape<ClassWithMarshalerExternal> typeShape = LocalWitness.ShapeProvider.Resolve<ClassWithMarshalerExternal>();
+        ITypeShape<ClassWithMarshalerExternal> typeShape = LocalWitness.GeneratedTypeShapeProvider.GetTypeShape<ClassWithMarshalerExternal>(throwIfMissing: true)!;
         var surrogateShape = Assert.IsType<ISurrogateTypeShape<ClassWithMarshalerExternal, int>>(typeShape, exactMatch: false);
         Assert.Equal(TypeShapeKind.Surrogate, typeShape.Kind);
         Assert.IsType<ClassWithMarshalerExternal.Marshaler>(surrogateShape.Marshaler);
 
         // Because we're configuring through GenerateShapeFor, this does not flow through to the reflection provider.
-        ITypeShape reflectionShape = ReflectionTypeShapeProvider.Default.Resolve<ClassWithMarshalerExternal>();
+        ITypeShape reflectionShape = ReflectionTypeShapeProvider.Default.GetTypeShape<ClassWithMarshalerExternal>(throwIfMissing: true)!;
         Assert.NotEqual(TypeShapeKind.Surrogate, reflectionShape.Kind);
     }
 
     [Fact]
     public void GenerateShapeFor_CanConfigureMethods()
     {
-        ITypeShape<ClassWithMethodExternal> typeShape = LocalWitness.ShapeProvider.Resolve<ClassWithMethodExternal>();
+        ITypeShape<ClassWithMethodExternal> typeShape = LocalWitness.GeneratedTypeShapeProvider.GetTypeShape<ClassWithMethodExternal>(throwIfMissing: true)!;
         var method = Assert.Single(typeShape.Methods);
         Assert.Equal("Add", method.Name);
     }
@@ -1632,7 +1632,7 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
     [Fact]
     public void GenerateShapeFor_CanConfigureKind()
     {
-        ITypeShape<ClassWithTrivialShapeExternal> typeShape = LocalWitness.ShapeProvider.Resolve<ClassWithTrivialShapeExternal>();
+        ITypeShape<ClassWithTrivialShapeExternal> typeShape = LocalWitness.GeneratedTypeShapeProvider.GetTypeShape<ClassWithTrivialShapeExternal>(throwIfMissing: true)!;
         var objectShape = Assert.IsType<IObjectTypeShape<ClassWithTrivialShapeExternal>>(typeShape, exactMatch: false);
         Assert.Empty(objectShape.Properties);
         Assert.Null(objectShape.Constructor);

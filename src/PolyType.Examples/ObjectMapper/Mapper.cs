@@ -50,17 +50,17 @@ public static partial class Mapper
     /// </summary>
     /// <typeparam name="TSource">The type to map from.</typeparam>
     /// <typeparam name="TTarget">The type to map to.</typeparam>
-    /// <param name="shapeProvider">The PolyType provider.</param>
+    /// <param name="typeShapeProvider">The PolyType provider.</param>
     /// <returns>A mapper delegate.</returns>
-    public static Mapper<TSource, TTarget> Create<TSource, TTarget>(ITypeShapeProvider shapeProvider)
+    public static Mapper<TSource, TTarget> Create<TSource, TTarget>(ITypeShapeProvider typeShapeProvider)
     {
-        TypeCache providerScopedTypeCache = s_cache.GetScopedCache(shapeProvider);
+        TypeCache providerScopedTypeCache = s_cache.GetScopedCache(typeShapeProvider);
         if (providerScopedTypeCache.TryGetValue(typeof(Mapper<TSource, TTarget>), out object? result))
         {
             return (Mapper<TSource, TTarget>)result!;
         }
 
-        ITypeShape mapperShape = new MapperShape<TSource, TTarget>(shapeProvider.Resolve<TSource>(), shapeProvider.Resolve<TTarget>());
+        ITypeShape mapperShape = new MapperShape<TSource, TTarget>(typeShapeProvider.GetTypeShape<TSource>(throwIfMissing: true)!, typeShapeProvider.GetTypeShape<TTarget>(throwIfMissing: true)!);
         return (Mapper<TSource, TTarget>)providerScopedTypeCache.GetOrAdd(mapperShape)!;
     }
 
@@ -82,7 +82,7 @@ public static partial class Mapper
         where TSource : IShapeable<TSource>
         where TTarget : IShapeable<TTarget>
     {
-        public static Mapper<TSource, TTarget> Value => s_value ??= Create(TSource.GetShape(), TTarget.GetShape());
+        public static Mapper<TSource, TTarget> Value => s_value ??= Create(TSource.GetTypeShape(), TTarget.GetTypeShape());
         private static Mapper<TSource, TTarget>? s_value;
     }
 #endif
