@@ -20,7 +20,7 @@ internal sealed class ReflectionDelegateTypeShape<TDelegate, TArgumentState, TRe
     public bool IsAsync => methodShapeInfo.IsAsync;
     public IReadOnlyList<IParameterShape> Parameters => _parameters ?? CommonHelpers.ExchangeIfNull(ref _parameters, GetParameters().AsReadOnlyList());
     public override TypeShapeKind Kind => TypeShapeKind.Function;
-    public ITypeShape<TResult> ReturnType => Provider.GetShape<TResult>();
+    public ITypeShape<TResult> ReturnType => Provider.GetTypeShape<TResult>();
     ITypeShape IFunctionTypeShape.ReturnType => ReturnType;
 
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitFunction(this, state);

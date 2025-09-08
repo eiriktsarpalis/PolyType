@@ -34,7 +34,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
 
     public sealed override TypeShapeKind Kind => TypeShapeKind.Enumerable;
     public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnumerable(this, state);
-    public ITypeShape<TElement> ElementType => Provider.GetShape<TElement>();
+    public ITypeShape<TElement> ElementType => Provider.GetTypeShape<TElement>();
     ITypeShape IEnumerableTypeShape.ElementType => ElementType;
 
     public virtual EnumerableAppender<TEnumerable, TElement> GetAppender()

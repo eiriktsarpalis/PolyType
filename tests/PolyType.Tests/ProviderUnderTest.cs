@@ -42,7 +42,7 @@ public enum ProviderKind
 
 public sealed class SourceGenProviderUnderTest(SourceGenTypeShapeProvider sourceGenProvider) : ProviderUnderTest
 {
-    public static SourceGenProviderUnderTest Default { get; } = new(Witness.ShapeProvider);
+    public static SourceGenProviderUnderTest Default { get; } = new(Witness.GeneratedTypeShapeProvider);
 
     public override ProviderKind Kind => ProviderKind.SourceGen;
     public override bool ResolvesNullableAnnotations => true;
@@ -60,5 +60,5 @@ public sealed class ReflectionProviderUnderTest(ReflectionTypeShapeProviderOptio
     public override ITypeShapeProvider Provider { get; } = ReflectionTypeShapeProvider.Create(options);
     public override ProviderKind Kind => options.UseReflectionEmit ? ProviderKind.ReflectionEmit : ProviderKind.ReflectionNoEmit;
     public override bool ResolvesNullableAnnotations => ReflectionHelpers.IsNullabilityInfoContextSupported;
-    public override ITypeShape ResolveShape(ITestCase testCase) => Provider.Resolve(testCase.Type);
+    public override ITypeShape ResolveShape(ITestCase testCase) => Provider.GetTypeShape(testCase.Type, throwIfMissing: true)!;
 }

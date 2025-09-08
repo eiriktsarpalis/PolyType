@@ -43,10 +43,10 @@ public static partial class XmlSerializer
     /// Builds an <see cref="XmlConverter{T}"/> instance from the specified shape provider.
     /// </summary>
     /// <typeparam name="T">The type for which to build the converter.</typeparam>
-    /// <param name="shapeProvider">The shape provider guiding converter construction.</param>
+    /// <param name="typeShapeProvider">The shape provider guiding converter construction.</param>
     /// <returns>An <see cref="XmlConverter{T}"/> instance.</returns>
-    public static XmlConverter<T> CreateConverter<T>(ITypeShapeProvider shapeProvider) =>
-        (XmlConverter<T>)s_converterCaches.GetOrAdd(typeof(T), shapeProvider)!;
+    public static XmlConverter<T> CreateConverter<T>(ITypeShapeProvider typeShapeProvider) =>
+        (XmlConverter<T>)s_converterCaches.GetOrAdd(typeof(T), typeShapeProvider)!;
 
     /// <summary>
     /// Serializes a value to an XML string using the provided converter.
@@ -133,7 +133,7 @@ public static partial class XmlSerializer
 
     private static class XmlSerializerCache<T, TProvider> where TProvider : IShapeable<T>
     {
-        public static XmlConverter<T> Value => s_value ??= CreateConverter(TProvider.GetShape());
+        public static XmlConverter<T> Value => s_value ??= CreateConverter(TProvider.GetTypeShape());
         private static XmlConverter<T>? s_value;
     }
 #endif

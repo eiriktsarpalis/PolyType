@@ -230,7 +230,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     private IDictionaryTypeShape<T, K, V> GetDictionaryShape<T, K, V>()
         where K : notnull
     {
-        var shape = (IDictionaryTypeShape<T, K, V>?)providerUnderTest.Provider.GetShape(typeof(T));
+        var shape = (IDictionaryTypeShape<T, K, V>?)providerUnderTest.Provider.GetTypeShape(typeof(T));
         Assert.NotNull(shape);
         return shape;
     }
@@ -320,7 +320,7 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
 
     private IEnumerableTypeShape<T, K> GetEnumerableShape<T, K>()
     {
-        var shape = (IEnumerableTypeShape<T, K>?)providerUnderTest.Provider.GetShape(typeof(T));
+        var shape = (IEnumerableTypeShape<T, K>?)providerUnderTest.Provider.GetTypeShape(typeof(T));
         Assert.NotNull(shape);
         return shape;
     }
@@ -609,5 +609,5 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
 
     public sealed class Reflection() : CollectionsWithComparersTests(ReflectionProviderUnderTest.NoEmit);
     public sealed class ReflectionEmit() : CollectionsWithComparersTests(ReflectionProviderUnderTest.Emit);
-    public sealed class SourceGen() : CollectionsWithComparersTests(new SourceGenProviderUnderTest(Witness.ShapeProvider));
+    public sealed class SourceGen() : CollectionsWithComparersTests(new SourceGenProviderUnderTest(Witness.GeneratedTypeShapeProvider));
 }

@@ -27,7 +27,7 @@ internal sealed class ReflectionParameterShape<TArgumentState, TParameter> : IPa
         _provider = provider;
     }
 
-    public ITypeShape<TParameter> ParameterType => _provider.GetShape<TParameter>();
+    public ITypeShape<TParameter> ParameterType => _provider.GetTypeShape<TParameter>();
 
     public int Position { get; }
     public string Name => _parameterInfo.Name;

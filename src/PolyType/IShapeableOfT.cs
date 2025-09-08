@@ -13,6 +13,6 @@ public interface IShapeable<T>
     /// Gets the PolyType instance corresponding to <typeparamref name="T"/>.
     /// </summary>
     /// <returns>The shape for <typeparamref name="T"/>.</returns>
-    static abstract ITypeShape<T> GetShape();
+    static abstract ITypeShape<T> GetTypeShape();
 }
 #endif

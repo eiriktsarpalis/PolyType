@@ -229,7 +229,7 @@ public static partial class JsonSerializerTS
 
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state)
         {
-            var caseConverter = (JsonConverter<TUnionCase>)unionCaseShape.Type.Accept(this)!;
+            var caseConverter = (JsonConverter<TUnionCase>)unionCaseShape.UnionCaseType.Accept(this)!;
             return new JsonUnionCaseConverter<TUnionCase, TUnion>(unionCaseShape.Name, unionCaseShape.Marshaler, caseConverter);
         }
 

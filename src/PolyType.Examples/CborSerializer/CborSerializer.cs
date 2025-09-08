@@ -33,10 +33,10 @@ public static partial class CborSerializer
     /// Builds an <see cref="CborConverter{T}"/> instance from the specified shape provider.
     /// </summary>
     /// <typeparam name="T">The type for which to build the converter.</typeparam>
-    /// <param name="shapeProvider">The shape provider converter construction.</param>
+    /// <param name="typeShapeProvider">The shape provider converter construction.</param>
     /// <returns>An <see cref="CborConverter{T}"/> instance.</returns>
-    public static CborConverter<T> CreateConverter<T>(ITypeShapeProvider shapeProvider) =>
-        (CborConverter<T>)s_converterCaches.GetOrAdd(typeof(T), shapeProvider)!;
+    public static CborConverter<T> CreateConverter<T>(ITypeShapeProvider typeShapeProvider) =>
+        (CborConverter<T>)s_converterCaches.GetOrAdd(typeof(T), typeShapeProvider)!;
 
     /// <summary>
     /// Builds a <see cref="JsonConverter"/> instance from the reflection-based shape provider.
@@ -196,7 +196,7 @@ public static partial class CborSerializer
 
     private static class CborSerializerCache<T, TProvider> where TProvider : IShapeable<T>
     {
-        public static CborConverter<T> Value => s_value ??= CreateConverter(TProvider.GetShape());
+        public static CborConverter<T> Value => s_value ??= CreateConverter(TProvider.GetTypeShape());
         private static CborConverter<T>? s_value;
     }
 #endif

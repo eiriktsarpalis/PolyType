@@ -15,5 +15,5 @@ public interface ITypeShapeProvider
     /// A <see cref="ITypeShape"/> instance corresponding to the current type,
     /// or <see langword="null" /> if a shape is not available.
     /// </returns>
-    ITypeShape? GetShape(Type type);
+    ITypeShape? GetTypeShape(Type type);
 }

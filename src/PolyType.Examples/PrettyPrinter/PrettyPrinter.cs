@@ -29,10 +29,10 @@ public static partial class PrettyPrinter
     /// Builds a <see cref="PrettyPrinter{T}"/> instance from the specified shape provider.
     /// </summary>
     /// <typeparam name="T">The type for which to build the printer.</typeparam>
-    /// <param name="shapeProvider">The shape provider guiding printer construction.</param>
+    /// <param name="typeShapeProvider">The shape provider guiding printer construction.</param>
     /// <returns>An <see cref="PrettyPrinter{T}"/> instance.</returns>
-    public static PrettyPrinter<T> Create<T>(ITypeShapeProvider shapeProvider)
-        => (PrettyPrinter<T>)s_cache.GetOrAdd(typeof(T), shapeProvider)!;
+    public static PrettyPrinter<T> Create<T>(ITypeShapeProvider typeShapeProvider)
+        => (PrettyPrinter<T>)s_cache.GetOrAdd(typeof(T), typeShapeProvider)!;
 
     /// <summary>
     /// Pretty prints the specified value to a string.
@@ -70,7 +70,7 @@ public static partial class PrettyPrinter
 
     private static class PrettyPrinterCache<T, TProvider> where TProvider : IShapeable<T>
     {
-        public static PrettyPrinter<T> Value => s_value ??= Create(TProvider.GetShape());
+        public static PrettyPrinter<T> Value => s_value ??= Create(TProvider.GetTypeShape());
         private static PrettyPrinter<T>? s_value;
     }
 #endif

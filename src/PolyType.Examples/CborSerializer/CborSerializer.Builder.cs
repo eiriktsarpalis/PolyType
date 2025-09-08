@@ -172,7 +172,7 @@ public static partial class CborSerializer
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state)
         {
             // NB: don't use the cached converter for TUnionCase, as it might equal TUnion.
-            var caseConverter = (CborConverter<TUnionCase>)unionCaseShape.Type.Invoke(this)!;
+            var caseConverter = (CborConverter<TUnionCase>)unionCaseShape.UnionCaseType.Invoke(this)!;
             return new CborUnionCaseConverter<TUnionCase, TUnion>(caseConverter, unionCaseShape.Marshaler);
         }
 

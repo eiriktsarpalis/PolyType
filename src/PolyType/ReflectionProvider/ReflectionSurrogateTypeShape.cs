@@ -14,6 +14,6 @@ internal sealed class ReflectionSurrogateTypeShape<T, TSurrogate>(
     public override TypeShapeKind Kind => TypeShapeKind.Surrogate;
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitSurrogate(this, state);
     public IMarshaler<T, TSurrogate> Marshaler => marshaler;
-    public ITypeShape<TSurrogate> SurrogateType => Provider.GetShape<TSurrogate>();
+    public ITypeShape<TSurrogate> SurrogateType => Provider.GetTypeShape<TSurrogate>();
     ITypeShape ISurrogateTypeShape.SurrogateType => SurrogateType;
 }

@@ -14,14 +14,5 @@ public abstract class SourceGenTypeShapeProvider : ITypeShapeProvider
     /// <returns>
     /// A <see cref="ITypeShape"/> instance corresponding to the current type.
     /// </returns>
-    public abstract ITypeShape? GetShape(Type type);
-
-    /// <summary>
-    /// Gets a <see cref="ITypeShape{T}"/> instance corresponding to the supplied type.
-    /// </summary>
-    /// <typeparam name="T">The type for which a shape is requested.</typeparam>
-    /// <returns>
-    /// A <see cref="ITypeShape{T}"/> instance corresponding to the current type.
-    /// </returns>
-    public ITypeShape<T>? GetShape<T>() => (ITypeShape<T>?)GetShape(typeof(T));
+    public abstract ITypeShape? GetTypeShape(Type type);
 }

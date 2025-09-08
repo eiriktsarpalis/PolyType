@@ -11,7 +11,7 @@ public partial class DependencyInjectionTests
         serviceCollection.Add<IFoo, FooImpl>();
         serviceCollection.Add<IBar, BarImpl>(ServiceLifetime.Scoped);
 
-        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.ShapeProvider_PolyType_Tests.Default);
+        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.TypeShapeProvider_PolyType_Tests.Default);
         using ServiceProvider provider = context.CreateScope();
 
         TestService testService = provider.GetRequiredService<TestService>();
@@ -35,7 +35,7 @@ public partial class DependencyInjectionTests
         serviceCollection.Add<IFoo, FooImpl>();
         serviceCollection.Add<IBar, BarImpl>(ServiceLifetime.Transient);
 
-        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.ShapeProvider_PolyType_Tests.Default);
+        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.TypeShapeProvider_PolyType_Tests.Default);
         using ServiceProvider provider = context.CreateScope();
 
         TestService testService = provider.GetRequiredService<TestService>();
@@ -59,7 +59,7 @@ public partial class DependencyInjectionTests
         serviceCollection.Add<IFoo, FooImpl>(ServiceLifetime.Scoped);
         serviceCollection.Add<IBar, BarImpl>(ServiceLifetime.Singleton);
 
-        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.ShapeProvider_PolyType_Tests.Default);
+        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.TypeShapeProvider_PolyType_Tests.Default);
         using ServiceProvider provider = context.CreateScope();
         TestService testService = provider.GetRequiredService<TestService>();
         Assert.IsType<FooImpl>(testService.Foo);
@@ -85,7 +85,7 @@ public partial class DependencyInjectionTests
         serviceCollection.Add<IBaz>(serviceProvider => new BazImpl(), ServiceLifetime.Transient);
         serviceCollection.Add<int>(42);
 
-        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.ShapeProvider_PolyType_Tests.Default);
+        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.TypeShapeProvider_PolyType_Tests.Default);
         using ServiceProvider provider = context.CreateScope();
         TestService testService = provider.GetRequiredService<TestService>();
         Assert.IsType<FooImpl>(testService.Foo);
@@ -108,7 +108,7 @@ public partial class DependencyInjectionTests
         serviceCollection.Add<IFoo, FooImpl>(ServiceLifetime.Scoped);
         serviceCollection.Add<IBaz>(serviceProvider => new BazImpl(), ServiceLifetime.Transient);
 
-        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.ShapeProvider_PolyType_Tests.Default);
+        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.TypeShapeProvider_PolyType_Tests.Default);
         using ServiceProvider provider = context.CreateScope();
 
         InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => provider.GetRequiredService<TestService>());
@@ -119,7 +119,7 @@ public partial class DependencyInjectionTests
     public void ServiceProvider_InstantiatesEmptyCollections()
     {
         ServiceCollection serviceCollection = new();
-        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.ShapeProvider_PolyType_Tests.Default);
+        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.TypeShapeProvider_PolyType_Tests.Default);
         using ServiceProvider provider = context.CreateScope();
 
         var service = provider.GetRequiredService<TestServiceWithCollections>();
@@ -134,7 +134,7 @@ public partial class DependencyInjectionTests
         serviceCollection.Add<IFoo, FooImpl>(ServiceLifetime.Scoped);
         serviceCollection.Add<IBar>(serviceProvider => new BarImpl { Value = serviceProvider.GetRequiredService<IFoo>().Value }, ServiceLifetime.Singleton);
 
-        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.ShapeProvider_PolyType_Tests.Default);
+        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.TypeShapeProvider_PolyType_Tests.Default);
 
         using ServiceProvider provider = context.CreateScope();
         TestService testService = provider.GetRequiredService<TestService>();
@@ -154,7 +154,7 @@ public partial class DependencyInjectionTests
         serviceCollection.Add(42);
         serviceCollection.Add<BinTree>();
 
-        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.ShapeProvider_PolyType_Tests.Default);
+        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.TypeShapeProvider_PolyType_Tests.Default);
         using ServiceProvider provider = context.CreateScope();
 
         InvalidOperationException ex;
@@ -169,7 +169,7 @@ public partial class DependencyInjectionTests
         ServiceCollection serviceCollection = new();
         serviceCollection.Add<IFoo>(_ => new FooImpl { Value = 42 });
 
-        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.ShapeProvider_PolyType_Tests.Default);
+        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.TypeShapeProvider_PolyType_Tests.Default);
         using ServiceProvider provider = context.CreateScope();
         var value = provider.GetRequiredService<ClassWithSurrogate>();
         Assert.Equal(42, value.Value);
@@ -181,7 +181,7 @@ public partial class DependencyInjectionTests
         ServiceCollection serviceCollection = new();
         serviceCollection.Add(42);
 
-        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.ShapeProvider_PolyType_Tests.Default);
+        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.TypeShapeProvider_PolyType_Tests.Default);
         using ServiceProvider provider = context.CreateScope();
         var value = provider.GetRequiredService<NullableValue>();
         Assert.Equal(42, value.Value);
@@ -193,7 +193,7 @@ public partial class DependencyInjectionTests
         ServiceCollection serviceCollection = new();
         serviceCollection.Add<IFoo, FooImpl>();
 
-        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.ShapeProvider_PolyType_Tests.Default);
+        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.TypeShapeProvider_PolyType_Tests.Default);
         using ServiceProvider provider = context.CreateScope();
 
         InvalidOperationException ex;
@@ -212,7 +212,7 @@ public partial class DependencyInjectionTests
         serviceCollection.Add<IFoo, DisposableFoo>();
         serviceCollection.Add<IBar, BarImpl>();
 
-        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.ShapeProvider_PolyType_Tests.Default);
+        using ServiceProviderContext context = serviceCollection.Build(PolyType.SourceGenerator.TypeShapeProvider_PolyType_Tests.Default);
         using (ServiceProvider provider = context.CreateScope())
         {
             TestService testService = provider.GetRequiredService<TestService>();

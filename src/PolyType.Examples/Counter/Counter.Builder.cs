@@ -132,7 +132,7 @@ public static partial class Counter
 
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCase, object? state = null)
         {
-            var underlyingCounter = (Func<TUnionCase, long>)unionCase.Type.Accept(this)!;
+            var underlyingCounter = (Func<TUnionCase, long>)unionCase.UnionCaseType.Accept(this)!;
             var marshaler = unionCase.Marshaler;
             return new Func<TUnion, long>(union => underlyingCounter(marshaler.Unmarshal(union)!));
         }

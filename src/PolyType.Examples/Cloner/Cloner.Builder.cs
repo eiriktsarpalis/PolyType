@@ -278,7 +278,7 @@ public static partial class Cloner
 
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
         {
-            var cloner = (Func<TUnionCase?, TUnionCase?>)unionCaseShape.Type.Invoke(this)!;
+            var cloner = (Func<TUnionCase?, TUnionCase?>)unionCaseShape.UnionCaseType.Invoke(this)!;
             var marshaler = unionCaseShape.Marshaler;
             return new Func<TUnion?, TUnion?>(t => marshaler.Marshal(cloner(marshaler.Unmarshal(t))));
         }

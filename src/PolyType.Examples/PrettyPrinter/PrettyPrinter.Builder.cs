@@ -241,7 +241,7 @@ public static partial class PrettyPrinter
 
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
         {
-            var underlying = (PrettyPrinter<TUnionCase>)unionCaseShape.Type.Accept(this)!;
+            var underlying = (PrettyPrinter<TUnionCase>)unionCaseShape.UnionCaseType.Accept(this)!;
             var marshaler = unionCaseShape.Marshaler;
             return new PrettyPrinter<TUnion>((sb, indentation, value) => underlying(sb, indentation, marshaler.Unmarshal(value)));
         }

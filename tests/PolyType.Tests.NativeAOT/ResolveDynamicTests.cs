@@ -30,9 +30,9 @@ public partial class ResolveDynamicTests
         // used by netstandard2.0 compilations.
         private sealed class Provider : ITypeShapeProvider
         {
-            public ITypeShape? GetShape(Type type) =>
+            public ITypeShape? GetTypeShape(Type type) =>
                 type == typeof(NetStandardPoco1) ?
-                PolyType.SourceGenerator.ShapeProvider_PolyType_Tests_NativeAOT.Default.NetStandardPoco1 :
+                PolyType.SourceGenerator.TypeShapeProvider_PolyType_Tests_NativeAOT.Default.NetStandardPoco1 :
                 null;
         }
     }
@@ -46,9 +46,9 @@ public partial class ResolveDynamicTests
         // used by netstandard2.0 compilations.
         private sealed class Provider : ITypeShapeProvider
         {
-            public ITypeShape? GetShape(Type type) =>
+            public ITypeShape? GetTypeShape(Type type) =>
                 type == typeof(NetStandardPoco2) ?
-                PolyType.SourceGenerator.ShapeProvider_PolyType_Tests_NativeAOT.Default.NetStandardPoco2 :
+                PolyType.SourceGenerator.TypeShapeProvider_PolyType_Tests_NativeAOT.Default.NetStandardPoco2 :
                 null;
         }
     }

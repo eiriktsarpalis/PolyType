@@ -14,7 +14,7 @@ internal sealed partial class SourceFormatter
         string? requiredParametersMaskFieldName = FormatRequiredParametersMaskFieldName(functionShapeModel);
 
         writer.WriteLine($$"""
-            private global::PolyType.Abstractions.ITypeShape<{{functionShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
+            private global::PolyType.ITypeShape<{{functionShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
             {
                 return new global::PolyType.SourceGenModel.SourceGenFunctionTypeShape<{{functionShapeModel.Type.FullyQualifiedName}}, {{functionArgumentStateFQN}}, {{functionShapeModel.ReturnType.FullyQualifiedName}}>
                 {

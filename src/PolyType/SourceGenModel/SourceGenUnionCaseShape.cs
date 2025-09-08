@@ -10,7 +10,7 @@ namespace PolyType.SourceGenModel;
 public sealed class SourceGenUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShape<TUnionCase, TUnion>
 {
     /// <inheritdoc/>
-    public required ITypeShape<TUnionCase> Type { get; init; }
+    public required ITypeShape<TUnionCase> UnionCaseType { get; init; }
 
     /// <inheritdoc/>
     public required IMarshaler<TUnionCase, TUnion> Marshaler { get; init; }
@@ -27,6 +27,6 @@ public sealed class SourceGenUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShap
     /// <inheritdoc/>
     public required int Index { get; init; }
 
-    ITypeShape IUnionCaseShape.Type => Type;
+    ITypeShape IUnionCaseShape.UnionCaseType => UnionCaseType;
     object? IUnionCaseShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitUnionCase(this, state);
 }

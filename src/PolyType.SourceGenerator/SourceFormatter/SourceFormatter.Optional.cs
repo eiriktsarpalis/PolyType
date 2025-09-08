@@ -13,7 +13,7 @@ internal sealed partial class SourceFormatter
         // Disable CS8622 to avoid a dependency on MaybeNullWhenAttribute in netfx
         writer.WriteLine("#pragma warning disable CS8622 // Nullability warning for out parameter mismatch", disableIndentation: true);
         writer.WriteLine($$"""
-            private global::PolyType.Abstractions.ITypeShape<{{optionalShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
+            private global::PolyType.ITypeShape<{{optionalShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
             {
                 return new global::PolyType.SourceGenModel.SourceGenOptionalTypeShape<{{optionalShapeModel.Type.FullyQualifiedName}}, {{optionalShapeModel.ElementType.FullyQualifiedName}}>
                 {

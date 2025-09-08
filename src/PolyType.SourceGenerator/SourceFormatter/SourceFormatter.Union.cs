@@ -14,7 +14,7 @@ internal sealed partial class SourceFormatter
         string? eventFactoryMethodName = CreateEventsFactoryName(unionShapeModel);
 
         writer.WriteLine($$"""
-            private global::PolyType.Abstractions.ITypeShape<{{unionShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
+            private global::PolyType.ITypeShape<{{unionShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
             {
                 return new global::PolyType.SourceGenModel.SourceGenUnionTypeShape<{{unionShapeModel.Type.FullyQualifiedName}}>
                 {
@@ -67,7 +67,7 @@ internal sealed partial class SourceFormatter
             writer.WriteLine($$"""
                 new global::PolyType.SourceGenModel.SourceGenUnionCaseShape<{{unionCase.Type.FullyQualifiedName}}, {{unionShapeModel.Type.FullyQualifiedName}}>
                 {
-                    Type = {{unionCaseType.SourceIdentifier}},
+                    UnionCaseType = {{unionCaseType.SourceIdentifier}},
                     Marshaler = global::PolyType.SourceGenModel.SubtypeMarshaler<{{unionCase.Type.FullyQualifiedName}}, {{unionShapeModel.Type.FullyQualifiedName}}>.Instance,
                     Name = {{FormatStringLiteral(unionCase.Name)}},
                     Tag = {{unionCase.Tag}},

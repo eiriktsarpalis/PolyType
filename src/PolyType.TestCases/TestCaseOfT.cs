@@ -11,7 +11,7 @@ namespace PolyType.Tests;
 /// <param name="Value">The value being tested.</param>
 public sealed record TestCase<T, TProvider>(T? Value) : TestCase<T>
 #if NET
-    (Value, TProvider.GetShape()) where TProvider : IShapeable<T>;
+    (Value, TProvider.GetTypeShape()) where TProvider : IShapeable<T>;
 #else
     (Value, TypeShapeResolver.ResolveDynamic<T, TProvider>(throwIfMissing: true)!);
 #endif
@@ -39,8 +39,8 @@ public record TestCase<T> : ITestCase
     /// Initializes a new instance of the <see cref="TestCase{T}"/> class.
     /// </summary>
     /// <param name="value">The value being tested.</param>
-    /// <param name="shapeProvider">The default type shape provider of the value, typically source generated.</param>
-    public TestCase(T? value, ITypeShapeProvider shapeProvider) : this(value, shapeProvider.Resolve<T>())
+    /// <param name="typeShapeProvider">The default type shape provider of the value, typically source generated.</param>
+    public TestCase(T? value, ITypeShapeProvider typeShapeProvider) : this(value, typeShapeProvider.GetTypeShape<T>(throwIfMissing: true)!)
     {
     }
 

@@ -1139,8 +1139,8 @@ public sealed partial class Parser : TypeDataModelGenerator
     private static TypeDeclarationModel CreateShapeProviderDeclaration(Compilation compilation)
     {
         string typeName = !string.IsNullOrWhiteSpace(compilation.AssemblyName)
-            ? "ShapeProvider_" + s_escapeAssemblyName.Replace(compilation.AssemblyName!, "_")
-            : "ShapeProvider_AnonAssembly";
+            ? "TypeShapeProvider_" + s_escapeAssemblyName.Replace(compilation.AssemblyName!, "_")
+            : "TypeShapeProvider_AnonAssembly";
 
         return new()
         {
@@ -1152,7 +1152,7 @@ public sealed partial class Parser : TypeDataModelGenerator
             },
             Name = typeName,
             Namespace = "PolyType.SourceGenerator",
-            SourceFilenamePrefix = "PolyType.SourceGenerator.ShapeProvider",
+            SourceFilenamePrefix = "PolyType.SourceGenerator.TypeShapeProvider",
             TypeDeclarationHeader = $"internal sealed partial class {typeName}",
             IsWitnessTypeDeclaration = false,
             ContainingTypes = [],

@@ -53,7 +53,7 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
     public string Name { get; }
     public ICustomAttributeProvider AttributeProvider { get; }
     public IObjectTypeShape<TDeclaringType> DeclaringType { get; }
-    public ITypeShape<TPropertyType> PropertyType => _provider.GetShape<TPropertyType>();
+    public ITypeShape<TPropertyType> PropertyType => _provider.GetTypeShape<TPropertyType>();
 
     public bool IsField { get; }
     public bool IsGetterPublic { get; }

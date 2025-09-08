@@ -49,11 +49,11 @@ public sealed class AggregatingTypeShapeProvider : ITypeShapeProvider
     public IReadOnlyList<ITypeShapeProvider> Providers => _providers;
 
     /// <inheritdoc/>
-    public ITypeShape? GetShape(Type type)
+    public ITypeShape? GetTypeShape(Type type)
     {
         for (int i = 0; i < _providers.Count; i++)
         {
-            if (_providers[i].GetShape(type) is ITypeShape shape)
+            if (_providers[i].GetTypeShape(type) is ITypeShape shape)
             {
                 return shape;
             }

@@ -27,10 +27,10 @@ public static partial class Cloner
     /// Builds a deep cloning delegate from the specified shape provider.
     /// </summary>
     /// <typeparam name="T">The type for which to build the cloner.</typeparam>
-    /// <param name="shapeProvider">The shape provider guiding cloner construction.</param>
+    /// <param name="typeShapeProvider">The shape provider guiding cloner construction.</param>
     /// <returns>A delegate for cloning instances of type <typeparamref name="T"/>.</returns>
-    public static Func<T?, T?> CreateCloner<T>(ITypeShapeProvider shapeProvider) =>
-        (Func<T?, T?>)s_clonerCache.GetOrAdd(typeof(T), shapeProvider)!;
+    public static Func<T?, T?> CreateCloner<T>(ITypeShapeProvider typeShapeProvider) =>
+        (Func<T?, T?>)s_clonerCache.GetOrAdd(typeof(T), typeShapeProvider)!;
 
 #if NET
     /// <summary>
@@ -54,7 +54,7 @@ public static partial class Cloner
 
     private static class ClonerCache<T, TProvider> where TProvider : IShapeable<T>
     {
-        public static Func<T?, T?> Value => s_value ??= CreateCloner(TProvider.GetShape());
+        public static Func<T?, T?> Value => s_value ??= CreateCloner(TProvider.GetTypeShape());
         private static Func<T?, T?>? s_value;
     }
 #endif

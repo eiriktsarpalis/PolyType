@@ -27,6 +27,6 @@ internal sealed class ReflectionNullableTypeShape<T>(ReflectionTypeShapeProvider
             return true;
         };
 
-    public ITypeShape<T> ElementType => Provider.GetShape<T>();
+    public ITypeShape<T> ElementType => Provider.GetTypeShape<T>();
     ITypeShape IOptionalTypeShape.ElementType => ElementType;
 }

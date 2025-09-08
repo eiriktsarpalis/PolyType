@@ -41,7 +41,7 @@ public interface IUnionCaseShape
     /// <summary>
     /// Gets the underlying type shape of the union case.
     /// </summary>
-    ITypeShape Type { get; }
+    ITypeShape UnionCaseType { get; }
 
     /// <summary>
     /// Accepts an <see cref="TypeShapeVisitor"/> for strongly-typed traversal.
@@ -63,7 +63,7 @@ public interface IUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShape
     /// <summary>
     /// Gets the underlying type shape of the union case.
     /// </summary>
-    new ITypeShape<TUnionCase> Type { get; }
+    new ITypeShape<TUnionCase> UnionCaseType { get; }
 
     /// <summary>
     /// Gets a bidirectional mapper between <typeparamref name="TUnionCase"/> and <typeparamref name="TUnion"/>.

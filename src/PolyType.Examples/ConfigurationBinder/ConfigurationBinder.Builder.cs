@@ -283,8 +283,8 @@ public static partial class ConfigurationBinderTS
 
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
         {
-            var caseBinder = (Func<IConfiguration, TUnion>)unionCaseShape.Type.Accept(this)!;
-            if (unionCaseShape.Type is IObjectTypeShape or IDictionaryTypeShape)
+            var caseBinder = (Func<IConfiguration, TUnion>)unionCaseShape.UnionCaseType.Accept(this)!;
+            if (unionCaseShape.UnionCaseType is IObjectTypeShape or IDictionaryTypeShape)
             {
                 return caseBinder;
             }
