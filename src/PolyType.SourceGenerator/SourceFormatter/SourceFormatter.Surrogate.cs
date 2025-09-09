@@ -9,6 +9,7 @@ internal sealed partial class SourceFormatter
     {
         string? methodFactoryMethodName = CreateMethodsFactoryName(surrogateShapeModel);
         string? eventFactoryMethodName = CreateEventsFactoryName(surrogateShapeModel);
+        string? associatedTypesFactoryMethodName = GetAssociatedTypesFactoryName(surrogateShapeModel);
 
         writer.WriteLine($$"""
             private global::PolyType.ITypeShape<{{surrogateShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
@@ -19,7 +20,7 @@ internal sealed partial class SourceFormatter
                     SurrogateType = {{GetShapeModel(surrogateShapeModel.SurrogateType).SourceIdentifier}},
                     CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
                     CreateEventsFunc = {{FormatNull(eventFactoryMethodName)}},
-                    AssociatedTypeShapes = {{FormatAssociatedTypeShapes(surrogateShapeModel)}},
+                    GetAssociatedTypeShapeFunc = {{FormatNull(associatedTypesFactoryMethodName)}},
                     Provider = this,
                 };
             }
@@ -35,6 +36,12 @@ internal sealed partial class SourceFormatter
         {
             writer.WriteLine();
             FormatEventsFactory(writer, eventFactoryMethodName, surrogateShapeModel);
+        }
+
+        if (associatedTypesFactoryMethodName is not null)
+        {
+            writer.WriteLine();
+            FormatAssociatedTypesFactory(writer, surrogateShapeModel, associatedTypesFactoryMethodName);
         }
     }
 }

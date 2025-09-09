@@ -12,6 +12,11 @@ public abstract record TypeShapeModel
     public required string SourceIdentifier { get; init; }
 
     /// <summary>
+    /// The type name as reported by the corresponding <see cref="Type.ToString()"/> method.
+    /// </summary>
+    public required string ReflectionName { get; init; }
+
+    /// <summary>
     /// The method shapes declared by the current type.
     /// </summary>
     public required ImmutableEquatableArray<MethodShapeModel> Methods { get; init; }

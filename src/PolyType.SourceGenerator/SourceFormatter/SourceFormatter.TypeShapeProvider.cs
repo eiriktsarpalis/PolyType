@@ -51,28 +51,47 @@ internal sealed partial class SourceFormatter
 
     private static void FormatGetShapeProviderMethod(TypeShapeProviderModel provider, SourceWriter writer)
     {
+        Debug.Assert(
+            provider.ProvidedTypes.Values.Select(t => t.ReflectionName).Distinct().Count() == provider.ProvidedTypes.Count, 
+            "The string-based type identifier should be unique to each generated type.");
+
         writer.WriteLine("""
             /// <inheritdoc/>
             public override global::PolyType.ITypeShape? GetTypeShape(global::System.Type type)
             {
+                // This method looks up type shapes from the entire transitive type graph
+                // being generated, as such in certain cases it can grow very large.
+                // In order to avoid performance issues associated loading all application
+                // types at once, perform a string-based lookup first before calling into
+                // a separate method returning the matching shape. The helper method guards
+                // the returned shape with a check against the literal type expression to aid
+                // trimmability of shapes of unused types.
+                switch (type?.ToString())
+                {
             """);
 
-        writer.Indentation++;
-
-        foreach (TypeShapeModel generatedType in provider.ProvidedTypes.Values)
+        writer.Indentation += 2;
+        foreach (TypeShapeModel typeModel in provider.ProvidedTypes.Values)
         {
             writer.WriteLine($$"""
-                if (type == typeof({{generatedType.Type.FullyQualifiedName}}))
+                case {{FormatStringLiteral(typeModel.ReflectionName)}}:
                 {
-                    return {{generatedType.SourceIdentifier}};
-                }
+                    return GetMatchingTypeShape(type);
 
+                    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+                    ITypeShape? GetMatchingTypeShape(System.Type type) =>
+                        type == typeof({{typeModel.Type.FullyQualifiedName}}) ? {{typeModel.SourceIdentifier}} : null;
+                }
                 """);
         }
 
-        writer.WriteLine("return null;");
-        writer.Indentation--;
-        writer.WriteLine('}');
+        writer.Indentation -= 2;
+        writer.WriteLine("""
+                    default:
+                        return null;
+                }
+            }
+            """);
     }
 
     private SourceText FormatGeneratedTypeMainFile(TypeDeclarationModel typeDeclaration)

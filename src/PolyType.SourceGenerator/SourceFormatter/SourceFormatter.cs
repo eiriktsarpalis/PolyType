@@ -203,22 +203,60 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
     private static string FormatComparerOptions(ImmutableEquatableArray<CollectionConstructorParameter> parameters)
         => $"global::PolyType.Abstractions.CollectionComparerOptions.{FormatOptionsComparerPropertyName(parameters) ?? "None"}";
 
-    private string FormatAssociatedTypeShapes(TypeShapeModel objectShapeModel)
+    private static string? GetAssociatedTypesFactoryName(TypeShapeModel typeShapeModel)
     {
-        if (objectShapeModel.AssociatedTypes.Count == 0)
-        {
-            return "null";
-        }
+        return typeShapeModel.AssociatedTypes.Count > 0 ? $"__GetAssociatedTypes_{typeShapeModel.SourceIdentifier}" : null;
+    }
 
-        StringBuilder builder = new();
-        builder.Append("static associatedType => associatedType switch { ");
+    private void FormatAssociatedTypesFactory(SourceWriter writer, TypeShapeModel objectShapeModel, string factoryName)
+    {
+        Debug.Assert(objectShapeModel.AssociatedTypes.Count > 0);
+
+        writer.WriteLine($$"""
+            private global::PolyType.ITypeShape? {{factoryName}}(global::System.Type associatedType)
+            {
+                switch (associatedType?.ToString())
+                {
+            """);
+
+        writer.Indentation += 2;
         foreach (AssociatedTypeId associatedType in objectShapeModel.AssociatedTypes)
         {
-            builder.Append($"\"{associatedType.Open}\" or \"{associatedType.Closed}\" => {provider.ProviderDeclaration.Id.FullyQualifiedName}.{ProviderSingletonProperty}.{GetShapeModel(associatedType.ClosedTypeId).SourceIdentifier}, ");
+            if (associatedType.OpenTypeInfo is { } openTypeInfo)
+            {
+                writer.WriteLine($$"""
+                    case {{FormatStringLiteral(openTypeInfo.ReflectionName)}}:
+                    case {{FormatStringLiteral(associatedType.ClosedTypeReflectionName)}}:
+                    {
+                        return GetMatchingAssociatedShape(associatedType);
+
+                        [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+                        global::PolyType.ITypeShape? GetMatchingAssociatedShape(global::System.Type type) =>
+                            type == typeof({{associatedType.ClosedTypeId.FullyQualifiedName}}) || type == typeof({{openTypeInfo.TypeId}}) ? {{GetShapeModel(associatedType.ClosedTypeId).SourceIdentifier}} : null;
+                    }
+                    """);
+            }
+            else
+            {
+                writer.WriteLine($$"""
+                case {{FormatStringLiteral(associatedType.ClosedTypeReflectionName)}}:
+                {
+                    return GetMatchingAssociatedShape(associatedType);
+
+                    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+                    global::PolyType.ITypeShape? GetMatchingAssociatedShape(global::System.Type type) =>
+                        type == typeof({{associatedType.ClosedTypeId.FullyQualifiedName}}) ? {{GetShapeModel(associatedType.ClosedTypeId).SourceIdentifier}} : null;
+                }
+                """);
+            }
         }
 
-        builder.Append("_ => null }");
-
-        return builder.ToString();
+        writer.Indentation -= 2;
+        writer.WriteLine("""
+                    default:
+                        return null;
+                }
+            }
+            """);
     }
 }

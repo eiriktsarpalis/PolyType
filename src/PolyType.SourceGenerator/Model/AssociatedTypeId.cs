@@ -5,4 +5,4 @@ using System.Text;
 
 namespace PolyType.SourceGenerator.Model;
 
-public record struct AssociatedTypeId(string Open, string Closed, string CSharpTypeName, TypeId ClosedTypeId);
+public record struct AssociatedTypeId(TypeId ClosedTypeId, string ClosedTypeReflectionName, (TypeId TypeId, string ReflectionName)? OpenTypeInfo);
