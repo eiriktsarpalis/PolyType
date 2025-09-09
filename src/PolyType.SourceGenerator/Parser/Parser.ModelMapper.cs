@@ -26,7 +26,7 @@ public sealed partial class Parser
             EnumDataModel enumModel => new EnumShapeModel
             {
                 Type = typeId,
-                ReflectionName = model.Type.GetReflectionName(),
+                ReflectionName = model.Type.GetReflectionToStringName(),
                 SourceIdentifier = sourceIdentifier,
                 UnderlyingType = CreateTypeId(enumModel.UnderlyingType),
                 AssociatedTypes = associatedTypes,
@@ -38,7 +38,7 @@ public sealed partial class Parser
             OptionalDataModel optionalModel => new OptionalShapeModel
             {
                 Type = typeId,
-                ReflectionName = model.Type.GetReflectionName(),
+                ReflectionName = model.Type.GetReflectionToStringName(),
                 Kind = optionalModel.Type switch
                 {
                     { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } => OptionalKind.NullableOfT,
@@ -56,7 +56,7 @@ public sealed partial class Parser
             SurrogateTypeDataModel surrogateModel => new SurrogateShapeModel
             {
                 Type = typeId,
-                ReflectionName = model.Type.GetReflectionName(),
+                ReflectionName = model.Type.GetReflectionToStringName(),
                 SourceIdentifier = sourceIdentifier,
                 SurrogateType = CreateTypeId(surrogateModel.SurrogateType),
                 MarshalerType = CreateTypeId(surrogateModel.MarshalerType),
@@ -68,7 +68,7 @@ public sealed partial class Parser
             EnumerableDataModel enumerableModel => new EnumerableShapeModel
             {
                 Type = typeId,
-                ReflectionName = model.Type.GetReflectionName(),
+                ReflectionName = model.Type.GetReflectionToStringName(),
                 SourceIdentifier = sourceIdentifier,
                 ElementType = CreateTypeId(enumerableModel.ElementType),
                 ConstructionStrategy = enumerableModel switch
@@ -107,7 +107,7 @@ public sealed partial class Parser
             DictionaryDataModel dictionaryModel => new DictionaryShapeModel
             {
                 Type = typeId,
-                ReflectionName = model.Type.GetReflectionName(),
+                ReflectionName = model.Type.GetReflectionToStringName(),
                 SourceIdentifier = sourceIdentifier,
                 KeyType = CreateTypeId(dictionaryModel.KeyType),
                 ValueType = CreateTypeId(dictionaryModel.ValueType),
@@ -144,7 +144,7 @@ public sealed partial class Parser
             {
                 Requirements = objectModel.Requirements,
                 Type = typeId,
-                ReflectionName = model.Type.GetReflectionName(),
+                ReflectionName = model.Type.GetReflectionToStringName(),
                 SourceIdentifier = sourceIdentifier,
                 Constructor = objectModel.Constructors
                     .Select(c => MapConstructor(objectModel, typeId, c, isFSharpUnionCase))
@@ -167,7 +167,7 @@ public sealed partial class Parser
             {
                 Requirements = TypeShapeRequirements.Full,
                 Type = typeId,
-                ReflectionName = model.Type.GetReflectionName(),
+                ReflectionName = model.Type.GetReflectionToStringName(),
                 SourceIdentifier = sourceIdentifier,
                 Constructor = MapTupleConstructor(typeId, tupleModel),
                 Methods = MapMethods(model, typeId),
@@ -185,7 +185,7 @@ public sealed partial class Parser
             FSharpUnionDataModel unionModel => new FSharpUnionShapeModel
             {
                 Type = typeId,
-                ReflectionName = model.Type.GetReflectionName(),
+                ReflectionName = model.Type.GetReflectionToStringName(),
                 SourceIdentifier = sourceIdentifier,
                 Methods = MapMethods(model, typeId),
                 Events = MapEvents(model, typeId),
@@ -199,7 +199,7 @@ public sealed partial class Parser
                 UnderlyingModel = new ObjectShapeModel
                 {
                     Requirements = TypeShapeRequirements.Full,
-                    ReflectionName = model.Type.GetReflectionName(),
+                    ReflectionName = model.Type.GetReflectionToStringName(),
                     Type = typeId,
                     Constructor = null,
                     Methods = MapMethods(model, typeId),
@@ -223,7 +223,7 @@ public sealed partial class Parser
             DelegateDataModel delegateModel => new FunctionShapeModel
             {
                 Type = typeId,
-                ReflectionName = model.Type.GetReflectionName(),
+                ReflectionName = model.Type.GetReflectionToStringName(),
                 SourceIdentifier = sourceIdentifier,
                 Methods = MapMethods(model, typeId),
                 Events = MapEvents(model, typeId),
@@ -248,7 +248,7 @@ public sealed partial class Parser
             {
                 Requirements = TypeShapeRequirements.Full,
                 Type = typeId,
-                ReflectionName = model.Type.GetReflectionName(),
+                ReflectionName = model.Type.GetReflectionToStringName(),
                 SourceIdentifier = sourceIdentifier,
                 Methods = MapMethods(model, typeId),
                 Events = MapEvents(model, typeId),
@@ -332,7 +332,7 @@ public sealed partial class Parser
         return new UnionShapeModel
         {
             Type = underlyingIncrementalModel.Type,
-            ReflectionName = model.Type.GetReflectionName(),
+            ReflectionName = model.Type.GetReflectionToStringName(),
             SourceIdentifier = underlyingIncrementalModel.SourceIdentifier,
             UnderlyingModel = underlyingIncrementalModel with
             {

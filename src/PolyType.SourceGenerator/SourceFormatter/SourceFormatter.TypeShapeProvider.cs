@@ -51,50 +51,37 @@ internal sealed partial class SourceFormatter
 
     private static void FormatGetShapeProviderMethod(TypeShapeProviderModel provider, SourceWriter writer)
     {
+        Debug.Assert(
+            provider.ProvidedTypes.Values.Select(t => t.ReflectionName).Distinct().Count() == provider.ProvidedTypes.Count, 
+            "The string-based type identifier should be unique to each generated type.");
+
         writer.WriteLine("""
             /// <inheritdoc/>
             public override global::PolyType.ITypeShape? GetTypeShape(global::System.Type type)
             {
-                // This method looks up type shapes from the full transitive type graph
-                // of the current assembly, as such it can occasionally grow very large.
-                // In order to avoid performance issues with loading all types at once,
-                // group types by their names and then call a helper method that performs
-                // exact type matching with inlining disabled.
-                switch (type?.Name)
+                // This method looks up type shapes from the entire transitive type graph
+                // being generated, as such in certain cases it can grow very large.
+                // In order to avoid performance issues associated loading all application
+                // types at once, perform a string-based lookup first before calling into
+                // a separate method returning the matching shape. The helper method guards
+                // the returned shape with a check against the literal type expression to aid
+                // trimmability of shapes of unused types.
+                switch (type?.ToString())
                 {
             """);
 
         writer.Indentation += 2;
-        foreach (var grouping in provider.ProvidedTypes.Values.GroupBy(t => t.ReflectionName).OrderBy(t => t.Key))
+        foreach (TypeShapeModel typeModel in provider.ProvidedTypes.Values)
         {
             writer.WriteLine($$"""
-                case {{FormatStringLiteral(grouping.Key)}}:
+                case {{FormatStringLiteral(typeModel.ReflectionName)}}:
                 {
-                    return MatchTypeGroup(type);
+                    return GetMatchingTypeShape(type);
 
                     [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-                    ITypeShape? MatchTypeGroup(System.Type type)
-                    {
-                """);
-
-            writer.Indentation += 2;
-            foreach (TypeShapeModel generatedType in grouping)
-            {
-                writer.WriteLine($$"""
-                    if (type == typeof({{generatedType.Type.FullyQualifiedName}}))
-                    {
-                        return {{generatedType.SourceIdentifier}};
-                    }
-
-                    """);
-            }
-
-            writer.Indentation -= 2;
-            writer.WriteLine("""
-                        return null;
-                    }
+                    ITypeShape? GetMatchingTypeShape(System.Type type) =>
+                        type == typeof({{typeModel.Type.FullyQualifiedName}}) ? {{typeModel.SourceIdentifier}} : null;
                 }
-
                 """);
         }
 

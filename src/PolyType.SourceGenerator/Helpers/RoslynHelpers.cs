@@ -27,21 +27,90 @@ internal static partial class RoslynHelpers
         method is { MethodKind: MethodKind.Constructor, IsStatic: false } ? method.ContainingType : method.ReturnType;
 
     /// <summary>
-    /// Returns the runtime <see cref="Type.Name"/> value of the specified type symbol.
+    /// Returns the runtime <see cref="Type.ToString()"/> value of the specified type symbol.
     /// </summary>
-    public static string GetReflectionName(this ITypeSymbol type)
+    public static string GetReflectionToStringName(this ITypeSymbol type)
     {
-        if (type is INamedTypeSymbol { TypeArguments: { Length: > 0 } args } namedType)
+        StringBuilder builder = new StringBuilder();
+        FormatType(type, builder);
+        return builder.ToString();
+
+        static void FormatType(ITypeSymbol type, StringBuilder builder)
         {
-            return $"{namedType.Name}`{args.Length}";
+            if (type is IArrayTypeSymbol arrayType)
+            {
+                FormatType(arrayType.ElementType, builder);
+                builder.Append('[');
+                builder.Append(',', arrayType.Rank - 1);
+                builder.Append(']');
+                return;
+            }
+
+            if (type is IPointerTypeSymbol pointerType)
+            {
+                FormatType(pointerType.PointedAtType, builder);
+                builder.Append('*');
+                return;
+            }
+
+            if (type is ITypeParameterSymbol typeParam)
+            {
+                builder.Append(typeParam.Name);
+                return;
+            }
+
+            Debug.Assert(type is INamedTypeSymbol);
+            List<ITypeSymbol>? aggregateGenericParams = null;
+            var namedType = (INamedTypeSymbol)type;
+            FormatNamedType(namedType, builder, ref aggregateGenericParams);
+
+            // Append the aggregate generic parameters for all nested types at the end.
+            if (aggregateGenericParams is not null)
+            {
+                builder.Append('[');
+                foreach (ITypeSymbol typeArg in aggregateGenericParams)
+                {
+                    FormatType(typeArg, builder);
+                    builder.Append(',');
+                }
+
+                builder.Length--; // remove last comma
+                builder.Append(']');
+            }
         }
 
-        if (type is IArrayTypeSymbol arrayType)
+        static void FormatNamedType(INamedTypeSymbol namedType, StringBuilder builder, ref List<ITypeSymbol>? aggregateGenericParams)
         {
-            return $"{arrayType.ElementType.GetReflectionName()}[{new string(',', arrayType.Rank - 1)}]";
+            if (namedType.ContainingType is { } containingType)
+            {
+                FormatNamedType(containingType, builder, ref aggregateGenericParams);
+                builder.Append('+');
+            }
+            else if (namedType.ContainingNamespace is { } namespaceSymbol)
+            {
+                FormatNamespace(namespaceSymbol, builder);
+                builder.Append('.');
+            }
+
+            builder.Append(namedType.Name);
+            if (namedType.TypeArguments.Length > 0)
+            {
+                builder.Append('`');
+                builder.Append(namedType.TypeArguments.Length);
+                (aggregateGenericParams ??= []).AddRange(namedType.TypeArguments);
+            }
         }
 
-        return type.Name;
+        static void FormatNamespace(INamespaceSymbol namespaceSymbol, StringBuilder builder)
+        {
+            if (namespaceSymbol.ContainingNamespace is { IsGlobalNamespace: false } parent)
+            {
+                FormatNamespace(parent, builder);
+                builder.Append('.');
+            }
+
+            builder.Append(namespaceSymbol.Name);
+        }
     }
 
     /// <summary>
