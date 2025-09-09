@@ -11,6 +11,7 @@ internal sealed partial class SourceFormatter
         string? constructorFactoryMethodName = objectShapeModel.Constructor != null ? $"__CreateConstructor_{objectShapeModel.SourceIdentifier}" : null;
         string? methodFactoryMethodName = CreateMethodsFactoryName(objectShapeModel);
         string? eventFactoryMethodName = CreateEventsFactoryName(objectShapeModel);
+        string? associatedTypesFactoryMethodName = GetAssociatedTypesFactoryName(objectShapeModel);
 
         writer.WriteLine($$"""
             private global::PolyType.ITypeShape<{{objectShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
@@ -23,7 +24,7 @@ internal sealed partial class SourceFormatter
                     CreateEventsFunc = {{FormatNull(eventFactoryMethodName)}},
                     IsRecordType = {{FormatBool(objectShapeModel.IsRecordType)}},
                     IsTupleType = {{FormatBool(objectShapeModel.IsTupleType)}},
-                    AssociatedTypeShapes = {{FormatAssociatedTypeShapes(objectShapeModel)}},
+                    GetAssociatedTypeShapeFunc = {{FormatNull(associatedTypesFactoryMethodName)}},
                     Provider = this,
                 };
             }
@@ -51,6 +52,12 @@ internal sealed partial class SourceFormatter
         {
             writer.WriteLine();
             FormatEventsFactory(writer, eventFactoryMethodName, objectShapeModel);
+        }
+
+        if (associatedTypesFactoryMethodName is not null)
+        {
+            writer.WriteLine();
+            FormatAssociatedTypesFactory(writer, objectShapeModel, associatedTypesFactoryMethodName);
         }
 
         FormatMemberAccessors(writer, objectShapeModel);

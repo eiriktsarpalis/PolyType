@@ -12,6 +12,7 @@ internal sealed partial class SourceFormatter
         string getUnionCaseIndexMethod = $"__GetUnionCaseIndex_{unionShapeModel.SourceIdentifier}";
         string? methodFactoryMethodName = CreateMethodsFactoryName(unionShapeModel);
         string? eventFactoryMethodName = CreateEventsFactoryName(unionShapeModel);
+        string? associatedTypesFactoryMethodName = GetAssociatedTypesFactoryName(unionShapeModel);
 
         writer.WriteLine($$"""
             private global::PolyType.ITypeShape<{{unionShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
@@ -23,7 +24,7 @@ internal sealed partial class SourceFormatter
                     GetUnionCaseIndexFunc = {{getUnionCaseIndexMethod}},
                     CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
                     CreateEventsFunc = {{FormatNull(eventFactoryMethodName)}},
-                    AssociatedTypeShapes = {{FormatAssociatedTypeShapes(unionShapeModel)}},
+                    GetAssociatedTypeShapeFunc = {{FormatNull(associatedTypesFactoryMethodName)}},
                     Provider = this,
                 };
             }
@@ -39,6 +40,12 @@ internal sealed partial class SourceFormatter
         {
             writer.WriteLine();
             FormatMethodsFactory(writer, methodFactoryMethodName, unionShapeModel);
+        }
+
+        if (eventFactoryMethodName is not null)
+        {
+            writer.WriteLine();
+            FormatEventsFactory(writer, eventFactoryMethodName, unionShapeModel);
         }
     }
 

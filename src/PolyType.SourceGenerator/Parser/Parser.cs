@@ -1041,78 +1041,13 @@ public sealed partial class Parser : TypeDataModelGenerator
 
     private AssociatedTypeId CreateAssociatedTypeId(INamedTypeSymbol open, INamedTypeSymbol closed)
     {
-        StringBuilder builder = new();
+        TypeId closedTypeId = CreateTypeId(closed);
+        string closedName = open.GetReflectionToStringName();
+        (TypeId, string)? openTypeInfo = !SymbolEqualityComparer.Default.Equals(open, closed)
+            ? (CreateTypeId(open), closed.GetReflectionToStringName())
+            : null;
 
-        ConstructStableName(open, builder);
-        string openName = builder.ToString();
-
-        string closedName;
-        if (SymbolEqualityComparer.Default.Equals(open, closed))
-        {
-            closedName = openName;
-        }
-        else
-        {
-            builder.Clear();
-            ConstructStableName(closed, builder);
-            closedName = builder.ToString();
-        }
-
-        return new AssociatedTypeId(openName, closedName, closed.GetFullyQualifiedName(), CreateTypeId(closed));
-
-        static void ConstructStableName(ITypeSymbol symbol, StringBuilder builder)
-        {
-            // The algorithm here must be kept in sync with SourceGenObjectTypeShape<T>.GetAssociatedTypeFactory.
-            if (symbol.ContainingType is not null)
-            {
-                ConstructStableName(symbol.ContainingType, builder);
-                builder.Append('+');
-            }
-            else if (symbol.ContainingNamespace is { IsGlobalNamespace: false })
-            {
-                ConstructStableNamespaceName(symbol.ContainingNamespace, builder);
-                builder.Append('.');
-            }
-
-            if (symbol is INamedTypeSymbol { IsGenericType: true } genericSymbol)
-            {
-                builder.Append(symbol.OriginalDefinition.Name);
-                builder.Append('<');
-                if (genericSymbol.IsUnboundGenericType)
-                {
-                    builder.Append(',', genericSymbol.TypeParameters.Length - 1);
-                }
-                else
-                {
-                    for (int i = 0; i < genericSymbol.TypeArguments.Length; i++)
-                    {
-                        if (i > 0)
-                        {
-                            builder.Append(',');
-                        }
-
-                        ConstructStableName(genericSymbol.TypeArguments[i], builder);
-                    }
-                }
-
-                builder.Append('>');
-            }
-            else
-            {
-                builder.Append(symbol.Name);
-            }
-        }
-
-        static void ConstructStableNamespaceName(INamespaceSymbol ns, StringBuilder builder)
-        {
-            if (ns.ContainingNamespace is { IsGlobalNamespace: false })
-            {
-                ConstructStableNamespaceName(ns.ContainingNamespace, builder);
-                builder.Append('.');
-            }
-
-            builder.Append(ns.Name);
-        }
+        return new AssociatedTypeId(closedTypeId, closedName, openTypeInfo);
     }
 
     private TypeId CreateTypeId(ITypeSymbol type)

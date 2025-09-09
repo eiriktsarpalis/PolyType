@@ -1,7 +1,7 @@
 ﻿using PolyType.Abstractions;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Text;
 
 namespace PolyType.SourceGenModel;
 
@@ -31,9 +31,9 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
     public Func<IEnumerable<IEventShape>>? CreateEventsFunc { get; init; }
 
     /// <summary>
-    /// Gets the shape of an associated type, by its name.
+    /// Gets the function that looks up associated type shapes by type.
     /// </summary>
-    public Func<string, ITypeShape?>? AssociatedTypeShapes { get; init; }
+    public Func<Type, ITypeShape?>? GetAssociatedTypeShapeFunc { get; init; }
 
     /// <inheritdoc/>
     public abstract object? Accept(TypeShapeVisitor visitor, object? state = null);
@@ -55,62 +55,20 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
 
     ITypeShape? ITypeShape.GetAssociatedTypeShape(Type associatedType)
     {
+        if (associatedType is null)
+        {
+            ThrowArgumentNull();
+            [DoesNotReturn]
+            static void ThrowArgumentNull() => throw new ArgumentNullException(nameof(associatedType));
+        }
+
         if (associatedType.IsGenericTypeDefinition && typeof(T).GenericTypeArguments.Length != associatedType.GetTypeInfo().GenericTypeParameters.Length)
         {
-            throw new ArgumentException("Type is not a generic type definition or does not have an equal count of generic type parameters with this type shape.");
+            ThrowArgumentException();
+            [DoesNotReturn]
+            static void ThrowArgumentException() => throw new ArgumentException("Type is not a generic type definition or does not have an equal count of generic type parameters with this type shape.", nameof(associatedType));
         }
 
-        StringBuilder builder = new();
-        ConstructStableName(associatedType, builder);
-        return AssociatedTypeShapes?.Invoke(builder.ToString());
-    }
-
-    private static void ConstructStableName(Type type, StringBuilder builder)
-    {
-        // The string created here must match the string created in the source generator (Parser.CreateAssociatedTypeId).
-        if (type.DeclaringType is not null)
-        {
-            ConstructStableName(type.DeclaringType, builder);
-            builder.Append('+');
-        }
-        else if (!string.IsNullOrEmpty(type.Namespace))
-        {
-            builder.Append(type.Namespace);
-            builder.Append('.');
-        }
-
-        if (type.IsGenericType)
-        {
-            string nameNoArity = type.Name[..type.Name.IndexOf('`')];
-            builder.Append(nameNoArity);
-            builder.Append('<');
-            if (type.IsGenericTypeDefinition)
-            {
-                builder.Append(',', GetOwnGenericTypeParameterCount(type) - 1);
-            }
-            else
-            {
-                for (int i = 0; i < type.GenericTypeArguments.Length; i++)
-                {
-                    if (i > 0)
-                    {
-                        builder.Append(',');
-                    }
-
-                    ConstructStableName(type.GenericTypeArguments[i], builder);
-                }
-            }
-
-            builder.Append('>');
-        }
-        else
-        {
-            builder.Append(type.Name);
-        }
-
-        static int GetOwnGenericTypeParameterCount(Type type)
-            => type.DeclaringType?.IsGenericType is true
-                ? type.GetTypeInfo().GenericTypeParameters.Length - type.DeclaringType.GetTypeInfo().GenericTypeParameters.Length
-                : type.GetTypeInfo().GenericTypeParameters.Length;
+        return GetAssociatedTypeShapeFunc?.Invoke(associatedType);
     }
 }
