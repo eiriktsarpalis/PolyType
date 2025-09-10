@@ -684,7 +684,7 @@ public static partial class CompilationTests
             #if NET
             shape = TypeShapeResolver.Resolve<MyPoco, Witness>();
             #endif
-            shape = TypeShapeResolver.ResolveDynamic<MyPoco, Witness>(throwIfMissing: true)!;
+            shape = TypeShapeResolver.ResolveDynamicOrThrow<MyPoco, Witness>();
             shape = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<MyPoco>();
 
             record MyPoco(string[] Values);

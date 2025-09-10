@@ -13,7 +13,7 @@ public sealed record TestCase<T, TProvider>(T? Value) : TestCase<T>
 #if NET
     (Value, TProvider.GetTypeShape()) where TProvider : IShapeable<T>;
 #else
-    (Value, TypeShapeResolver.ResolveDynamic<T, TProvider>(throwIfMissing: true)!);
+    (Value, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>());
 #endif
 
 /// <summary>
