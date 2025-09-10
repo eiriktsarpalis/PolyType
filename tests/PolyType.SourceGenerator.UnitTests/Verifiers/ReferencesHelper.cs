@@ -6,7 +6,7 @@ namespace PolyType.SourceGenerator.UnitTests;
 
 internal class ReferencesHelper
 {
-#if NET9_0
+#if NET9_0_OR_GREATER
 	internal static ReferenceAssemblies References = ReferenceAssemblies.Net.Net90;
 #elif NET8_0
     internal static ReferenceAssemblies References = ReferenceAssemblies.Net.Net80;
