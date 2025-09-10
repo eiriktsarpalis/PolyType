@@ -60,5 +60,5 @@ public sealed class ReflectionProviderUnderTest(ReflectionTypeShapeProviderOptio
     public override ITypeShapeProvider Provider { get; } = ReflectionTypeShapeProvider.Create(options);
     public override ProviderKind Kind => options.UseReflectionEmit ? ProviderKind.ReflectionEmit : ProviderKind.ReflectionNoEmit;
     public override bool ResolvesNullableAnnotations => ReflectionHelpers.IsNullabilityInfoContextSupported;
-    public override ITypeShape ResolveShape(ITestCase testCase) => Provider.GetTypeShape(testCase.Type, throwIfMissing: true)!;
+    public override ITypeShape ResolveShape(ITestCase testCase) => Provider.GetTypeShapeOrThrow(testCase.Type);
 }

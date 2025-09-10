@@ -48,7 +48,7 @@ public static class CacheTests
     [Fact]
     public static void TypeGenerationContext_TryGetValue()
     {
-        ITypeShape<int> key = Witness.GeneratedTypeShapeProvider.GetTypeShape<int>(throwIfMissing: true)!;
+        ITypeShape<int> key = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<int>();
         TypeGenerationContext context = new();
 
         Assert.DoesNotContain(typeof(int), context);
@@ -71,7 +71,7 @@ public static class CacheTests
     [Fact]
     public static void TypeGenerationContext_TryGetValue_DelayedValueFactory()
     {
-        ITypeShape<int> key = Witness.GeneratedTypeShapeProvider.GetTypeShape<int>(throwIfMissing: true)!;
+        ITypeShape<int> key = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<int>();
         TestDelayedValueFactory factory = new();
         TypeGenerationContext context = new() { DelayedValueFactory = factory };
 
@@ -195,7 +195,7 @@ public static class CacheTests
         Assert.Empty(cache);
 
         // Register an incomplete value in the cache.
-        ITypeShape<int> key = Witness.GeneratedTypeShapeProvider.GetTypeShape<int>(throwIfMissing: true)!;
+        ITypeShape<int> key = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<int>();
         Assert.False(generationContext.TryGetValue(key, out object? result));
         Assert.Null(result);
         Assert.Throws<InvalidOperationException>(() => generationContext.TryCommitResults());
@@ -248,7 +248,7 @@ public static class CacheTests
     {
         TypeCache cache = new(Witness.GeneratedTypeShapeProvider) { ValueBuilderFactory = _ => new IdBuilderFactory() };
         TypeGenerationContext generationContext = cache.CreateGenerationContext();
-        ITypeShape<int> shapeFromOtherProvider = ReflectionTypeShapeProvider.Default.GetTypeShape<int>(throwIfMissing: true)!;
+        ITypeShape<int> shapeFromOtherProvider = ReflectionTypeShapeProvider.Default.GetTypeShapeOrThrow<int>();
         Assert.NotNull(generationContext.ValueBuilder);
 
         Assert.Throws<ArgumentNullException>(() => generationContext.TryGetValue<int>(null!, out _));
@@ -265,7 +265,7 @@ public static class CacheTests
     {
         TypeCache cache = new(Witness.GeneratedTypeShapeProvider);
         TypeGenerationContext generationContext = cache.CreateGenerationContext();
-        ITypeShape<int> key = Witness.GeneratedTypeShapeProvider.GetTypeShape<int>(throwIfMissing: true)!;
+        ITypeShape<int> key = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<int>();
 
         Assert.Throws<InvalidOperationException>(() => generationContext.GetOrAdd(key));
     }
@@ -286,7 +286,7 @@ public static class CacheTests
             ValueBuilderFactory = _ => new ThrowingBuilder() 
         };
 
-        ITypeShape<int> key = Witness.GeneratedTypeShapeProvider.GetTypeShape<int>(throwIfMissing: true)!;
+        ITypeShape<int> key = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<int>();
 
         var ex1 = Assert.Throws<NotFiniteNumberException>(() => cache.GetOrAdd(key));
         var ex2 = Assert.Throws<NotFiniteNumberException>(() => cache.GetOrAdd(key));

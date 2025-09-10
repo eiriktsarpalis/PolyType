@@ -402,7 +402,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
     [Fact]
     public async Task JsonFunc_InvokedAsExpected()
     {
-        var serviceShape = providerUnderTest.Provider.GetTypeShape<RpcService>(throwIfMissing: true)!;
+        var serviceShape = providerUnderTest.Provider.GetTypeShapeOrThrow<RpcService>();
         var instance = new RpcService();
 
         var getEventsFunc = JsonSerializerTS.CreateJsonFunc(serviceShape.Methods.First(m => m.Name == nameof(RpcService.GetEventsAsync)), instance);
@@ -445,7 +445,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
             return;
         }
 
-        var serviceShape = providerUnderTest.Provider.GetTypeShape<RpcService>(throwIfMissing: true)!;
+        var serviceShape = providerUnderTest.Provider.GetTypeShapeOrThrow<RpcService>();
         var instance = new RpcService();
 
         JsonEvent onMethodCalledEvent = JsonSerializerTS.CreateJsonEvent(serviceShape.Events.First(m => m.Name == nameof(RpcService.OnMethodCalled)), instance);

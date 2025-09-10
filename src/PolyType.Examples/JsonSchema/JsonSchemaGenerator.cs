@@ -16,7 +16,7 @@ public static class JsonSchemaGenerator
     /// </summary>
     /// <typeparam name="T">The type for which to generate a JSON schema.</typeparam>
     public static JsonObject Generate<T>(ITypeShapeProvider typeShapeProvider)
-        => Generate(typeShapeProvider.GetTypeShape<T>(throwIfMissing: true)!);
+        => Generate(typeShapeProvider.GetTypeShapeOrThrow<T>());
 
     /// <summary>
     /// Generates a JSON schema using the specified shape.

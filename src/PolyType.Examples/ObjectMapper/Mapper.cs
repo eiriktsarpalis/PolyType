@@ -60,7 +60,7 @@ public static partial class Mapper
             return (Mapper<TSource, TTarget>)result!;
         }
 
-        ITypeShape mapperShape = new MapperShape<TSource, TTarget>(typeShapeProvider.GetTypeShape<TSource>(throwIfMissing: true)!, typeShapeProvider.GetTypeShape<TTarget>(throwIfMissing: true)!);
+        ITypeShape mapperShape = new MapperShape<TSource, TTarget>(typeShapeProvider.GetTypeShapeOrThrow<TSource>(), typeShapeProvider.GetTypeShapeOrThrow<TTarget>());
         return (Mapper<TSource, TTarget>)providerScopedTypeCache.GetOrAdd(mapperShape)!;
     }
 

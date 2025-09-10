@@ -1,4 +1,6 @@
-﻿namespace PolyType;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace PolyType;
 
 /// <summary>
 /// Extension methods for the <see cref="ITypeShapeProvider"/> interface.
@@ -6,19 +8,20 @@
 public static class TypeShapeProviderExtensions
 {
     /// <summary>
-    /// Gets a <see cref="ITypeShape"/> instance corresponding to the specified type.
+    /// Gets a <see cref="ITypeShape"/> instance corresponding to the specified type, or throw if one doesn't exist.
     /// </summary>
     /// <param name="typeShapeProvider">The shape provider from which to extract the <see cref="ITypeShape"/>.</param>
     /// <param name="type">The type whose shape we need to resolve.</param>
-    /// <param name="throwIfMissing">If <see langword="true"/>, throws an exception if no shape is found.</param>
-    /// <returns>An <see cref="ITypeShape"/> instance describing <paramref name="type"/>.</returns>
-    /// <exception cref="NotSupportedException"><paramref name="typeShapeProvider"/> does not support <paramref name="type"/>.</exception>
-    public static ITypeShape? GetTypeShape(this ITypeShapeProvider typeShapeProvider, Type type, bool throwIfMissing)
+    /// <returns>An <see cref="ITypeShape"/> instance corresponding to <paramref name="type"/>.</returns>
+    /// <exception cref="NotSupportedException">The <paramref name="typeShapeProvider"/> does not support <paramref name="type"/>.</exception>
+    public static ITypeShape GetTypeShapeOrThrow(this ITypeShapeProvider typeShapeProvider, Type type)
     {
         ITypeShape? typeShape = typeShapeProvider.GetTypeShape(type);
-        if (typeShape is null && throwIfMissing)
+        if (typeShape is null)
         {
             ThrowTypeShapeNotFound();
+
+            [DoesNotReturn]
             void ThrowTypeShapeNotFound() => throw new NotSupportedException($"The type shape provider '{typeShapeProvider.GetType()}' does not support type '{type}'.");
         }
 
@@ -26,19 +29,32 @@ public static class TypeShapeProviderExtensions
     }
 
     /// <summary>
+    /// Gets a <see cref="ITypeShape{T}"/> instance corresponding to the specified type, or throw if one doesn't exist.
+    /// </summary>
+    /// <typeparam name="T">The type whose shape should be resolved.</typeparam>
+    /// <param name="typeShapeProvider">The shape provider from which to extract the <see cref="ITypeShape"/>.</param>
+    /// <returns>
+    /// An <see cref="ITypeShape{T}"/> instance corresponding to <typeparamref name="T"/>,
+    /// or <see langword="null" /> if a shape is not available.
+    /// </returns>
+    public static ITypeShape<T>? GetTypeShape<T>(this ITypeShapeProvider typeShapeProvider) =>
+        (ITypeShape<T>?)typeShapeProvider.GetTypeShape(typeof(T));
+
+    /// <summary>
     /// Gets a <see cref="ITypeShape{T}"/> instance corresponding to the specified type.
     /// </summary>
-    /// <typeparam name="T">The type whose shape we need to resolve.</typeparam>
+    /// <typeparam name="T">The type whose shape should be resolved.</typeparam>
     /// <param name="typeShapeProvider">The shape provider from which to extract the <see cref="ITypeShape"/>.</param>
-    /// <param name="throwIfMissing">If <see langword="true"/>, throws an exception if no shape is found.</param>
-    /// <returns>An <see cref="ITypeShape{T}"/> instance describing <typeparamref name="T"/>.</returns>
-    /// <exception cref="NotSupportedException"><paramref name="typeShapeProvider"/> does not support <typeparamref name="T"/>.</exception>
-    public static ITypeShape<T>? GetTypeShape<T>(this ITypeShapeProvider typeShapeProvider, bool throwIfMissing = false)
+    /// <returns>An <see cref="ITypeShape{T}"/> instance corresponding to <typeparamref name="T"/>.</returns>
+    /// <exception cref="NotSupportedException">The <paramref name="typeShapeProvider"/> does not support <typeparamref name="T"/>.</exception>
+    public static ITypeShape<T> GetTypeShapeOrThrow<T>(this ITypeShapeProvider typeShapeProvider)
     {
-        ITypeShape<T>? typeShape = (ITypeShape<T>?)typeShapeProvider.GetTypeShape(typeof(T));
-        if (typeShape is null && throwIfMissing)
+        var typeShape = (ITypeShape<T>?)typeShapeProvider.GetTypeShape(typeof(T));
+        if (typeShape is null)
         {
             ThrowTypeShapeNotFound();
+
+            [DoesNotReturn]
             void ThrowTypeShapeNotFound() => throw new NotSupportedException($"The type shape provider '{typeShapeProvider.GetType()}' does not support type '{typeof(T)}'.");
         }
 

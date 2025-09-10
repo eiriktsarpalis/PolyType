@@ -5,7 +5,7 @@ public abstract partial class EnumMemberShapeTests(ProviderUnderTest providerUnd
     [Fact]
     public void EnumMemberShapeTest()
     {
-        var enumShape = (IEnumTypeShape<TestEnum, byte>)providerUnderTest.Provider.GetTypeShape<TestEnum>(throwIfMissing: true)!;
+        var enumShape = (IEnumTypeShape<TestEnum, byte>)providerUnderTest.Provider.GetTypeShapeOrThrow<TestEnum>();
         Assert.Equal(3, enumShape.Members.Count);
         Assert.Equal(0, enumShape.Members["FirstValue"]);
         Assert.Equal(5, enumShape.Members["Second"]);
