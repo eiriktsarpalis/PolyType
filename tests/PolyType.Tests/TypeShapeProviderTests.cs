@@ -1574,8 +1574,8 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
         Assert.Null(TypeShapeResolver.ResolveDynamic<object>());
         Assert.Null(TypeShapeResolver.ResolveDynamic<int, object>());
 
-        Assert.Throws<NotSupportedException>(() => TypeShapeResolver.ResolveDynamic<object>(throwIfMissing: true));
-        Assert.Throws<NotSupportedException>(() => TypeShapeResolver.ResolveDynamic<int, object>(throwIfMissing: true));
+        Assert.Throws<NotSupportedException>(() => TypeShapeResolver.ResolveDynamicOrThrow<object>());
+        Assert.Throws<NotSupportedException>(() => TypeShapeResolver.ResolveDynamicOrThrow<int, object>());
     }
 
     [Fact]

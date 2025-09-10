@@ -615,6 +615,7 @@ internal static class ReflectionHelpers
             genericArguments[7].IsTupleType();
     }
 
+    [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
     [RequiresDynamicCode(RequiresDynamicCodeMessage)]
     public static Type CreateValueTupleType(Type[] elementTypes)
     {

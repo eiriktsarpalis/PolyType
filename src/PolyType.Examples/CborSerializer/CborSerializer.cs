@@ -54,13 +54,12 @@ public static partial class CborSerializer
     /// <typeparam name="T">The type for which to build the converter.</typeparam>
     /// <returns>An <see cref="CborConverter{T}"/> instance.</returns>
     /// <exception cref="NotSupportedException">No source generated implementation for <typeparamref name="T"/> was found.</exception>
-    public static CborConverter<T> CreateConverterUsingSourceGen<
-#if NET
-        [DynamicallyAccessedMembers(TypeShapeResolver.ResolveDynamicLinkerRequirements)]
+#if NET8_0
+    [RequiresDynamicCode("Dynamic resolution of IShapeable<T> interface may require dynamic code generation in .NET 8 Native AOT. It is recommended to switch to statically resolved IShapeable<T> APIs or upgrade your app to .NET 9 or later.")]
 #endif
-        T>() =>
+    public static CborConverter<T> CreateConverterUsingSourceGen<T>() =>
 
-        CreateConverter(TypeShapeResolver.ResolveDynamic<T>(throwIfMissing: true)!)!;
+        CreateConverter(TypeShapeResolver.ResolveDynamicOrThrow<T>());
 
     /// <summary>
     /// Serializes a value to a CBOR encoding using the provided converter.

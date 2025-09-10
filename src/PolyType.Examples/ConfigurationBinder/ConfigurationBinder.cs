@@ -47,11 +47,10 @@ public static partial class ConfigurationBinderTS
     /// <typeparam name="T">The type for which to build the binder.</typeparam>
     /// <returns>A configuration binder delegate.</returns>
     /// <exception cref="NotSupportedException">No source generated implementation for <typeparamref name="T"/> was found.</exception>
-    public static Func<IConfiguration, T?> CreateUsingSourceGen<
-#if NET
-        [DynamicallyAccessedMembers(TypeShapeResolver.ResolveDynamicLinkerRequirements)]
+#if NET8_0
+    [RequiresDynamicCode("Dynamic resolution of IShapeable<T> interface may require dynamic code generation in .NET 8 Native AOT. It is recommended to switch to statically resolved IShapeable<T> APIs or upgrade your app to .NET 9 or later.")]
 #endif
-        T>() => Create<T>(TypeShapeResolver.ResolveDynamic<T>(throwIfMissing: true)!);
+    public static Func<IConfiguration, T?> CreateUsingSourceGen<T>() => Create(TypeShapeResolver.ResolveDynamicOrThrow<T>());
 
 #if NET
     /// <summary>

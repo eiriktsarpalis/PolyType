@@ -6,8 +6,10 @@ namespace PolyType.SourceGenerator.UnitTests;
 
 internal class ReferencesHelper
 {
-#if NET
-	internal static ReferenceAssemblies References = ReferenceAssemblies.Net.Net80;
+#if NET9_0
+	internal static ReferenceAssemblies References = ReferenceAssemblies.Net.Net90;
+#elif NET8_0
+    internal static ReferenceAssemblies References = ReferenceAssemblies.Net.Net80;
 #else
     internal static ReferenceAssemblies References = ReferenceAssemblies.NetStandard.NetStandard20
         .WithPackages(ImmutableArray.Create([
