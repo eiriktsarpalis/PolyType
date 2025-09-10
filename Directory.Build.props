@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))</RepoRoot>
-    <AssemblyOriginatorKeyFile>$(RepoRoot)\key.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>$(RepoRoot)\OpenKey.snk</AssemblyOriginatorKeyFile>
     <VSTestLogger>trx%3bLogFileName=$(MSBuildProjectName).$(TargetFramework).$(OS).trx</VSTestLogger>
     <VSTestResultsDirectory>$(MSBuildThisFileDirectory)/artifacts/TestResults</VSTestResultsDirectory>
     <ProduceReferenceAssembly>true</ProduceReferenceAssembly>

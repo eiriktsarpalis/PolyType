@@ -31,7 +31,7 @@
     <File Path="Dockerfile" />
     <File Path="exclusion.dic" />
     <File Path="global.json" />
-    <File Path="key.snk" />
+    <File Path="OpenKey.snk" />
     <File Path="LICENSE" />
     <File Path="Makefile" />
     <File Path="nuget.config" />
