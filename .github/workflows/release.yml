@@ -15,7 +15,10 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: |
+          10.0.x
+          9.0.x
+
     - name: Setup Mono
       run: sudo apt-get install -y mono-devel
     - name: Build & Test
