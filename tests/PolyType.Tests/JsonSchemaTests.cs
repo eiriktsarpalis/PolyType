@@ -140,7 +140,7 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
     [Fact]
     public void TestMethodShapeSchema()
     {
-        ITypeShape serviceShape = providerUnderTest.Provider.GetTypeShape<RpcService>(throwIfMissing: true)!;
+        ITypeShape serviceShape = providerUnderTest.Provider.GetTypeShapeOrThrow<RpcService>();
         IMethodShape getEventsAsync = serviceShape.Methods.Single(m => m.Name == nameof(RpcService.GetEventsAsync));
         IMethodShape resetAsync = serviceShape.Methods.Single(m => m.Name == nameof(RpcService.ResetAsync));
 

@@ -8,7 +8,7 @@ namespace PolyType;
 public interface ITypeShapeProvider
 {
     /// <summary>
-    /// Gets a <see cref="ITypeShape"/> instance corresponding to the supplied type.
+    /// Gets a <see cref="ITypeShape"/> instance corresponding to the specified type.
     /// </summary>
     /// <param name="type">The type for which a shape is requested.</param>
     /// <returns>

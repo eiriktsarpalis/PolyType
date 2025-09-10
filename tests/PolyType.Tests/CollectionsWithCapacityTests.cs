@@ -5,7 +5,7 @@ public abstract partial class CollectionsWithCapacityTests(ProviderUnderTest pro
     [Fact]
     public void List_OfInt()
     {
-        IEnumerableTypeShape<List<int>, int> shape = (IEnumerableTypeShape<List<int>, int>)providerUnderTest.Provider.GetTypeShape<List<int>>(throwIfMissing: true)!;
+        IEnumerableTypeShape<List<int>, int> shape = (IEnumerableTypeShape<List<int>, int>)providerUnderTest.Provider.GetTypeShapeOrThrow<List<int>>();
         List<int> list = shape.GetDefaultConstructor()(new() { Capacity = 11 });
         Assert.Equal(11, list.Capacity);
     }
@@ -13,7 +13,7 @@ public abstract partial class CollectionsWithCapacityTests(ProviderUnderTest pro
     [Fact]
     public void List_OfString()
     {
-        IEnumerableTypeShape<List<string>, string> shape = (IEnumerableTypeShape<List<string>, string>)providerUnderTest.Provider.GetTypeShape<List<string>>(throwIfMissing: true)!;
+        IEnumerableTypeShape<List<string>, string> shape = (IEnumerableTypeShape<List<string>, string>)providerUnderTest.Provider.GetTypeShapeOrThrow<List<string>>();
         List<string> list = shape.GetDefaultConstructor()(new() { Capacity = 11 });
         Assert.Equal(11, list.Capacity);
     }
@@ -21,7 +21,7 @@ public abstract partial class CollectionsWithCapacityTests(ProviderUnderTest pro
     [Fact]
     public void Dictionary()
     {
-        IDictionaryTypeShape<Dictionary<int, bool>, int, bool> shape = (IDictionaryTypeShape<Dictionary<int, bool>, int, bool>)providerUnderTest.Provider.GetTypeShape<Dictionary<int, bool>>(throwIfMissing: true)!;
+        IDictionaryTypeShape<Dictionary<int, bool>, int, bool> shape = (IDictionaryTypeShape<Dictionary<int, bool>, int, bool>)providerUnderTest.Provider.GetTypeShapeOrThrow<Dictionary<int, bool>>();
         Dictionary<int, bool> dict = shape.GetDefaultConstructor()(new() { Capacity = 11 });
 #if NET9_0_OR_GREATER
         Assert.Equal(11, dict.Capacity);
@@ -33,7 +33,7 @@ public abstract partial class CollectionsWithCapacityTests(ProviderUnderTest pro
     [Fact]
     public void HashSet()
     {
-        IEnumerableTypeShape<HashSet<int>, int> shape = (IEnumerableTypeShape<HashSet<int>, int>)providerUnderTest.Provider.GetTypeShape<HashSet<int>>(throwIfMissing: true)!;
+        IEnumerableTypeShape<HashSet<int>, int> shape = (IEnumerableTypeShape<HashSet<int>, int>)providerUnderTest.Provider.GetTypeShapeOrThrow<HashSet<int>>();
         HashSet<int> set = shape.GetDefaultConstructor()(new() { Capacity = 11 });
 #if NET9_0_OR_GREATER
         Assert.Equal(11, set.Capacity);

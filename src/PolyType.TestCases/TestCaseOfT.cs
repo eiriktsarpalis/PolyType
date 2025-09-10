@@ -40,7 +40,7 @@ public record TestCase<T> : ITestCase
     /// </summary>
     /// <param name="value">The value being tested.</param>
     /// <param name="typeShapeProvider">The default type shape provider of the value, typically source generated.</param>
-    public TestCase(T? value, ITypeShapeProvider typeShapeProvider) : this(value, typeShapeProvider.GetTypeShape<T>(throwIfMissing: true)!)
+    public TestCase(T? value, ITypeShapeProvider typeShapeProvider) : this(value, typeShapeProvider.GetTypeShapeOrThrow<T>())
     {
     }
 

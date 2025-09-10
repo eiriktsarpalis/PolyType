@@ -153,7 +153,7 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
             static void Throw() => throw new InvalidOperationException("The current cache does not specify a Provider property.");
         }
 
-        return AddValue(Provider.GetTypeShape(type, throwIfMissing: true)!);
+        return AddValue(Provider.GetTypeShapeOrThrow(type));
     }
 
     /// <summary>
