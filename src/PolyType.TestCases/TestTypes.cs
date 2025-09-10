@@ -588,6 +588,10 @@ public static class TestTypes
         yield return TestCase.Create((GenericTree<string>)new GenericTree<string>.Node("str", new GenericTree<string>.Leaf(), new GenericTree<string>.Leaf()), additionalValues: [new GenericTree<string>.Leaf()], isUnion: true, provider: p);
         yield return TestCase.Create((GenericTree<int>)new GenericTree<int>.Node(42, new GenericTree<int>.Leaf(), new GenericTree<int>.Leaf()), additionalValues: [new GenericTree<int>.Leaf()], isUnion: true, provider: p);
 
+        yield return TestCase.Create(new RecordWithoutNamespace(42));
+        yield return TestCase.Create(new GenericRecordWithoutNamespace<int>(42), p);
+        yield return TestCase.Create(new GenericContainerWithoutNamespace<int>.Record<string>(42, "str"), p);
+
         yield return TestCase.Create(new AsyncEnumerableClass([1, 1, 2, 3, 5, 8]));
         yield return TestCase.Create((IAsyncEnumerable<int>)new AsyncEnumerableClass([1, 1, 2, 3, 5, 8]), p);
 
@@ -3371,6 +3375,8 @@ public delegate Task<int> LargeAsyncDelegate(
 [GenerateShapeFor<GenericDictionaryWithMarshaler<string, int>>]
 [GenerateShapeFor<GenericTree<string>>]
 [GenerateShapeFor<GenericTree<int>>]
+[GenerateShapeFor<GenericRecordWithoutNamespace<int>>]
+[GenerateShapeFor<GenericContainerWithoutNamespace<int>.Record<string>>]
 [GenerateShapeFor<IAsyncEnumerable<int>>]
 [GenerateShapeFor<FSharpRecord>]
 [GenerateShapeFor<FSharpStructRecord>]

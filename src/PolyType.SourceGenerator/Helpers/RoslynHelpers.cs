@@ -86,10 +86,9 @@ internal static partial class RoslynHelpers
                 FormatNamedType(containingType, builder, ref aggregateGenericParams);
                 builder.Append('+');
             }
-            else if (namedType.ContainingNamespace is { } namespaceSymbol)
+            else
             {
-                FormatNamespace(namespaceSymbol, builder);
-                builder.Append('.');
+                FormatNamespace(namedType.ContainingNamespace, builder);
             }
 
             builder.Append(namedType.Name);
@@ -101,15 +100,16 @@ internal static partial class RoslynHelpers
             }
         }
 
-        static void FormatNamespace(INamespaceSymbol namespaceSymbol, StringBuilder builder)
+        static void FormatNamespace(INamespaceSymbol? namespaceSymbol, StringBuilder builder)
         {
-            if (namespaceSymbol.ContainingNamespace is { IsGlobalNamespace: false } parent)
+            if (namespaceSymbol is null or { IsGlobalNamespace: true })
             {
-                FormatNamespace(parent, builder);
-                builder.Append('.');
+                return;
             }
 
+            FormatNamespace(namespaceSymbol.ContainingNamespace, builder);
             builder.Append(namespaceSymbol.Name);
+            builder.Append('.');
         }
     }
 
