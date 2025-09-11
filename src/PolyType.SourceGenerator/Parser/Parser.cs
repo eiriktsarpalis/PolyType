@@ -208,11 +208,26 @@ public sealed partial class Parser : TypeDataModelGenerator
     // Include delegate parameter types into generated shapes.
     protected override bool IncludeDelegateParameters => true;
 
-    // Ignore properties with the [PropertyShape] attribute set to Ignore = true.
     protected override bool IncludeProperty(IPropertySymbol property, out bool includeGetter, out bool includeSetter)
     {
+        if (property.ContainingType.HasAttribute(_knownSymbols.DataContractAttribute))
+        {
+            // If the type is annotated with [DataContract], only include properties with [DataMember].
+            if (!property.HasAttribute(_knownSymbols.DataMemberAttribute))
+            {
+                includeGetter = includeSetter = false;
+                return false;
+            }
+
+            property = property.GetBaseProperty();
+            includeGetter = property.GetMethod is not null;
+            includeSetter = property.SetMethod is not null;
+            return true;
+        }
+
         if (property.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData propertyAttribute)
         {
+            // Ignore properties with the [PropertyShape] attribute set to Ignore = true.
             bool includeProperty = !propertyAttribute.TryGetNamedArgument("Ignore", out bool ignoreValue) || !ignoreValue;
             if (includeProperty)
             {
@@ -230,11 +245,17 @@ public sealed partial class Parser : TypeDataModelGenerator
         return base.IncludeProperty(property, out includeGetter, out includeSetter);
     }
 
-    // Ignore fields with the [PropertyShape] attribute set to Ignore = true.
     protected override bool IncludeField(IFieldSymbol field)
     {
+        if (field.ContainingType.HasAttribute(_knownSymbols.DataContractAttribute))
+        {
+            // If the type is annotated with [DataContract], only include fields with [DataMember].
+            return field.HasAttribute(_knownSymbols.DataMemberAttribute);
+        }
+
         if (field.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData fieldAttribute)
         {
+            // Ignore fields with the [PropertyShape] attribute set to Ignore = true.
             return !fieldAttribute.TryGetNamedArgument("Ignore", out bool ignoreValue) || !ignoreValue;
         }
 
@@ -243,7 +264,15 @@ public sealed partial class Parser : TypeDataModelGenerator
 
     protected override bool? IsRequiredByPolicy(IPropertySymbol member)
     {
-        if (member.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData fieldAttribute && fieldAttribute.TryGetNamedArgument("IsRequired", out bool isRequiredValue))
+        if (member.ContainingType.HasAttribute(_knownSymbols.DataContractAttribute) &&
+            member.GetAttribute(_knownSymbols.DataMemberAttribute) is AttributeData dataMemberAttribute &&
+            dataMemberAttribute.TryGetNamedArgument("IsRequired", out bool isRequiredDataMember))
+        {
+            return isRequiredDataMember;
+        }
+
+        if (member.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData shapeAttribute &&
+            shapeAttribute.TryGetNamedArgument("IsRequired", out bool isRequiredValue))
         {
             return isRequiredValue;
         }
@@ -253,7 +282,14 @@ public sealed partial class Parser : TypeDataModelGenerator
 
     protected override bool? IsRequiredByPolicy(IFieldSymbol member)
     {
-        if (member.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData fieldAttribute && fieldAttribute.TryGetNamedArgument("IsRequired", out bool isRequiredValue))
+        if (member.ContainingType.HasAttribute(_knownSymbols.DataContractAttribute) &&
+            member.GetAttribute(_knownSymbols.DataMemberAttribute) is AttributeData dataMemberAttribute &&
+            dataMemberAttribute.TryGetNamedArgument("IsRequired", out bool isRequiredDataMember))
+        {
+            return isRequiredDataMember;
+        }
+
+        if (member.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData shapeAttribute && shapeAttribute.TryGetNamedArgument("IsRequired", out bool isRequiredValue))
         {
             return isRequiredValue;
         }

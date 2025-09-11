@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.Serialization;
 
 namespace PolyType.ReflectionProvider;
 
@@ -296,6 +297,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
 
         foreach (Type current in typeof(T).GetSortedTypeHierarchy())
         {
+            bool hasDataContractAttribute = current.GetCustomAttribute<DataContractAttribute>() is not null;
             foreach (PropertyInfo propertyInfo in current.GetProperties(AllInstanceMembers))
             {
                 if (propertyInfo.GetIndexParameters().Length == 0 &&
@@ -303,7 +305,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                     !propertyInfo.IsExplicitInterfaceImplementation() &&
                     !IsOverriddenOrShadowed(propertyInfo))
                 {
-                    HandleMember(propertyInfo, nullabilityCtx);
+                    HandleMember(propertyInfo, nullabilityCtx, hasDataContractAttribute);
                 }
             }
 
@@ -312,7 +314,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                 if (fieldInfo.FieldType.CanBeGenericArgument() &&
                     !IsOverriddenOrShadowed(fieldInfo))
                 {
-                    HandleMember(fieldInfo, nullabilityCtx);
+                    HandleMember(fieldInfo, nullabilityCtx, hasDataContractAttribute);
                 }
             }
         }
@@ -321,7 +323,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
 
         bool IsOverriddenOrShadowed(MemberInfo memberInfo) => !membersInScope.Add(memberInfo.Name);
 
-        void HandleMember(MemberInfo memberInfo, NullabilityInfoContext? nullabilityCtx)
+        void HandleMember(MemberInfo memberInfo, NullabilityInfoContext? nullabilityCtx, bool hasDataContractAttribute)
         {
             // Use the most derived member for attribute resolution but
             // use the base definition to determine the member signatures
@@ -329,31 +331,51 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
             MemberInfo attributeProvider = memberInfo;
             memberInfo = memberInfo is PropertyInfo p ? p.GetBaseDefinition() : memberInfo;
 
-            PropertyShapeAttribute? propertyAttr = attributeProvider.GetCustomAttribute<PropertyShapeAttribute>(inherit: true);
             string? logicalName = null;
             bool includeNonPublic = false;
             int order = 0;
             bool? isRequiredByAttribute = null;
 
-            if (propertyAttr != null)
+            if (hasDataContractAttribute)
             {
-                // If the attribute is present, use the value of the Ignore property to determine its inclusion.
-                if (propertyAttr.Ignore)
+                if (attributeProvider.GetCustomAttribute<DataMemberAttribute>() is not { } dataMemberAttr)
                 {
+                    // Always skip members not explicitly annotated with DataMemberAttribute.
                     return;
                 }
 
-                logicalName = propertyAttr.Name;
-                if (propertyAttr.Order != 0)
+                logicalName = dataMemberAttr.Name;
+                if (dataMemberAttr.Order != 0)
                 {
-                    order = propertyAttr.Order;
+                    order = dataMemberAttr.Order;
                     isOrderSpecified = true;
                 }
 
                 includeNonPublic = true;
-                if (propertyAttr.IsRequiredSpecified)
+                if (dataMemberAttr.IsRequired)
                 {
-                    isRequiredByAttribute = propertyAttr.IsRequired;
+                    isRequiredByAttribute = true;
+                }
+            }
+            else if (attributeProvider.GetCustomAttribute<PropertyShapeAttribute>(inherit: true) is { } propertyShapeAttr)
+            {
+                // If the attribute is present, use the value of the Ignore property to determine its inclusion.
+                if (propertyShapeAttr.Ignore)
+                {
+                    return;
+                }
+
+                logicalName = propertyShapeAttr.Name;
+                if (propertyShapeAttr.Order != 0)
+                {
+                    order = propertyShapeAttr.Order;
+                    isOrderSpecified = true;
+                }
+
+                includeNonPublic = true;
+                if (propertyShapeAttr.IsRequiredSpecified)
+                {
+                    isRequiredByAttribute = propertyShapeAttr.IsRequired;
                 }
             }
             else
