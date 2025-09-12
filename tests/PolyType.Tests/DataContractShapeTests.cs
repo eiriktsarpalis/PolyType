@@ -7,7 +7,7 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
     [Fact]
     public void DataContract_DataMember_ObjectShape()
     {
-        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetTypeShape(typeof(ContractType));
+        var shape = Assert.IsType<IObjectTypeShape>(providerUnderTest.Provider.GetTypeShape(typeof(ContractType)), exactMatch: false);
         Assert.NotNull(shape);
 
         // Only members explicitly marked with [DataMember] should be included.
@@ -26,7 +26,7 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
     [Fact]
     public void NonDataContract_IgnoresDataMember()
     {
-        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetTypeShape(typeof(NonContractType));
+        var shape = Assert.IsType<IObjectTypeShape>(providerUnderTest.Provider.GetTypeShape(typeof(NonContractType)), exactMatch: false);
         Assert.NotNull(shape);
         // Non-contract type: public properties included even without DataMember.
         Assert.Contains(shape.Properties, p => p.Name == nameof(NonContractType.Value));
@@ -37,7 +37,7 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
     [Fact]
     public void DerivedNonContractType_IncludesBaseContractProperties()
     {
-        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetTypeShape(typeof(DerivedNonContractType));
+        var shape = Assert.IsType<IObjectTypeShape>(providerUnderTest.Provider.GetTypeShape(typeof(DerivedNonContractType)), exactMatch: false);
         Assert.NotNull(shape);
 
         // Only members explicitly marked with [DataMember] should be included.
@@ -57,7 +57,7 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
     [Fact]
     public void NonContractTypeWithIgnoreDataMemberAttribute_IgnoresIgnoredProperty()
     {
-        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetTypeShape(typeof(NonContractTypeWithIgnoreDataMemberAttribute));
+        var shape = Assert.IsType<IObjectTypeShape>(providerUnderTest.Provider.GetTypeShape(typeof(NonContractTypeWithIgnoreDataMemberAttribute)), exactMatch: false);
         Assert.NotNull(shape);
 
         Assert.Equal(2, shape.Properties.Count);
@@ -78,6 +78,22 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
         Assert.True(enumShape.Members.ContainsKey("SecondRenamed"));
         Assert.True(enumShape.Members.ContainsKey("ThirdRenamed"));
         Assert.True(enumShape.Members.ContainsKey("Fourth"));
+    }
+
+    [Fact]
+    public void KnownTypeAttribute_ReportsUnionShape()
+    {
+        var shape = Assert.IsType<IUnionTypeShape>(providerUnderTest.Provider.GetTypeShape(typeof(Animal)), exactMatch: false);
+
+        Assert.Equal(2, shape.UnionCases.Count);
+        Assert.Contains(shape.UnionCases, c => c.UnionCaseType.Type == typeof(Dog));
+        Assert.Contains(shape.UnionCases, c => c.UnionCaseType.Type == typeof(Cat));
+    }
+
+    [Fact]
+    public void KnownTypeAttribute_OnNonDataContract_DoesNotReportUnionShape()
+    {
+        Assert.IsType<IObjectTypeShape>(providerUnderTest.Provider.GetTypeShape(typeof(AnimalNoDataContract)), exactMatch: false);
     }
 
     [GenerateShape]
@@ -130,6 +146,39 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
         [EnumMemberShape(Name = "SecondRenamed"), EnumMember(Value = "IgnoredName")] Second = 1,
         [EnumMemberShape, EnumMember(Value = "ThirdRenamed")] Third = 2,
         Fourth = 3,
+    }
+
+    [GenerateShape]
+    [DataContract]
+    [KnownType(typeof(Dog))]
+    [KnownType(typeof(Cat))]
+    public partial class Animal
+    {
+        [DataMember(Order = 0)] public string? Name { get; set; }
+    }
+
+    [DataContract]
+    public class Dog : Animal
+    {
+        [DataMember(Order = 1)] public bool Barks { get; set; }
+    }
+
+    [DataContract]
+    public class Cat : Animal
+    {
+        [DataMember(Order = 1)] public int Lives { get; set; }
+    }
+
+    [GenerateShape]
+    [KnownType(typeof(DogNoDataContract))]
+    public partial class AnimalNoDataContract
+    {
+        public string? Name { get; set; }
+    }
+
+    public class DogNoDataContract : AnimalNoDataContract
+    {
+        public bool Barks { get; set; }
     }
 
     [GenerateShapeFor<ContractEnum>]

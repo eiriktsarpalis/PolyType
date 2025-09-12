@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.Serialization;
 
 namespace PolyType.ReflectionProvider;
 
@@ -280,7 +281,23 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             return (IUnionTypeShape)Activator.CreateInstance(fsharpUnionTypeTy, fSharpUnionInfo, this, options)!;
         }
 
-        DerivedTypeShapeAttribute[] derivedTypeAttributes = unionType.GetCustomAttributes<DerivedTypeShapeAttribute>().ToArray();
+        List<DerivedTypeShapeAttribute> derivedTypeAttributes = unionType.GetCustomAttributes<DerivedTypeShapeAttribute>().ToList();
+        if (unionType.GetCustomAttribute<DataContractAttribute>() is { })
+        {
+            var mappedKnownTypeAttributes = unionType.GetCustomAttributes<KnownTypeAttribute>()
+                .Select(attr =>
+                {
+                    if (attr.Type is null)
+                    {
+                        throw new NotSupportedException("KnownTypeAttribute annotations using methods are not supported.");
+                    }
+
+                    return new DerivedTypeShapeAttribute(attr.Type);
+                });
+
+            derivedTypeAttributes.AddRange(mappedKnownTypeAttributes);
+        }
+
         HashSet<Type> types = new();
         HashSet<string> names = new(StringComparer.Ordinal);
         HashSet<int> tags = new();
@@ -459,9 +476,19 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             return fsharpUnionInfo.IsOptional ? TypeShapeKind.Optional : TypeShapeKind.Union;
         }
 
-        if (allowUnionShapes && type.GetCustomAttributesData().Any(attrData => attrData.AttributeType == typeof(DerivedTypeShapeAttribute)))
+        if (allowUnionShapes)
         {
-            return TypeShapeKind.Union;
+            var customAttributeData = type.GetCustomAttributesData();
+            if (customAttributeData.Any(attrData => attrData.AttributeType == typeof(DerivedTypeShapeAttribute)))
+            {
+                return TypeShapeKind.Union;
+            }
+
+            if (customAttributeData.Any(attrData => attrData.AttributeType == typeof(DataContractAttribute) &&
+                customAttributeData.Any(attrData => attrData.AttributeType == typeof(KnownTypeAttribute))))
+            {
+                return TypeShapeKind.Union;
+            }
         }
 
         if (typeof(IDictionary).IsAssignableFrom(type))

@@ -547,12 +547,28 @@ public sealed partial class Parser : TypeDataModelGenerator
         HashSet<string> names = new(StringComparer.Ordinal);
         foreach (AttributeData attribute in type.GetAttributes())
         {
-            if (!SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, _knownSymbols.DerivedTypeShapeAttribute))
+            ITypeSymbol? derivedType = null;
+            string? name = null;
+            int tag = -1;
+
+            if (SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, _knownSymbols.DerivedTypeShapeAttribute))
+            {
+                ParseDerivedTypeShapeAttribute(attribute, out derivedType, out name, out tag);
+            }
+            else if (SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, _knownSymbols.KnownTypeAttribute) &&
+                     type.HasAttribute(_knownSymbols.DataContractAttribute))
+            {
+                if (attribute.ConstructorArguments is not [{ Value: ITypeSymbol dt }])
+                {
+                    continue;
+                }
+
+                derivedType = dt;
+            }
+            else
             {
                 continue;
             }
-
-            ParseDerivedTypeShapeAttribute(attribute, out ITypeSymbol derivedType, out string? name, out int tag);
 
             if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true } namedDerivedType)
             {

@@ -96,4 +96,7 @@ public sealed class PolyTypeKnownSymbols(Compilation compilation) : KnownSymbols
 
     public INamedTypeSymbol? IgnoreDataMemberAttribute => GetOrResolveType("System.Runtime.Serialization.IgnoreDataMemberAttribute", ref _IgnoreDataMemberAttribute);
     private Option<INamedTypeSymbol?> _IgnoreDataMemberAttribute;
+
+    public INamedTypeSymbol? KnownTypeAttribute => GetOrResolveType("System.Runtime.Serialization.KnownTypeAttribute", ref _KnownTypeAttribute);
+    private Option<INamedTypeSymbol?> _KnownTypeAttribute;
 }
