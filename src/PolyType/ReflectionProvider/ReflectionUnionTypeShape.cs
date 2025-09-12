@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerTypeProxy(typeof(PolyType.Debugging.UnionTypeShapeDebugView))]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 internal sealed class ReflectionUnionTypeShape<TUnion>(DerivedTypeInfo[] derivedTypeInfos, ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)

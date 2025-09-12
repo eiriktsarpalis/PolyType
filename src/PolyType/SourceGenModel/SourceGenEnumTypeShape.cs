@@ -1,4 +1,5 @@
 ﻿using PolyType.Abstractions;
+using System.Diagnostics;
 
 namespace PolyType.SourceGenModel;
 
@@ -7,6 +8,7 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TEnum">The type of the enum.</typeparam>
 /// <typeparam name="TUnderlying">The type of the underlying type of the enum.</typeparam>
+[DebuggerTypeProxy(typeof(PolyType.Debugging.EnumTypeShapeDebugView))]
 public sealed class SourceGenEnumTypeShape<TEnum, TUnderlying> : SourceGenTypeShape<TEnum>, IEnumTypeShape<TEnum, TUnderlying>
     where TEnum : struct, Enum
     where TUnderlying : unmanaged

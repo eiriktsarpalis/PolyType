@@ -4,6 +4,8 @@ using System.Reflection;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerTypeProxy(typeof(PolyType.Debugging.MethodShapeDebugView))]
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 internal sealed class ReflectionMethodShape<TDeclaringType, TArgumentState, TResult>
     : IMethodShape<TDeclaringType, TArgumentState, TResult>
     where TArgumentState : IArgumentState
@@ -52,4 +54,6 @@ internal sealed class ReflectionMethodShape<TDeclaringType, TArgumentState, TRes
             yield return _provider.CreateParameter(typeof(TArgumentState), _methodShapeInfo, i);
         }
     }
+
+    private string DebuggerDisplay => $"{ReturnType} {Name}({string.Join(", ", Parameters.Select(p => $"{p.ParameterType} {p.Name}"))})";
 }

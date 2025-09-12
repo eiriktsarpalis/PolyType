@@ -4,6 +4,8 @@ using System.Reflection;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerTypeProxy(typeof(PolyType.Debugging.ParameterShapeDebugView))]
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 internal sealed class ReflectionParameterShape<TArgumentState, TParameter> : IParameterShape<TArgumentState, TParameter>
     where TArgumentState : IArgumentState
 {
@@ -55,4 +57,6 @@ internal sealed class ReflectionParameterShape<TArgumentState, TParameter> : IPa
         Setter<TArgumentState, TParameter> CreateSetter() =>
             _provider.MemberAccessor.CreateArgumentStateSetter<TArgumentState, TParameter>(_ctorInfo, Position);
     }
+
+    private string DebuggerDisplay => $"{{Type = \"{typeof(TParameter)}\", Name = \"{Name}\"}}";
 }

@@ -4,6 +4,8 @@ using PolyType.Abstractions;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerTypeProxy(typeof(PolyType.Debugging.PropertyShapeDebugView))]
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : IPropertyShape<TDeclaringType, TPropertyType>
 {
     private readonly ReflectionTypeShapeProvider _provider;
@@ -95,6 +97,8 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
         Setter<TDeclaringType, TPropertyType> CreateSetter() =>
             _provider.MemberAccessor.CreateSetter<TDeclaringType, TPropertyType>(_memberInfo, _parentMembers);
     }
+
+    private string DebuggerDisplay => $"{{Type = \"{typeof(TPropertyType)}\", Name = \"{Name}\"}}";
 }
 
 internal sealed record PropertyShapeInfo(

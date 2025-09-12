@@ -1,13 +1,17 @@
 ﻿using PolyType.Abstractions;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace PolyType.ReflectionProvider;
 
+// Base does not set a debugger proxy; individual derived kinds will specify theirs.
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
-internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options) : ITypeShape<T>
+internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+    : ITypeShape<T>
 {
     public abstract TypeShapeKind Kind { get; }
     public abstract object? Accept(TypeShapeVisitor visitor, object? state = null);
@@ -126,4 +130,6 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
             return true;
         }
     }
+
+    protected string DebuggerDisplay => $"{{Type = \"{Type}\", Kind = {Kind}}}";
 }

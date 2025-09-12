@@ -4,6 +4,8 @@ using System.Reflection;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerTypeProxy(typeof(PolyType.Debugging.EventShapeDebugView))]
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 internal sealed class ReflectionEventShape<TDeclaringType, TEventHandler> : IEventShape<TDeclaringType, TEventHandler>
 {
     private readonly ReflectionTypeShapeProvider _provider;
@@ -38,4 +40,6 @@ internal sealed class ReflectionEventShape<TDeclaringType, TEventHandler> : IEve
     {
         return _removeHandler ?? CommonHelpers.ExchangeIfNull(ref _removeHandler, _provider.MemberAccessor.CreateEventAccessor<TDeclaringType, TEventHandler>(_eventInfo.RemoveMethod!));
     }
+
+    private string DebuggerDisplay => $"{{Name = \"{Name}\", Handler = \"{typeof(TEventHandler)}\"}}";
 }

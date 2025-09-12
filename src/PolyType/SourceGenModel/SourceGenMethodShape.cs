@@ -10,6 +10,8 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TDeclaringType">The type declaring the method.</typeparam>
 /// <typeparam name="TArgumentState">The mutable state type used for aggregating method arguments.</typeparam>
 /// <typeparam name="TResult">The return type of the underlying method.</typeparam>
+[DebuggerTypeProxy(typeof(PolyType.Debugging.MethodShapeDebugView))]
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed class SourceGenMethodShape<TDeclaringType, TArgumentState, TResult> : IMethodShape<TDeclaringType, TArgumentState, TResult>
     where TArgumentState : IArgumentState
 {
@@ -71,4 +73,6 @@ public sealed class SourceGenMethodShape<TDeclaringType, TArgumentState, TResult
     Func<TArgumentState> IMethodShape<TDeclaringType, TArgumentState, TResult>.GetArgumentStateConstructor() => ArgumentStateConstructor;
 
     MethodInvoker<TDeclaringType?, TArgumentState, TResult> IMethodShape<TDeclaringType, TArgumentState, TResult>.GetMethodInvoker() => MethodInvoker;
+
+    private string DebuggerDisplay => $"{ReturnType} {Name}({string.Join(", ", Parameters.Select(p => $"{p.ParameterType} {p.Name}"))})";
 }

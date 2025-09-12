@@ -10,6 +10,7 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TFunction">The function type.</typeparam>
 /// <typeparam name="TArgumentState">The mutable state type used for aggregating function arguments.</typeparam>
 /// <typeparam name="TResult">The return type of the underlying method.</typeparam>
+[DebuggerTypeProxy(typeof(PolyType.Debugging.FunctionTypeShapeDebugView))]
 public sealed class SourceGenFunctionTypeShape<TFunction, TArgumentState, TResult> : SourceGenTypeShape<TFunction>, IFunctionTypeShape<TFunction, TArgumentState, TResult>
     where TArgumentState : IArgumentState
 {

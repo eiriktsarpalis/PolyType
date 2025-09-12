@@ -9,6 +9,8 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TDeclaringType">The type being constructed.</typeparam>
 /// <typeparam name="TArgumentState">The mutable argument state for the constructor.</typeparam>
+[DebuggerTypeProxy(typeof(PolyType.Debugging.ConstructorShapeDebugView))]
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed class SourceGenConstructorShape<TDeclaringType, TArgumentState> : IConstructorShape<TDeclaringType, TArgumentState>
     where TArgumentState : IArgumentState
 {
@@ -61,4 +63,6 @@ public sealed class SourceGenConstructorShape<TDeclaringType, TArgumentState> : 
     object? IConstructorShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitConstructor(this, state);
     ICustomAttributeProvider? IConstructorShape.AttributeProvider => AttributeProviderFunc?.Invoke();
     IObjectTypeShape IConstructorShape.DeclaringType => DeclaringType;
+
+    private string DebuggerDisplay => $".ctor({string.Join(", ", Parameters.Select(p => $"{p.ParameterType} {p.Name}"))})";
 }

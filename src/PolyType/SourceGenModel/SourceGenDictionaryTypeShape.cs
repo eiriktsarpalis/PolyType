@@ -9,6 +9,7 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TDictionary">The type of the dictionary.</typeparam>
 /// <typeparam name="TKey">The type of the dictionary key.</typeparam>
 /// <typeparam name="TValue">The type of the dictionary value.</typeparam>
+[DebuggerTypeProxy(typeof(PolyType.Debugging.DictionaryTypeShapeDebugView))]
 public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : SourceGenTypeShape<TDictionary>, IDictionaryTypeShape<TDictionary, TKey, TValue>
     where TKey : notnull
 {
