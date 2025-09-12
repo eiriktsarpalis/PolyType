@@ -1,4 +1,5 @@
 ﻿using PolyType.Abstractions;
+using System.Diagnostics;
 
 namespace PolyType.SourceGenModel;
 
@@ -7,6 +8,7 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TOptional">The optional type described by the shape.</typeparam>
 /// <typeparam name="TElement">The type of the value encapsulated by the option type.</typeparam>
+[DebuggerTypeProxy(typeof(PolyType.Debugging.OptionalTypeShapeDebugView))]
 public sealed class SourceGenOptionalTypeShape<TOptional, TElement> : SourceGenTypeShape<TOptional>, IOptionalTypeShape<TOptional, TElement>
 {
     /// <inheritdoc/>

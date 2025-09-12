@@ -1,6 +1,5 @@
-﻿using System.Data;
+﻿using PolyType.Abstractions;
 using System.Diagnostics;
-using PolyType.Abstractions;
 
 namespace PolyType.SourceGenModel;
 
@@ -8,6 +7,7 @@ namespace PolyType.SourceGenModel;
 /// Source generator model for object type shapes.
 /// </summary>
 /// <typeparam name="TObject">The type whose shape is described.</typeparam>
+[DebuggerTypeProxy(typeof(PolyType.Debugging.ObjectTypeShapeDebugView))]
 public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObject>, IObjectTypeShape<TObject>
 {
     /// <inheritdoc/>

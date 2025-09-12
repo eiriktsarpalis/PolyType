@@ -1,15 +1,18 @@
-﻿using System.Diagnostics;
+﻿using PolyType.Abstractions;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using PolyType.Abstractions;
+using System.Xml.Linq;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerTypeProxy(typeof(PolyType.Debugging.ConstructorShapeDebugView))]
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>(
     ReflectionTypeShapeProvider provider,
     IObjectTypeShape<TDeclaringType> declaringType,
-    IMethodShapeInfo ctorInfo) :
-    IConstructorShape<TDeclaringType, TArgumentState>
+    IMethodShapeInfo ctorInfo)
+    : IConstructorShape<TDeclaringType, TArgumentState>
     where TArgumentState : IArgumentState
 {
     private IReadOnlyList<IParameterShape>? _parameters;
@@ -65,4 +68,6 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
             yield return provider.CreateParameter(typeof(TArgumentState), ctorInfo, i);
         }
     }
+
+    private string DebuggerDisplay => $".ctor({string.Join(", ", Parameters.Select(p => $"{p.ParameterType} {p.Name}"))})";
 }

@@ -1,5 +1,6 @@
-﻿using System.Reflection;
-using PolyType.Abstractions;
+﻿using PolyType.Abstractions;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace PolyType.SourceGenModel;
 
@@ -8,6 +9,8 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TArgumentState">The mutable constructor argument state type.</typeparam>
 /// <typeparam name="TParameter">The constructor parameter type.</typeparam>
+[DebuggerTypeProxy(typeof(PolyType.Debugging.ParameterShapeDebugView))]
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed class SourceGenParameterShape<TArgumentState, TParameter> : IParameterShape<TArgumentState, TParameter>
     where TArgumentState : IArgumentState
 {
@@ -59,4 +62,6 @@ public sealed class SourceGenParameterShape<TArgumentState, TParameter> : IParam
     object? IParameterShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitParameter(this, state);
     Getter<TArgumentState, TParameter> IParameterShape<TArgumentState, TParameter>.GetGetter() => Getter;
     Setter<TArgumentState, TParameter> IParameterShape<TArgumentState, TParameter>.GetSetter() => Setter;
+
+    private string DebuggerDisplay => $"{{Type = \"{typeof(TParameter)}\", Name = \"{Name}\"}}";
 }

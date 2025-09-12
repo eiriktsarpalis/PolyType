@@ -1,4 +1,5 @@
 using PolyType.Abstractions;
+using System.Diagnostics;
 
 namespace PolyType.SourceGenModel;
 
@@ -7,6 +8,7 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="T">The type that the shape describes.</typeparam>
 /// <typeparam name="TSurrogate">The surrogate type used by the shape.</typeparam>
+[DebuggerTypeProxy(typeof(PolyType.Debugging.SurrogateTypeShapeDebugView))]
 public sealed class SourceGenSurrogateTypeShape<T, TSurrogate> : SourceGenTypeShape<T>, ISurrogateTypeShape<T, TSurrogate>
 {
     /// <inheritdoc/>

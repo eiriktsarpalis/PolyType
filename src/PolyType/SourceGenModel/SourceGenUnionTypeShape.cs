@@ -1,4 +1,5 @@
 ﻿using PolyType.Abstractions;
+using System.Diagnostics;
 
 namespace PolyType.SourceGenModel;
 
@@ -6,6 +7,7 @@ namespace PolyType.SourceGenModel;
 /// Source generator model for union type shapes.
 /// </summary>
 /// <typeparam name="TUnion">The type whose shape is described.</typeparam>
+[DebuggerTypeProxy(typeof(PolyType.Debugging.UnionTypeShapeDebugView))]
 public sealed class SourceGenUnionTypeShape<TUnion> : SourceGenTypeShape<TUnion>, IUnionTypeShape<TUnion>
 {
     /// <inheritdoc/>

@@ -1,8 +1,11 @@
 ﻿using PolyType.Abstractions;
 using PolyType.SourceGenModel;
+using System.Diagnostics;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerTypeProxy(typeof(PolyType.Debugging.UnionCaseShapeDebugView))]
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 internal sealed class ReflectionUnionCaseShape<TUnionCase, TUnion>(IUnionTypeShape unionType, DerivedTypeInfo derivedTypeInfo, ReflectionTypeShapeProvider provider) : IUnionCaseShape<TUnionCase, TUnion>
     where TUnionCase : TUnion
 {
@@ -19,4 +22,6 @@ internal sealed class ReflectionUnionCaseShape<TUnionCase, TUnion>(IUnionTypeSha
     ITypeShape IUnionCaseShape.UnionCaseType => UnionCaseType;
 
     public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnionCase(this, state);
+
+    private string DebuggerDisplay => $"{{Name = \"{Name}\", CaseType = \"{typeof(TUnionCase)}\"}}";
 }

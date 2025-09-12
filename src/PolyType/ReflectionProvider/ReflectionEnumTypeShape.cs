@@ -1,14 +1,17 @@
 ﻿using PolyType.Abstractions;
 using PolyType.Utilities;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Serialization;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerTypeProxy(typeof(PolyType.Debugging.EnumTypeShapeDebugView))]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
-internal sealed class ReflectionEnumTypeShape<TEnum, TUnderlying>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+internal sealed class ReflectionEnumTypeShape<TEnum, TUnderlying>
+    (ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
     : ReflectionTypeShape<TEnum>(provider, options), IEnumTypeShape<TEnum, TUnderlying>
     where TEnum : struct, Enum
     where TUnderlying : unmanaged

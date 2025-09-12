@@ -9,6 +9,7 @@ namespace PolyType.SourceGenModel;
 /// Source generator model for type shapes.
 /// </summary>
 /// <typeparam name="T">The type that the shape describes.</typeparam>
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public abstract class SourceGenTypeShape<T> : ITypeShape<T>
 {
     /// <inheritdoc/>
@@ -71,4 +72,6 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
 
         return GetAssociatedTypeShapeFunc?.Invoke(associatedType);
     }
+
+    private protected string DebuggerDisplay => $"{{Type = \"{typeof(T)}\", Kind = {Kind}}}";
 }

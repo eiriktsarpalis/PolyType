@@ -6,9 +6,11 @@ using System.Runtime.Serialization;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerTypeProxy(typeof(PolyType.Debugging.ObjectTypeShapeDebugView))]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
-internal abstract class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options) : ReflectionTypeShape<T>(provider, options), IObjectTypeShape<T>
+internal abstract class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+    : ReflectionTypeShape<T>(provider, options), IObjectTypeShape<T>
 {
     public sealed override TypeShapeKind Kind => TypeShapeKind.Object;
     public sealed override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);

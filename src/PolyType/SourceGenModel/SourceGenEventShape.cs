@@ -1,4 +1,5 @@
 using PolyType.Abstractions;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace PolyType.SourceGenModel;
@@ -8,6 +9,8 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TDeclaringType">The type declaring the event.</typeparam>
 /// <typeparam name="TEventHandler">The type of the event handler.</typeparam>
+[DebuggerTypeProxy(typeof(PolyType.Debugging.EventShapeDebugView))]
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed class SourceGenEventShape<TDeclaringType, TEventHandler> : IEventShape<TDeclaringType, TEventHandler>
 {
     /// <inheritdoc/>
@@ -50,4 +53,6 @@ public sealed class SourceGenEventShape<TDeclaringType, TEventHandler> : IEventS
 
     Setter<TDeclaringType?, TEventHandler> IEventShape<TDeclaringType, TEventHandler>.GetAddHandler() => AddHandler;
     Setter<TDeclaringType?, TEventHandler> IEventShape<TDeclaringType, TEventHandler>.GetRemoveHandler() => RemoveHandler;
+
+    private string DebuggerDisplay => $"{{Name = \"{Name}\", Handler = \"{typeof(TEventHandler)}\"}}";
 }

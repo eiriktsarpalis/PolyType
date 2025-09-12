@@ -6,6 +6,7 @@ using System.Reflection;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerTypeProxy(typeof(PolyType.Debugging.UnionTypeShapeDebugView))]
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 internal sealed class FSharpUnionTypeShape<TUnion>(FSharpUnionInfo unionInfo, ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)

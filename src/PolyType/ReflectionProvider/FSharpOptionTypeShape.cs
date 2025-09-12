@@ -5,6 +5,7 @@ using System.Reflection;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerTypeProxy(typeof(PolyType.Debugging.OptionalTypeShapeDebugView))]
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 internal sealed class FSharpOptionTypeShape<TOptional, TElement>(FSharpUnionInfo unionInfo, ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)

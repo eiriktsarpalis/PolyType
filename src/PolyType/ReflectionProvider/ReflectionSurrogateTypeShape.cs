@@ -1,8 +1,10 @@
 using PolyType.Abstractions;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerTypeProxy(typeof(PolyType.Debugging.SurrogateTypeShapeDebugView))]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 internal sealed class ReflectionSurrogateTypeShape<T, TSurrogate>(

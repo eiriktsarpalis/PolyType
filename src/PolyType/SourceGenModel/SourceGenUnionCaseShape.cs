@@ -1,4 +1,5 @@
 ﻿using PolyType.Abstractions;
+using System.Diagnostics;
 
 namespace PolyType.SourceGenModel;
 
@@ -7,6 +8,8 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TUnionCase">The type of the current union case.</typeparam>
 /// <typeparam name="TUnion">The type of the base union type.</typeparam>
+[DebuggerTypeProxy(typeof(PolyType.Debugging.UnionCaseShapeDebugView))]
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed class SourceGenUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShape<TUnionCase, TUnion>
 {
     /// <inheritdoc/>
@@ -29,4 +32,6 @@ public sealed class SourceGenUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShap
 
     ITypeShape IUnionCaseShape.UnionCaseType => UnionCaseType;
     object? IUnionCaseShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitUnionCase(this, state);
+
+    private string DebuggerDisplay => $"{{ Name = \"{Name}\", CaseType = \"{typeof(TUnionCase)}\" }}";
 }

@@ -1,5 +1,6 @@
-﻿using System.Reflection;
-using PolyType.Abstractions;
+﻿using PolyType.Abstractions;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace PolyType.SourceGenModel;
 
@@ -8,6 +9,8 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TDeclaringType">The declaring type of the property.</typeparam>
 /// <typeparam name="TPropertyType">The type of the property value.</typeparam>
+[DebuggerTypeProxy(typeof(PolyType.Debugging.PropertyShapeDebugView))]
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed class SourceGenPropertyShape<TDeclaringType, TPropertyType> : IPropertyShape<TDeclaringType, TPropertyType>
 {
     /// <inheritdoc/>
@@ -64,4 +67,6 @@ public sealed class SourceGenPropertyShape<TDeclaringType, TPropertyType> : IPro
     bool IPropertyShape.HasSetter => Setter is not null;
     ICustomAttributeProvider? IPropertyShape.AttributeProvider => AttributeProviderFunc?.Invoke();
     object? IPropertyShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitProperty(this, state);
+
+    private string DebuggerDisplay => $"{{Type = \"{typeof(TPropertyType)}\", Name = \"{Name}\"}}";
 }

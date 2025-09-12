@@ -4,6 +4,7 @@ using System.Collections;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Diagnostics;
 
 namespace PolyType.Tests;
 
@@ -1240,6 +1241,74 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             }
 
             return null;
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
+    public void DebuggerProxy_Annotations_ArePresent(ITestCase testCase)
+    {
+        ITypeShape shape = providerUnderTest.ResolveShape(testCase);
+
+        AssertHasDebuggerDisplay(shape);
+        AssertHasDebuggerTypeProxy(shape);
+
+        if (shape is IObjectTypeShape objectShape)
+        {
+            foreach (IPropertyShape property in objectShape.Properties)
+            {
+                AssertHasDebuggerDisplay(property);
+                AssertHasDebuggerTypeProxy(property);
+            }
+
+            if (objectShape.Constructor is { } ctor)
+            {
+                AssertHasDebuggerDisplay(ctor);
+                AssertHasDebuggerTypeProxy(ctor);
+                foreach (IParameterShape p in objectShape.Constructor.Parameters)
+                {
+                    AssertHasDebuggerDisplay(p);
+                    AssertHasDebuggerTypeProxy(p);
+                }
+            }
+        }
+
+        foreach (IMethodShape method in shape.Methods)
+        {
+            AssertHasDebuggerDisplay(method);
+            AssertHasDebuggerTypeProxy(method);
+            foreach (IParameterShape p in method.Parameters)
+            {
+                AssertHasDebuggerDisplay(p);
+                AssertHasDebuggerTypeProxy(p);
+            }
+        }
+
+        foreach (IEventShape evt in shape.Events)
+        {
+            AssertHasDebuggerDisplay(evt);
+            AssertHasDebuggerTypeProxy(evt);
+        }
+
+        static void AssertHasDebuggerDisplay(object obj)
+        {
+            Type t = obj.GetType();
+            var attr = t.GetCustomAttribute<DebuggerDisplayAttribute>(inherit: true);
+            Assert.NotNull(attr);
+            Assert.NotNull(attr.Value);
+            Assert.Equal("{DebuggerDisplay,nq}", attr.Value);
+            Assert.NotNull(t.GetProperty("DebuggerDisplay", BindingFlags.NonPublic | BindingFlags.Instance));
+        }
+
+        static void AssertHasDebuggerTypeProxy(object obj)
+        {
+            Type t = obj.GetType();
+            var attr = t.GetCustomAttribute<DebuggerTypeProxyAttribute>();
+            Assert.NotNull(attr);
+            Type? proxyType = Type.GetType(attr.ProxyTypeName);
+            Assert.NotNull(proxyType);
+            object? proxy = Activator.CreateInstance(proxyType, obj);
+            Assert.NotNull(proxy);
         }
     }
 }
