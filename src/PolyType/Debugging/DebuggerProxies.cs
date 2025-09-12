@@ -1,4 +1,5 @@
 using PolyType.Abstractions;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace PolyType.Debugging;
@@ -6,6 +7,7 @@ namespace PolyType.Debugging;
 /// <summary>
 /// Base debugger proxy view for any <see cref="ITypeShape"/> implementation.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal abstract class TypeShapeDebugView(ITypeShape typeShape)
 {
     public Type Type => typeShape.Type;
@@ -19,6 +21,7 @@ internal abstract class TypeShapeDebugView(ITypeShape typeShape)
 /// <summary>
 /// Debugger proxy for <see cref="IObjectTypeShape"/>.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal sealed class ObjectTypeShapeDebugView(IObjectTypeShape typeShape) : TypeShapeDebugView(typeShape)
 {
     public bool IsRecordType => typeShape.IsRecordType;
@@ -30,6 +33,7 @@ internal sealed class ObjectTypeShapeDebugView(IObjectTypeShape typeShape) : Typ
 /// <summary>
 /// Debugger proxy for <see cref="IEnumerableTypeShape"/>.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal sealed class EnumerableTypeShapeDebugView(IEnumerableTypeShape typeShape) : TypeShapeDebugView(typeShape)
 {
     public ITypeShape ElementType => typeShape.ElementType;
@@ -39,6 +43,7 @@ internal sealed class EnumerableTypeShapeDebugView(IEnumerableTypeShape typeShap
 /// <summary>
 /// Debugger proxy for <see cref="IDictionaryTypeShape"/>.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal sealed class DictionaryTypeShapeDebugView(IDictionaryTypeShape typeShape) : TypeShapeDebugView(typeShape)
 {
     public ITypeShape KeyType => typeShape.KeyType;
@@ -49,6 +54,7 @@ internal sealed class DictionaryTypeShapeDebugView(IDictionaryTypeShape typeShap
 /// <summary>
 /// Debugger proxy for <see cref="IEnumTypeShape"/>.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal sealed class EnumTypeShapeDebugView(IEnumTypeShape typeShape) : TypeShapeDebugView(typeShape)
 {
     public ITypeShape UnderlyingType => typeShape.UnderlyingType;
@@ -57,6 +63,7 @@ internal sealed class EnumTypeShapeDebugView(IEnumTypeShape typeShape) : TypeSha
 /// <summary>
 /// Debugger proxy for <see cref="IOptionalTypeShape"/>.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal sealed class OptionalTypeShapeDebugView(IOptionalTypeShape typeShape) : TypeShapeDebugView(typeShape)
 {
     public ITypeShape ElementType => typeShape.ElementType;
@@ -65,6 +72,7 @@ internal sealed class OptionalTypeShapeDebugView(IOptionalTypeShape typeShape) :
 /// <summary>
 /// Debugger proxy for <see cref="ISurrogateTypeShape"/>.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal sealed class SurrogateTypeShapeDebugView(ISurrogateTypeShape typeShape) : TypeShapeDebugView(typeShape)
 {
     public ITypeShape SurrogateType => typeShape.SurrogateType;
@@ -73,6 +81,7 @@ internal sealed class SurrogateTypeShapeDebugView(ISurrogateTypeShape typeShape)
 /// <summary>
 /// Debugger proxy for <see cref="IUnionTypeShape"/>.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal sealed class UnionTypeShapeDebugView(IUnionTypeShape typeShape) : TypeShapeDebugView(typeShape)
 {
     public ITypeShape BaseType => typeShape.BaseType;
@@ -82,6 +91,7 @@ internal sealed class UnionTypeShapeDebugView(IUnionTypeShape typeShape) : TypeS
 /// <summary>
 /// Debugger proxy for <see cref="IFunctionTypeShape"/>.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal sealed class FunctionTypeShapeDebugView(IFunctionTypeShape typeShape) : TypeShapeDebugView(typeShape)
 {
     public ITypeShape ReturnType => typeShape.ReturnType;
@@ -93,6 +103,7 @@ internal sealed class FunctionTypeShapeDebugView(IFunctionTypeShape typeShape) :
 /// <summary>
 /// Debugger proxy for <see cref="IConstructorShape"/>.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal sealed class ConstructorShapeDebugView(IConstructorShape ctorShape)
 {
     public IObjectTypeShape DeclaringType => ctorShape.DeclaringType;
@@ -103,6 +114,7 @@ internal sealed class ConstructorShapeDebugView(IConstructorShape ctorShape)
 /// <summary>
 /// Debugger proxy for <see cref="IMethodShape"/>.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal sealed class MethodShapeDebugView(IMethodShape methodShape)
 {
     public string Name => methodShape.Name;
@@ -118,6 +130,7 @@ internal sealed class MethodShapeDebugView(IMethodShape methodShape)
 /// <summary>
 /// Debugger proxy for <see cref="IParameterShape"/>.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal sealed class ParameterShapeDebugView(IParameterShape parameterShape)
 {
     public int Position => parameterShape.Position;
@@ -134,6 +147,7 @@ internal sealed class ParameterShapeDebugView(IParameterShape parameterShape)
 /// <summary>
 /// Debugger proxy for <see cref="IPropertyShape"/>.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal sealed class PropertyShapeDebugView(IPropertyShape propertyShape)
 {
     public string Name => propertyShape.Name;
@@ -151,6 +165,7 @@ internal sealed class PropertyShapeDebugView(IPropertyShape propertyShape)
 /// <summary>
 /// Debugger proxy for <see cref="IEventShape"/>.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal sealed class EventShapeDebugView(IEventShape eventShape)
 {
     public string Name => eventShape.Name;
@@ -162,6 +177,7 @@ internal sealed class EventShapeDebugView(IEventShape eventShape)
 /// <summary>
 /// Debugger proxy for <see cref="IUnionCaseShape"/>.
 /// </summary>
+[ExcludeFromCodeCoverage]
 internal sealed class UnionCaseShapeDebugView(IUnionCaseShape unionCaseShape)
 {
     public string Name => unionCaseShape.Name;
