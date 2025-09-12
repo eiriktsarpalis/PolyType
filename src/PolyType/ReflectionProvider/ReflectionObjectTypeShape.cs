@@ -378,6 +378,12 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                     isRequiredByAttribute = propertyShapeAttr.IsRequired;
                 }
             }
+            else if (attributeProvider.GetCustomAttribute<IgnoreDataMemberAttribute>() is not null)
+            {
+                // If not a data contract and no property shape attribute is present,
+                // ignore members annotated with IgnoreDataMemberAttribute.
+                return;
+            }
             else
             {
                 // If no attribute is present, only include members that have at least one public accessor.

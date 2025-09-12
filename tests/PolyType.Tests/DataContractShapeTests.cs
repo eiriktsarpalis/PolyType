@@ -55,6 +55,20 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
     }
 
     [Fact]
+    public void NonContractTypeWithIgnoreDataMemberAttribute_IgnoresIgnoredProperty()
+    {
+        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetTypeShape(typeof(NonContractTypeWithIgnoreDataMemberAttribute));
+        Assert.NotNull(shape);
+
+        Assert.Equal(2, shape.Properties.Count);
+        Assert.Contains(shape.Properties, p => p.Name == nameof(NonContractTypeWithIgnoreDataMemberAttribute.Included));
+        // Property with [IgnoreDataMember] should be excluded.
+        Assert.DoesNotContain(shape.Properties, p => p.Name == nameof(NonContractTypeWithIgnoreDataMemberAttribute.Ignored));
+        // Property with both [IgnoreDataMember] and [PropertyShape] should be included.
+        Assert.Contains(shape.Properties, p => p.Name == nameof(NonContractTypeWithIgnoreDataMemberAttribute.IgnoreWithShapeAttribute));
+    }
+
+    [Fact]
     public void Enum_EnumMember_And_EnumMemberShape_Priority()
     {
         var enumShape = (IEnumTypeShape<ContractEnum, int>)providerUnderTest.Provider.GetTypeShapeOrThrow<ContractEnum>();
@@ -98,6 +112,16 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
     public partial class DerivedNonContractType : ContractType
     {
         public int NewValue { get; set; }
+    }
+
+    [GenerateShape]
+    public partial class NonContractTypeWithIgnoreDataMemberAttribute
+    {
+        [IgnoreDataMember]
+        public int Ignored { get; set; }
+        public int Included { get; set; }
+        [IgnoreDataMember, PropertyShape]
+        public int IgnoreWithShapeAttribute { get; set; }
     }
 
     public enum ContractEnum

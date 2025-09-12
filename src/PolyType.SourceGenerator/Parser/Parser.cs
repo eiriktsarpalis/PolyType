@@ -242,6 +242,13 @@ public sealed partial class Parser : TypeDataModelGenerator
             return false;
         }
 
+        if (property.HasAttribute(_knownSymbols.IgnoreDataMemberAttribute))
+        {
+            // Ignore properties with [IgnoreDataMember] attribute.
+            includeGetter = includeSetter = false;
+            return false;
+        }
+
         return base.IncludeProperty(property, out includeGetter, out includeSetter);
     }
 
@@ -257,6 +264,12 @@ public sealed partial class Parser : TypeDataModelGenerator
         {
             // Ignore fields with the [PropertyShape] attribute set to Ignore = true.
             return !fieldAttribute.TryGetNamedArgument("Ignore", out bool ignoreValue) || !ignoreValue;
+        }
+
+        if (field.HasAttribute(_knownSymbols.IgnoreDataMemberAttribute))
+        {
+            // Ignore fields with [IgnoreDataMember] attribute.
+            return false;
         }
 
         return base.IncludeField(field);

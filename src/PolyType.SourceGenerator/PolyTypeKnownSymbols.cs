@@ -93,4 +93,7 @@ public sealed class PolyTypeKnownSymbols(Compilation compilation) : KnownSymbols
 
     public INamedTypeSymbol? EnumMemberAttribute => GetOrResolveType("System.Runtime.Serialization.EnumMemberAttribute", ref _EnumMemberAttribute);
     private Option<INamedTypeSymbol?> _EnumMemberAttribute;
+
+    public INamedTypeSymbol? IgnoreDataMemberAttribute => GetOrResolveType("System.Runtime.Serialization.IgnoreDataMemberAttribute", ref _IgnoreDataMemberAttribute);
+    private Option<INamedTypeSymbol?> _IgnoreDataMemberAttribute;
 }
