@@ -2,6 +2,7 @@
 using PolyType.Utilities;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.Serialization;
 
 namespace PolyType.ReflectionProvider;
 
@@ -34,8 +35,19 @@ internal sealed class ReflectionEnumTypeShape<TEnum, TUnderlying>(ReflectionType
             object? value = field.GetRawConstantValue();
             if (value is TUnderlying underlyingValue)
             {
+                // Priority: EnumMemberShapeAttribute > EnumMemberAttribute > field.Name
                 var shapeAttribute = field.GetCustomAttribute<EnumMemberShapeAttribute>();
-                members.Add(shapeAttribute?.Name ?? field.Name, underlyingValue);
+                string? name = shapeAttribute?.Name;
+                if (name is null)
+                {
+                    EnumMemberAttribute? enumMemberAttr = field.GetCustomAttribute<EnumMemberAttribute>();
+                    if (enumMemberAttr?.Value is { } enumMemberValue)
+                    {
+                        name = enumMemberValue;
+                    }
+                }
+
+                members.Add(name ?? field.Name, underlyingValue);
             }
         }
 

@@ -84,4 +84,19 @@ public sealed class PolyTypeKnownSymbols(Compilation compilation) : KnownSymbols
 
     public INamedTypeSymbol? FSharpValueOption => GetOrResolveType("Microsoft.FSharp.Core.FSharpValueOption`1", ref _FSharpValueOptionType);
     private Option<INamedTypeSymbol?> _FSharpValueOptionType;
+
+    public INamedTypeSymbol? DataContractAttribute => GetOrResolveType("System.Runtime.Serialization.DataContractAttribute", ref _DataContractAttribute);
+    private Option<INamedTypeSymbol?> _DataContractAttribute;
+
+    public INamedTypeSymbol? DataMemberAttribute => GetOrResolveType("System.Runtime.Serialization.DataMemberAttribute", ref _DataMemberAttribute);
+    private Option<INamedTypeSymbol?> _DataMemberAttribute;
+
+    public INamedTypeSymbol? EnumMemberAttribute => GetOrResolveType("System.Runtime.Serialization.EnumMemberAttribute", ref _EnumMemberAttribute);
+    private Option<INamedTypeSymbol?> _EnumMemberAttribute;
+
+    public INamedTypeSymbol? IgnoreDataMemberAttribute => GetOrResolveType("System.Runtime.Serialization.IgnoreDataMemberAttribute", ref _IgnoreDataMemberAttribute);
+    private Option<INamedTypeSymbol?> _IgnoreDataMemberAttribute;
+
+    public INamedTypeSymbol? KnownTypeAttribute => GetOrResolveType("System.Runtime.Serialization.KnownTypeAttribute", ref _KnownTypeAttribute);
+    private Option<INamedTypeSymbol?> _KnownTypeAttribute;
 }

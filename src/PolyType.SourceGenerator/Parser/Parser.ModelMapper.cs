@@ -589,18 +589,7 @@ public sealed partial class Parser
                     CommonHelpers.CamelCaseInvariantComparer.Instance.Equals(parameter.Parameter.Name, property.Name))
                 {
                     // We have a matching property, use its name in the parameter.
-                    if (property.PropertySymbol.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData attributeData &&
-                        attributeData.TryGetNamedArgument("Name", out string? result) && result != null)
-                    {
-                        // Resolve the [PropertyShape] attribute name override.
-                        name = result;
-                    }
-                    else
-                    {
-                        // Use the name of the matching property.
-                        name = property.Name;
-                    }
-
+                    ParsePropertyShapeAttribute(property.PropertySymbol, out name, out int _);
                     break;
                 }
             }
@@ -786,9 +775,17 @@ public sealed partial class Parser
 
     protected override string GetEnumValueName(IFieldSymbol field)
     {
-        if (field.GetAttribute(_knownSymbols.EnumMemberShapeAttribute, inherit: false) is AttributeData ad)
+        if (field.GetAttribute(_knownSymbols.EnumMemberShapeAttribute, inherit: false) is AttributeData enumMemberShapeAttr)
         {
-            if (ad.TryGetNamedArgument(PolyTypeKnownSymbols.EnumMemberShapeAttributePropertyNames.Name, out string? name) && name is not null)
+            if (enumMemberShapeAttr.TryGetNamedArgument(PolyTypeKnownSymbols.EnumMemberShapeAttributePropertyNames.Name, out string? name) && name is not null)
+            {
+                return name;
+            }
+        }
+
+        if (field.GetAttribute(_knownSymbols.EnumMemberAttribute, inherit: false) is AttributeData enumMemberAttr)
+        {
+            if (enumMemberAttr.TryGetNamedArgument("Value", out string? name) && name is not null)
             {
                 return name;
             }
@@ -912,6 +909,27 @@ public sealed partial class Parser
     {
         propertyName = propertySymbol.Name;
         order = 0;
+
+        if (propertySymbol.ContainingType.HasAttribute(_knownSymbols.DataContractAttribute))
+        {
+            if (propertySymbol.GetAttribute(_knownSymbols.DataMemberAttribute) is AttributeData dataMemberAttr)
+            {
+                foreach (KeyValuePair<string, TypedConstant> namedArgument in dataMemberAttr.NamedArguments)
+                {
+                    switch (namedArgument.Key)
+                    {
+                        case "Name":
+                            propertyName = (string?)namedArgument.Value.Value ?? propertyName;
+                            break;
+                        case "Order":
+                            order = (int)namedArgument.Value.Value!;
+                            break;
+                    }
+                }
+            }
+
+            return;
+        }
 
         if (propertySymbol.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData propertyAttr)
         {

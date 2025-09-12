@@ -315,3 +315,15 @@ class PocoWithConstructors
     public PocoWithConstructors([ParameterShape(Name = "name")] string x1, [ParameterShape(Name = "age")] int x2);
 }
 ```
+
+### DataContract support
+
+PolyType includes limited support for types using [data contract annotations](https://learn.microsoft.com/dotnet/framework/wcf/feature-details/using-data-contracts).
+
+Types annotated with `DataContractAttribute` will only include member shapes annotated with `DataMemberAttribute`, resolving property shape metadata from the relevant attribute properties where applicable. DataContract types annotated with `KnownTypeAttribute` will be mapped to union shapes following the same rules as `DerivedTypeShapeAttribute`.
+
+Types not annotated with `DataContractAttribute` will include all public readable properties, ignoring any `DataMemberAttribute` or `KnownTypeAttribute` annotations. Members annotated with `IgnoreDataMemberAttribute` but not with `PropertyShapeAttribute` will be ignored.
+
+The `EnumMemberAttribute` is supported for enum types, with `EnumMemberShapeAttribute` annotations taking precedence.
+
+The attributes `CollectionDataContractAttribute` and `ServiceContractAttribute` are currently not supported by PolyType.
