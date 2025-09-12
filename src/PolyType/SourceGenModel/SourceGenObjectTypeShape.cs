@@ -8,6 +8,7 @@ namespace PolyType.SourceGenModel;
 /// Source generator model for object type shapes.
 /// </summary>
 /// <typeparam name="TObject">The type whose shape is described.</typeparam>
+[DebuggerDisplay("ObjectTypeShape {((Type)typeof(TObject)).Name} (Properties = {Properties.Count})")]
 public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObject>, IObjectTypeShape<TObject>
 {
     /// <inheritdoc/>

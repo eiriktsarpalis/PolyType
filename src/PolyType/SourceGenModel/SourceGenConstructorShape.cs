@@ -9,6 +9,7 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TDeclaringType">The type being constructed.</typeparam>
 /// <typeparam name="TArgumentState">The mutable argument state for the constructor.</typeparam>
+[DebuggerDisplay("Constructor {((Type)typeof(TDeclaringType)).Name}({Parameters.Count} parameters)")]
 public sealed class SourceGenConstructorShape<TDeclaringType, TArgumentState> : IConstructorShape<TDeclaringType, TArgumentState>
     where TArgumentState : IArgumentState
 {

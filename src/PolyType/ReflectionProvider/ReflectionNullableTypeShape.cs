@@ -1,8 +1,10 @@
 ﻿using PolyType.Abstractions;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerDisplay("NullableTypeShape {Type.Name}")]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 internal sealed class ReflectionNullableTypeShape<T>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)

@@ -4,13 +4,19 @@ using PolyType.Abstractions;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerDisplay("Property {Name} : {PropertyType.Type.Name}")]
 internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : IPropertyShape<TDeclaringType, TPropertyType>
 {
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly ReflectionTypeShapeProvider _provider;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly MemberInfo _memberInfo;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly MemberInfo[]? _parentMembers; // stack of parent members reserved for nested tuple representations
 
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private Getter<TDeclaringType, TPropertyType>? _getter;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private Setter<TDeclaringType, TPropertyType>? _setter;
 
     public ReflectionPropertyShape(ReflectionTypeShapeProvider provider, IObjectTypeShape<TDeclaringType> declaringType, PropertyShapeInfo shapeInfo, int position)

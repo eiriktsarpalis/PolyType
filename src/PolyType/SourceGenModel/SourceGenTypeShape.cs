@@ -9,6 +9,7 @@ namespace PolyType.SourceGenModel;
 /// Source generator model for type shapes.
 /// </summary>
 /// <typeparam name="T">The type that the shape describes.</typeparam>
+[DebuggerDisplay("TypeShape {((Type)typeof(T)).Name} (Kind = {Kind})")]
 public abstract class SourceGenTypeShape<T> : ITypeShape<T>
 {
     /// <inheritdoc/>

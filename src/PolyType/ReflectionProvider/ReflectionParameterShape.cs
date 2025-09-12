@@ -4,13 +4,19 @@ using System.Reflection;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerDisplay("Parameter {Name} : {ParameterType.Type.Name}")]
 internal sealed class ReflectionParameterShape<TArgumentState, TParameter> : IParameterShape<TArgumentState, TParameter>
     where TArgumentState : IArgumentState
 {
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly ReflectionTypeShapeProvider _provider;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly IMethodShapeInfo _ctorInfo;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly IParameterShapeInfo _parameterInfo;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private Getter<TArgumentState, TParameter>? _getter;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private Setter<TArgumentState, TParameter>? _setter;
 
     public ReflectionParameterShape(

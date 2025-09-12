@@ -5,6 +5,7 @@ using PolyType.Abstractions;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerDisplay("Constructor {DeclaringType.Type.Name}({Parameters.Count} parameters)")]
 internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>(
     ReflectionTypeShapeProvider provider,
     IObjectTypeShape<TDeclaringType> declaringType,
@@ -12,9 +13,13 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
     IConstructorShape<TDeclaringType, TArgumentState>
     where TArgumentState : IArgumentState
 {
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private IReadOnlyList<IParameterShape>? _parameters;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private Func<TArgumentState>? _argumentStateConstructor;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private Constructor<TArgumentState, TDeclaringType>? _parameterizedConstructor;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private Func<TDeclaringType>? _defaultConstructor;
 
     public IObjectTypeShape<TDeclaringType> DeclaringType { get; } = declaringType;

@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics;
+using System.Reflection;
 using PolyType.Abstractions;
 
 namespace PolyType.SourceGenModel;
@@ -8,6 +9,7 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TDeclaringType">The declaring type of the property.</typeparam>
 /// <typeparam name="TPropertyType">The type of the property value.</typeparam>
+[DebuggerDisplay("Property {Name} : {((Type)typeof(TPropertyType)).Name}")]
 public sealed class SourceGenPropertyShape<TDeclaringType, TPropertyType> : IPropertyShape<TDeclaringType, TPropertyType>
 {
     /// <inheritdoc/>

@@ -1,10 +1,12 @@
 ﻿using PolyType.Abstractions;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerDisplay("TypeShape {Type.Name} (Kind = {Kind})")]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options) : ITypeShape<T>
@@ -16,9 +18,11 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
     public Type Type => typeof(T);
 
     public IReadOnlyList<IMethodShape> Methods => _methods ?? CommonHelpers.ExchangeIfNull(ref _methods, GetMethods().AsReadOnlyList());
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private IReadOnlyList<IMethodShape>? _methods;
 
     public IReadOnlyList<IEventShape> Events => _events ?? CommonHelpers.ExchangeIfNull(ref _events, GetEvents().AsReadOnlyList());
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private IReadOnlyList<IEventShape>? _events;
 
     ITypeShapeProvider ITypeShape.Provider => provider;

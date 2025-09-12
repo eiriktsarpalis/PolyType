@@ -10,6 +10,7 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TDeclaringType">The type declaring the method.</typeparam>
 /// <typeparam name="TArgumentState">The mutable state type used for aggregating method arguments.</typeparam>
 /// <typeparam name="TResult">The return type of the underlying method.</typeparam>
+[DebuggerDisplay("Method {Name}({Parameters.Count} parameters) : {((Type)typeof(TResult)).Name}")]
 public sealed class SourceGenMethodShape<TDeclaringType, TArgumentState, TResult> : IMethodShape<TDeclaringType, TArgumentState, TResult>
     where TArgumentState : IArgumentState
 {

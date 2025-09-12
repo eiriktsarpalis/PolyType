@@ -7,17 +7,24 @@ using System.Reflection;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerDisplay("DictionaryTypeShape {Type.Name}<{KeyType.Type.Name}, {ValueType.Type.Name}>")]
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
     : ReflectionTypeShape<TDictionary>(provider, options), IDictionaryTypeShape<TDictionary, TKey, TValue>
     where TKey : notnull
 {
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private CollectionConstructorInfo? _constructorInfo;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private MutableCollectionConstructor<TKey, TDictionary>? _mutableCtorDelegate;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private DictionaryInserter<TDictionary, TKey, TValue>? _addInserter;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private DictionaryInserter<TDictionary, TKey, TValue>? _setInserter;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private DictionaryInserter<TDictionary, TKey, TValue>? _tryAddInserter;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>? _spanCtorDelegate;
 
     private CollectionConstructorInfo ConstructorInfo

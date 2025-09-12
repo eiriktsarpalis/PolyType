@@ -5,6 +5,7 @@ using System.Reflection;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerDisplay("ObjectTypeShape {Type.Name} (Properties = {Properties.Count})")]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 internal abstract class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options) : ReflectionTypeShape<T>(provider, options), IObjectTypeShape<T>
@@ -16,6 +17,7 @@ internal abstract class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider
     public virtual bool IsTupleType => false;
 
     public IReadOnlyList<IPropertyShape> Properties => _properties ?? CommonHelpers.ExchangeIfNull(ref _properties, GetProperties().AsReadOnlyList());
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private IReadOnlyList<IPropertyShape>? _properties;
 
     public IConstructorShape? Constructor
@@ -37,7 +39,9 @@ internal abstract class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider
         }
     }
 
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private IConstructorShape? _constructor;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private bool _isConstructorResolved;
 
     protected abstract IEnumerable<IPropertyShape> GetProperties();

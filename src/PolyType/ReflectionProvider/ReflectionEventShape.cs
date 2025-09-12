@@ -4,12 +4,18 @@ using System.Reflection;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerDisplay("Event {Name} : {HandlerType}")]
 internal sealed class ReflectionEventShape<TDeclaringType, TEventHandler> : IEventShape<TDeclaringType, TEventHandler>
 {
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly ReflectionTypeShapeProvider _provider;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly EventInfo _eventInfo;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private IFunctionTypeShape? _handlerType;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private Setter<TDeclaringType?, TEventHandler>? _addHandler;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private Setter<TDeclaringType?, TEventHandler>? _removeHandler;
 
     public ReflectionEventShape(EventInfo eventInfo, string name, ReflectionTypeShapeProvider provider)

@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics;
+using System.Reflection;
 using PolyType.Abstractions;
 
 namespace PolyType.SourceGenModel;
@@ -8,6 +9,7 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TArgumentState">The mutable constructor argument state type.</typeparam>
 /// <typeparam name="TParameter">The constructor parameter type.</typeparam>
+[DebuggerDisplay("Parameter {Name} : {((Type)typeof(TParameter)).Name}")]
 public sealed class SourceGenParameterShape<TArgumentState, TParameter> : IParameterShape<TArgumentState, TParameter>
     where TArgumentState : IArgumentState
 {

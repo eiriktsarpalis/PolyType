@@ -4,14 +4,20 @@ using System.Reflection;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerDisplay("Method {Name}({Parameters.Count} parameters) : {ReturnType.Type.Name}")]
 internal sealed class ReflectionMethodShape<TDeclaringType, TArgumentState, TResult>
     : IMethodShape<TDeclaringType, TArgumentState, TResult>
     where TArgumentState : IArgumentState
 {
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly ReflectionTypeShapeProvider _provider;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly MethodShapeInfo _methodShapeInfo;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private IReadOnlyList<IParameterShape>? _parameters;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private Func<TArgumentState>? _argumentStateConstructor;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private MethodInvoker<TDeclaringType?, TArgumentState, TResult>? _methodInvoker;
 
     public ReflectionMethodShape(MethodShapeInfo methodShapeInfo, ReflectionTypeShapeProvider provider)

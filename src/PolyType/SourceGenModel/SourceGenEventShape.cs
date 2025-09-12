@@ -1,4 +1,5 @@
 using PolyType.Abstractions;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace PolyType.SourceGenModel;
@@ -8,6 +9,7 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TDeclaringType">The type declaring the event.</typeparam>
 /// <typeparam name="TEventHandler">The type of the event handler.</typeparam>
+[DebuggerDisplay("Event {Name} : {HandlerType}")]
 public sealed class SourceGenEventShape<TDeclaringType, TEventHandler> : IEventShape<TDeclaringType, TEventHandler>
 {
     /// <inheritdoc/>

@@ -7,14 +7,19 @@ using System.Runtime.InteropServices;
 
 namespace PolyType.ReflectionProvider;
 
+[DebuggerDisplay("EnumerableTypeShape {Type.Name}<{ElementType.Type.Name}>")]
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
     : ReflectionTypeShape<TEnumerable>(provider, options), IEnumerableTypeShape<TEnumerable, TElement>
 {
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private CollectionConstructorInfo? _constructorInfo;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private EnumerableAppender<TEnumerable, TElement>? _addDelegate;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private MutableCollectionConstructor<TElement, TEnumerable>? _mutableCtorDelegate;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private ParameterizedCollectionConstructor<TElement, TElement, TEnumerable>? _spanCtorDelegate;
 
     private CollectionConstructorInfo ConstructorInfo

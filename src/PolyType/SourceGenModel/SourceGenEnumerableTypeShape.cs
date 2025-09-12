@@ -1,4 +1,5 @@
 ﻿using PolyType.Abstractions;
+using System.Diagnostics;
 
 namespace PolyType.SourceGenModel;
 
@@ -7,6 +8,7 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TEnumerable">The type of the enumerable collection.</typeparam>
 /// <typeparam name="TElement">The element type of the collection.</typeparam>
+[DebuggerDisplay("EnumerableTypeShape {((Type)typeof(TEnumerable)).Name}<{((Type)typeof(TElement)).Name}>")]
 public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : SourceGenTypeShape<TEnumerable>, IEnumerableTypeShape<TEnumerable, TElement>
 {
     /// <inheritdoc/>
