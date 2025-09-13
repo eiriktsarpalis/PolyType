@@ -1,6 +1,6 @@
 # Type Shape Derivation Specification
 
-This document provides a comprehensive specification for how .NET types are mapped to PolyType shapes. Both built-in shape providers (source generator and reflection provider) implement identical derivation logic that maps arbitrary .NET types into type shapes of different kinds.
+This document details a specification for how .NET types are mapped to PolyType shapes. Both built-in shape providers (source generator and reflection provider) implement identical derivation logic that maps arbitrary .NET types into type shapes of different kinds.
 
 ## Overview
 
@@ -19,9 +19,7 @@ PolyType categorizes .NET types into eight distinct shape kinds, each represente
 
 Type shape derivation follows a priority-based algorithm that checks conditions in the following order:
 
-### 1. Surrogate Types (Highest Priority)
-
-**Condition**: A type is mapped to <xref:PolyType.Abstractions.ISurrogateTypeShape> when a custom marshaler is explicitly configured.
+### 1. Surrogate Types
 
 **Implementation Details**:
 - Requires an <xref:PolyType.IMarshaler`2> implementation
@@ -31,53 +29,31 @@ Type shape derivation follows a priority-based algorithm that checks conditions 
 
 ### 2. Enum Types
 
-**Condition**: A type is mapped to <xref:PolyType.Abstractions.IEnumTypeShape> when:
+A type is mapped to <xref:PolyType.Abstractions.IEnumTypeShape> when:
 - It is an enum type
-
-**Specification**: A type is mapped to <xref:PolyType.Abstractions.IEnumTypeShape> when:
-- It is an enum type
-
-- The underlying numeric type maps to the underlying enum property of <xref:PolyType.Abstractions.IEnumTypeShape>
+- The underlying numeric type maps to the `UnderlyingType` property of <xref:PolyType.Abstractions.IEnumTypeShape>
 - Enum member names can be overridden using <xref:PolyType.PropertyShapeAttribute> attributes
 
 
 ### 3. Optional Types
 
-**Condition**: A type is mapped to <xref:PolyType.Abstractions.IOptionalTypeShape> when:
+A type is mapped to <xref:PolyType.Abstractions.IOptionalTypeShape> when:
 - It is @System.Nullable`1 (e.g., `int?`, `DateTime?`)
 - It is an F# option type
-
-**Specification**: A type is mapped to <xref:PolyType.Abstractions.IOptionalTypeShape> when:
-- It is @System.Nullable`1 (e.g., `int?`, `DateTime?`)
-- It is an F# option type
-
-- For nullable value types: @System.Nullable.GetUnderlyingType* returns non-null
-- For F# options: detected via F# reflection helpers
-- Provides access to the element type and construction/deconstruction methods
-
-
 
 ### 4. Function Types
 
-**Condition**: A type is mapped to <xref:PolyType.Abstractions.IFunctionTypeShape> when:
+A type is mapped to <xref:PolyType.Abstractions.IFunctionTypeShape> when:
 - It is a delegate type
-
-**Specification**: A type is mapped to <xref:PolyType.Abstractions.IFunctionTypeShape> when:
-- It is a delegate type
-
-- Provides access to parameter shapes and return type
-- Supports both creation and invocation of delegate instances
-- Handles F# function types through specialized detection
 
 
 
 ### 5. Union Types
 
-**Condition**: A type is mapped to <xref:PolyType.Abstractions.IUnionTypeShape> when:
+A type is mapped to <xref:PolyType.Abstractions.IUnionTypeShape> when:
 - It has F# discriminated union metadata (detected via `FSharpReflectionHelpers`)
 - It has <xref:PolyType.DerivedTypeShapeAttribute> attributes declaring union cases
 - It has WCF @System.Runtime.Serialization.DataContractAttribute with @System.Runtime.Serialization.KnownTypeAttribute attributes
-
 - Provides access to all union cases/derived types
 - Each case has a unique identifier inferred from type name and optional discriminator values specified via attributes
 - Supports both open and closed union hierarchies
@@ -86,36 +62,45 @@ Type shape derivation follows a priority-based algorithm that checks conditions 
 
 ### 6. Dictionary Types
 
-**Condition**: A type is mapped to <xref:PolyType.Abstractions.IDictionaryTypeShape> when it implements (checked in priority order):
+A type is mapped to <xref:PolyType.Abstractions.IDictionaryTypeShape> when it implements (checked in priority order):
 - @System.Collections.Generic.IDictionary`2
 - @System.Collections.Generic.IReadOnlyDictionary`2
 - Non-generic @System.Collections.IDictionary
-
 - Takes precedence over @System.Collections.Generic.IEnumerable`1 since dictionaries also implement enumerable
 - For generic dictionaries: provides strongly-typed key and value types
 - For non-generic @System.Collections.IDictionary: uses `object` for both key and value types
-- Supports construction via collection constructors or factory methods
+
+#### Collection Construction Strategy
+
+Dictionary construction follows this priority order:
+- Public constructors accepting key-value pair enumerables (e.g., `IDictionary<K,V>`, `IEnumerable<KeyValuePair<K,V>>`)
+- Public parameterless constructors with accessible `Add` methods
+- Factory methods or static creation methods when available
 
 
 
 ### 7. Enumerable Types
 
-**Condition**: A type is mapped to <xref:PolyType.Abstractions.IEnumerableTypeShape> when:
+A type is mapped to <xref:PolyType.Abstractions.IEnumerableTypeShape> when:
 - It implements @System.Collections.Generic.IEnumerable`1 (except @System.String)
 - It implements non-generic @System.Collections.IEnumerable, using `object` as the element type
 - It implements @System.Collections.Generic.IAsyncEnumerable`1
 - It is an array type (including multi-dimensional arrays)
 - It is @System.Memory`1 or @System.ReadOnlyMemory`1
-
 - @System.String is explicitly excluded despite implementing @System.Collections.Generic.IEnumerable`1
 - Dictionary types are excluded since they're handled by dictionary mapping
-- Provides element type information and construction capabilities
 
+#### Collection Construction Strategy
 
+Enumerable construction follows this priority order:
+- Public constructors accepting element enumerables (e.g., `IEnumerable<T>`, `ICollection<T>`)
+- Public parameterless constructors with accessible `Add` methods
+- Array creation for array types
+- Factory methods or static creation methods when available
 
 ### 8. Object Types (Default)
 
-**Condition**: A type is mapped to <xref:PolyType.Abstractions.IObjectTypeShape> when it doesn't match any of the above categories.
+A type is mapped to <xref:PolyType.Abstractions.IObjectTypeShape> when it doesn't match any of the above categories.
 
 ### Property Shape Resolution
 
