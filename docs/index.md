@@ -71,5 +71,6 @@ For more information, see:
 
 * The [core abstractions](https://eiriktsarpalis.github.io/PolyType/core-abstractions.html) document for an overview of the core programming model.
 * The [shape providers](https://eiriktsarpalis.github.io/PolyType/shape-providers.html) document for an overview of the built-in shape providers and their APIs.
+* The [type shape derivation specification](https://eiriktsarpalis.github.io/PolyType/specification.html) document detailing how .NET types are mapped to different type shapes.
 * The generated [API documentation](https://eiriktsarpalis.github.io/PolyType/api/PolyType.html) for the project.
 * The [`PolyType.Examples`](https://github.com/eiriktsarpalis/PolyType/tree/main/src/PolyType.Examples) project for advanced examples of libraries built on top of PolyType.
