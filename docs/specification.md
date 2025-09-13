@@ -6,14 +6,14 @@ This document provides a comprehensive specification for how .NET types are mapp
 
 PolyType categorizes .NET types into eight distinct shape kinds, each represented by a specific interface:
 
-- **Object** - `IObjectTypeShape` for general object types with properties and constructors  
-- **Enumerable** - `IEnumerableTypeShape` for collection types implementing `IEnumerable<T>`
-- **Dictionary** - `IDictionaryTypeShape` for key-value collection types
-- **Enum** - `IEnumTypeShape` for enumeration types
-- **Optional** - `IOptionalTypeShape` for nullable value types and F# options
-- **Surrogate** - `ISurrogateTypeShape` for types with custom marshaling
-- **Union** - `IUnionTypeShape` for discriminated union types
-- **Function** - `IFunctionTypeShape` for delegate and F# function types
+- **Object** - <xref:PolyType.Abstractions.IObjectTypeShape> for general object types with properties and constructors  
+- **Enumerable** - <xref:PolyType.Abstractions.IEnumerableTypeShape> for collection types implementing @System.Collections.Generic.IEnumerable`1
+- **Dictionary** - <xref:PolyType.Abstractions.IDictionaryTypeShape> for key-value collection types
+- **Enum** - <xref:PolyType.Abstractions.IEnumTypeShape> for enumeration types
+- **Optional** - <xref:PolyType.Abstractions.IOptionalTypeShape> for nullable value types and F# options
+- **Surrogate** - <xref:PolyType.Abstractions.ISurrogateTypeShape> for types with custom marshaling
+- **Union** - <xref:PolyType.Abstractions.IUnionTypeShape> for discriminated union types
+- **Function** - <xref:PolyType.Abstractions.IFunctionTypeShape> for delegate and F# function types
 
 ## Derivation Algorithm
 
@@ -21,12 +21,12 @@ Type shape derivation follows a priority-based algorithm that checks conditions 
 
 ### 1. Surrogate Types (Highest Priority)
 
-**Condition**: A type is mapped to `ISurrogateTypeShape` when a custom marshaler is explicitly configured.
+**Condition**: A type is mapped to <xref:PolyType.Abstractions.ISurrogateTypeShape> when a custom marshaler is explicitly configured.
 
 **Implementation Details**:
-- Requires an `IMarshaler<T, TSurrogate>` implementation
+- Requires an <xref:PolyType.IMarshaler`2> implementation
 - The marshaler provides bidirectional mapping between the original type and surrogate type
-- Configured via the `GenerateShape` attribute's `Marshaler` parameter or type extensions
+- Configured via the <xref:PolyType.GenerateShapeAttribute> attribute's `Marshaler` parameter or type extensions
 - Takes precedence over all other shape kinds
 
 **Examples**:
@@ -44,7 +44,7 @@ public class PersonToStringMarshaler : IMarshaler<Person, string>
 
 ### 2. Enum Types
 
-**Condition**: A type is mapped to `IEnumTypeShape` when:
+**Condition**: A type is mapped to <xref:PolyType.Abstractions.IEnumTypeShape> when:
 - `type.IsEnum` returns `true`
 
 **Implementation Details**:
@@ -60,12 +60,12 @@ public enum FileAccess : byte { Read = 1, Write = 2, ReadWrite = 3 }
 
 ### 3. Optional Types
 
-**Condition**: A type is mapped to `IOptionalTypeShape` when:
-- It is `Nullable<T>` (e.g., `int?`, `DateTime?`)
+**Condition**: A type is mapped to <xref:PolyType.Abstractions.IOptionalTypeShape> when:
+- It is @System.Nullable`1 (e.g., `int?`, `DateTime?`)
 - It is an F# option type with appropriate metadata
 
 **Implementation Details**:
-- For nullable value types: `Nullable.GetUnderlyingType(type) != null`
+- For nullable value types: @System.Nullable.GetUnderlyingType* returns non-null
 - For F# options: detected via F# reflection helpers
 - Provides access to the element type and construction/deconstruction methods
 
@@ -78,9 +78,9 @@ DateTime? nullableDate;     // Maps to IOptionalTypeShape<DateTime?, DateTime>
 
 ### 4. Function Types
 
-**Condition**: A type is mapped to `IFunctionTypeShape` when:
-- `typeof(Delegate).IsAssignableFrom(type)` returns `true`
-- This includes `Func<>`, `Action<>`, and custom delegate types
+**Condition**: A type is mapped to <xref:PolyType.Abstractions.IFunctionTypeShape> when:
+- @System.Delegate.IsAssignableFrom* returns `true`
+- This includes @System.Func`1, @System.Action, and custom delegate types
 
 **Implementation Details**:
 - Provides access to parameter shapes and return type
@@ -97,10 +97,10 @@ MyCustomDelegate           // Maps to IFunctionTypeShape
 
 ### 5. Union Types
 
-**Condition**: A type is mapped to `IUnionTypeShape` when (requires `allowUnionShapes = true`):
+**Condition**: A type is mapped to <xref:PolyType.Abstractions.IUnionTypeShape> when (requires `allowUnionShapes = true`):
 - It has F# discriminated union metadata (detected via `FSharpReflectionHelpers`)
-- It has `[DerivedTypeShape]` attributes declaring union cases
-- It has WCF `[DataContract]` with `[KnownType]` attributes
+- It has <xref:PolyType.DerivedTypeShapeAttribute> attributes declaring union cases
+- It has WCF @System.Runtime.Serialization.DataContractAttribute with @System.Runtime.Serialization.KnownTypeAttribute attributes
 
 **Implementation Details**:
 - Provides access to all union cases/derived types
@@ -123,15 +123,15 @@ public abstract class Shape { }
 
 ### 6. Dictionary Types
 
-**Condition**: A type is mapped to `IDictionaryTypeShape` when it implements (checked in priority order):
-- `IDictionary<TKey, TValue>`
-- `IReadOnlyDictionary<TKey, TValue>`
-- Non-generic `IDictionary`
+**Condition**: A type is mapped to <xref:PolyType.Abstractions.IDictionaryTypeShape> when it implements (checked in priority order):
+- @System.Collections.Generic.IDictionary`2
+- @System.Collections.Generic.IReadOnlyDictionary`2
+- Non-generic @System.Collections.IDictionary
 
 **Implementation Details**:
-- Takes precedence over `IEnumerable<T>` since dictionaries also implement enumerable
+- Takes precedence over @System.Collections.Generic.IEnumerable`1 since dictionaries also implement enumerable
 - For generic dictionaries: provides strongly-typed key and value types
-- For non-generic `IDictionary`: uses `object` for both key and value types
+- For non-generic @System.Collections.IDictionary: uses `object` for both key and value types
 - Supports construction via collection constructors or factory methods
 
 **Examples**:
@@ -144,16 +144,16 @@ Hashtable                           // IDictionary (non-generic)
 
 ### 7. Enumerable Types
 
-**Condition**: A type is mapped to `IEnumerableTypeShape` when:
-- It implements `IEnumerable<T>` (except `string`)
-- It implements non-generic `IEnumerable` (except `string`)  
-- It implements `IAsyncEnumerable<T>`
+**Condition**: A type is mapped to <xref:PolyType.Abstractions.IEnumerableTypeShape> when:
+- It implements @System.Collections.Generic.IEnumerable`1 (except @System.String)
+- It implements non-generic @System.Collections.IEnumerable (except @System.String)  
+- It implements @System.Collections.Generic.IAsyncEnumerable`1
 - It is an array type (including multi-dimensional)
-- It is `Memory<T>` or `ReadOnlyMemory<T>`
-- It is `Span<T>` or `ReadOnlySpan<T>`
+- It is @System.Memory`1 or @System.ReadOnlyMemory`1
+- It is @System.Span`1 or @System.ReadOnlySpan`1
 
 **Implementation Details**:
-- `string` is explicitly excluded despite implementing `IEnumerable<char>`
+- @System.String is explicitly excluded despite implementing @System.Collections.Generic.IEnumerable`1
 - Dictionary types are excluded since they're handled by dictionary mapping
 - Provides element type information and construction capabilities
 - Supports various collection interfaces and span types
@@ -171,7 +171,7 @@ ReadOnlySpan<char>           // Treated as enumerable
 
 ### 8. Object Types (Default)
 
-**Condition**: A type is mapped to `IObjectTypeShape` when:
+**Condition**: A type is mapped to <xref:PolyType.Abstractions.IObjectTypeShape> when:
 - It doesn't match any of the above categories
 - This is the fallback for all other types
 
@@ -193,11 +193,11 @@ public interface IService { ... }               // Object type
 
 ### String Exclusion
 
-The `string` type is explicitly treated as an object type, not as `IEnumerable<char>`, despite implementing the enumerable interface. This prevents unintended character-level processing in serialization scenarios.
+The @System.String type is explicitly treated as an object type, not as @System.Collections.Generic.IEnumerable`1, despite implementing the enumerable interface. This prevents unintended character-level processing in serialization scenarios.
 
 ### Dictionary Priority
 
-Dictionary detection has higher priority than enumerable detection because dictionary types also implement `IEnumerable<KeyValuePair<TKey, TValue>>`. This ensures they are correctly categorized as dictionaries rather than enumerables.
+Dictionary detection has higher priority than enumerable detection because dictionary types also implement @System.Collections.Generic.IEnumerable`1. This ensures they are correctly categorized as dictionaries rather than enumerables.
 
 ### Union Shape Prerequisites
 
@@ -210,9 +210,9 @@ Generic type parameters and unbound generic types are not supported for shape ge
 ### F# Interoperability
 
 The derivation logic includes special handling for F# types:
-- F# option types map to `IOptionalTypeShape`
-- F# discriminated unions map to `IUnionTypeShape`
-- F# function types map to `IFunctionTypeShape`
+- F# option types map to <xref:PolyType.Abstractions.IOptionalTypeShape>
+- F# discriminated unions map to <xref:PolyType.Abstractions.IUnionTypeShape>
+- F# function types map to <xref:PolyType.Abstractions.IFunctionTypeShape>
 - Detection relies on F# metadata attributes and reflection helpers
 
 ## Validation and Testing
