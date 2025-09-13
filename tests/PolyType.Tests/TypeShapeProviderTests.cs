@@ -1290,7 +1290,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             AssertHasDebuggerTypeProxy(evt);
         }
 
-        static void AssertHasDebuggerDisplay(object obj)
+        static void AssertHasDebuggerDisplay<TShape>(TShape obj) where TShape : notnull
         {
             Type t = obj.GetType();
             var attr = t.GetCustomAttribute<DebuggerDisplayAttribute>(inherit: true);
@@ -1300,7 +1300,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             Assert.NotNull(t.GetProperty("DebuggerDisplay", BindingFlags.NonPublic | BindingFlags.Instance));
         }
 
-        static void AssertHasDebuggerTypeProxy(object obj)
+        static void AssertHasDebuggerTypeProxy<TShape>(TShape obj) where TShape : notnull
         {
             Type t = obj.GetType();
             var attr = t.GetCustomAttribute<DebuggerTypeProxyAttribute>();
@@ -1308,7 +1308,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             Type? proxyType = Type.GetType(attr.ProxyTypeName);
             Assert.NotNull(proxyType);
             object? proxy = Activator.CreateInstance(proxyType, obj);
-            Assert.NotNull(proxy);
+            Assert.IsType<TShape>(proxy, exactMatch: false);
         }
     }
 }
