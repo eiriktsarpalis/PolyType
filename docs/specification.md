@@ -12,7 +12,7 @@ PolyType categorizes .NET types into eight distinct shape kinds, each represente
 - **Enum** - <xref:PolyType.Abstractions.IEnumTypeShape> for enumeration types
 - **Optional** - <xref:PolyType.Abstractions.IOptionalTypeShape> for nullable value types and F# options
 - **Surrogate** - <xref:PolyType.Abstractions.ISurrogateTypeShape> for types with custom marshaling
-- **Union** - <xref:PolyType.Abstractions.IUnionTypeShape> for discriminated union types
+- **Union** - <xref:PolyType.Abstractions.IUnionTypeShape> for polymorphic type hierarchies or discriminated union types
 - **Function** - <xref:PolyType.Abstractions.IFunctionTypeShape> for delegate and F# function types
 
 ## Derivation Algorithm
@@ -26,21 +26,10 @@ Type shape derivation follows a priority-based algorithm that checks conditions 
 **Implementation Details**:
 - Requires an <xref:PolyType.IMarshaler`2> implementation
 - The marshaler provides bidirectional mapping between the original type and surrogate type
-- Configured via the <xref:PolyType.GenerateShapeAttribute> attribute's `Marshaler` parameter or type extensions
+- Configured via the `GenerateShape`, `TypeShapeAttribute`, or `TypeShapeExtension` attributes' `Marshaler` parameter
 - Takes precedence over all other shape kinds
 
-**Examples**:
-```csharp
-// Custom marshaler example
-[GenerateShape(Marshaler = typeof(PersonToStringMarshaler))]
-public partial record Person(string Name, int Age);
 
-public class PersonToStringMarshaler : IMarshaler<Person, string>
-{
-    public string Marshal(Person value) => $"{value.Name}:{value.Age}";
-    public Person Unmarshal(string value) => /* implementation */;
-}
-```
 
 ### 2. Enum Types
 
@@ -52,11 +41,7 @@ public class PersonToStringMarshaler : IMarshaler<Person, string>
 - Provides access to all enum members and their values
 - Supports custom enum member naming through overridable methods
 
-**Examples**:
-```csharp
-public enum Color { Red = 1, Green = 2, Blue = 3 }
-public enum FileAccess : byte { Read = 1, Write = 2, ReadWrite = 3 }
-```
+
 
 ### 3. Optional Types
 
@@ -69,12 +54,7 @@ public enum FileAccess : byte { Read = 1, Write = 2, ReadWrite = 3 }
 - For F# options: detected via F# reflection helpers
 - Provides access to the element type and construction/deconstruction methods
 
-**Examples**:
-```csharp
-int? nullableInt;           // Maps to IOptionalTypeShape<int?, int>
-DateTime? nullableDate;     // Maps to IOptionalTypeShape<DateTime?, DateTime>
-// F# option<'T> types are also supported
-```
+
 
 ### 4. Function Types
 
@@ -87,13 +67,7 @@ DateTime? nullableDate;     // Maps to IOptionalTypeShape<DateTime?, DateTime>
 - Supports both creation and invocation of delegate instances
 - Handles F# function types through specialized detection
 
-**Examples**:
-```csharp
-Func<int, string>           // Maps to IFunctionTypeShape
-Action<string, int>         // Maps to IFunctionTypeShape  
-Predicate<Person>          // Maps to IFunctionTypeShape
-MyCustomDelegate           // Maps to IFunctionTypeShape
-```
+
 
 ### 5. Union Types
 
@@ -107,19 +81,7 @@ MyCustomDelegate           // Maps to IFunctionTypeShape
 - Each case has a unique identifier (name and optional numeric tag)
 - Supports both open and closed union hierarchies
 
-**Examples**:
-```csharp
-// Explicit union with DerivedTypeShape attributes
-[DerivedTypeShape<Dog>]
-[DerivedTypeShape<Cat>]  
-public abstract partial record Animal;
 
-// WCF-style unions
-[DataContract]
-[KnownType(typeof(Circle))]
-[KnownType(typeof(Rectangle))]
-public abstract class Shape { }
-```
 
 ### 6. Dictionary Types
 
@@ -134,13 +96,7 @@ public abstract class Shape { }
 - For non-generic @System.Collections.IDictionary: uses `object` for both key and value types
 - Supports construction via collection constructors or factory methods
 
-**Examples**:
-```csharp
-Dictionary<string, int>              // IDictionary<string, int>
-ConcurrentDictionary<int, string>    // IDictionary<int, string>  
-ReadOnlyDictionary<string, object>   // IReadOnlyDictionary<string, object>
-Hashtable                           // IDictionary (non-generic)
-```
+
 
 ### 7. Enumerable Types
 
@@ -158,16 +114,7 @@ Hashtable                           // IDictionary (non-generic)
 - Provides element type information and construction capabilities
 - Supports various collection interfaces and span types
 
-**Examples**:
-```csharp
-List<int>                    // IEnumerable<int>
-int[]                        // Array of int
-HashSet<string>              // IEnumerable<string>
-IEnumerable<Person>          // IEnumerable<Person>
-Memory<byte>                 // Treated as enumerable
-ReadOnlySpan<char>           // Treated as enumerable
-// string is NOT treated as IEnumerable<char>
-```
+
 
 ### 8. Object Types (Default)
 
@@ -181,13 +128,7 @@ ReadOnlySpan<char>           // Treated as enumerable
 - Can optionally disable member resolution for unsupported types
 - Handles record types, classes, structs, and interfaces
 
-**Examples**:
-```csharp
-public record Person(string Name, int Age);     // Object type
-public class Customer { ... }                   // Object type  
-public struct Point { public int X, Y; }        // Object type
-public interface IService { ... }               // Object type
-```
+
 
 ## Special Cases and Considerations
 
