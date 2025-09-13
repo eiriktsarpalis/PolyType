@@ -26,30 +26,31 @@ Type shape derivation follows a priority-based algorithm that checks conditions 
 **Implementation Details**:
 - Requires an <xref:PolyType.IMarshaler`2> implementation
 - The marshaler provides bidirectional mapping between the original type and surrogate type
-- Configured via the `GenerateShape`, `TypeShapeAttribute`, or `TypeShapeExtension` attributes' `Marshaler` parameter
+- Configured via the <xref:PolyType.GenerateShapeAttribute>, <xref:PolyType.TypeShapeAttribute>, or <xref:PolyType.TypeShapeExtensionAttribute> attributes' `Marshaler` parameter
 - Takes precedence over all other shape kinds
-
-
 
 ### 2. Enum Types
 
 **Condition**: A type is mapped to <xref:PolyType.Abstractions.IEnumTypeShape> when:
-- `type.IsEnum` returns `true`
+- It is an enum type
 
-**Implementation Details**:
-- Includes the underlying numeric type (byte, int, long, etc.)
-- Provides access to all enum members and their values
-- Supports custom enum member naming through overridable methods
+**Specification**: A type is mapped to <xref:PolyType.Abstractions.IEnumTypeShape> when:
+- It is an enum type
 
+- The underlying numeric type maps to the underlying enum property of <xref:PolyType.Abstractions.IEnumTypeShape>
+- Enum member names can be overridden using <xref:PolyType.PropertyShapeAttribute> attributes
 
 
 ### 3. Optional Types
 
 **Condition**: A type is mapped to <xref:PolyType.Abstractions.IOptionalTypeShape> when:
 - It is @System.Nullable`1 (e.g., `int?`, `DateTime?`)
-- It is an F# option type with appropriate metadata
+- It is an F# option type
 
-**Implementation Details**:
+**Specification**: A type is mapped to <xref:PolyType.Abstractions.IOptionalTypeShape> when:
+- It is @System.Nullable`1 (e.g., `int?`, `DateTime?`)
+- It is an F# option type
+
 - For nullable value types: @System.Nullable.GetUnderlyingType* returns non-null
 - For F# options: detected via F# reflection helpers
 - Provides access to the element type and construction/deconstruction methods
@@ -59,10 +60,11 @@ Type shape derivation follows a priority-based algorithm that checks conditions 
 ### 4. Function Types
 
 **Condition**: A type is mapped to <xref:PolyType.Abstractions.IFunctionTypeShape> when:
-- @System.Delegate.IsAssignableFrom* returns `true`
-- This includes @System.Func`1, @System.Action, and custom delegate types
+- It is a delegate type
 
-**Implementation Details**:
+**Specification**: A type is mapped to <xref:PolyType.Abstractions.IFunctionTypeShape> when:
+- It is a delegate type
+
 - Provides access to parameter shapes and return type
 - Supports both creation and invocation of delegate instances
 - Handles F# function types through specialized detection
@@ -71,14 +73,13 @@ Type shape derivation follows a priority-based algorithm that checks conditions 
 
 ### 5. Union Types
 
-**Condition**: A type is mapped to <xref:PolyType.Abstractions.IUnionTypeShape> when (requires `allowUnionShapes = true`):
+**Condition**: A type is mapped to <xref:PolyType.Abstractions.IUnionTypeShape> when:
 - It has F# discriminated union metadata (detected via `FSharpReflectionHelpers`)
 - It has <xref:PolyType.DerivedTypeShapeAttribute> attributes declaring union cases
 - It has WCF @System.Runtime.Serialization.DataContractAttribute with @System.Runtime.Serialization.KnownTypeAttribute attributes
 
-**Implementation Details**:
 - Provides access to all union cases/derived types
-- Each case has a unique identifier (name and optional numeric tag)
+- Each case has a unique identifier inferred from type name and optional discriminator values specified via attributes
 - Supports both open and closed union hierarchies
 
 
@@ -90,7 +91,6 @@ Type shape derivation follows a priority-based algorithm that checks conditions 
 - @System.Collections.Generic.IReadOnlyDictionary`2
 - Non-generic @System.Collections.IDictionary
 
-**Implementation Details**:
 - Takes precedence over @System.Collections.Generic.IEnumerable`1 since dictionaries also implement enumerable
 - For generic dictionaries: provides strongly-typed key and value types
 - For non-generic @System.Collections.IDictionary: uses `object` for both key and value types
@@ -102,31 +102,59 @@ Type shape derivation follows a priority-based algorithm that checks conditions 
 
 **Condition**: A type is mapped to <xref:PolyType.Abstractions.IEnumerableTypeShape> when:
 - It implements @System.Collections.Generic.IEnumerable`1 (except @System.String)
-- It implements non-generic @System.Collections.IEnumerable (except @System.String)  
+- It implements non-generic @System.Collections.IEnumerable, using `object` as the element type
 - It implements @System.Collections.Generic.IAsyncEnumerable`1
-- It is an array type (including multi-dimensional)
+- It is an array type (including multi-dimensional arrays)
 - It is @System.Memory`1 or @System.ReadOnlyMemory`1
-- It is @System.Span`1 or @System.ReadOnlySpan`1
 
-**Implementation Details**:
 - @System.String is explicitly excluded despite implementing @System.Collections.Generic.IEnumerable`1
 - Dictionary types are excluded since they're handled by dictionary mapping
 - Provides element type information and construction capabilities
-- Supports various collection interfaces and span types
 
 
 
 ### 8. Object Types (Default)
 
-**Condition**: A type is mapped to <xref:PolyType.Abstractions.IObjectTypeShape> when:
-- It doesn't match any of the above categories
-- This is the fallback for all other types
+**Condition**: A type is mapped to <xref:PolyType.Abstractions.IObjectTypeShape> when it doesn't match any of the above categories.
 
-**Implementation Details**:
-- Provides access to properties, fields, and constructors
-- Supports both mutable and immutable object patterns
-- Can optionally disable member resolution for unsupported types
-- Handles record types, classes, structs, and interfaces
+### Property Shape Resolution
+
+Property shapes are resolved using the following criteria:
+
+- **Inheritance**: Properties from base classes are included, with derived class properties taking precedence over base class properties with the same name
+- **Accessibility**: Only properties with accessible getters or setters are included
+- **Shadowing**: Derived class properties shadow base class properties with identical signatures
+- **Field Mapping**: Public fields are mapped to property shapes with matching getter/setter semantics
+- **Attribute Overrides**: <xref:PolyType.PropertyShapeAttribute> can customize property names and behavior
+
+### Constructor Shape Resolution
+
+Constructor shapes are resolved using the following algorithm:
+
+- **Accessibility**: Only public constructors are considered by default
+- **Disambiguation**: When multiple constructors are available, preference is given to constructors with <xref:PolyType.ConstructorShapeAttribute>
+- **Parameter Population**: Constructor parameters are matched to properties by name (case-insensitive)
+- **Property Setters**: Properties with accessible setters that don't match constructor parameters form part of the logical constructor signature
+- **Argument State Type**: The chosen argument state type accommodates both constructor parameters and settable properties
+
+### Method Shape Derivation
+
+Method shapes are derived independently of type shape kinds and follow these rules:
+
+- **Accessibility**: Only public methods are included by default
+- **Instance Methods**: Non-static methods are mapped to instance method shapes
+- **Static Methods**: Static methods are mapped to static method shapes  
+- **Generic Methods**: Generic method definitions are supported with proper type parameter mapping
+- **Overrides**: Method overrides in derived classes replace base class method shapes
+
+### Event Shape Derivation
+
+Event shapes are derived independently of type shape kinds and follow these rules:
+
+- **Accessibility**: Only public events are included by default
+- **Instance Events**: Non-static events are mapped to instance event shapes
+- **Static Events**: Static events are mapped to static event shapes
+- **Event Handler Types**: Event handler delegate types are mapped to their corresponding function shapes
 
 
 
@@ -140,14 +168,6 @@ The @System.String type is explicitly treated as an object type, not as @System.
 
 Dictionary detection has higher priority than enumerable detection because dictionary types also implement @System.Collections.Generic.IEnumerable`1. This ensures they are correctly categorized as dictionaries rather than enumerables.
 
-### Union Shape Prerequisites
-
-Union type detection only occurs when `allowUnionShapes` is `true`. This parameter is used to prevent infinite recursion when resolving derived types within union hierarchies.
-
-### Type Parameter Constraints
-
-Generic type parameters and unbound generic types are not supported for shape generation. Only constructed generic types with concrete type arguments can be mapped to shapes.
-
 ### F# Interoperability
 
 The derivation logic includes special handling for F# types:
@@ -156,12 +176,25 @@ The derivation logic includes special handling for F# types:
 - F# function types map to <xref:PolyType.Abstractions.IFunctionTypeShape>
 - Detection relies on F# metadata attributes and reflection helpers
 
-## Validation and Testing
+## Primitive Type Mappings
 
-Both shape providers implement extensive test coverage to ensure derivation logic consistency:
-
-- **Conformance Tests**: Verify that reflection and source generator providers produce equivalent shapes for the same input types
-- **Edge Case Testing**: Cover boundary conditions like generic type constraints, accessibility, and inheritance hierarchies  
-- **Integration Testing**: Validate end-to-end scenarios with real-world type hierarchies
-
-The test suite includes over 49,000 test cases ensuring robust and consistent behavior across different .NET runtime versions and target frameworks.
+| .NET Type | Shape Kind |
+|-----------|------------|
+| @System.Boolean | Object |
+| @System.Byte | Object |
+| @System.SByte | Object |
+| @System.Int16 | Object |
+| @System.UInt16 | Object |
+| @System.Int32 | Object |
+| @System.UInt32 | Object |
+| @System.Int64 | Object |
+| @System.UInt64 | Object |
+| @System.Single | Object |
+| @System.Double | Object |
+| @System.Decimal | Object |
+| @System.Char | Object |
+| @System.String | Object |
+| @System.DateTime | Object |
+| @System.DateTimeOffset | Object |
+| @System.TimeSpan | Object |
+| @System.Guid | Object |
