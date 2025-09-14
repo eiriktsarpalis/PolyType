@@ -83,6 +83,16 @@ public interface ITestCase
     public bool IsFunctionType { get; }
 
     /// <summary>
+    /// Gets a value indicating whether the type is an F# function type.
+    /// </summary>
+    public bool IsFSharpFunctionType { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the type is the F# unit type.
+    /// </summary>
+    public bool IsFSharpUnitType { get; }
+
+    /// <summary>
     /// Gets the value specified in <see cref="TypeShapeAttribute.Kind"/>.
     /// </summary>
     public TypeShapeKind? CustomKind { get; }

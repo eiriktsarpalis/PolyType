@@ -486,7 +486,14 @@ public partial class TypeDataModelGenerator
         return TypeDataModelGenerationStatus.Success;
     }
 
-    private ITypeSymbol? GetEffectiveReturnType(IMethodSymbol method, out MethodReturnTypeKind kind)
+    /// <summary>
+    /// Extracts the actual return type from async wrappers like Task or ValueTask,
+    /// returning null if the method returns void or the non-generic Task or ValueTask.
+    /// </summary>
+    /// <param name="method">The method from which to extract the return type.</param>
+    /// <param name="kind">The inferred type kind.</param>
+    /// <returns>A type symbol representing the underlying type being returned.</returns>
+    protected virtual ITypeSymbol? GetEffectiveReturnType(IMethodSymbol method, out MethodReturnTypeKind kind)
     {
         ITypeSymbol? returnType = method.ReturnType;
         kind = MethodReturnTypeKind.Unrecognized;

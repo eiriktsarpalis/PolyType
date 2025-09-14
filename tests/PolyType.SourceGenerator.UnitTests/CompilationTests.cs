@@ -1079,6 +1079,31 @@ public static partial class CompilationTests
     }
 
     [Fact]
+    public static void FSharpFuncs_NoWarnings()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using Microsoft.FSharp.Core;
+            using PolyType;
+            using System;
+            using System.Threading.Tasks;
+
+            [GenerateShapeFor(typeof(FSharpFunc<int, int>))]
+            [GenerateShapeFor(typeof(FSharpFunc<int, FSharpFunc<int, int>>))]
+            [GenerateShapeFor(typeof(FSharpFunc<Microsoft.FSharp.Core.Unit, int>))]
+            [GenerateShapeFor(typeof(FSharpFunc<Microsoft.FSharp.Core.Unit, FSharpFunc<int, FSharpFunc<Microsoft.FSharp.Core.Unit, int>>>))]
+            [GenerateShapeFor(typeof(FSharpFunc<int, Microsoft.FSharp.Core.Unit>))]
+            [GenerateShapeFor(typeof(FSharpFunc<int, FSharpFunc<int, Microsoft.FSharp.Core.Unit>>))]
+            [GenerateShapeFor(typeof(FSharpFunc<Tuple<int, int>, int>))]
+            [GenerateShapeFor(typeof(FSharpFunc<int, Task<int>>))]
+            [GenerateShapeFor(typeof(FSharpFunc<int, FSharpFunc<int, FSharpFunc<int, Task<int>>>>))]
+            partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
     public static void HashSet()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""

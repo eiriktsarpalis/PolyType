@@ -55,7 +55,7 @@ enum TypeShapeKind
     Union = 7,
 
     /// <summary>
-    /// Shape that maps to a delegate or function type using <see cref="IFunctionTypeShape"/>.
+    /// Shape that maps to a delegate or F# function type using <see cref="IFunctionTypeShape"/>.
     /// </summary>
     Function = 8,
 }
