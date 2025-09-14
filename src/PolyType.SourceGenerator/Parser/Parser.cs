@@ -313,6 +313,11 @@ public sealed partial class Parser : TypeDataModelGenerator
     // Resolve constructors with the [ConstructorShape] attribute.
     protected override IEnumerable<IMethodSymbol> ResolveConstructors(ITypeSymbol type, ImmutableArray<PropertyDataModel> properties)
     {
+        if (type.IsAbstract || type.TypeKind is TypeKind.Interface)
+        {
+            return [];
+        }
+
         // Search for constructors that have the [ConstructorShape] attribute. Ignore accessibility modifiers in this step.
         IMethodSymbol[] constructors = type.GetMembers()
             .OfType<IMethodSymbol>()
@@ -669,6 +674,16 @@ public sealed partial class Parser : TypeDataModelGenerator
             };
         }
 
+        if (SymbolEqualityComparer.Default.Equals(type, _knownSymbols.FSharpUnitType))
+        {
+            return MapFSharpUnitDataModel(type, ref ctx, out model);
+        }
+
+        if (type is INamedTypeSymbol { IsGenericType: true } namedType && SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _knownSymbols.FSharpFunc))
+        {
+            return MapFSharpFunctionDataModel(namedType, ref ctx, out model);
+        }
+
         requestedKind = MapTypeShapeKindToDataKind(attrDeclaredKind);
         TypeDataModelGenerationStatus status = base.MapType(type, requestedKind, methodBindingFlags, associatedTypes, ref ctx, requirements, out model);
 
@@ -870,6 +885,83 @@ public sealed partial class Parser : TypeDataModelGenerator
             Requirements = TypeShapeRequirements.Full,
             Properties = properties.ToImmutableArray(),
             Constructors = ImmutableArray.Create(constructorDataModel),
+        };
+
+        return TypeDataModelGenerationStatus.Success;
+    }
+
+    private static TypeDataModelGenerationStatus MapFSharpUnitDataModel(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model)
+    {
+        model = new FSharpUnitDataModel
+        {
+            Type = type,
+            Requirements = TypeShapeRequirements.Full,
+        };
+
+        return TypeDataModelGenerationStatus.Success;
+    }
+
+    private TypeDataModelGenerationStatus MapFSharpFunctionDataModel(INamedTypeSymbol type, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model)
+    {
+        Debug.Assert(type.IsGenericType && SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _knownSymbols.FSharpFunc));
+
+        var uncurriedTypes = ImmutableArray.CreateBuilder<ITypeSymbol>();
+        INamedTypeSymbol currentFunc = type;
+        ITypeSymbol returnType;
+        while (true)
+        {
+            ITypeSymbol argType = currentFunc.TypeArguments[0];
+            returnType = currentFunc.TypeArguments[1];
+            TypeDataModelGenerationStatus status = IncludeNestedType(argType, ref ctx);
+            if (status is not TypeDataModelGenerationStatus.Success)
+            {
+                model = null;
+                return status;
+            }
+
+            uncurriedTypes.Add(argType);
+
+            if (returnType is not INamedTypeSymbol { IsGenericType: true } namedReturnType ||
+                !SymbolEqualityComparer.Default.Equals(returnType.OriginalDefinition, _knownSymbols.FSharpFunc))
+            {
+                break;
+            }
+
+            currentFunc = namedReturnType;
+        }
+
+        ITypeSymbol? effectiveReturnType = GetEffectiveReturnType(currentFunc.GetMethods("Invoke", isStatic: false).First(), out MethodReturnTypeKind methodReturnTypeKind);
+        if (effectiveReturnType is not null && SymbolEqualityComparer.Default.Equals(effectiveReturnType, _knownSymbols.FSharpUnitType))
+        {
+            TypeDataModelGenerationStatus status = IncludeNestedType(_knownSymbols.UnitType!, ref ctx);
+            if (status is not TypeDataModelGenerationStatus.Success)
+            {
+                model = null;
+                return status;
+            }
+
+            effectiveReturnType = null;
+            methodReturnTypeKind = FSharpFunctionDataModel.FSharpUnitReturnTypeKind;
+        }
+
+        if (effectiveReturnType is not null)
+        {
+            TypeDataModelGenerationStatus status = IncludeNestedType(effectiveReturnType, ref ctx);
+            if (status is not TypeDataModelGenerationStatus.Success)
+            {
+                model = null;
+                return status;
+            }
+        }
+
+        model = new FSharpFunctionDataModel
+        {
+            Type = type,
+            ReturnType = returnType,
+            ReturnedValueType = effectiveReturnType,
+            Parameters = uncurriedTypes.ToImmutableArray(),
+            ReturnTypeKind = methodReturnTypeKind,
+            Requirements = TypeShapeRequirements.Full,
         };
 
         return TypeDataModelGenerationStatus.Success;

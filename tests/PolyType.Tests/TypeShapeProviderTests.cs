@@ -152,7 +152,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             Assert.All(objectShape.Constructor.Parameters, param => Assert.True(param.IsRequired));
         }
 
-        var visitor = new ConstructorTestVisitor();
+        var visitor = new ConstructorTestVisitor(testCase);
         if (objectShape.Constructor is { } ctor)
         {
             Assert.Equal(typeof(T), ctor.DeclaringType.Type);
@@ -160,7 +160,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         }
     }
 
-    private sealed class ConstructorTestVisitor : TypeShapeVisitor
+    private sealed class ConstructorTestVisitor(ITestCase testCase) : TypeShapeVisitor
     {
         public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructor, object? state)
         {
@@ -175,7 +175,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                 var defaultCtor = constructor.GetDefaultConstructor();
                 Assert.Same(constructor.GetDefaultConstructor(), constructor.GetDefaultConstructor());
                 TDeclaringType defaultValue = defaultCtor();
-                Assert.NotNull(defaultValue);
+                Assert.Equal(testCase.IsFSharpUnitType, defaultValue is null);
             }
             else
             {
@@ -636,12 +636,10 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             Assert.True(testCase.IsFunctionType);
             IFunctionTypeShape functionShape = Assert.IsAssignableFrom<IFunctionTypeShape>(shape);
             Assert.Equal(typeof(T), functionShape.Type);
-            MethodInfo invokeMethod = typeof(T).GetMethod("Invoke")!;
-            ParameterInfo[] parameterInfos = invokeMethod.GetParameters();
+            (ParameterInfo[] parameterInfos, Type returnType, Type? effectiveReturnType) = GetMethodParameters();
 
-            Type? effectiveReturnType = invokeMethod.GetEffectiveReturnType();
             Assert.Equal(effectiveReturnType is null, functionShape.IsVoidLike);
-            Assert.Equal(invokeMethod.IsAsyncMethod(), functionShape.IsAsync);
+            Assert.Equal(returnType.IsAsyncType(), functionShape.IsAsync);
             Assert.Equal(effectiveReturnType ?? typeof(Unit), functionShape.ReturnType.Type);
             Assert.Equal(parameterInfos.Length, functionShape.Parameters.Count);
 
@@ -651,9 +649,10 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                 ParameterInfo actualParameter = parameterInfos[i];
                 ParameterShapeAttribute? shapeAttr = actualParameter.GetCustomAttribute<ParameterShapeAttribute>();
 
-                Assert.Equal(actualParameter.Position, paramShape.Position);
+                Assert.Equal(i, paramShape.Position);
                 Assert.Equal(actualParameter.GetEffectiveParameterType(), paramShape.ParameterType.Type);
-                Assert.Equal(shapeAttr?.Name ?? actualParameter.Name, paramShape.Name);
+                string expectedName = testCase.IsFSharpFunctionType ? $"arg{i + 1}" : shapeAttr?.Name ?? actualParameter.Name!;
+                Assert.Equal(expectedName, paramShape.Name);
 
                 bool hasDefaultValue = actualParameter.TryGetDefaultValueNormalized(out object? defaultValue);
                 Assert.Equal(hasDefaultValue, paramShape.HasDefaultValue);
@@ -668,7 +667,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                 Assert.Equal(actualParameter.ParameterType, paramInfo.ParameterType);
             }
 
-            var visitor = new FunctionTestVisitor(providerUnderTest);
+            var visitor = new FunctionTestVisitor(providerUnderTest, testCase.IsFSharpFunctionType);
             functionShape.Accept(visitor, state: testCase.Value);
         }
         else
@@ -676,9 +675,40 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             Assert.False(shape is IFunctionTypeShape);
             Assert.False(testCase.IsFunctionType);
         }
+
+        (ParameterInfo[] Parameters, Type ReturnType, Type? EffectiveReturnType) GetMethodParameters()
+        {
+            MethodInfo invokeMethod = typeof(T).GetMethod("Invoke")!;
+            ParameterInfo[] parameterInfos = invokeMethod.GetParameters();
+            if (testCase.IsFSharpFunctionType)
+            {
+                List<ParameterInfo> uncurriedParams = [parameterInfos[0]];
+                while (invokeMethod.ReturnType is { Name: "FSharpFunc`2", Namespace: "Microsoft.FSharp.Core" })
+                {
+                    invokeMethod = invokeMethod.ReturnType.GetMethod("Invoke")!;
+                    parameterInfos = invokeMethod.GetParameters();
+                    uncurriedParams.Add(parameterInfos[0]);
+                }
+                
+                if (uncurriedParams.Count == 1 && uncurriedParams[0].ParameterType is { Name: "Unit", Namespace: "Microsoft.FSharp.Core" })
+                {
+                    uncurriedParams.Clear();
+                }
+
+                Type? returnType = invokeMethod.GetEffectiveReturnType();
+                if (returnType is null or { Name: "Unit", Namespace: "Microsoft.FSharp.Core" })
+                {
+                    returnType = null;
+                }
+
+                return (uncurriedParams.ToArray(), invokeMethod.ReturnType, returnType);
+            }
+
+            return (parameterInfos, invokeMethod.ReturnType, invokeMethod.GetEffectiveReturnType());
+        }
     }
 
-    private sealed class FunctionTestVisitor(ProviderUnderTest providerUnderTest) : TypeShapeVisitor
+    private sealed class FunctionTestVisitor(ProviderUnderTest providerUnderTest, bool isFsharpFunc) : TypeShapeVisitor
     {
         public override object? VisitFunction<TFunction, TArgumentState, TResult>(IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state = null)
         {
@@ -727,7 +757,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             if (functionShape.IsAsync)
             {
                 Assert.Throws<InvalidOperationException>(() => functionShape.FromDelegate(wrappedInvoker));
-                if (providerUnderTest.Kind is ProviderKind.ReflectionNoEmit)
+                if (providerUnderTest.Kind is ProviderKind.ReflectionNoEmit || isFsharpFunc)
                 {
                     Assert.Throws<NotSupportedException>(() => functionShape.FromAsyncDelegate(wrappedInvokerAsync));
                 }
@@ -741,7 +771,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             else
             {
                 Assert.Throws<InvalidOperationException>(() => functionShape.FromAsyncDelegate(wrappedInvokerAsync));
-                if (providerUnderTest.Kind is ProviderKind.ReflectionNoEmit)
+                if (providerUnderTest.Kind is ProviderKind.ReflectionNoEmit || isFsharpFunc)
                 {
                     Assert.Throws<NotSupportedException>(() => functionShape.FromDelegate(wrappedInvoker));
                 }
@@ -983,7 +1013,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             Assert.Equal(methodInfo.IsStatic, method.IsStatic);
             Assert.Equal(methodInfo.IsPublic, method.IsPublic);
             Assert.Equal(effectiveReturnType is null, method.IsVoidLike);
-            Assert.Equal(methodInfo.IsAsyncMethod(), method.IsAsync);
+            Assert.Equal(methodInfo.ReturnType.IsAsyncType(), method.IsAsync);
             Assert.Equal(methodShapeAttribute?.Name ?? methodInfo.Name, method.Name);
             Assert.Equal(effectiveReturnType ?? typeof(Unit), method.ReturnType.Type);
 

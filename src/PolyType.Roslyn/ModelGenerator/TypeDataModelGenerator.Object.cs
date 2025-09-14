@@ -32,6 +32,11 @@ public partial class TypeDataModelGenerator
     /// </summary>
     protected virtual IEnumerable<IMethodSymbol> ResolveConstructors(ITypeSymbol type, ImmutableArray<PropertyDataModel> properties)
     {
+        if (type.IsAbstract || type.TypeKind is TypeKind.Interface)
+        {
+            return [];
+        }
+
         IMethodSymbol[] foundConstructors = type.GetMembers()
             .OfType<IMethodSymbol>()
             .Where(ctor =>

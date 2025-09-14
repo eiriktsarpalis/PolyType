@@ -489,7 +489,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         DebugExt.Assert(ctorInfo.Method is MethodInfo);
         var methodInfo = (MethodInfo)ctorInfo.Method;
 
-        Func<object?, ValueTask<TResult>> returnMarshaler = CreateResultMarshaler(methodInfo.ReturnType);
+        Func<object?, ValueTask<TResult>> returnMarshaler = CreateResultMarshaler<TResult>(methodInfo.ReturnType);
         if (ctorInfo.Parameters is [])
         {
             Debug.Assert(typeof(TArgumentState) == typeof(EmptyArgumentState));
@@ -511,40 +511,86 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                 target = (TDeclaringType?)boxedTarget;
                 return returnMarshaler(result);
             });
+    }
 
-        static Func<object?, ValueTask<TResult>> CreateResultMarshaler(Type methodReturnType)
+    public MethodInvoker<TFunction, TArgumentState, TResult> CreateFSharpFunctionInvoker<TFunction, TArgumentState, TResult>(FSharpFuncInfo funcInfo)
+        where TArgumentState : IArgumentState
+    {
+        Func<object?, ValueTask<TResult>> resultMarshaler = CreateFSharpResultMarshaler();
+        if (funcInfo.Parameters is [])
         {
-            if (methodReturnType == typeof(void))
+            DebugExt.Assert(typeof(TArgumentState) == typeof(EmptyArgumentState));
+            Debug.Assert(funcInfo.CurriedInvocationChain is [_]);
+            MethodInfo invokeMethod = funcInfo.CurriedInvocationChain[0];
+            object?[] args = [null]; // single argument is F# unit type represented using null.
+            return (MethodInvoker<TFunction, TArgumentState, TResult>)(object)new MethodInvoker<TFunction, EmptyArgumentState, TResult>(
+                (ref TFunction target, ref EmptyArgumentState state) =>
+                {
+                    object? result = invokeMethod.Invoke(target, args);
+                    return resultMarshaler(result);
+                });
+        }
+
+        DebugExt.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<object?[]>));
+        return (MethodInvoker<TFunction, TArgumentState, TResult>)(object)new MethodInvoker<TFunction, LargeArgumentState<object?[]>, TResult>(
+            (ref TFunction target, ref LargeArgumentState<object?[]> state) =>
+            {
+                object? current = target;
+                int i = 0;
+                var args = new object?[1];
+                foreach (MethodInfo method in funcInfo.CurriedInvocationChain)
+                {
+                    args[0] = state.Arguments[i++];
+                    current = method.Invoke(current, args);
+                }
+
+                return resultMarshaler(current);
+            });
+
+        Func<object?, ValueTask<TResult>> CreateFSharpResultMarshaler()
+        {
+            if (funcInfo.IsUnitReturning)
             {
                 Debug.Assert(typeof(TResult) == typeof(Unit));
                 return (Func<object?, ValueTask<TResult>>)(object)(static (object? _) => new ValueTask<Unit>(Unit.Value));
             }
 
-            if (methodReturnType == typeof(Task))
-            {
-                Debug.Assert(typeof(TResult) == typeof(Unit));
-                return (Func<object?, ValueTask<TResult>>)(object)new Func<object?, ValueTask<Unit>>(static value => Unit.FromTaskAsync((Task)value!));
-            }
-
-            if (methodReturnType == typeof(ValueTask))
-            {
-                Debug.Assert(typeof(TResult) == typeof(Unit));
-                return (Func<object?, ValueTask<TResult>>)(object)new Func<object?, ValueTask<Unit>>(static (object? value) => Unit.FromValueTaskAsync((ValueTask)value!));
-            }
-
-            if (methodReturnType == typeof(ValueTask<TResult>))
-            {
-                return static value => (ValueTask<TResult>)value!;
-            }
-
-            if (methodReturnType == typeof(Task<TResult>))
-            {
-                return static value => new ValueTask<TResult>((Task<TResult>)value!);
-            }
-
-            Debug.Assert(methodReturnType == typeof(TResult) || (methodReturnType.IsByRef && methodReturnType.GetElementType() == typeof(TResult)));
-            return static value => new ValueTask<TResult>((TResult)value!);
+            return CreateResultMarshaler<TResult>(funcInfo.ReturnType);
         }
+    }
+
+    private static Func<object?, ValueTask<TResult>> CreateResultMarshaler<TResult>(Type methodReturnType)
+    {
+        if (methodReturnType == typeof(void))
+        {
+            Debug.Assert(typeof(TResult) == typeof(Unit));
+            return (Func<object?, ValueTask<TResult>>)(object)(static (object? _) => new ValueTask<Unit>(Unit.Value));
+        }
+
+        if (methodReturnType == typeof(Task))
+        {
+            Debug.Assert(typeof(TResult) == typeof(Unit));
+            return (Func<object?, ValueTask<TResult>>)(object)new Func<object?, ValueTask<Unit>>(static value => Unit.FromTaskAsync((Task)value!));
+        }
+
+        if (methodReturnType == typeof(ValueTask))
+        {
+            Debug.Assert(typeof(TResult) == typeof(Unit));
+            return (Func<object?, ValueTask<TResult>>)(object)new Func<object?, ValueTask<Unit>>(static (object? value) => Unit.FromValueTaskAsync((ValueTask)value!));
+        }
+
+        if (methodReturnType == typeof(ValueTask<TResult>))
+        {
+            return static value => (ValueTask<TResult>)value!;
+        }
+
+        if (methodReturnType == typeof(Task<TResult>))
+        {
+            return static value => new ValueTask<TResult>((Task<TResult>)value!);
+        }
+
+        Debug.Assert(methodReturnType == typeof(TResult) || (methodReturnType.IsByRef && methodReturnType.GetElementType() == typeof(TResult)));
+        return static value => new ValueTask<TResult>((TResult)value!);
     }
 
     public Func<RefFunc<TArgumentState, TResult>, TDelegate> CreateDelegateWrapper<TDelegate, TArgumentState, TResult>(MethodShapeInfo shapeInfo)

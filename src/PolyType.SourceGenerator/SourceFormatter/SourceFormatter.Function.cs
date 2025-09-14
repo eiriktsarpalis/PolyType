@@ -60,7 +60,8 @@ internal sealed partial class SourceFormatter
         {
             return method.ReturnTypeKind is MethodReturnTypeKind.Void
                 or MethodReturnTypeKind.Task
-                or MethodReturnTypeKind.ValueTask;
+                or MethodReturnTypeKind.ValueTask
+                or FSharpFunctionDataModel.FSharpUnitReturnTypeKind;
         }
 
         static bool IsAsync(FunctionShapeModel method)
@@ -99,14 +100,31 @@ internal sealed partial class SourceFormatter
 
         static string FormatFunctionInvocationExpr(FunctionShapeModel functionShapeModel, string targetVar, string stateVar)
         {
-            string parametersExpression = functionShapeModel.Parameters.Length switch
-            {
-                0 => "",
-                1 => FormatFunctionParameterExpr(functionShapeModel.Parameters[0], isSingleParameter: true),
-                _ => string.Join(", ", functionShapeModel.Parameters.Select(p => FormatFunctionParameterExpr(p, isSingleParameter: false)))
-            };
+            string invokeExpr;
 
-            string invokeExpr = $"{targetVar}({parametersExpression})";
+            if (functionShapeModel.IsFsharpFunc)
+            {
+                // Format a curried invocation chain for F# functions
+                string parametersExpression = functionShapeModel.Parameters.Length switch
+                {
+                    0 => $".Invoke(null!)", // F# function accepting a single unit parameter
+                    1 => $".Invoke({FormatFunctionParameterExpr(functionShapeModel.Parameters[0], isSingleParameter: true)})",
+                    _ => string.Join("", functionShapeModel.Parameters.Select(p => $".Invoke({FormatFunctionParameterExpr(p, isSingleParameter: false)})")),
+                };
+
+                invokeExpr = $"{targetVar}{parametersExpression}";
+            }
+            else
+            {
+                string parametersExpression = functionShapeModel.Parameters.Length switch
+                {
+                    0 => "",
+                    1 => FormatFunctionParameterExpr(functionShapeModel.Parameters[0], isSingleParameter: true),
+                    _ => string.Join(", ", functionShapeModel.Parameters.Select(p => FormatFunctionParameterExpr(p, isSingleParameter: false)))
+                };
+
+                invokeExpr = $"{targetVar}({parametersExpression})";
+            }
 
             // Handle async methods and void returns
             return functionShapeModel.ReturnTypeKind switch
@@ -116,6 +134,7 @@ internal sealed partial class SourceFormatter
                 MethodReturnTypeKind.ValueTask => $"{{ var task = {invokeExpr}; return global::PolyType.Abstractions.Unit.FromValueTaskAsync(task); }}",
                 MethodReturnTypeKind.TaskOfT => $"{{ var task = {invokeExpr}; return new(task); }}",
                 MethodReturnTypeKind.ValueTaskOfT => invokeExpr,
+                FSharpFunctionDataModel.FSharpUnitReturnTypeKind => $"{{ var _ = {invokeExpr}; return new(global::PolyType.Abstractions.Unit.Value); }}",
                 _ => $"{{ var result = {invokeExpr}; return new(result); }}",
             };
 
@@ -141,6 +160,11 @@ internal sealed partial class SourceFormatter
             if (IsAsync(functionShapeModel) != requireAsync)
             {
                 return null;
+            }
+
+            if (functionShapeModel.IsFsharpFunc)
+            {
+                return """static _ => throw new global::System.NotSupportedException("F# function creation from delegates is currently not supported.")""";
             }
 
             string delegateSignature = string.Join(", ", functionShapeModel.Parameters
@@ -240,6 +264,12 @@ internal sealed partial class SourceFormatter
 
             static string FormatAttributeProviderFunc(FunctionShapeModel functionShapeModel, ParameterShapeModel parameter)
             {
+                if (functionShapeModel.IsFsharpFunc)
+                {
+                    string nestedFunctionGetter = string.Join("", Enumerable.Range(0, parameter.Position).Select(_ => ".GetGenericArguments()[1]"));
+                    return $"static () => typeof({functionShapeModel.Type.FullyQualifiedName}){nestedFunctionGetter}.GetMethod(\"Invoke\")!.GetParameters()[0]";
+                }
+
                 string parameterTypes = functionShapeModel.Parameters.Length == 0
                     ? "global::System.Type.EmptyTypes"
                     : $$"""new global::System.Type[] { {{string.Join(", ", functionShapeModel.Parameters.Select(FormatParameterTypeExpr))}} }""";

@@ -35,7 +35,7 @@ internal sealed class MethodShapeInfo : IMethodShapeInfo
         if (method is MethodInfo mI)
         {
             IsVoidLike = mI.GetEffectiveReturnType() is null;
-            IsAsync = mI.IsAsyncMethod();
+            IsAsync = mI.ReturnType.IsAsyncType();
         }
     }
 

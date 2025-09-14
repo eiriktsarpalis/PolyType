@@ -57,7 +57,7 @@ internal sealed partial class SourceFormatter
         
         static string FormatAttributeProviderFunc(ObjectShapeModel type, ConstructorShapeModel constructor)
         {
-            if (type.IsTupleType || constructor.IsStaticFactory)
+            if (type.IsTupleType || constructor.IsStaticFactory || constructor.IsFSharpUnitConstructor)
             {
                 return "null";
             }
@@ -234,6 +234,11 @@ internal sealed partial class SourceFormatter
 
         static string FormatDefaultCtor(ObjectShapeModel declaringType, ConstructorShapeModel constructor)
         {
+            if (constructor.IsFSharpUnitConstructor)
+            {
+                return "static () => null!";
+            }
+
             string castPrefix = constructor.ResultRequiresCast ? $"({declaringType.Type.FullyQualifiedName})" : "";
             return constructor.TotalArity switch
             {

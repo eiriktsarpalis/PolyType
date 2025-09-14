@@ -27,7 +27,10 @@ internal interface IReflectionMemberAccessor
     Constructor<TArgumentState, TDeclaringType> CreateParameterizedConstructor<TArgumentState, TDeclaringType>(IMethodShapeInfo ctorInfo)
         where TArgumentState : IArgumentState;
 
-    MethodInvoker<TDeclaringType?, TArgumentState, TResult> CreateMethodInvoker<TDeclaringType, TArgumentState, TResult>(MethodShapeInfo ctorInfo)
+    MethodInvoker<TDeclaringType?, TArgumentState, TResult> CreateMethodInvoker<TDeclaringType, TArgumentState, TResult>(MethodShapeInfo methodInfo)
+        where TArgumentState : IArgumentState;
+
+    MethodInvoker<TFunction, TArgumentState, TResult> CreateFSharpFunctionInvoker<TFunction, TArgumentState, TResult>(FSharpFuncInfo funcInfo)
         where TArgumentState : IArgumentState;
 
     Func<RefFunc<TArgumentState, TResult>, TDelegate> CreateDelegateWrapper<TDelegate, TArgumentState, TResult>(MethodShapeInfo shapeInfo)
