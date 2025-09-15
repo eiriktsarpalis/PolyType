@@ -17,25 +17,22 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    # Exclude System.* and Microsoft.* packages - these should only be updated manually
+    ignore:
+      - dependency-name: "System.*"
+      - dependency-name: "Microsoft.*"
     groups:
       # Group test framework updates together
       test-frameworks:
         patterns:
           - "xunit*"
           - "TUnit*"
-          - "Microsoft.NET.Test.Sdk"
-      # Group Microsoft packages together
-      microsoft-packages:
-        patterns:
-          - "Microsoft.*"
-          - "System.*"
       # Group build and analyzer tools
       build-tools:
         patterns:
           - "StyleCop.Analyzers"
           - "PolySharp"
           - "Nerdbank.GitVersioning"
-          - "Microsoft.CodeAnalysis*"
       # Group benchmarking tools
       benchmarking:
         patterns:
