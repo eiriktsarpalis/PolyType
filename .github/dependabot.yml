@@ -12,8 +12,6 @@ updates:
       time: "10:00"
       timezone: "UTC"
     open-pull-requests-limit: 10
-    reviewers:
-      - "eiriktsarpalis"
     commit-message:
       prefix: "deps"
       include: "scope"
@@ -47,8 +45,6 @@ updates:
       time: "10:00"
       timezone: "UTC"
     open-pull-requests-limit: 5
-    reviewers:
-      - "eiriktsarpalis"
     commit-message:
       prefix: "tools"
       include: "scope"
@@ -62,8 +58,6 @@ updates:
       time: "10:00"
       timezone: "UTC"
     open-pull-requests-limit: 5
-    reviewers:
-      - "eiriktsarpalis"
     commit-message:
       prefix: "ci"
       include: "scope"
@@ -82,8 +76,6 @@ updates:
       time: "10:00"
       timezone: "UTC"
     open-pull-requests-limit: 2
-    reviewers:
-      - "eiriktsarpalis"
     commit-message:
       prefix: "docker"
       include: "scope"
