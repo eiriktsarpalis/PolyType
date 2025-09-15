@@ -1,0 +1,92 @@
+---
+version: 2
+updates:
+  # Enable version updates for NuGet packages
+  # This repository uses Central Package Management with
+  # Directory.Packages.props
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "10:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "eiriktsarpalis"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    groups:
+      # Group test framework updates together
+      test-frameworks:
+        patterns:
+          - "xunit*"
+          - "TUnit*"
+          - "Microsoft.NET.Test.Sdk"
+      # Group Microsoft packages together
+      microsoft-packages:
+        patterns:
+          - "Microsoft.*"
+          - "System.*"
+      # Group build and analyzer tools
+      build-tools:
+        patterns:
+          - "StyleCop.Analyzers"
+          - "PolySharp"
+          - "Nerdbank.GitVersioning"
+          - "Microsoft.CodeAnalysis*"
+      # Group benchmarking tools
+      benchmarking:
+        patterns:
+          - "BenchmarkDotNet"
+
+  # Enable version updates for .NET tools
+  - package-ecosystem: "nuget"
+    directory: "/.config"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "10:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "eiriktsarpalis"
+    commit-message:
+      prefix: "tools"
+      include: "scope"
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "10:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "eiriktsarpalis"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    groups:
+      # Group common GitHub Actions together
+      github-actions:
+        patterns:
+          - "actions/*"
+
+  # Enable version updates for Docker
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "10:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 2
+    reviewers:
+      - "eiriktsarpalis"
+    commit-message:
+      prefix: "docker"
+      include: "scope"
