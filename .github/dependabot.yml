@@ -1,0 +1,81 @@
+---
+version: 2
+updates:
+  # Enable version updates for NuGet packages
+  # This repository uses Central Package Management with
+  # Directory.Packages.props
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "10:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    # Exclude System.* and Microsoft.* packages - these should only be updated manually
+    ignore:
+      - dependency-name: "System.*"
+      - dependency-name: "Microsoft.*"
+    groups:
+      # Group test framework updates together
+      test-frameworks:
+        patterns:
+          - "xunit*"
+          - "TUnit*"
+      # Group build and analyzer tools
+      build-tools:
+        patterns:
+          - "StyleCop.Analyzers"
+          - "PolySharp"
+          - "Nerdbank.GitVersioning"
+      # Group benchmarking tools
+      benchmarking:
+        patterns:
+          - "BenchmarkDotNet"
+
+  # Enable version updates for .NET tools
+  - package-ecosystem: "nuget"
+    directory: "/.config"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "10:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "tools"
+      include: "scope"
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "10:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    groups:
+      # Group common GitHub Actions together
+      github-actions:
+        patterns:
+          - "actions/*"
+
+  # Enable version updates for Docker
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "10:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: "docker"
+      include: "scope"
