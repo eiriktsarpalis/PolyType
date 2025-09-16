@@ -210,21 +210,6 @@ public sealed partial class Parser : TypeDataModelGenerator
 
     protected override bool IncludeProperty(IPropertySymbol property, out bool includeGetter, out bool includeSetter)
     {
-        if (property.ContainingType.HasAttribute(_knownSymbols.DataContractAttribute))
-        {
-            // If the type is annotated with [DataContract], only include properties with [DataMember].
-            if (!property.HasAttribute(_knownSymbols.DataMemberAttribute))
-            {
-                includeGetter = includeSetter = false;
-                return false;
-            }
-
-            property = property.GetBaseProperty();
-            includeGetter = property.GetMethod is not null;
-            includeSetter = property.SetMethod is not null;
-            return true;
-        }
-
         if (property.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData propertyAttribute)
         {
             // Ignore properties with the [PropertyShape] attribute set to Ignore = true.
@@ -240,6 +225,21 @@ public sealed partial class Parser : TypeDataModelGenerator
 
             includeGetter = includeSetter = false;
             return false;
+        }
+
+        if (property.ContainingType.HasAttribute(_knownSymbols.DataContractAttribute))
+        {
+            // If the type is annotated with [DataContract], only include properties with [DataMember].
+            if (!property.HasAttribute(_knownSymbols.DataMemberAttribute))
+            {
+                includeGetter = includeSetter = false;
+                return false;
+            }
+
+            property = property.GetBaseProperty();
+            includeGetter = property.GetMethod is not null;
+            includeSetter = property.SetMethod is not null;
+            return true;
         }
 
         if (property.HasAttribute(_knownSymbols.IgnoreDataMemberAttribute))

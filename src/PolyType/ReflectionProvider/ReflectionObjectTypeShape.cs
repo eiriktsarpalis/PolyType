@@ -338,28 +338,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
             int order = 0;
             bool? isRequiredByAttribute = null;
 
-            if (hasDataContractAttribute)
-            {
-                if (attributeProvider.GetCustomAttribute<DataMemberAttribute>() is not { } dataMemberAttr)
-                {
-                    // Always skip members not explicitly annotated with DataMemberAttribute.
-                    return;
-                }
-
-                logicalName = dataMemberAttr.Name;
-                if (dataMemberAttr.Order != 0)
-                {
-                    order = dataMemberAttr.Order;
-                    isOrderSpecified = true;
-                }
-
-                includeNonPublic = true;
-                if (dataMemberAttr.IsRequired)
-                {
-                    isRequiredByAttribute = true;
-                }
-            }
-            else if (attributeProvider.GetCustomAttribute<PropertyShapeAttribute>(inherit: true) is { } propertyShapeAttr)
+            if (attributeProvider.GetCustomAttribute<PropertyShapeAttribute>(inherit: true) is { } propertyShapeAttr)
             {
                 // If the attribute is present, use the value of the Ignore property to determine its inclusion.
                 if (propertyShapeAttr.Ignore)
@@ -378,6 +357,27 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                 if (propertyShapeAttr.IsRequiredSpecified)
                 {
                     isRequiredByAttribute = propertyShapeAttr.IsRequired;
+                }
+            }
+            else if (hasDataContractAttribute)
+            {
+                if (attributeProvider.GetCustomAttribute<DataMemberAttribute>() is not { } dataMemberAttr)
+                {
+                    // Always skip members not explicitly annotated with DataMemberAttribute.
+                    return;
+                }
+
+                logicalName = dataMemberAttr.Name;
+                if (dataMemberAttr.Order != 0)
+                {
+                    order = dataMemberAttr.Order;
+                    isOrderSpecified = true;
+                }
+
+                includeNonPublic = true;
+                if (dataMemberAttr.IsRequired)
+                {
+                    isRequiredByAttribute = true;
                 }
             }
             else if (attributeProvider.GetCustomAttribute<IgnoreDataMemberAttribute>() is not null)
