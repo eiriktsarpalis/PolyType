@@ -10,13 +10,15 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
         var shape = Assert.IsType<IObjectTypeShape>(providerUnderTest.Provider.GetTypeShape(typeof(ContractType)), exactMatch: false);
         Assert.NotNull(shape);
 
-        // Only members explicitly marked with [DataMember] should be included.
-        Assert.Equal(3, shape.Properties.Count);
+        // Only members explicitly marked with [DataMember] or [PropertyShape] should be included.
+        Assert.Equal(5, shape.Properties.Count);
 
         // Orders should follow DataMember.Order
         Assert.Equal("id", shape.Properties[0].Name);
         Assert.Equal("Renamed", shape.Properties[1].Name);
         Assert.Equal("AlsoIncluded", shape.Properties[2].Name);
+        Assert.Equal("ExplicitShape", shape.Properties[3].Name);
+        Assert.Equal("CustomName1", shape.Properties[4].Name);
 
         // Required flag propagated from DataMember(IsRequired=true)
         Assert.True(shape.Constructor!.Parameters.Single(p => p.Name == "id").IsRequired);
@@ -40,14 +42,16 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
         var shape = Assert.IsType<IObjectTypeShape>(providerUnderTest.Provider.GetTypeShape(typeof(DerivedNonContractType)), exactMatch: false);
         Assert.NotNull(shape);
 
-        // Only members explicitly marked with [DataMember] should be included.
-        Assert.Equal(4, shape.Properties.Count);
+        // Only members explicitly marked with [DataMember] or [PropertyShape] should be included.
+        Assert.Equal(6, shape.Properties.Count);
 
         // Orders should follow DataMember.Order
         Assert.Equal("NewValue", shape.Properties[0].Name);
         Assert.Equal("id", shape.Properties[1].Name);
         Assert.Equal("Renamed", shape.Properties[2].Name);
         Assert.Equal("AlsoIncluded", shape.Properties[3].Name);
+        Assert.Equal("ExplicitShape", shape.Properties[4].Name);
+        Assert.Equal("CustomName1", shape.Properties[5].Name);
 
         // Required flag propagated from DataMember(IsRequired=true)
         Assert.True(shape.Constructor!.Parameters.Single(p => p.Name == "id").IsRequired);
@@ -114,6 +118,10 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
 
         [PropertyShape(Name = "ExplicitShape", Order = 3)]
         public int ViaPropertyShape { get; set; }
+
+        [PropertyShape(Name = "CustomName1", Order = 100)]
+        [DataMember(Name = "CustomName2", Order = -100)]
+        public int PropertyWithConflictingAnnotation { get; set; }
     }
 
     [GenerateShape]

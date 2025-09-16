@@ -1007,6 +1007,24 @@ public sealed partial class Parser
         propertyName = propertySymbol.Name;
         order = 0;
 
+        if (propertySymbol.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData propertyAttr)
+        {
+            foreach (KeyValuePair<string, TypedConstant> namedArgument in propertyAttr.NamedArguments)
+            {
+                switch (namedArgument.Key)
+                {
+                    case "Name":
+                        propertyName = (string?)namedArgument.Value.Value ?? propertyName;
+                        break;
+                    case "Order":
+                        order = (int)namedArgument.Value.Value!;
+                        break;
+                }
+            }
+
+            return;
+        }
+
         if (propertySymbol.ContainingType.HasAttribute(_knownSymbols.DataContractAttribute))
         {
             if (propertySymbol.GetAttribute(_knownSymbols.DataMemberAttribute) is AttributeData dataMemberAttr)
@@ -1022,24 +1040,6 @@ public sealed partial class Parser
                             order = (int)namedArgument.Value.Value!;
                             break;
                     }
-                }
-            }
-
-            return;
-        }
-
-        if (propertySymbol.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData propertyAttr)
-        {
-            foreach (KeyValuePair<string, TypedConstant> namedArgument in propertyAttr.NamedArguments)
-            {
-                switch (namedArgument.Key)
-                {
-                    case "Name":
-                        propertyName = (string?)namedArgument.Value.Value ?? propertyName;
-                        break;
-                    case "Order":
-                        order = (int)namedArgument.Value.Value!;
-                        break;
                 }
             }
         }
