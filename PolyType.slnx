@@ -4,7 +4,7 @@
     <File Path=".github/workflows/build.yml" />
     <File Path=".github/workflows/markdown-link-check.yml" />
     <File Path=".github/workflows/release.yml" />
-    <File Path=".github/workflows/update-docs.yml" />
+    <File Path=".github/workflows/publish-docs.yml" />
   </Folder>
   <Folder Name="/applications/">
     <Project Path="applications/ConfigurationBinder.AOT/ConfigurationBinder.AOT.csproj" />
@@ -48,6 +48,7 @@
     <Project Path="src/PolyType/PolyType.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <File Path="tests/Directory.Build.props" />
     <Project Path="tests/PolyType.Benchmarks/PolyType.Benchmarks.csproj" />
     <Project Path="tests/PolyType.Roslyn.Tests/PolyType.Roslyn.Tests.csproj" />
     <Project Path="tests/PolyType.SourceGenerator.UnitTests/PolyType.SourceGenerator.UnitTests.csproj" />
