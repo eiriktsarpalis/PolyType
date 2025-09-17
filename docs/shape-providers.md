@@ -320,9 +320,11 @@ class PocoWithConstructors
 
 PolyType includes limited support for types using [data contract annotations](https://learn.microsoft.com/dotnet/framework/wcf/feature-details/using-data-contracts).
 
-Types annotated with `DataContractAttribute` will only include member shapes annotated with `DataMemberAttribute`, resolving property shape metadata from the relevant attribute properties where applicable. DataContract types annotated with `KnownTypeAttribute` will be mapped to union shapes following the same rules as `DerivedTypeShapeAttribute`.
+Types annotated with `DataContractAttribute` will only include member shapes annotated with `DataMemberAttribute`, resolving shape information from the attribute where applicable.
+Members annotated with `PropertyShapeAttribute` will also be included, with `PropertyShapeAttribute` taking precedence over `DataMemberAttribute` in case of conflicts.
+Data contract types annotated with `KnownTypeAttribute` will be mapped to union shapes following the same rules as `DerivedTypeShapeAttribute`.
 
-Types not annotated with `DataContractAttribute` will include all public readable properties, ignoring any `DataMemberAttribute` or `KnownTypeAttribute` annotations. Members annotated with `IgnoreDataMemberAttribute` but not with `PropertyShapeAttribute` will be ignored.
+Types not annotated with `DataContractAttribute` ignore `DataMemberAttribute` and `KnownTypeAttribute` annotations, but will honor `IgnoreDataMemberAttribute` annotations if present.
 
 The `EnumMemberAttribute` is supported for enum types, with `EnumMemberShapeAttribute` annotations taking precedence.
 

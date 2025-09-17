@@ -13,6 +13,8 @@ namespace PolyType.ReflectionProvider.MemberAccessors;
 [RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
 internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
 {
+    private static readonly ReflectionMemberAccessor s_noEmitfallback = new();
+
     public Getter<TDeclaringType, TPropertyType> CreateGetter<TDeclaringType, TPropertyType>(MemberInfo memberInfo, MemberInfo[]? parentMembers)
     {
         Debug.Assert(memberInfo is FieldInfo or PropertyInfo);
@@ -352,6 +354,11 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
 
     public Type CreateConstructorArgumentStateType(IMethodShapeInfo ctorInfo)
     {
+        if (ctorInfo is FSharpFuncInfo)
+        {
+            return s_noEmitfallback.CreateConstructorArgumentStateType(ctorInfo);
+        }
+
         if (ctorInfo.Parameters is [])
         {
             return typeof(EmptyArgumentState);
@@ -372,6 +379,11 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
     public Func<TArgumentState> CreateConstructorArgumentStateCtor<TArgumentState>(IMethodShapeInfo ctorInfo)
         where TArgumentState : IArgumentState
     {
+        if (ctorInfo is FSharpFuncInfo)
+        {
+            return s_noEmitfallback.CreateConstructorArgumentStateCtor<TArgumentState>(ctorInfo);
+        }
+
         DynamicMethod dynamicMethod = CreateDynamicMethod("argumentStateCtor", typeof(TArgumentState), [typeof(StrongBox<ValueBitArray>)]);
         ILGenerator generator = dynamicMethod.GetILGenerator();
 
@@ -524,6 +536,11 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
     public Getter<TArgumentState, TParameter> CreateArgumentStateGetter<TArgumentState, TParameter>(IMethodShapeInfo ctorInfo, int parameterIndex)
         where TArgumentState : IArgumentState
     {
+        if (ctorInfo is FSharpFuncInfo)
+        {
+            return s_noEmitfallback.CreateArgumentStateGetter<TArgumentState, TParameter>(ctorInfo, parameterIndex);
+        }
+
         Debug.Assert(ctorInfo.Parameters.Length > 0);
         Debug.Assert(typeof(TArgumentState).IsGenericType);
         Type argumentsType = typeof(TArgumentState).GetGenericArguments()[0];
@@ -554,6 +571,11 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
     public Setter<TArgumentState, TParameter> CreateArgumentStateSetter<TArgumentState, TParameter>(IMethodShapeInfo ctorInfo, int parameterIndex)
         where TArgumentState : IArgumentState
     {
+        if (ctorInfo is FSharpFuncInfo)
+        {
+            return s_noEmitfallback.CreateArgumentStateSetter<TArgumentState, TParameter>(ctorInfo, parameterIndex);
+        }
+
         Debug.Assert(ctorInfo.Parameters.Length > 0);
         Debug.Assert(typeof(TArgumentState).IsGenericType);
         Type argumentsType = typeof(TArgumentState).GetGenericArguments()[0];
@@ -826,6 +848,12 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
 
         generator.Emit(OpCodes.Ret);
         return dynamicMethod;
+    }
+
+    public MethodInvoker<TDeclaringType, TArgumentState, TResult> CreateFSharpFunctionInvoker<TDeclaringType, TArgumentState, TResult>(FSharpFuncInfo funcInfo)
+        where TArgumentState : IArgumentState
+    {
+        return s_noEmitfallback.CreateFSharpFunctionInvoker<TDeclaringType, TArgumentState, TResult>(funcInfo);
     }
 
     public Func<RefFunc<TArgumentState, TResult>, TDelegate> CreateDelegateWrapper<TDelegate, TArgumentState, TResult>(MethodShapeInfo shapeInfo)

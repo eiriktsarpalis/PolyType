@@ -126,7 +126,17 @@ public record TestCase<T> : ITestCase
     /// <summary>
     /// Gets a value indicating whether the type is a function type.
     /// </summary>
-    public bool IsFunctionType => typeof(Delegate).IsAssignableFrom(typeof(T));
+    public bool IsFunctionType => typeof(Delegate).IsAssignableFrom(typeof(T)) || IsFSharpFunctionType;
+
+    /// <summary>
+    /// Gets a value indicating whether the type is an F# function type.
+    /// </summary>
+    public bool IsFSharpFunctionType => typeof(T) is { Name: "FSharpFunc`2", Namespace: "Microsoft.FSharp.Core" };
+
+    /// <summary>
+    /// Gets a value indicating whether the type is the F# unit type.
+    /// </summary>
+    public bool IsFSharpUnitType => typeof(T) is { Name: "Unit", Namespace: "Microsoft.FSharp.Core" };
 
     /// <summary>
     /// Gets a value indicating whether the type configuration specifies a custom kind.

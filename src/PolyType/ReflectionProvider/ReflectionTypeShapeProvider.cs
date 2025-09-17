@@ -107,7 +107,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         }
 
         ReflectionTypeShapeOptions options = ResolveTypeShapeOptions(type);
-        return DetermineTypeKind(type, allowUnionShapes, options, out FSharpUnionInfo? fSharpUnionInfo) switch
+        return DetermineTypeKind(type, allowUnionShapes, options, out FSharpUnionInfo? fSharpUnionInfo, out FSharpFuncInfo? fSharpFuncInfo) switch
         {
             TypeShapeKind.Enumerable => CreateEnumerableShape(type, options),
             TypeShapeKind.Dictionary => CreateDictionaryShape(type, options),
@@ -116,13 +116,19 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             TypeShapeKind.Object => CreateObjectShape(type, disableMemberResolution: false, options),
             TypeShapeKind.Surrogate => CreateSurrogateShape(type, options),
             TypeShapeKind.Union => CreateUnionTypeShape(type, fSharpUnionInfo, options),
-            TypeShapeKind.Function => CreateFunctionTypeShape(type, options),
+            TypeShapeKind.Function => CreateFunctionTypeShape(type, fSharpFuncInfo, options),
             TypeShapeKind.None or _ => CreateObjectShape(type, disableMemberResolution: true, options),
         };
     }
 
     private ITypeShape CreateObjectShape(Type type, bool disableMemberResolution, ReflectionTypeShapeOptions options)
     {
+        if (FSharpReflectionHelpers.IsFSharpUnitType(type))
+        {
+            Type unitTypeShapeTy = typeof(FSharpUnitTypeShape<>).MakeGenericType(type);
+            return (ITypeShape)Activator.CreateInstance(unitTypeShapeTy, this, options)!;
+        }
+
         Type objectShapeTy = typeof(DefaultReflectionObjectTypeShape<>).MakeGenericType(type);
         return (ITypeShape)Activator.CreateInstance(objectShapeTy, this, disableMemberResolution, options)!;
     }
@@ -361,8 +367,15 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         return (IUnionTypeShape)Activator.CreateInstance(unionTypeTy, derivedTypeInfos.ToArray(), this, options)!;
     }
 
-    private IFunctionTypeShape CreateFunctionTypeShape(Type functionType, ReflectionTypeShapeOptions options)
+    private IFunctionTypeShape CreateFunctionTypeShape(Type functionType, FSharpFuncInfo? fSharpFuncInfo, ReflectionTypeShapeOptions options)
     {
+        if (fSharpFuncInfo is not null)
+        {
+            Type fsharpArgumentStateType = MemberAccessor.CreateConstructorArgumentStateType(fSharpFuncInfo);
+            Type fsharpFunctionShapeTy = typeof(FSharpFunctionTypeShape<,,>).MakeGenericType(functionType, fsharpArgumentStateType, fSharpFuncInfo.EffectiveReturnType);
+            return (IFunctionTypeShape)Activator.CreateInstance(fsharpFunctionShapeTy, fSharpFuncInfo, options, this)!;
+        }
+
         DebugExt.Assert(typeof(Delegate).IsAssignableFrom(functionType));
         MethodInfo invokeMethod = functionType.GetMethod("Invoke")!;
         MethodShapeInfo methodShapeInfo = CreateMethodShapeInfo(invokeMethod, shapeAttribute: null, nullabilityCtx: CreateNullabilityInfoContext());
@@ -423,9 +436,9 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         };
     }
 
-    private static TypeShapeKind DetermineTypeKind(Type type, bool allowUnionShapes, ReflectionTypeShapeOptions typeShapeOptions, out FSharpUnionInfo? fsharpUnionInfo)
+    private static TypeShapeKind DetermineTypeKind(Type type, bool allowUnionShapes, ReflectionTypeShapeOptions typeShapeOptions, out FSharpUnionInfo? fsharpUnionInfo, out FSharpFuncInfo? fSharpFuncInfo)
     {
-        TypeShapeKind builtInKind = DetermineBuiltInTypeKind(type, allowUnionShapes, typeShapeOptions, out fsharpUnionInfo);
+        TypeShapeKind builtInKind = DetermineBuiltInTypeKind(type, allowUnionShapes, typeShapeOptions, out fsharpUnionInfo, out fSharpFuncInfo);
 
         if (typeShapeOptions.RequestedKind is TypeShapeKind requestedKind && requestedKind != builtInKind)
         {
@@ -447,9 +460,15 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         return builtInKind;
     }
 
-    private static TypeShapeKind DetermineBuiltInTypeKind(Type type, bool allowUnionShapes, ReflectionTypeShapeOptions? options, out FSharpUnionInfo? fsharpUnionInfo)
+    private static TypeShapeKind DetermineBuiltInTypeKind(
+        Type type,
+        bool allowUnionShapes,
+        ReflectionTypeShapeOptions? options,
+        out FSharpUnionInfo? fsharpUnionInfo,
+        out FSharpFuncInfo? fSharpFuncInfo)
     {
         fsharpUnionInfo = null;
+        fSharpFuncInfo = null;
 
         if (options?.Marshaler is not null)
         {
@@ -474,6 +493,11 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         if (FSharpReflectionHelpers.TryResolveFSharpUnionMetadata(type, out fsharpUnionInfo))
         {
             return fsharpUnionInfo.IsOptional ? TypeShapeKind.Optional : TypeShapeKind.Union;
+        }
+
+        if (FSharpReflectionHelpers.TryResolveFSharpFuncMetadata(type, out fSharpFuncInfo))
+        {
+            return TypeShapeKind.Function;
         }
 
         if (allowUnionShapes)

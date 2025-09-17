@@ -602,6 +602,7 @@ public static class TestTypes
         yield return TestCase.Create(new CtorParameterNotRequiredByAttribute(true));
 
         // F# types
+        yield return TestCase.Create(FSharpValues.unit, p);
         yield return TestCase.Create(new FSharpRecord(42, "str", true), p);
         yield return TestCase.Create(new FSharpStructRecord(42, "str", true), p);
         yield return TestCase.Create(new GenericFSharpRecord<string>("str"), p);
@@ -682,6 +683,16 @@ public static class TestTypes
             p41 + p42 + p43 + p44 + p45 + p46 + p47 + p48 + p49 + p50 +
             p51 + p52 + p53 + p54 + p55 + p56 + p57 + p58 + p59 + p60 +
             p61 + p62 + p63 + p64 + p65 + p66 + p67 + p68 + p69 + p70)), p);
+
+        yield return TestCase.Create(FSharpFunctions.simpleFunc, p);
+        yield return TestCase.Create(FSharpFunctions.curriedFunc, p);
+        yield return TestCase.Create(FSharpFunctions.unitAcceptingFunc, p);
+        yield return TestCase.Create(FSharpFunctions.curriedUnitAcceptingFunc, p);
+        yield return TestCase.Create(FSharpFunctions.unitReturningFunc, p);
+        yield return TestCase.Create(FSharpFunctions.curriedUnitReturningFunc, p);
+        yield return TestCase.Create(FSharpFunctions.tupleAcceptingFunc, p);
+        yield return TestCase.Create(FSharpFunctions.taskFunc, p);
+        yield return TestCase.Create(FSharpFunctions.curriedTaskFunc, p);
 
         // RPC types
         yield return TestCase.Create(new ClassWithMethodShapes());
@@ -3386,6 +3397,7 @@ public delegate Task<int> LargeAsyncDelegate(
 [GenerateShapeFor<FSharpStruct>]
 [GenerateShapeFor<GenericFSharpClass<string>>]
 [GenerateShapeFor<GenericFSharpStruct<string>>]
+[GenerateShapeFor<Microsoft.FSharp.Core.Unit>]
 [GenerateShapeFor<FSharpList<int>>]
 [GenerateShapeFor<FSharpMap<string, int>>]
 [GenerateShapeFor<FSharpSet<int>>]
@@ -3426,4 +3438,13 @@ public delegate Task<int> LargeAsyncDelegate(
 [GenerateShapeFor<CustomDelegate>]
 [GenerateShapeFor<LargeDelegate>]
 [GenerateShapeFor<LargeAsyncDelegate>]
+[GenerateShapeFor<FSharpFunc<int, int>>]
+[GenerateShapeFor<FSharpFunc<int, FSharpFunc<int, int>>>]
+[GenerateShapeFor<FSharpFunc<Microsoft.FSharp.Core.Unit, int>>]
+[GenerateShapeFor<FSharpFunc<Microsoft.FSharp.Core.Unit, FSharpFunc<int, FSharpFunc<Microsoft.FSharp.Core.Unit, int>>>>]
+[GenerateShapeFor<FSharpFunc<int, Microsoft.FSharp.Core.Unit>>]
+[GenerateShapeFor<FSharpFunc<int, FSharpFunc<int, Microsoft.FSharp.Core.Unit>>>]
+[GenerateShapeFor<FSharpFunc<Tuple<int, int>, int>>]
+[GenerateShapeFor<FSharpFunc<int, Task<int>>>]
+[GenerateShapeFor<FSharpFunc<int, FSharpFunc<int, FSharpFunc<int, Task<int>>>>>]
 public partial class Witness;

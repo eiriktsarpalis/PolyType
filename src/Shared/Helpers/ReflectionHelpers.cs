@@ -236,17 +236,16 @@ internal static class ReflectionHelpers
         return returnType;
     }
 
-    public static bool IsAsyncMethod(this MethodInfo methodInfo)
+    public static bool IsAsyncType(this Type type)
     {
-        Type returnType = methodInfo.ReturnType;
-        if (typeof(Task).IsAssignableFrom(returnType) || returnType == typeof(ValueTask))
+        if (typeof(Task).IsAssignableFrom(type) || type == typeof(ValueTask))
         {
             return true;
         }
 
-        if (methodInfo.ReturnType.IsGenericType)
+        if (type.IsGenericType)
         {
-            Type genericTypeDefinition = methodInfo.ReturnType.GetGenericTypeDefinition();
+            Type genericTypeDefinition = type.GetGenericTypeDefinition();
             return genericTypeDefinition == typeof(ValueTask<>);
         }
 

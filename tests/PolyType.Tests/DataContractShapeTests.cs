@@ -10,13 +10,15 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
         var shape = Assert.IsType<IObjectTypeShape>(providerUnderTest.Provider.GetTypeShape(typeof(ContractType)), exactMatch: false);
         Assert.NotNull(shape);
 
-        // Only members explicitly marked with [DataMember] should be included.
-        Assert.Equal(3, shape.Properties.Count);
+        // Only members explicitly marked with [DataMember] or [PropertyShape] should be included.
+        Assert.Equal(5, shape.Properties.Count);
 
         // Orders should follow DataMember.Order
         Assert.Equal("id", shape.Properties[0].Name);
         Assert.Equal("Renamed", shape.Properties[1].Name);
         Assert.Equal("AlsoIncluded", shape.Properties[2].Name);
+        Assert.Equal("ExplicitShape", shape.Properties[3].Name);
+        Assert.Equal("CustomName1", shape.Properties[4].Name);
 
         // Required flag propagated from DataMember(IsRequired=true)
         Assert.True(shape.Constructor!.Parameters.Single(p => p.Name == "id").IsRequired);
@@ -40,14 +42,16 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
         var shape = Assert.IsType<IObjectTypeShape>(providerUnderTest.Provider.GetTypeShape(typeof(DerivedNonContractType)), exactMatch: false);
         Assert.NotNull(shape);
 
-        // Only members explicitly marked with [DataMember] should be included.
-        Assert.Equal(4, shape.Properties.Count);
+        // Only members explicitly marked with [DataMember] or [PropertyShape] should be included.
+        Assert.Equal(6, shape.Properties.Count);
 
         // Orders should follow DataMember.Order
         Assert.Equal("NewValue", shape.Properties[0].Name);
         Assert.Equal("id", shape.Properties[1].Name);
         Assert.Equal("Renamed", shape.Properties[2].Name);
         Assert.Equal("AlsoIncluded", shape.Properties[3].Name);
+        Assert.Equal("ExplicitShape", shape.Properties[4].Name);
+        Assert.Equal("CustomName1", shape.Properties[5].Name);
 
         // Required flag propagated from DataMember(IsRequired=true)
         Assert.True(shape.Constructor!.Parameters.Single(p => p.Name == "id").IsRequired);
@@ -72,7 +76,7 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
     public void Enum_EnumMember_And_EnumMemberShape_Priority()
     {
         var enumShape = (IEnumTypeShape<ContractEnum, int>)providerUnderTest.Provider.GetTypeShapeOrThrow<ContractEnum>();
-        // Expect names: First (EnumMember value), SecondRenamed (EnumMemberShape), Third (field name)
+
         Assert.Equal(4, enumShape.Members.Count);
         Assert.True(enumShape.Members.ContainsKey("FirstRenamed"));
         Assert.True(enumShape.Members.ContainsKey("SecondRenamed"));
@@ -96,6 +100,21 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
         Assert.IsType<IObjectTypeShape>(providerUnderTest.Provider.GetTypeShape(typeof(AnimalNoDataContract)), exactMatch: false);
     }
 
+    [Fact]
+    public void ClassWithConflictingMembers_ReportsExpectedMembers()
+    {
+        // Regression test for https://github.com/eiriktsarpalis/PolyType/issues/286
+        var shape = Assert.IsType<IObjectTypeShape>(providerUnderTest.Provider.GetTypeShape(typeof(ClassWithConflictingMembers)), exactMatch: false);
+        Assert.NotNull(shape);
+
+        Assert.Equal(2, shape.Properties.Count);
+        Assert.Equal("innerStream", shape.Properties[0].Name);
+        Assert.Equal("innerStream", shape.Properties[1].Name);
+
+        Assert.False(shape.Properties[0].IsField);
+        Assert.True(shape.Properties[1].IsField);
+    }
+
     [GenerateShape]
     [DataContract]
     public partial class ContractType
@@ -114,6 +133,10 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
 
         [PropertyShape(Name = "ExplicitShape", Order = 3)]
         public int ViaPropertyShape { get; set; }
+
+        [PropertyShape(Name = "CustomName1", Order = 100)]
+        [DataMember(Name = "CustomName2", Order = -100)]
+        public int PropertyWithConflictingAnnotation { get; set; }
     }
 
     [GenerateShape]
@@ -179,6 +202,22 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
     public class DogNoDataContract : AnimalNoDataContract
     {
         public bool Barks { get; set; }
+    }
+
+    [DataContract]
+    [GenerateShape]
+    public partial class ClassWithConflictingMembers
+    {
+        [DataMember]
+        private Stream innerStream;
+
+        public ClassWithConflictingMembers(Stream innerStream)
+        {
+            this.innerStream = innerStream;
+        }
+
+        [PropertyShape(Name = "innerStream")]
+        public Stream InnerStream => innerStream;
     }
 
     [GenerateShapeFor<ContractEnum>]

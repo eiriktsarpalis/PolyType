@@ -1,5 +1,7 @@
 ﻿namespace PolyType.Tests.FSharp
 
+open System.Threading.Tasks
+
 type FSharpRecord =
     {
         IntProperty: int
@@ -112,3 +114,19 @@ with
 type NullaryUnion =
     | A
     | B of int
+
+module FSharpValues =
+
+    let unit = ()
+
+module FSharpFunctions =
+
+    let simpleFunc : int -> int = (); fun x -> x + 1
+    let curriedFunc : int -> int -> int = (); fun x y -> x + y
+    let unitAcceptingFunc : unit -> int = (); fun () -> 42
+    let curriedUnitAcceptingFunc : unit -> int -> unit -> int = (); fun () x () -> x + 1
+    let unitReturningFunc : int -> unit = (); fun x -> ()
+    let curriedUnitReturningFunc : int -> int -> unit = (); fun x y -> ()
+    let tupleAcceptingFunc : int * int -> int = (); fun (x, y) -> x + y
+    let taskFunc : int -> Task<int> = (); fun x -> task { let! _ = Async.Sleep(10) in return x + 1 }
+    let curriedTaskFunc : int -> int -> int -> Task<int> = (); fun x y z -> task { let! _ = Async.Sleep(10) in return x + y + z }

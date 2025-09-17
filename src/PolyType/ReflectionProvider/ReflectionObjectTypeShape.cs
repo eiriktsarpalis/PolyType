@@ -109,16 +109,20 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
             // 2. Maximize the number of parameters that match read-only properties/fields.
             // 3. Minimize the total number of constructor parameters.
 
-            Dictionary<(Type, string), bool> readableMembers = allMembers
-                .Where(member => member.MemberInfo is PropertyInfo { CanRead: true } or FieldInfo)
-                .ToDictionary(
-                    keySelector: member => (member.MemberInfo.GetMemberType(), member.MemberInfo.Name),
-                    elementSelector: member => member.MemberInfo switch
+            Dictionary<(Type, string), bool> readableMembers = new(ReflectionTypeShapeProvider.CtorParameterEqualityComparer);
+            foreach (var member in allMembers)
+            {
+                if (member.MemberInfo is PropertyInfo { CanRead: true } or FieldInfo)
+                {
+                    var key = (member.MemberInfo.GetMemberType(), member.MemberInfo.Name);
+                    readableMembers.TryGetValue(key, out bool isReadOnly);
+                    readableMembers[key] = isReadOnly && member.MemberInfo switch
                     {
                         PropertyInfo prop => !prop.CanWrite,
                         var field => ((FieldInfo)field).IsInitOnly,
-                    },
-                    comparer: ReflectionTypeShapeProvider.CtorParameterEqualityComparer);
+                    };
+                }
+            }
 
             (constructorInfo, parameters) = ctorCandidates
                 .OrderByDescending(ctor =>
@@ -338,28 +342,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
             int order = 0;
             bool? isRequiredByAttribute = null;
 
-            if (hasDataContractAttribute)
-            {
-                if (attributeProvider.GetCustomAttribute<DataMemberAttribute>() is not { } dataMemberAttr)
-                {
-                    // Always skip members not explicitly annotated with DataMemberAttribute.
-                    return;
-                }
-
-                logicalName = dataMemberAttr.Name;
-                if (dataMemberAttr.Order != 0)
-                {
-                    order = dataMemberAttr.Order;
-                    isOrderSpecified = true;
-                }
-
-                includeNonPublic = true;
-                if (dataMemberAttr.IsRequired)
-                {
-                    isRequiredByAttribute = true;
-                }
-            }
-            else if (attributeProvider.GetCustomAttribute<PropertyShapeAttribute>(inherit: true) is { } propertyShapeAttr)
+            if (attributeProvider.GetCustomAttribute<PropertyShapeAttribute>(inherit: true) is { } propertyShapeAttr)
             {
                 // If the attribute is present, use the value of the Ignore property to determine its inclusion.
                 if (propertyShapeAttr.Ignore)
@@ -378,6 +361,27 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                 if (propertyShapeAttr.IsRequiredSpecified)
                 {
                     isRequiredByAttribute = propertyShapeAttr.IsRequired;
+                }
+            }
+            else if (hasDataContractAttribute)
+            {
+                if (attributeProvider.GetCustomAttribute<DataMemberAttribute>() is not { } dataMemberAttr)
+                {
+                    // Always skip members not explicitly annotated with DataMemberAttribute.
+                    return;
+                }
+
+                logicalName = dataMemberAttr.Name;
+                if (dataMemberAttr.Order != -1)
+                {
+                    order = dataMemberAttr.Order;
+                    isOrderSpecified = true;
+                }
+
+                includeNonPublic = true;
+                if (dataMemberAttr.IsRequired)
+                {
+                    isRequiredByAttribute = true;
                 }
             }
             else if (attributeProvider.GetCustomAttribute<IgnoreDataMemberAttribute>() is not null)

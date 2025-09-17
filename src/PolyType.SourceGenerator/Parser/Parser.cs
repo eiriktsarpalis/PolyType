@@ -210,21 +210,6 @@ public sealed partial class Parser : TypeDataModelGenerator
 
     protected override bool IncludeProperty(IPropertySymbol property, out bool includeGetter, out bool includeSetter)
     {
-        if (property.ContainingType.HasAttribute(_knownSymbols.DataContractAttribute))
-        {
-            // If the type is annotated with [DataContract], only include properties with [DataMember].
-            if (!property.HasAttribute(_knownSymbols.DataMemberAttribute))
-            {
-                includeGetter = includeSetter = false;
-                return false;
-            }
-
-            property = property.GetBaseProperty();
-            includeGetter = property.GetMethod is not null;
-            includeSetter = property.SetMethod is not null;
-            return true;
-        }
-
         if (property.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData propertyAttribute)
         {
             // Ignore properties with the [PropertyShape] attribute set to Ignore = true.
@@ -240,6 +225,21 @@ public sealed partial class Parser : TypeDataModelGenerator
 
             includeGetter = includeSetter = false;
             return false;
+        }
+
+        if (property.ContainingType.HasAttribute(_knownSymbols.DataContractAttribute))
+        {
+            // If the type is annotated with [DataContract], only include properties with [DataMember].
+            if (!property.HasAttribute(_knownSymbols.DataMemberAttribute))
+            {
+                includeGetter = includeSetter = false;
+                return false;
+            }
+
+            property = property.GetBaseProperty();
+            includeGetter = property.GetMethod is not null;
+            includeSetter = property.SetMethod is not null;
+            return true;
         }
 
         if (property.HasAttribute(_knownSymbols.IgnoreDataMemberAttribute))
@@ -313,6 +313,11 @@ public sealed partial class Parser : TypeDataModelGenerator
     // Resolve constructors with the [ConstructorShape] attribute.
     protected override IEnumerable<IMethodSymbol> ResolveConstructors(ITypeSymbol type, ImmutableArray<PropertyDataModel> properties)
     {
+        if (type.IsAbstract || type.TypeKind is TypeKind.Interface)
+        {
+            return [];
+        }
+
         // Search for constructors that have the [ConstructorShape] attribute. Ignore accessibility modifiers in this step.
         IMethodSymbol[] constructors = type.GetMembers()
             .OfType<IMethodSymbol>()
@@ -343,12 +348,16 @@ public sealed partial class Parser : TypeDataModelGenerator
         // 2. Maximize the number of parameters that match read-only properties/fields.
         // 3. Minimize the total number of constructor parameters.
 
-        Dictionary<(ITypeSymbol, string), bool> readableProperties = properties
-            .Where(prop => prop.IncludeGetter)
-            .ToDictionary(
-                keySelector: p => (p.PropertyType, p.Name),
-                elementSelector: p => !p.IncludeSetter,
-                comparer: s_ctorParamComparer);
+        Dictionary<(ITypeSymbol, string), bool> readableProperties = new(s_ctorParamComparer);
+        foreach (var prop in properties)
+        {
+            if (prop.IncludeGetter)
+            {
+                var key = (prop.PropertyType, prop.Name);
+                readableProperties.TryGetValue(key, out bool isReadOnly);
+                readableProperties[key] = isReadOnly && !prop.IncludeSetter;
+            }
+        }
 
         return constructors
             .OrderByDescending(ctor =>
@@ -669,6 +678,16 @@ public sealed partial class Parser : TypeDataModelGenerator
             };
         }
 
+        if (SymbolEqualityComparer.Default.Equals(type, _knownSymbols.FSharpUnitType))
+        {
+            return MapFSharpUnitDataModel(type, ref ctx, out model);
+        }
+
+        if (type is INamedTypeSymbol { IsGenericType: true } namedType && SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _knownSymbols.FSharpFunc))
+        {
+            return MapFSharpFunctionDataModel(namedType, ref ctx, out model);
+        }
+
         requestedKind = MapTypeShapeKindToDataKind(attrDeclaredKind);
         TypeDataModelGenerationStatus status = base.MapType(type, requestedKind, methodBindingFlags, associatedTypes, ref ctx, requirements, out model);
 
@@ -870,6 +889,83 @@ public sealed partial class Parser : TypeDataModelGenerator
             Requirements = TypeShapeRequirements.Full,
             Properties = properties.ToImmutableArray(),
             Constructors = ImmutableArray.Create(constructorDataModel),
+        };
+
+        return TypeDataModelGenerationStatus.Success;
+    }
+
+    private static TypeDataModelGenerationStatus MapFSharpUnitDataModel(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model)
+    {
+        model = new FSharpUnitDataModel
+        {
+            Type = type,
+            Requirements = TypeShapeRequirements.Full,
+        };
+
+        return TypeDataModelGenerationStatus.Success;
+    }
+
+    private TypeDataModelGenerationStatus MapFSharpFunctionDataModel(INamedTypeSymbol type, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model)
+    {
+        Debug.Assert(type.IsGenericType && SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _knownSymbols.FSharpFunc));
+
+        var uncurriedTypes = ImmutableArray.CreateBuilder<ITypeSymbol>();
+        INamedTypeSymbol currentFunc = type;
+        ITypeSymbol returnType;
+        while (true)
+        {
+            ITypeSymbol argType = currentFunc.TypeArguments[0];
+            returnType = currentFunc.TypeArguments[1];
+            TypeDataModelGenerationStatus status = IncludeNestedType(argType, ref ctx);
+            if (status is not TypeDataModelGenerationStatus.Success)
+            {
+                model = null;
+                return status;
+            }
+
+            uncurriedTypes.Add(argType);
+
+            if (returnType is not INamedTypeSymbol { IsGenericType: true } namedReturnType ||
+                !SymbolEqualityComparer.Default.Equals(returnType.OriginalDefinition, _knownSymbols.FSharpFunc))
+            {
+                break;
+            }
+
+            currentFunc = namedReturnType;
+        }
+
+        ITypeSymbol? effectiveReturnType = GetEffectiveReturnType(currentFunc.GetMethods("Invoke", isStatic: false).First(), out MethodReturnTypeKind methodReturnTypeKind);
+        if (effectiveReturnType is not null && SymbolEqualityComparer.Default.Equals(effectiveReturnType, _knownSymbols.FSharpUnitType))
+        {
+            TypeDataModelGenerationStatus status = IncludeNestedType(_knownSymbols.UnitType!, ref ctx);
+            if (status is not TypeDataModelGenerationStatus.Success)
+            {
+                model = null;
+                return status;
+            }
+
+            effectiveReturnType = null;
+            methodReturnTypeKind = FSharpFunctionDataModel.FSharpUnitReturnTypeKind;
+        }
+
+        if (effectiveReturnType is not null)
+        {
+            TypeDataModelGenerationStatus status = IncludeNestedType(effectiveReturnType, ref ctx);
+            if (status is not TypeDataModelGenerationStatus.Success)
+            {
+                model = null;
+                return status;
+            }
+        }
+
+        model = new FSharpFunctionDataModel
+        {
+            Type = type,
+            ReturnType = returnType,
+            ReturnedValueType = effectiveReturnType,
+            Parameters = uncurriedTypes.ToImmutableArray(),
+            ReturnTypeKind = methodReturnTypeKind,
+            Requirements = TypeShapeRequirements.Full,
         };
 
         return TypeDataModelGenerationStatus.Success;

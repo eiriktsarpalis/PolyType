@@ -232,6 +232,7 @@ public sealed partial class Parser
                 UnderlyingReturnType = CreateTypeId(delegateModel.InvokeMethod.ReturnType),
                 ReturnsByRef = delegateModel.InvokeMethod.ReturnsByRef || delegateModel.InvokeMethod.ReturnsByRefReadonly,
                 AssociatedTypes = associatedTypes,
+                IsFsharpFunc = false,
                 Parameters = delegateModel.Parameters
                     .Select(p => MapParameter(declaringObjectForConstructor: null, typeId, p, false))
                     .ToImmutableEquatableArray(),
@@ -242,6 +243,44 @@ public sealed partial class Parser
                     <= 64 => ArgumentStateType.SmallArgumentState,
                     _ => ArgumentStateType.LargeArgumentState,
                 },
+            },
+
+            FSharpFunctionDataModel fsharpFunc => new FunctionShapeModel
+            {
+                Type = typeId,
+                ReflectionName = model.Type.GetReflectionToStringName(),
+                SourceIdentifier = sourceIdentifier,
+                Methods = MapMethods(model, typeId),
+                Events = MapEvents(model, typeId),
+                ReturnType = CreateTypeId(fsharpFunc.ReturnedValueType ?? _knownSymbols.UnitType!),
+                ReturnTypeKind = fsharpFunc.ReturnTypeKind,
+                UnderlyingReturnType = CreateTypeId(fsharpFunc.ReturnType),
+                ReturnsByRef = false,
+                AssociatedTypes = associatedTypes,
+                IsFsharpFunc = true,
+                Parameters = MapFSharpFunctionParameters(fsharpFunc, typeId, out int effectiveParameterCount),
+                ArgumentStateType = effectiveParameterCount switch
+                {
+                    0 => ArgumentStateType.EmptyArgumentState,
+                    <= 64 => ArgumentStateType.SmallArgumentState,
+                    _ => ArgumentStateType.LargeArgumentState,
+                },
+            },
+
+            FSharpUnitDataModel => new ObjectShapeModel
+            {
+                Requirements = TypeShapeRequirements.Full,
+                Type = typeId,
+                ReflectionName = model.Type.GetReflectionToStringName(),
+                SourceIdentifier = sourceIdentifier,
+                Methods = MapMethods(model, typeId),
+                Events = MapEvents(model, typeId),
+                Constructor = MapFSharpUnitConstructor(typeId),
+                Properties = [],
+                IsValueTupleType = false,
+                IsTupleType = false,
+                IsRecordType = false,
+                AssociatedTypes = associatedTypes,
             },
 
             _ => new ObjectShapeModel
@@ -488,6 +527,7 @@ public sealed partial class Parser
                 _ => false,
             },
             IsAccessible = isAccessibleConstructor,
+            IsFSharpUnitConstructor = false,
         };
     }
 
@@ -618,6 +658,43 @@ public sealed partial class Parser
         };
     }
 
+    private ImmutableEquatableArray<ParameterShapeModel> MapFSharpFunctionParameters(FSharpFunctionDataModel fsharpFunc, TypeId declaringTypeId, out int effectiveParameterCount)
+    {
+        Debug.Assert(fsharpFunc.Parameters.Length > 0);
+
+        if (fsharpFunc.Parameters is [var singleParam] && SymbolEqualityComparer.Default.Equals(singleParam, _knownSymbols.FSharpUnitType))
+        {
+            effectiveParameterCount = 0;
+            return [];
+        }
+
+        effectiveParameterCount = fsharpFunc.Parameters.Length;
+        return fsharpFunc.Parameters
+            .Select((ITypeSymbol argType, int index) =>
+                new ParameterShapeModel
+                {
+                    Name = $"arg{index + 1}",
+                    UnderlyingMemberName = $"arg{index + 1}",
+                    Position = index,
+                    DeclaringType = declaringTypeId,
+                    ParameterType = CreateTypeId(argType),
+                    Kind = ParameterKind.MethodParameter,
+                    RefKind = RefKind.None,
+                    IsRequired = true,
+                    IsAccessible = true,
+                    CanUseUnsafeAccessors = false,
+                    IsInitOnlyProperty = false,
+                    IsNonNullable = false,
+                    NullableAnnotation = NullableAnnotation.NotAnnotated,
+                    ParameterTypeContainsNullabilityAnnotations = false,
+                    IsPublic = true,
+                    IsField = false,
+                    HasDefaultValue = false,
+                    DefaultValueExpr = null,
+                })
+            .ToImmutableEquatableArray();
+    }
+
     private static string EnumValueToString(object underlyingValue)
         => underlyingValue switch
         {
@@ -646,6 +723,7 @@ public sealed partial class Parser
             IsAccessible = true,
             CanUseUnsafeAccessors = false,
             IsPublic = true,
+            IsFSharpUnitConstructor = false,
         };
 
         ParameterShapeModel MapTupleConstructorParameter(TypeId typeId, PropertyDataModel tupleElement, int position)
@@ -673,6 +751,25 @@ public sealed partial class Parser
                 DefaultValueExpr = null,
             };
         }
+    }
+
+    private static ConstructorShapeModel MapFSharpUnitConstructor(TypeId typeId)
+    {
+        return new ConstructorShapeModel
+        {
+            DeclaringType = typeId,
+            Parameters = [],
+            RequiredMembers = [],
+            OptionalMembers = [],
+            ArgumentStateType = ArgumentStateType.EmptyArgumentState,
+            StaticFactoryName = null,
+            StaticFactoryIsProperty = false,
+            ResultRequiresCast = false,
+            IsAccessible = true,
+            CanUseUnsafeAccessors = false,
+            IsPublic = true,
+            IsFSharpUnitConstructor = true,
+        };
     }
 
     private record struct CustomAttributeAssociatedTypeProvider(ImmutableDictionary<string, TypeShapeRequirements> NamesAndRequirements);
@@ -910,6 +1007,24 @@ public sealed partial class Parser
         propertyName = propertySymbol.Name;
         order = 0;
 
+        if (propertySymbol.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData propertyAttr)
+        {
+            foreach (KeyValuePair<string, TypedConstant> namedArgument in propertyAttr.NamedArguments)
+            {
+                switch (namedArgument.Key)
+                {
+                    case "Name":
+                        propertyName = (string?)namedArgument.Value.Value ?? propertyName;
+                        break;
+                    case "Order":
+                        order = (int)namedArgument.Value.Value!;
+                        break;
+                }
+            }
+
+            return;
+        }
+
         if (propertySymbol.ContainingType.HasAttribute(_knownSymbols.DataContractAttribute))
         {
             if (propertySymbol.GetAttribute(_knownSymbols.DataMemberAttribute) is AttributeData dataMemberAttr)
@@ -925,24 +1040,6 @@ public sealed partial class Parser
                             order = (int)namedArgument.Value.Value!;
                             break;
                     }
-                }
-            }
-
-            return;
-        }
-
-        if (propertySymbol.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData propertyAttr)
-        {
-            foreach (KeyValuePair<string, TypedConstant> namedArgument in propertyAttr.NamedArguments)
-            {
-                switch (namedArgument.Key)
-                {
-                    case "Name":
-                        propertyName = (string?)namedArgument.Value.Value ?? propertyName;
-                        break;
-                    case "Order":
-                        order = (int)namedArgument.Value.Value!;
-                        break;
                 }
             }
         }
