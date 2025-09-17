@@ -76,7 +76,7 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
     public void Enum_EnumMember_And_EnumMemberShape_Priority()
     {
         var enumShape = (IEnumTypeShape<ContractEnum, int>)providerUnderTest.Provider.GetTypeShapeOrThrow<ContractEnum>();
-        // Expect names: First (EnumMember value), SecondRenamed (EnumMemberShape), Third (field name)
+
         Assert.Equal(4, enumShape.Members.Count);
         Assert.True(enumShape.Members.ContainsKey("FirstRenamed"));
         Assert.True(enumShape.Members.ContainsKey("SecondRenamed"));
@@ -98,6 +98,21 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
     public void KnownTypeAttribute_OnNonDataContract_DoesNotReportUnionShape()
     {
         Assert.IsType<IObjectTypeShape>(providerUnderTest.Provider.GetTypeShape(typeof(AnimalNoDataContract)), exactMatch: false);
+    }
+
+    [Fact]
+    public void ClassWithConflictingMembers_ReportsExpectedMembers()
+    {
+        // Regression test for https://github.com/eiriktsarpalis/PolyType/issues/286
+        var shape = Assert.IsType<IObjectTypeShape>(providerUnderTest.Provider.GetTypeShape(typeof(ClassWithConflictingMembers)), exactMatch: false);
+        Assert.NotNull(shape);
+
+        Assert.Equal(2, shape.Properties.Count);
+        Assert.Equal("innerStream", shape.Properties[0].Name);
+        Assert.Equal("innerStream", shape.Properties[1].Name);
+
+        Assert.False(shape.Properties[0].IsField);
+        Assert.True(shape.Properties[1].IsField);
     }
 
     [GenerateShape]
@@ -187,6 +202,22 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
     public class DogNoDataContract : AnimalNoDataContract
     {
         public bool Barks { get; set; }
+    }
+
+    [DataContract]
+    [GenerateShape]
+    public partial class ClassWithConflictingMembers
+    {
+        [DataMember]
+        private Stream innerStream;
+
+        public ClassWithConflictingMembers(Stream innerStream)
+        {
+            this.innerStream = innerStream;
+        }
+
+        [PropertyShape(Name = "innerStream")]
+        public Stream InnerStream => innerStream;
     }
 
     [GenerateShapeFor<ContractEnum>]
