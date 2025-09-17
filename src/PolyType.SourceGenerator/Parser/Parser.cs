@@ -348,12 +348,16 @@ public sealed partial class Parser : TypeDataModelGenerator
         // 2. Maximize the number of parameters that match read-only properties/fields.
         // 3. Minimize the total number of constructor parameters.
 
-        Dictionary<(ITypeSymbol, string), bool> readableProperties = properties
-            .Where(prop => prop.IncludeGetter)
-            .ToDictionary(
-                keySelector: p => (p.PropertyType, p.Name),
-                elementSelector: p => !p.IncludeSetter,
-                comparer: s_ctorParamComparer);
+        Dictionary<(ITypeSymbol, string), bool> readableProperties = new(s_ctorParamComparer);
+        foreach (var prop in properties)
+        {
+            if (prop.IncludeGetter)
+            {
+                var key = (prop.PropertyType, prop.Name);
+                readableProperties.TryGetValue(key, out bool isReadOnly);
+                readableProperties[key] = isReadOnly && !prop.IncludeSetter;
+            }
+        }
 
         return constructors
             .OrderByDescending(ctor =>
