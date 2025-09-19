@@ -3,6 +3,8 @@ items:
   href: core-abstractions.md
 - name: Shape Providers
   href: shape-providers.md
+- name: Specification
+  href: specification.md
 - name: API Documentation
   href: api/PolyType.yml
 - name: GitHub
