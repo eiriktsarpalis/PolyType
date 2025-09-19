@@ -1,185 +1,148 @@
-# Type Shape Derivation Specification
+# Specification
 
-This document details a specification for how .NET types are mapped to PolyType shapes. Both built-in shape providers (source generator and reflection provider) implement identical derivation logic that maps arbitrary .NET types into type shapes of different kinds.
+This document details how .NET types are mapped to type shapes. Both built-in shape providers (source generator and reflection provider) implement equivalent derivation logics that map arbitrary .NET types into type shapes of different kinds.
 
 ## Overview
 
-PolyType categorizes .NET types into eight distinct shape kinds, each represented by a specific interface:
+PolyType classifies .NET types into eight distinct type shape kinds, each represented by a specific interface:
 
-- **Object** - <xref:PolyType.Abstractions.IObjectTypeShape> for general object types with properties and constructors  
-- **Enumerable** - <xref:PolyType.Abstractions.IEnumerableTypeShape> for collection types implementing @System.Collections.Generic.IEnumerable`1
-- **Dictionary** - <xref:PolyType.Abstractions.IDictionaryTypeShape> for key-value collection types
-- **Enum** - <xref:PolyType.Abstractions.IEnumTypeShape> for enumeration types
-- **Optional** - <xref:PolyType.Abstractions.IOptionalTypeShape> for nullable value types and F# options
-- **Surrogate** - <xref:PolyType.Abstractions.ISurrogateTypeShape> for types with custom marshaling
-- **Union** - <xref:PolyType.Abstractions.IUnionTypeShape> for polymorphic type hierarchies or discriminated union types
-- **Function** - <xref:PolyType.Abstractions.IFunctionTypeShape> for delegate and F# function types
+- **Object** - <xref:PolyType.Abstractions.IObjectTypeShape> for general object types with properties and constructors.
+- **Enumerable** - <xref:PolyType.Abstractions.IEnumerableTypeShape> for collection types implementing @System.Collections.Generic.IEnumerable`1.
+- **Dictionary** - <xref:PolyType.Abstractions.IDictionaryTypeShape> for key-value collection types.
+- **Enum** - <xref:PolyType.Abstractions.IEnumTypeShape> for enum types.
+- **Optional** - <xref:PolyType.Abstractions.IOptionalTypeShape> for nullable value types and F# options.
+- **Surrogate** - <xref:PolyType.Abstractions.ISurrogateTypeShape> for types that define a marshaller to a surrogate type.
+- **Union** - <xref:PolyType.Abstractions.IUnionTypeShape> for polymorphic type hierarchies or discriminated union types.
+- **Function** - <xref:PolyType.Abstractions.IFunctionTypeShape> for delegate and F# function types.
 
 ## Derivation Algorithm
 
-Type shape derivation follows a priority-based algorithm that checks conditions in the following order:
+PolyType maps type into individual shape kinds using the following rules:
 
-### 1. Surrogate Types
+### Enum Types
 
-**Implementation Details**:
-- Requires an <xref:PolyType.IMarshaler`2> implementation
-- The marshaler provides bidirectional mapping between the original type and surrogate type
-- Configured via the <xref:PolyType.GenerateShapeAttribute>, <xref:PolyType.TypeShapeAttribute>, or <xref:PolyType.TypeShapeExtensionAttribute> attributes' `Marshaler` parameter
-- Takes precedence over all other shape kinds
+A type is mapped to <xref:PolyType.Abstractions.IEnumTypeShape> if and only if it is an enum type.
 
-### 2. Enum Types
-
-A type is mapped to <xref:PolyType.Abstractions.IEnumTypeShape> when:
-- It is an enum type
-- The underlying numeric type maps to the `UnderlyingType` property of <xref:PolyType.Abstractions.IEnumTypeShape>
-- Enum member names can be overridden using <xref:PolyType.PropertyShapeAttribute> attributes
-
-
-### 3. Optional Types
+### Optional Types
 
 A type is mapped to <xref:PolyType.Abstractions.IOptionalTypeShape> when:
-- It is @System.Nullable`1 (e.g., `int?`, `DateTime?`)
-- It is an F# option type
 
-### 4. Function Types
+1. It is @System.Nullable`1 (e.g., `int?`, `DateTime?`) or
+2. It is an F# option type
+
+### Function Types
 
 A type is mapped to <xref:PolyType.Abstractions.IFunctionTypeShape> when:
-- It is a delegate type
 
+1. It is a delegate type or
+2. It is an F# function type (i.e. any type deriving from [`FShapFunc<T,R>`](https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpfunc-2.html)).
 
+### Surrogate Types
 
-### 5. Union Types
+A type is mapped to <xref:PolyType.Abstractions.ISurrogateTypeShape> if and only if the type has been given an <xref:PolyType.IMarshaler`2> implementation to a surrogate type.
+This is typically configured via the `Marshaller` property on the <xref:PolyType.TypeShapeAttribute>, <xref:PolyType.GenerateShapeAttribute>, or <xref:PolyType.TypeShapeExtensionAttribute>
+attributes and doing so overrides the built-in shape kind inferred for the type.
+
+### Union Types
 
 A type is mapped to <xref:PolyType.Abstractions.IUnionTypeShape> when:
-- It has F# discriminated union metadata (detected via `FSharpReflectionHelpers`)
-- It has <xref:PolyType.DerivedTypeShapeAttribute> attributes declaring union cases
-- It has WCF @System.Runtime.Serialization.DataContractAttribute with @System.Runtime.Serialization.KnownTypeAttribute attributes
-- Provides access to all union cases/derived types
-- Each case has a unique identifier inferred from type name and optional discriminator values specified via attributes
-- Supports both open and closed union hierarchies
 
+1. It is a class with <xref:PolyType.DerivedTypeShapeAttribute> annotations or
+2. It has [`DataContractAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.datacontractattribute) with [`KnownTypeAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.knowntypeattribute) annotations or
+3. It is an F# union type.
 
+### Dictionary Types
 
-### 6. Dictionary Types
+A type is mapped to <xref:PolyType.Abstractions.IDictionaryTypeShape> when it implements:
 
-A type is mapped to <xref:PolyType.Abstractions.IDictionaryTypeShape> when it implements (checked in priority order):
-- @System.Collections.Generic.IDictionary`2
-- @System.Collections.Generic.IReadOnlyDictionary`2
-- Non-generic @System.Collections.IDictionary
-- Takes precedence over @System.Collections.Generic.IEnumerable`1 since dictionaries also implement enumerable
-- For generic dictionaries: provides strongly-typed key and value types
-- For non-generic @System.Collections.IDictionary: uses `object` for both key and value types
+1. @System.Collections.Generic.IDictionary`2 or
+2. @System.Collections.Generic.IReadOnlyDictionary`2 or
+3. The non-generic @System.Collections.IDictionary
 
-#### Collection Construction Strategy
+Types implementing @System.Collections.IDictionary use `object` to represent both key and value type shapes.
 
-Dictionary construction follows this priority order:
-- Public constructors accepting key-value pair enumerables (e.g., `IDictionary<K,V>`, `IEnumerable<KeyValuePair<K,V>>`)
-- Public parameterless constructors with accessible `Add` methods
-- Factory methods or static creation methods when available
+#### Construction Strategy
 
+The construction strategy for dictionary types is inferred using the following priority:
 
+1. Types with public parameterless constructors that additionally expose `Add` and indexer methods, or implement one of the mutable `IDictionary` interfaces are classified as `CollectionConstructionStrategy.Mutable`.
+2. Types annotated with [`CollectionBuilderAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.collectionbuilderattribute) are classified as `CollectionConstructionStrategy.Parameterized`.
+3. Immutable or frozen dictionary types are classified as `CollectionConstructionStrategy.Parameterized`.
+4. Types with public constructors accepting `ReadonlySpan<KeyValuePair<K,V>>` or `IEnumerable<KeyValuePair<K,V>>` parameters are classified as `CollectionConstructionStrategy.Parameterized`.
+5. Dictionary types not matching the above are classified as `CollectionConstructionStrategy.None`.
 
-### 7. Enumerable Types
+PolyType will automatically select constructor or factory method overloads that additionally accept `IEqualityComparer<Key>` or `IComparer<Key>` and map those to the corresponding settings in the <xref:PolyType.Abstractions.CollectionConstructionOptions`1> used by the constructor delegate.
+For parameterless constructors it will additionally look for `int capacity` parameters that map to the <xref:PolyType.Abstractions.CollectionConstructionOptions`1.Capacity> property.
 
-A type is mapped to <xref:PolyType.Abstractions.IEnumerableTypeShape> when:
-- It implements @System.Collections.Generic.IEnumerable`1 (except @System.String)
-- It implements non-generic @System.Collections.IEnumerable, using `object` as the element type
-- It implements @System.Collections.Generic.IAsyncEnumerable`1
-- It is an array type (including multi-dimensional arrays)
-- It is @System.Memory`1 or @System.ReadOnlyMemory`1
-- @System.String is explicitly excluded despite implementing @System.Collections.Generic.IEnumerable`1
-- Dictionary types are excluded since they're handled by dictionary mapping
+### Enumerable Types
 
-#### Collection Construction Strategy
+A non-dictionary type is mapped to <xref:PolyType.Abstractions.IEnumerableTypeShape> when:
 
-Enumerable construction follows this priority order:
-- Public constructors accepting element enumerables (e.g., `IEnumerable<T>`, `ICollection<T>`)
-- Public parameterless constructors with accessible `Add` methods
-- Array creation for array types
-- Factory methods or static creation methods when available
+1. It implements @System.Collections.Generic.IEnumerable`1 (except @System.String) or
+2. It implements non-generic @System.Collections.IEnumerable (using `object` as the element type) or
+3. It implements [`IAsyncEnumerable<T>`](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1) or
+4. It is an array type (including multi-dimensional arrays) or
+5. It is @System.Memory`1 or @System.ReadOnlyMemory`1.
 
-### 8. Object Types (Default)
+#### Construction Strategy
 
-A type is mapped to <xref:PolyType.Abstractions.IObjectTypeShape> when it doesn't match any of the above categories.
+The construction strategy for enumerable types is inferred using the following priority:
 
-### Property Shape Resolution
+1. Types with public parameterless constructors that additionally expose `Add` methods, or implement one of the mutable `ICollection` interfaces are classified as `CollectionConstructionStrategy.Mutable`.
+2. Types annotated with @System.Runtime.CompilerServices.CollectionBuilderAttribute are classified as `CollectionConstructionStrategy.Parameterized`.
+3. Immutable or frozen collection types are classified as `CollectionConstructionStrategy.Parameterized`.
+4. Types with public constructors accepting `ReadonlySpan<TElement>` or `IEnumerable<TElement>` parameters are classified as `CollectionConstructionStrategy.Parameterized`.
+5. Enumerable types not matching the above are classified as `CollectionConstructionStrategy.None`.
+
+### Object Types
+
+Types not matching any of the above categories map to <xref:PolyType.Abstractions.IObjectTypeShape>. This includes primitive types and other irreducible values such as `string`, `DateTimeOffset`, or `Guid` which map to the type shape trivially without including any property or constructor shapes.
+
+#### Property Shape Resolution
 
 Property shapes are resolved using the following criteria:
 
-- **Inheritance**: Properties from base classes are included, with derived class properties taking precedence over base class properties with the same name
-- **Accessibility**: Only properties with accessible getters or setters are included
-- **Shadowing**: Derived class properties shadow base class properties with identical signatures
-- **Field Mapping**: Public fields are mapped to property shapes with matching getter/setter semantics
-- **Attribute Overrides**: <xref:PolyType.PropertyShapeAttribute> can customize property names and behavior
+- Any public property or field is included as a property shape, unless explicitly ignored using a `PropertyShapeAttribute`.
+- Non-public members are not included, unless they have been explicitly annotated with a `PropertyShapeAttribute`.
+- Types annotated with `DataContractAttribute` only include members annotated with `DataMemberAttribute` or `PropertyShapeAttribute`.
+- Members from base types are included, with derived class members taking precedence over base class members with the same name (following the shadowing semantics of C#).
+- Members whose type does not support being a generic parameter (pointers, ref structs) are always skipped.
 
-### Constructor Shape Resolution
+Read-only fields and init-only properties do not expose a setter delegate.
+
+#### Constructor Shape Resolution
 
 Constructor shapes are resolved using the following algorithm:
 
-- **Accessibility**: Only public constructors are considered by default
-- **Disambiguation**: When multiple constructors are available, preference is given to constructors with <xref:PolyType.ConstructorShapeAttribute>
-- **Parameter Population**: Constructor parameters are matched to properties by name (case-insensitive)
-- **Property Setters**: Properties with accessible setters that don't match constructor parameters form part of the logical constructor signature
-- **Argument State Type**: The chosen argument state type accommodates both constructor parameters and settable properties
+- Only public constructors are considered by default.
+- Prefer constructors annotated with <xref:PolyType.ConstructorShapeAttribute>, even if non-public.
+- If the type defines multiple public constructors, pick one that:
+    1. Minimizes the number of required parameters not corresponding to any property shapes, then
+    2. Maximizes the number of parameters that match read-only properties/fields, and then
+    3. Minimizes the total number of constructor parameters.
 
-### Method Shape Derivation
+  Parameters correspond to a property shape if and only if they are of the same type and have matching names up to Pascal case/camel case equivalence.
 
-Method shapes are derived independently of type shape kinds and follow these rules:
+If the selected constructor is parameterless and additionally there are no required or init-only properties defined on the type,
+it is mapped to an <xref:PolyType.Abstractions.IConstructorShape> that is parameterless and which relies on property shape setters
+to be populated.
 
-- **Accessibility**: Only public methods are included by default
-- **Instance Methods**: Non-static methods are mapped to instance method shapes
-- **Static Methods**: Static methods are mapped to static method shapes  
-- **Generic Methods**: Generic method definitions are supported with proper type parameter mapping
-- **Overrides**: Method overrides in derived classes replace base class method shapes
+Otherwise, the constructor gets mapped to a parameterized <xref:PolyType.Abstractions.IConstructorShape>.
+The logical signature of a parameterized constructor includes parameters and _all_ settable members not corresponding to a constructor parameter,
+meaning that parameterized constructors *DO NOT* require additional binding from the object's property setter delegates.
 
-### Event Shape Derivation
+### Method Shapes
 
-Event shapes are derived independently of type shape kinds and follow these rules:
+Method shapes may be included in type shapes of any kind. By default, types do _not_ include any method shapes and need to be opted in either by
 
-- **Accessibility**: Only public events are included by default
-- **Instance Events**: Non-static events are mapped to instance event shapes
-- **Static Events**: Static events are mapped to static event shapes
-- **Event Handler Types**: Event handler delegate types are mapped to their corresponding function shapes
+- Configuring the `IncludeMethods` property in either of the <xref:PolyType.TypeShapeAttribute>, <xref:PolyType.GenerateShapeAttribute>, or <xref:PolyType.TypeShapeExtensionAttribute> or
+- Explicitly annotating a method with the <xref:PolyType.MethodShapeAttribute>.
 
+The `IncludeMethods` approach only supports public methods, while `MethodShapeAttribute` can be used to opt in non-public methods.
 
+### Event Shapes
 
-## Special Cases and Considerations
+Event shapes may be included in type shapes of any kind. By default, types do _not_ include any event shapes and need to be opted in either by
 
-### String Exclusion
-
-The @System.String type is explicitly treated as an object type, not as @System.Collections.Generic.IEnumerable`1, despite implementing the enumerable interface. This prevents unintended character-level processing in serialization scenarios.
-
-### Dictionary Priority
-
-Dictionary detection has higher priority than enumerable detection because dictionary types also implement @System.Collections.Generic.IEnumerable`1. This ensures they are correctly categorized as dictionaries rather than enumerables.
-
-### F# Interoperability
-
-The derivation logic includes special handling for F# types:
-- F# option types map to <xref:PolyType.Abstractions.IOptionalTypeShape>
-- F# discriminated unions map to <xref:PolyType.Abstractions.IUnionTypeShape>
-- F# function types map to <xref:PolyType.Abstractions.IFunctionTypeShape>
-- Detection relies on F# metadata attributes and reflection helpers
-
-## Primitive Type Mappings
-
-| .NET Type | Shape Kind |
-|-----------|------------|
-| @System.Boolean | Object |
-| @System.Byte | Object |
-| @System.SByte | Object |
-| @System.Int16 | Object |
-| @System.UInt16 | Object |
-| @System.Int32 | Object |
-| @System.UInt32 | Object |
-| @System.Int64 | Object |
-| @System.UInt64 | Object |
-| @System.Single | Object |
-| @System.Double | Object |
-| @System.Decimal | Object |
-| @System.Char | Object |
-| @System.String | Object |
-| @System.DateTime | Object |
-| @System.DateTimeOffset | Object |
-| @System.TimeSpan | Object |
-| @System.Guid | Object |
+- Configuring the `IncludeMethods` property in either of the <xref:PolyType.TypeShapeAttribute>, <xref:PolyType.GenerateShapeAttribute>, or <xref:PolyType.TypeShapeExtensionAttribute> or
+- Explicitly annotating a method with the <xref:PolyType.EventShapeAttribute>.
