@@ -131,6 +131,10 @@ Otherwise, the constructor gets mapped to a parameterized <xref:PolyType.Abstrac
 The logical signature of a parameterized constructor includes parameters and _all_ settable members not corresponding to a constructor parameter,
 meaning that parameterized constructors *DO NOT* require additional binding from the object's property setter delegates.
 
+#### Tuples
+
+Tuple and value tuple types map to object shapes. Long tuple types, that is tuples with more than 7 elements are represented in IL using [nested tuples](https://learn.microsoft.com/dotnet/api/system.valuetuple-8). PolyType flattens long tuple representations so that all elements are accessible transparently from the outer tuple.
+
 ### Method Shapes
 
 Method shapes may be included in type shapes of any kind. By default, types do _not_ include any method shapes and need to be opted in either by
