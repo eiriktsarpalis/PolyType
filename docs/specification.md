@@ -17,7 +17,7 @@ PolyType classifies .NET types into eight distinct type shape kinds, each repres
 
 ## Derivation Algorithm
 
-PolyType maps type into individual shape kinds using the following rules:
+PolyType maps types into individual shape kinds using the following rules:
 
 ### Enum Types
 
@@ -35,7 +35,7 @@ A type is mapped to <xref:PolyType.Abstractions.IOptionalTypeShape> when:
 A type is mapped to <xref:PolyType.Abstractions.IFunctionTypeShape> when:
 
 1. It is a delegate type or
-2. It is an F# function type (i.e. any type deriving from [`FShapFunc<T,R>`](https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpfunc-2.html)).
+2. It is an F# function type (i.e. any type deriving from [`FSharpFunc<T,R>`](https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpfunc-2.html)).
 
 ### Surrogate Types
 
@@ -68,7 +68,7 @@ The construction strategy for dictionary types is inferred using the following p
 1. Types with public parameterless constructors that additionally expose `Add` and indexer methods, or implement one of the mutable `IDictionary` interfaces are classified as `CollectionConstructionStrategy.Mutable`.
 2. Types annotated with [`CollectionBuilderAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.collectionbuilderattribute) are classified as `CollectionConstructionStrategy.Parameterized`.
 3. Immutable or frozen dictionary types are classified as `CollectionConstructionStrategy.Parameterized`.
-4. Types with public constructors accepting `ReadonlySpan<KeyValuePair<K,V>>` or `IEnumerable<KeyValuePair<K,V>>` parameters are classified as `CollectionConstructionStrategy.Parameterized`.
+4. Types with public constructors accepting `ReadOnlySpan<KeyValuePair<K,V>>` or `IEnumerable<KeyValuePair<K,V>>` parameters are classified as `CollectionConstructionStrategy.Parameterized`.
 5. Dictionary types not matching the above are classified as `CollectionConstructionStrategy.None`.
 
 PolyType will automatically select constructor or factory method overloads that additionally accept `IEqualityComparer<Key>` or `IComparer<Key>` and map those to the corresponding settings in the <xref:PolyType.Abstractions.CollectionConstructionOptions`1> used by the constructor delegate.
@@ -91,7 +91,7 @@ The construction strategy for enumerable types is inferred using the following p
 1. Types with public parameterless constructors that additionally expose `Add` methods, or implement one of the mutable `ICollection` interfaces are classified as `CollectionConstructionStrategy.Mutable`.
 2. Types annotated with @System.Runtime.CompilerServices.CollectionBuilderAttribute are classified as `CollectionConstructionStrategy.Parameterized`.
 3. Immutable or frozen collection types are classified as `CollectionConstructionStrategy.Parameterized`.
-4. Types with public constructors accepting `ReadonlySpan<TElement>` or `IEnumerable<TElement>` parameters are classified as `CollectionConstructionStrategy.Parameterized`.
+4. Types with public constructors accepting `ReadOnlySpan<TElement>` or `IEnumerable<TElement>` parameters are classified as `CollectionConstructionStrategy.Parameterized`.
 5. Enumerable types not matching the above are classified as `CollectionConstructionStrategy.None`.
 
 ### Object Types
@@ -145,4 +145,4 @@ The `IncludeMethods` approach only supports public methods, while `MethodShapeAt
 Event shapes may be included in type shapes of any kind. By default, types do _not_ include any event shapes and need to be opted in either by
 
 - Configuring the `IncludeMethods` property in either of the <xref:PolyType.TypeShapeAttribute>, <xref:PolyType.GenerateShapeAttribute>, or <xref:PolyType.TypeShapeExtensionAttribute> or
-- Explicitly annotating a method with the <xref:PolyType.EventShapeAttribute>.
+- Explicitly annotating an event with the <xref:PolyType.EventShapeAttribute>.
