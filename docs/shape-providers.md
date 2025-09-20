@@ -6,7 +6,7 @@ This document provides a walkthrough of the built-in type shape providers. These
 
 We can use the built-in source generator to auto-generate shape metadata for a user-defined type like so:
 
-```C#
+```csharp
 using PolyType;
 
 [GenerateShape]
@@ -15,7 +15,7 @@ partial record Person(string name, int age, List<Person> children);
 
 This augments `Person` with an explicit implementation of `IShapeable<Person>`, which can be used as an entry point by libraries targeting PolyType:
 
-```C#
+```csharp
 MyRandomGenerator.Generate<Person>(); // Compiles
 
 public static class MyRandomGenerator
@@ -26,7 +26,7 @@ public static class MyRandomGenerator
 
 The source generator also supports shape generation for third-party types using witness types:
 
-```C#
+```csharp
 [GenerateShapeFor<Person[]>]
 [GenerateShapeFor<List<int>>]
 public partial class Witness; // : IShapeable<Person[]>, IShapeable<List<int>>
@@ -34,7 +34,7 @@ public partial class Witness; // : IShapeable<Person[]>, IShapeable<List<int>>
 
 which can be applied against supported libraries like so:
 
-```C#
+```csharp
 MyRandomGenerator.Generate<Person[], Witness>() // Compiles
 MyRandomGenerator.Generate<List<int>, Witness>() // Compiles
 
@@ -48,7 +48,7 @@ public static class MyRandomGenerator
 
 PolyType includes a reflection-based provider that resolves shape metadata at run time:
 
-```C#
+```csharp
 using PolyType.ReflectionProvider;
 
 ITypeShapeProvider provider = ReflectionTypeShapeProvider.Default;
@@ -57,7 +57,7 @@ var shape = (ITypeShape<Person>)provider.GetTypeShape(typeof(Person));
 
 Which can be consumed by supported libraries as follows:
 
-```C#
+```csharp
 MyRandomGenerator.Generate<Person>(ReflectionTypeShapeProvider.Default);
 MyRandomGenerator.Generate<Person[][]>(ReflectionTypeShapeProvider.Default);
 MyRandomGenerator.Generate<List<int>>(ReflectionTypeShapeProvider.Default);
@@ -70,7 +70,7 @@ public static class MyRandomGenerator
 
 By default, the reflection provider uses dynamic methods (Reflection.Emit) to speed up reflection, however, this might not be desirable when running on certain platforms (e.g., Blazor WebAssembly). It can be turned off using the relevant constructor parameter:
 
-```C#
+```csharp
 ITypeShapeProvider provider = new ReflectionTypeShapeProvider(useReflectionEmit: false);
 ```
 
@@ -84,7 +84,7 @@ The <xref:PolyType.TypeShapeAttribute> attribute can be applied on type declarat
 
 The `Kind` property can be used to override the default shape kind for a particular type:
 
-```C#
+```csharp
 [TypeShape(Kind = TypeShapeKind.Object)]
 class MyList : List<int>
 {
@@ -94,7 +94,7 @@ class MyList : List<int>
 
 The above will instruct the providers to generate an object shape as opposed to an enumerable shape that is the default. It can also be used to completely disable any nested member resolution for a given type:
 
-```C#
+```csharp
 [TypeShape(Kind = TypeShapeKind.None)]
 record MyPoco(int Value);
 ```
@@ -103,7 +103,7 @@ record MyPoco(int Value);
 
 The `TypeShape` attribute can also be used to specify marshalers to surrogate types:
 
-```C#
+```csharp
 [TypeShape(Marshaler = typeof(EnvelopeMarshaler))]
 record Envelope(string Value);
 
@@ -118,7 +118,7 @@ The above configures `Envelope` to admit a string-based shape using the specifie
 
 In the following example, we marshal the internal state of an object to a surrogate struct:
 
-```C#
+```csharp
 [TypeShape(Marshaler = typeof(Marshaler))]
 public class PocoWithInternalState(int value1, string value2)
 {
@@ -137,7 +137,7 @@ public class PocoWithInternalState(int value1, string value2)
 
 It's possible to define marshalers for generic types, provided that the type parameters of the Marshaler match the type parameters of declaring type:
 
-```C#
+```csharp
 [TypeShape(Marshaler = typeof(Marshaler<>))]
 public record MyPoco<T>(T Value);
 
@@ -153,7 +153,7 @@ public partial class Witness;
 
 The above will configure `MyPoco<string>` with a Marshaler of type `Marshaler<string>`. Nested generic Marshalers are also supported:
 
-```C#
+```csharp
 [TypeShape(Marshaler = typeof(MyPoco<>.Marshaler))]
 public record MyPoco<T>(T Value)
 {
@@ -209,7 +209,7 @@ It is very similar to @PolyType.TypeShapeAttribute, but it is used to customize 
 
 The `DerivedTypeShape` attribute can be used to declare polymorphic type hierarchies for classes and interfaces:
 
-```C#
+```csharp
 [DerivedTypeShape(typeof(Horse))]
 [DerivedTypeShape(typeof(Dog))]
 [DerivedTypeShape(typeof(Cat))]
@@ -232,7 +232,7 @@ The former is used as a type discriminator in the case of text-based formats lik
 as a discriminator in compact binary formats like CBOR or MessagePack. Either name or tag can be specified explicitly
 for each derived type declaration:
 
-```C#
+```csharp
 [DerivedTypeShape(typeof(Leaf), Name = "leaf", Tag = 5)]
 [DerivedTypeShape(typeof(Node), Name = "node", Tag = 6)]
 abstract record BinTree;
@@ -245,7 +245,7 @@ It should be noted that mono reflection does not preserve attribute declaration 
 
 For the case of unregistered derived types, PolyType applies a "nearest known ancestor" resolution algorithm. Given the type hierarchy
 
-```C#
+```csharp
 [DerivedTypeShape(typeof(Horse))]
 [DerivedTypeShape(typeof(Cow))]
 class Animal;
@@ -258,7 +258,7 @@ class Chicken : Animal;
 
 instances of type `Pony` will resolve as `Horse` and instances of type `Chicken` will resolve as the `Animal` base. Note that this can result in undefined behavior in the case of diamonds in interface hierarchies:
 
-```C#
+```csharp
 [DerivedTypeShape(typeof(IDerived1))]
 [DerivedTypeShape(typeof(IDerived2))]
 interface IBase;
@@ -274,7 +274,7 @@ Instances of type `Impl` could resolve as either `IDerived1` or `IDerived2`, dep
 
 Configures aspects of a generated property shape, for example:
 
-```C#
+```csharp
 class UserData
 {
     [PropertyShape(Name = "id", Order = 0)]
@@ -294,7 +294,7 @@ Compare with `System.Runtime.Serialization.DataMemberAttribute` and `Newtonsoft.
 
 Can be used to pick a specific constructor for a given type, if there is ambiguity:
 
-```C#
+```csharp
 class PocoWithConstructors
 {
     public PocoWithConstructors();
@@ -309,7 +309,7 @@ Compare with `System.Text.Json.Serialization.JsonConstructorAttribute`.
 
 Configures aspects of a constructor parameter shape:
 
-```C#
+```csharp
 class PocoWithConstructors
 {
     public PocoWithConstructors([ParameterShape(Name = "name")] string x1, [ParameterShape(Name = "age")] int x2);
