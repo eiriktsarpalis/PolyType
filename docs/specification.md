@@ -65,11 +65,11 @@ Types implementing <xref:System.Collections.IDictionary> use `object` to represe
 
 The construction strategy for dictionary types is inferred using the following priority:
 
-1. Types with public parameterless constructors that additionally expose `Add` and indexer methods, or implement one of the mutable `IDictionary` interfaces are classified as `CollectionConstructionStrategy.Mutable`.
-2. Types annotated with [`CollectionBuilderAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.collectionbuilderattribute) are classified as `CollectionConstructionStrategy.Parameterized`.
-3. Immutable or frozen dictionary types are classified as `CollectionConstructionStrategy.Parameterized`.
-4. Types with public constructors accepting `ReadOnlySpan<KeyValuePair<K,V>>` or `IEnumerable<KeyValuePair<K,V>>` parameters are classified as `CollectionConstructionStrategy.Parameterized`.
-5. Dictionary types not matching the above are classified as `CollectionConstructionStrategy.None`.
+1. Types with public parameterless constructors that additionally expose `Add` and indexer methods, or implement one of the mutable `IDictionary` interfaces are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Mutable>.
+2. Types annotated with [`CollectionBuilderAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.collectionbuilderattribute) are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Parameterized>.
+3. Immutable or frozen dictionary types are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Parameterized>.
+4. Types with public constructors accepting `ReadOnlySpan<KeyValuePair<K,V>>` or `IEnumerable<KeyValuePair<K,V>>` parameters are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Parameterized>.
+5. Dictionary types not matching the above are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.None>.
 
 PolyType will automatically select constructor or factory method overloads that additionally accept `IEqualityComparer<Key>` or `IComparer<Key>` and map those to the corresponding settings in the <xref:PolyType.Abstractions.CollectionConstructionOptions`1> used by the constructor delegate.
 For parameterless constructors it will additionally look for `int capacity` parameters that map to the <xref:PolyType.Abstractions.CollectionConstructionOptions`1.Capacity> property.
@@ -88,11 +88,11 @@ A non-dictionary type is mapped to <xref:PolyType.Abstractions.IEnumerableTypeSh
 
 The construction strategy for enumerable types is inferred using the following priority:
 
-1. Types with public parameterless constructors that additionally expose `Add` methods, or implement one of the mutable `ICollection` interfaces are classified as `CollectionConstructionStrategy.Mutable`.
-2. Types annotated with [`CollectionBuilderAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.collectionbuilderattribute) are classified as `CollectionConstructionStrategy.Parameterized`.
-3. Immutable or frozen collection types are classified as `CollectionConstructionStrategy.Parameterized`.
-4. Types with public constructors accepting `ReadOnlySpan<TElement>` or `IEnumerable<TElement>` parameters are classified as `CollectionConstructionStrategy.Parameterized`.
-5. Enumerable types not matching the above are classified as `CollectionConstructionStrategy.None`.
+1. Types with public parameterless constructors that additionally expose `Add` methods, or implement one of the mutable `ICollection` interfaces are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Mutable>.
+2. Types annotated with [`CollectionBuilderAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.collectionbuilderattribute) are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Parameterized>.
+3. Immutable or frozen collection types are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Parameterized>.
+4. Types with public constructors accepting `ReadOnlySpan<TElement>` or `IEnumerable<TElement>` parameters are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Parameterized>.
+5. Enumerable types not matching the above are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.None>.
 
 ### Object Types
 
@@ -102,9 +102,9 @@ Types not matching any of the above categories map to <xref:PolyType.Abstraction
 
 Property shapes are resolved using the following criteria:
 
-- Any public property or field is included as a property shape, unless explicitly ignored using a `PropertyShapeAttribute`.
-- Non-public members are not included, unless they have been explicitly annotated with a `PropertyShapeAttribute`.
-- Types annotated with `DataContractAttribute` only include members annotated with `DataMemberAttribute` or `PropertyShapeAttribute`.
+- Any public property or field is included as a property shape, unless explicitly ignored using a <xref:PolyType.PropertyShapeAttribute>.
+- Non-public members are not included, unless they have been explicitly annotated with a <xref:PolyType.PropertyShapeAttribute>.
+- Types annotated with [`DataContractAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.datacontractattribute) only include members annotated with [`DataMemberAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.datamemberattribute) or <xref:PolyType.PropertyShapeAttribute>.
 - Members from base types are included, with derived class members taking precedence over base class members with the same name (following the shadowing semantics of C#).
 - Members whose type does not support being a generic parameter (pointers, ref structs) are always skipped.
 
@@ -142,7 +142,7 @@ Method shapes may be included in type shapes of any kind. By default, types do _
 - Configuring the `IncludeMethods` property in either of the <xref:PolyType.TypeShapeAttribute>, <xref:PolyType.GenerateShapeAttribute>, or <xref:PolyType.TypeShapeExtensionAttribute> or
 - Explicitly annotating a method with the <xref:PolyType.MethodShapeAttribute>.
 
-The `IncludeMethods` approach only supports public methods, while `MethodShapeAttribute` can be used to opt in non-public methods.
+The `IncludeMethods` approach only supports public methods, while <xref:PolyType.MethodShapeAttribute> can be used to opt in non-public methods.
 
 ### Event Shapes
 
