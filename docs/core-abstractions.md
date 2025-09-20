@@ -1,14 +1,14 @@
 # Core Abstractions
 
-This document provides a walkthrough of the core type abstractions found in PolyType. This includes `ITypeShape`, `IPropertyShape` and the visitor types for accessing them. These are typically consumed by library authors looking to build datatype-generic components. Unless otherwise stated, all APIs are found in the `PolyType.Abstractions` namespace.
+This document provides a walkthrough of the core type abstractions found in PolyType. This includes <xref:PolyType.ITypeShape>, <xref:PolyType.Abstractions.IPropertyShape> and the <xref:PolyType.Abstractions.TypeShapeVisitor> used for accessing them. These are typically consumed by library authors looking to build datatype-generic components. Unless otherwise stated, all APIs are found in the <xref:PolyType.Abstractions> namespace.
 
 ## The `ITypeShape` interface
 
-The `ITypeShape` interface defines a reflection-like representation for a given .NET type. The type hierarchy that it creates encapsulates all information necessary to perform strongly typed traversal of its type graph.
+The <xref:PolyType.ITypeShape> interface defines a reflection-like representation for a given .NET type. The type hierarchy that it creates encapsulates all information necessary to perform strongly typed traversal of its type graph.
 
 To illustrate the idea, consider the following APIs modelling objects with properties:
 
-```C#
+```csharp
 namespace PolyType.Abstractions;
 
 public partial interface IObjectTypeShape<TDeclaringType> : ITypeShape
@@ -24,9 +24,9 @@ public partial interface IPropertyShape<TDeclaringType, TPropertyType> : IProper
 }
 ```
 
-This model is fairly similar to `System.Type` and `System.Reflection.PropertyInfo`, with the notable difference that both models are generic and the property shape is capable of producing a strongly typed getter delegate. It can be traversed using the following generic visitor type:
+This model is fairly similar to <xref:System.Type> and [`PropertyInfo`](https://learn.microsoft.com/dotnet/api/system.reflection.propertyinfo), with the notable difference that both models are generic and the property shape is capable of producing a strongly typed getter delegate. It can be traversed using the following generic visitor type:
 
-```C#
+```csharp
 public abstract partial class TypeShapeVisitor
 {
     object? VisitObject<TDeclaringType>(IObjectTypeShape<TDeclaringType> objectShape, object? state = null);
@@ -46,7 +46,7 @@ public partial interface IPropertyShape
 
 Here's a simple visitor used to construct delegates counting the number nodes in an object graph:
 
-```C#
+```csharp
 partial class CounterVisitor : TypeShapeVisitor
 {
     public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? _)
@@ -80,9 +80,9 @@ partial class CounterVisitor : TypeShapeVisitor
 }
 ```
 
-Given an `ITypeShape<T>` instance we can now construct a counter delegate like so:
+Given an <xref:PolyType.ITypeShape`1> instance we can now construct a counter delegate like so:
 
-```C#
+```csharp
 ITypeShape<MyPoco> shape = provider.GetTypeShape<MyPoco>();
 CounterVisitor visitor = new();
 var pocoCounter = (Func<MyPoco, int>)shape.Accept(visitor)!;
@@ -98,7 +98,7 @@ record MyPoco(string? x, string? y);
 It should be noted that the visitor is only used when constructing, or _folding_ the counter delegate but not when the delegate itself is being invoked. At the same time, traversing the type graph via the visitor requires casting of the intermediate delegates, however the traversal of the object graph via the resultant delegate is fully type-safe and doesn't require any casting.
 
 > [!NOTE]
-> In technical terms, `ITypeShape` encodes a [GADT representation](https://en.wikipedia.org/wiki/Generalized_algebraic_data_type) over .NET types and `TypeShapeVisitor` encodes a pattern match over the GADT. This technique was originally described in [this publication](https://www.microsoft.com/research/publication/generalized-algebraic-data-types-and-object-oriented-programming/).
+> In technical terms, <xref:PolyType.ITypeShape> encodes a [GADT representation](https://en.wikipedia.org/wiki/Generalized_algebraic_data_type) over .NET types and <xref:PolyType.Abstractions.TypeShapeVisitor> encodes a pattern match over the GADT. This technique was originally described in [this publication](https://www.microsoft.com/research/publication/generalized-algebraic-data-types-and-object-oriented-programming/).
 >
 > The casting requirement for visitors is a known restriction of this approach, and possible extensions to the C# type system that allow type-safe pattern matching on GADTs are discussed in the paper.
 
@@ -106,7 +106,7 @@ It should be noted that the visitor is only used when constructing, or _folding_
 
 A collection type in this context refers to any type implementing `IEnumerable`, and this is further refined into enumerable and dictionary shapes:
 
-```C#
+```csharp
 public interface IEnumerableTypeShape<TEnumerable, TElement> : ITypeShape<TEnumerable>
 {
     ITypeShape<TElement> ElementType { get; }
@@ -123,9 +123,9 @@ public interface IDictionaryTypeShape<TDictionary, TKey, TValue> : ITypeShape<TD
 }
 ```
 
-A collection type is classed as a dictionary if it implements one of the known dictionary interfaces. Non-generic collections use `object` as the element, key and value types. As before, enumerable shapes can be unpacked by the relevant methods of `TypeShapeVisitor`:
+A collection type is classed as a dictionary if it implements one of the known dictionary interfaces. Non-generic collections use `object` as the element, key and value types. As before, enumerable shapes can be unpacked by the relevant methods of <xref:PolyType.Abstractions.TypeShapeVisitor>:
 
-```C#
+```csharp
 public abstract partial class TypeShapeVisitor
 {
     object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state = null);
@@ -135,7 +135,7 @@ public abstract partial class TypeShapeVisitor
 
 Using the above we can now extend `CounterVisitor` so that collection types are supported:
 
-```C#
+```csharp
 partial class CounterVisitor : TypeShapeVisitor
 {
     public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? _)
@@ -180,16 +180,16 @@ partial class CounterVisitor : TypeShapeVisitor
 
 Enum types are classed as a special type shape:
 
-```C#
+```csharp
 public interface IEnumTypeShape<TEnum, TUnderlying> : ITypeShape<TEnum> where TEnum : struct, Enum
 {
     public ITypeShape<TUnderlying> UnderlyingType { get; }
 }
 ```
 
-The `TUnderlying` represents the underlying numeric representation used by the enum in question. As before, `TypeShapeVisitor` exposes relevant methods for consuming the new shapes:
+The `TUnderlying` represents the underlying numeric representation used by the enum in question. As before, <xref:PolyType.Abstractions.TypeShapeVisitor> exposes relevant methods for consuming the new shapes:
 
-```C#
+```csharp
 public abstract partial class TypeShapeVisitor
 {
     object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null) where TEnum : struct, Enum;
@@ -198,7 +198,7 @@ public abstract partial class TypeShapeVisitor
 
 Like before we can extend `CounterVisitor` to enum types like so:
 
-```C#
+```csharp
 partial class CounterVisitor : TypeShapeVisitor
 {
     public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> _, object? _)
@@ -210,9 +210,9 @@ partial class CounterVisitor : TypeShapeVisitor
 
 ### Optional types
 
-An optional type is any container type encapsulating zero or one values of a given type. The most common example is `System.Nullable<T>` but it also includes the [F# option types](https://learn.microsoft.com/dotnet/fsharp/language-reference/options). It does not include nullable reference types since they constitute a compile-time annotation as opposed to being a real .NET type. Optional types map to the following shape:
+An optional type is any container type encapsulating zero or one values of a given type. The most common example is <xref:System.Nullable`1> but it also includes the [F# option types](https://learn.microsoft.com/dotnet/fsharp/language-reference/options). It does not include nullable reference types since they constitute a compile-time annotation as opposed to being a real .NET type. Optional types map to the following shape:
 
-```C#
+```csharp
 public interface IOptionalTypeShape<TOptional, TElement> : ITypeShape<TOptional>
 {
     // The shape of the value encapsulated by the optional type.
@@ -229,9 +229,9 @@ public interface IOptionalTypeShape<TOptional, TElement> : ITypeShape<TOptional>
 public delegate bool OptionDeconstructor<TOptional, TElement>(TOptional optional, out TElement value);
 ```
 
-In the case of `Nullable<T>`, the type `int?` maps to an optional shape with `TOptional` set to `int?` and `TElement` set to `int`. The relevant `TypeShapeVisitor` method looks as follows:
+In the case of <xref:System.Nullable`1>, the type `int?` maps to an optional shape with `TOptional` set to `int?` and `TElement` set to `int`. The relevant <xref:PolyType.Abstractions.TypeShapeVisitor> method looks as follows:
 
-```C#
+```csharp
 public abstract partial class TypeShapeVisitor
 {
     object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state = null);
@@ -240,7 +240,7 @@ public abstract partial class TypeShapeVisitor
 
 We can extend `CounterVisitor` to optional types like so:
 
-```C#
+```csharp
 partial class CounterVisitor : TypeShapeVisitor
 {
     public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? _)
@@ -256,12 +256,12 @@ partial class CounterVisitor : TypeShapeVisitor
 
 PolyType supports union types through the `IUnionTypeShape` abstraction. Currently two kinds of union types are supported:
 
-1. Polymorphic class or interface hierarchies declared via `DerivedTypeShape` attribute annotations and
+1. Polymorphic class or interface hierarchies declared via <xref:PolyType.DerivedTypeShapeAttribute> attribute annotations and
 2. F# [discriminated union](https://learn.microsoft.com/dotnet/fsharp/language-reference/discriminated-unions) types.
 
 The shape abstraction for union types looks as follows:
 
-```C#
+```csharp
 public interface IUnionTypeShape<TUnion> : ITypeShape<TUnion>
 {
     // The list of all registered union cases and their shapes.
@@ -288,9 +288,9 @@ public interface IUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShape
 }
 ```
 
-And as before, `TypeShapeVisitor` exposes relevant methods for the two types:
+And as before, <xref:PolyType.Abstractions.TypeShapeVisitor> exposes relevant methods for the two types:
 
-```C#
+```csharp
 public abstract partial class TypeShapeVisitor
 {
     object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null);
@@ -301,7 +301,7 @@ public abstract partial class TypeShapeVisitor
 
 Putting it all together, here's how we can extend our counter example to support union types:
 
-```C#
+```csharp
 partial class CounterVisitor : TypeShapeVisitor
 {
     public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? _)
@@ -332,7 +332,7 @@ partial class CounterVisitor : TypeShapeVisitor
 
 PolyType lets users customize the shape of a given type by marshaling its data to a surrogate type. This is done by declaring an implementation of the `IMarshaler<T, TSurrogate>` interface on the type, which defines a bidirectional mapping between the instances of the type itself and the surrogate. Such types are mapped to the following abstraction:
 
-```C#
+```csharp
 public interface ISurrogateTypeShape<T, TSurrogate> : ITypeShape<T>
 {
     // The shape of the surrogate type
@@ -351,7 +351,7 @@ public interface IMarshaler<T, TSurrogate>
 
 And corresponding visitor method
 
-```C#
+```csharp
 public abstract partial class TypeShapeVisitor
 {
     object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null);
@@ -360,7 +360,7 @@ public abstract partial class TypeShapeVisitor
 
 We can extend the counter example to surrogate types as follows:
 
-```C#
+```csharp
 partial class CounterVisitor : TypeShapeVisitor
 {
     public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? _)
@@ -376,7 +376,7 @@ partial class CounterVisitor : TypeShapeVisitor
 
 PolyType models delegate types as well as F# function types using the `IFunctionTypeShape` interface:
 
-```C#
+```csharp
 public partial interface IFunctionTypeShape<TFunction, TArguments, TResult> : ITypeShape<TFunction>
 {
     ITypeShape<TResult> ReturnType { get; }
@@ -387,16 +387,16 @@ public partial interface IFunctionTypeShape<TFunction, TArguments, TResult> : IT
 Visitors accessing function shapes can be used to invoke instances of type `TFunction` or to create new instances of type `TFunction` by wrapping a generic `Func<TArgumentState, TResult>` delegate. For more information on how function or method shapes work, please refer to the [method shapes](#method-shapes) section below.
 
 
-To recap, the `ITypeShape` model splits .NET types into seven separate kinds:
+To recap, the <xref:PolyType.ITypeShape> model splits .NET types into seven separate kinds:
 
-* `IObjectTypeShape` instances which may or may not define properties,
-* `IEnumerableTypeShape` instances describing enumerable types,
-* `IDictionaryTypeShape` instances describing dictionary types,
-* `IEnumTypeShape` instances describing enum types,
-* `IOptionalTypeShape` instances describing optional types such as `Nullable<T>` or F# option types,
-* `IUnionTypeShape` instances describing union types such as polymorphic type hierarchies or F# discriminated unions, and
-* `ISurrogateTypeShape` instances that delegate their shape declaration to surrogate types.
-* `IFunctionTypeShape` instances describing delegate types, F# function types, or other single-method interfaces.
+* <xref:PolyType.Abstractions.IObjectTypeShape> instances which may or may not define properties,
+* <xref:PolyType.Abstractions.IEnumerableTypeShape> instances describing enumerable types,
+* <xref:PolyType.Abstractions.IDictionaryTypeShape> instances describing dictionary types,
+* <xref:PolyType.Abstractions.IEnumTypeShape> instances describing enum types,
+* <xref:PolyType.Abstractions.IOptionalTypeShape> instances describing optional types such as <xref:System.Nullable`1> or F# option types,
+* <xref:PolyType.Abstractions.IUnionTypeShape> instances describing union types such as polymorphic type hierarchies or F# discriminated unions, and
+* <xref:PolyType.Abstractions.ISurrogateTypeShape> instances that delegate their shape declaration to surrogate types.
+* <xref:PolyType.Abstractions.IFunctionTypeShape> instances describing delegate types, F# function types, or other single-method interfaces.
 
 ## Constructing and mutating types
 
@@ -404,9 +404,9 @@ The APIs described so far facilitate algorithms that perform object traversal su
 
 ### Property setters
 
-The `IPropertyShape` interface exposes strongly typed setter delegates:
+The <xref:PolyType.Abstractions.IPropertyShape> interface exposes strongly typed setter delegates:
 
-```C#
+```csharp
 public interface IPropertyShape<TDeclaringType, TPropertyType>
 {
     Setter<TDeclaringType, TPropertyType> GetSetter();
@@ -418,7 +418,7 @@ public delegate void Setter<TDeclaringType, TPropertyType>(ref TDeclaringType ob
 
 The setter is defined using a special delegate that accepts the declaring type by reference, ensuring that it has the expected behavior when working with value types. To illustrate how this works, here is a toy example that sets all properties to their default value:
 
-```C#
+```csharp
 public delegate void Mutator<T>(ref T obj);
 
 class MutatorVisitor : TypeShapeVisitor
@@ -443,7 +443,7 @@ class MutatorVisitor : TypeShapeVisitor
 
 which can be consumed as follows:
 
-```C#
+```csharp
 ITypeShape<MyPoco> shape = provider.GetTypeShape<MyPoco>();
 MutatorVisitor visitor = new();
 var mutator = (Mutator<MyPoco>)shape.Accept(visitor)!;
@@ -460,9 +460,9 @@ struct MyPoco
 
 ### Constructor shapes
 
-While property setters should suffice when mutating existing objects, constructing a new instance from scratch is somewhat more complicated, particularly for types that only expose parameterized constructors or are immutable. PolyType models constructors using the `IConstructorShape` abstraction which can be obtained as follows:
+While property setters should suffice when mutating existing objects, constructing a new instance from scratch is somewhat more complicated, particularly for types that only expose parameterized constructors or are immutable. PolyType models constructors using the <xref:PolyType.Abstractions.IConstructorShape> abstraction which can be obtained as follows:
 
-```C#
+```csharp
 public partial interface IObjectTypeShape<T>
 {
     IConstructorShape? Constructor { get; }
@@ -482,7 +482,7 @@ public abstract partial class TypeShapeVisitor
 
 The constructor shape specifies two type parameters: `TDeclaringType` represents the declaring type of the constructor while `TArgumentState` represents an opaque, mutable token that encapsulates all parameters that will be passed to constructor. The choice of `TArgumentState` is up to the particular type shape provider implementation, but typically a value tuple is used:
 
-```C#
+```csharp
 record MyPoco(int x = 42, string y);
 
 class MyPocoConstructorShape : IConstructorShape<MyPoco, (int, string)>
@@ -494,7 +494,7 @@ class MyPocoConstructorShape : IConstructorShape<MyPoco, (int, string)>
 
 The two delegates define the means for creating a default instance of the mutable state token and constructing an instance of the declaring type from a populated token, respectively. Separately, there needs to be a mechanism for populating the state token which is achieved using the `IParameterShape` interface:
 
-```C#
+```csharp
 public partial interface IConstructorShape<TDeclaringType, TArgumentState> : IConstructorShape
 {
     IReadOnlyList<IParameterShape> Parameters { get; }
@@ -514,7 +514,7 @@ public abstract partial class TypeShapeVisitor
 
 Which exposes strongly typed setters for each of the constructor parameters. Putting it all together, here is toy implementation of a visitor that recursively constructs an object graph using constructor shapes:
 
-```C#
+```csharp
 class EmptyConstructorVisitor : TypeShapeVisitor
 {
     private delegate void ParameterSetter<T>(ref T object);
@@ -555,7 +555,7 @@ class EmptyConstructorVisitor : TypeShapeVisitor
 
 We can now use the visitor to construct an empty instance factory:
 
-```C#
+```csharp
 ITypeShape<MyPoco> shape = provider.GetTypeShape<MyPoco>();
 EmptyConstructorVisitor visitor = new();
 var factory = (Func<MyPoco>)shape.Accept(visitor)!;
@@ -576,7 +576,7 @@ Collection types are constructed somewhat differently compared to regular POCOs,
 
 These strategies are surfaced via the `CollectionConstructionStrategy` enum:
 
-```C#
+```csharp
 [Flags]
 public enum CollectionConstructionStrategy
 {
@@ -588,7 +588,7 @@ public enum CollectionConstructionStrategy
 
 Which is exposed in the relevant shape types as follows:
 
-```C#
+```csharp
 public partial interface IEnumerableTypeShape<TEnumerable, TElement>
 {
     CollectionConstructionStrategy ConstructionStrategy { get; }
@@ -607,7 +607,7 @@ public delegate TEnumerable ParameterizedCollectionConstructor<TKey, TElement, T
 
 Putting it all together, we can extend `EmptyConstructorVisitor` to collection types like so:
 
-```C#
+```csharp
 class EmptyConstructorVisitor : TypeShapeVisitor
 {
     public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> typeShape, object? _)
@@ -651,7 +651,7 @@ This can be useful for keyed collections (i.e. sorted or hashed) when you're per
 
 PolyType exposes an `IMethodShape` abstraction that provides strongly typed representations of .NET methods. This enables automatic shape generation for all parameter and return types in a method signature, making it easy to implement RPC-like libraries and other method invocation scenarios. Method shapes are accessible via the `Methods` property on `ITypeShape`:
 
-```C#
+```csharp
 public partial interface ITypeShape
 {
     IReadOnlyList<IMethodShape> Methods { get; }
@@ -660,7 +660,7 @@ public partial interface ITypeShape
 
 The core `IMethodShape` interface looks as follows:
 
-```C#
+```csharp
 public partial interface IMethodShape<TDeclaringType, TArgumentState, TResult> : IMethodShape
     where TArgumentState : IArgumentState
 {
@@ -678,7 +678,7 @@ public delegate ValueTask<TResult> MethodInvoker<TDeclaringType, TArgumentState,
 
 Similar to constructor shapes, method shapes use an opaque `TArgumentState` type to encapsulate method parameters, and expose strongly typed setters via the `IParameterShape` abstraction. The visitor pattern supports method shapes:
 
-```C#
+```csharp
 public abstract partial class TypeShapeVisitor
 {
     object? VisitMethod<TDeclaringType, TArgumentState, TResult>(IMethodShape<TDeclaringType, TArgumentState, TResult> methodShape, object? state = null);
@@ -687,7 +687,7 @@ public abstract partial class TypeShapeVisitor
 
 Here's a simple example that creates a weakly typed logging wrapper around method calls:
 
-```C#
+```csharp
 partial class LoggingVisitor : TypeShapeVisitor
 {
     public override object? VisitMethod<TDeclaringType, TArgumentState, TResult>(
@@ -733,7 +733,7 @@ partial class LoggingVisitor : TypeShapeVisitor
 
 This logging wrapper can be applied to any method shape:
 
-```C#
+```csharp
 ITypeShape<Calculator> shape = TypeShapeResolver.Resolve<Calculator>();
 IMethodShape addMethodShape = shape.Methods.First(m => m.Name == "Add");
 var addMethod = (Func<IReadOnlyDictionary<string, object?>, ValueTask<object?>>)addMethodShape.Accept(new LoggingVisitor(), new Calculator())!;
@@ -757,7 +757,7 @@ partial class Calculator
 
 The `IFunctionTypeShape` abstraction has many similarities with the `IMethodShape` abstraction, exposing the same facilities enabling generic function invocation:
 
-```C#
+```csharp
 public partial interface IFunctionTypeShape<TFunction, TArgumentState, TResult> : ITypeShape<TFunction>
     where TArgumentState : IArgumentState
 {
@@ -771,7 +771,7 @@ public partial interface IFunctionTypeShape<TFunction, TArgumentState, TResult> 
 
 Additionally, the abstraction exposes facilities for creating `TFunction` instances by wrapping generic delegates:
 
-```C#
+```csharp
 public partial interface IFunctionTypeShape<TFunction, TArgumentState, TResult>
 {
     bool IsAsync { get; }
@@ -784,7 +784,7 @@ public partial interface IFunctionTypeShape<TFunction, TArgumentState, TResult>
 
 In some cases you want to return a strongly typed delegate of the same shape after adding cross-cutting behavior:
 
-```C#
+```csharp
 partial class DecoratorVisitor : TypeShapeVisitor
 {
     public override object? VisitFunction<TFunction, TArgumentState, TResult>(
@@ -821,7 +821,7 @@ partial class DecoratorVisitor : TypeShapeVisitor
 
 Which can be used to decorate any delegate type:
 
-```C#
+```csharp
 // Usage
 ITypeShape<Adder> addShape = ...;
 var decorator = (Func<Adder, Adder>)addShape.Accept(new DecoratorVisitor())!;

@@ -18,7 +18,7 @@ $ dotnet add package PolyType
 
 Which includes the core types and source generator for generating type shapes:
 
-```C#
+```csharp
 using PolyType;
 
 [GenerateShape]
@@ -50,7 +50,7 @@ Since the application uses a source generator to produce the shape for `Person`,
 
 As a library author, PolyType makes it easy to write high-performance, feature-complete components by targeting its [core abstractions](https://eiriktsarpalis.github.io/PolyType/core-abstractions.html). For example, a parser API using PolyType might look as follows:
 
-```C#
+```csharp
 public static class MyFancyParser
 {
     public static T? Parse<T>(string myFancyFormat) where T : IShapeable<T>;
