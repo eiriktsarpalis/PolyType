@@ -7,7 +7,7 @@ This document details how .NET types are mapped to type shapes. Both built-in sh
 PolyType classifies .NET types into eight distinct type shape kinds, each represented by a specific interface:
 
 - **Object** - <xref:PolyType.Abstractions.IObjectTypeShape> for general object types with properties and constructors.
-- **Enumerable** - <xref:PolyType.Abstractions.IEnumerableTypeShape> for collection types implementing @System.Collections.Generic.IEnumerable`1.
+- **Enumerable** - <xref:PolyType.Abstractions.IEnumerableTypeShape> for collection types implementing <xref:System.Collections.Generic.IEnumerable`1>
 - **Dictionary** - <xref:PolyType.Abstractions.IDictionaryTypeShape> for key-value collection types.
 - **Enum** - <xref:PolyType.Abstractions.IEnumTypeShape> for enum types.
 - **Optional** - <xref:PolyType.Abstractions.IOptionalTypeShape> for nullable value types and F# options.
@@ -27,7 +27,7 @@ A type is mapped to <xref:PolyType.Abstractions.IEnumTypeShape> if and only if i
 
 A type is mapped to <xref:PolyType.Abstractions.IOptionalTypeShape> when:
 
-1. It is @System.Nullable`1 (e.g., `int?`, `DateTime?`) or
+1. It is <xref:System.Nullable`1> (e.g., `int?`, `DateTime?`) or
 2. It is an F# option type
 
 ### Function Types
@@ -55,11 +55,11 @@ A type is mapped to <xref:PolyType.Abstractions.IUnionTypeShape> when:
 
 A type is mapped to <xref:PolyType.Abstractions.IDictionaryTypeShape> when it implements:
 
-1. @System.Collections.Generic.IDictionary`2 or
-2. @System.Collections.Generic.IReadOnlyDictionary`2 or
-3. The non-generic @System.Collections.IDictionary
+1. <xref:System.Collections.Generic.IDictionary`2> or
+2. <xref:System.Collections.Generic.IReadOnlyDictionary`2> or
+3. The non-generic <xref:System.Collections.IDictionary>
 
-Types implementing @System.Collections.IDictionary use `object` to represent both key and value type shapes.
+Types implementing <xref:System.Collections.IDictionary> use `object` to represent both key and value type shapes.
 
 #### Construction Strategy
 
@@ -78,18 +78,18 @@ For parameterless constructors it will additionally look for `int capacity` para
 
 A non-dictionary type is mapped to <xref:PolyType.Abstractions.IEnumerableTypeShape> when:
 
-1. It implements @System.Collections.Generic.IEnumerable`1 (except @System.String) or
-2. It implements non-generic @System.Collections.IEnumerable (using `object` as the element type) or
+1. It implements <xref:System.Collections.Generic.IEnumerable`1> (except <xref:System.String>) or
+2. It implements non-generic <xref:System.Collections.IEnumerable> (using `object` as the element type) or
 3. It implements [`IAsyncEnumerable<T>`](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1) or
 4. It is an array type (including multi-dimensional arrays) or
-5. It is @System.Memory`1 or @System.ReadOnlyMemory`1.
+5. It is <xref:System.Memory`1> or <xref:System.ReadOnlyMemory`1>.
 
 #### Construction Strategy
 
 The construction strategy for enumerable types is inferred using the following priority:
 
 1. Types with public parameterless constructors that additionally expose `Add` methods, or implement one of the mutable `ICollection` interfaces are classified as `CollectionConstructionStrategy.Mutable`.
-2. Types annotated with @System.Runtime.CompilerServices.CollectionBuilderAttribute are classified as `CollectionConstructionStrategy.Parameterized`.
+2. Types annotated with [`CollectionBuilderAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.collectionbuilderattribute) are classified as `CollectionConstructionStrategy.Parameterized`.
 3. Immutable or frozen collection types are classified as `CollectionConstructionStrategy.Parameterized`.
 4. Types with public constructors accepting `ReadOnlySpan<TElement>` or `IEnumerable<TElement>` parameters are classified as `CollectionConstructionStrategy.Parameterized`.
 5. Enumerable types not matching the above are classified as `CollectionConstructionStrategy.None`.
