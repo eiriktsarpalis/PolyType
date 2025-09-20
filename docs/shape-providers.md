@@ -80,7 +80,7 @@ PolyType exposes a number of attributes that tweak aspects of the generated shap
 
 ### TypeShapeAttribute
 
-The `TypeShape` attribute can be applied on type declarations to customize their generated shapes. It is independent of the `GenerateShape` attribute since it doesn't trigger the source generator and is recognized by the reflection-based provider.
+The <xref:PolyType.TypeShapeAttribute> attribute can be applied on type declarations to customize their generated shapes. It is independent of the <xref:PolyType.GenerateShapeAttribute> attribute since it doesn't trigger the source generator and is recognized by the reflection-based provider.
 
 The `Kind` property can be used to override the default shape kind for a particular type:
 
@@ -320,12 +320,12 @@ class PocoWithConstructors
 
 PolyType includes limited support for types using [data contract annotations](https://learn.microsoft.com/dotnet/framework/wcf/feature-details/using-data-contracts).
 
-Types annotated with `DataContractAttribute` will only include member shapes annotated with `DataMemberAttribute`, resolving shape information from the attribute where applicable.
-Members annotated with `PropertyShapeAttribute` will also be included, with `PropertyShapeAttribute` taking precedence over `DataMemberAttribute` in case of conflicts.
-Data contract types annotated with `KnownTypeAttribute` will be mapped to union shapes following the same rules as `DerivedTypeShapeAttribute`.
+Types annotated with [`DataContractAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.datacontractattribute) will only include member shapes annotated with [`DataMemberAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.datamemberattribute), resolving shape information from the attribute where applicable.
+Members annotated with <xref:PolyType.PropertyShapeAttribute> will also be included, with <xref:PolyType.PropertyShapeAttribute> taking precedence over [`DataMemberAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.datamemberattribute) in case of conflicts.
+Data contract types annotated with [`KnownTypeAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.knowntypeattribute) will be mapped to union shapes following the same rules as <xref:PolyType.DerivedTypeShapeAttribute>.
 
-Types not annotated with `DataContractAttribute` ignore `DataMemberAttribute` and `KnownTypeAttribute` annotations, but will honor `IgnoreDataMemberAttribute` annotations if present.
+Types not annotated with [`DataContractAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.datacontractattribute) ignore [`DataMemberAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.datamemberattribute) and [`KnownTypeAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.knowntypeattribute) annotations, but will honor [`IgnoreDataMemberAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.ignoredatamemberattribute) annotations if present.
 
-The `EnumMemberAttribute` is supported for enum types, with `EnumMemberShapeAttribute` annotations taking precedence.
+The [`EnumMemberAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.enummemberattribute) is supported for enum types, with <xref:PolyType.EnumMemberShapeAttribute> annotations taking precedence.
 
-The attributes `CollectionDataContractAttribute` and `ServiceContractAttribute` are currently not supported by PolyType.
+The attributes [`CollectionDataContractAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.collectiondatacontractattribute) and [`ServiceContractAttribute`](https://learn.microsoft.com/dotnet/api/system.servicemodel.servicecontractattribute) are currently not supported by PolyType.
