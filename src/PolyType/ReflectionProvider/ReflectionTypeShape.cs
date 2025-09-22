@@ -99,7 +99,7 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
     private IEnumerable<IEventShape> GetEvents()
     {
         const BindingFlags AllEvents = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
-        foreach (EventInfo eventInfo in typeof(T).GetEvents(AllEvents))
+        foreach (EventInfo eventInfo in typeof(T).GetAllEvents(AllEvents))
         {
             EventShapeAttribute? eventAttr = eventInfo.GetCustomAttribute<EventShapeAttribute>();
             if (IncludeEvent(eventInfo, eventAttr))

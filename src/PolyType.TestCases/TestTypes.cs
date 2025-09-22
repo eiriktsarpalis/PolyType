@@ -709,6 +709,8 @@ public static class TestTypes
         yield return TestCase.Create(new ClassWithStaticEvent());
         yield return TestCase.Create(new ClassWithPrivateEvent());
         yield return TestCase.Create(new ClassWithPrivateStaticEvent());
+        yield return TestCase.Create<InterfaceWithEvent>(new DerivedInterfaceWithEvent.Impl());
+        yield return TestCase.Create<DerivedInterfaceWithEvent>(new DerivedInterfaceWithEvent.Impl());
     }
 
     private static ExpandoObject CreateExpandoObject(IEnumerable<KeyValuePair<string, object?>> values)
@@ -3157,6 +3159,32 @@ public partial class ClassWithPrivateStaticEvent : ITriggerable
     [EventShape(Name = "PrivateStaticEvent")]
     private static event Action<int>? OnChange;
     void ITriggerable.Trigger(int x) => OnChange?.Invoke(x);
+}
+
+[GenerateShape]
+public partial interface InterfaceWithEvent
+{
+    [EventShape]
+    public event Action<int>? OnChange;
+}
+
+[GenerateShape]
+public partial interface DerivedInterfaceWithEvent : InterfaceWithEvent
+{
+    [EventShape]
+    public event Action<int>? OnChange2;
+
+    public sealed class Impl : DerivedInterfaceWithEvent, ITriggerable
+    {
+        public event Action<int>? OnChange;
+        public event Action<int>? OnChange2;
+
+        public void Trigger(int x)
+        {
+            OnChange?.Invoke(x);
+            OnChange2?.Invoke(x);
+        }
+    }
 }
 
 public interface ITriggerable

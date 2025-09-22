@@ -484,6 +484,30 @@ internal static class ReflectionHelpers
         }
     }
 
+    [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
+    public static IEnumerable<EventInfo> GetAllEvents(this Type type, BindingFlags flags)
+    {
+        if (type.IsInterface)
+        {
+            // For interfaces, we need to include all events, including those from base interfaces.
+            foreach (Type interfaceType in type.GetAllInterfaces())
+            {
+                foreach (EventInfo eventInfo in interfaceType.GetEvents(flags))
+                {
+                    yield return eventInfo;
+                }
+            }
+        }
+        else
+        {
+            // For classes, we can just get the events directly.
+            foreach (EventInfo eventInfo in type.GetEvents(flags | BindingFlags.FlattenHierarchy))
+            {
+                yield return eventInfo;
+            }
+        }
+    }
+
     public static bool IsExplicitInterfaceImplementation(this MethodInfo methodInfo)
     {
         DebugExt.Assert(!methodInfo.IsStatic);
