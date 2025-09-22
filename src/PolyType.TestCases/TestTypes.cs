@@ -3448,3 +3448,18 @@ public delegate Task<int> LargeAsyncDelegate(
 [GenerateShapeFor<FSharpFunc<int, Task<int>>>]
 [GenerateShapeFor<FSharpFunc<int, FSharpFunc<int, FSharpFunc<int, Task<int>>>>>]
 public partial class Witness;
+
+// Test interfaces for issue #295: IEventShape.AttributeProvider is null for events inherited from an interface
+[GenerateShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+public partial interface IServer
+{
+    event EventHandler InterfaceEvent;
+
+    event EventHandler ExplicitInterfaceImplementation_Event;
+}
+
+[GenerateShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+public partial interface IServerDerived : IServer
+{
+    event EventHandler DerivedInterfaceEvent;
+}

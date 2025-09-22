@@ -1737,6 +1737,44 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
         Assert.Null(objectShape.Constructor);
     }
 
+    [Fact]
+    public void InterfaceEventInheritance_AttributeProvider_NotNull()
+    {
+        // Regression test for https://github.com/eiriktsarpalis/PolyType/issues/295
+        // IEventShape.AttributeProvider should not be null for events inherited from an interface
+
+        // Arrange - Get the shape of the derived interface
+        var shape = Provider.GetTypeShapeOrThrow<IServerDerived>();
+
+        // Act & Assert - All events should have non-null AttributeProvider
+        Assert.NotEmpty(shape.Events);
+        
+        foreach (var eventShape in shape.Events)
+        {
+            // The AttributeProvider should not be null for any event
+            Assert.NotNull(eventShape.AttributeProvider);
+            
+            // The AttributeProvider should be an EventInfo
+            var eventInfo = Assert.IsType<EventInfo>(eventShape.AttributeProvider, exactMatch: false);
+            
+            // The event info should match the event name
+            Assert.Equal(eventShape.Name, eventInfo.Name);
+            
+            // For inherited events, the declaring type should be the interface that declares them
+            Assert.NotNull(eventInfo.DeclaringType);
+            if (eventShape.Name == "InterfaceEvent" || eventShape.Name == "ExplicitInterfaceImplementation_Event")
+            {
+                // These events are declared in IServer, not IServerDerived
+                Assert.Equal(typeof(IServer), eventInfo.DeclaringType);
+            }
+            else if (eventShape.Name == "DerivedInterfaceEvent") 
+            {
+                // This event is declared in IServerDerived
+                Assert.Equal(typeof(IServerDerived), eventInfo.DeclaringType);
+            }
+        }
+    }
+
 
     [GenerateShape(Marshaler = typeof(Marshaler))]
     public partial class ClassWithMarshaler

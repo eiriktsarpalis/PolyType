@@ -147,4 +147,32 @@ public static partial class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
+
+    [Fact]
+    public static void InterfaceEventInheritance_AttributeProviderNotNull_NoErrors()
+    {
+        // Regression test for https://github.com/eiriktsarpalis/PolyType/issues/295
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System;
+            using PolyType;
+
+            #pragma warning disable CS0067 // Event is never used
+
+            [GenerateShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+            public partial interface IServer
+            {
+                event EventHandler InterfaceEvent;
+                event EventHandler ExplicitInterfaceImplementation_Event;
+            }
+
+            [GenerateShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+            public partial interface IServerDerived : IServer
+            {
+                event EventHandler DerivedInterfaceEvent;
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
 }
