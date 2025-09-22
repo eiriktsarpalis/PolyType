@@ -1420,7 +1420,7 @@ public static class ReflectionExtensions
     public static int GetExpectedEventShapeCount(this Type type)
     {
         MethodShapeFlags flags = type.GetCustomAttribute<TypeShapeAttribute>()?.IncludeMethods ?? MethodShapeFlags.None;
-        return type.GetEvents(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+        return type.GetAllEvents(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
             .Count(IsIncludedEvent);
 
         bool IsIncludedEvent(EventInfo eventInfo)

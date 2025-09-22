@@ -146,7 +146,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         }
 
         generator.Emit(OpCodes.Ldarg_1);
-        generator.Emit(OpCodes.Call, accessor);
+        EmitCall(generator, accessor);
         generator.Emit(OpCodes.Ret);
 
         return CreateDelegate<Setter<TDeclaringType?, TEventHandler>>(dynamicMethod);
