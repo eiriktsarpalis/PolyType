@@ -76,9 +76,9 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
                 return !shapeAttribute.Ignore; // Skip methods explicitly marked as ignored.
             }
 
-            if (!methodInfo.IsPublic || methodInfo.IsSpecialName)
+            if (!methodInfo.IsPublic)
             {
-                return false; // Skip methods that are not public or special names (like property getters/setters).
+                return false; // Skip methods that are not public and unannotated.
             }
 
             if (methodInfo.DeclaringType == typeof(object) || methodInfo.DeclaringType == typeof(ValueType))
@@ -110,6 +110,11 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
 
         bool IncludeEvent(EventInfo eventInfo, EventShapeAttribute? eventAttr)
         {
+            if (eventInfo.IsSpecialName || eventInfo.GetCustomAttribute<CompilerGeneratedAttribute>() is not null)
+            {
+                return false; // Skip events that are special names or compiler-generated.
+            }
+
             if (eventAttr is not null)
             {
                 return !eventAttr.Ignore;
@@ -118,7 +123,7 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
             MethodInfo? accessor = eventInfo.AddMethod ?? eventInfo.RemoveMethod;
             if (accessor is not { IsPublic: true })
             {
-                return false;
+                return false; // Skip events that are not public and unannotated.
             }
 
             MethodShapeFlags requiredFlag = accessor.IsStatic ? MethodShapeFlags.PublicStatic : MethodShapeFlags.PublicInstance;

@@ -477,9 +477,21 @@ public sealed partial class Parser : TypeDataModelGenerator
         {
             customName = null;
 
+            if (!SyntaxFacts.IsValidIdentifier(eventSymbol.Name) ||
+                eventSymbol.IsImplicitlyDeclared ||
+                eventSymbol.HasAttribute(KnownSymbols.CompilerGeneratedAttribute))
+            {
+                return false; // Skip events that are explicit interface implementations or compiler-generated.
+            }
+
             if (ParseEventShapeAttribute(eventSymbol, out customName, out bool? ignore))
             {
                 return ignore is not true; // Skip events explicitly marked as ignored.
+            }
+
+            if (eventSymbol.DeclaredAccessibility is not Accessibility.Public)
+            {
+                return false; // Skip events that are not public when not annotated.
             }
 
             BindingFlags requiredFlags = eventSymbol.IsStatic ? BindingFlags.Public | BindingFlags.Static : BindingFlags.Public | BindingFlags.Instance;
