@@ -41,7 +41,7 @@ public partial class TypeDataModelGenerator
                     return true;
                 }
 
-                PropertyDataModel propertyModel = MapField(element);
+                PropertyDataModel propertyModel = MapField(element, customName: null, order: 0, includeGetter: true, includeSetter: true, isAmbiguous: false);
                 elements.Add(propertyModel);
             }
 
@@ -71,7 +71,7 @@ public partial class TypeDataModelGenerator
                     return true;
                 }
 
-                PropertyDataModel propertyModel = MapProperty(elementProp, includeGetter: true, includeSetter: false);
+                PropertyDataModel propertyModel = MapProperty(elementProp, customName: null, order: 0, includeGetter: true, includeSetter: false, isAmbiguous: false);
                 elements.Add(propertyModel);
             }
 

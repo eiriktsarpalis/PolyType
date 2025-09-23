@@ -66,9 +66,14 @@ internal sealed partial class SourceFormatter
             {
                 { IsStatic: true, IsAccessible: true } => $"{eventModel.DeclaringType.FullyQualifiedName}.{eventModel.UnderlyingMemberName} {op} {handlerExpr}",
                 { IsStatic: true, IsAccessible: false } => $"{GetEventAccessorName(declaringType, eventModel, isAdd)}({handlerExpr})",
-                { IsStatic: false, IsAccessible: true } => $"{objExpr}{suppressSuffix}.{eventModel.UnderlyingMemberName} {op} {handlerExpr}",
+                { IsStatic: false, IsAccessible: true } => $"{ApplyDisambiguation(eventModel, objExpr)}{suppressSuffix}.{eventModel.UnderlyingMemberName} {op} {handlerExpr}",
                 { IsStatic: false, IsAccessible: false } => $"{GetEventAccessorName(declaringType, eventModel, isAdd)}({refPrefix}{objExpr}, {handlerExpr})",
             };
+
+            static string ApplyDisambiguation(EventShapeModel eventModel, string objExpr)
+            {
+                return eventModel.RequiresDisambiguation ? $"(({eventModel.DeclaringType.FullyQualifiedName}?){objExpr})" : $"{objExpr}";
+            }
         }
     }
 

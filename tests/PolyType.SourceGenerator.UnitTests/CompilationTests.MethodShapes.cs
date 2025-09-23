@@ -420,6 +420,7 @@ public static partial class CompilationTests
 
         public interface IBase2
         {
+            [MethodShape(Name = "DoSomething2")]
             void DoSomething();
         }
 

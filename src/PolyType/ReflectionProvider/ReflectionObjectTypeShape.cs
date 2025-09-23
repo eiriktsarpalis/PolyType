@@ -1,4 +1,5 @@
 ﻿using PolyType.Abstractions;
+using PolyType.Utilities;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -298,38 +299,30 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
     {
         Debug.Assert(!IsSimpleType);
         List<PropertyShapeInfo> results = [];
-        HashSet<string> membersInScope = new(StringComparer.Ordinal);
+        HashSet<string>? propertyNames = null;
         bool isOrderSpecified = false;
 
-        foreach (Type current in typeof(T).GetSortedTypeHierarchy())
+        foreach (MemberInfo memberInfo in typeof(T).ResolveVisibleMembers())
         {
-            bool hasDataContractAttribute = current.GetCustomAttribute<DataContractAttribute>() is not null;
-            foreach (PropertyInfo propertyInfo in current.GetProperties(AllInstanceMembers))
+            if (memberInfo is PropertyInfo propertyInfo &&
+                !propertyInfo.IsStatic() &&
+                propertyInfo.GetIndexParameters().Length == 0 &&
+                propertyInfo.PropertyType.CanBeGenericArgument() &&
+                !propertyInfo.IsExplicitInterfaceImplementation())
             {
-                if (propertyInfo.GetIndexParameters().Length == 0 &&
-                    propertyInfo.PropertyType.CanBeGenericArgument() &&
-                    !propertyInfo.IsExplicitInterfaceImplementation() &&
-                    !IsOverriddenOrShadowed(propertyInfo))
-                {
-                    HandleMember(propertyInfo, nullabilityCtx, hasDataContractAttribute);
-                }
+                HandleMember(propertyInfo, nullabilityCtx);
             }
 
-            foreach (FieldInfo fieldInfo in current.GetFields(AllInstanceMembers))
+            if (memberInfo is FieldInfo { IsStatic: false } fieldInfo &&
+                fieldInfo.FieldType.CanBeGenericArgument())
             {
-                if (fieldInfo.FieldType.CanBeGenericArgument() &&
-                    !IsOverriddenOrShadowed(fieldInfo))
-                {
-                    HandleMember(fieldInfo, nullabilityCtx, hasDataContractAttribute);
-                }
+                HandleMember(fieldInfo, nullabilityCtx);
             }
         }
 
         return isOrderSpecified ? results.OrderBy(r => r.Order) : results;
 
-        bool IsOverriddenOrShadowed(MemberInfo memberInfo) => !membersInScope.Add(memberInfo.Name);
-
-        void HandleMember(MemberInfo memberInfo, NullabilityInfoContext? nullabilityCtx, bool hasDataContractAttribute)
+        void HandleMember(MemberInfo memberInfo, NullabilityInfoContext? nullabilityCtx)
         {
             // Use the most derived member for attribute resolution but
             // use the base definition to determine the member signatures
@@ -363,7 +356,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                     isRequiredByAttribute = propertyShapeAttr.IsRequired;
                 }
             }
-            else if (hasDataContractAttribute)
+            else if (memberInfo.DeclaringType!.IsDefined<DataContractAttribute>())
             {
                 if (attributeProvider.GetCustomAttribute<DataMemberAttribute>() is not { } dataMemberAttr)
                 {
@@ -398,6 +391,14 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                 {
                     return;
                 }
+            }
+
+            string name = logicalName ?? memberInfo.Name;
+            if (!(propertyNames ??= new()).Add(name))
+            {
+                throw new NotSupportedException(
+                    $"Conflicting members named '{name}' were found on type '{Type}'. " +
+                     "Consider renaming one of them or disambiguating via the PropertyShapeAttribute.Name property.");
             }
 
             memberInfo.ResolveNullableAnnotation(nullabilityCtx, out bool isGetterNonNullable, out bool isSetterNonNullable);

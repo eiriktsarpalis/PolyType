@@ -1511,4 +1511,56 @@ public static partial class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
+
+    [Fact]
+    public static void DuplicatePropertyShapeName_DiamondConflict_AttributeDisambiguation_NoWarning()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            interface IPropA { int X { get; set; } }
+            interface IPropB { [PropertyShape(Name = "XB")] int X { get; set; } }
+
+            [GenerateShape]
+            partial interface IPropC : IPropA, IPropB { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void DuplicateMethodShapeName_DiamondConflict_AttributeDisambiguation_NoWarning()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            interface IPropA { int M(); }
+            interface IPropB { [MethodShape(Name = "MB")] int M(); }
+
+            [GenerateShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+            partial interface IPropC : IPropA, IPropB { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void DuplicateEventShapeName_DiamondConflict_AttributeDisambiguation_NoWarning()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+            using System;
+
+            interface IPropA { event Action? E; }
+            interface IPropB { [EventShape(Name = "EB")] event Action? E; }
+
+            [GenerateShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+            partial interface IPropC : IPropA, IPropB { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        Assert.Empty(result.Diagnostics);
+    }
 }

@@ -36,7 +36,7 @@ public readonly struct MethodDataModel
     /// <summary>
     /// Whether the method is ambiguous due to diamond inheritance.
     /// </summary>
-    public required bool IsDiamondAmbiguous { get; init; }
+    public required bool IsAmbiguous { get; init; }
 }
 
 /// <summary>
@@ -93,5 +93,5 @@ public readonly struct ResolvedMethodSymbol
     /// <summary>
     /// Gets a value indicating whether the method is ambiguous due to diamond inheritance.
     /// </summary>
-    public bool IsDiamondAmbiguous { get; init; }
+    public bool IsAmbiguous { get; init; }
 }

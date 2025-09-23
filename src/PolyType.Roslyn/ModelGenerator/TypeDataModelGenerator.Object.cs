@@ -53,29 +53,82 @@ public partial class TypeDataModelGenerator
     }
 
     /// <summary>
+    /// Resolves the properties and fields that should be included for the given type.
+    /// </summary>
+    protected virtual IEnumerable<ResolvedPropertySymbol> ResolveProperties(ITypeSymbol type)
+    {
+        foreach ((ISymbol member, bool isAmbiguous) in type.ResolveVisibleMembers())
+        {
+            if (member is IPropertySymbol { IsStatic: false, Parameters: [] } property &&
+                IncludeProperty(property, out string? customName, out int order, out bool includeGetter, out bool includeSetter))
+            {
+                yield return new()
+                {
+                    Symbol = property,
+                    CustomName = customName,
+                    IncludeGetter = includeGetter,
+                    IncludeSetter = includeSetter,
+                    Order = order,
+                    IsAmbiguous = isAmbiguous,
+                };
+            }
+            else if (
+                member is IFieldSymbol { IsStatic: false, IsConst: false } field &&
+                IncludeField(field, out customName, out order, out includeGetter, out includeSetter))
+            {
+                yield return new()
+                {
+                    Symbol = field,
+                    CustomName = customName,
+                    IncludeGetter = includeGetter,
+                    IncludeSetter = includeSetter,
+                    Order = order,
+                    IsAmbiguous = isAmbiguous,
+                };
+            }
+        }
+    }
+
+    /// <summary>
     /// Determines whether the given field should be included in the object data model.
     /// </summary>
     /// <remarks>Defaults to including public fields only.</remarks>
-    protected virtual bool IncludeField(IFieldSymbol field)
-        => field.DeclaredAccessibility is Accessibility.Public;
+    protected virtual bool IncludeField(IFieldSymbol field, out string? customName, out int order, out bool includeGetter, out bool includeSetter)
+    {
+        customName = null;
+        order = 0;
+
+        if (field.DeclaredAccessibility is not Accessibility.Public)
+        { 
+            includeGetter = includeSetter = false;
+            return false;
+        }
+
+        includeGetter = true;
+        includeSetter = !field.IsReadOnly;
+        return true;
+    }
 
     /// <summary>
     /// Determines whether the given property should be included in the object data model.
     /// </summary>
     /// <remarks>Defaults to including public getters and setters only.</remarks>
-    protected virtual bool IncludeProperty(IPropertySymbol property, out bool includeGetter, out bool includeSetter)
+    protected virtual bool IncludeProperty(IPropertySymbol property, out string? customName, out int order, out bool includeGetter, out bool includeSetter)
     {
-        if (property.DeclaredAccessibility is Accessibility.Public)
+        customName = null;
+        order = 0;
+
+        if (property.DeclaredAccessibility is not Accessibility.Public)
         {
-            // Use the signature of the base property to determine shape and accessibility.
-            property = property.GetBaseProperty();
-            includeGetter = property.GetMethod is { } getter && IsAccessibleSymbol(getter);
-            includeSetter = property.SetMethod is { } setter && IsAccessibleSymbol(setter);
-            return true;
+            includeGetter = includeSetter = false;
+            return false;
         }
 
-        includeGetter = includeSetter = false;
-        return false;
+        // Use the signature of the base property to determine shape and accessibility.
+        property = property.GetBaseProperty();
+        includeGetter = property.GetMethod is { } getter && IsAccessibleSymbol(getter);
+        includeSetter = property.SetMethod is { } setter && IsAccessibleSymbol(setter);
+        return true;
     }
 
     /// <summary>
@@ -155,47 +208,49 @@ public partial class TypeDataModelGenerator
 
     private ImmutableArray<PropertyDataModel> MapProperties(INamedTypeSymbol type, ref TypeDataModelGenerationContext ctx)
     {
-        List<PropertyDataModel> properties = [];
-        HashSet<string> membersInScope = new(StringComparer.Ordinal);
+        var properties = ImmutableArray.CreateBuilder<PropertyDataModel>();
 
-        foreach (ITypeSymbol current in type.GetSortedTypeHierarchy())
+        foreach (var resolvedProperty in ResolveProperties(type))
         {
-            IOrderedEnumerable<ISymbol> members = current.GetMembers()
-                .Where(m => m.Kind is SymbolKind.Field or SymbolKind.Property)
-                .OrderByDescending(m => m.Kind is SymbolKind.Property); // for consistency with reflection, sort properties ahead of fields
-
-            foreach (ISymbol member in members)
+            if (resolvedProperty.Symbol is IPropertySymbol property &&
+                IncludeNestedType(property.Type, ref ctx) is TypeDataModelGenerationStatus.Success)
             {
-                if (member is IPropertySymbol { IsStatic: false, Parameters: [] } ps &&
-                    !IsOverriddenOrShadowed(ps) && IncludeProperty(ps, out bool includeGetter, out bool includeSetter) &&
-                    IncludeNestedType(ps.Type, ref ctx) is TypeDataModelGenerationStatus.Success)
-                {
-                    PropertyDataModel propertyModel = MapProperty(ps, includeGetter, includeSetter);
-                    properties.Add(propertyModel);
+                PropertyDataModel propertyModel = MapProperty(
+                    property,
+                    resolvedProperty.CustomName,
+                    resolvedProperty.Order,
+                    resolvedProperty.IncludeGetter,
+                    resolvedProperty.IncludeSetter,
+                    resolvedProperty.IsAmbiguous);
 
-                    ParseCustomAssociatedTypeAttributes(member, out ImmutableArray<AssociatedTypeModel> customAssociatedTypes);
-                    IncludeAssociatedShapes(ps.Type, customAssociatedTypes, ref ctx);
-                }
-                else if (
-                    member is IFieldSymbol { IsStatic: false, IsConst: false } fs &&
-                    !IsOverriddenOrShadowed(fs) && IncludeField(fs) &&
-                    IncludeNestedType(fs.Type, ref ctx) is TypeDataModelGenerationStatus.Success)
-                {
-                    PropertyDataModel fieldModel = MapField(fs);
-                    properties.Add(fieldModel);
+                properties.Add(propertyModel);
 
-                    ParseCustomAssociatedTypeAttributes(member, out ImmutableArray<AssociatedTypeModel> customAssociatedTypes);
-                    IncludeAssociatedShapes(fs.Type, customAssociatedTypes, ref ctx);
-                }
+                ParseCustomAssociatedTypeAttributes(property, out ImmutableArray<AssociatedTypeModel> customAssociatedTypes);
+                IncludeAssociatedShapes(property.Type, customAssociatedTypes, ref ctx);
+            }
+            else if (
+                resolvedProperty.Symbol is IFieldSymbol field &&
+                IncludeNestedType(field.Type, ref ctx) is TypeDataModelGenerationStatus.Success)
+            {
+                PropertyDataModel fieldModel = MapField(
+                    field,
+                    resolvedProperty.CustomName,
+                    resolvedProperty.Order,
+                    resolvedProperty.IncludeGetter,
+                    resolvedProperty.IncludeSetter,
+                    resolvedProperty.IsAmbiguous);
 
-                bool IsOverriddenOrShadowed(ISymbol member) => !membersInScope.Add(member.Name);
+                properties.Add(fieldModel);
+
+                ParseCustomAssociatedTypeAttributes(field, out ImmutableArray<AssociatedTypeModel> customAssociatedTypes);
+                IncludeAssociatedShapes(field.Type, customAssociatedTypes, ref ctx);
             }
         }
 
         return properties.ToImmutableArray();
     }
 
-    private PropertyDataModel MapProperty(IPropertySymbol property, bool includeGetter, bool includeSetter)
+    private PropertyDataModel MapProperty(IPropertySymbol property, string? customName, int order, bool includeGetter, bool includeSetter, bool isAmbiguous)
     {
         Debug.Assert(property is { IsStatic: false, IsIndexer: false });
         Debug.Assert(!includeGetter || property.GetBaseProperty().GetMethod is not null);
@@ -209,6 +264,7 @@ public partial class TypeDataModelGenerator
 
         return new PropertyDataModel(property)
         {
+            LogicalName = customName,
             IncludeGetter = includeGetter,
             IncludeSetter = includeSetter,
             IsGetterAccessible = baseProperty.GetMethod is { } getter && IsAccessibleSymbol(getter),
@@ -217,24 +273,29 @@ public partial class TypeDataModelGenerator
             IsSetterNonNullable = isSetterNonNullable,
             IsRequiredBySyntax = property.IsRequired(),
             IsRequiredByPolicy = IsRequiredByPolicy(property),
+            IsAmbiguous = isAmbiguous,
+            Order = order,
         };
     }
 
-    private PropertyDataModel MapField(IFieldSymbol field)
+    private PropertyDataModel MapField(IFieldSymbol field, string? customName, int order, bool includeGetter, bool includeSetter, bool isAmbiguous)
     {
         Debug.Assert(!field.IsStatic);
         field.ResolveNullableAnnotation(out bool isGetterNonNullable, out bool isSetterNonNullable);
         bool isAccessible = IsAccessibleSymbol(field);
         return new PropertyDataModel(field)
         {
-            IncludeGetter = true,
-            IncludeSetter = !field.IsReadOnly,
-            IsGetterAccessible = isAccessible,
-            IsSetterAccessible = isAccessible && !field.IsReadOnly,
+            LogicalName = customName,
+            IncludeGetter = includeGetter,
+            IncludeSetter = includeSetter,
+            IsGetterAccessible = isAccessible && includeGetter,
+            IsSetterAccessible = isAccessible && includeSetter,
             IsGetterNonNullable = isGetterNonNullable,
             IsSetterNonNullable = isSetterNonNullable,
             IsRequiredBySyntax = field.IsRequired(),
             IsRequiredByPolicy = IsRequiredByPolicy(field),
+            IsAmbiguous = isAmbiguous,
+            Order = order,
         };
     }
 

@@ -1595,8 +1595,8 @@ public partial record RecordWith42ConstructorParametersAndRequiredProperties(
     string x29, int x30, bool x31, TimeSpan x32, DateTime x33, int x34, string x35,
     string x36, int x37, bool x38, TimeSpan x39, DateTime x40, int x41, string x42)
 {
-    public required int requiredField;
     public required string RequiredProperty { get; set; }
+    public required int requiredField;
 }
 
 [GenerateShape]
@@ -1608,8 +1608,8 @@ public partial record StructRecordWith42ConstructorParametersAndRequiredProperti
     string x29, int x30, bool x31, TimeSpan x32, DateTime x33, int x34, string x35,
     string x36, int x37, bool x38, TimeSpan x39, DateTime x40, int x41, string x42)
 {
-    public required int requiredField;
     public required string RequiredProperty { get; set; }
+    public required int requiredField;
 }
 
 [GenerateShape]
@@ -1878,10 +1878,10 @@ public partial class WeatherForecastDTO
     public DateTimeOffset Date { get; set; }
     public int TemperatureCelsius { get; set; }
     public string? Summary { get; set; }
-    public string? SummaryField;
     public List<DateTimeOffset>? DatesAvailable { get; set; }
     public Dictionary<string, HighLowTempsDTO>? TemperatureRanges { get; set; }
     public string[]? SummaryWords { get; set; }
+    public string? SummaryField;
 }
 
 public class HighLowTempsDTO
@@ -2195,17 +2195,20 @@ public partial class ClassWithIncludedPrivateMembers
     [JsonInclude, PropertyShape]
     private int PrivateProperty { get; set; }
     [JsonInclude, PropertyShape]
-    private int PrivateField;
-    [JsonInclude, PropertyShape]
     public int PrivateGetter { private get; set; }
     [JsonInclude, PropertyShape]
     public int PrivateSetter { get; private set; }
 
     public required int RequiredProperty { get; set; }
-    public required int RequiredField;
 
     [JsonInclude, JsonPropertyOrder(1), PropertyShape(Order = 1)]
     private int? OptionalProperty { get; init; }
+
+    [JsonInclude, PropertyShape]
+    private int PrivateField;
+
+    public required int RequiredField;
+
     [JsonInclude, JsonPropertyOrder(1), PropertyShape(Order = 1)]
     private int? OptionalField;
 }
@@ -2235,17 +2238,20 @@ public partial struct StructWithIncludedPrivateMembers
     [JsonInclude, PropertyShape]
     private int PrivateProperty { get; set; }
     [JsonInclude, PropertyShape]
-    private int PrivateField;
-    [JsonInclude, PropertyShape]
     public int PrivateGetter { private get; set; }
     [JsonInclude, PropertyShape]
     public int PrivateSetter { get; private set; }
 
     public required int RequiredProperty { get; set; }
-    public required int RequiredField;
 
     [JsonInclude, JsonPropertyOrder(1), PropertyShape(Order = 1)]
     private int? OptionalProperty { get; init; }
+
+    [JsonInclude, PropertyShape]
+    private int PrivateField;
+
+    public required int RequiredField;
+
     [JsonInclude, JsonPropertyOrder(1), PropertyShape(Order = 1)]
     private int? OptionalField;
 }
@@ -3107,6 +3113,7 @@ public interface IBase1WithMethod
 
 public interface IBase2WithMethod
 {
+    [MethodShape(Name = "AddFromBase2")]
     int Add(int x, int y);
 }
 

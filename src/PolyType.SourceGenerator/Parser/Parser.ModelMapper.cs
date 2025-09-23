@@ -397,14 +397,12 @@ public sealed partial class Parser
 
     private PropertyShapeModel MapProperty(ITypeSymbol parentType, TypeId parentTypeId, PropertyDataModel property, bool isClassTupleType = false, int tupleElementIndex = -1)
     {
-        ParsePropertyShapeAttribute(property.PropertySymbol, out string propertyName, out int order);
-
         bool emitGetter = property.IncludeGetter;
         bool emitSetter = property.IncludeSetter && !property.IsInitOnly;
 
         return new PropertyShapeModel
         {
-            Name = isClassTupleType ? $"Item{tupleElementIndex + 1}" : propertyName ?? property.Name,
+            Name = isClassTupleType ? $"Item{tupleElementIndex + 1}" : property.LogicalName ?? property.Name,
             UnderlyingMemberName = isClassTupleType
                 ? $"{string.Join("", Enumerable.Repeat("Rest.", tupleElementIndex / 7))}Item{(tupleElementIndex % 7) + 1}"
                 : property.Name,
@@ -430,8 +428,9 @@ public sealed partial class Parser
             IsInitOnly = property.IsInitOnly,
             IsRequiredBySyntax = property.IsRequiredBySyntax,
             IsRequiredByPolicy = property.IsRequiredByPolicy,
+            RequiresDisambiguation = property.IsAmbiguous,
             IsField = property.IsField,
-            Order = order,
+            Order = property.Order,
         };
     }
 
@@ -451,8 +450,6 @@ public sealed partial class Parser
 
         foreach (PropertyDataModel propertyModel in memberInitializers)
         {
-            ParsePropertyShapeAttribute(propertyModel.PropertySymbol, out string propertyName, out _);
-
             var memberInitializer = new ParameterShapeModel
             {
                 ParameterType = CreateTypeId(propertyModel.PropertyType),
@@ -460,7 +457,7 @@ public sealed partial class Parser
                     ? declaringTypeId
                     : CreateTypeId(propertyModel.DeclaringType),
 
-                Name = propertyName,
+                Name = propertyModel.LogicalName ?? propertyModel.Name,
                 UnderlyingMemberName = propertyModel.Name,
                 Position = position++,
                 IsRequired = propertyModel.IsRequiredByPolicy ?? propertyModel.IsRequiredBySyntax,
@@ -549,7 +546,7 @@ public sealed partial class Parser
                 UnderlyingReturnType = CreateTypeId(m.Method.ReturnType),
                 ReturnType = CreateTypeId(m.ReturnedValueType ?? _knownSymbols.UnitType!),
                 ReturnsByRef = m.Method.ReturnsByRef || m.Method.ReturnsByRefReadonly,
-                InstanceMethodRequiresCast = m.IsDiamondAmbiguous,
+                RequiresDisambiguation = m.IsAmbiguous,
                 Parameters = m.Parameters
                     .Select(p => MapParameter(declaringObjectForConstructor: null, CreateTypeId(m.Method.ContainingType), p, false))
                     .ToImmutableEquatableArray(),
@@ -587,6 +584,7 @@ public sealed partial class Parser
                     : typeId,
                 HandlerType = CreateTypeId(e.Event.Type),
                 IsAccessible = IsAccessibleSymbol(e.Event),
+                RequiresDisambiguation = e.IsAmbiguous,
                 CanUseUnsafeAccessors = _knownSymbols.TargetFramework switch
                 {
                     // .NET 8 or later supports unsafe accessors for events of non-generic types.
@@ -629,7 +627,7 @@ public sealed partial class Parser
                     CommonHelpers.CamelCaseInvariantComparer.Instance.Equals(parameter.Parameter.Name, property.Name))
                 {
                     // We have a matching property, use its name in the parameter.
-                    ParsePropertyShapeAttribute(property.PropertySymbol, out name, out int _);
+                    name = property.LogicalName ?? property.Name;
                     break;
                 }
             }
@@ -1002,10 +1000,11 @@ public sealed partial class Parser
         return false;
     }
 
-    private void ParsePropertyShapeAttribute(ISymbol propertySymbol, out string propertyName, out int order)
+    private bool ParsePropertyShapeAttribute(ISymbol propertySymbol, out string propertyName, out int order, out bool ignore)
     {
         propertyName = propertySymbol.Name;
         order = 0;
+        ignore = false;
 
         if (propertySymbol.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData propertyAttr)
         {
@@ -1019,10 +1018,13 @@ public sealed partial class Parser
                     case "Order":
                         order = (int)namedArgument.Value.Value!;
                         break;
+                    case "Ignore":
+                        ignore = (bool)namedArgument.Value.Value!;
+                        break;
                 }
             }
 
-            return;
+            return true;
         }
 
         if (propertySymbol.ContainingType.HasAttribute(_knownSymbols.DataContractAttribute))
@@ -1041,7 +1043,22 @@ public sealed partial class Parser
                             break;
                     }
                 }
+
+                return true;
             }
+
+            // In a [DataContract] type, ignore properties without [DataMember] attribute.
+            ignore = true;
+            return true;
         }
+
+        if (propertySymbol.HasAttribute(_knownSymbols.IgnoreDataMemberAttribute))
+        {
+            // Ignore properties with [IgnoreDataMember] attribute.
+            ignore = true;
+            return true;
+        }
+
+        return false;
     }
 }

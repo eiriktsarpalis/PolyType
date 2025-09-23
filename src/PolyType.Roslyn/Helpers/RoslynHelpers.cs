@@ -367,61 +367,65 @@ internal static class RoslynHelpers
         }
     }
 
-    public static IEnumerable<ISymbol> GetAllMembers(this ITypeSymbol type)
-        => type.GetSortedTypeHierarchy().SelectMany(t => t.GetMembers());
-
-    public static IEnumerable<(IMethodSymbol Symbol, bool IsAmbiguous)> GetAllMethods(this ITypeSymbol type)
+    /// <summary>
+    /// Resolves all members that are visible on the specified type,
+    /// accounting for overrides and shadowing in the type hierarchy.
+    /// </summary>
+    public static IEnumerable<(ISymbol Symbol, bool IsAmbiguous)> ResolveVisibleMembers(this ITypeSymbol type)
     {
-        List<(IMethodSymbol Symbol, bool IsAmbiguous)> methods = [];
-        Dictionary<string, int> foundSignatures = new();
+        Dictionary<string, List<int>> membersInScope = new(StringComparer.Ordinal);
+        List<(ISymbol Symbol, bool IsAmbiguous)> results = [];
 
+        // Walk the type hierarchy, from most derived to least derived.
         foreach (ITypeSymbol current in type.GetSortedTypeHierarchy())
         {
-            foreach (IMethodSymbol method in current.GetMembers().OfType<IMethodSymbol>())
+            foreach (ISymbol member in current.GetMembers())
             {
-                // Create a signature key that includes name, parameters, and return type
-                string signature = GetMethodSignature(method);
-                if (foundSignatures.TryGetValue(signature, out int index))
-                {
-                    IMethodSymbol conflictingMethod = methods[index].Symbol;
-                    if (!current.IsAssignableFrom(conflictingMethod.ContainingType))
-                    {
-                        // We have a method with the same signature in an unrelated type,
-                        // due to diamond ambiguity in an interface hierarchy.
+                // To account for overloads, method identifiers include the method name and parameter types but not the return type.
+                string identifier = member is IMethodSymbol method
+                    ? $"{method.Name}({string.Join(", ", method.Parameters.Select(p => p.Type.GetFullyQualifiedName()))})"
+                    : member.Name;
 
-                        Debug.Assert(type.TypeKind is TypeKind.Interface);
-                        methods[index] = (conflictingMethod, IsAmbiguous: true);
-                        methods.Add((method, IsAmbiguous: true));
+                bool isAmbiguous;
+                if (membersInScope.TryGetValue(identifier, out List<int> conflictingMemberIndices))
+                {
+                    if (conflictingMemberIndices.Exists(i => current.IsAssignableFrom(results[i].Symbol.ContainingType)))
+                    {
+                        continue; // Member is overridden or shadowed by a more derived type in the hierarchy.
                     }
 
-                    continue; // This method is shadowed by a derived type, skip it.
+                    if (conflictingMemberIndices is [int singleIndex])
+                    {
+                        // We found our first ambiguity, update the previous entry accordingly.
+                        results[singleIndex] = (results[singleIndex].Symbol, IsAmbiguous: true);
+                    }
+
+                    // Member forms diamond ambiguity, include in case there is disambiguation on attribute configs.
+                    Debug.Assert(type.TypeKind is TypeKind.Interface);
+                    isAmbiguous = true;
+                }
+                else
+                {
+                    membersInScope[identifier] = conflictingMemberIndices = [];
+                    isAmbiguous = false;
                 }
 
-                foundSignatures.Add(signature, methods.Count);
-                methods.Add((method, IsAmbiguous: false));
+                conflictingMemberIndices.Add(results.Count);
+                results.Add((member, isAmbiguous));
             }
         }
 
-        return methods;
-
-        static string GetMethodSignature(IMethodSymbol method)
-        {
-            string parameters = string.Join(",", method.Parameters.Select(p => p.Type.ToDisplayString()));
-            return $"{method.ReturnType.ToDisplayString()} {method.Name}({parameters})";
-        }
+        return results;
     }
 
-    public static IEnumerable<IEventSymbol> GetAllEvents(this ITypeSymbol type)
+    public static IEnumerable<(TMember Symbol, bool IsAmbiguous)> ResolveVisibleMembers<TMember>(this ITypeSymbol type)
+        where TMember : ISymbol
     {
-        HashSet<string> foundNames = [];
-        foreach (ITypeSymbol current in type.GetSortedTypeHierarchy())
+        foreach ((ISymbol symbol, bool isAmbiguous) in type.ResolveVisibleMembers())
         {
-            foreach (IEventSymbol eventSymbol in current.GetMembers().OfType<IEventSymbol>())
+            if (symbol is TMember member)
             {
-                if (foundNames.Add(eventSymbol.Name))
-                {
-                    yield return eventSymbol;
-                }
+                yield return (member, isAmbiguous);
             }
         }
     }

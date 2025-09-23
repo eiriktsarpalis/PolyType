@@ -16,10 +16,15 @@ public readonly struct EventDataModel
     /// The event symbol that this model represents.
     /// </summary>
     public required IEventSymbol Event { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the member is ambiguous due to diamond inheritance.
+    /// </summary>
+    public bool IsAmbiguous { get; init; }
 }
 
 /// <summary>
-/// A method data model wrapping an <see cref="IEventSymbol"/>.
+/// An event data model wrapping an <see cref="IEventSymbol"/>.
 /// </summary>
 public readonly struct ResolvedEventSymbol
 {
@@ -32,4 +37,9 @@ public readonly struct ResolvedEventSymbol
     /// Gets a custom name to be applied to the method, if specified.
     /// </summary>
     public string? CustomName { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the member is ambiguous due to diamond inheritance.
+    /// </summary>
+    public bool IsAmbiguous { get; init; }
 }

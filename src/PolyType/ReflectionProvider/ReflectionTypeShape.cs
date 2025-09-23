@@ -54,12 +54,25 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
     private IEnumerable<MethodShapeInfo> GetMethodShapeInfos()
     {
         NullabilityInfoContext? ctx = ReflectionTypeShapeProvider.CreateNullabilityInfoContext();
-        const BindingFlags AllMethods = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
-        foreach (MethodInfo methodInfo in typeof(T).GetAllMethods(AllMethods))
+        HashSet<string>? resolvedMethodNames = null;
+        foreach (MethodInfo methodInfo in typeof(T).ResolveVisibleMembers().OfType<MethodInfo>())
         {
+            if (methodInfo is { DeclaringType.IsInterface: true, IsStatic: true, IsAbstract: true })
+            {
+                continue; // Skip static abstract methods in interfaces.
+            }
+
             MethodShapeAttribute? shapeAttribute = methodInfo.GetCustomAttribute<MethodShapeAttribute>();
             if (IncludeMethod(methodInfo, shapeAttribute, Options.IncludeMethods))
             {
+                string name = shapeAttribute?.Name ?? methodInfo.Name;
+                if (!(resolvedMethodNames ??= new()).Add(name))
+                {
+                    throw new NotSupportedException(
+                        $"Multiple methods named '{name}' were found on type '{Type}'. " +
+                         "Consider renaming one of them or disambiguating via the MethodShapeAttribute.Name property.");
+                }
+
                 yield return ReflectionTypeShapeProvider.CreateMethodShapeInfo(methodInfo, shapeAttribute, ctx);
             }
         }
@@ -98,13 +111,21 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
 
     private IEnumerable<IEventShape> GetEvents()
     {
-        const BindingFlags AllEvents = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
-        foreach (EventInfo eventInfo in typeof(T).GetAllEvents(AllEvents))
+        HashSet<string>? resolvedEventNames = null;
+        foreach (EventInfo eventInfo in typeof(T).ResolveVisibleMembers().OfType<EventInfo>())
         {
             EventShapeAttribute? eventAttr = eventInfo.GetCustomAttribute<EventShapeAttribute>();
             if (IncludeEvent(eventInfo, eventAttr))
             {
-                yield return Provider.CreateEvent(this, eventInfo, eventAttr?.Name ?? eventInfo.Name);
+                string eventName = eventAttr?.Name ?? eventInfo.Name;
+                if (!(resolvedEventNames ??= new()).Add(eventName))
+                {
+                    throw new NotSupportedException(
+                        $"Conflicting members named '{eventName}' were found on type '{Type}'. " +
+                         "Consider renaming one of them or disambiguating via the EventShapeAttribute.Name property.");
+                }
+
+                yield return Provider.CreateEvent(this, eventInfo, eventName);
             }
         }
 

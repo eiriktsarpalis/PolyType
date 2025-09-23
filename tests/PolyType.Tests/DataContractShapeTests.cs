@@ -103,16 +103,21 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
     [Fact]
     public void ClassWithConflictingMembers_ReportsExpectedMembers()
     {
-        // Regression test for https://github.com/eiriktsarpalis/PolyType/issues/286
         var shape = Assert.IsType<IObjectTypeShape>(providerUnderTest.Provider.GetTypeShape(typeof(ClassWithConflictingMembers)), exactMatch: false);
         Assert.NotNull(shape);
 
-        Assert.Equal(2, shape.Properties.Count);
-        Assert.Equal("innerStream", shape.Properties[0].Name);
-        Assert.Equal("innerStream", shape.Properties[1].Name);
+        if (providerUnderTest.Kind is ProviderKind.SourceGen)
+        {
+            // Source gen provider skips the second member with conflicting name.
+            var single = Assert.Single(shape.Properties);
+            Assert.False(single.IsField);
+            return;
+        }
 
-        Assert.False(shape.Properties[0].IsField);
-        Assert.True(shape.Properties[1].IsField);
+        // Reflection-based provider throws due to conflicting member names.
+        var ex = Assert.Throws<NotSupportedException>(() => shape.Properties);
+        Assert.Contains("Conflicting members", ex.Message);
+        Assert.Contains("'innerStream'", ex.Message);
     }
 
     [GenerateShape]
@@ -208,9 +213,6 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
     [GenerateShape]
     public partial class ClassWithConflictingMembers
     {
-        [DataMember]
-        private Stream innerStream;
-
         public ClassWithConflictingMembers(Stream innerStream)
         {
             this.innerStream = innerStream;
@@ -218,6 +220,9 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
 
         [PropertyShape(Name = "innerStream")]
         public Stream InnerStream => innerStream;
+
+        [DataMember]
+        private Stream innerStream;
     }
 
     [GenerateShapeFor<ContractEnum>]

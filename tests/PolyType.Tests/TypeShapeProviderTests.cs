@@ -1386,11 +1386,16 @@ public static class ReflectionExtensions
     public static int GetExpectedMethodShapeCount(this Type type)
     {
         MethodShapeFlags flags = type.GetCustomAttribute<TypeShapeAttribute>()?.IncludeMethods ?? MethodShapeFlags.None;
-        return type.GetAllMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+        return type.ResolveVisibleMembers().OfType<MethodInfo>()
             .Count(IsIncludedMethod);
 
         bool IsIncludedMethod(MethodInfo methodInfo)
         {
+            if (methodInfo is { DeclaringType.IsInterface: true, IsStatic: true, IsAbstract: true })
+            {
+                return false; // Skip static abstract methods in interfaces.
+            }
+
             MethodShapeAttribute? shapeAttr = methodInfo.GetCustomAttribute<MethodShapeAttribute>();
             if (shapeAttr is not null)
             {
@@ -1420,7 +1425,7 @@ public static class ReflectionExtensions
     public static int GetExpectedEventShapeCount(this Type type)
     {
         MethodShapeFlags flags = type.GetCustomAttribute<TypeShapeAttribute>()?.IncludeMethods ?? MethodShapeFlags.None;
-        return type.GetAllEvents(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+        return type.ResolveVisibleMembers().OfType<EventInfo>()
             .Count(IsIncludedEvent);
 
         bool IsIncludedEvent(EventInfo eventInfo)
@@ -1613,6 +1618,66 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
     private class GenericPolymorphicClassWithMismatchingGenericDerivedType<T>
     {
         public class Derived<S> : GenericPolymorphicClassWithMismatchingGenericDerivedType<List<S>>;
+    }
+
+    [Fact]
+    public void PropertyNamingConflicts_ThrowsNotSupportedException()
+    {
+        IObjectTypeShape shape = Assert.IsType<IObjectTypeShape>(Provider.GetTypeShape<ClassWithPropertyNamingConflict>(), exactMatch: false);
+        var ex = Assert.Throws<NotSupportedException>(() => shape.Properties);
+        Assert.Contains("Conflicting members named 'SameName' were found", ex.Message);
+    }
+
+    [Fact]
+    public void EventNamingConflicts_ThrowsNotSupportedException()
+    {
+        ITypeShape shape = Provider.GetTypeShape<ClassWithEventNamingConflict>()!;
+        var ex = Assert.Throws<NotSupportedException>(() => shape.Events);
+        Assert.Contains("Conflicting members named 'SameName' were found", ex.Message);
+    }
+
+    [Fact]
+    public void MethodNamingConflicts_ThrowsNotSupportedException()
+    {
+        ITypeShape shape = Provider.GetTypeShape<ClassWithMethodNamingConflict>()!;
+        var ex = Assert.Throws<NotSupportedException>(() => shape.Methods);
+        Assert.Contains("Multiple methods named 'SameName' were found", ex.Message);
+    }
+
+    [TypeShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+    private class ClassWithPropertyNamingConflict
+    {
+        [PropertyShape(Name = "SameName")]
+        public int Property1 { get; set; }
+
+        [PropertyShape(Name = "SameName")]
+        public string? Property2 { get; set; }
+    }
+
+    [TypeShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+    private class ClassWithEventNamingConflict : ITriggerable
+    {
+        [EventShape(Name = "SameName")]
+        public event Action<int>? Event1;
+
+        [EventShape(Name = "SameName")]
+        public event Action<int>? Event2;
+
+        public void Trigger(int value)
+        {
+            Event1?.Invoke(value);
+            Event2?.Invoke(value);
+        }
+    }
+
+    [TypeShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+    private class ClassWithMethodNamingConflict
+    {
+        [MethodShape(Name = "SameName")]
+        public int Method1(int x, int y) => x + y;
+
+        [MethodShape(Name = "SameName")]
+        public int Method2(int x, int y) => x * y;
     }
 }
 

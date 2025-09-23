@@ -37,4 +37,6 @@ public sealed record PropertyShapeModel
     public required bool CanUseUnsafeAccessors { get; init; }
 
     public required int Order { get; init; }
+
+    public required bool RequiresDisambiguation { get; init; }
 }

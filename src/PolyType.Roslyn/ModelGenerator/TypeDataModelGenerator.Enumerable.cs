@@ -159,11 +159,10 @@ public partial class TypeDataModelGenerator
         IMethodSymbol? ResolveAddMethod(ITypeSymbol type, ITypeSymbol elementType, out EnumerableInsertionMode insertionMode)
         {
             insertionMode = EnumerableInsertionMode.None;
-            IMethodSymbol? result = type.GetAllMembers()
-                .OfType<IMethodSymbol>()
+            (IMethodSymbol? result, _) = type.ResolveVisibleMembers<IMethodSymbol>()
                 .FirstOrDefault(method =>
-                    method is { DeclaredAccessibility: Accessibility.Public, IsStatic: false, Name: "Add" or "Enqueue" or "Push", Parameters: [{ Type: ITypeSymbol parameterType }] } &&
-                    SymbolEqualityComparer.Default.Equals(method.Parameters[0].Type, elementType));
+                    method.Symbol is { DeclaredAccessibility: Accessibility.Public, IsStatic: false, Name: "Add" or "Enqueue" or "Push", Parameters: [{ Type: ITypeSymbol parameterType }] } &&
+                    SymbolEqualityComparer.Default.Equals(method.Symbol.Parameters[0].Type, elementType));
 
             if (result is not null)
             {
