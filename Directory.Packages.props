@@ -25,13 +25,13 @@
     <PackageVersion Include="xunit.assert" Version="2.9.3" />
     <PackageVersion Include="xunit.v3" Version="3.0.1" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
-    <PackageVersion Include="TUnit" Version="0.57.65" />
-    <PackageVersion Include="TUnit.Assertions" Version="0.57.65" />
-    <PackageVersion Include="TUnit.Engine" Version="0.57.65" />
+    <PackageVersion Include="TUnit" Version="0.61.22" />
+    <PackageVersion Include="TUnit.Assertions" Version="0.61.22" />
+    <PackageVersion Include="TUnit.Engine" Version="0.61.22" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.8" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="9.0.8" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-    <PackageVersion Include="BenchmarkDotNet" Version="0.15.2" />
+    <PackageVersion Include="BenchmarkDotNet" Version="0.15.3" />
     <!-- Earliest version of the library supporting literals and frozen collections -->
     <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
     <PackageVersion Include="System.Formats.Cbor" Version="9.0.8" />
