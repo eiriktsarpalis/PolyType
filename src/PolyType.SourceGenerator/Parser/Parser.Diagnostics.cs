@@ -150,4 +150,16 @@ public sealed partial class Parser
         category: "PolyType.SourceGenerator",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
+
+    internal static DiagnosticDescriptor DuplicateMemberName { get; } = new DiagnosticDescriptor(
+        id: "PT0022",
+        title: "Duplicate member name.",
+        messageFormat: 
+            "Conflicting members named '{0}' were found on type '{1}'. " +
+            "This member will not be included in the generated shape. " +
+            "Consider renaming one of them or disambiguating via the {2} attribute.",
+
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
 }

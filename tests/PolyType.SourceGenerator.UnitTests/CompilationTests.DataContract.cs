@@ -139,35 +139,4 @@ public static partial class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
-
-    [Fact]
-    public static void DataContract_ConflictingMembers()
-    {
-        // Regression test for https://github.com/eiriktsarpalis/PolyType/issues/286
-
-        Compilation compilation = CompilationHelpers.CreateCompilation("""
-            using PolyType;
-            using System.IO;
-            using System.Runtime.Serialization;
-
-            [DataContract]
-            [GenerateShape]
-            public partial class StreamContainingClass
-            {
-                [DataMember]
-                private Stream innerStream;
-
-                public StreamContainingClass(Stream innerStream)
-                {
-                    this.innerStream = innerStream;
-                }
-
-                [PropertyShape(Name = "innerStream")]
-                public Stream InnerStream => this.innerStream;
-            }
-            """);
-
-        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
-        Assert.Empty(result.Diagnostics);
-    }
 }

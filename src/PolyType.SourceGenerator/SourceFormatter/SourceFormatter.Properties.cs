@@ -85,6 +85,11 @@ internal sealed partial class SourceFormatter
                     }
                 }
 
+                if (property.RequiresDisambiguation)
+                {
+                    objParam = $"(({property.DeclaringType.FullyQualifiedName}){objParam})";
+                }
+
                 return $"{objParam}.{RoslynHelpers.EscapeKeywordIdentifier(property.UnderlyingMemberName)}";
             }
 
@@ -105,6 +110,11 @@ internal sealed partial class SourceFormatter
                         string propertySetterAccessorName = GetPropertySetterAccessorName(declaringType, property.UnderlyingMemberName);
                         return $"{propertySetterAccessorName}({refPrefix}{objParam}, {valueParam})";
                     }
+                }
+
+                if (property.RequiresDisambiguation)
+                {
+                    objParam = $"(({property.DeclaringType.FullyQualifiedName}){objParam})";
                 }
 
                 return $"{objParam}.{RoslynHelpers.EscapeKeywordIdentifier(property.UnderlyingMemberName)} = {valueParam}";

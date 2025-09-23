@@ -480,7 +480,7 @@ public partial class TypeDataModelGenerator
             ReturnedValueType = returnType,
             ReturnTypeKind = returnTypeKind,
             Parameters = parameters.ToImmutable(),
-            IsDiamondAmbiguous = resolvedMethod.IsDiamondAmbiguous,
+            IsAmbiguous = resolvedMethod.IsAmbiguous,
         };
 
         return TypeDataModelGenerationStatus.Success;
@@ -575,6 +575,7 @@ public partial class TypeDataModelGenerator
         {
             Name = resolvedEvent.CustomName ?? resolvedEvent.Event.Name,
             Event = resolvedEvent.Event,
+            IsAmbiguous = resolvedEvent.IsAmbiguous,
         };
 
         return status;

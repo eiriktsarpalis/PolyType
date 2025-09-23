@@ -885,4 +885,130 @@ public static class DiagnosticTests
         Assert.Equal("PT0021", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
     }
+
+    [Fact]
+    public static void DuplicatePropertyShapeName_AttributeConflict_ProducesWarning()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [GenerateShape]
+            partial class ConflictingPropertyNames
+            {
+                public int X { get; set; }
+                [PropertyShape(Name = "X")]
+                public int Y { get; set; }
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "PT0022");
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Contains("Conflicting members named 'X' were found", diagnostic.GetMessage());
+        Assert.Contains("PropertyShape", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public static void DuplicatePropertyShapeName_DiamondConflict_ProducesWarning()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            interface IPropA { int X { get; set; } }
+            interface IPropB { int X { get; set; } }
+
+            [GenerateShape]
+            partial interface IPropC : IPropA, IPropB { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "PT0022");
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Contains("Conflicting members named 'X' were found", diagnostic.GetMessage());
+        Assert.Contains("PropertyShape", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public static void DuplicateMethodShapeName_AttributeConflict_ProducesWarning()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [GenerateShape, TypeShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+            partial class ConflictingMethodNames
+            {
+                public void M() { }
+                [MethodShape(Name = "M")] public void N() { }
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "PT0022");
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Contains("Conflicting members named 'M' were found", diagnostic.GetMessage());
+        Assert.Contains("MethodShape", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public static void DuplicateMethodShapeName_DiamondConflict_ProducesWarning()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            interface IM1 { void M(); }
+            interface IM2 { void M(); }
+
+            [GenerateShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+            partial interface IM3 : IM1, IM2 { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "PT0022");
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Contains("Conflicting members named 'M' were found", diagnostic.GetMessage());
+        Assert.Contains("MethodShape", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public static void DuplicateEventShapeName_AttributeConflict_ProducesWarning()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+            using System;
+
+            [GenerateShape, TypeShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+            partial class ConflictingEventNames
+            {
+                public event Action E; // included via IncludeMethods
+                [EventShape(Name = "E")] public event Action F; // conflicting named via attribute
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "PT0022");
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Contains("Conflicting members named 'E' were found", diagnostic.GetMessage());
+        Assert.Contains("EventShape", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public static void DuplicateEventShapeName_DiamondConflict_ProducesWarning()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+            using System;
+
+            interface IE1 { event Action E; }
+            interface IE2 { event Action E; }
+
+            [GenerateShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+            partial interface IE3 : IE1, IE2 { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "PT0022");
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Contains("Conflicting members named 'E' were found", diagnostic.GetMessage());
+        Assert.Contains("EventShape", diagnostic.GetMessage());
+    }
 }

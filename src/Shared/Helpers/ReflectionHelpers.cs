@@ -455,55 +455,45 @@ internal static class ReflectionHelpers
         }
     }
 
+    /// <summary>
+    /// Resolves all members that are visible on the specified type,
+    /// accounting for overrides and shadowing in the type hierarchy.
+    /// </summary>
+    /// <param name="type">The type to resolve members for.</param>
+    /// <returns>The type's visible members.</returns>
+    /// <remarks>
+    /// Note that this method doesn't take accessibility modifiers into account.
+    /// </remarks>
     [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
-    public static IEnumerable<MethodInfo> GetAllMethods(this Type type, BindingFlags flags)
+    internal static IEnumerable<MemberInfo> ResolveVisibleMembers(this Type type)
     {
-        if (type.IsInterface)
+        Dictionary<string, List<Type>> membersInScope = new(StringComparer.Ordinal);
+        foreach (Type current in type.GetSortedTypeHierarchy())
         {
-            // For interfaces, we need to include all methods, including those from base interfaces.
-            foreach (Type interfaceType in type.GetAllInterfaces())
+            foreach (MemberInfo member in current.GetMembers(AllMemberFlags))
             {
-                foreach (MethodInfo method in interfaceType.GetMethods(flags))
+                // To account for overloads, method identifiers include the method name and parameter types but not the return type.
+                string identifier = member is MethodInfo method ?
+                    $"{method.Name}({string.Join(", ", method.GetParameters().Select(p => p.ParameterType.AssemblyQualifiedName))})" :
+                    member.Name;
+
+                if (membersInScope.TryGetValue(identifier, out List<Type>? declaringTypes))
                 {
-                    if (method is { IsStatic: true, IsAbstract: true })
+                    if (declaringTypes.Exists(current.IsAssignableFrom))
                     {
-                        continue; // Skip static abstract methods in interfaces.
+                        continue; // Member is overridden or shadowed by a more derived type in the hierarchy.
                     }
 
-                    yield return method;
+                    // Member forms diamond ambiguity, include in case there is disambiguation on attribute configs.
+                    Debug.Assert(type.IsInterface);
                 }
-            }
-        }
-        else
-        {
-            // For classes, we can just get the methods directly.
-            foreach (MethodInfo method in type.GetMethods(flags | BindingFlags.FlattenHierarchy))
-            {
-                yield return method;
-            }
-        }
-    }
-
-    [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
-    public static IEnumerable<EventInfo> GetAllEvents(this Type type, BindingFlags flags)
-    {
-        if (type.IsInterface)
-        {
-            // For interfaces, we need to include all events, including those from base interfaces.
-            foreach (Type interfaceType in type.GetAllInterfaces())
-            {
-                foreach (EventInfo eventInfo in interfaceType.GetEvents(flags))
+                else
                 {
-                    yield return eventInfo;
+                    membersInScope[identifier] = declaringTypes = [];
                 }
-            }
-        }
-        else
-        {
-            // For classes, we can just get the events directly.
-            foreach (EventInfo eventInfo in type.GetEvents(flags | BindingFlags.FlattenHierarchy))
-            {
-                yield return eventInfo;
+
+                declaringTypes.Add(current);
+                yield return member;
             }
         }
     }
@@ -519,6 +509,11 @@ internal static class ReflectionHelpers
         return
             propertyInfo.GetMethod?.IsExplicitInterfaceImplementation() == true ||
             propertyInfo.SetMethod?.IsExplicitInterfaceImplementation() == true;
+    }
+
+    public static bool IsStatic(this PropertyInfo propertyInfo)
+    {
+        return (propertyInfo.GetMethod ?? propertyInfo.SetMethod)!.IsStatic;
     }
 
     [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]

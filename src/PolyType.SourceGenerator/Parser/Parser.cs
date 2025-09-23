@@ -208,71 +208,59 @@ public sealed partial class Parser : TypeDataModelGenerator
     // Include delegate parameter types into generated shapes.
     protected override bool IncludeDelegateParameters => true;
 
-    protected override bool IncludeProperty(IPropertySymbol property, out bool includeGetter, out bool includeSetter)
+    protected override bool IncludeProperty(IPropertySymbol property, out string? customName, out int order, out bool includeGetter, out bool includeSetter)
     {
-        if (property.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData propertyAttribute)
+        if (ParsePropertyShapeAttribute(property, out customName, out order, out bool ignore))
         {
-            // Ignore properties with the [PropertyShape] attribute set to Ignore = true.
-            bool includeProperty = !propertyAttribute.TryGetNamedArgument("Ignore", out bool ignoreValue) || !ignoreValue;
-            if (includeProperty)
-            {
-                // Use the signature of the base property to determine shape.
-                property = property.GetBaseProperty();
-                includeGetter = property.GetMethod is not null;
-                includeSetter = property.SetMethod is not null;
-                return true;
-            }
-
-            includeGetter = includeSetter = false;
-            return false;
-        }
-
-        if (property.ContainingType.HasAttribute(_knownSymbols.DataContractAttribute))
-        {
-            // If the type is annotated with [DataContract], only include properties with [DataMember].
-            if (!property.HasAttribute(_knownSymbols.DataMemberAttribute))
+            if (ignore)
             {
                 includeGetter = includeSetter = false;
                 return false;
             }
 
+            // Use the signature of the base property to determine shape.
             property = property.GetBaseProperty();
             includeGetter = property.GetMethod is not null;
             includeSetter = property.SetMethod is not null;
             return true;
         }
 
-        if (property.HasAttribute(_knownSymbols.IgnoreDataMemberAttribute))
-        {
-            // Ignore properties with [IgnoreDataMember] attribute.
-            includeGetter = includeSetter = false;
-            return false;
-        }
-
-        return base.IncludeProperty(property, out includeGetter, out includeSetter);
+        return base.IncludeProperty(property, out customName, out order, out includeGetter, out includeSetter);
     }
 
-    protected override bool IncludeField(IFieldSymbol field)
+    protected override bool IncludeField(IFieldSymbol field, out string? customName, out int order, out bool includeGetter, out bool includeSetter)
     {
-        if (field.ContainingType.HasAttribute(_knownSymbols.DataContractAttribute))
+        if (ParsePropertyShapeAttribute(field, out customName, out order, out bool ignore))
         {
-            // If the type is annotated with [DataContract], only include fields with [DataMember].
-            return field.HasAttribute(_knownSymbols.DataMemberAttribute);
+            if (ignore)
+            {
+                includeGetter = includeSetter = false;
+                return false;
+            }
+
+            includeGetter = true;
+            includeSetter = !field.IsReadOnly;
+            return true;
         }
 
-        if (field.GetAttribute(_knownSymbols.PropertyShapeAttribute) is AttributeData fieldAttribute)
-        {
-            // Ignore fields with the [PropertyShape] attribute set to Ignore = true.
-            return !fieldAttribute.TryGetNamedArgument("Ignore", out bool ignoreValue) || !ignoreValue;
-        }
+        return base.IncludeField(field, out customName, out order, out includeGetter, out includeSetter);
+    }
 
-        if (field.HasAttribute(_knownSymbols.IgnoreDataMemberAttribute))
-        {
-            // Ignore fields with [IgnoreDataMember] attribute.
-            return false;
-        }
+    protected override IEnumerable<ResolvedPropertySymbol> ResolveProperties(ITypeSymbol type)
+    {
+        HashSet<string>? propertyNames = null;
 
-        return base.IncludeField(field);
+        foreach (var resolvedProperty in base.ResolveProperties(type))
+        {
+            string name = resolvedProperty.CustomName ?? resolvedProperty.Symbol.Name;
+            if (!(propertyNames ??= new()).Add(name))
+            {
+                ReportDiagnostic(DuplicateMemberName, resolvedProperty.Symbol.Locations.FirstOrDefault(), name, type.ToDisplayString(), "PropertyShape");
+                continue;
+            }
+
+            yield return resolvedProperty;
+        }
     }
 
     protected override bool? IsRequiredByPolicy(IPropertySymbol member)
@@ -387,11 +375,26 @@ public sealed partial class Parser : TypeDataModelGenerator
 
     protected override IEnumerable<ResolvedMethodSymbol> ResolveMethods(ITypeSymbol type, BindingFlags bindingFlags)
     {
-        foreach ((IMethodSymbol method, bool isAmbiguous) in type.GetAllMethods())
+        if (type is not INamedTypeSymbol namedType)
+        {
+            yield break;
+        }
+
+        HashSet<string>? methodNames = null;
+        foreach ((IMethodSymbol method, bool isAmbiguous) in type.ResolveVisibleMembers<IMethodSymbol>())
         {
             if (IncludeMethod(method, out string? customName))
             {
-                yield return new() { CustomName = customName, MethodSymbol = method, IsDiamondAmbiguous = isAmbiguous };
+                // To account for overloads, method identifiers include the method name and parameter types but not the return type.
+                string name = customName ?? method.Name;
+                string identifier = $"{customName ?? method.Name}({string.Join(", ", method.Parameters.Select(p => p.Type.GetFullyQualifiedName()))})";
+                if (!(methodNames ??= new()).Add(identifier))
+                {
+                    ReportDiagnostic(DuplicateMemberName, method.Locations.FirstOrDefault(), name, type.ToDisplayString(), "MethodShape");
+                    continue;
+                }
+
+                yield return new() { CustomName = customName, MethodSymbol = method, IsAmbiguous = isAmbiguous };
             }
         }
 
@@ -465,11 +468,19 @@ public sealed partial class Parser : TypeDataModelGenerator
             yield break;
         }
 
-        foreach (IEventSymbol eventSymbol in namedType.GetAllEvents())
+        HashSet<string>? eventNames = null;
+        foreach ((IEventSymbol eventSymbol, bool isAmbiguous) in namedType.ResolveVisibleMembers<IEventSymbol>())
         {
             if (IncludeEvent(eventSymbol, out string? customName))
             {
-                yield return new() { CustomName = customName, Event = eventSymbol };
+                string name = customName ?? eventSymbol.Name;
+                if (!(eventNames ??= new()).Add(name))
+                {
+                    ReportDiagnostic(DuplicateMemberName, eventSymbol.Locations.FirstOrDefault(), name, type.ToDisplayString(), "EventShape");
+                    continue;
+                }
+
+                yield return new() { CustomName = customName, Event = eventSymbol, IsAmbiguous = isAmbiguous };
             }
         }
 

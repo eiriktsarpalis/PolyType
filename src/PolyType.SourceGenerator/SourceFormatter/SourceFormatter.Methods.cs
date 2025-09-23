@@ -158,7 +158,7 @@ internal sealed partial class SourceFormatter
             };
 
             string refPrefix = method.DeclaringType.IsValueType ? "ref " : "";
-            string targetExpr = method.InstanceMethodRequiresCast ? $"(({method.DeclaringType.FullyQualifiedName}){targetVar}!)" : $"{targetVar}!";
+            string targetExpr = method.RequiresDisambiguation ? $"(({method.DeclaringType.FullyQualifiedName}){targetVar}!)" : $"{targetVar}!";
             string invokeExpr = method switch
             {
                 { IsStatic: true, IsAccessible: true } => $"{declaringType.Type.FullyQualifiedName}.{method.UnderlyingMethodName}({parametersExpression})",

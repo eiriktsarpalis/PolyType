@@ -98,11 +98,10 @@ public partial class TypeDataModelGenerator
         {
             availableInsertionModes = DictionaryInsertionMode.None;
             bool foundContainsKey = false;
-            var instanceMethods = type.GetAllMembers()
-                .OfType<IMethodSymbol>()
-                .Where(method => method.IsStatic is false && IsAccessibleSymbol(method));
+            var instanceMethods = type.ResolveVisibleMembers<IMethodSymbol>()
+                .Where(method => method.Symbol.IsStatic is false && IsAccessibleSymbol(method.Symbol));
 
-            foreach (var method in instanceMethods)
+            foreach ((var method, _) in instanceMethods)
             {
                 if (method.Parameters is [var p1, var p2] &&
                     SymbolEqualityComparer.Default.Equals(p1.Type, keyType) &&

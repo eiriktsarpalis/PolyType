@@ -10,6 +10,7 @@
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
     <EmitCompilerGeneratedFiles>false</EmitCompilerGeneratedFiles>
     <DefineConstants Condition="'$(OS)' != 'Windows_NT' and '$(TargetFramework)' == 'net472'">MONO</DefineConstants>
+    <NoWarn>$(NoWarn);PT0022</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

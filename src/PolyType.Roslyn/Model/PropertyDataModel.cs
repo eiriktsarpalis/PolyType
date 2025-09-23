@@ -51,6 +51,16 @@ public readonly struct PropertyDataModel
     public string Name => PropertySymbol.Name;
 
     /// <summary>
+    /// A logical name overwriting the underlying name.
+    /// </summary>
+    public string? LogicalName { get; init; }
+
+    /// <summary>
+    /// The declared order of the property or field.
+    /// </summary>
+    public int Order { get; init; }
+
+    /// <summary>
     /// The type exposed by this property.
     /// </summary>
     public ITypeSymbol PropertyType => PropertySymbol switch
@@ -105,6 +115,11 @@ public readonly struct PropertyDataModel
     public bool? IsRequiredByPolicy { get; init; }
 
     /// <summary>
+    /// Gets a value indicating whether the member is ambiguous due to diamond inheritance.
+    /// </summary>
+    public bool IsAmbiguous { get; init; }
+
+    /// <summary>
     /// Whether the property is init-only.
     /// </summary>
     public bool IsInitOnly => PropertySymbol switch
@@ -112,4 +127,40 @@ public readonly struct PropertyDataModel
         IPropertySymbol p => p.SetMethod is { IsInitOnly: true },
         _ => false,
     };
+}
+
+/// <summary>
+/// A property data model wrapping an <see cref="IEventSymbol"/>.
+/// </summary>
+public readonly struct ResolvedPropertySymbol
+{
+    /// <summary>
+    /// Gets the resolved property or field symbol.
+    /// </summary>
+    public required ISymbol Symbol { get; init; }
+
+    /// <summary>
+    /// Gets a custom name to be applied to the member, if specified.
+    /// </summary>
+    public string? CustomName { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the getter should be included in the shape.
+    /// </summary>
+    public bool IncludeGetter { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the setter should be included in the shape.
+    /// </summary>
+    public bool IncludeSetter { get; init; }
+
+    /// <summary>
+    /// The declared order of the property or field.
+    /// </summary>
+    public int Order { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the member is ambiguous due to diamond inheritance.
+    /// </summary>
+    public bool IsAmbiguous { get; init; }
 }

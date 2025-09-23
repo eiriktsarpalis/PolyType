@@ -8,6 +8,7 @@ public sealed record EventShapeModel
     public required TypeId DeclaringType { get; init; }
     public required bool IsAccessible { get; init; }
     public required bool CanUseUnsafeAccessors { get; init; }
+    public required bool RequiresDisambiguation { get; init; }
     public required bool IsPublic { get; init; }
     public required bool IsStatic { get; init; }
 }
