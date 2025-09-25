@@ -105,7 +105,7 @@ Even though both serializers target the same underlying reader and writer types,
 The following projects have been based on PolyType:
 
 * [Nerdbank.MessagePack](https://github.com/AArnott/Nerdbank.MessagePack) - a MessagePack library with performance to rival MessagePack-CSharp, and greater simplicity and additional features.
-* “At [Alvys](alvys.com), we built an EDI mapping engine to automate and accelerate EDI integrations. The engine had to be fast, configurable and portable across EDI versions. A crucial step is mapping the EDI segments model to an object model. For this, we used PolyType, which allowed us to easily build both the encoder and the decoder. We appreciated the emphasis on fundamentals and performance, as well as the plethora of examples. The result: a solution with only a fraction of the code and an order-of-magnitude increase in micro-benchmark performance compared to the previous solution that used a commercial EDI library.” —[_Leo Gorodinski_](https://github.com/eulerfx)
+* “At [Alvys](https://alvys.com), we built an EDI mapping engine to automate and accelerate EDI integrations. The engine had to be fast, configurable and portable across EDI versions. A crucial step is mapping the EDI segments model to an object model. For this, we used PolyType, which allowed us to easily build both the encoder and the decoder. We appreciated the emphasis on fundamentals and performance, as well as the plethora of examples. The result: a solution with only a fraction of the code and an order-of-magnitude increase in micro-benchmark performance compared to the previous solution that used a commercial EDI library.” —[_Leo Gorodinski_](https://github.com/eulerfx)
 
 ## Project structure
 
