@@ -100,11 +100,12 @@ Here's a [benchmark](https://github.com/eiriktsarpalis/PolyType/blob/main/tests/
 
 Even though both serializers target the same underlying reader and writer types, the PolyType implementation is ~75% faster for serialization and ~100% faster for deserialization, when compared with System.Text.Json's metadata serializer. As expected, fast-path serialization is still fastest since its implementation is fully inlined.
 
-## Known libraries based on PolyType
+## Applications
 
-The following code bases are based upon PolyType and may be worth checking out.
+The following projects have been based on PolyType:
 
 * [Nerdbank.MessagePack](https://github.com/AArnott/Nerdbank.MessagePack) - a MessagePack library with performance to rival MessagePack-CSharp, and greater simplicity and additional features.
+* “At [Alvys](https://alvys.com), we built an EDI mapping engine to automate and accelerate EDI integrations. The engine had to be fast, configurable and portable across EDI versions. A crucial step is mapping the EDI segments model to an object model. For this, we used PolyType, which allowed us to easily build both the encoder and the decoder. We appreciated the emphasis on fundamentals and performance, as well as the plethora of examples. The result: a solution with only a fraction of the code and an order-of-magnitude increase in micro-benchmark performance compared to the previous solution that used a commercial EDI library.” —[_Leo Gorodinski_](https://github.com/eulerfx)
 
 ## Project structure
 
