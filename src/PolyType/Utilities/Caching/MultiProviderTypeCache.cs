@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 namespace PolyType.Utilities;
 
 /// <summary>
-/// Stores weakly referenced <see cref="TypeCache"/> instances keyed on <see cref="ITypeShapeProvider"/>.
+/// Stores weakly referenced <see cref="TypeCache"/> instances keyed to a particular <see cref="ITypeShapeProvider"/> instance.
 /// </summary>
 public sealed class MultiProviderTypeCache
 {
@@ -45,25 +45,25 @@ public sealed class MultiProviderTypeCache
     public bool CacheExceptions { get; init; }
 
     /// <summary>
-    /// Gets or creates a cache scoped to the specified <paramref name="typeShapeProvider"/>.
+    /// Gets or creates a cache scoped to the specified <paramref name="typeShape"/> and its <see cref="ITypeShapeProvider"/>.
     /// </summary>
-    /// <param name="typeShapeProvider">The shape provider key.</param>
-    /// <returns>A <see cref="TypeCache"/> scoped to <paramref name="typeShapeProvider"/>.</returns>
-    public TypeCache GetScopedCache(ITypeShapeProvider typeShapeProvider)
+    /// <param name="typeShape">The shape provider key.</param>
+    /// <returns>A <see cref="TypeCache"/> scoped to <paramref name="typeShape"/>.</returns>
+    public TypeCache GetScopedCache(ITypeShape typeShape)
     {
-        Throw.IfNull(typeShapeProvider);
-        return _providerCaches.GetValue(typeShapeProvider, _createProviderCache);
+        Throw.IfNull(typeShape);
+        return _providerCaches.GetValue(typeShape.Provider, _createProviderCache);
     }
 
     /// <summary>
-    /// Gets or adds a value keyed on the type represented by <paramref name="typeShape"/>.
+    /// Gets or adds a value keyed on the type represented by <paramref name="typeShape"/> and its <see cref="ITypeShapeProvider"/>.
     /// </summary>
     /// <param name="typeShape">The type shape representing the key type.</param>
     /// <returns>The final computed value.</returns>
     public object? GetOrAdd(ITypeShape typeShape)
     {
         Throw.IfNull(typeShape);
-        TypeCache cache = GetScopedCache(typeShape.Provider);
+        TypeCache cache = GetScopedCache(typeShape);
         return cache.GetOrAdd(typeShape);
     }
 
@@ -75,7 +75,8 @@ public sealed class MultiProviderTypeCache
     /// <returns>The final computed value.</returns>
     public object? GetOrAdd(Type type, ITypeShapeProvider provider)
     {
-        TypeCache cache = GetScopedCache(provider);
+        ITypeShape typeShape = provider.GetTypeShapeOrThrow(type);
+        TypeCache cache = GetScopedCache(typeShape);
         return cache.GetOrAdd(type);
     }
 }

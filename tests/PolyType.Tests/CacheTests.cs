@@ -311,9 +311,12 @@ public static class CacheTests
     {
         MultiProviderTypeCache cache = new();
 
-        Assert.Same(cache.GetScopedCache(Witness.GeneratedTypeShapeProvider), cache.GetScopedCache(Witness.GeneratedTypeShapeProvider));
-        Assert.Same(cache.GetScopedCache(ReflectionTypeShapeProvider.Default), cache.GetScopedCache(ReflectionTypeShapeProvider.Default));
-        Assert.NotSame(cache.GetScopedCache(Witness.GeneratedTypeShapeProvider), cache.GetScopedCache(ReflectionTypeShapeProvider.Default));
+        ITypeShape sourceGenShape = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<int>();
+        ITypeShape reflectionShape = ReflectionTypeShapeProvider.Default.GetTypeShapeOrThrow<int>();
+
+        Assert.Same(cache.GetScopedCache(sourceGenShape), cache.GetScopedCache(sourceGenShape));
+        Assert.Same(cache.GetScopedCache(reflectionShape), cache.GetScopedCache(reflectionShape));
+        Assert.NotSame(cache.GetScopedCache(sourceGenShape), cache.GetScopedCache(reflectionShape));
     }
 
     [Fact]
@@ -326,7 +329,8 @@ public static class CacheTests
             ValueBuilderFactory = _ => new IdBuilderFactory(),
         };
 
-        TypeCache sourceGenCache = cache.GetScopedCache(Witness.GeneratedTypeShapeProvider);
+        ITypeShape sourceGenShape = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<int>();
+        TypeCache sourceGenCache = cache.GetScopedCache(sourceGenShape);
         Assert.Same(Witness.GeneratedTypeShapeProvider, sourceGenCache.Provider);
         Assert.Equal(cache.CacheExceptions, sourceGenCache.CacheExceptions);
         Assert.Same(cache.DelayedValueFactory, sourceGenCache.DelayedValueFactory);
