@@ -35,7 +35,7 @@ public static partial class Mapper
     /// <returns>A mapper delegate.</returns>
     public static Mapper<TSource, TTarget> Create<TSource, TTarget>(ITypeShape<TSource> sourceShape, ITypeShape<TTarget> targetShape)
     {
-        TypeCache providerScopedTypeCache = s_cache.GetScopedCache(sourceShape.Provider);
+        TypeCache providerScopedTypeCache = s_cache.GetScopedCache(sourceShape);
         if (providerScopedTypeCache.TryGetValue(typeof(Mapper<TSource, TTarget>), out object? result))
         {
             return (Mapper<TSource, TTarget>)result!;
@@ -54,7 +54,8 @@ public static partial class Mapper
     /// <returns>A mapper delegate.</returns>
     public static Mapper<TSource, TTarget> Create<TSource, TTarget>(ITypeShapeProvider typeShapeProvider)
     {
-        TypeCache providerScopedTypeCache = s_cache.GetScopedCache(typeShapeProvider);
+        ITypeShape shape = typeShapeProvider.GetTypeShapeOrThrow<TSource>();
+        TypeCache providerScopedTypeCache = s_cache.GetScopedCache(shape);
         if (providerScopedTypeCache.TryGetValue(typeof(Mapper<TSource, TTarget>), out object? result))
         {
             return (Mapper<TSource, TTarget>)result!;

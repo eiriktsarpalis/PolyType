@@ -66,7 +66,7 @@ public static partial class JsonSerializerTS
     /// <returns>A JSON marshaling delegate.</returns>
     public static JsonFunc CreateJsonFunc(IMethodShape methodShape, object? target = null)
     {
-        TypeCache scopedCache = s_converterCaches.GetScopedCache(methodShape.DeclaringType.Provider);
+        TypeCache scopedCache = s_converterCaches.GetScopedCache(methodShape.DeclaringType);
         TypeGenerationContext ctx = scopedCache.CreateGenerationContext();
         return (JsonFunc)methodShape.Accept((Builder)ctx.ValueBuilder!, state: target)!;
     }
@@ -80,7 +80,7 @@ public static partial class JsonSerializerTS
     public static JsonEvent CreateJsonEvent(IEventShape eventShape, object? target = null)
     {
         (bool RequireAsync, object? Target) state = (RequireAsync: false, Target: target);
-        TypeCache scopedCache = s_converterCaches.GetScopedCache(eventShape.DeclaringType.Provider);
+        TypeCache scopedCache = s_converterCaches.GetScopedCache(eventShape.DeclaringType);
         TypeGenerationContext ctx = scopedCache.CreateGenerationContext();
         return (JsonEvent)eventShape.Accept((Builder)ctx.ValueBuilder!, state)!;
     }
@@ -94,7 +94,7 @@ public static partial class JsonSerializerTS
     public static AsyncJsonEvent CreateAsyncJsonEvent(IEventShape eventShape, object? target = null)
     {
         (bool RequireAsync, object? Target) state = (RequireAsync: true, Target: target);
-        TypeCache scopedCache = s_converterCaches.GetScopedCache(eventShape.DeclaringType.Provider);
+        TypeCache scopedCache = s_converterCaches.GetScopedCache(eventShape.DeclaringType);
         TypeGenerationContext ctx = scopedCache.CreateGenerationContext();
         return (AsyncJsonEvent)eventShape.Accept((Builder)ctx.ValueBuilder!, state)!;
     }
