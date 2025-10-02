@@ -154,7 +154,7 @@ public sealed class SourceWriter : IDisposable
     /// Appends a new line with the specified interpolated string.
     /// </summary>
     /// <param name="handler">The interpolated string handler.</param>
-    public void WriteLine([InterpolatedStringHandlerArgument("")] WriteLineInterpolatedStringHandler handler)
+    public void WriteLine([InterpolatedStringHandlerArgument("")] ref WriteLineInterpolatedStringHandler handler)
     {
         // Handler has accumulated content which we need to process for indentation
         if (_indentation == 0)
@@ -335,7 +335,7 @@ public sealed class SourceWriter : IDisposable
 
 #if NET6_0_OR_GREATER
     /// <summary>
-    /// Provides an interpolated string handler for <see cref="SourceWriter.WriteLine"/> methods.
+    /// Provides an interpolated string handler for <see cref="SourceWriter"/> WriteLine methods.
     /// </summary>
     [InterpolatedStringHandler]
     public ref struct WriteLineInterpolatedStringHandler
@@ -373,11 +373,6 @@ public sealed class SourceWriter : IDisposable
             if (value is string s)
             {
                 _writer.Append(s);
-            }
-            else if (value is IFormattable)
-            {
-                // Use ToString with default format
-                _writer.Append(value?.ToString() ?? string.Empty);
             }
             else
             {
