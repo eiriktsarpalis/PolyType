@@ -154,23 +154,45 @@ public sealed class SourceWriter : IDisposable
     /// Appends a new line with the specified interpolated string.
     /// </summary>
     /// <param name="handler">The interpolated string handler.</param>
-    public void WriteLine([InterpolatedStringHandlerArgument("")] ref WriteLineInterpolatedStringHandler handler)
+    public void WriteLine([InterpolatedStringHandlerArgument("")] WriteLineInterpolatedStringHandler handler)
     {
-        WriteLine(handler.ToStringAndClear());
-    }
+        // Handler has accumulated content which we need to process for indentation
+        if (_indentation == 0)
+        {
+            // Simple case: no indentation needed, content is already in buffer
+            AppendLine();
+            return;
+        }
 
-    /// <summary>
-    /// Appends a new line with the specified interpolated string.
-    /// </summary>
-    /// <param name="handler">The interpolated string handler.</param>
-    /// <param name="trimNullAssignmentLines">Trims any lines containing 'Identifier = null,' assignments.</param>
-    /// <param name="disableIndentation">Append text without preserving the current indentation.</param>
-    public void WriteLine(
-        [InterpolatedStringHandlerArgument("")] ref WriteLineInterpolatedStringHandler handler,
-        bool trimNullAssignmentLines = false,
-        bool disableIndentation = false)
-    {
-        WriteLine(handler.ToStringAndClear(), trimNullAssignmentLines, disableIndentation);
+        // For indented output, we need to process line by line
+        // The handler accumulated text at the end of our buffer, so we need to
+        // temporarily extract it, clear those characters, then re-add with proper indentation
+        int contentStart = handler.GetStartPosition();
+        int contentLength = _length - contentStart;
+        
+        if (contentLength == 0)
+        {
+            AppendLine();
+            return;
+        }
+
+        // Create a span view of the accumulated content
+        ReadOnlySpan<char> content = _buffer.AsSpan(contentStart, contentLength);
+        
+        // Reset to before the handler started writing
+        _length = contentStart;
+        
+        // Process with proper indentation
+        bool isFinalLine;
+        ReadOnlySpan<char> remainingText = content;
+        do
+        {
+            ReadOnlySpan<char> nextLine = GetNextLine(ref remainingText, out isFinalLine);
+            AddIndentation();
+            Append(nextLine);
+            AppendLine();
+        }
+        while (!isFinalLine);
     }
 #endif
 
@@ -316,9 +338,10 @@ public sealed class SourceWriter : IDisposable
     /// Provides an interpolated string handler for <see cref="SourceWriter.WriteLine"/> methods.
     /// </summary>
     [InterpolatedStringHandler]
-    public struct WriteLineInterpolatedStringHandler
+    public ref struct WriteLineInterpolatedStringHandler
     {
-        private DefaultInterpolatedStringHandler _handler;
+        private readonly SourceWriter _writer;
+        private readonly int _startPosition;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WriteLineInterpolatedStringHandler"/> struct.
@@ -328,33 +351,59 @@ public sealed class SourceWriter : IDisposable
         /// <param name="writer">The associated <see cref="SourceWriter"/> instance.</param>
         public WriteLineInterpolatedStringHandler(int literalLength, int formattedCount, SourceWriter writer)
         {
-            _handler = new DefaultInterpolatedStringHandler(literalLength, formattedCount);
+            _writer = writer;
+            _startPosition = writer._length;
         }
+
+        /// <summary>
+        /// Gets the position where this handler started writing.
+        /// </summary>
+        internal int GetStartPosition() => _startPosition;
 
         /// <summary>
         /// Appends a string value to the handler.
         /// </summary>
-        public void AppendLiteral(string value) => _handler.AppendLiteral(value);
+        public void AppendLiteral(string value) => _writer.Append(value);
 
         /// <summary>
         /// Appends a formatted value to the handler.
         /// </summary>
-        public void AppendFormatted<T>(T value) => _handler.AppendFormatted(value);
+        public void AppendFormatted<T>(T value)
+        {
+            if (value is string s)
+            {
+                _writer.Append(s);
+            }
+            else if (value is IFormattable)
+            {
+                // Use ToString with default format
+                _writer.Append(value?.ToString() ?? string.Empty);
+            }
+            else
+            {
+                _writer.Append(value?.ToString() ?? string.Empty);
+            }
+        }
 
         /// <summary>
         /// Appends a formatted value to the handler with a format string.
         /// </summary>
-        public void AppendFormatted<T>(T value, string? format) => _handler.AppendFormatted(value, format);
+        public void AppendFormatted<T>(T value, string? format)
+        {
+            if (value is IFormattable formattable)
+            {
+                _writer.Append(formattable.ToString(format, null) ?? string.Empty);
+            }
+            else
+            {
+                _writer.Append(value?.ToString() ?? string.Empty);
+            }
+        }
 
         /// <summary>
         /// Appends a formatted span value to the handler.
         /// </summary>
-        public void AppendFormatted(ReadOnlySpan<char> value) => _handler.AppendFormatted(value);
-
-        /// <summary>
-        /// Converts the handler to a string and clears it.
-        /// </summary>
-        internal string ToStringAndClear() => _handler.ToStringAndClear();
+        public void AppendFormatted(ReadOnlySpan<char> value) => _writer.Append(value);
     }
 #endif
 }
