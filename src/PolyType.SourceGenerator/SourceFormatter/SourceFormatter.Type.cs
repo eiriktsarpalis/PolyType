@@ -13,7 +13,7 @@ internal sealed partial class SourceFormatter
         string generatedFactoryMethodName = $"__Create_{type.SourceIdentifier}";
         string generatedFieldName = "__" + type.SourceIdentifier;
 
-        var writer = new SourceWriter();
+        using var writer = new SourceWriter();
         StartFormatSourceFile(writer, provider.ProviderDeclaration);
 
         writer.WriteLine(provider.ProviderDeclaration.TypeDeclarationHeader);

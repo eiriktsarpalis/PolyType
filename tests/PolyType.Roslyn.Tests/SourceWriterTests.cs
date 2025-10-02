@@ -11,7 +11,7 @@ public static class SourceWriterTests
     [InlineData('\n', 42)]
     public static void Constructor_CustomizedIndentation(char indentationChar, int charsPerIndentation)
     {
-        SourceWriter writer = new(indentationChar, charsPerIndentation);
+        using SourceWriter writer = new(indentationChar, charsPerIndentation);
         Assert.Equal(indentationChar, writer.IndentationChar);
         Assert.Equal(charsPerIndentation, writer.CharsPerIndentation);
 
@@ -20,7 +20,7 @@ public static class SourceWriterTests
         writer.Indentation = 0;
 
         SourceText text = writer.ToSourceText();
-        Assert.Equal(charsPerIndentation * 2 + 2 + Environment.NewLine.Length, text.Length);
+        Assert.Equal(charsPerIndentation * 2 + 2 + 2, text.Length);
     }
     
     [Theory]
@@ -40,7 +40,7 @@ public static class SourceWriterTests
     [InlineData(int.MaxValue)]
     public static void Indentation_ValidArgument(int indentation)
     {
-        SourceWriter writer = new();
+        using SourceWriter writer = new();
         writer.Indentation = indentation;
         Assert.Equal(indentation, writer.Indentation);
     }
@@ -50,7 +50,7 @@ public static class SourceWriterTests
     [InlineData(int.MinValue)]
     public static void Indentation_InvalidArgument(int indentation)
     {
-        SourceWriter writer = new();
+        using SourceWriter writer = new();
         Assert.Throws<ArgumentOutOfRangeException>(() => writer.Indentation = indentation);
         Assert.Equal(0, writer.Indentation);
     }
