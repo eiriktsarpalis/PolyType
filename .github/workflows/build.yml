@@ -27,7 +27,6 @@ jobs:
         dotnet-version: |
           10.0.x
           9.0.x
-          8.0.x
 
     # Netfx testing on non-Windows OSes requires mono
     - name: Setup Mono
