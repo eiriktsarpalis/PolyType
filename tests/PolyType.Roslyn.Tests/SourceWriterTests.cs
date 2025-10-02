@@ -20,7 +20,7 @@ public static class SourceWriterTests
         writer.Indentation = 0;
 
         SourceText text = writer.ToSourceText();
-        Assert.Equal(charsPerIndentation * 2 + 2 + 2, text.Length);
+        Assert.Equal(charsPerIndentation * 2 + 2 + Environment.NewLine.Length, text.Length);
     }
     
     [Theory]

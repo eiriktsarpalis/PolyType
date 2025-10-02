@@ -9,7 +9,7 @@ internal sealed partial class SourceFormatter
 {
     private static SourceText FormatTypeShapeProviderMainFile(TypeShapeProviderModel provider)
     {
-        using var writer = new SourceWriter();
+        using SourceWriter writer = new();
         StartFormatSourceFile(writer, provider.ProviderDeclaration);
 
         writer.WriteLine("""/// <summary>The source generated <see cref="global::PolyType.SourceGenModel.SourceGenTypeShapeProvider"/> implementation for the current assembly.</summary>""");

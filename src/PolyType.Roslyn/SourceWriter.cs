@@ -14,7 +14,7 @@ namespace PolyType.Roslyn;
 /// </summary>
 public sealed class SourceWriter : IDisposable
 {
-    private static readonly string s_newLine = "\r\n";
+    private readonly string _newLine;
     private char[] _buffer;
     private int _length;
     private int _indentation;
@@ -23,12 +23,23 @@ public sealed class SourceWriter : IDisposable
     /// <summary>
     /// Creates a new instance of <see cref="SourceWriter"/>.
     /// </summary>
-    public SourceWriter()
+    /// <param name="capacity">The initial capacity of the buffer.</param>
+    public SourceWriter(int capacity = 1024)
     {
         IndentationChar = ' ';
         CharsPerIndentation = 4;
-        _buffer = ArrayPool<char>.Shared.Rent(1024);
+        _buffer = ArrayPool<char>.Shared.Rent(capacity);
         _length = 0;
+        // StringBuilder.AppendLine() uses Environment.NewLine, so we cache it here
+        // before entering any analyzer context where Environment is restricted
+        _newLine = GetNewLine();
+    }
+
+    private static string GetNewLine()
+    {
+#pragma warning disable RS1035 // Environment access is safe during construction, before entering analyzer context
+        return Environment.NewLine;
+#pragma warning restore RS1035
     }
 
     /// <summary>
@@ -36,7 +47,8 @@ public sealed class SourceWriter : IDisposable
     /// </summary>
     /// <param name="indentationChar">The indentation character to be used.</param>
     /// <param name="charsPerIndentation">The number of characters per indentation to be applied.</param>
-    public SourceWriter(char indentationChar, int charsPerIndentation)
+    /// <param name="capacity">The initial capacity of the buffer.</param>
+    public SourceWriter(char indentationChar, int charsPerIndentation, int capacity = 1024)
     {
         if (!char.IsWhiteSpace(indentationChar))
         {
@@ -50,8 +62,9 @@ public sealed class SourceWriter : IDisposable
 
         IndentationChar = indentationChar;
         CharsPerIndentation = charsPerIndentation;
-        _buffer = ArrayPool<char>.Shared.Rent(1024);
+        _buffer = ArrayPool<char>.Shared.Rent(capacity);
         _length = 0;
+        _newLine = GetNewLine();
     }
 
     /// <summary>
@@ -135,6 +148,31 @@ public sealed class SourceWriter : IDisposable
         }
         while (!isFinalLine);
     }
+
+#if NET6_0_OR_GREATER
+    /// <summary>
+    /// Appends a new line with the specified interpolated string.
+    /// </summary>
+    /// <param name="handler">The interpolated string handler.</param>
+    public void WriteLine([InterpolatedStringHandlerArgument("")] ref WriteLineInterpolatedStringHandler handler)
+    {
+        WriteLine(handler.ToStringAndClear());
+    }
+
+    /// <summary>
+    /// Appends a new line with the specified interpolated string.
+    /// </summary>
+    /// <param name="handler">The interpolated string handler.</param>
+    /// <param name="trimNullAssignmentLines">Trims any lines containing 'Identifier = null,' assignments.</param>
+    /// <param name="disableIndentation">Append text without preserving the current indentation.</param>
+    public void WriteLine(
+        [InterpolatedStringHandlerArgument("")] ref WriteLineInterpolatedStringHandler handler,
+        bool trimNullAssignmentLines = false,
+        bool disableIndentation = false)
+    {
+        WriteLine(handler.ToStringAndClear(), trimNullAssignmentLines, disableIndentation);
+    }
+#endif
 
     // Horizontal whitespace regex: apply double negation on \s to exclude \r and \n
     private const string HWSR = @"[^\S\r\n]*";
@@ -238,9 +276,9 @@ public sealed class SourceWriter : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void AppendLine()
     {
-        EnsureCapacity(_length + s_newLine.Length);
-        s_newLine.AsSpan().CopyTo(_buffer.AsSpan(_length));
-        _length += s_newLine.Length;
+        EnsureCapacity(_length + _newLine.Length);
+        _newLine.AsSpan().CopyTo(_buffer.AsSpan(_length));
+        _length += _newLine.Length;
     }
 
     private void EnsureCapacity(int requiredCapacity)
@@ -272,4 +310,51 @@ public sealed class SourceWriter : IDisposable
         _length = 0;
         _disposed = true;
     }
+
+#if NET6_0_OR_GREATER
+    /// <summary>
+    /// Provides an interpolated string handler for <see cref="SourceWriter.WriteLine"/> methods.
+    /// </summary>
+    [InterpolatedStringHandler]
+    public struct WriteLineInterpolatedStringHandler
+    {
+        private DefaultInterpolatedStringHandler _handler;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="WriteLineInterpolatedStringHandler"/> struct.
+        /// </summary>
+        /// <param name="literalLength">The number of constant characters in the interpolated string.</param>
+        /// <param name="formattedCount">The number of interpolation expressions in the interpolated string.</param>
+        /// <param name="writer">The associated <see cref="SourceWriter"/> instance.</param>
+        public WriteLineInterpolatedStringHandler(int literalLength, int formattedCount, SourceWriter writer)
+        {
+            _handler = new DefaultInterpolatedStringHandler(literalLength, formattedCount);
+        }
+
+        /// <summary>
+        /// Appends a string value to the handler.
+        /// </summary>
+        public void AppendLiteral(string value) => _handler.AppendLiteral(value);
+
+        /// <summary>
+        /// Appends a formatted value to the handler.
+        /// </summary>
+        public void AppendFormatted<T>(T value) => _handler.AppendFormatted(value);
+
+        /// <summary>
+        /// Appends a formatted value to the handler with a format string.
+        /// </summary>
+        public void AppendFormatted<T>(T value, string? format) => _handler.AppendFormatted(value, format);
+
+        /// <summary>
+        /// Appends a formatted span value to the handler.
+        /// </summary>
+        public void AppendFormatted(ReadOnlySpan<char> value) => _handler.AppendFormatted(value);
+
+        /// <summary>
+        /// Converts the handler to a string and clears it.
+        /// </summary>
+        internal string ToStringAndClear() => _handler.ToStringAndClear();
+    }
+#endif
 }
