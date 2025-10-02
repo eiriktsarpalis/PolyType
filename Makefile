@@ -28,6 +28,7 @@ test: build
 		-p:SkipTUnitTestRuns=true \
 		--results-directory $(ARTIFACT_PATH)/testResults \
 		--collect "Code Coverage;Format=cobertura" \
+		--logger "console;verbosity=normal" \
 		--logger "trx" \
 		-- \
 		RunConfiguration.CollectSourceInformation=true
