@@ -29,7 +29,7 @@
     <PackageVersion Include="TUnit.Engine" Version="0.61.58" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.8" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="9.0.8" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.4" />
     <!-- Earliest version of the library supporting literals and frozen collections -->
     <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
