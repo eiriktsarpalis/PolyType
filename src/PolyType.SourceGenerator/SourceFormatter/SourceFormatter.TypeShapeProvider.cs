@@ -98,7 +98,7 @@ internal sealed partial class SourceFormatter
     {
         const string LocalTypeShapeProviderName = "__LocalTypeShapeProvider__";
 
-        SourceWriter writer = new();
+        using SourceWriter writer = new();
         StartFormatSourceFile(writer, typeDeclaration);
 
         if (!provider.TargetSupportsIShapeableOfT)

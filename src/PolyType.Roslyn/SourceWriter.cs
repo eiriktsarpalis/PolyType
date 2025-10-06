@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using System.Buffers;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -14,7 +15,10 @@ namespace PolyType.Roslyn;
 /// </summary>
 public sealed class SourceWriter : IDisposable
 {
-    private readonly string _newLine;
+#pragma warning disable RS1035 // Do not use APIs banned for analyzers
+    private static readonly string s_newLine = Environment.NewLine;
+#pragma warning restore RS1035 // Do not use APIs banned for analyzers
+
     private char[] _buffer;
     private int _length;
     private int _indentation;
@@ -24,22 +28,8 @@ public sealed class SourceWriter : IDisposable
     /// Creates a new instance of <see cref="SourceWriter"/>.
     /// </summary>
     /// <param name="capacity">The initial capacity of the buffer.</param>
-    public SourceWriter(int capacity = 1024)
+    public SourceWriter(int capacity = 1024) : this(' ', 4, capacity)
     {
-        IndentationChar = ' ';
-        CharsPerIndentation = 4;
-        _buffer = ArrayPool<char>.Shared.Rent(capacity);
-        _length = 0;
-        // StringBuilder.AppendLine() uses Environment.NewLine, so we cache it here
-        // before entering any analyzer context where Environment is restricted
-        _newLine = GetNewLine();
-    }
-
-    private static string GetNewLine()
-    {
-#pragma warning disable RS1035 // Environment access is safe during construction, before entering analyzer context
-        return Environment.NewLine;
-#pragma warning restore RS1035
     }
 
     /// <summary>
@@ -63,8 +53,6 @@ public sealed class SourceWriter : IDisposable
         IndentationChar = indentationChar;
         CharsPerIndentation = charsPerIndentation;
         _buffer = ArrayPool<char>.Shared.Rent(capacity);
-        _length = 0;
-        _newLine = GetNewLine();
     }
 
     /// <summary>
@@ -105,8 +93,10 @@ public sealed class SourceWriter : IDisposable
     /// </summary>
     public void WriteLine(char value)
     {
+        EnsureNotDisposed();
         AddIndentation();
-        Append(value);
+        EnsureCapacity(checked(_length + 1));
+        _buffer[_length++] = value;
         AppendLine();
     }
 
@@ -121,6 +111,8 @@ public sealed class SourceWriter : IDisposable
         bool trimNullAssignmentLines = false,
         bool disableIndentation = false)
     {
+        EnsureNotDisposed();
+
         if (trimNullAssignmentLines)
         {
             // Since the ns2.0 Regex class doesn't support spans,
@@ -129,89 +121,35 @@ public sealed class SourceWriter : IDisposable
             text = s_nullAssignmentLineRegex.Replace(text, "");
         }
 
-        if (_indentation == 0 || disableIndentation)
-        {
-            Append(text);
-            AppendLine();
-            return;
-        }
-
-        bool isFinalLine;
-        ReadOnlySpan<char> remainingText = text.AsSpan();
-        do
-        {
-            ReadOnlySpan<char> nextLine = GetNextLine(ref remainingText, out isFinalLine);
-
-            AddIndentation();
-            Append(nextLine);
-            AppendLine();
-        }
-        while (!isFinalLine);
+        AddIndentation();
+        AppendSegment(text.AsSpan(), disableIndentation);
+        WriteLine();
     }
 
-#if NET6_0_OR_GREATER
     /// <summary>
     /// Appends a new line with the specified interpolated string.
     /// </summary>
     /// <param name="handler">The interpolated string handler.</param>
     public void WriteLine([InterpolatedStringHandlerArgument("")] ref WriteLineInterpolatedStringHandler handler)
     {
-        // Handler has accumulated content which we need to process for indentation
-        if (_indentation == 0)
-        {
-            // Simple case: no indentation needed, content is already in buffer
-            AppendLine();
-            return;
-        }
-
-        // For indented output, we need to process line by line
-        // The handler accumulated text at the end of our buffer, so we need to
-        // temporarily extract it, clear those characters, then re-add with proper indentation
-        int contentStart = handler.GetStartPosition();
-        int contentLength = _length - contentStart;
-        
-        if (contentLength == 0)
-        {
-            AppendLine();
-            return;
-        }
-
-        // Create a span view of the accumulated content
-        ReadOnlySpan<char> content = _buffer.AsSpan(contentStart, contentLength);
-        
-        // Reset to before the handler started writing
-        _length = contentStart;
-        
-        // Process with proper indentation
-        bool isFinalLine;
-        ReadOnlySpan<char> remainingText = content;
-        do
-        {
-            ReadOnlySpan<char> nextLine = GetNextLine(ref remainingText, out isFinalLine);
-            AddIndentation();
-            Append(nextLine);
-            AppendLine();
-        }
-        while (!isFinalLine);
+        AppendLine();
     }
-#endif
-
-    // Horizontal whitespace regex: apply double negation on \s to exclude \r and \n
-    private const string HWSR = @"[^\S\r\n]*";
-    private static readonly Regex s_nullAssignmentLineRegex =
-        new(@$"{HWSR}\w+{HWSR}={HWSR}null{HWSR},?{HWSR}\r?\n", RegexOptions.Compiled);
 
     /// <summary>
     /// Appends a new line to the source text.
     /// </summary>
-    public void WriteLine() => AppendLine();
+    public void WriteLine()
+    {
+        EnsureNotDisposed();
+        AppendLine();
+    }
 
     /// <summary>
     /// Encodes the currently written source to a <see cref="SourceText"/> instance.
     /// </summary>
     public SourceText ToSourceText()
     {
-        Debug.Assert(_indentation == 0 && _length > 0);
+        EnsureNotDisposed();
         return SourceText.From(new string(_buffer, 0, _length), Encoding.UTF8);
     }
 
@@ -220,12 +158,21 @@ public sealed class SourceWriter : IDisposable
     /// </summary>
     public override string ToString() => new string(_buffer, 0, _length);
 
-    private void AddIndentation()
+    /// <summary>
+    /// Disposes the SourceWriter and returns buffers to the pool.
+    /// </summary>
+    public void Dispose()
     {
-        int count = CharsPerIndentation * _indentation;
-        EnsureCapacity(_length + count);
-        _buffer.AsSpan(_length, count).Fill(IndentationChar);
-        _length += count;
+        if (_disposed)
+        {
+            return;
+        }
+
+        _buffer.AsSpan(0, _length).Clear();
+        ArrayPool<char>.Shared.Return(_buffer);
+        _buffer = null!;
+        _length = 0;
+        _disposed = true;
     }
 
     private static ReadOnlySpan<char> GetNextLine(ref ReadOnlySpan<char> remainingText, out bool isFinalLine)
@@ -262,86 +209,117 @@ public sealed class SourceWriter : IDisposable
         return next;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void Append(char value)
+    private void AppendSegment(ReadOnlySpan<char> segment, bool disableIndentation = false)
     {
-        EnsureCapacity(_length + 1);
-        _buffer[_length++] = value;
+        if (disableIndentation)
+        {
+            AppendChars(segment);
+            return;
+        }
+
+        while (true)
+        {
+            ReadOnlySpan<char> nextLine = GetNextLine(ref segment, out bool isFinalLine);
+            AppendChars(nextLine);
+
+            if (isFinalLine)
+            {
+                break;
+            }
+
+            AppendLine();
+            AddIndentation();
+        }
     }
 
+    // Horizontal whitespace regex: apply double negation on \s to exclude \r and \n
+    private const string HWSR = @"[^\S\r\n]*";
+    private static readonly Regex s_nullAssignmentLineRegex =
+        new(@$"{HWSR}\w+{HWSR}={HWSR}null{HWSR},?{HWSR}\r?\n", RegexOptions.Compiled);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void Append(ReadOnlySpan<char> span)
+    private void AppendChars(ReadOnlySpan<char> span)
     {
         if (span.IsEmpty)
         {
             return;
         }
 
-        EnsureCapacity(_length + span.Length);
-        span.CopyTo(_buffer.AsSpan(_length));
-        _length += span.Length;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void Append(string text)
-    {
-        if (string.IsNullOrEmpty(text))
-        {
-            return;
-        }
-
-        EnsureCapacity(_length + text.Length);
-        text.AsSpan().CopyTo(_buffer.AsSpan(_length));
-        _length += text.Length;
+        int newLength = checked(_length + span.Length);
+        EnsureCapacity(newLength);
+        span.CopyTo(_buffer.AsSpan(start: _length));
+        _length = newLength;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void AppendLine()
     {
-        EnsureCapacity(_length + _newLine.Length);
-        _newLine.AsSpan().CopyTo(_buffer.AsSpan(_length));
-        _length += _newLine.Length;
+        int length = _length;
+        int newLength = length + s_newLine.Length;
+        EnsureCapacity(newLength);
+        s_newLine.AsSpan().CopyTo(_buffer.AsSpan(start: length));
+        _length = newLength;
     }
 
-    private void EnsureCapacity(int requiredCapacity)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void AddIndentation()
     {
-        if (requiredCapacity <= _buffer.Length)
+        if (_indentation == 0)
         {
             return;
         }
 
-        int newCapacity = Math.Max(requiredCapacity, _buffer.Length * 2);
+        int count = CharsPerIndentation * _indentation;
+        int newLength = checked(_length + count);
+        EnsureCapacity(newLength);
+        _buffer.AsSpan(_length, count).Fill(IndentationChar);
+        _length = newLength;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void EnsureNotDisposed()
+    {
+        if (_disposed)
+        {
+            Throw();
+            static void Throw() => throw new ObjectDisposedException(nameof(SourceWriter));
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void EnsureCapacity(int requiredCapacity)
+    {
+        Debug.Assert(requiredCapacity >= 0);
+        if (requiredCapacity > _buffer.Length)
+        {
+            Grow(requiredCapacity);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void Grow(int requiredCapacity)
+    {
+        Debug.Assert(requiredCapacity > _buffer.Length);
+
+        int newCapacity = Math.Max(requiredCapacity, checked(_buffer.Length * 2));
         char[] newBuffer = ArrayPool<char>.Shared.Rent(newCapacity);
-        _buffer.AsSpan(0, _length).CopyTo(newBuffer);
+
+        Span<char> oldBuffer = _buffer.AsSpan(0, _length);
+        oldBuffer.CopyTo(newBuffer);
+        oldBuffer.Clear();
+
         ArrayPool<char>.Shared.Return(_buffer);
         _buffer = newBuffer;
     }
 
     /// <summary>
-    /// Disposes the SourceWriter and returns buffers to the pool.
-    /// </summary>
-    public void Dispose()
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        ArrayPool<char>.Shared.Return(_buffer);
-        _buffer = null!;
-        _length = 0;
-        _disposed = true;
-    }
-
-#if NET6_0_OR_GREATER
-    /// <summary>
     /// Provides an interpolated string handler for <see cref="SourceWriter"/> WriteLine methods.
     /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [InterpolatedStringHandler]
     public ref struct WriteLineInterpolatedStringHandler
     {
         private readonly SourceWriter _writer;
-        private readonly int _startPosition;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WriteLineInterpolatedStringHandler"/> struct.
@@ -351,54 +329,33 @@ public sealed class SourceWriter : IDisposable
         /// <param name="writer">The associated <see cref="SourceWriter"/> instance.</param>
         public WriteLineInterpolatedStringHandler(int literalLength, int formattedCount, SourceWriter writer)
         {
+            writer.EnsureNotDisposed();
+            writer.AddIndentation();
             _writer = writer;
-            _startPosition = writer._length;
         }
-
-        /// <summary>
-        /// Gets the position where this handler started writing.
-        /// </summary>
-        internal int GetStartPosition() => _startPosition;
 
         /// <summary>
         /// Appends a string value to the handler.
         /// </summary>
-        public void AppendLiteral(string value) => _writer.Append(value);
+        public void AppendLiteral(string value) => _writer.AppendSegment(value.AsSpan());
 
         /// <summary>
         /// Appends a formatted value to the handler.
         /// </summary>
-        public void AppendFormatted<T>(T value)
-        {
-            if (value is string s)
-            {
-                _writer.Append(s);
-            }
-            else
-            {
-                _writer.Append(value?.ToString() ?? string.Empty);
-            }
-        }
+        public void AppendFormatted<T>(T value) => _writer.AppendSegment((value?.ToString()).AsSpan());
 
         /// <summary>
         /// Appends a formatted value to the handler with a format string.
         /// </summary>
         public void AppendFormatted<T>(T value, string? format)
         {
-            if (value is IFormattable formattable)
-            {
-                _writer.Append(formattable.ToString(format, null) ?? string.Empty);
-            }
-            else
-            {
-                _writer.Append(value?.ToString() ?? string.Empty);
-            }
+            string? result = value is IFormattable formattable ? formattable.ToString(format, null) : value?.ToString();
+            _writer.AppendSegment(result.AsSpan());
         }
 
         /// <summary>
         /// Appends a formatted span value to the handler.
         /// </summary>
-        public void AppendFormatted(ReadOnlySpan<char> value) => _writer.Append(value);
+        public void AppendFormatted(ReadOnlySpan<char> value) => _writer.AppendSegment(value);
     }
-#endif
 }

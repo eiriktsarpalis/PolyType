@@ -54,4 +54,38 @@ public static class SourceWriterTests
         Assert.Throws<ArgumentOutOfRangeException>(() => writer.Indentation = indentation);
         Assert.Equal(0, writer.Indentation);
     }
+    
+    [Fact]
+    public static void WriteLine_MultiLineString_PreservesIndentation()
+    {
+        using SourceWriter writer = new();
+        writer.Indentation = 2;
+        writer.WriteLine("""
+            line1
+            line2
+            line3
+            """);
+        
+        string result = writer.ToString();
+        string expected = $"        line1{Environment.NewLine}        line2{Environment.NewLine}        line3{Environment.NewLine}";
+        Assert.Equal(expected, result);
+    }
+    
+    [Fact]
+    public static void WriteLine_MultiLineInterpolatedString_PreservesIndentation()
+    {
+        using SourceWriter writer = new();
+        writer.Indentation = 1;
+        string value1 = "hello";
+        int value2 = 42;
+        writer.WriteLine($"""
+            First: {value1}
+            Second: {value2}
+            End
+            """);
+        
+        string result = writer.ToString();
+        string expected = $"    First: hello{Environment.NewLine}    Second: 42{Environment.NewLine}    End{Environment.NewLine}";
+        Assert.Equal(expected, result);
+    }
 }
