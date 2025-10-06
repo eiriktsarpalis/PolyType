@@ -84,6 +84,7 @@ public sealed class SourceWriter : IDisposable
                 static void Throw() => throw new ArgumentOutOfRangeException(nameof(value));
             }
 
+            EnsureNotDisposed();
             _indentation = value;
         }
     }
@@ -156,7 +157,11 @@ public sealed class SourceWriter : IDisposable
     /// <summary>
     /// Renders the written text as a string.
     /// </summary>
-    public override string ToString() => new string(_buffer, 0, _length);
+    public override string ToString()
+    {
+        EnsureNotDisposed();
+        return new string(_buffer, 0, _length);
+    }
 
     /// <summary>
     /// Disposes the SourceWriter and returns buffers to the pool.
