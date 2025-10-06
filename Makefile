@@ -28,9 +28,7 @@ test: build
 		-p:SkipTUnitTestRuns=true \
 		--results-directory $(ARTIFACT_PATH)/testResults \
 		--collect "Code Coverage;Format=cobertura" \
-		--logger "trx" \
-		-- \
-		RunConfiguration.CollectSourceInformation=true
+		--logger "trx"
 
 test-aot: build
 	dotnet publish $(SOURCE_DIRECTORY)/tests/PolyType.Tests.NativeAOT/PolyType.Tests.NativeAOT.csproj \
