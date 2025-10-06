@@ -23,15 +23,7 @@ build: restore
 	dotnet build --no-restore --configuration $(CONFIGURATION) $(ADDITIONAL_ARGS)
 
 test: build
-	dotnet test --configuration $(CONFIGURATION) $(ADDITIONAL_ARGS) \
-		--blame \
-		-p:SkipTUnitTestRuns=true \
-		--results-directory $(ARTIFACT_PATH)/testResults \
-		--collect "Code Coverage;Format=cobertura" \
-		--logger "console;verbosity=normal" \
-		--logger "trx" \
-		-- \
-		RunConfiguration.CollectSourceInformation=true
+	dotnet run --project $(SOURCE_DIRECTORY)/tests/PolyType.Tests -f net10.0
 
 test-aot: build
 	dotnet publish $(SOURCE_DIRECTORY)/tests/PolyType.Tests.NativeAOT/PolyType.Tests.NativeAOT.csproj \
