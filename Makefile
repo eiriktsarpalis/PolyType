@@ -27,7 +27,6 @@ test: build
 		--blame \
 		-p:SkipTUnitTestRuns=true \
 		--results-directory $(ARTIFACT_PATH)/testResults \
-		--collect "Code Coverage;Format=cobertura" \
 		--logger "trx" \
 		-- \
 		RunConfiguration.CollectSourceInformation=true
