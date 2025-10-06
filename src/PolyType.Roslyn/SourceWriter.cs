@@ -133,7 +133,7 @@ public sealed class SourceWriter : IDisposable
     /// <param name="handler">The interpolated string handler.</param>
     public void WriteLine([InterpolatedStringHandlerArgument("")] ref WriteLineInterpolatedStringHandler handler)
     {
-        AppendLine();
+        AppendLine(); // All work is done in the handler methods, just need to append a new line.
     }
 
     /// <summary>
