@@ -5,8 +5,6 @@
     <TargetFramework>net9.0</TargetFramework>
     <PublishAot>true</PublishAot>
     <UseCurrentRuntimeIdentifier>true</UseCurrentRuntimeIdentifier>
-    <!-- https://github.com/thomhurst/TUnit/issues/2410 -->
-    <NoWarn>($NoWarn);IL2026;IL3053;IL2104;IL3000</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(SkipTUnitTestRuns)' == 'true'">
