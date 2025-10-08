@@ -24,8 +24,13 @@ build: restore
 
 test: build
 	dotnet test --configuration $(CONFIGURATION) $(ADDITIONAL_ARGS) \
+		--blame \
 		-p:SkipTUnitTestRuns=true \
-		--collect "Code Coverage;Format=cobertura"
+		--results-directory $(ARTIFACT_PATH)/testResults \
+		--collect "Code Coverage;Format=cobertura" \
+		--logger "trx" \
+		-- \
+		RunConfiguration.CollectSourceInformation=true
 
 test-aot: build
 	dotnet publish $(SOURCE_DIRECTORY)/tests/PolyType.Tests.NativeAOT/PolyType.Tests.NativeAOT.csproj \
