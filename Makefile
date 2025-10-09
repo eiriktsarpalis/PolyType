@@ -23,14 +23,8 @@ build: restore
 	dotnet build --no-restore --configuration $(CONFIGURATION) $(ADDITIONAL_ARGS)
 
 test: build
-	dotnet test --configuration $(CONFIGURATION) $(ADDITIONAL_ARGS) \
-		--blame \
-		-p:SkipTUnitTestRuns=true \
-		--results-directory $(ARTIFACT_PATH)/testResults \
-		--collect "Code Coverage;Format=cobertura" \
-		--logger "trx" \
-		-- \
-		RunConfiguration.CollectSourceInformation=true
+	dotnet test --configuration $(CONFIGURATION) $(SOURCE_DIRECTORY)/tests/PolyType.Roslyn.Tests \
+		--collect "Code Coverage;Format=cobertura"
 
 test-aot: build
 	dotnet publish $(SOURCE_DIRECTORY)/tests/PolyType.Tests.NativeAOT/PolyType.Tests.NativeAOT.csproj \
