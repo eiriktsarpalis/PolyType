@@ -16,9 +16,6 @@ jobs:
         configuration: [Debug, Release]
       fail-fast: false
 
-    env:
-      ENABLE_CODECOV: ${{ runner.os == 'Linux' && matrix.configuration == 'Release' }}
-
     steps:
     - uses: actions/checkout@v5
       with:
@@ -42,6 +39,8 @@ jobs:
 
     - name: Build & Test
       run: make pack CONFIGURATION=${{ matrix.configuration }}
+      env:
+        ENABLE_CODECOV: ${{ runner.os == 'Linux' && matrix.configuration == 'Release' }}
 
     - name: Upload artifacts
       if: runner.os == 'Windows' && matrix.configuration == 'Release' && github.ref == 'refs/heads/main'
