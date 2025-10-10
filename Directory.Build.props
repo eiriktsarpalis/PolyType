@@ -6,8 +6,8 @@
     <Nullable>enable</Nullable>
     <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))</RepoRoot>
     <AssemblyOriginatorKeyFile>$(RepoRoot)\OpenKey.snk</AssemblyOriginatorKeyFile>
-    <!--<VSTestLogger>trx%3bLogFileName=$(MSBuildProjectName).$(TargetFramework).$(OS).trx</VSTestLogger>
-    <VSTestResultsDirectory>$(MSBuildThisFileDirectory)/artifacts/TestResults</VSTestResultsDirectory>-->
+    <VSTestLogger>trx%3bLogFileName=$(MSBuildProjectName).$(TargetFramework).$(OS).trx</VSTestLogger>
+    <VSTestResultsDirectory>$(MSBuildThisFileDirectory)/artifacts/TestResults</VSTestResultsDirectory>
     <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
   </PropertyGroup>
 
