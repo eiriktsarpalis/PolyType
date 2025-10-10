@@ -9,6 +9,11 @@ DOCKER_IMAGE_NAME ?= "polytype-docker-build"
 DOCKER_CMD ?= make pack
 VERSION_FILE = $(SOURCE_DIRECTORY)version.json
 VERSION ?= ""
+CODECOV ?= false
+
+ifeq ($(CODECOV),true)
+CODECOV_ARGS = --collect "Code Coverage;Format=cobertura"
+endif
 
 clean:
 	dotnet clean --configuration $(CONFIGURATION)
@@ -27,7 +32,7 @@ test: build
 		--blame \
 		-p:SkipTUnitTestRuns=true \
 		--results-directory $(ARTIFACT_PATH)/testResults \
-		--collect "Code Coverage;Format=cobertura" \
+		$(CODECOV_ARGS) \
 		--logger "trx" \
 		-- \
 		RunConfiguration.CollectSourceInformation=true
