@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
 
     env:
-      enableCodeCov: ${{ runner.os == 'Linux' && matrix.configuration == 'Release' }}
+      ENABLE_CODECOV: ${{ runner.os == 'Linux' && matrix.configuration == 'Release' }}
 
     steps:
     - uses: actions/checkout@v5
@@ -41,7 +41,7 @@ jobs:
       run: brew install mono
 
     - name: Build & Test
-      run: make pack CONFIGURATION=${{ matrix.configuration }} CODECOV=${{ env.enableCodeCov }}
+      run: make pack CONFIGURATION=${{ matrix.configuration }}
 
     - name: Upload artifacts
       if: runner.os == 'Windows' && matrix.configuration == 'Release' && github.ref == 'refs/heads/main'

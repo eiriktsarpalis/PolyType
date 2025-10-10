@@ -9,9 +9,9 @@ DOCKER_IMAGE_NAME ?= "polytype-docker-build"
 DOCKER_CMD ?= make pack
 VERSION_FILE = $(SOURCE_DIRECTORY)version.json
 VERSION ?= ""
-CODECOV ?= false
+ENABLE_CODECOV ?= false
 
-ifeq ($(CODECOV),true)
+ifeq ($(ENABLE_CODECOV),true)
 CODECOV_ARGS = --collect "Code Coverage;Format=cobertura"
 endif
 
