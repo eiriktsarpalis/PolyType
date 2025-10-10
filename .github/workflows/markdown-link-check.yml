@@ -13,4 +13,4 @@ jobs:
       - name: Checkout
         uses: actions/checkout@main
       - name: Markup Link Checker (mlc)
-        uses: becheran/mlc@v0.15.4
+        uses: becheran/mlc@v1.0.0
