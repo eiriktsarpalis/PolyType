@@ -24,7 +24,9 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: |
+          10.0.x
+          9.0.x
 
     # Netfx testing on non-Windows OSes requires mono
     - name: Setup Mono
@@ -37,6 +39,8 @@ jobs:
 
     - name: Build & Test
       run: make pack CONFIGURATION=${{ matrix.configuration }}
+      env:
+        ENABLE_CODECOV: ${{ runner.os == 'Linux' && matrix.configuration == 'Release' }}
 
     - name: Upload artifacts
       if: runner.os == 'Windows' && matrix.configuration == 'Release' && github.ref == 'refs/heads/main'
