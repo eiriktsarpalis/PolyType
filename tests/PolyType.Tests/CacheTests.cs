@@ -251,11 +251,11 @@ public static class CacheTests
         ITypeShape<int> shapeFromOtherProvider = ReflectionTypeShapeProvider.Default.GetTypeShapeOrThrow<int>();
         Assert.NotNull(generationContext.ValueBuilder);
 
-        Assert.Throws<ArgumentNullException>(() => generationContext.TryGetValue<int>(null!, out _));
-        Assert.Throws<ArgumentException>(() => generationContext.TryGetValue<int>(shapeFromOtherProvider, out _));
+        Assert.Throws<ArgumentNullException>(() => generationContext.TryGetValue(default(ITypeShape<int>)!, out _));
+        Assert.Throws<ArgumentException>(() => generationContext.TryGetValue(shapeFromOtherProvider, out _));
 
-        Assert.Throws<ArgumentNullException>(() => generationContext.GetOrAdd<int>(null!));
-        Assert.Throws<ArgumentException>(() => generationContext.GetOrAdd<int>(shapeFromOtherProvider));
+        Assert.Throws<ArgumentNullException>(() => generationContext.GetOrAdd(default(ITypeShape<int>)!));
+        Assert.Throws<ArgumentException>(() => generationContext.GetOrAdd(shapeFromOtherProvider));
 
         Assert.Throws<ArgumentNullException>(() => generationContext.Add(null!, "42"));
     }

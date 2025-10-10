@@ -34,7 +34,7 @@ public sealed class TypeGenerationContext : IReadOnlyDictionary<Type, object?>, 
     public TypeCache? ParentCache { get; }
 
     /// <summary>
-    /// Gets a factory method governing the creation of values when invoking the <see cref="GetOrAdd{TKey}" /> method.
+    /// Gets a factory method governing the creation of values when invoking the <see cref="GetOrAdd" /> method.
     /// </summary>
     public ITypeShapeFunc? ValueBuilder { get; init; }
 
@@ -67,11 +67,10 @@ public sealed class TypeGenerationContext : IReadOnlyDictionary<Type, object?>, 
     /// <summary>
     /// Gets or adds a value keyed on the type represented by <paramref name="typeShape"/>.
     /// </summary>
-    /// <typeparam name="TKey">The type key to be looked up.</typeparam>
     /// <param name="typeShape">The type shape representing the key type.</param>
     /// <param name="state">The state object to be passed to the visitor.</param>
     /// <returns>The final computed value.</returns>
-    public object? GetOrAdd<TKey>(ITypeShape<TKey> typeShape, object? state = null)
+    public object? GetOrAdd(ITypeShape typeShape, object? state = null)
     {
         Throw.IfNull(typeShape);
         if (ValueBuilder is null)
@@ -90,28 +89,27 @@ public sealed class TypeGenerationContext : IReadOnlyDictionary<Type, object?>, 
     }
 
     /// <summary>
-    /// Looks up the value for type <typeparamref name="TKey"/>.
+    /// Looks up the value for the specified <see cref="ITypeShape"/>.
     /// </summary>
-    /// <typeparam name="TKey">The type key to be looked up.</typeparam>
     /// <param name="typeShape">The type shape representing the key type.</param>
     /// <param name="value">The value returned by the lookup operation.</param>
     /// <returns>True if either a completed or delayed value have been returned.</returns>
-    public bool TryGetValue<TKey>(ITypeShape<TKey> typeShape, [MaybeNullWhen(false)] out object? value)
+    public bool TryGetValue(ITypeShape typeShape, [MaybeNullWhen(false)] out object? value)
     {
         Throw.IfNull(typeShape);
         ParentCache?.ValidateProvider(typeShape.Provider);
 
         // Consult the parent cache first to avoid creating duplicate values.
-        if (ParentCache?.TryGetValue(typeof(TKey), out value) is true)
+        if (ParentCache?.TryGetValue(typeShape.Type, out value) is true)
         {
             return true;
         }
 
 #if NET
-        ref Entry entry = ref CollectionsMarshal.GetValueRefOrNullRef(_entries, typeof(TKey));
+        ref Entry entry = ref CollectionsMarshal.GetValueRefOrNullRef(_entries, typeShape.Type);
         bool exists = !Unsafe.IsNullRef(ref entry);
 #else
-        bool exists = _entries.TryGetValue(typeof(TKey), out Entry entry);
+        bool exists = _entries.TryGetValue(typeShape.Type, out Entry entry);
 #endif
 
         if (!exists)
@@ -120,7 +118,7 @@ public sealed class TypeGenerationContext : IReadOnlyDictionary<Type, object?>, 
             {
                 // First time visiting this type, add an empty entry to the
                 // dictionary to record that it has been visited and return false.
-                _entries[typeof(TKey)] = new(EntryKind.Empty);
+                _entries[typeShape.Type] = new(EntryKind.Empty);
             }
 
             value = default;
@@ -134,11 +132,11 @@ public sealed class TypeGenerationContext : IReadOnlyDictionary<Type, object?>, 
                 DebugExt.Assert(DelayedValueFactory is not null);
 
                 // Create a delayed value and return the uninitialized result.
-                DelayedValue delayedValue = DelayedValueFactory.Create(typeShape);
+                DelayedValue delayedValue = (DelayedValue)typeShape.Invoke(UntypedDelayedValueFactoryInvoker.Instance, DelayedValueFactory)!;
                 value = delayedValue.PotentiallyDelayedResult;
                 entry = new(EntryKind.DelayedValue, delayedValue);
 #if !NET
-                _entries[typeof(TKey)] = entry;
+                _entries[typeShape.Type] = entry;
 #endif
                 return true;
 
@@ -304,4 +302,10 @@ public sealed class TypeGenerationContext : IReadOnlyDictionary<Type, object?>, 
     IEnumerable<Type> IReadOnlyDictionary<Type, object?>.Keys => GetCompletedValues().Select(kvp => kvp.Key);
     IEnumerable<object?> IReadOnlyDictionary<Type, object?>.Values => GetCompletedValues().Select(kvp => kvp.Value.Value);
     private IEnumerable<KeyValuePair<Type, Entry>> GetCompletedValues() => _entries.Where(kvp => kvp.Value.Kind is EntryKind.CompletedValue);
+
+    private sealed class UntypedDelayedValueFactoryInvoker : ITypeShapeFunc
+    {
+        public static readonly UntypedDelayedValueFactoryInvoker Instance = new();
+        object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state) => ((IDelayedValueFactory)state!).Create(typeShape);
+    }
 }
