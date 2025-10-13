@@ -291,6 +291,13 @@ public class KnownSymbols(Compilation compilation)
 
     private TargetFramework ResolveTargetFramework()
     {
+        INamedTypeSymbol? unsafeAccessorTypeAttribute = Compilation.GetTypeByMetadataName("System.Runtime.CompilerServices.UnsafeAccessorTypeAttribute");
+        if (unsafeAccessorTypeAttribute is not null &&
+            SymbolEqualityComparer.Default.Equals(unsafeAccessorTypeAttribute.ContainingAssembly, CoreLibAssembly))
+        {
+            return TargetFramework.Net100;
+        }
+
         INamedTypeSymbol? alternateEqualityComparer = Compilation.GetTypeByMetadataName("System.Collections.Generic.IAlternateEqualityComparer`2");
         if (alternateEqualityComparer is not null &&
             SymbolEqualityComparer.Default.Equals(alternateEqualityComparer.ContainingAssembly, CoreLibAssembly))

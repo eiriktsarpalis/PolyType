@@ -390,11 +390,22 @@ internal sealed partial class SourceFormatter
             return;
         }
 
-        Debug.Assert(!method.IsStatic, "Remove once https://github.com/eiriktsarpalis/PolyType/issues/220 is implemented");
         string methodRefPrefix = method.ReturnsByRef ? "ref " : "";
-        writer.WriteLine($"""
-            [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = {FormatStringLiteral(method.UnderlyingMethodName)})]
-            private static extern {methodRefPrefix}{method.UnderlyingReturnType.FullyQualifiedName} {accessorName}({allParameters});
-            """);
+        if (method.IsStatic)
+        {
+            // .NET 10+ supports static method accessors using UnsafeAccessorTypeAttribute
+            writer.WriteLine($"""
+                [global::System.Runtime.CompilerServices.UnsafeAccessorType(typeof({method.DeclaringType.FullyQualifiedName}))]
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = {FormatStringLiteral(method.UnderlyingMethodName)})]
+                private static extern {methodRefPrefix}{method.UnderlyingReturnType.FullyQualifiedName} {accessorName}({allParameters});
+                """);
+        }
+        else
+        {
+            writer.WriteLine($"""
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = {FormatStringLiteral(method.UnderlyingMethodName)})]
+                private static extern {methodRefPrefix}{method.UnderlyingReturnType.FullyQualifiedName} {accessorName}({allParameters});
+                """);
+        }
     }
 }

@@ -561,8 +561,9 @@ public sealed partial class Parser
                 IsAccessible = IsAccessibleSymbol(m.Method),
                 CanUseUnsafeAccessors = _knownSymbols.TargetFramework switch
                 {
-                    // .NET 8 or later supports unsafe accessors for methods of non-generic types.
-                    // .NET 10 or later supports unsafe accessors for static methods cf. https://github.com/eiriktsarpalis/PolyType/issues/220
+                    // .NET 10 or later supports unsafe accessors for static methods via UnsafeAccessorTypeAttribute cf. https://github.com/eiriktsarpalis/PolyType/issues/220
+                    var target when target >= TargetFramework.Net100 => !m.Method.ContainingType.IsGenericType,
+                    // .NET 8 or later supports unsafe accessors for instance methods of non-generic types.
                     var target when target >= TargetFramework.Net80 => !m.Method.ContainingType.IsGenericType && !m.Method.IsStatic,
                     _ => false
                 },
@@ -587,7 +588,9 @@ public sealed partial class Parser
                 RequiresDisambiguation = e.IsAmbiguous,
                 CanUseUnsafeAccessors = _knownSymbols.TargetFramework switch
                 {
-                    // .NET 8 or later supports unsafe accessors for events of non-generic types.
+                    // .NET 10 or later supports unsafe accessors for static events via UnsafeAccessorTypeAttribute.
+                    var target when target >= TargetFramework.Net100 => !e.Event.ContainingType.IsGenericType,
+                    // .NET 8 or later supports unsafe accessors for instance events of non-generic types.
                     var target when target >= TargetFramework.Net80 => !e.Event.ContainingType.IsGenericType && !e.Event.IsStatic,
                     _ => false
                 },

@@ -19,4 +19,9 @@ public enum TargetFramework
     /// .NET 9 or later.
     /// </summary>
     Net90 = 90,
+
+    /// <summary>
+    /// .NET 10 or later.
+    /// </summary>
+    Net100 = 100,
 }
