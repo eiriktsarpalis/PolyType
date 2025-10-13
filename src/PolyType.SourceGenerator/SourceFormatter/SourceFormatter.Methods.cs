@@ -393,10 +393,10 @@ internal sealed partial class SourceFormatter
         string methodRefPrefix = method.ReturnsByRef ? "ref " : "";
         if (method.IsStatic)
         {
-            // .NET 10+ supports static method accessors using UnsafeAccessorTypeAttribute
+            // .NET 10+ supports static method accessors using UnsafeAccessorTypeAttribute on return type
             writer.WriteLine($"""
-                [global::System.Runtime.CompilerServices.UnsafeAccessorType({FormatStringLiteral(method.DeclaringType.FullyQualifiedName)})]
                 [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.StaticMethod, Name = {FormatStringLiteral(method.UnderlyingMethodName)})]
+                [return: global::System.Runtime.CompilerServices.UnsafeAccessorType({FormatStringLiteral(method.DeclaringType.FullyQualifiedName)})]
                 private static extern {methodRefPrefix}{method.UnderlyingReturnType.FullyQualifiedName} {accessorName}({allParameters});
                 """);
         }

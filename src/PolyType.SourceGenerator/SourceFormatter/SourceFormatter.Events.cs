@@ -139,10 +139,10 @@ internal sealed partial class SourceFormatter
         string methodName = $"{methodPrefix}_{eventModel.UnderlyingMemberName}";
         if (eventModel.IsStatic)
         {
-            // .NET 10+ supports static event accessors using UnsafeAccessorTypeAttribute
+            // .NET 10+ supports static event accessors using UnsafeAccessorTypeAttribute on return type
             writer.WriteLine($"""
-                [global::System.Runtime.CompilerServices.UnsafeAccessorType({FormatStringLiteral(eventModel.DeclaringType.FullyQualifiedName)})]
                 [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.StaticMethod, Name = {FormatStringLiteral(methodName)})]
+                [return: global::System.Runtime.CompilerServices.UnsafeAccessorType({FormatStringLiteral(eventModel.DeclaringType.FullyQualifiedName)})]
                 private static extern void {accessorName}({eventModel.HandlerType.FullyQualifiedName} handler);
                 """);
         }
