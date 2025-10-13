@@ -183,7 +183,7 @@ public static class TestTypes
         yield return TestCase.Create(new CollectionWithSpanCtor([1, 2, 1, 3]), usesSpanConstructor: true);
         yield return TestCase.Create(new DictionaryWithSpanCtor([new("key", 42)]), usesSpanConstructor: true);
         yield return TestCase.Create(DictionaryWithBuilderAttribute.Create([new("key1", 1), new("key2", 2)], comparer: null));
-        yield return TestCase.Create((GenericDictionaryWithBuilderAttribute<string, int>)[new("key1", 1), new("key2", 2)], p);
+        yield return TestCase.Create(GenericDictionaryWithBuilderAttribute.Create<string, int>([new("key1", 1), new("key2", 2)], comparer: null), p);
 
         yield return TestCase.Create(new Collection<int> { 1, 2, 3 }, p);
         yield return TestCase.Create(new ObservableCollection<int> { 1, 2, 1, 3 }, p);
@@ -3456,6 +3456,7 @@ public delegate Task<int> LargeAsyncDelegate(
 [GenerateShapeFor<DictionaryWithNullableEntries<int>>]
 [GenerateShapeFor<DictionaryWithNullableEntries<int?>>]
 [GenerateShapeFor<DictionaryWithNullableEntries<string>>]
+[GenerateShapeFor<GenericDictionaryWithBuilderAttribute<string, int>>]
 [GenerateShapeFor<ClassWithNullableProperty<int>>]
 [GenerateShapeFor<ClassWithNullableProperty<int?>>]
 [GenerateShapeFor<ClassWithNullableProperty<string>>]
