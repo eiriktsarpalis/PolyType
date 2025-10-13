@@ -375,7 +375,7 @@ internal static class ReflectionHelpers
 
     [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
     [RequiresDynamicCode(RequiresDynamicCodeMessage)]
-    public static IEnumerable<MethodInfo> GetCollectionBuilderAttributeMethods(this Type collectionType, Type elementType)
+    public static IEnumerable<MethodInfo> GetCollectionBuilderAttributeMethods(this Type collectionType, Type elementType, Type? keyType = null)
     {
         CustomAttributeData? attributeData = collectionType.CustomAttributes
             .FirstOrDefault(attr => attr.AttributeType.FullName == "System.Runtime.CompilerServices.CollectionBuilderAttribute");
@@ -393,6 +393,7 @@ internal static class ReflectionHelpers
             yield break;
         }
 
+        Type[]? typeArgs = null;
         foreach (MethodInfo method in builderType.GetMethods(BindingFlags.Public | BindingFlags.Static))
         {
             if (method.Name != methodName)
@@ -402,12 +403,13 @@ internal static class ReflectionHelpers
 
             if (method.IsGenericMethod)
             {
-                if (method.GetGenericArguments().Length != 1)
+                typeArgs ??= keyType is null ? [elementType] : [keyType, elementType];
+                if (method.GetGenericArguments().Length != typeArgs.Length)
                 {
                     continue;
                 }
 
-                yield return method.MakeGenericMethod(elementType);
+                yield return method.MakeGenericMethod(typeArgs);
             }
             else
             {

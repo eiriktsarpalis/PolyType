@@ -237,7 +237,8 @@ internal static class RoslynHelpers
         this Compilation compilation,
         INamedTypeSymbol type,
         ITypeSymbol elementType,
-        CancellationToken cancellationToken)
+        ITypeSymbol? keyType = null,
+        CancellationToken cancellationToken = default)
     {
         AttributeData? attributeData = type.GetAttributes().FirstOrDefault(static attr =>
             attr is { AttributeClass.Name: "CollectionBuilderAttribute" } &&
@@ -249,6 +250,7 @@ internal static class RoslynHelpers
         }
 
         var cmp = SymbolEqualityComparer.Default;
+        ITypeSymbol[]? typeArgs = null;
         foreach (IMethodSymbol method in builderType.GetMembers().OfType<IMethodSymbol>())
         {
             if (!method.IsStatic || method.Name != methodName)
@@ -258,12 +260,13 @@ internal static class RoslynHelpers
 
             if (method.IsGenericMethod)
             {
-                if (method.TypeArguments.Length != 1)
+                typeArgs ??= keyType is null ? [elementType] : [keyType, elementType];
+                if (method.TypeArguments.Length != typeArgs.Length)
                 {
                     continue;
                 }
 
-                yield return method.Construct(elementType);
+                yield return method.Construct(typeArgs);
             }
             else
             {

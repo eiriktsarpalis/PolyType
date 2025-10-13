@@ -182,7 +182,7 @@ public static class TestTypes
         yield return TestCase.Create(new DictionaryWithEnumerableCtor([new("key", 42)]));
         yield return TestCase.Create(new CollectionWithSpanCtor([1, 2, 1, 3]), usesSpanConstructor: true);
         yield return TestCase.Create(new DictionaryWithSpanCtor([new("key", 42)]), usesSpanConstructor: true);
-        yield return TestCase.Create(new DictionaryWithBuilderAttribute { ["key1"] = 1, ["key2"] = 2 });
+        yield return TestCase.Create(DictionaryWithBuilderAttribute.Create([new("key1", 1), new("key2", 2)]));
 
         yield return TestCase.Create(new Collection<int> { 1, 2, 3 }, p);
         yield return TestCase.Create(new ObservableCollection<int> { 1, 2, 1, 3 }, p);

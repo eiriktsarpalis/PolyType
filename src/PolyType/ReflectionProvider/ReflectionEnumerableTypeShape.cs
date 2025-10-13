@@ -104,7 +104,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
             return collectionCtorInfo;
         }
 
-        // move this later in priority order so it doesn't skip comparer options when they exist.
+        // Move this later in priority order so it doesn't override other options when they exist.
         IEnumerable<MethodInfo> collectionBuilderMethods = typeof(TEnumerable).GetCollectionBuilderAttributeMethods(typeof(TElement));
         if (Provider.ResolveBestCollectionCtor<TElement, TElement>(typeof(TEnumerable), collectionBuilderMethods, addMethod: null) is { } builderCtorInfo)
         {

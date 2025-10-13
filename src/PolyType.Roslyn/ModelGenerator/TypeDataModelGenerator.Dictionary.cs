@@ -74,7 +74,7 @@ public partial class TypeDataModelGenerator
         // after other constructors have been considered.
         else if (ResolveBestCollectionCtor(
             namedType,
-            KnownSymbols.Compilation.GetCollectionBuilderAttributeMethods(namedType, elementType, CancellationToken),
+            KnownSymbols.Compilation.GetCollectionBuilderAttributeMethods(namedType, elementType, keyType, CancellationToken),
             hasInserter: false,
             elementType,
             keyType,

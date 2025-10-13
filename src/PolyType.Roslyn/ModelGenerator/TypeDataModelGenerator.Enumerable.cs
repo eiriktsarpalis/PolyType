@@ -114,7 +114,7 @@ public partial class TypeDataModelGenerator
             else if (
                 ResolveBestCollectionCtor(
                     namedType,
-                    candidates: KnownSymbols.Compilation.GetCollectionBuilderAttributeMethods(namedType, elementType, CancellationToken),
+                    candidates: KnownSymbols.Compilation.GetCollectionBuilderAttributeMethods(namedType, elementType, cancellationToken: CancellationToken),
                     hasInserter: false,
                     elementType,
                     keyType: elementType,
