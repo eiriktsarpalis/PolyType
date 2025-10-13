@@ -1867,12 +1867,7 @@ public partial class DictionaryWithBuilderAttribute : Dictionary<string, int>
 
     public static DictionaryWithBuilderAttribute Create(ReadOnlySpan<KeyValuePair<string, int>> values)
     {
-        var result = new DictionaryWithBuilderAttribute();
-        foreach (var kvp in values)
-        {
-            result[kvp.Key] = kvp.Value;
-        }
-        return result;
+        throw new NotSupportedException("This overload should not be used. Use the overload with IEqualityComparer parameter.");
     }
 
     public static DictionaryWithBuilderAttribute Create(ReadOnlySpan<KeyValuePair<string, int>> values, IEqualityComparer<string>? comparer)

@@ -139,7 +139,6 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         {
             return collectionCtorInfo;
         }
-
         // Check for CollectionBuilderAttribute as the last option.
         if (Provider.ResolveBestCollectionCtor<KeyValuePair<TKey, TValue>, TKey>(
                 dictionaryType,
