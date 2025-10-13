@@ -182,6 +182,7 @@ public static class TestTypes
         yield return TestCase.Create(new DictionaryWithEnumerableCtor([new("key", 42)]));
         yield return TestCase.Create(new CollectionWithSpanCtor([1, 2, 1, 3]), usesSpanConstructor: true);
         yield return TestCase.Create(new DictionaryWithSpanCtor([new("key", 42)]), usesSpanConstructor: true);
+        yield return TestCase.Create<DictionaryWithBuilderAttribute>([new("key1", 1), new("key2", 2)]);
 
         yield return TestCase.Create(new Collection<int> { 1, 2, 3 }, p);
         yield return TestCase.Create(new ObservableCollection<int> { 1, 2, 1, 3 }, p);
@@ -1854,6 +1855,34 @@ public partial class DictionaryWithSpanCtor : Dictionary<string, int>
         {
             this[value.Key] = value.Value;
         }
+    }
+}
+
+[GenerateShape]
+[CollectionBuilder(typeof(DictionaryWithBuilderAttribute), nameof(Create))]
+public partial class DictionaryWithBuilderAttribute : Dictionary<string, int>
+{
+    private DictionaryWithBuilderAttribute() { }
+    private DictionaryWithBuilderAttribute(IEqualityComparer<string> comparer) : base(comparer) { }
+
+    public static DictionaryWithBuilderAttribute Create(ReadOnlySpan<KeyValuePair<string, int>> values)
+    {
+        var result = new DictionaryWithBuilderAttribute();
+        foreach (var kvp in values)
+        {
+            result[kvp.Key] = kvp.Value;
+        }
+        return result;
+    }
+
+    public static DictionaryWithBuilderAttribute Create(ReadOnlySpan<KeyValuePair<string, int>> values, IEqualityComparer<string>? comparer)
+    {
+        var result = new DictionaryWithBuilderAttribute(comparer ?? EqualityComparer<string>.Default);
+        foreach (var kvp in values)
+        {
+            result[kvp.Key] = kvp.Value;
+        }
+        return result;
     }
 }
 

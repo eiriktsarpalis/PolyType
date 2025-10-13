@@ -66,9 +66,9 @@ Types implementing <xref:System.Collections.IDictionary> use `object` to represe
 The construction strategy for dictionary types is inferred using the following priority:
 
 1. Types with public parameterless constructors that additionally expose `Add` and indexer methods, or implement one of the mutable `IDictionary` interfaces are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Mutable>.
-2. Types annotated with [`CollectionBuilderAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.collectionbuilderattribute) are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Parameterized>.
-3. Immutable or frozen dictionary types are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Parameterized>.
-4. Types with public constructors accepting `ReadOnlySpan<KeyValuePair<K,V>>` or `IEnumerable<KeyValuePair<K,V>>` parameters are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Parameterized>.
+2. Immutable or frozen dictionary types are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Parameterized>.
+3. Types with public constructors accepting `ReadOnlySpan<KeyValuePair<K,V>>` or `IEnumerable<KeyValuePair<K,V>>` parameters are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Parameterized>.
+4. Types annotated with [`CollectionBuilderAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.collectionbuilderattribute) are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Parameterized>.
 5. Dictionary types not matching the above are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.None>.
 
 PolyType will automatically select constructor or factory method overloads that additionally accept `IEqualityComparer<Key>` or `IComparer<Key>` and map those to the corresponding settings in the <xref:PolyType.Abstractions.CollectionConstructionOptions`1> used by the constructor delegate.
@@ -89,9 +89,9 @@ A non-dictionary type is mapped to <xref:PolyType.Abstractions.IEnumerableTypeSh
 The construction strategy for enumerable types is inferred using the following priority:
 
 1. Types with public parameterless constructors that additionally expose `Add` methods, or implement one of the mutable `ICollection` interfaces are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Mutable>.
-2. Types annotated with [`CollectionBuilderAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.collectionbuilderattribute) are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Parameterized>.
-3. Immutable or frozen collection types are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Parameterized>.
-4. Types with public constructors accepting `ReadOnlySpan<TElement>` or `IEnumerable<TElement>` parameters are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Parameterized>.
+2. Immutable or frozen collection types are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Parameterized>.
+3. Types with public constructors accepting `ReadOnlySpan<TElement>` or `IEnumerable<TElement>` parameters are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Parameterized>.
+4. Types annotated with [`CollectionBuilderAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.collectionbuilderattribute) are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.Parameterized>.
 5. Enumerable types not matching the above are classified as <xref:PolyType.Abstractions.CollectionConstructionStrategy.None>.
 
 ### Object Types

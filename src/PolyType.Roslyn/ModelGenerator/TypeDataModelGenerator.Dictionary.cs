@@ -69,6 +69,19 @@ public partial class TypeDataModelGenerator
         {
             (factoryMethod, factorySignature, isParameterizedFactory) = bestCtor;
         }
+        // Check for CollectionBuilderAttribute as the last option.
+        // CollectionBuilderAttribute uses overwrite semantics by default, so it should be used
+        // after other constructors have been considered.
+        else if (ResolveBestCollectionCtor(
+            namedType,
+            KnownSymbols.Compilation.GetCollectionBuilderAttributeMethods(namedType, elementType, CancellationToken),
+            hasInserter: false,
+            elementType,
+            keyType,
+            valueType) is { } builderCtor)
+        {
+            (factoryMethod, factorySignature, isParameterizedFactory) = builderCtor;
+        }
 
         if ((status = IncludeNestedType(keyType, ref ctx)) != TypeDataModelGenerationStatus.Success ||
             (status = IncludeNestedType(valueType, ref ctx)) != TypeDataModelGenerationStatus.Success)

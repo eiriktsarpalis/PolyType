@@ -105,7 +105,6 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
 
     private CollectionConstructorInfo DetermineConstructorInfo()
     {
-        // TODO resolve CollectionBuilderAttribute once added for Dictionary types
         Type dictionaryType = typeof(TDictionary);
 
         // The System.Collections.Generic.Dictionary<TKey, TValue> type corresponding to the current shape.
@@ -139,6 +138,23 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
                 correspondingTupleEnumerableType) is { } collectionCtorInfo)
         {
             return collectionCtorInfo;
+        }
+
+        // Check for CollectionBuilderAttribute as the last option.
+        // CollectionBuilderAttribute uses overwrite semantics by default, so it should be used
+        // after other constructors have been considered.
+        if (Provider.ResolveBestCollectionCtor<KeyValuePair<TKey, TValue>, TKey>(
+                dictionaryType,
+                dictionaryType.GetCollectionBuilderAttributeMethods(typeof(KeyValuePair<TKey, TValue>)),
+                addMethod: null,
+                setMethod: null,
+                tryAddMethod: null,
+                containsKeyMethod: null,
+                insertionMode: DictionaryInsertionMode.None,
+                correspondingGenericDictionaryType,
+                correspondingTupleEnumerableType) is { } builderCtorInfo)
+        {
+            return builderCtorInfo;
         }
 
         return NoCollectionConstructorInfo.Instance;
