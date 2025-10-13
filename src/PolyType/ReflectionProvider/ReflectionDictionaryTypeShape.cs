@@ -141,8 +141,6 @@ internal abstract class ReflectionDictionaryTypeShape<TDictionary, TKey, TValue>
         }
 
         // Check for CollectionBuilderAttribute as the last option.
-        // CollectionBuilderAttribute uses overwrite semantics by default, so it should be used
-        // after other constructors have been considered.
         if (Provider.ResolveBestCollectionCtor<KeyValuePair<TKey, TValue>, TKey>(
                 dictionaryType,
                 dictionaryType.GetCollectionBuilderAttributeMethods(typeof(KeyValuePair<TKey, TValue>)),
