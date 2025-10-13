@@ -71,7 +71,7 @@ public partial class TypeDataModelGenerator
         }
         else if (ResolveBestCollectionCtor(
             namedType,
-            KnownSymbols.Compilation.GetCollectionBuilderAttributeMethods(namedType, elementType, keyType, CancellationToken),
+            KnownSymbols.Compilation.GetCollectionBuilderAttributeMethods(namedType, valueType, keyType, CancellationToken),
             hasInserter: false,
             elementType,
             keyType,

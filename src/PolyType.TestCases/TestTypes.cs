@@ -1883,7 +1883,7 @@ public partial class DictionaryWithBuilderAttribute : Dictionary<string, int>
 }
 
 [CollectionBuilder(typeof(GenericDictionaryWithBuilderAttribute), nameof(GenericDictionaryWithBuilderAttribute.Create))]
-public partial class GenericDictionaryWithBuilderAttribute<TKey, TValue> : Dictionary<TKey, TValue>
+public class GenericDictionaryWithBuilderAttribute<TKey, TValue> : Dictionary<TKey, TValue>
     where TKey : notnull
 {
     private GenericDictionaryWithBuilderAttribute() { }
