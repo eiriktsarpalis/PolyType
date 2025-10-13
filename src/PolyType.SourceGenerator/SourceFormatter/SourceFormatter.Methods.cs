@@ -396,7 +396,7 @@ internal sealed partial class SourceFormatter
             // .NET 10+ supports static method accessors using UnsafeAccessorTypeAttribute
             writer.WriteLine($"""
                 [global::System.Runtime.CompilerServices.UnsafeAccessorType({FormatStringLiteral(method.DeclaringType.FullyQualifiedName)})]
-                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = {FormatStringLiteral(method.UnderlyingMethodName)})]
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.StaticMethod, Name = {FormatStringLiteral(method.UnderlyingMethodName)})]
                 private static extern {methodRefPrefix}{method.UnderlyingReturnType.FullyQualifiedName} {accessorName}({allParameters});
                 """);
         }

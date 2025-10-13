@@ -142,7 +142,7 @@ internal sealed partial class SourceFormatter
             // .NET 10+ supports static event accessors using UnsafeAccessorTypeAttribute
             writer.WriteLine($"""
                 [global::System.Runtime.CompilerServices.UnsafeAccessorType({FormatStringLiteral(eventModel.DeclaringType.FullyQualifiedName)})]
-                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = {FormatStringLiteral(methodName)})]
+                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.StaticMethod, Name = {FormatStringLiteral(methodName)})]
                 private static extern void {accessorName}({eventModel.HandlerType.FullyQualifiedName} handler);
                 """);
         }
