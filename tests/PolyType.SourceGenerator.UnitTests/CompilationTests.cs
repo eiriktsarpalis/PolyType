@@ -1563,4 +1563,89 @@ public static partial class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
         Assert.Empty(result.Diagnostics);
     }
+
+    [Fact]
+    public static void DictionaryWithCollectionBuilderAttribute_NoErrors()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+            using System;
+            using System.Collections.Generic;
+            using System.Runtime.CompilerServices;
+
+            [GenerateShape]
+            [CollectionBuilder(typeof(DictionaryWithBuilderAttribute), nameof(Create))]
+            public partial class DictionaryWithBuilderAttribute : Dictionary<string, int>
+            {
+                private DictionaryWithBuilderAttribute() { }
+                private DictionaryWithBuilderAttribute(IEqualityComparer<string> comparer) : base(comparer) { }
+
+                public static DictionaryWithBuilderAttribute Create(ReadOnlySpan<KeyValuePair<string, int>> values)
+                {
+                    throw new NotSupportedException();
+                }
+
+                public static DictionaryWithBuilderAttribute Create(ReadOnlySpan<KeyValuePair<string, int>> values, IEqualityComparer<string>? comparer)
+                {
+                    var result = new DictionaryWithBuilderAttribute(comparer ?? EqualityComparer<string>.Default);
+                    foreach (var kvp in values)
+                    {
+                        result[kvp.Key] = kvp.Value;
+                    }
+                    return result;
+                }
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void GenericDictionaryWithCollectionBuilderAttribute_NoErrors()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+            using System;
+            using System.Collections.Generic;
+            using System.Runtime.CompilerServices;
+
+            [CollectionBuilder(typeof(GenericDictionaryWithBuilderAttribute), nameof(GenericDictionaryWithBuilderAttribute.Create))]
+            public partial class GenericDictionaryWithBuilderAttribute<TKey, TValue> : Dictionary<TKey, TValue>
+                where TKey : notnull
+            {
+                private GenericDictionaryWithBuilderAttribute() { }
+                private GenericDictionaryWithBuilderAttribute(IEqualityComparer<TKey> comparer) : base(comparer) { }
+
+                public static GenericDictionaryWithBuilderAttribute<TKey, TValue> CreateEmpty() => new();
+                public static GenericDictionaryWithBuilderAttribute<TKey, TValue> CreateEmpty(IEqualityComparer<TKey> comparer) => new(comparer);
+            }
+
+            public static class GenericDictionaryWithBuilderAttribute
+            {
+                public static GenericDictionaryWithBuilderAttribute<TKey, TValue> Create<TKey, TValue>(ReadOnlySpan<KeyValuePair<TKey, TValue>> values)
+                    where TKey : notnull
+                {
+                    throw new NotSupportedException();
+                }
+
+                public static GenericDictionaryWithBuilderAttribute<TKey, TValue> Create<TKey, TValue>(ReadOnlySpan<KeyValuePair<TKey, TValue>> values, IEqualityComparer<TKey>? comparer)
+                    where TKey : notnull
+                {
+                    var result = GenericDictionaryWithBuilderAttribute<TKey, TValue>.CreateEmpty(comparer ?? EqualityComparer<TKey>.Default);
+                    foreach (var kvp in values)
+                    {
+                        result[kvp.Key] = kvp.Value;
+                    }
+                    return result;
+                }
+            }
+
+            [GenerateShapeFor(typeof(GenericDictionaryWithBuilderAttribute<string, int>))]
+            partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
 }
