@@ -21,7 +21,7 @@ jobs:
       with:
         fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
 
-    - name: Setup .NET
+    - name: Setup .NET 🤖
       uses: actions/setup-dotnet@v5
       with:
         dotnet-version: |
@@ -29,37 +29,48 @@ jobs:
           9.0.x
 
     # Netfx testing on non-Windows OSes requires mono
-    - name: Setup Mono
+    - name: Setup Mono 🙈
       if: runner.os == 'Linux'
       run: sudo apt-get install -y mono-devel
 
-    - name: Setup Mono on macOS
+    - name: Setup Mono on macOS 🙈
       if: runner.os == 'macOS'
       run: brew install mono
 
-    - name: Build & Test
-      run: make pack CONFIGURATION=${{ matrix.configuration }}
+    - name: Build 🏗️
+      run: make build CONFIGURATION=${{ matrix.configuration }}
+
+    - name: Test 🧪
+      run: make test CONFIGURATION=${{ matrix.configuration }}
       env:
         ENABLE_CODECOV: ${{ runner.os == 'Linux' && matrix.configuration == 'Release' }}
 
-    - name: Upload artifacts
+    - name: Pack 📦
+      if: matrix.configuration == 'Release'
+      run: make pack CONFIGURATION=${{ matrix.configuration }}
+
+    - name: Generate docs 📚
+      if: matrix.configuration == 'Release'
+      run: make generate-docs CONFIGURATION=${{ matrix.configuration }}
+
+    - name: Upload artifacts 🚀
       if: runner.os == 'Linux' && matrix.configuration == 'Release' && github.ref == 'refs/heads/main'
       uses: actions/upload-artifact@v4
       with:
         name: build-artifacts
         path: artifacts/
 
-    - name: Upload to Codecov
+    - name: Upload to Codecov 📊
       uses: codecov/codecov-action@v5
       if: runner.os == 'Linux' && matrix.configuration == 'Release'
       with:
         files: artifacts/testResults/*/*.cobertura.xml
         token: ${{ secrets.CODECOV_TOKEN }}
 
-    - name: Publish CI packages to GitHub
+    - name: Publish CI packages to GitHub 🐙
       if: runner.os == 'Linux' && matrix.configuration == 'Release' && github.event_name == 'push'
       run: make push NUGET_SOURCE=https://nuget.pkg.github.com/eiriktsarpalis/index.json NUGET_API_KEY=${{ secrets.GITHUB_TOKEN }}
 
-    - name: Publish CI packages to Feedz.io
+    - name: Publish CI packages to Feedz.io 🚚
       if: runner.os == 'Linux' && matrix.configuration == 'Release' && github.event_name == 'push'
       run: make push NUGET_SOURCE=https://f.feedz.io/eiriktsarpalis/polytype/nuget/index.json NUGET_API_KEY=${{ secrets.FEEDZ_IO_KEY }}
