@@ -1564,6 +1564,7 @@ public static partial class CompilationTests
         Assert.Empty(result.Diagnostics);
     }
 
+#if NET8_0_OR_GREATER
     [Fact]
     public static void DictionaryWithCollectionBuilderAttribute_NoErrors()
     {
@@ -1648,4 +1649,5 @@ public static partial class CompilationTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
     }
+#endif
 }
