@@ -378,3 +378,4 @@ artifacts/
 # docfx files
 _site
 docs/api
+dotnet-install.sh

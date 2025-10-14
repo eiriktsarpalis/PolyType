@@ -69,6 +69,16 @@ public partial class TypeDataModelGenerator
         {
             (factoryMethod, factorySignature, isParameterizedFactory) = bestCtor;
         }
+        else if (ResolveBestCollectionCtor(
+            namedType,
+            KnownSymbols.Compilation.GetCollectionBuilderAttributeMethods(namedType, valueType, keyType, CancellationToken),
+            hasInserter: false,
+            elementType,
+            keyType,
+            valueType) is { } builderCtor)
+        {
+            (factoryMethod, factorySignature, isParameterizedFactory) = builderCtor;
+        }
 
         if ((status = IncludeNestedType(keyType, ref ctx)) != TypeDataModelGenerationStatus.Success ||
             (status = IncludeNestedType(valueType, ref ctx)) != TypeDataModelGenerationStatus.Success)

@@ -182,6 +182,8 @@ public static class TestTypes
         yield return TestCase.Create(new DictionaryWithEnumerableCtor([new("key", 42)]));
         yield return TestCase.Create(new CollectionWithSpanCtor([1, 2, 1, 3]), usesSpanConstructor: true);
         yield return TestCase.Create(new DictionaryWithSpanCtor([new("key", 42)]), usesSpanConstructor: true);
+        yield return TestCase.Create(DictionaryWithBuilderAttribute.Create([new("key1", 1), new("key2", 2)], comparer: null));
+        yield return TestCase.Create(GenericDictionaryWithBuilderAttribute.Create<string, int>([new("key1", 1), new("key2", 2)], comparer: null), p);
 
         yield return TestCase.Create(new Collection<int> { 1, 2, 3 }, p);
         yield return TestCase.Create(new ObservableCollection<int> { 1, 2, 1, 3 }, p);
@@ -1857,6 +1859,60 @@ public partial class DictionaryWithSpanCtor : Dictionary<string, int>
     }
 }
 
+[GenerateShape]
+[CollectionBuilder(typeof(DictionaryWithBuilderAttribute), nameof(Create))]
+public partial class DictionaryWithBuilderAttribute : Dictionary<string, int>
+{
+    private DictionaryWithBuilderAttribute() { }
+    private DictionaryWithBuilderAttribute(IEqualityComparer<string> comparer) : base(comparer) { }
+
+    public static DictionaryWithBuilderAttribute Create(ReadOnlySpan<KeyValuePair<string, int>> values)
+    {
+        throw new NotSupportedException("This overload should not be used. Use the overload with IEqualityComparer parameter.");
+    }
+
+    public static DictionaryWithBuilderAttribute Create(ReadOnlySpan<KeyValuePair<string, int>> values, IEqualityComparer<string>? comparer)
+    {
+        var result = new DictionaryWithBuilderAttribute(comparer ?? EqualityComparer<string>.Default);
+        foreach (var kvp in values)
+        {
+            result[kvp.Key] = kvp.Value;
+        }
+        return result;
+    }
+}
+
+[CollectionBuilder(typeof(GenericDictionaryWithBuilderAttribute), nameof(GenericDictionaryWithBuilderAttribute.Create))]
+public class GenericDictionaryWithBuilderAttribute<TKey, TValue> : Dictionary<TKey, TValue>
+    where TKey : notnull
+{
+    private GenericDictionaryWithBuilderAttribute() { }
+    private GenericDictionaryWithBuilderAttribute(IEqualityComparer<TKey> comparer) : base(comparer) { }
+
+    public static GenericDictionaryWithBuilderAttribute<TKey, TValue> CreateEmpty() => new();
+    public static GenericDictionaryWithBuilderAttribute<TKey, TValue> CreateEmpty(IEqualityComparer<TKey> comparer) => new(comparer);
+}
+
+public static class GenericDictionaryWithBuilderAttribute
+{
+    public static GenericDictionaryWithBuilderAttribute<TKey, TValue> Create<TKey, TValue>(ReadOnlySpan<KeyValuePair<TKey, TValue>> values)
+        where TKey : notnull
+    {
+        throw new NotSupportedException("This overload should not be used. Use the overload with IEqualityComparer parameter.");
+    }
+
+    public static GenericDictionaryWithBuilderAttribute<TKey, TValue> Create<TKey, TValue>(ReadOnlySpan<KeyValuePair<TKey, TValue>> values, IEqualityComparer<TKey>? comparer)
+        where TKey : notnull
+    {
+        var result = GenericDictionaryWithBuilderAttribute<TKey, TValue>.CreateEmpty(comparer ?? EqualityComparer<TKey>.Default);
+        foreach (var kvp in values)
+        {
+            result[kvp.Key] = kvp.Value;
+        }
+        return result;
+    }
+}
+
 public class MyKeyedCollection<T> : KeyedCollection<int, T>
 {
     private int _count;
@@ -3400,6 +3456,7 @@ public delegate Task<int> LargeAsyncDelegate(
 [GenerateShapeFor<DictionaryWithNullableEntries<int>>]
 [GenerateShapeFor<DictionaryWithNullableEntries<int?>>]
 [GenerateShapeFor<DictionaryWithNullableEntries<string>>]
+[GenerateShapeFor<GenericDictionaryWithBuilderAttribute<string, int>>]
 [GenerateShapeFor<ClassWithNullableProperty<int>>]
 [GenerateShapeFor<ClassWithNullableProperty<int?>>]
 [GenerateShapeFor<ClassWithNullableProperty<string>>]

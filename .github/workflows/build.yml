@@ -43,7 +43,7 @@ jobs:
         ENABLE_CODECOV: ${{ runner.os == 'Linux' && matrix.configuration == 'Release' }}
 
     - name: Upload artifacts
-      if: runner.os == 'Windows' && matrix.configuration == 'Release' && github.ref == 'refs/heads/main'
+      if: runner.os == 'Linux' && matrix.configuration == 'Release' && github.ref == 'refs/heads/main'
       uses: actions/upload-artifact@v4
       with:
         name: build-artifacts
@@ -51,15 +51,15 @@ jobs:
 
     - name: Upload to Codecov
       uses: codecov/codecov-action@v5
-      if: runner.os == 'Windows' && matrix.configuration == 'Release'
+      if: runner.os == 'Linux' && matrix.configuration == 'Release'
       with:
         files: artifacts/testResults/*/*.cobertura.xml
         token: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Publish CI packages to GitHub
-      if: runner.os == 'Windows' && matrix.configuration == 'Release' && github.event_name == 'push'
+      if: runner.os == 'Linux' && matrix.configuration == 'Release' && github.event_name == 'push'
       run: make push NUGET_SOURCE=https://nuget.pkg.github.com/eiriktsarpalis/index.json NUGET_API_KEY=${{ secrets.GITHUB_TOKEN }}
 
     - name: Publish CI packages to Feedz.io
-      if: runner.os == 'Windows' && matrix.configuration == 'Release' && github.event_name == 'push'
+      if: runner.os == 'Linux' && matrix.configuration == 'Release' && github.event_name == 'push'
       run: make push NUGET_SOURCE=https://f.feedz.io/eiriktsarpalis/polytype/nuget/index.json NUGET_API_KEY=${{ secrets.FEEDZ_IO_KEY }}
