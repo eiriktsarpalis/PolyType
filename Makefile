@@ -28,12 +28,14 @@ build: restore
 	dotnet build --no-restore --configuration $(CONFIGURATION) $(ADDITIONAL_ARGS)
 
 test-clr: build
-	dotnet test --configuration $(CONFIGURATION) $(ADDITIONAL_ARGS) \
+	dotnet test \
+		--configuration $(CONFIGURATION) \
+		$(ADDITIONAL_ARGS) \
 		--blame \
 		-p:SkipTUnitTestRuns=true \
-		--results-directory $(ARTIFACT_PATH)/testResults \
-		$(CODECOV_ARGS) \
 		--logger "trx" \
+		$(CODECOV_ARGS) \
+		--results-directory $(ARTIFACT_PATH)/testResults \
 		-- \
 		RunConfiguration.CollectSourceInformation=true
 
