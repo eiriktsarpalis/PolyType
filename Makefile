@@ -9,11 +9,6 @@ DOCKER_IMAGE_NAME ?= "polytype-docker-build"
 DOCKER_CMD ?= make pack
 VERSION_FILE = $(SOURCE_DIRECTORY)version.json
 VERSION ?= ""
-ENABLE_CODECOV ?= false
-
-ifeq ($(ENABLE_CODECOV),true)
-CODECOV_ARGS = --collect "Code Coverage;Format=cobertura"
-endif
 
 clean:
 	dotnet clean --configuration $(CONFIGURATION)
@@ -28,13 +23,14 @@ build: restore
 	dotnet build --no-restore --configuration $(CONFIGURATION) $(ADDITIONAL_ARGS)
 
 test-clr: build
-	dotnet test --configuration $(CONFIGURATION) $(ADDITIONAL_ARGS) \
+	dotnet test \
+		--configuration $(CONFIGURATION) \
+		$(ADDITIONAL_ARGS) \
 		--blame \
 		-p:SkipTUnitTestRuns=true \
-		--results-directory $(ARTIFACT_PATH)/testResults \
-		$(CODECOV_ARGS) \
 		--logger "trx" \
-		--logger "GitHubActions;summary.includePassedTests=true;summary.includeSkippedTests=true" \
+		--collect "XPlat Code Coverage" \
+		--results-directory $(ARTIFACT_PATH)/testResults \
 		-- \
 		RunConfiguration.CollectSourceInformation=true
 
