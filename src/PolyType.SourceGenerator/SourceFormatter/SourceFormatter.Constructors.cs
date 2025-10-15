@@ -84,7 +84,7 @@ internal sealed partial class SourceFormatter
                 _ => FormatTupleConstructor(constructor.GetAllParameters().Select(FormatDefaultValueExpr)),
             };
 
-            return $"static () => new({stateValueExpr}, count: {constructor.TotalArity}, requiredArgumentsMask: {requiredMembersMaskFieldName})";
+            return $"static () => new(new({stateValueExpr}), count: {constructor.TotalArity}, requiredArgumentsMask: {requiredMembersMaskFieldName})";
             static string FormatTupleConstructor(IEnumerable<string> parameters)
                 => $"({string.Join(", ", parameters)})";
         }
@@ -104,8 +104,8 @@ internal sealed partial class SourceFormatter
                     return constructor.TotalArity switch
                     {
                         0 => $"default({type.Type.FullyQualifiedName})",
-                        1 => $"new ({stateVar}.Arguments)",
-                        _ => $"{stateVar}.Arguments",
+                        1 => $"new ({stateVar}.Arguments.Value!)",
+                        _ => $"{stateVar}.Arguments.Value",
                     };
                 }
 
@@ -116,7 +116,7 @@ internal sealed partial class SourceFormatter
 
                     if (constructor.Parameters.Length == 1)
                     {
-                        return $"new({stateVar}.Arguments)";
+                        return $"new({stateVar}.Arguments.Value!)";
                     }
 
                     var sb = new StringBuilder();
@@ -141,7 +141,7 @@ internal sealed partial class SourceFormatter
                 {
                     0 => null,
                     _ when !constructor.IsAccessible => null, // Can't use member initializers with unsafe accessors
-                    1 when constructor.TotalArity == 1 => $$""" { {{constructor.RequiredMembers[0].UnderlyingMemberName}} = {{stateVar}}.Arguments }""",
+                    1 when constructor.TotalArity == 1 => $$""" { {{constructor.RequiredMembers[0].UnderlyingMemberName}} = {{stateVar}}.Arguments.Value! }""",
                     _ => $$""" { {{FormatInitializerBody()}} }""",
                 };
 
@@ -226,8 +226,8 @@ internal sealed partial class SourceFormatter
                     };
                     
                     return isSingleParameter
-                        ? $"{refPrefix}{stateVar}.Arguments{(requiresSuppression ? "!" : "")}"
-                        : $"{refPrefix}{stateVar}.Arguments.Item{parameter.Position + 1}{(requiresSuppression ? "!" : "")}";
+                        ? $"{refPrefix}{stateVar}.Arguments.Value!"
+                        : $"{refPrefix}{stateVar}.Arguments.Value.Item{parameter.Position + 1}{(requiresSuppression ? "!" : "")}";
                 }
             }
         }
@@ -338,8 +338,8 @@ internal sealed partial class SourceFormatter
 
                 return constructor.TotalArity switch
                 {
-                    1 => $"state.Arguments{(suppressGetter ? "!" : "")}",
-                    _ => $"state.Arguments.Item{parameter.Position + 1}{(suppressGetter ? "!" : "")}",
+                    1 => $"state.Arguments.Value!",
+                    _ => $"state.Arguments.Value.Item{parameter.Position + 1}{(suppressGetter ? "!" : "")}",
                 };
             }
 
@@ -354,8 +354,8 @@ internal sealed partial class SourceFormatter
                 
                 string assignValueExpr = constructor.TotalArity switch
                 {
-                    1 => $"state.Arguments = value{(suppressSetter ? "!" : "")}",
-                    _ => $"state.Arguments.Item{parameter.Position + 1} = value{(suppressSetter ? "!" : "")}",
+                    1 => $"state.Arguments.Value = value{(suppressSetter ? "!" : "")}",
+                    _ => $"state.Arguments.Value.Item{parameter.Position + 1} = value{(suppressSetter ? "!" : "")}",
                 };
 
                 return $$"""{ {{assignValueExpr}}; state.MarkArgumentSet({{parameter.Position}}); }""";
@@ -395,8 +395,8 @@ internal sealed partial class SourceFormatter
         return constructorModel.ArgumentStateType switch
         {
             ArgumentStateType.EmptyArgumentState => $"global::PolyType.SourceGenModel.EmptyArgumentState",
-            ArgumentStateType.SmallArgumentState => $"global::PolyType.SourceGenModel.SmallArgumentState<{typeParameter}>",
-            ArgumentStateType.LargeArgumentState => $"global::PolyType.SourceGenModel.LargeArgumentState<{typeParameter}>",
+            ArgumentStateType.SmallArgumentState => $"global::PolyType.SourceGenModel.SmallArgumentState<global::System.Runtime.CompilerServices.StrongBox<{typeParameter}>>",
+            ArgumentStateType.LargeArgumentState => $"global::PolyType.SourceGenModel.LargeArgumentState<global::System.Runtime.CompilerServices.StrongBox<{typeParameter}>>",
             _ => throw new InvalidOperationException(constructorModel.ArgumentStateType.ToString()),
         };
 
