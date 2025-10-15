@@ -34,6 +34,7 @@ test-clr: build
 		--results-directory $(ARTIFACT_PATH)/testResults \
 		$(CODECOV_ARGS) \
 		--logger "trx" \
+		--logger "GitHubActions;summary.includePassedTests=true;summary.includeSkippedTests=true" \
 		-- \
 		RunConfiguration.CollectSourceInformation=true
 
