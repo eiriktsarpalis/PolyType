@@ -87,7 +87,7 @@ internal sealed partial class SourceFormatter
                 _ => FormatTupleConstructor(functionShapeModel.Parameters.Select(FormatDefaultValueExpr)),
             };
 
-            return $"static () => new {functionArgumentStateFQN}({stateValueExpr}, count: {functionShapeModel.Parameters.Length}, requiredArgumentsMask: {requiredParametersMaskFieldName})";
+            return $"static () => new {functionArgumentStateFQN}(new({stateValueExpr}), count: {functionShapeModel.Parameters.Length}, requiredArgumentsMask: {requiredParametersMaskFieldName})";
 
             static string FormatTupleConstructor(IEnumerable<string> parameters)
                 => $"({string.Join(", ", parameters)})";
@@ -150,8 +150,8 @@ internal sealed partial class SourceFormatter
                 string refPrefix = FormatRefPrefix(parameter);
 
                 return isSingleParameter
-                    ? $"{refPrefix}state.Arguments{(requiresSuppression ? "!" : "")}"
-                    : $"{refPrefix}state.Arguments.Item{parameter.Position + 1}{(requiresSuppression ? "!" : "")}";
+                    ? $"{refPrefix}state.Arguments.Value!"
+                    : $"{refPrefix}state.Arguments.Value.Item{parameter.Position + 1}{(requiresSuppression ? "!" : "")}";
             }
         }
 
@@ -173,8 +173,8 @@ internal sealed partial class SourceFormatter
             string argumentStateCtorExpr = functionShapeModel.Parameters switch
             {
                 [] => "global::PolyType.SourceGenModel.EmptyArgumentState.Instance",
-                [var p] => $"new({p.Name}{GetSuppressionSuffix(p)}, count: 1, requiredArgumentsMask: {requiredParametersMaskFieldName}, markAllArgumentsSet: true)",
-                _ => $"new(({string.Join(", ", functionShapeModel.Parameters.Select(p => p.Name + GetSuppressionSuffix(p)))}), count: {functionShapeModel.Parameters.Length}, requiredArgumentsMask: {requiredParametersMaskFieldName}, markAllArgumentsSet: true)",
+                [var p] => $"new(new({p.Name}{GetSuppressionSuffix(p)}), count: 1, requiredArgumentsMask: {requiredParametersMaskFieldName}, markAllArgumentsSet: true)",
+                _ => $"new(new(({string.Join(", ", functionShapeModel.Parameters.Select(p => p.Name + GetSuppressionSuffix(p)))})), count: {functionShapeModel.Parameters.Length}, requiredArgumentsMask: {requiredParametersMaskFieldName}, markAllArgumentsSet: true)",
             };
 
             const string innerFuncVar = "innerFunc";
@@ -212,8 +212,8 @@ internal sealed partial class SourceFormatter
         return method.ArgumentStateType switch
         {
             ArgumentStateType.EmptyArgumentState => $"global::PolyType.SourceGenModel.EmptyArgumentState",
-            ArgumentStateType.SmallArgumentState => $"global::PolyType.SourceGenModel.SmallArgumentState<{typeParameter}>",
-            ArgumentStateType.LargeArgumentState => $"global::PolyType.SourceGenModel.LargeArgumentState<{typeParameter}>",
+            ArgumentStateType.SmallArgumentState => $"global::PolyType.SourceGenModel.SmallArgumentState<global::System.Runtime.CompilerServices.StrongBox<{typeParameter}>>",
+            ArgumentStateType.LargeArgumentState => $"global::PolyType.SourceGenModel.LargeArgumentState<global::System.Runtime.CompilerServices.StrongBox<{typeParameter}>>",
             _ => throw new InvalidOperationException(method.ArgumentStateType.ToString()),
         };
 
@@ -288,8 +288,8 @@ internal sealed partial class SourceFormatter
 
                 return functionShapeModel.Parameters.Length switch
                 {
-                    1 => $"state.Arguments{(suppressGetter ? "!" : "")}",
-                    _ => $"state.Arguments.Item{parameter.Position + 1}{(suppressGetter ? "!" : "")}",
+                    1 => $"state.Arguments.Value!",
+                    _ => $"state.Arguments.Value.Item{parameter.Position + 1}{(suppressGetter ? "!" : "")}",
                 };
             }
 
@@ -304,8 +304,8 @@ internal sealed partial class SourceFormatter
 
                 string assignValueExpr = functionShapeModel.Parameters.Length switch
                 {
-                    1 => $"state.Arguments = value{(suppressSetter ? "!" : "")}",
-                    _ => $"state.Arguments.Item{parameter.Position + 1} = value{(suppressSetter ? "!" : "")}",
+                    1 => $"state.Arguments.Value = value{(suppressSetter ? "!" : "")}",
+                    _ => $"state.Arguments.Value.Item{parameter.Position + 1} = value{(suppressSetter ? "!" : "")}",
                 };
 
                 return $$"""{ {{assignValueExpr}}; state.MarkArgumentSet({{parameter.Position}}); }""";
