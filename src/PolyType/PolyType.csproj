@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net9.0;net8.0;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net9.0;net8.0;net472;netstandard2.0</TargetFrameworks>
+    <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)','net8.0'))">true</IsAotCompatible>
     <IsPackable>true</IsPackable>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -9,13 +10,9 @@
     <!-- <PackageValidationBaselineVersion>1.0.0</PackageValidationBaselineVersion> -->
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+  <PropertyGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)','net8.0'))">
     <!-- XML comments should not warn in targets where IShapeable{T} is not available -->
-    <NoWarn>CS1574</NoWarn>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
-    <IsAotCompatible>true</IsAotCompatible>
+    <NoWarn>$(NoWarn);CS1574</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,7 +23,7 @@
     <Compile Include="..\Shared\Polyfills\FSharpSourceConstructFlags.cs" Link="Shared\Polyfills\%(Filename).cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)','net8.0'))">
     <Compile Include="..\Shared\Polyfills\NullabilityInfo\*.cs " Link="Shared\Polyfills\NullabilityInfo\%(Filename).cs" />
     <Compile Include="..\Shared\Polyfills\LinkerAttributes\*.cs " Link="Shared\Polyfills\LinkerAttributes\%(Filename).cs" />
   </ItemGroup>
@@ -50,7 +47,7 @@
     </PackageReference>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)','net8.0'))">
     <PackageReference Include="System.Memory" />
     <PackageReference Include="System.Reflection.Emit.Lightweight" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" />
