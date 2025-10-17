@@ -46,6 +46,87 @@ public abstract class PrettyPrinterFSharpTests(ProviderUnderTest providerUnderTe
         yield return [TestCase.Create(FSharpOption<int>.Some(42), p), "42"];
         yield return [TestCase.Create(FSharpValueOption<int>.None, p), "null"];
         yield return [TestCase.Create(FSharpValueOption<int>.Some(42), p), "42"];
+        
+        // POCOs
+        yield return [TestCase.Create(new SimplePoco { Value = 42 }), 
+            """
+            new SimplePoco
+            {
+              Value = 42
+            }
+            """];
+        
+        yield return [TestCase.Create(new BaseClass { X = 1 }), 
+            """
+            new BaseClass
+            {
+              X = 1
+            }
+            """];
+        
+        yield return [TestCase.Create(new DerivedClass { X = 1, Y = 2 }), 
+            """
+            new DerivedClass
+            {
+              Y = 2,
+              X = 1
+            }
+            """];
+        
+        // Records
+        yield return [TestCase.Create(new SimpleRecord(42)), 
+            """
+            new SimpleRecord
+            {
+              value = 42
+            }
+            """];
+        
+        yield return [TestCase.Create(new GenericRecord<int>(42), p), 
+            """
+            new GenericRecord<Int32>
+            {
+              value = 42
+            }
+            """];
+        
+        yield return [TestCase.Create(new GenericRecord<string>("str"), p), 
+            """
+            new GenericRecord<String>
+            {
+              value = "str"
+            }
+            """];
+        
+        // Recursive types
+        yield return [TestCase.Create(new MyLinkedList<int>
+        {
+            Value = 1,
+            Next = new()
+            {
+                Value = 2,
+                Next = new()
+                {
+                    Value = 3,
+                    Next = null,
+                }
+            }
+        }, p),
+            """
+            new MyLinkedList<Int32>
+            {
+              Value = 1,
+              Next = new MyLinkedList<Int32>
+              {
+                Value = 2,
+                Next = new MyLinkedList<Int32>
+                {
+                  Value = 3,
+                  Next = null
+                }
+              }
+            }
+            """];
     }
 
     private static string ReplaceLineEndings(string value) => s_newLineRegex.Replace(value, Environment.NewLine);
