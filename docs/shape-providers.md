@@ -316,6 +316,36 @@ class PocoWithConstructors
 }
 ```
 
+### Including method shapes for RPC
+
+PolyType supports the creation of RPC libraries capable of invoking methods of user-defined types. Users can opt in by configuring the <xref:PolyType.TypeShapeAttribute.IncludeMethods> which generates shapes for a type's methods and their parameter parameters:
+
+```csharp
+[TypeShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+public class UserService
+{
+    public async ValueTask<User> GetUserAsync(int userId)
+    {
+        // Implementation
+    }
+    
+    public async ValueTask<bool> UpdateUserAsync(User user)
+    {
+        // Implementation
+    }
+}
+```
+
+Method shapes enable libraries to automatically generate RPC handlers, HTTP endpoints, or dynamic invocation logic. For example, the `JsonFunc` abstraction in `PolyType.Examples` wraps methods with JSON-based parameter marshaling:
+
+```csharp
+ITypeShape<UserService> serviceShape = ...;
+IMethodShape getUserMethod = serviceShape.Methods.First(m => m.Name == "GetUserAsync");
+
+JsonFunc jsonFunc = JsonSerializerTS.CreateJsonFunc(getUserMethod, new UserService());
+JsonElement result = await jsonFunc.Invoke("""{"userId": 123}""");
+```
+
 ### DataContract support
 
 PolyType includes limited support for types using [data contract annotations](https://learn.microsoft.com/dotnet/framework/wcf/feature-details/using-data-contracts).

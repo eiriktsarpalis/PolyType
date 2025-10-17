@@ -44,6 +44,49 @@ CborSerializer.EncodeToHex(person); // A2644E616D656450657465634167651846
 
 Since the application uses a source generator to produce the shape for `Person`, it is fully compatible with Native AOT. See the [shape providers](https://eiriktsarpalis.github.io/PolyType/shape-providers.html) article for more details on how to use the library with your types.
 
+## RPC Support
+
+PolyType enables rapid development of RPC frameworks and method invocation libraries using method shapes. Here's an example using a `JsonFunc` abstraction from `TypeShape.Examples` sample library, which wraps .NET methods in JSON-based delegates:
+
+```csharp
+using PolyType;
+using PolyType.Examples.JsonSerializer;
+
+// Define a service class with methods to expose
+[GenerateShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+public partial class CalculatorService
+{
+    public int Add(int x, int y) => x + y;
+    
+    public async ValueTask<double> DivideAsync(double numerator, double denominator)
+    {
+        await Task.Delay(10); // Simulate async work
+        return numerator / denominator;
+    }
+}
+
+// Create JSON-based delegates for each method
+var service = new CalculatorService();
+var serviceShape = TypeShapeResolver.Resolve<CalculatorService>();
+
+var addFunc = JsonSerializerTS.CreateJsonFunc(
+    serviceShape.Methods.First(m => m.Name == "Add"), 
+    service);
+
+var divideFunc = JsonSerializerTS.CreateJsonFunc(
+    serviceShape.Methods.First(m => m.Name == "DivideAsync"), 
+    service);
+
+// Invoke methods with JSON parameters
+var result1 = await addFunc.Invoke("""{"x": 5, "y": 3}""");
+Console.WriteLine(result1.GetRawText()); // 8
+
+var result2 = await divideFunc.Invoke("""{"numerator": 10.0, "denominator": 2.0}""");
+Console.WriteLine(result2.GetRawText()); // 5
+```
+
+The `JsonFunc` abstraction provides a uniform way to invoke arbitrary .NET methods using JSON-serialized parameters and return values, making it ideal for building RPC systems, HTTP API handlers, and other dynamic invocation scenarios. See the [core abstractions](https://eiriktsarpalis.github.io/PolyType/core-abstractions.html#method-shapes) documentation for more details.
+
 ## Authoring PolyType Libraries
 
 As a library author, PolyType makes it easy to write high-performance, feature-complete components by targeting its [core abstractions](https://eiriktsarpalis.github.io/PolyType/core-abstractions.html). For example, a parser API using PolyType might look as follows:
