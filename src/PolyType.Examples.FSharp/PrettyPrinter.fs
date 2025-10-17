@@ -9,7 +9,7 @@ open PolyType.Abstractions
 open PolyType.Utilities
 
 /// A delegate that formats a pretty-printed value to a TextWriter.
-type PrettyPrinter<'T> = delegate of TextWriter * int * 'T -> unit
+type PrettyPrinter<'T> = delegate of writer:TextWriter * indentation:int * value:'T -> unit
 
 /// Provides a pretty printer for .NET types built on top of PolyType.
 module PrettyPrinter =
@@ -20,6 +20,7 @@ module PrettyPrinter =
                 t.GetGenericArguments() 
                 |> Seq.map formatTypeName
                 |> String.concat ", "
+
             $"{t.Name.Split('`').[0]}<{paramNames}>"
         else
             t.Name
@@ -29,9 +30,9 @@ module PrettyPrinter =
         writer.Write(String(' ', 2 * indentation))
     
     let private writeStringLiteral (writer: TextWriter) (value: obj) =
-        writer.Write('\"')
-        writer.Write(value)
-        writer.Write('\"')
+        writer.Write '\"'
+        writer.Write value
+        writer.Write '\"'
     
     type private Builder(self: ITypeShapeFunc) =
         inherit TypeShapeVisitor()
@@ -57,13 +58,13 @@ module PrettyPrinter =
                 typeof<BigInteger>, box <| PrettyPrinter<BigInteger>(fun writer _ i -> writer.Write(i))
                 
                 typeof<char>, box <| PrettyPrinter<char>(fun writer _ c -> 
-                    writer.Write('\'')
-                    writer.Write(c)
-                    writer.Write('\''))
+                    writer.Write '\''
+                    writer.Write c
+                    writer.Write '\'')
                 
                 typeof<string>, box <| PrettyPrinter<string>(fun writer _ s -> 
                     if isNull s then
-                        writer.Write("null")
+                        writer.Write "null"
                     else
                         writeStringLiteral writer s)
                 
@@ -93,32 +94,32 @@ module PrettyPrinter =
             
             box <| PrettyPrinter<'T>(fun writer indentation value ->
                 if box value |> isNull then
-                    writer.Write("null")
+                    writer.Write "null"
                 else
-                    writer.Write("new ")
+                    writer.Write "new "
                     writer.Write(typeName)
                     
                     if propertyPrinters.Length = 0 then
-                        writer.Write("()")
+                        writer.Write "()"
                     else
                         writeLine writer indentation
-                        writer.Write('{')
-                        for i in 0 .. propertyPrinters.Length - 1 do
+                        writer.Write '{'
+                        for i = 0 to propertyPrinters.Length - 1 do
                             writeLine writer (indentation + 1)
                             propertyPrinters.[i].Invoke(writer, indentation + 1, value)
                             if i < propertyPrinters.Length - 1 then
-                                writer.Write(',')
+                                writer.Write ','
                         writeLine writer indentation
-                        writer.Write('}'))
+                        writer.Write '}')
         
         override this.VisitProperty<'TDeclaringType, 'TPropertyType>(property: IPropertyShape<'TDeclaringType, 'TPropertyType>, _state: obj) : obj =
             let getter = property.GetGetter()
             let propertyTypePrinter = this.GetOrAddPrettyPrinter property.PropertyType
             box <| PrettyPrinter<'TDeclaringType>(fun writer indentation obj ->
-                writer.Write(property.Name)
-                writer.Write(" = ")
+                writer.Write property.Name
+                writer.Write " = "
                 let mutable objRef = obj
-                propertyTypePrinter.Invoke(writer, indentation, getter.Invoke(&objRef)))
+                propertyTypePrinter.Invoke(writer, indentation, getter.Invoke &objRef))
         
         override this.VisitEnumerable<'TEnumerable, 'TElement>(enumerableShape: IEnumerableTypeShape<'TEnumerable, 'TElement>, _state: obj) : obj =
             let enumerableGetter = enumerableShape.GetGetEnumerable()
@@ -127,27 +128,27 @@ module PrettyPrinter =
             
             box <| PrettyPrinter<'TEnumerable>(fun writer indentation value ->
                 if box value |> isNull then
-                    writer.Write("null")
+                    writer.Write "null"
                 else
-                    writer.Write('[')
+                    writer.Write '['
                     
                     let mutable containsElements = false
                     if valuesArePrimitives then
-                        for element in enumerableGetter.Invoke(value) do
+                        for element in enumerableGetter.Invoke value do
                             if containsElements then
-                                writer.Write(", ")
+                                writer.Write ", "
                             elementPrinter.Invoke(writer, indentation, element)
                             containsElements <- true
                     else
                         for element in enumerableGetter.Invoke(value) do
                             if containsElements then
-                                writer.Write(',')
+                                writer.Write ','
                             writeLine writer (indentation + 1)
                             elementPrinter.Invoke(writer, indentation + 1, element)
                             containsElements <- true
                         writeLine writer indentation
                     
-                    writer.Write(']'))
+                    writer.Write ']')
         
         override this.VisitDictionary<'TDictionary, 'TKey, 'TValue>(dictionaryShape: IDictionaryTypeShape<'TDictionary, 'TKey, 'TValue>, _state: obj) : obj =
             let typeName = formatTypeName typeof<'TDictionary>
@@ -157,30 +158,30 @@ module PrettyPrinter =
             
             box <| PrettyPrinter<'TDictionary>(fun writer indentation value ->
                 if box value |> isNull then
-                    writer.Write("null")
+                    writer.Write "null"
                 else
-                    writer.Write("new ")
-                    writer.Write(typeName)
+                    writer.Write "new "
+                    writer.Write typeName
                     
-                    let dictionary = dictionaryGetter.Invoke(value)
+                    let dictionary = dictionaryGetter.Invoke value
                     
                     if dictionary.Count = 0 then
-                        writer.Write("()")
+                        writer.Write "()"
                     else
                         writeLine writer indentation
-                        writer.Write('{')
+                        writer.Write '{'
                         let mutable first = true
                         for kvp in dictionary do
                             if not first then
-                                writer.Write(',')
+                                writer.Write ','
                             writeLine writer (indentation + 1)
-                            writer.Write('[')
+                            writer.Write '['
                             keyPrinter.Invoke(writer, indentation + 1, kvp.Key)
-                            writer.Write("] = ")
+                            writer.Write "] = "
                             valuePrinter.Invoke(writer, indentation + 1, kvp.Value)
                             first <- false
                         writeLine writer indentation
-                        writer.Write('}'))
+                        writer.Write '}')
         
         // Note: VisitEnum is not overridden due to F# compiler constraints issues with Enum types
         // The base implementation from TypeShapeVisitor will be used instead
@@ -191,7 +192,7 @@ module PrettyPrinter =
             box <| PrettyPrinter<'TOptional>(fun writer indentation value ->
                 let mutable element = Unchecked.defaultof<'TElement>
                 if not (deconstructor.Invoke(value, &element)) then
-                    writer.Write("null")
+                    writer.Write "null"
                 else
                     elementPrinter.Invoke(writer, indentation, element))
         
@@ -211,10 +212,10 @@ module PrettyPrinter =
             
             box <| PrettyPrinter<'TUnion>(fun writer indentation value ->
                 if box value |> isNull then
-                    writer.Write("null")
+                    writer.Write "null"
                 else
                     let mutable valueRef = value
-                    let index = getUnionCaseIndex.Invoke(&valueRef)
+                    let index = getUnionCaseIndex.Invoke &valueRef
                     let derivedPrinter = if index < 0 then baseCasePrinter else unionCasePrinters.[index]
                     derivedPrinter.Invoke(writer, indentation, value))
         
