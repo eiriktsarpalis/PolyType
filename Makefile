@@ -54,7 +54,8 @@ pack: build
 push:
 	dotnet nuget push $(ARTIFACT_PATH)/*.nupkg -s $(NUGET_SOURCE) -k $(NUGET_API_KEY)
 
-generate-docs: build
+generate-docs: restore
+	dotnet build -c Release
 	dotnet docfx $(DOCS_PATH)/docfx.json --warningsAsErrors true
 
 serve-docs: generate-docs

@@ -172,9 +172,9 @@ For example, serializers may need to jump from a type shape to its converter.
 
 [!code-csharp[](CSharpSamples/AssociatedTypes.cs#TypeShapeOneType)]
 
-Use the @PolyType.ITypeShape.GetAssociatedTypeShape*?displayProperty=nameWithType method to obtain the shape of an associated type.
-The @PolyType.SourceGenModel.SourceGenTypeShapeProvider implementation of this method requires that the associated types be pre-determined at compile time via attributes.
-The @PolyType.ReflectionProvider.ReflectionTypeShapeProvider is guaranteed to work with all types and therefore does _not_ require these attributes.
+Use the <xref:PolyType.ITypeShape.GetAssociatedTypeShape*> method to obtain the shape of an associated type.
+The <xref:PolyType.SourceGenModel.SourceGenTypeShapeProvider> implementation of this method requires that the associated types be pre-determined at compile time via attributes.
+The <xref:PolyType.ReflectionProvider.ReflectionTypeShapeProvider> is guaranteed to work with all types and therefore does _not_ require these attributes.
 Thus, it can be valuable to test your associated types code with the source generation provider to ensure your code is AOT-compatible.
 
 An associated type must have at least `internal` visibility for its shape to be generated for use within its same assembly.
@@ -190,20 +190,20 @@ This can be appropriate for a serializer that needs to jump from a generic data 
 
 [!code-csharp[](CSharpSamples/AssociatedTypes.cs#SerializerConverter)]
 
-Only @PolyType.SourceGenModel.SourceGenTypeShapeProvider produces partial shapes.
-The @PolyType.ReflectionProvider.ReflectionTypeShapeProvider always produces complete shapes.
+Only <xref:PolyType.SourceGenModel.SourceGenTypeShapeProvider> produces partial shapes.
+The <xref:PolyType.ReflectionProvider.ReflectionTypeShapeProvider> always produces complete shapes.
 
-At present, only @PolyType.Abstractions.IObjectTypeShape shapes are generated partially.
+At present, only <xref:PolyType.Abstractions.IObjectTypeShape> shapes are generated partially.
 Shapes for collections, enums, unions, etc. are generated as full shapes.
 
-Type associations can be defined directly on the originating type via @PolyType.AssociatedTypeShapeAttribute.AssociatedTypes?displayProperty=nameWithType when that type and its associated type are in the same assembly.
-When the associated type is in another assembly, use @PolyType.TypeShapeExtensionAttribute.AssociatedTypes?displayProperty=nameWithType in the assembly that declares the associated type.
+Type associations can be defined directly on the originating type via <xref:PolyType.AssociatedTypeShapeAttribute.AssociatedTypes> when that type and its associated type are in the same assembly.
+When the associated type is in another assembly, use <xref:PolyType.TypeShapeExtensionAttribute.AssociatedTypes> in the assembly that declares the associated type.
 You can also define a custom attribute that can define associated types by attributing your own custom attribute with @PolyType.Abstractions.AssociatedTypeAttributeAttribute.
 
 ### TypeShapeExtensionAttribute
 
-The @PolyType.TypeShapeExtensionAttribute is an assembly-level attribute.
-It is very similar to @PolyType.TypeShapeAttribute, but it is used to customize the generated shape for a type that your assembly does not declare.
+The <xref:PolyType.TypeShapeExtensionAttribute> is an assembly-level attribute.
+It is very similar to <xref:PolyType.TypeShapeAttribute>, but it is used to customize the generated shape for a type that your assembly does not declare.
 
 ### Polymorphic types
 
