@@ -41,6 +41,7 @@
   <Folder Name="/src/">
     <File Path="src/Directory.Build.props" />
     <Project Path="src/PolyType.Examples/PolyType.Examples.csproj" />
+    <Project Path="src/PolyType.Examples.FSharp/PolyType.Examples.FSharp.fsproj" />
     <Project Path="src/PolyType.Roslyn/PolyType.Roslyn.csproj" />
     <Project Path="src/PolyType.SourceGenerator/PolyType.SourceGenerator.csproj" />
     <Project Path="src/PolyType.TestCases.FSharp/PolyType.TestCases.FSharp.fsproj" />
