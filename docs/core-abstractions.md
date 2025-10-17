@@ -753,6 +753,109 @@ partial class Calculator
 }
 ```
 
+### Building RPC systems with JsonFunc
+
+One of the most practical applications of method shapes is building RPC systems. The built-in `JsonFunc` abstraction (from `PolyType.Examples`) demonstrates how to wrap arbitrary .NET methods with JSON-based parameter marshaling:
+
+```csharp
+using PolyType;
+using PolyType.Examples.JsonSerializer;
+
+// Define an RPC service with various method signatures
+[GenerateShape, TypeShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+public partial class UserService
+{
+    private readonly Dictionary<int, User> _users = new();
+    private int _nextId = 1;
+
+    // Simple synchronous method
+    public User CreateUser(string name, int age)
+    {
+        var user = new User(_nextId++, name, age);
+        _users[user.Id] = user;
+        return user;
+    }
+
+    // Async method with cancellation token
+    public async ValueTask<User?> GetUserAsync(int id, CancellationToken cancellationToken = default)
+    {
+        await Task.Delay(10, cancellationToken); // Simulate async work
+        return _users.TryGetValue(id, out var user) ? user : null;
+    }
+
+    // Method returning collection via IAsyncEnumerable
+    public async IAsyncEnumerable<User> GetAllUsersAsync(
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        foreach (var user in _users.Values)
+        {
+            await Task.Yield();
+            yield return user;
+        }
+    }
+
+    // Void-like async method
+    public async ValueTask DeleteUserAsync(int id)
+    {
+        await Task.CompletedTask;
+        _users.Remove(id);
+    }
+}
+
+public record User(int Id, string Name, int Age);
+```
+
+The `CreateJsonFunc` method generates a `JsonFunc` delegate that handles parameter deserialization and result serialization:
+
+```csharp
+var service = new UserService();
+var serviceShape = TypeShapeResolver.Resolve<UserService>();
+
+// Create JsonFunc wrappers for each method
+var createUserFunc = JsonSerializerTS.CreateJsonFunc(
+    serviceShape.Methods.First(m => m.Name == nameof(UserService.CreateUser)),
+    service);
+
+var getUserFunc = JsonSerializerTS.CreateJsonFunc(
+    serviceShape.Methods.First(m => m.Name == nameof(UserService.GetUserAsync)),
+    service);
+
+var getAllUsersFunc = JsonSerializerTS.CreateJsonFunc(
+    serviceShape.Methods.First(m => m.Name == nameof(UserService.GetAllUsersAsync)),
+    service);
+
+// Invoke methods using JSON parameters
+var createResult = await createUserFunc.Invoke("""{"name": "Alice", "age": 30}""");
+Console.WriteLine(createResult.GetRawText()); 
+// {"Id":1,"Name":"Alice","Age":30}
+
+var getResult = await getUserFunc.Invoke("""{"id": 1}""");
+Console.WriteLine(getResult.GetRawText()); 
+// {"Id":1,"Name":"Alice","Age":30}
+
+var getAllResult = await getAllUsersFunc.Invoke("""{}""");
+Console.WriteLine(getAllResult.GetRawText());
+// [{"Id":1,"Name":"Alice","Age":30}]
+```
+
+The `JsonFunc` delegate signature accepts JSON parameters as a dictionary and returns JSON results:
+
+```csharp
+public delegate ValueTask<JsonElement> JsonFunc(
+    IReadOnlyDictionary<string, JsonElement> parameters,
+    CancellationToken cancellationToken = default);
+```
+
+There are also convenient overloads for invoking with string JSON:
+
+```csharp
+// Extension methods on JsonFunc
+var result = await jsonFunc.Invoke("""{"id": 1}""");  // From JSON string
+var result2 = await jsonFunc.Invoke("""{"id": 1}""", cancellationToken);
+```
+
+This pattern makes it easy to build HTTP API handlers, message-based RPC systems, or any scenario requiring dynamic method invocation with serialized parameters. The approach works seamlessly with Native AOT when using the source generator, and the type-safe method shape ensures all parameters and return types are correctly handled.
+
 ### Function type shapes
 
 The `IFunctionTypeShape` abstraction has many similarities with the `IMethodShape` abstraction, exposing the same facilities enabling generic function invocation:

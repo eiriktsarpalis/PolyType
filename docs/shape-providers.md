@@ -82,6 +82,46 @@ PolyType exposes a number of attributes that tweak aspects of the generated shap
 
 The <xref:PolyType.TypeShapeAttribute> attribute can be applied on type declarations to customize their generated shapes. It is independent of the <xref:PolyType.GenerateShapeAttribute> attribute since it doesn't trigger the source generator and is recognized by the reflection-based provider.
 
+#### Including method shapes for RPC scenarios
+
+The `IncludeMethods` property can be used to include method shapes in a type's generated shape. This is essential for RPC generation and method invocation scenarios:
+
+```csharp
+[GenerateShape, TypeShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+public partial class UserService
+{
+    public async ValueTask<User> GetUserAsync(int userId)
+    {
+        // Implementation
+    }
+    
+    public async ValueTask<bool> UpdateUserAsync(User user)
+    {
+        // Implementation
+    }
+}
+```
+
+Available flags for `IncludeMethods`:
+- `None` - No methods are included (default)
+- `PublicInstance` - Include public instance methods
+- `PublicStatic` - Include public static methods
+- `AllPublic` - Include all public methods (instance and static)
+- `PrivateInstance` - Include private instance methods
+- `PrivateStatic` - Include private static methods
+- `AllPrivate` - Include all private methods
+- `All` - Include all methods
+
+Method shapes enable libraries to automatically generate RPC handlers, HTTP endpoints, or dynamic invocation logic. For example, the built-in `JsonFunc` abstraction wraps methods with JSON-based parameter marshaling:
+
+```csharp
+var serviceShape = TypeShapeResolver.Resolve<UserService>();
+var getUserMethod = serviceShape.Methods.First(m => m.Name == "GetUserAsync");
+
+var jsonFunc = JsonSerializerTS.CreateJsonFunc(getUserMethod, new UserService());
+var result = await jsonFunc.Invoke("""{"userId": 123}""");
+```
+
 The `Kind` property can be used to override the default shape kind for a particular type:
 
 ```csharp
