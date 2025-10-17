@@ -20,7 +20,7 @@ module PrettyPrinter =
                 t.GetGenericArguments() 
                 |> Seq.map formatTypeName
                 |> String.concat ", "
-            sprintf "%s<%s>" (t.Name.Split('`').[0]) paramNames
+            $"{t.Name.Split('`').[0]}<{paramNames}>"
         else
             t.Name
     
