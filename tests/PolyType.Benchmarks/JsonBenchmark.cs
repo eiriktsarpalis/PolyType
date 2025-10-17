@@ -25,7 +25,7 @@ public static class JsonData
     public static readonly JsonConverter<MyPoco> PolyTypeSourceGen = JsonSerializerTS.CreateConverter<MyPoco>();
 }
 
-[MemoryDiagnoser]
+[MemoryDiagnoser(false)]
 [HideColumns("Job", "Error", "StdDev", "Median", "RatioSD")]
 public class JsonSerializeBenchmark
 {
@@ -80,7 +80,7 @@ public class JsonSerializeBenchmark
     }
 }
 
-[MemoryDiagnoser()]
+[MemoryDiagnoser(false)]
 [HideColumns("Job", "Error", "StdDev", "Median", "RatioSD")]
 public class JsonDeserializeBenchmark
 {
