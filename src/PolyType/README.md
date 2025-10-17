@@ -44,16 +44,16 @@ CborSerializer.EncodeToHex(person); // A2644E616D656450657465634167651846
 
 Since the application uses a source generator to produce the shape for `Person`, it is fully compatible with Native AOT. See the [shape providers](https://eiriktsarpalis.github.io/PolyType/shape-providers.html) article for more details on how to use the library with your types.
 
-## RPC and Method Invocation
+## RPC Support
 
-PolyType enables rapid development of RPC frameworks and method invocation libraries using method shapes. Here's an example using `JsonFunc`, which wraps .NET methods in JSON-based delegates:
+PolyType enables rapid development of RPC frameworks and method invocation libraries using method shapes. Here's an example using a `JsonFunc` abstraction from `TypeShape.Examples` sample library, which wraps .NET methods in JSON-based delegates:
 
 ```csharp
 using PolyType;
 using PolyType.Examples.JsonSerializer;
 
 // Define a service class with methods to expose
-[GenerateShape, TypeShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
+[GenerateShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
 public partial class CalculatorService
 {
     public int Add(int x, int y) => x + y;
