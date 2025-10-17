@@ -16,6 +16,5 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PolyType\PolyType.csproj" />
-    <ProjectReference Include="..\PolyType.Examples\PolyType.Examples.csproj" />
   </ItemGroup>
 </Project>

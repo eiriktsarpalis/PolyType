@@ -17,8 +17,9 @@ public abstract class PrettyPrinterFSharpTests(ProviderUnderTest providerUnderTe
     public void TestValue<T>(TestCase<T> testCase, string expectedEncoding)
     {
         var shape = providerUnderTest.ResolveShape(testCase);
+        var prettyPrinter = PrettyPrinter.create(shape);
         #pragma warning disable CS8620 // Argument nullability mismatch
-        string result = PrettyPrinter.print(shape, testCase.Value);
+        string result = PrettyPrinter.print(prettyPrinter, testCase.Value);
         #pragma warning restore CS8620
         Assert.Equal(ReplaceLineEndings(expectedEncoding), result);
     }
