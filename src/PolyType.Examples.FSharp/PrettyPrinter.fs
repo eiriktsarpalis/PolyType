@@ -18,7 +18,7 @@ module PrettyPrinter =
         if t.IsGenericType then
             let paramNames = 
                 t.GetGenericArguments() 
-                |> Array.map formatTypeName
+                |> Seq.map formatTypeName
                 |> String.concat ", "
             sprintf "%s<%s>" (t.Name.Split('`').[0]) paramNames
         else
