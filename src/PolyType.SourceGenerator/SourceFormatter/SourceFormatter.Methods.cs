@@ -137,7 +137,7 @@ internal sealed partial class SourceFormatter
             };
 
             string requiredParametersMaskFieldName = FormatRequiredParametersMaskFieldName(declaringType, method)!;
-            return $"static () => new {methodArgumentStateFQN}({stateValueExpr}, count: {method.Parameters.Length}, requiredArgumentsMask: {requiredParametersMaskFieldName})";
+            return $"static () => new {methodArgumentStateFQN}(new({stateValueExpr}), count: {method.Parameters.Length}, requiredArgumentsMask: {requiredParametersMaskFieldName})";
             
             static string FormatTupleConstructor(IEnumerable<string> parameters)
                 => $"({string.Join(", ", parameters)})";
@@ -197,8 +197,8 @@ internal sealed partial class SourceFormatter
                 };
                 
                 return isSingleParameter
-                    ? $"{refPrefix}state.Arguments{(requiresSuppression ? "!" : "")}"
-                    : $"{refPrefix}state.Arguments.Item{parameter.Position + 1}{(requiresSuppression ? "!" : "")}";
+                    ? $"{refPrefix}state.Arguments.Value!"
+                    : $"{refPrefix}state.Arguments.Value.Item{parameter.Position + 1}{(requiresSuppression ? "!" : "")}";
             }
         }
 
@@ -265,8 +265,8 @@ internal sealed partial class SourceFormatter
 
                 return method.Parameters.Length switch
                 {
-                    1 => $"state.Arguments{(suppressGetter ? "!" : "")}",
-                    _ => $"state.Arguments.Item{parameter.Position + 1}{(suppressGetter ? "!" : "")}",
+                    1 => $"state.Arguments.Value!",
+                    _ => $"state.Arguments.Value.Item{parameter.Position + 1}{(suppressGetter ? "!" : "")}",
                 };
             }
 
@@ -281,8 +281,8 @@ internal sealed partial class SourceFormatter
                 
                 string assignValueExpr = method.Parameters.Length switch
                 {
-                    1 => $"state.Arguments = value{(suppressSetter ? "!" : "")}",
-                    _ => $"state.Arguments.Item{parameter.Position + 1} = value{(suppressSetter ? "!" : "")}",
+                    1 => $"state.Arguments.Value = value{(suppressSetter ? "!" : "")}",
+                    _ => $"state.Arguments.Value.Item{parameter.Position + 1} = value{(suppressSetter ? "!" : "")}",
                 };
 
                 return $$"""{ {{assignValueExpr}}; state.MarkArgumentSet({{parameter.Position}}); }""";
@@ -312,8 +312,8 @@ internal sealed partial class SourceFormatter
         return method.ArgumentStateType switch
         {
             ArgumentStateType.EmptyArgumentState => $"global::PolyType.SourceGenModel.EmptyArgumentState",
-            ArgumentStateType.SmallArgumentState => $"global::PolyType.SourceGenModel.SmallArgumentState<{typeParameter}>",
-            ArgumentStateType.LargeArgumentState => $"global::PolyType.SourceGenModel.LargeArgumentState<{typeParameter}>",
+            ArgumentStateType.SmallArgumentState => $"global::PolyType.SourceGenModel.SmallArgumentState<global::System.Runtime.CompilerServices.StrongBox<{typeParameter}>>",
+            ArgumentStateType.LargeArgumentState => $"global::PolyType.SourceGenModel.LargeArgumentState<global::System.Runtime.CompilerServices.StrongBox<{typeParameter}>>",
             _ => throw new InvalidOperationException(method.ArgumentStateType.ToString()),
         };
 
