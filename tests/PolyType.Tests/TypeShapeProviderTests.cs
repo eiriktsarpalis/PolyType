@@ -1846,4 +1846,20 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
     [GenerateShapeFor(typeof(ClassWithMethodExternal), IncludeMethods = MethodShapeFlags.PublicInstance)]
     [GenerateShapeFor(typeof(ClassWithTrivialShapeExternal), Kind = TypeShapeKind.None)]
     public partial class LocalWitness;
+
+    // Test for external private field discovery issue
+    // Wrapper class in local assembly that references ExternalClassWithPrivateField from TestCases
+    [GenerateShape]
+    public partial class WrapperForExternalClassWithPrivateField
+    {
+        public List<ExternalClassWithPrivateField> Items = [];
+
+        public void Fill()
+        {
+            var item = new ExternalClassWithPrivateField();
+            item.Add("test1");
+            item.Add("test2");
+            Items.Add(item);
+        }
+    }
 }

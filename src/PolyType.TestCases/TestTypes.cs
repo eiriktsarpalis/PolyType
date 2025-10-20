@@ -3540,3 +3540,23 @@ public delegate Task<int> LargeAsyncDelegate(
 [GenerateShapeFor<FSharpFunc<int, Task<int>>>]
 [GenerateShapeFor<FSharpFunc<int, FSharpFunc<int, FSharpFunc<int, Task<int>>>>>]
 public partial class Witness;
+
+// Test case for external private field discovery (issue reproduction)
+// This class is in an external assembly (TestCases) and does NOT have [GenerateShape]
+// but has private fields with [PropertyShape] that should be discovered when referenced
+// from a type with [GenerateShape] in another assembly.
+public class ExternalClassWithPrivateField
+{
+    [PropertyShape]
+    private List<string> _privateList = [];
+
+    public List<string> PublicList = [];
+
+    public void Add(string element)
+    {
+        _privateList.Add(element);
+        PublicList.Add(element);
+    }
+
+    public List<string> GetPrivateList() => _privateList;
+}
