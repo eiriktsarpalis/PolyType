@@ -1,9 +1,11 @@
 ﻿using PolyType.Examples.RandomGenerator;
+using PolyType.Examples.JsonSerializer;
 using PolyType.ReflectionProvider;
 using System.Collections;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Diagnostics;
 
 namespace PolyType.Tests;
@@ -1773,6 +1775,28 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
     }
 
     [Fact]
+    public void ExternalClassWithPrivateField_CanSerializeAndDeserialize()
+    {
+        // Test that private fields from external assemblies marked with [PropertyShape]
+        // are properly discovered and accessible via unsafe accessors
+        var wrapper = new WrapperForExternalClassWithPrivateField();
+        wrapper.Fill();
+
+        ITypeShape<WrapperForExternalClassWithPrivateField> shape = LocalWitness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<WrapperForExternalClassWithPrivateField>();
+        JsonConverter<WrapperForExternalClassWithPrivateField> converter = Examples.JsonSerializer.JsonSerializerTS.CreateConverter(shape);
+        
+        string json = converter.Serialize(wrapper);
+        var deserialized = converter.Deserialize(json.AsSpan());
+
+        Assert.NotNull(deserialized);
+        Assert.Single(deserialized.Items);
+        Assert.Equal(2, deserialized.Items[0].GetPrivateList().Count);
+        Assert.Equal("test1", deserialized.Items[0].GetPrivateList()[0]);
+        Assert.Equal("test2", deserialized.Items[0].GetPrivateList()[1]);
+        Assert.Equal(2, deserialized.Items[0].PublicList.Count);
+    }
+
+    [Fact]
     public void GenerateShapeFor_CanConfigureMarshaler()
     {
         ITypeShape<ClassWithMarshalerExternal> typeShape = LocalWitness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<ClassWithMarshalerExternal>();
@@ -1845,11 +1869,11 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
     [GenerateShapeFor<ClassWithMarshalerExternal>(Marshaler = typeof(ClassWithMarshalerExternal.Marshaler))]
     [GenerateShapeFor(typeof(ClassWithMethodExternal), IncludeMethods = MethodShapeFlags.PublicInstance)]
     [GenerateShapeFor(typeof(ClassWithTrivialShapeExternal), Kind = TypeShapeKind.None)]
+    [GenerateShapeFor<WrapperForExternalClassWithPrivateField>]
     public partial class LocalWitness;
 
     // Test for external private field discovery issue
     // Wrapper class in local assembly that references ExternalClassWithPrivateField from TestCases
-    [GenerateShape]
     public partial class WrapperForExternalClassWithPrivateField
     {
         public List<ExternalClassWithPrivateField> Items = [];
