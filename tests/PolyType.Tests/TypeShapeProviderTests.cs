@@ -1866,12 +1866,6 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
 
     public partial record ClassWithTrivialShapeExternal(int x, string y);
 
-    [GenerateShapeFor<ClassWithMarshalerExternal>(Marshaler = typeof(ClassWithMarshalerExternal.Marshaler))]
-    [GenerateShapeFor(typeof(ClassWithMethodExternal), IncludeMethods = MethodShapeFlags.PublicInstance)]
-    [GenerateShapeFor(typeof(ClassWithTrivialShapeExternal), Kind = TypeShapeKind.None)]
-    [GenerateShapeFor<WrapperForExternalClassWithPrivateField>]
-    public partial class LocalWitness;
-
     // Test for external private field discovery issue
     // Wrapper class in local assembly that references ExternalClassWithPrivateField from TestCases
     public partial class WrapperForExternalClassWithPrivateField
@@ -1886,4 +1880,10 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
             Items.Add(item);
         }
     }
+
+    [GenerateShapeFor<ClassWithMarshalerExternal>(Marshaler = typeof(ClassWithMarshalerExternal.Marshaler))]
+    [GenerateShapeFor(typeof(ClassWithMethodExternal), IncludeMethods = MethodShapeFlags.PublicInstance)]
+    [GenerateShapeFor(typeof(ClassWithTrivialShapeExternal), Kind = TypeShapeKind.None)]
+    [GenerateShapeFor<WrapperForExternalClassWithPrivateField>]
+    public partial class LocalWitness;
 }
