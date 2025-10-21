@@ -1884,6 +1884,7 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
     [GenerateShapeFor<ClassWithMarshalerExternal>(Marshaler = typeof(ClassWithMarshalerExternal.Marshaler))]
     [GenerateShapeFor(typeof(ClassWithMethodExternal), IncludeMethods = MethodShapeFlags.PublicInstance)]
     [GenerateShapeFor(typeof(ClassWithTrivialShapeExternal), Kind = TypeShapeKind.None)]
+    [GenerateShapeFor<ExternalClassWithPrivateField>]
     [GenerateShapeFor<WrapperForExternalClassWithPrivateField>]
     public partial class LocalWitness;
 }

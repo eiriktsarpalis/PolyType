@@ -374,11 +374,8 @@ internal static partial class RoslynHelpers
             return null;
         }
 
-        string attributeFullName = attributeType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-
         AttributeData? attribute = symbol.GetAttributes()
-            .FirstOrDefault(ad => SymbolEqualityComparer.Default.Equals(ad.AttributeClass, attributeType) ||
-                                 ad.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == attributeFullName);
+            .FirstOrDefault(ad => SymbolEqualityComparer.Default.Equals(ad.AttributeClass, attributeType));
 
         if (attribute is null && inherit)
         {
