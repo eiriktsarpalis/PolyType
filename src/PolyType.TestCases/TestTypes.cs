@@ -2330,7 +2330,8 @@ struct GenericStructWithPrivateIncludedMembers<T>
     }
 }
 
-public class ClassWithPrivateMembers
+[GenerateShape]
+public partial class ClassWithPrivateMembers
 {
     [PropertyShape]
     private string privateField = "private";

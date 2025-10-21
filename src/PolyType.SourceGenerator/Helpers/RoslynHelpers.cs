@@ -374,8 +374,24 @@ internal static partial class RoslynHelpers
             return null;
         }
 
+        string attributeMetadataName = attributeType.MetadataName;
+        string attributeNamespace = attributeType.ContainingNamespace?.ToDisplayString() ?? "";
+        
         AttributeData? attribute = symbol.GetAttributes()
-            .FirstOrDefault(ad => SymbolEqualityComparer.Default.Equals(ad.AttributeClass, attributeType));
+            .FirstOrDefault(ad => 
+            {
+                if (ad.AttributeClass == null)
+                    return false;
+                    
+                // First try symbol equality
+                if (SymbolEqualityComparer.Default.Equals(ad.AttributeClass, attributeType))
+                    return true;
+                    
+                // Fallback: compare by metadata name and namespace
+                // This handles cases where the attribute symbol from metadata doesn't match via symbol equality
+                return ad.AttributeClass.MetadataName == attributeMetadataName &&
+                       ad.AttributeClass.ContainingNamespace?.ToDisplayString() == attributeNamespace;
+            });
 
         if (attribute is null && inherit)
         {

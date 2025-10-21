@@ -1779,7 +1779,7 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
     {
         // Test that private fields from external assemblies marked with [PropertyShape]
         // are properly discovered and accessible via unsafe accessors
-        IObjectTypeShape shape = Assert.IsAssignableFrom<IObjectTypeShape>(LocalWitness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<ClassWithPrivateMembers>());
+        IObjectTypeShape shape = Assert.IsAssignableFrom<IObjectTypeShape>(Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<ClassWithPrivateMembers>());
         Assert.Equal(2, shape.Properties.Count);
         Assert.Contains(shape.Properties, p => p.Name == "privateField");
         Assert.Contains(shape.Properties, p => p.Name == "PrivateProperty");
@@ -1858,6 +1858,5 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
     [GenerateShapeFor<ClassWithMarshalerExternal>(Marshaler = typeof(ClassWithMarshalerExternal.Marshaler))]
     [GenerateShapeFor(typeof(ClassWithMethodExternal), IncludeMethods = MethodShapeFlags.PublicInstance)]
     [GenerateShapeFor(typeof(ClassWithTrivialShapeExternal), Kind = TypeShapeKind.None)]
-    [GenerateShapeFor<ClassWithPrivateMembers>]
     public partial class LocalWitness;
 }
