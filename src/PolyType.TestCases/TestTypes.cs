@@ -2330,24 +2330,13 @@ struct GenericStructWithPrivateIncludedMembers<T>
     }
 }
 
-// Test case for external private field discovery (issue #329)
-// This class is in an external assembly (TestCases) and does NOT have [GenerateShape]
-// but has private fields with [PropertyShape] that should be discovered when referenced
-// from a type with [GenerateShape] in another assembly.
-public class ExternalClassWithPrivateField
+public class ClassWithPrivateMembers
 {
     [PropertyShape]
-    private List<string> _privateList = [];
+    private string privateField = "private";
 
-    public List<string> PublicList = [];
-
-    public void Add(string element)
-    {
-        _privateList.Add(element);
-        PublicList.Add(element);
-    }
-
-    public List<string> GetPrivateList() => _privateList;
+    [PropertyShape]
+    private string PrivateProperty { get; set; } = "privateProp";
 }
 
 // Repro for https://github.com/eiriktsarpalis/PolyType/issues/238

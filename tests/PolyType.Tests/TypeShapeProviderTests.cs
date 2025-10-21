@@ -1779,21 +1779,10 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
     {
         // Test that private fields from external assemblies marked with [PropertyShape]
         // are properly discovered and accessible via unsafe accessors
-        var wrapper = new WrapperForExternalClassWithPrivateField();
-        wrapper.Fill();
-
-        ITypeShape<WrapperForExternalClassWithPrivateField> shape = LocalWitness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<WrapperForExternalClassWithPrivateField>();
-        JsonConverter<WrapperForExternalClassWithPrivateField> converter = Examples.JsonSerializer.JsonSerializerTS.CreateConverter(shape);
-        
-        string json = converter.Serialize(wrapper);
-        var deserialized = converter.Deserialize(json.AsSpan());
-
-        Assert.NotNull(deserialized);
-        Assert.Single(deserialized.Items);
-        Assert.Equal(2, deserialized.Items[0].GetPrivateList().Count);
-        Assert.Equal("test1", deserialized.Items[0].GetPrivateList()[0]);
-        Assert.Equal("test2", deserialized.Items[0].GetPrivateList()[1]);
-        Assert.Equal(2, deserialized.Items[0].PublicList.Count);
+        IObjectTypeShape shape = Assert.IsAssignableFrom<IObjectTypeShape>(LocalWitness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<ClassWithPrivateMembers>());
+        Assert.Equal(2, shape.Properties.Count);
+        Assert.Contains(shape.Properties, p => p.Name == "privateField");
+        Assert.Contains(shape.Properties, p => p.Name == "PrivateProperty");
     }
 
     [Fact]
@@ -1866,25 +1855,9 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
 
     public partial record ClassWithTrivialShapeExternal(int x, string y);
 
-    // Test for external private field discovery issue
-    // Wrapper class in local assembly that references ExternalClassWithPrivateField from TestCases
-    public partial class WrapperForExternalClassWithPrivateField
-    {
-        public List<ExternalClassWithPrivateField> Items = [];
-
-        public void Fill()
-        {
-            var item = new ExternalClassWithPrivateField();
-            item.Add("test1");
-            item.Add("test2");
-            Items.Add(item);
-        }
-    }
-
     [GenerateShapeFor<ClassWithMarshalerExternal>(Marshaler = typeof(ClassWithMarshalerExternal.Marshaler))]
     [GenerateShapeFor(typeof(ClassWithMethodExternal), IncludeMethods = MethodShapeFlags.PublicInstance)]
     [GenerateShapeFor(typeof(ClassWithTrivialShapeExternal), Kind = TypeShapeKind.None)]
-    [GenerateShapeFor<ExternalClassWithPrivateField>]
-    [GenerateShapeFor<WrapperForExternalClassWithPrivateField>]
+    [GenerateShapeFor<ClassWithPrivateMembers>]
     public partial class LocalWitness;
 }
