@@ -5,6 +5,7 @@ using PolyType.SourceGenerator.Helpers;
 using PolyType.SourceGenerator.Model;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 
 namespace PolyType.SourceGenerator;
