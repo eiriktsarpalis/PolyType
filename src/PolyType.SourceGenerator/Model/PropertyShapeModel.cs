@@ -39,4 +39,9 @@ public sealed record PropertyShapeModel
     public required int Order { get; init; }
 
     public required bool RequiresDisambiguation { get; init; }
+
+    /// <summary>
+    /// List of attribute data to be emitted for this property.
+    /// </summary>
+    public ImmutableEquatableArray<AttributeDataModel> Attributes { get; init; } = ImmutableEquatableArray<AttributeDataModel>.Empty;
 }

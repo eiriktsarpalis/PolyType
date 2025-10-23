@@ -11,4 +11,9 @@ public sealed record EventShapeModel
     public required bool RequiresDisambiguation { get; init; }
     public required bool IsPublic { get; init; }
     public required bool IsStatic { get; init; }
+
+    /// <summary>
+    /// List of attribute data to be emitted for this event.
+    /// </summary>
+    public ImmutableEquatableArray<AttributeDataModel> Attributes { get; init; } = ImmutableEquatableArray<AttributeDataModel>.Empty;
 }

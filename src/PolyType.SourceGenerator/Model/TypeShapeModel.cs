@@ -30,4 +30,9 @@ public abstract record TypeShapeModel
     /// A map of type IDs for associated types and their requirements.
     /// </summary>
     public required ImmutableEquatableSet<AssociatedTypeId> AssociatedTypes { get; init; }
+
+    /// <summary>
+    /// List of attribute data to be emitted for this type.
+    /// </summary>
+    public ImmutableEquatableArray<AttributeDataModel> Attributes { get; init; } = ImmutableEquatableArray<AttributeDataModel>.Empty;
 }

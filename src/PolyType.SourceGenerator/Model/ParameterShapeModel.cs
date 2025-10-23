@@ -22,6 +22,11 @@ public sealed record ParameterShapeModel
     public required bool IsField { get; init; }
     public required bool HasDefaultValue { get; init; }
     public required string? DefaultValueExpr { get; init; }
+
+    /// <summary>
+    /// List of attribute data to be emitted for this parameter.
+    /// </summary>
+    public ImmutableEquatableArray<AttributeDataModel> Attributes { get; init; } = ImmutableEquatableArray<AttributeDataModel>.Empty;
 }
 
 public enum ParameterKind
