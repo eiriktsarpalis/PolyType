@@ -45,11 +45,16 @@ public sealed class SourceGenEventShape<TDeclaringType, TEventHandler> : IEventS
     /// </summary>
     public Func<ICustomAttributeProvider?>? AttributeProviderFunc { get; init; }
 
+    /// <summary>
+    /// Gets the factory function for retrieving the EventInfo of the event.
+    /// </summary>
+    public Func<EventInfo?>? EventInfoFunc { get; init; }
+
     ITypeShape IEventShape.DeclaringType => DeclaringType;
 
     ICustomAttributeProvider? IEventShape.AttributeProvider => AttributeProviderFunc?.Invoke();
 
-    EventInfo? IEventShape.EventInfo => null;
+    EventInfo? IEventShape.EventInfo => EventInfoFunc?.Invoke();
 
     object? IEventShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitEvent(this, state);
 

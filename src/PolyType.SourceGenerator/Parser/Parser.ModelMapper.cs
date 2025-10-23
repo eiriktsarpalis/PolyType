@@ -1083,13 +1083,136 @@ public sealed partial class Parser
 
     private ImmutableEquatableArray<AttributeDataModel> CollectAttributes(ISymbol symbol)
     {
-        // TODO: Implement proper attribute collection from symbol.GetAttributes()
-        // For now, return an empty array as the infrastructure is in place
-        // but full implementation requires:
-        // 1. Filtering out compiler-generated and framework attributes that shouldn't be emitted
-        // 2. Properly formatting constructor arguments (handling literals, enums, typeof expressions, arrays)
-        // 3. Properly formatting named arguments
-        // 4. Handling nested attribute values
-        return ImmutableEquatableArray<AttributeDataModel>.Empty;
+        var attributes = new List<AttributeDataModel>();
+        
+        foreach (AttributeData attr in symbol.GetAttributes())
+        {
+            // Skip if attribute class is null or not accessible
+            if (attr.AttributeClass is null || !IsAccessibleSymbol(attr.AttributeClass))
+            {
+                continue;
+            }
+            
+            // Filter out unwanted attributes
+            if (ShouldSkipAttribute(attr.AttributeClass))
+            {
+                continue;
+            }
+            
+            // Format constructor arguments
+            var ctorArgs = attr.ConstructorArguments
+                .Select(arg => FormatTypedConstant(arg))
+                .ToImmutableEquatableArray();
+            
+            // Format named arguments
+            var namedArgs = attr.NamedArguments
+                .Select(kvp => (kvp.Key, FormatTypedConstant(kvp.Value)))
+                .ToImmutableEquatableArray();
+            
+            attributes.Add(new AttributeDataModel
+            {
+                AttributeType = CreateTypeId(attr.AttributeClass),
+                ConstructorArguments = ctorArgs,
+                NamedArguments = namedArgs
+            });
+        }
+        
+        return attributes.ToImmutableEquatableArray();
+    }
+
+    private bool ShouldSkipAttribute(INamedTypeSymbol attributeClass)
+    {
+        // Skip compiler-generated and framework attributes that shouldn't be emitted
+        string fullName = attributeClass.GetFullyQualifiedName();
+        return fullName switch
+        {
+            "System.Runtime.CompilerServices.CompilerGeneratedAttribute" => true,
+            "System.Runtime.CompilerServices.NullableAttribute" => true,
+            "System.Runtime.CompilerServices.NullableContextAttribute" => true,
+            "System.Diagnostics.DebuggerStepThroughAttribute" => true,
+            "System.Diagnostics.DebuggerHiddenAttribute" => true,
+            "System.Diagnostics.DebuggerNonUserCodeAttribute" => true,
+            "System.Diagnostics.DebuggerBrowsableAttribute" => true,
+            "System.Diagnostics.DebuggerDisplayAttribute" => true,
+            "System.ComponentModel.EditorBrowsableAttribute" => true,
+            "System.Runtime.CompilerServices.IsReadOnlyAttribute" => true,
+            "System.Runtime.CompilerServices.IsByRefLikeAttribute" => true,
+            "System.ObsoleteAttribute" when attributeClass.ContainingNamespace?.Name == "System.Runtime.CompilerServices" => true,
+            _ => false
+        };
+    }
+
+    private string FormatTypedConstant(TypedConstant constant)
+    {
+        return constant.Kind switch
+        {
+            TypedConstantKind.Primitive => FormatPrimitive(constant.Value, constant.Type),
+            TypedConstantKind.Enum => FormatEnum(constant.Value, constant.Type),
+            TypedConstantKind.Type => $"typeof({((ITypeSymbol)constant.Value!).GetFullyQualifiedName()})",
+            TypedConstantKind.Array => FormatArray(constant.Values),
+            _ => "null"
+        };
+    }
+
+    private string FormatPrimitive(object? value, ITypeSymbol? type)
+    {
+        return value switch
+        {
+            null => "null",
+            string s => FormatStringLiteral(s),
+            bool b => b ? "true" : "false",
+            char c => $"'{EscapeChar(c)}'",
+            byte b => $"(byte){b}",
+            sbyte sb => $"(sbyte){sb}",
+            short s => $"(short){s}",
+            ushort us => $"(ushort){us}",
+            int i => i.ToString(),
+            uint ui => $"{ui}u",
+            long l => $"{l}L",
+            ulong ul => $"{ul}UL",
+            float f => f.ToString("R") + "f",
+            double d => d.ToString("R") + "d",
+            decimal m => m.ToString() + "m",
+            _ => value.ToString() ?? "null"
+        };
+    }
+
+    private string EscapeChar(char c)
+    {
+        return c switch
+        {
+            '\'' => "\\'",
+            '\\' => "\\\\",
+            '\0' => "\\0",
+            '\a' => "\\a",
+            '\b' => "\\b",
+            '\f' => "\\f",
+            '\n' => "\\n",
+            '\r' => "\\r",
+            '\t' => "\\t",
+            '\v' => "\\v",
+            _ => c.ToString()
+        };
+    }
+
+    private string FormatEnum(object? value, ITypeSymbol? type)
+    {
+        if (value is null || type is not INamedTypeSymbol enumType)
+        {
+            return "null";
+        }
+        
+        return $"({enumType.GetFullyQualifiedName()}){value}";
+    }
+
+    private string FormatArray(ImmutableArray<TypedConstant> values)
+    {
+        if (values.IsDefaultOrEmpty)
+        {
+            return "new global::System.Attribute[] { }";
+        }
+        
+        string items = string.Join(", ", values.Select(FormatTypedConstant));
+        return $"new[] {{ {items} }}";
     }
 }

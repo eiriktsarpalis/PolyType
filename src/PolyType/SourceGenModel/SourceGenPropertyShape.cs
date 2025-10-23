@@ -24,6 +24,11 @@ public sealed class SourceGenPropertyShape<TDeclaringType, TPropertyType> : IPro
     /// </summary>
     public Func<ICustomAttributeProvider?>? AttributeProviderFunc { get; init; }
 
+    /// <summary>
+    /// Gets the factory function for retrieving the MemberInfo of the property.
+    /// </summary>
+    public Func<MemberInfo?>? MemberInfoFunc { get; init; }
+
     /// <inheritdoc/>
     public required IObjectTypeShape<TDeclaringType> DeclaringType { get; init; }
 
@@ -66,7 +71,7 @@ public sealed class SourceGenPropertyShape<TDeclaringType, TPropertyType> : IPro
     bool IPropertyShape.HasGetter => Getter is not null;
     bool IPropertyShape.HasSetter => Setter is not null;
     ICustomAttributeProvider? IPropertyShape.AttributeProvider => AttributeProviderFunc?.Invoke();
-    MemberInfo? IPropertyShape.MemberInfo => null;
+    MemberInfo? IPropertyShape.MemberInfo => MemberInfoFunc?.Invoke();
     object? IPropertyShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitProperty(this, state);
 
     private string DebuggerDisplay => $"{{Type = \"{typeof(TPropertyType)}\", Name = \"{Name}\"}}";

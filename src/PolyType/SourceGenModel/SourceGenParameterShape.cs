@@ -50,6 +50,11 @@ public sealed class SourceGenParameterShape<TArgumentState, TParameter> : IParam
     /// </summary>
     public Func<ICustomAttributeProvider?>? AttributeProviderFunc { get; init; }
 
+    /// <summary>
+    /// Gets the factory function for retrieving the ParameterInfo of the parameter.
+    /// </summary>
+    public Func<ParameterInfo?>? ParameterInfoFunc { get; init; }
+
     /// <inheritdoc/>
     public bool HasDefaultValue { get; init; }
 
@@ -59,7 +64,7 @@ public sealed class SourceGenParameterShape<TArgumentState, TParameter> : IParam
     object? IParameterShape.DefaultValue => HasDefaultValue ? DefaultValue : null;
     ITypeShape IParameterShape.ParameterType => ParameterType;
     ICustomAttributeProvider? IParameterShape.AttributeProvider => AttributeProviderFunc?.Invoke();
-    ParameterInfo? IParameterShape.ParameterInfo => null;
+    ParameterInfo? IParameterShape.ParameterInfo => ParameterInfoFunc?.Invoke();
     object? IParameterShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitParameter(this, state);
     Getter<TArgumentState, TParameter> IParameterShape<TArgumentState, TParameter>.GetGetter() => Getter;
     Setter<TArgumentState, TParameter> IParameterShape<TArgumentState, TParameter>.GetSetter() => Setter;

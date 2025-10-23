@@ -260,6 +260,7 @@ internal sealed partial class SourceFormatter
                     Getter = static (ref {{functionArgumentStateFQN}} state) => {{FormatGetterBody(functionShapeModel, parameter)}},
                     Setter = static (ref {{functionArgumentStateFQN}} state, {{parameter.ParameterType.FullyQualifiedName}} value) => {{FormatSetterBody(functionShapeModel, parameter)}},
                     AttributeProviderFunc = {{FormatAttributeProviderFactory(parameter.Attributes)}},
+                    ParameterInfoFunc = {{FormatAttributeProviderFunc(functionShapeModel, parameter)}},
                 },
                 """, trimNullAssignmentLines: true);
 

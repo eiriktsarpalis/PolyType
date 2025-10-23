@@ -301,6 +301,7 @@ internal sealed partial class SourceFormatter
                     Getter = static (ref {{constructorArgumentStateFQN}} state) => {{FormatGetterBody(constructor, parameter)}},
                     Setter = static (ref {{constructorArgumentStateFQN}} state, {{parameter.ParameterType.FullyQualifiedName}} value) => {{FormatSetterBody(constructor, parameter)}},
                     AttributeProviderFunc = {{FormatAttributeProviderFactory(parameter.Attributes)}},
+                    ParameterInfoFunc = {{FormatAttributeProviderFunc(type, constructor, parameter)}},
                 },
                 """, trimNullAssignmentLines: true);
 

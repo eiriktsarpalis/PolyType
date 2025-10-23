@@ -70,4 +70,42 @@ public sealed class SourceGenAttributeProvider : ICustomAttributeProvider
 
         return false;
     }
+
+    /// <summary>
+    /// Gets the first attribute of the specified type.
+    /// </summary>
+    /// <typeparam name="TAttribute">The type of attribute to retrieve.</typeparam>
+    /// <returns>The first attribute of the specified type, or <see langword="null"/> if not found.</returns>
+    public TAttribute? GetAttribute<TAttribute>() where TAttribute : Attribute
+    {
+        Attribute[] allAttributes = _attributesFactory();
+        foreach (Attribute attr in allAttributes)
+        {
+            if (attr is TAttribute typedAttr)
+            {
+                return typedAttr;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Determines whether an attribute of the specified type is defined.
+    /// </summary>
+    /// <typeparam name="TAttribute">The type of attribute to check.</typeparam>
+    /// <returns><see langword="true"/> if an attribute of the specified type is defined; otherwise, <see langword="false"/>.</returns>
+    public bool IsDefined<TAttribute>() where TAttribute : Attribute
+    {
+        Attribute[] allAttributes = _attributesFactory();
+        foreach (Attribute attr in allAttributes)
+        {
+            if (attr is TAttribute)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
