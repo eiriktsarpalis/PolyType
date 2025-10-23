@@ -33,6 +33,7 @@ public sealed partial class Parser
                 Methods = [],
                 Events = [],
                 Members = enumModel.Members.ToImmutableEquatableDictionary(m => m.Key, m => EnumValueToString(m.Value)),
+                Attributes = CollectAttributes(model.Type),
             },
 
             OptionalDataModel optionalModel => new OptionalShapeModel
@@ -51,6 +52,7 @@ public sealed partial class Parser
                 Events = MapEvents(model, typeId),
                 ElementType = CreateTypeId(optionalModel.ElementType),
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
             },
 
             SurrogateTypeDataModel surrogateModel => new SurrogateShapeModel
@@ -63,6 +65,7 @@ public sealed partial class Parser
                 Methods = MapMethods(model, typeId),
                 Events = MapEvents(model, typeId),
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
             },
 
             EnumerableDataModel enumerableModel => new EnumerableShapeModel
@@ -102,6 +105,7 @@ public sealed partial class Parser
                 InsertionMode = enumerableModel.InsertionMode,
                 AppendMethodReturnsBoolean = enumerableModel.AppendMethod?.ReturnType.SpecialType is SpecialType.System_Boolean,
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
             },
 
             DictionaryDataModel dictionaryModel => new DictionaryShapeModel
@@ -138,6 +142,7 @@ public sealed partial class Parser
                     dictionaryModel.ValueType.ContainsNullabilityAnnotations(),
                 AvailableInsertionModes = dictionaryModel.AvailableInsertionModes,
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
             },
 
             ObjectDataModel objectModel => new ObjectShapeModel
@@ -161,6 +166,7 @@ public sealed partial class Parser
                 IsTupleType = false,
                 IsRecordType = model.Type.IsRecord,
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
             },
 
             TupleDataModel tupleModel => new ObjectShapeModel
@@ -180,6 +186,7 @@ public sealed partial class Parser
                 IsTupleType = true,
                 IsRecordType = false,
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
             },
 
             FSharpUnionDataModel unionModel => new FSharpUnionShapeModel
@@ -210,6 +217,7 @@ public sealed partial class Parser
                     IsTupleType = false,
                     IsRecordType = false,
                     AssociatedTypes = associatedTypes,
+                    Attributes = ImmutableEquatableArray<AttributeDataModel>.Empty, // Underlying model doesn't have separate attributes
                 },
                 UnionCases = unionModel.UnionCases
                     .Select(unionCase => new FSharpUnionCaseShapeModel(
@@ -218,6 +226,7 @@ public sealed partial class Parser
                         TypeModel: MapModelCore(unionCase.Type, CreateTypeId(unionCase.Type.Type), $"{sourceIdentifier}__Case_{unionCase.Name}", isFSharpUnionCase: true)))
                     .ToImmutableEquatableArray(),
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
             },
 
             DelegateDataModel delegateModel => new FunctionShapeModel
@@ -232,6 +241,7 @@ public sealed partial class Parser
                 UnderlyingReturnType = CreateTypeId(delegateModel.InvokeMethod.ReturnType),
                 ReturnsByRef = delegateModel.InvokeMethod.ReturnsByRef || delegateModel.InvokeMethod.ReturnsByRefReadonly,
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
                 IsFsharpFunc = false,
                 Parameters = delegateModel.Parameters
                     .Select(p => MapParameter(declaringObjectForConstructor: null, typeId, p, false))
@@ -257,6 +267,7 @@ public sealed partial class Parser
                 UnderlyingReturnType = CreateTypeId(fsharpFunc.ReturnType),
                 ReturnsByRef = false,
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
                 IsFsharpFunc = true,
                 Parameters = MapFSharpFunctionParameters(fsharpFunc, typeId, out int effectiveParameterCount),
                 ArgumentStateType = effectiveParameterCount switch
@@ -281,6 +292,7 @@ public sealed partial class Parser
                 IsTupleType = false,
                 IsRecordType = false,
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
             },
 
             _ => new ObjectShapeModel
@@ -297,6 +309,7 @@ public sealed partial class Parser
                 IsTupleType = false,
                 IsRecordType = false,
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
             }
         };
     }
@@ -431,6 +444,7 @@ public sealed partial class Parser
             RequiresDisambiguation = property.IsAmbiguous,
             IsField = property.IsField,
             Order = property.Order,
+            Attributes = CollectAttributes(property.BaseSymbol),
         };
     }
 
@@ -478,6 +492,7 @@ public sealed partial class Parser
                 IsField = propertyModel.IsField,
                 HasDefaultValue = false,
                 DefaultValueExpr = null,
+                Attributes = CollectAttributes(propertyModel.BaseSymbol),
             };
 
             if (memberInitializer.Kind is ParameterKind.RequiredMember)
@@ -591,6 +606,7 @@ public sealed partial class Parser
                     var target when target >= TargetFramework.Net80 => !e.Event.ContainingType.IsGenericType && !e.Event.IsStatic,
                     _ => false
                 },
+                Attributes = CollectAttributes(e.Event),
             })
             .ToImmutableEquatableArray();
     }
@@ -653,6 +669,7 @@ public sealed partial class Parser
             IsField = false,
             HasDefaultValue = parameter.HasDefaultValue,
             DefaultValueExpr = parameter.DefaultValueExpr,
+            Attributes = CollectAttributes(parameter.Parameter),
         };
     }
 
@@ -689,6 +706,7 @@ public sealed partial class Parser
                     IsField = false,
                     HasDefaultValue = false,
                     DefaultValueExpr = null,
+                    Attributes = ImmutableEquatableArray<AttributeDataModel>.Empty, // F# func parameters don't have attributes
                 })
             .ToImmutableEquatableArray();
     }
@@ -747,6 +765,7 @@ public sealed partial class Parser
                 NullableAnnotation = NullableAnnotation.NotAnnotated,
                 ParameterTypeContainsNullabilityAnnotations = tupleElement.PropertyType.ContainsNullabilityAnnotations(),
                 DefaultValueExpr = null,
+                Attributes = CollectAttributes(tupleElement.BaseSymbol),
             };
         }
     }
@@ -1060,5 +1079,17 @@ public sealed partial class Parser
         }
 
         return false;
+    }
+
+    private ImmutableEquatableArray<AttributeDataModel> CollectAttributes(ISymbol symbol)
+    {
+        // TODO: Implement proper attribute collection from symbol.GetAttributes()
+        // For now, return an empty array as the infrastructure is in place
+        // but full implementation requires:
+        // 1. Filtering out compiler-generated and framework attributes that shouldn't be emitted
+        // 2. Properly formatting constructor arguments (handling literals, enums, typeof expressions, arrays)
+        // 3. Properly formatting named arguments
+        // 4. Handling nested attribute values
+        return ImmutableEquatableArray<AttributeDataModel>.Empty;
     }
 }
