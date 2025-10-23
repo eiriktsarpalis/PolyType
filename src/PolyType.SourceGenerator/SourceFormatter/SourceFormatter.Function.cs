@@ -28,6 +28,7 @@ internal sealed partial class SourceFormatter
                     FromDelegateFunc = {{FormatNull(FormatFromDelegateFunc(functionShapeModel, functionArgumentStateFQN, requiredParametersMaskFieldName, requireAsync: false))}},
                     FromAsyncDelegateFunc = {{FormatNull(FormatFromDelegateFunc(functionShapeModel, functionArgumentStateFQN, requiredParametersMaskFieldName, requireAsync: true))}},
                     GetAssociatedTypeShapeFunc = {{FormatNull(associatedTypesFactoryMethodName)}},
+                    AttributeProviderFunc = {{FormatAttributeProviderFactory(functionShapeModel.Attributes)}},
                     Provider = this,
                 };
             }
@@ -258,7 +259,7 @@ internal sealed partial class SourceFormatter
                     DefaultValue = {{FormatDefaultValueExpr(parameter)}},
                     Getter = static (ref {{functionArgumentStateFQN}} state) => {{FormatGetterBody(functionShapeModel, parameter)}},
                     Setter = static (ref {{functionArgumentStateFQN}} state, {{parameter.ParameterType.FullyQualifiedName}} value) => {{FormatSetterBody(functionShapeModel, parameter)}},
-                    AttributeProviderFunc = {{FormatAttributeProviderFunc(functionShapeModel, parameter)}},
+                    AttributeProviderFunc = {{FormatAttributeProviderFactory(parameter.Attributes)}},
                 },
                 """, trimNullAssignmentLines: true);
 

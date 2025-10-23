@@ -25,6 +25,7 @@ internal sealed partial class SourceFormatter
                     CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
                     CreateEventsFunc = {{FormatNull(eventFactoryMethodName)}},
                     GetAssociatedTypeShapeFunc = {{FormatNull(associatedTypesFactoryMethodName)}},
+                    AttributeProviderFunc = {{FormatAttributeProviderFactory(optionalShapeModel.Attributes)}},
                     Provider = this,
                 };
             }

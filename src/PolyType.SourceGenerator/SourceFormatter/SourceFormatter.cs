@@ -208,6 +208,59 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
         return typeShapeModel.AssociatedTypes.Count > 0 ? $"__GetAssociatedTypes_{typeShapeModel.SourceIdentifier}" : null;
     }
 
+    private static string FormatAttributeProviderFactory(ImmutableEquatableArray<AttributeDataModel> attributes)
+    {
+        if (attributes.Length == 0)
+        {
+            return "null";
+        }
+
+        StringBuilder sb = new();
+        sb.Append("static () => new global::PolyType.SourceGenModel.SourceGenAttributeProvider(static () => new global::System.Attribute[] { ");
+        
+        for (int i = 0; i < attributes.Length; i++)
+        {
+            if (i > 0)
+            {
+                sb.Append(", ");
+            }
+
+            AttributeDataModel attr = attributes[i];
+            sb.Append($"new {attr.AttributeType.FullyQualifiedName}(");
+            
+            // Add constructor arguments
+            for (int j = 0; j < attr.ConstructorArguments.Length; j++)
+            {
+                if (j > 0)
+                {
+                    sb.Append(", ");
+                }
+                sb.Append(attr.ConstructorArguments[j]);
+            }
+            
+            sb.Append(')');
+            
+            // Add named arguments (property/field initializers)
+            if (attr.NamedArguments.Length > 0)
+            {
+                sb.Append(" { ");
+                for (int j = 0; j < attr.NamedArguments.Length; j++)
+                {
+                    if (j > 0)
+                    {
+                        sb.Append(", ");
+                    }
+                    var (name, value) = attr.NamedArguments[j];
+                    sb.Append($"{name} = {value}");
+                }
+                sb.Append(" }");
+            }
+        }
+        
+        sb.Append(" })");
+        return sb.ToString();
+    }
+
     private void FormatAssociatedTypesFactory(SourceWriter writer, TypeShapeModel objectShapeModel, string factoryName)
     {
         Debug.Assert(objectShapeModel.AssociatedTypes.Count > 0);

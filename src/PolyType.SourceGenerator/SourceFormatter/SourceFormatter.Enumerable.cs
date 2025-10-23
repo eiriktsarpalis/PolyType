@@ -29,6 +29,7 @@ internal sealed partial class SourceFormatter
                     IsSetType = {{FormatBool(enumerableShapeModel.IsSetType)}},
                     Rank = {{enumerableShapeModel.Rank}},
                     GetAssociatedTypeShapeFunc = {{FormatNull(associatedTypesFactoryMethodName)}},
+                    AttributeProviderFunc = {{FormatAttributeProviderFactory(enumerableShapeModel.Attributes)}},
                     Provider = this,
                };
             }

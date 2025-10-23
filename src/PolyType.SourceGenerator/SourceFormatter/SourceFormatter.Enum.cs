@@ -18,6 +18,7 @@ internal sealed partial class SourceFormatter
                     UnderlyingType = {{GetShapeModel(enumTypeShape.UnderlyingType).SourceIdentifier}},
                     GetAssociatedTypeShapeFunc = {{FormatNull(associatedTypesFactoryMethodName)}},
                     Members = {{memberDictionaryFactoryName}}(),
+                    AttributeProviderFunc = {{FormatAttributeProviderFactory(enumTypeShape.Attributes)}},
                     Provider = this,
                 };
             }

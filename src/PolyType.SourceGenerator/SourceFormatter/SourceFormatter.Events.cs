@@ -37,7 +37,7 @@ internal sealed partial class SourceFormatter
                     IsPublic = {{FormatBool(eventModel.IsPublic)}},
                     AddHandler = static (ref {{declaringType.Type.FullyQualifiedName}}{{nullableSuffix}} obj, {{eventModel.HandlerType.FullyQualifiedName}} handler) => {{FormatHandlerExpr("obj", "handler", declaringType, eventModel, isAdd: true)}},
                     RemoveHandler = static (ref {{declaringType.Type.FullyQualifiedName}}{{nullableSuffix}} obj, {{eventModel.HandlerType.FullyQualifiedName}} handler) => {{FormatHandlerExpr("obj", "handler", declaringType, eventModel, isAdd: false)}},
-                    AttributeProviderFunc = static () => typeof({{eventModel.DeclaringType.FullyQualifiedName}}).GetEvent({{FormatStringLiteral(eventModel.UnderlyingMemberName)}}, {{AllBindingFlagsConstMember}}),
+                    AttributeProviderFunc = {{FormatAttributeProviderFactory(eventModel.Attributes)}},
                 },
                 """, trimNullAssignmentLines: true);
         }

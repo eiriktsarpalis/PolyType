@@ -25,6 +25,7 @@ internal sealed partial class SourceFormatter
                     IsRecordType = {{FormatBool(objectShapeModel.IsRecordType)}},
                     IsTupleType = {{FormatBool(objectShapeModel.IsTupleType)}},
                     GetAssociatedTypeShapeFunc = {{FormatNull(associatedTypesFactoryMethodName)}},
+                    AttributeProviderFunc = {{FormatAttributeProviderFactory(objectShapeModel.Attributes)}},
                     Provider = this,
                 };
             }
