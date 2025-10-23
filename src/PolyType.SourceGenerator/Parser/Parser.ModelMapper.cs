@@ -1157,23 +1157,24 @@ public sealed partial class Parser
 
     private string FormatPrimitive(object? value, ITypeSymbol? type)
     {
+        _ = type; // Parameter reserved for future use
         return value switch
         {
             null => "null",
-            string s => FormatStringLiteral(s),
-            bool b => b ? "true" : "false",
-            char c => $"'{EscapeChar(c)}'",
-            byte b => $"(byte){b}",
-            sbyte sb => $"(sbyte){sb}",
-            short s => $"(short){s}",
-            ushort us => $"(ushort){us}",
-            int i => i.ToString(),
-            uint ui => $"{ui}u",
-            long l => $"{l}L",
-            ulong ul => $"{ul}UL",
-            float f => f.ToString("R") + "f",
-            double d => d.ToString("R") + "d",
-            decimal m => m.ToString() + "m",
+            string str => FormatStringLiteral(str),
+            bool boolValue => boolValue ? "true" : "false",
+            char charValue => $"'{EscapeChar(charValue)}'",
+            byte byteValue => $"(byte){byteValue}",
+            sbyte sbyteValue => $"(sbyte){sbyteValue}",
+            short shortValue => $"(short){shortValue}",
+            ushort ushortValue => $"(ushort){ushortValue}",
+            int intValue => intValue.ToString(),
+            uint uintValue => $"{uintValue}u",
+            long longValue => $"{longValue}L",
+            ulong ulongValue => $"{ulongValue}UL",
+            float floatValue => floatValue.ToString("R") + "f",
+            double doubleValue => doubleValue.ToString("R") + "d",
+            decimal decimalValue => decimalValue.ToString() + "m",
             _ => value.ToString() ?? "null"
         };
     }
