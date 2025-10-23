@@ -1,4 +1,6 @@
-﻿namespace PolyType.SourceGenerator.Model;
+﻿using PolyType.Roslyn;
+
+namespace PolyType.SourceGenerator.Model;
 
 public sealed record EventShapeModel
 {

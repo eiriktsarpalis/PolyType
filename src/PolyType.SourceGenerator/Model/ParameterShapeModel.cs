@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using PolyType.Roslyn;
 
 namespace PolyType.SourceGenerator.Model;
 
