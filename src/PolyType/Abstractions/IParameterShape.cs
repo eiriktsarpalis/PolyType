@@ -75,6 +75,15 @@ public interface IParameterShape
     ICustomAttributeProvider? AttributeProvider { get; }
 
     /// <summary>
+    /// Gets the underlying <see cref="System.Reflection.ParameterInfo"/> representing the parameter, if available.
+    /// </summary>
+    /// <remarks>
+    /// This property returns <see langword="null"/> for source-generated shapes.
+    /// Use <see cref="AttributeProvider"/> for attribute resolution instead.
+    /// </remarks>
+    ParameterInfo? ParameterInfo { get; }
+
+    /// <summary>
     /// Accepts an <see cref="TypeShapeVisitor"/> for strongly-typed traversal.
     /// </summary>
     /// <param name="visitor">The visitor to accept.</param>

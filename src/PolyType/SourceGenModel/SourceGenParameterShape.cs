@@ -59,6 +59,7 @@ public sealed class SourceGenParameterShape<TArgumentState, TParameter> : IParam
     object? IParameterShape.DefaultValue => HasDefaultValue ? DefaultValue : null;
     ITypeShape IParameterShape.ParameterType => ParameterType;
     ICustomAttributeProvider? IParameterShape.AttributeProvider => AttributeProviderFunc?.Invoke();
+    ParameterInfo? IParameterShape.ParameterInfo => null;
     object? IParameterShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitParameter(this, state);
     Getter<TArgumentState, TParameter> IParameterShape<TArgumentState, TParameter>.GetGetter() => Getter;
     Setter<TArgumentState, TParameter> IParameterShape<TArgumentState, TParameter>.GetSetter() => Setter;

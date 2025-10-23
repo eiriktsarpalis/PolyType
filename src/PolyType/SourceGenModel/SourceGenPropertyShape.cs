@@ -66,6 +66,7 @@ public sealed class SourceGenPropertyShape<TDeclaringType, TPropertyType> : IPro
     bool IPropertyShape.HasGetter => Getter is not null;
     bool IPropertyShape.HasSetter => Setter is not null;
     ICustomAttributeProvider? IPropertyShape.AttributeProvider => AttributeProviderFunc?.Invoke();
+    MemberInfo? IPropertyShape.MemberInfo => null;
     object? IPropertyShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitProperty(this, state);
 
     private string DebuggerDisplay => $"{{Type = \"{typeof(TPropertyType)}\", Name = \"{Name}\"}}";

@@ -25,6 +25,15 @@ public interface IPropertyShape
     ICustomAttributeProvider? AttributeProvider { get; }
 
     /// <summary>
+    /// Gets the underlying <see cref="MemberInfo"/> representing the property or field, if available.
+    /// </summary>
+    /// <remarks>
+    /// This property returns <see langword="null"/> for source-generated shapes.
+    /// Use <see cref="AttributeProvider"/> for attribute resolution instead.
+    /// </remarks>
+    MemberInfo? MemberInfo { get; }
+
+    /// <summary>
     /// Gets the shape of the declaring type.
     /// </summary>
     IObjectTypeShape DeclaringType { get; }

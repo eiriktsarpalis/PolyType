@@ -18,8 +18,13 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
     /// <inheritdoc/>
     public required ITypeShapeProvider Provider { get; init; }
 
+    /// <summary>
+    /// Gets the factory method for creating the custom attribute provider of the type.
+    /// </summary>
+    public Func<ICustomAttributeProvider?>? AttributeProviderFunc { get; init; }
+
     Type ITypeShape.Type => typeof(T);
-    ICustomAttributeProvider? ITypeShape.AttributeProvider => typeof(T);
+    ICustomAttributeProvider? ITypeShape.AttributeProvider => AttributeProviderFunc?.Invoke();
 
     /// <summary>
     /// Gets the factory method for creating method shapes.

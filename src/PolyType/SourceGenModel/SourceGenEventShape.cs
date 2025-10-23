@@ -49,6 +49,8 @@ public sealed class SourceGenEventShape<TDeclaringType, TEventHandler> : IEventS
 
     ICustomAttributeProvider? IEventShape.AttributeProvider => AttributeProviderFunc?.Invoke();
 
+    EventInfo? IEventShape.EventInfo => null;
+
     object? IEventShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitEvent(this, state);
 
     Setter<TDeclaringType?, TEventHandler> IEventShape<TDeclaringType, TEventHandler>.GetAddHandler() => AddHandler;

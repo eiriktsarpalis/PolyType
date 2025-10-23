@@ -39,6 +39,15 @@ public interface IEventShape
     ICustomAttributeProvider? AttributeProvider { get; }
 
     /// <summary>
+    /// Gets the underlying <see cref="System.Reflection.EventInfo"/> representing the event, if available.
+    /// </summary>
+    /// <remarks>
+    /// This property returns <see langword="null"/> for source-generated shapes.
+    /// Use <see cref="AttributeProvider"/> for attribute resolution instead.
+    /// </remarks>
+    EventInfo? EventInfo { get; }
+
+    /// <summary>
     /// Accepts an <see cref="TypeShapeVisitor"/> for strongly-typed traversal.
     /// </summary>
     /// <param name="visitor">The visitor to accept.</param>
