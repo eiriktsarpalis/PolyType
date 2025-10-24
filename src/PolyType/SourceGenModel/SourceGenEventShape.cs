@@ -14,7 +14,7 @@ namespace PolyType.SourceGenModel;
 public sealed class SourceGenEventShape<TDeclaringType, TEventHandler> : IEventShape<TDeclaringType, TEventHandler>
 {
     /// <inheritdoc/>
-    public string Name { get; init; } = null!;
+    public required string Name { get; init; }
 
     /// <inheritdoc/>
     public bool IsStatic { get; init; }
