@@ -1162,7 +1162,7 @@ public sealed partial class Parser
         };
     }
 
-    private string FormatPrimitive(object? value, ITypeSymbol? type)
+    private static string FormatPrimitive(object? value, ITypeSymbol? type)
     {
         _ = type; // Parameter reserved for future use
         return value switch

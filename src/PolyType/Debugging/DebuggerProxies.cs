@@ -157,6 +157,7 @@ internal sealed class ParameterShapeDebugView(IParameterShape parameterShape) : 
     public bool IsPublic => parameterShape.IsPublic;
     public ITypeShape ParameterType => parameterShape.ParameterType;
     public ICustomAttributeProvider? AttributeProvider => parameterShape.AttributeProvider;
+    public ParameterInfo? ParameterInfo => parameterShape.ParameterInfo;
     object? IParameterShape.Accept(TypeShapeVisitor visitor, object? state) => parameterShape.Accept(visitor, state);
 }
 
@@ -178,6 +179,7 @@ internal sealed class PropertyShapeDebugView(IPropertyShape propertyShape) : IPr
     public bool IsGetterNonNullable => propertyShape.IsGetterNonNullable;
     public bool IsSetterNonNullable => propertyShape.IsSetterNonNullable;
     public ICustomAttributeProvider? AttributeProvider => propertyShape.AttributeProvider;
+    public MemberInfo? MemberInfo => propertyShape.MemberInfo;
     object? IPropertyShape.Accept(TypeShapeVisitor visitor, object? state) => propertyShape.Accept(visitor, state);
 }
 
@@ -193,6 +195,7 @@ internal sealed class EventShapeDebugView(IEventShape eventShape) : IEventShape
     public bool IsStatic => eventShape.IsStatic;
     public IFunctionTypeShape HandlerType => eventShape.HandlerType;
     public ICustomAttributeProvider? AttributeProvider => eventShape.AttributeProvider;
+    public EventInfo? EventInfo => eventShape.EventInfo;
     object? IEventShape.Accept(TypeShapeVisitor visitor, object? state) => eventShape.Accept(visitor, state);
 }
 
