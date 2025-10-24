@@ -1167,7 +1167,7 @@ public sealed partial class Parser
         return value switch
         {
             null => "null",
-            string str => SymbolDisplay.FormatLiteral(str, quote: true),
+            string str => Microsoft.CodeAnalysis.SymbolDisplay.FormatLiteral(str, quote: true),
             bool boolValue => boolValue ? "true" : "false",
             char charValue => $"'{EscapeChar(charValue)}'",
             byte byteValue => $"(byte){byteValue}",
