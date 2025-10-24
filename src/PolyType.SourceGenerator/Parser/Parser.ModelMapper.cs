@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using PolyType.Roslyn;
 using PolyType.Roslyn.Helpers;
 using PolyType.SourceGenerator.Helpers;
@@ -1167,7 +1168,7 @@ public sealed partial class Parser
         return value switch
         {
             null => "null",
-            string str => Microsoft.CodeAnalysis.SymbolDisplay.FormatLiteral(str, quote: true),
+            string str => SymbolDisplay.FormatLiteral(str, quote: true),
             bool boolValue => boolValue ? "true" : "false",
             char charValue => $"'{EscapeChar(charValue)}'",
             byte byteValue => $"(byte){byteValue}",
