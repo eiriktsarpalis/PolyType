@@ -5,6 +5,7 @@ using PolyType.SourceGenerator.Helpers;
 using PolyType.SourceGenerator.Model;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 
@@ -1082,8 +1083,13 @@ public sealed partial class Parser
         return false;
     }
 
-    private ImmutableEquatableArray<AttributeDataModel> CollectAttributes(ISymbol symbol)
+    private ImmutableEquatableArray<AttributeDataModel> CollectAttributes(ISymbol? symbol)
     {
+        if (symbol is null)
+        {
+            return ImmutableEquatableArray<AttributeDataModel>.Empty;
+        }
+
         var attributes = new List<AttributeDataModel>();
         
         foreach (AttributeData attr in symbol.GetAttributes())
@@ -1121,7 +1127,7 @@ public sealed partial class Parser
         return attributes.ToImmutableEquatableArray();
     }
 
-    private bool ShouldSkipAttribute(INamedTypeSymbol attributeClass)
+    private static bool ShouldSkipAttribute(INamedTypeSymbol attributeClass)
     {
         // Skip compiler-generated and framework attributes that shouldn't be emitted
         string fullName = attributeClass.GetFullyQualifiedName();
@@ -1161,25 +1167,25 @@ public sealed partial class Parser
         return value switch
         {
             null => "null",
-            string str => FormatStringLiteral(str),
+            string str => SymbolDisplay.FormatLiteral(str, quote: true),
             bool boolValue => boolValue ? "true" : "false",
             char charValue => $"'{EscapeChar(charValue)}'",
             byte byteValue => $"(byte){byteValue}",
             sbyte sbyteValue => $"(sbyte){sbyteValue}",
             short shortValue => $"(short){shortValue}",
             ushort ushortValue => $"(ushort){ushortValue}",
-            int intValue => intValue.ToString(),
-            uint uintValue => $"{uintValue}u",
-            long longValue => $"{longValue}L",
-            ulong ulongValue => $"{ulongValue}UL",
-            float floatValue => floatValue.ToString("R") + "f",
-            double doubleValue => doubleValue.ToString("R") + "d",
-            decimal decimalValue => decimalValue.ToString() + "m",
+            int intValue => intValue.ToString(CultureInfo.InvariantCulture),
+            uint uintValue => $"{uintValue.ToString(CultureInfo.InvariantCulture)}u",
+            long longValue => $"{longValue.ToString(CultureInfo.InvariantCulture)}L",
+            ulong ulongValue => $"{ulongValue.ToString(CultureInfo.InvariantCulture)}UL",
+            float floatValue => floatValue.ToString("R", CultureInfo.InvariantCulture) + "f",
+            double doubleValue => doubleValue.ToString("R", CultureInfo.InvariantCulture) + "d",
+            decimal decimalValue => decimalValue.ToString(CultureInfo.InvariantCulture) + "m",
             _ => value.ToString() ?? "null"
         };
     }
 
-    private string EscapeChar(char c)
+    private static string EscapeChar(char c)
     {
         return c switch
         {
@@ -1197,7 +1203,7 @@ public sealed partial class Parser
         };
     }
 
-    private string FormatEnum(object? value, ITypeSymbol? type)
+    private static string FormatEnum(object? value, ITypeSymbol? type)
     {
         if (value is null || type is not INamedTypeSymbol enumType)
         {
