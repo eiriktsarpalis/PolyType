@@ -15,7 +15,7 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     public required ITypeShape<TElement> ElementType { get; init; }
 
     /// <inheritdoc/>
-    public int Rank { get; init; }
+    public required int Rank { get; init; }
 
     /// <inheritdoc/>
     public bool IsAsyncEnumerable { get; init; }
