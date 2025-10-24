@@ -28,7 +28,7 @@ internal sealed partial class SourceFormatter
                     Provider = this,
                 };
             }
-            """, trimNullAssignmentLines: true);
+            """, trimDefaultAssignmentLines: true);
         writer.WriteLine("#pragma warning restore CS8767", disableIndentation: true);
 
         if (methodFactoryMethodName is not null)

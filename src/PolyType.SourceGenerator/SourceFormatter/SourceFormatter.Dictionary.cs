@@ -39,7 +39,7 @@ internal sealed partial class SourceFormatter
                     Provider = this,
                 };
             }
-            """, trimNullAssignmentLines: true);
+            """, trimDefaultAssignmentLines: true);
 
         if (requiresCS8631Suppression)
         {

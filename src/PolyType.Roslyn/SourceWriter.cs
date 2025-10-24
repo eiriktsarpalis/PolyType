@@ -6,7 +6,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Text.RegularExpressions;
+using System.Text.RegularExpressions; // retained for potential future use
+using System.IO;
 
 namespace PolyType.Roslyn;
 
@@ -105,21 +106,18 @@ public sealed class SourceWriter : IDisposable
     /// Appends a new line with the specified text.
     /// </summary>
     /// <param name="text">The text to append.</param>
-    /// <param name="trimNullAssignmentLines">Trims any lines containing 'Identifier = null,' assignments.</param>
+    /// <param name="trimDefaultAssignmentLines">Trims any lines containing 'Identifier = null', 'Identifier = false', 'Identifier = 0', or 'Identifier = default' assignments.</param>
     /// <param name="disableIndentation">Append text without preserving the current indentation.</param>
     public void WriteLine(
         [StringSyntax("c#-test")] string text,
-        bool trimNullAssignmentLines = false,
+        bool trimDefaultAssignmentLines = false,
         bool disableIndentation = false)
     {
         EnsureNotDisposed();
 
-        if (trimNullAssignmentLines)
+        if (trimDefaultAssignmentLines)
         {
-            // Since the ns2.0 Regex class doesn't support spans,
-            // use Regex.Replace to preprocess the string instead
-            // of doing a line-by-line replacement.
-            text = s_nullAssignmentLineRegex.Replace(text, "");
+            text = TrimDefaultAssignmentLines(text);
         }
 
         AddIndentation();
@@ -239,8 +237,78 @@ public sealed class SourceWriter : IDisposable
 
     // Horizontal whitespace regex: apply double negation on \s to exclude \r and \n
     private const string HWSR = @"[^\S\r\n]*";
-    private static readonly Regex s_nullAssignmentLineRegex =
-        new(@$"{HWSR}\w+{HWSR}={HWSR}null{HWSR},?{HWSR}\r?\n", RegexOptions.Compiled);
+    // Instead of a broad regex that risks removing required member initializers, we implement
+    // a lightweight line filter that skips only safe default assignments for non-required members.
+    // Required members are listed explicitly below; if new required members are added in the model
+    // layer they should also be added here to avoid accidental trimming.
+    private static readonly HashSet<string> s_requiredMemberNames = new(StringComparer.Ordinal)
+    {
+        "IsRecordType","IsTupleType","Position","Rank","Tag","Index",
+        "IsGetterPublic","IsSetterPublic","IsGetterNonNullable","IsSetterNonNullable",
+        "IsRequired","IsNonNullable","IsPublic","IsVoidLike","IsAsync",
+        "IsAsyncEnumerable","IsSetType","IsStatic","IsTagSpecified","Name"
+    };
+
+    private static string TrimDefaultAssignmentLines(string text)
+    {
+        // Fast path: if none of the target tokens appear, return original.
+        if (text.IndexOf("= null", StringComparison.Ordinal) < 0 &&
+            text.IndexOf("= false", StringComparison.Ordinal) < 0 &&
+            text.IndexOf("= 0", StringComparison.Ordinal) < 0 &&
+            text.IndexOf("= default", StringComparison.Ordinal) < 0)
+        {
+            return text;
+        }
+
+        var sb = new StringBuilder(text.Length);
+        using var reader = new StringReader(text);
+        string? line;
+        while ((line = reader.ReadLine()) != null)
+        {
+            string trimmedStart = line.TrimStart();
+            int eqIndex = trimmedStart.IndexOf('=');
+            if (eqIndex > 0)
+            {
+                string identifier = trimmedStart.Substring(0, eqIndex).TrimEnd();
+                if (IsIdentifier(identifier) && !s_requiredMemberNames.Contains(identifier))
+                {
+                    string rhs = trimmedStart.Substring(eqIndex + 1).Trim();
+                    // Remove trailing comma for value comparison.
+                    if (rhs.EndsWith(",", StringComparison.Ordinal)) // specify comparison to satisfy analyzer
+                    {
+                        rhs = rhs.Substring(0, rhs.Length - 1).TrimEnd();
+                    }
+
+                    if (rhs is "null" or "false" or "0" or "default")
+                    {
+                        // Skip this line (trim it)
+                        continue;
+                    }
+                }
+            }
+
+            sb.AppendLine(line);
+        }
+
+        return sb.ToString();
+    }
+
+    private static bool IsIdentifier(string value)
+    {
+        if (string.IsNullOrEmpty(value) || !(char.IsLetter(value[0]) || value[0] == '_'))
+        {
+            return false;
+        }
+        for (int i = 1; i < value.Length; i++)
+        {
+            char c = value[i];
+            if (!(char.IsLetterOrDigit(c) || c == '_'))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void AppendChars(ReadOnlySpan<char> span)

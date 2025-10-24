@@ -32,7 +32,7 @@ internal sealed partial class SourceFormatter
                     Provider = this,
                };
             }
-            """, trimNullAssignmentLines: true);
+            """, trimDefaultAssignmentLines: true);
 
         if (methodFactoryMethodName is not null)
         {

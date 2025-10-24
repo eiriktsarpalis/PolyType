@@ -32,7 +32,7 @@ internal sealed partial class SourceFormatter
                 AttributeProviderFunc = {{FormatAttributeProviderFunc(type, constructor)}},
                 IsPublic = {{FormatBool(constructor.IsPublic)}},
             };
-            """, trimNullAssignmentLines: true);
+            """, trimDefaultAssignmentLines: true);
 
         writer.Indentation--;
         writer.WriteLine('}');
@@ -302,7 +302,7 @@ internal sealed partial class SourceFormatter
                     Setter = static (ref {{constructorArgumentStateFQN}} state, {{parameter.ParameterType.FullyQualifiedName}} value) => {{FormatSetterBody(constructor, parameter)}},
                     AttributeProviderFunc = {{FormatAttributeProviderFunc(type, constructor, parameter)}},
                 },
-                """, trimNullAssignmentLines: true);
+                """, trimDefaultAssignmentLines: true);
 
             i++;
 

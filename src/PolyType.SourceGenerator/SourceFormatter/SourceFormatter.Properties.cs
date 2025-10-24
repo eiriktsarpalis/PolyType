@@ -52,7 +52,7 @@ internal sealed partial class SourceFormatter
                     IsGetterNonNullable = {{FormatBool(property.IsGetterNonNullable)}},
                     IsSetterNonNullable = {{FormatBool(property.IsSetterNonNullable)}},
                 },
-                """, trimNullAssignmentLines: true);
+                """, trimDefaultAssignmentLines: true);
 
             i++;
 
