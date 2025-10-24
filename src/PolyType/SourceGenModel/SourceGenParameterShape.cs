@@ -18,7 +18,7 @@ public sealed class SourceGenParameterShape<TArgumentState, TParameter> : IParam
     public int Position { get; init; }
 
     /// <inheritdoc/>
-    public string Name { get; init; } = null!;
+    public required string Name { get; init; }
 
     /// <inheritdoc/>
     public required ParameterKind Kind { get; init; }
