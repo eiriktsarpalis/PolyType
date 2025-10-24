@@ -17,7 +17,7 @@ public sealed class SourceGenPropertyShape<TDeclaringType, TPropertyType> : IPro
     public int Position { get; init; }
 
     /// <inheritdoc/>
-    public string Name { get; init; } = null!;
+    public required string Name { get; init; }
 
     /// <summary>
     /// Gets the custom attribute provider for the property.
