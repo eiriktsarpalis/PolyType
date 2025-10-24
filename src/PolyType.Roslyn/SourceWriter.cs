@@ -105,7 +105,7 @@ public sealed class SourceWriter : IDisposable
     /// Appends a new line with the specified text.
     /// </summary>
     /// <param name="text">The text to append.</param>
-    /// <param name="trimDefaultAssignmentLines">Trims any lines containing 'Identifier = null', 'Identifier = false', 'Identifier = 0', or 'Identifier = default' assignments.</param>
+    /// <param name="trimDefaultAssignmentLines">Trims any lines containing 'Identifier = null', 'Identifier = false', or 'Identifier = default' assignments.</param>
     /// <param name="disableIndentation">Append text without preserving the current indentation.</param>
     public void WriteLine(
         [StringSyntax("c#-test")] string text,
@@ -240,7 +240,7 @@ public sealed class SourceWriter : IDisposable
     // Horizontal whitespace regex: apply double negation on \s to exclude \r and \n
     private const string HWSR = @"[^\S\r\n]*";
     private static readonly Regex s_defaultAssignmentLineRegex =
-        new(@$"{HWSR}\w+{HWSR}={HWSR}(null|false|0|default){HWSR},?{HWSR}\r?\n", RegexOptions.Compiled);
+        new(@$"{HWSR}\w+{HWSR}={HWSR}(null|false|default){HWSR},?{HWSR}\r?\n", RegexOptions.Compiled);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void AppendChars(ReadOnlySpan<char> span)

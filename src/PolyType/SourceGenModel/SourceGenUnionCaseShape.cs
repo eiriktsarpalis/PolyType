@@ -22,13 +22,13 @@ public sealed class SourceGenUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShap
     public required string Name { get; init; }
 
     /// <inheritdoc/>
-    public int Tag { get; init; }
+    public required int Tag { get; init; }
 
     /// <inheritdoc/>
     public bool IsTagSpecified { get; init; }
 
     /// <inheritdoc/>
-    public int Index { get; init; }
+    public required int Index { get; init; }
 
     ITypeShape IUnionCaseShape.UnionCaseType => UnionCaseType;
     object? IUnionCaseShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitUnionCase(this, state);

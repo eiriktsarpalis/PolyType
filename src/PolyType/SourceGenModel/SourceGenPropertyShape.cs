@@ -14,7 +14,7 @@ namespace PolyType.SourceGenModel;
 public sealed class SourceGenPropertyShape<TDeclaringType, TPropertyType> : IPropertyShape<TDeclaringType, TPropertyType>
 {
     /// <inheritdoc/>
-    public int Position { get; init; }
+    public required int Position { get; init; }
 
     /// <inheritdoc/>
     public required string Name { get; init; }
