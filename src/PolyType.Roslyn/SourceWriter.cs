@@ -105,21 +105,21 @@ public sealed class SourceWriter : IDisposable
     /// Appends a new line with the specified text.
     /// </summary>
     /// <param name="text">The text to append.</param>
-    /// <param name="trimNullAssignmentLines">Trims any lines containing 'Identifier = null,' assignments.</param>
+    /// <param name="trimDefaultAssignmentLines">Trims any lines containing 'Identifier = null', 'Identifier = false', or 'Identifier = default' assignments.</param>
     /// <param name="disableIndentation">Append text without preserving the current indentation.</param>
     public void WriteLine(
         [StringSyntax("c#-test")] string text,
-        bool trimNullAssignmentLines = false,
+        bool trimDefaultAssignmentLines = false,
         bool disableIndentation = false)
     {
         EnsureNotDisposed();
 
-        if (trimNullAssignmentLines)
+        if (trimDefaultAssignmentLines)
         {
             // Since the ns2.0 Regex class doesn't support spans,
             // use Regex.Replace to preprocess the string instead
             // of doing a line-by-line replacement.
-            text = s_nullAssignmentLineRegex.Replace(text, "");
+            text = s_defaultAssignmentLineRegex.Replace(text, "");
         }
 
         AddIndentation();
@@ -239,8 +239,8 @@ public sealed class SourceWriter : IDisposable
 
     // Horizontal whitespace regex: apply double negation on \s to exclude \r and \n
     private const string HWSR = @"[^\S\r\n]*";
-    private static readonly Regex s_nullAssignmentLineRegex =
-        new(@$"{HWSR}\w+{HWSR}={HWSR}null{HWSR},?{HWSR}\r?\n", RegexOptions.Compiled);
+    private static readonly Regex s_defaultAssignmentLineRegex =
+        new(@$"{HWSR}\w+{HWSR}={HWSR}(null|false|default){HWSR},?{HWSR}\r?\n", RegexOptions.Compiled);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void AppendChars(ReadOnlySpan<char> span)

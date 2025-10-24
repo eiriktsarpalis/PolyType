@@ -19,16 +19,16 @@ public sealed class SourceGenMethodShape<TDeclaringType, TArgumentState, TResult
     public required string Name { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsPublic { get; init; }
+    public bool IsPublic { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsStatic { get; init; }
+    public bool IsStatic { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsVoidLike { get; init; }
+    public bool IsVoidLike { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsAsync { get; init; }
+    public bool IsAsync { get; init; }
 
     /// <inheritdoc/>
     public required ITypeShape<TDeclaringType> DeclaringType { get; init; }

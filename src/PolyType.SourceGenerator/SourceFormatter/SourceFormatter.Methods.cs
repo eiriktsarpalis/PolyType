@@ -76,7 +76,7 @@ internal sealed partial class SourceFormatter
                 ArgumentStateConstructor = {{FormatArgumentStateConstructor(declaringType, method, methodArgumentStateFQN)}},
                 MethodInvoker = {{FormatMethodInvoker(declaringType, method, methodArgumentStateFQN)}},
             };
-            """, trimNullAssignmentLines: true);
+            """, trimDefaultAssignmentLines: true);
 
         writer.Indentation--;
         writer.WriteLine('}');
@@ -243,7 +243,7 @@ internal sealed partial class SourceFormatter
                     Setter = static (ref {{methodArgumentStateFQN}} state, {{parameter.ParameterType.FullyQualifiedName}} value) => {{FormatSetterBody(method, parameter)}},
                     AttributeProviderFunc = {{FormatAttributeProviderFunc(declaringType, method, parameter)}},
                 },
-                """, trimNullAssignmentLines: true);
+                """, trimDefaultAssignmentLines: true);
 
             static string FormatAttributeProviderFunc(TypeShapeModel declaringType, MethodShapeModel method, ParameterShapeModel parameter)
             {

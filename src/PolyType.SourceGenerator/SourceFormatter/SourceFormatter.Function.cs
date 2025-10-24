@@ -31,7 +31,7 @@ internal sealed partial class SourceFormatter
                     Provider = this,
                 };
             }
-            """, trimNullAssignmentLines: true);
+            """, trimDefaultAssignmentLines: true);
 
         if (functionParameterFactoryName != null)
         {
@@ -260,7 +260,7 @@ internal sealed partial class SourceFormatter
                     Setter = static (ref {{functionArgumentStateFQN}} state, {{parameter.ParameterType.FullyQualifiedName}} value) => {{FormatSetterBody(functionShapeModel, parameter)}},
                     AttributeProviderFunc = {{FormatAttributeProviderFunc(functionShapeModel, parameter)}},
                 },
-                """, trimNullAssignmentLines: true);
+                """, trimDefaultAssignmentLines: true);
 
             static string FormatAttributeProviderFunc(FunctionShapeModel functionShapeModel, ParameterShapeModel parameter)
             {

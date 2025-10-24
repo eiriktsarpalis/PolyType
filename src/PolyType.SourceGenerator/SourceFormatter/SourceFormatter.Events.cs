@@ -39,7 +39,7 @@ internal sealed partial class SourceFormatter
                     RemoveHandler = static (ref {{declaringType.Type.FullyQualifiedName}}{{nullableSuffix}} obj, {{eventModel.HandlerType.FullyQualifiedName}} handler) => {{FormatHandlerExpr("obj", "handler", declaringType, eventModel, isAdd: false)}},
                     AttributeProviderFunc = static () => typeof({{eventModel.DeclaringType.FullyQualifiedName}}).GetEvent({{FormatStringLiteral(eventModel.UnderlyingMemberName)}}, {{AllBindingFlagsConstMember}}),
                 },
-                """, trimNullAssignmentLines: true);
+                """, trimDefaultAssignmentLines: true);
         }
 
         writer.Indentation--;

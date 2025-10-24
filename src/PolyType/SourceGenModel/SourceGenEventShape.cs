@@ -17,10 +17,10 @@ public sealed class SourceGenEventShape<TDeclaringType, TEventHandler> : IEventS
     public required string Name { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsStatic { get; init; }
+    public bool IsStatic { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsPublic { get; init; }
+    public bool IsPublic { get; init; }
 
     /// <inheritdoc/>
     public required ITypeShape<TDeclaringType> DeclaringType { get; init; }

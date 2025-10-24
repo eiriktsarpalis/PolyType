@@ -41,16 +41,16 @@ public sealed class SourceGenPropertyShape<TDeclaringType, TPropertyType> : IPro
     public Setter<TDeclaringType, TPropertyType>? Setter { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsGetterPublic { get; init; }
+    public bool IsGetterPublic { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsSetterPublic { get; init; }
+    public bool IsSetterPublic { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsGetterNonNullable { get; init; }
+    public bool IsGetterNonNullable { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsSetterNonNullable { get; init; }
+    public bool IsSetterNonNullable { get; init; }
 
     /// <inheritdoc/>
     public bool IsField { get; init; }

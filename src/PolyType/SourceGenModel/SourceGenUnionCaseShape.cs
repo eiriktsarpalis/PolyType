@@ -25,7 +25,7 @@ public sealed class SourceGenUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShap
     public required int Tag { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsTagSpecified { get; init; }
+    public bool IsTagSpecified { get; init; }
 
     /// <inheritdoc/>
     public required int Index { get; init; }

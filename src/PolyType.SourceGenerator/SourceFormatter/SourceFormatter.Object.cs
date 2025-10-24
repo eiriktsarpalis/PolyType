@@ -28,7 +28,7 @@ internal sealed partial class SourceFormatter
                     Provider = this,
                 };
             }
-            """, trimNullAssignmentLines: true);
+            """, trimDefaultAssignmentLines: true);
 
         if (objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Properties) && propertiesFactoryMethodName != null)
         {

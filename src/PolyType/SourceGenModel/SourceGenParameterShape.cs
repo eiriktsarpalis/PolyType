@@ -24,13 +24,13 @@ public sealed class SourceGenParameterShape<TArgumentState, TParameter> : IParam
     public required ParameterKind Kind { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsRequired { get; init; }
+    public bool IsRequired { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsNonNullable { get; init; }
+    public bool IsNonNullable { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsPublic { get; init; }
+    public bool IsPublic { get; init; }
 
     /// <inheritdoc/>
     public required ITypeShape<TParameter> ParameterType { get; init; }

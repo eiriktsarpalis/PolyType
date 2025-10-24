@@ -15,10 +15,10 @@ public sealed class SourceGenFunctionTypeShape<TFunction, TArgumentState, TResul
     where TArgumentState : IArgumentState
 {
     /// <inheritdoc/>
-    public required bool IsVoidLike { get; init; }
+    public bool IsVoidLike { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsAsync { get; init; }
+    public bool IsAsync { get; init; }
 
     /// <inheritdoc/>
     public required ITypeShape<TResult> ReturnType { get; init; }
