@@ -19,7 +19,7 @@ public sealed class SourceGenUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShap
     public required IMarshaler<TUnionCase, TUnion> Marshaler { get; init; }
 
     /// <inheritdoc/>
-    public string Name { get; init; } = null!;
+    public required string Name { get; init; }
 
     /// <inheritdoc/>
     public int Tag { get; init; }
