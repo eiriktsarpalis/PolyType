@@ -15,22 +15,22 @@ public sealed class SourceGenParameterShape<TArgumentState, TParameter> : IParam
     where TArgumentState : IArgumentState
 {
     /// <inheritdoc/>
-    public required int Position { get; init; }
+    public int Position { get; init; }
 
     /// <inheritdoc/>
-    public required string Name { get; init; }
+    public string Name { get; init; } = null!;
 
     /// <inheritdoc/>
     public required ParameterKind Kind { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsRequired { get; init; }
+    public bool IsRequired { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsNonNullable { get; init; }
+    public bool IsNonNullable { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsPublic { get; init; }
+    public bool IsPublic { get; init; }
 
     /// <inheritdoc/>
     public required ITypeShape<TParameter> ParameterType { get; init; }

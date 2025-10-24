@@ -11,10 +11,10 @@ namespace PolyType.SourceGenModel;
 public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObject>, IObjectTypeShape<TObject>
 {
     /// <inheritdoc/>
-    public required bool IsRecordType { get; init; }
+    public bool IsRecordType { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsTupleType { get; init; }
+    public bool IsTupleType { get; init; }
 
     /// <summary>
     /// Gets the factory method for creating property shapes.

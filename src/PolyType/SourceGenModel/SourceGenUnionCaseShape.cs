@@ -19,16 +19,16 @@ public sealed class SourceGenUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShap
     public required IMarshaler<TUnionCase, TUnion> Marshaler { get; init; }
 
     /// <inheritdoc/>
-    public required string Name { get; init; }
+    public string Name { get; init; } = null!;
 
     /// <inheritdoc/>
-    public required int Tag { get; init; }
+    public int Tag { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsTagSpecified { get; init; }
+    public bool IsTagSpecified { get; init; }
 
     /// <inheritdoc/>
-    public required int Index { get; init; }
+    public int Index { get; init; }
 
     ITypeShape IUnionCaseShape.UnionCaseType => UnionCaseType;
     object? IUnionCaseShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitUnionCase(this, state);

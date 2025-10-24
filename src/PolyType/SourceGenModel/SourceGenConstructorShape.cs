@@ -15,7 +15,7 @@ public sealed class SourceGenConstructorShape<TDeclaringType, TArgumentState> : 
     where TArgumentState : IArgumentState
 {
     /// <inheritdoc/>
-    public required bool IsPublic { get; init; }
+    public bool IsPublic { get; init; }
 
     /// <inheritdoc/>
     public required IObjectTypeShape<TDeclaringType> DeclaringType { get; init; }

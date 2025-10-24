@@ -15,13 +15,13 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     public required ITypeShape<TElement> ElementType { get; init; }
 
     /// <inheritdoc/>
-    public required int Rank { get; init; }
+    public int Rank { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsAsyncEnumerable { get; init; }
+    public bool IsAsyncEnumerable { get; init; }
 
     /// <inheritdoc/>
-    public required bool IsSetType { get; init; }
+    public bool IsSetType { get; init; }
 
     /// <summary>
     /// Gets the function that retrieves an enumerable from an instance of the collection.
