@@ -16,7 +16,7 @@ public sealed class SourceGenMethodShape<TDeclaringType, TArgumentState, TResult
     where TArgumentState : IArgumentState
 {
     /// <inheritdoc/>
-    public string Name { get; init; } = null!;
+    public required string Name { get; init; }
 
     /// <inheritdoc/>
     public bool IsPublic { get; init; }
