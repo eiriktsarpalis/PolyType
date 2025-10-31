@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace PolyType.Tests;
 
-public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest)
+public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerUnderTest)
 {
     protected ITypeShapeProvider Provider => providerUnderTest.Provider;
 
@@ -1397,7 +1397,8 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
     [Fact]
     public void AnimalWithGenericCowTypes_ValidatesAutoComputedNames()
     {
-        // Skip for SourceGen since test type doesn't have [GenerateShape]
+        // Skip for SourceGen - this test is specifically for runtime computed names
+        // SourceGen computes names at compile time and is tested separately
         if (providerUnderTest.Kind is ProviderKind.SourceGen)
         {
             return;
@@ -1425,10 +1426,11 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         Assert.True(clovenHoofCowCase.IsTagSpecified);
     }
 
+    [GenerateShape]
     [DerivedTypeShape(typeof(Animal.Horse))]
     [DerivedTypeShape(typeof(Animal.Cow<Animal.SolidHoof>), Tag = 1)]
     [DerivedTypeShape(typeof(Animal.Cow<Animal.ClovenHoof>), Tag = 2)]
-    private record Animal(string Name)
+    public partial record Animal(string Name)
     {
         public record Horse(string Name) : Animal(Name);
         public record Cow<THoof>(string Name, THoof Hoof) : Animal(Name);
