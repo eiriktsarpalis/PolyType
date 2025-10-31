@@ -1341,6 +1341,76 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             Assert.IsType<TShape>(proxy, exactMatch: false);
         }
     }
+
+    [Fact]
+    public void GenericDerivedTypes_RuntimeComputedNamesMatchExpectations()
+    {
+        // Skip for SourceGen since test types don't have [GenerateShape]
+        if (providerUnderTest.Kind is ProviderKind.SourceGen)
+        {
+            return;
+        }
+
+        // Test with simple generic types
+        ITypeShape<PolymorphicTypeWithGenericDerivedTypes> shape = Provider.GetTypeShape<PolymorphicTypeWithGenericDerivedTypes>()!;
+        IUnionTypeShape<PolymorphicTypeWithGenericDerivedTypes> unionShape = Assert.IsAssignableFrom<IUnionTypeShape<PolymorphicTypeWithGenericDerivedTypes>>(shape);
+
+        Assert.Equal(3, unionShape.UnionCases.Count);
+
+        // Horse should keep simple name
+        var horseCase = unionShape.UnionCases.First(c => c.UnionCaseType.Type == typeof(PolymorphicTypeWithGenericDerivedTypes.Horse));
+        Assert.Equal("Horse", horseCase.Name);
+
+        // Cow<SolidHoof> should be Cow_SolidHoof
+        var solidHoofCowCase = unionShape.UnionCases.First(c => c.UnionCaseType.Type == typeof(PolymorphicTypeWithGenericDerivedTypes.Cow<PolymorphicTypeWithGenericDerivedTypes.SolidHoof>));
+        Assert.Equal("Cow_SolidHoof", solidHoofCowCase.Name);
+
+        // Cow<ClovenHoof> should be Cow_ClovenHoof
+        var clovenHoofCowCase = unionShape.UnionCases.First(c => c.UnionCaseType.Type == typeof(PolymorphicTypeWithGenericDerivedTypes.Cow<PolymorphicTypeWithGenericDerivedTypes.ClovenHoof>));
+        Assert.Equal("Cow_ClovenHoof", clovenHoofCowCase.Name);
+    }
+
+    [Fact]
+    public void NestedGenericDerivedTypes_RuntimeComputedNamesMatchExpectations()
+    {
+        // Skip for SourceGen since test types don't have [GenerateShape]
+        if (providerUnderTest.Kind is ProviderKind.SourceGen)
+        {
+            return;
+        }
+
+        // Test with nested generic types like List<T>
+        ITypeShape<PolymorphicTypeWithNestedGenericDerivedTypes> shape = Provider.GetTypeShape<PolymorphicTypeWithNestedGenericDerivedTypes>()!;
+        IUnionTypeShape<PolymorphicTypeWithNestedGenericDerivedTypes> unionShape = Assert.IsAssignableFrom<IUnionTypeShape<PolymorphicTypeWithNestedGenericDerivedTypes>>(shape);
+
+        Assert.Equal(2, unionShape.UnionCases.Count);
+
+        // Container<int> should be Container_Int32
+        var intContainerCase = unionShape.UnionCases.First(c => c.UnionCaseType.Type == typeof(PolymorphicTypeWithNestedGenericDerivedTypes.Container<int>));
+        Assert.Equal("Container_Int32", intContainerCase.Name);
+
+        // Container<List<string>> should be Container_List_String
+        var listContainerCase = unionShape.UnionCases.First(c => c.UnionCaseType.Type == typeof(PolymorphicTypeWithNestedGenericDerivedTypes.Container<List<string>>));
+        Assert.Equal("Container_List_String", listContainerCase.Name);
+    }
+
+    [DerivedTypeShape(typeof(Horse))]
+    [DerivedTypeShape(typeof(Cow<SolidHoof>), Tag = 1)]
+    [DerivedTypeShape(typeof(Cow<ClovenHoof>), Tag = 2)]
+    private class PolymorphicTypeWithGenericDerivedTypes
+    {
+        public class Horse : PolymorphicTypeWithGenericDerivedTypes;
+        public class Cow<THoof> : PolymorphicTypeWithGenericDerivedTypes;
+        public class SolidHoof;
+        public class ClovenHoof;
+    }
+
+    [DerivedTypeShape(typeof(Container<int>))]
+    [DerivedTypeShape(typeof(Container<List<string>>))]
+    private class PolymorphicTypeWithNestedGenericDerivedTypes
+    {
+        public class Container<T> : PolymorphicTypeWithNestedGenericDerivedTypes;
+    }
 }
 
 public static class ReflectionExtensions
