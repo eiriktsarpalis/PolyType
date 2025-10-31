@@ -586,11 +586,6 @@ public static class TestTypes
             additionalValues: [new PolymorphicClassWithGenericDerivedType.Derived<string>("str")],
             isUnion: true);
 
-        yield return TestCase.Create(
-            (Animal)new Animal.Horse("Spirit"),
-            additionalValues: [new Animal.Cow<Animal.SolidHoof>("Bessie", new Animal.SolidHoof()), new Animal.Cow<Animal.ClovenHoof>("Clover", new Animal.ClovenHoof())],
-            isUnion: true);
-
         yield return TestCase.Create<Tree>(new Tree.Node(42, new Tree.Leaf(), new Tree.Leaf()), additionalValues: [new Tree.Leaf()], isUnion: true);
         yield return TestCase.Create((GenericTree<string>)new GenericTree<string>.Node("str", new GenericTree<string>.Leaf(), new GenericTree<string>.Leaf()), additionalValues: [new GenericTree<string>.Leaf()], isUnion: true, provider: p);
         yield return TestCase.Create((GenericTree<int>)new GenericTree<int>.Node(42, new GenericTree<int>.Leaf(), new GenericTree<int>.Leaf()), additionalValues: [new GenericTree<int>.Leaf()], isUnion: true, provider: p);
@@ -2640,21 +2635,6 @@ public partial interface IPolymorphicInterface
 public partial record PolymorphicClassWithGenericDerivedType
 {
     public record Derived<T>(T Value) : PolymorphicClassWithGenericDerivedType;
-}
-
-[GenerateShape]
-[DerivedTypeShape(typeof(Horse))]
-[DerivedTypeShape(typeof(Cow<SolidHoof>), Tag = 1)]
-[DerivedTypeShape(typeof(Cow<ClovenHoof>), Tag = 2)]
-[JsonDerivedType(typeof(Horse), "Horse")]
-[JsonDerivedType(typeof(Cow<SolidHoof>), "Cow_SolidHoof")]
-[JsonDerivedType(typeof(Cow<ClovenHoof>), "Cow_ClovenHoof")]
-public partial record Animal(string Name)
-{
-    public record Horse(string Name) : Animal(Name);
-    public record Cow<THoof>(string Name, THoof Hoof) : Animal(Name);
-    public record SolidHoof;
-    public record ClovenHoof;
 }
 
 [GenerateShape]

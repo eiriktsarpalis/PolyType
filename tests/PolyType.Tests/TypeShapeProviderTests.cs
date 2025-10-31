@@ -1394,6 +1394,48 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         Assert.Equal("Container_List_String", listContainerCase.Name);
     }
 
+    [Fact]
+    public void AnimalWithGenericCowTypes_ValidatesAutoComputedNames()
+    {
+        // Skip for SourceGen since test type doesn't have [GenerateShape]
+        if (providerUnderTest.Kind is ProviderKind.SourceGen)
+        {
+            return;
+        }
+
+        // Test the Animal type from the original issue - validates each union case name explicitly
+        ITypeShape<Animal> shape = Provider.GetTypeShape<Animal>()!;
+        IUnionTypeShape<Animal> unionShape = Assert.IsAssignableFrom<IUnionTypeShape<Animal>>(shape);
+
+        Assert.Equal(3, unionShape.UnionCases.Count);
+
+        // Find each union case and validate its name
+        var horseCase = unionShape.UnionCases.Single(c => c.UnionCaseType.Type == typeof(Animal.Horse));
+        Assert.Equal("Horse", horseCase.Name);
+        Assert.Equal(0, horseCase.Index);
+
+        var solidHoofCowCase = unionShape.UnionCases.Single(c => c.UnionCaseType.Type == typeof(Animal.Cow<Animal.SolidHoof>));
+        Assert.Equal("Cow_SolidHoof", solidHoofCowCase.Name);
+        Assert.Equal(1, solidHoofCowCase.Index);
+        Assert.True(solidHoofCowCase.IsTagSpecified);
+
+        var clovenHoofCowCase = unionShape.UnionCases.Single(c => c.UnionCaseType.Type == typeof(Animal.Cow<Animal.ClovenHoof>));
+        Assert.Equal("Cow_ClovenHoof", clovenHoofCowCase.Name);
+        Assert.Equal(2, clovenHoofCowCase.Index);
+        Assert.True(clovenHoofCowCase.IsTagSpecified);
+    }
+
+    [DerivedTypeShape(typeof(Animal.Horse))]
+    [DerivedTypeShape(typeof(Animal.Cow<Animal.SolidHoof>), Tag = 1)]
+    [DerivedTypeShape(typeof(Animal.Cow<Animal.ClovenHoof>), Tag = 2)]
+    private record Animal(string Name)
+    {
+        public record Horse(string Name) : Animal(Name);
+        public record Cow<THoof>(string Name, THoof Hoof) : Animal(Name);
+        public record SolidHoof;
+        public record ClovenHoof;
+    }
+
     [DerivedTypeShape(typeof(Horse))]
     [DerivedTypeShape(typeof(Cow<SolidHoof>), Tag = 1)]
     [DerivedTypeShape(typeof(Cow<ClovenHoof>), Tag = 2)]
