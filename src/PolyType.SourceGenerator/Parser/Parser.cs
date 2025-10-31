@@ -622,7 +622,7 @@ public sealed partial class Parser : TypeDataModelGenerator
 
             bool isTagSpecified = tag >= 0;
             tag = isTagSpecified ? tag : i;
-            name ??= derivedType.Name;
+            name ??= derivedType.GetDerivedTypeShapeName();
 
             if (!types.Add(derivedType))
             {

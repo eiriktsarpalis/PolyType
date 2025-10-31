@@ -255,6 +255,73 @@ internal static partial class RoslynHelpers
             : $"{symbol.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}.{symbol.Name}";
     }
 
+    /// <summary>
+    /// Returns a name suitable for auto-deriving DerivedTypeShapeAttribute.Name that includes type arguments separated by underscores.
+    /// </summary>
+    /// <remarks>
+    /// Examples:
+    /// - Cow&lt;SolidHoof&gt; → Cow_SolidHoof
+    /// - Cow&lt;List&lt;SolidHoof&gt;&gt; → Cow_List_SolidHoof
+    /// </remarks>
+    public static string GetDerivedTypeShapeName(this ITypeSymbol type)
+    {
+        StringBuilder builder = new StringBuilder();
+        ITypeSymbol? skipContainingType = (type as INamedTypeSymbol)?.ContainingType;
+        FormatTypeWithUnderscores(type, builder, skipContainingType);
+        return builder.ToString();
+
+        static void FormatTypeWithUnderscores(ITypeSymbol type, StringBuilder builder, ITypeSymbol? skipContainingType)
+        {
+            if (type is IArrayTypeSymbol arrayType)
+            {
+                FormatTypeWithUnderscores(arrayType.ElementType, builder, skipContainingType);
+                builder.Append("Array");
+                if (arrayType.Rank > 1)
+                {
+                    builder.Append(arrayType.Rank);
+                }
+
+                return;
+            }
+
+            if (type is IPointerTypeSymbol pointerType)
+            {
+                FormatTypeWithUnderscores(pointerType.PointedAtType, builder, skipContainingType);
+                builder.Append("Pointer");
+                return;
+            }
+
+            if (type is ITypeParameterSymbol typeParam)
+            {
+                builder.Append(typeParam.Name);
+                return;
+            }
+
+            Debug.Assert(type is INamedTypeSymbol);
+            var namedType = (INamedTypeSymbol)type;
+            
+            // For nested types, include containing type unless it matches the skip type
+            if (namedType.ContainingType is { } containingType &&
+                !SymbolEqualityComparer.Default.Equals(containingType, skipContainingType))
+            {
+                FormatTypeWithUnderscores(containingType, builder, skipContainingType);
+                builder.Append('_');
+            }
+
+            builder.Append(namedType.Name);
+
+            // Append type arguments separated by underscores
+            if (namedType.TypeArguments.Length > 0)
+            {
+                foreach (ITypeSymbol typeArg in namedType.TypeArguments)
+                {
+                    builder.Append('_');
+                    FormatTypeWithUnderscores(typeArg, builder, skipContainingType);
+                }
+            }
+        }
+    }
+
     public static IEnumerable<TMember> GetMembers<TMember>(this ITypeSymbol type, string name) where TMember : ISymbol
         => type.GetMembers(name).OfType<TMember>();
 
