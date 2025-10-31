@@ -14,7 +14,7 @@ public class DerivedTypeShapeAttribute : Attribute
     {
         Throw.IfNull(type);
         Type = type;
-        Name = type.Name;
+        Name = Utilities.ReflectionUtilities.GetDerivedTypeShapeName(type);
     }
 
     /// <summary>
