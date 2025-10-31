@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace PolyType.Tests;
 
-public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerUnderTest)
+public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest)
 {
     protected ITypeShapeProvider Provider => providerUnderTest.Provider;
 
@@ -1397,15 +1397,19 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
     [Fact]
     public void AnimalWithGenericCowTypes_ValidatesAutoComputedNames()
     {
-        // Skip for SourceGen - this test is specifically for runtime computed names
-        // SourceGen computes names at compile time and is tested separately
+        // Test the Animal type from the original issue - validates each union case name explicitly
+        ITypeShape<Animal> shape;
+#if NET
+        // For SourceGen, use TypeShapeProviderTests_SourceGen.LocalWitness which has GenerateShapeFor<Animal>
         if (providerUnderTest.Kind is ProviderKind.SourceGen)
         {
-            return;
+            shape = TypeShapeProviderTests_SourceGen.LocalWitness.GeneratedTypeShapeProvider.GetTypeShape<Animal>()!;
         }
-
-        // Test the Animal type from the original issue - validates each union case name explicitly
-        ITypeShape<Animal> shape = Provider.GetTypeShape<Animal>()!;
+        else
+#endif
+        {
+            shape = Provider.GetTypeShape<Animal>()!;
+        }
         IUnionTypeShape<Animal> unionShape = Assert.IsAssignableFrom<IUnionTypeShape<Animal>>(shape);
 
         Assert.Equal(3, unionShape.UnionCases.Count);
@@ -1426,11 +1430,10 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
         Assert.True(clovenHoofCowCase.IsTagSpecified);
     }
 
-    [GenerateShape]
     [DerivedTypeShape(typeof(Animal.Horse))]
     [DerivedTypeShape(typeof(Animal.Cow<Animal.SolidHoof>), Tag = 1)]
     [DerivedTypeShape(typeof(Animal.Cow<Animal.ClovenHoof>), Tag = 2)]
-    public partial record Animal(string Name)
+    public record Animal(string Name)
     {
         public record Horse(string Name) : Animal(Name);
         public record Cow<THoof>(string Name, THoof Hoof) : Animal(Name);
@@ -1956,6 +1959,7 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
 
     public partial record ClassWithTrivialShapeExternal(int x, string y);
 
+    [GenerateShapeFor<Animal>]
     [GenerateShapeFor<ClassWithMarshalerExternal>(Marshaler = typeof(ClassWithMarshalerExternal.Marshaler))]
     [GenerateShapeFor(typeof(ClassWithMethodExternal), IncludeMethods = MethodShapeFlags.PublicInstance)]
     [GenerateShapeFor(typeof(ClassWithTrivialShapeExternal), Kind = TypeShapeKind.None)]
