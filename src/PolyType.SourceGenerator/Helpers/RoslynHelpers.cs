@@ -322,7 +322,7 @@ internal static partial class RoslynHelpers
                         ? namedType.TupleElements.Select(e => e.Type)
                         : namedType.TypeArguments;
 
-                    foreach (ITypeSymbol argument in namedType.TypeArguments)
+                    foreach (ITypeSymbol argument in typeArguments)
                     {
                         sb.Append('_');
                         GenerateCore(argument, sb);
