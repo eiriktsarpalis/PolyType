@@ -296,14 +296,17 @@ internal static partial class RoslynHelpers
                     break;
 
                 case IArrayTypeSymbol arrayType:
-                    GenerateCore(arrayType.ElementType, sb);
-                    sb.Append("_Array");
+                    // Use prefix notation to avoid ambiguity: Array_Int32 instead of Int32_Array
+                    // This prevents collisions like Dictionary<string, int[]> vs Dictionary<string, int>[]
+                    sb.Append("Array");
                     if (arrayType.Rank > 1)
                     {
-                        // _Array2D, _Array3D, etc.
+                        // Array2D, Array3D, etc.
                         sb.Append(arrayType.Rank);
                         sb.Append('D');
                     }
+                    sb.Append('_');
+                    GenerateCore(arrayType.ElementType, sb);
                     break;
 
                 case INamedTypeSymbol namedType:
