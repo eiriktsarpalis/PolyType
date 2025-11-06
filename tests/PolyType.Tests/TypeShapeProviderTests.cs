@@ -1398,25 +1398,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
     public void AnimalWithGenericCowTypes_ValidatesAutoComputedNames()
     {
         // Test the Animal type from the original issue - validates each union case name explicitly
-        // For SourceGen, Animal is registered in LocalWitness, for others use Provider
-        ITypeShape<Animal> shape;
-#if NET
-        if (providerUnderTest.Kind is ProviderKind.SourceGen)
-        {
-            shape = TypeShapeProviderTests_SourceGen.LocalWitness.GeneratedTypeShapeProvider.GetTypeShape<Animal>()!;
-        }
-        else
-#else
-        // SourceGen doesn't work on .NET Framework
-        if (providerUnderTest.Kind is ProviderKind.SourceGen)
-        {
-            return;
-        }
-        else
-#endif
-        {
-            shape = Provider.GetTypeShape<Animal>()!;
-        }
+        ITypeShape<Animal> shape = Provider.GetTypeShape<Animal>()!;
         IUnionTypeShape<Animal> unionShape = Assert.IsAssignableFrom<IUnionTypeShape<Animal>>(shape);
 
         Assert.Equal(3, unionShape.UnionCases.Count);
@@ -1435,17 +1417,6 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         Assert.Equal("Cow_ClovenHoof", clovenHoofCowCase.Name);
         Assert.Equal(2, clovenHoofCowCase.Index);
         Assert.True(clovenHoofCowCase.IsTagSpecified);
-    }
-
-    [DerivedTypeShape(typeof(Animal.Horse))]
-    [DerivedTypeShape(typeof(Animal.Cow<Animal.SolidHoof>), Tag = 1)]
-    [DerivedTypeShape(typeof(Animal.Cow<Animal.ClovenHoof>), Tag = 2)]
-    public record Animal(string Name)
-    {
-        public record Horse(string Name) : Animal(Name);
-        public record Cow<THoof>(string Name, THoof Hoof) : Animal(Name);
-        public record SolidHoof;
-        public record ClovenHoof;
     }
 
     [DerivedTypeShape(typeof(Horse))]
@@ -1966,7 +1937,6 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
 
     public partial record ClassWithTrivialShapeExternal(int x, string y);
 
-    [GenerateShapeFor<Animal>]
     [GenerateShapeFor<ClassWithMarshalerExternal>(Marshaler = typeof(ClassWithMarshalerExternal.Marshaler))]
     [GenerateShapeFor(typeof(ClassWithMethodExternal), IncludeMethods = MethodShapeFlags.PublicInstance)]
     [GenerateShapeFor(typeof(ClassWithTrivialShapeExternal), Kind = TypeShapeKind.None)]

@@ -2657,6 +2657,18 @@ public partial record GenericTree<T>
 }
 
 [GenerateShape]
+[DerivedTypeShape(typeof(Animal.Horse))]
+[DerivedTypeShape(typeof(Animal.Cow<Animal.SolidHoof>), Tag = 1)]
+[DerivedTypeShape(typeof(Animal.Cow<Animal.ClovenHoof>), Tag = 2)]
+public partial record Animal(string Name)
+{
+    public record Horse(string Name) : Animal(Name);
+    public record Cow<THoof>(string Name, THoof Hoof) : Animal(Name);
+    public record SolidHoof;
+    public record ClovenHoof;
+}
+
+[GenerateShape]
 public partial record PropertyRequiredByAttribute
 {
     [PropertyShape(IsRequired = true)]
