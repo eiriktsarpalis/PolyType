@@ -1398,6 +1398,14 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
     public void AnimalWithGenericCowTypes_ValidatesAutoComputedNames()
     {
         // Test the Animal type from the original issue - validates each union case name explicitly
+        // SourceGen doesn't work on .NET Framework, so skip for that combination
+#if !NET
+        if (providerUnderTest.Kind is ProviderKind.SourceGen)
+        {
+            return;
+        }
+#endif
+
         ITypeShape<Animal> shape;
 #if NET
         // For SourceGen, use TypeShapeProviderTests_SourceGen.LocalWitness which has GenerateShapeFor<Animal>
