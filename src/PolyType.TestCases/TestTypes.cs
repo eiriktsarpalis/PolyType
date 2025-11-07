@@ -2671,6 +2671,14 @@ public partial record ClassWithGenericDerivedType
 }
 
 [GenerateShape]
+[DerivedTypeShape(typeof(Derived<int[,]>))]
+[DerivedTypeShape(typeof(Derived<string[,,]>))]
+public partial record ClassWithMultiDimensionalArrayDerivedType
+{
+    public record Derived<T>(T Value) : ClassWithMultiDimensionalArrayDerivedType;
+}
+
+[GenerateShape]
 public partial record PropertyRequiredByAttribute
 {
     [PropertyShape(IsRequired = true)]

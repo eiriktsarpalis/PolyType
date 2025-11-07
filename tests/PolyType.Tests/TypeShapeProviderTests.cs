@@ -1365,6 +1365,21 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         unionCase = unionShape.UnionCases.First(c => c.UnionCaseType.Type == typeof(ClassWithGenericDerivedType.Derived<ClassWithGenericDerivedType.Arg2[]>));
         Assert.Equal("Derived_Array_Arg2", unionCase.Name);
     }
+
+    [Fact]
+    public void ClassWithMultiDimensionalArrayDerivedTypes_HasExpectedNames()
+    {
+        ITypeShape<ClassWithMultiDimensionalArrayDerivedType> shape = Provider.GetTypeShape<ClassWithMultiDimensionalArrayDerivedType>()!;
+        IUnionTypeShape<ClassWithMultiDimensionalArrayDerivedType> unionShape = Assert.IsAssignableFrom<IUnionTypeShape<ClassWithMultiDimensionalArrayDerivedType>>(shape);
+
+        Assert.Equal(2, unionShape.UnionCases.Count);
+
+        var unionCase = unionShape.UnionCases.First(c => c.UnionCaseType.Type == typeof(ClassWithMultiDimensionalArrayDerivedType.Derived<int[,]>));
+        Assert.Equal("Derived_Array2D_Int32", unionCase.Name);
+
+        unionCase = unionShape.UnionCases.First(c => c.UnionCaseType.Type == typeof(ClassWithMultiDimensionalArrayDerivedType.Derived<string[,,]>));
+        Assert.Equal("Derived_Array3D_String", unionCase.Name);
+    }
 }
 
 public static class ReflectionExtensions
