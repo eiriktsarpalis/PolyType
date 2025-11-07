@@ -2663,19 +2663,13 @@ public partial record GenericTree<T>
 [DerivedTypeShape(typeof(Derived<Arg2>))]
 [DerivedTypeShape(typeof(Derived<List<Arg1>>))]
 [DerivedTypeShape(typeof(Derived<Arg2[]>))]
+[DerivedTypeShape(typeof(Derived<Arg2[,]>))]
+[DerivedTypeShape(typeof(Derived<Arg2[,,]>))]
 public partial record ClassWithGenericDerivedType
 {
     public record Derived<T>(T Value) : ClassWithGenericDerivedType;
     public class Arg1;
     public class Arg2;
-}
-
-[GenerateShape]
-[DerivedTypeShape(typeof(Derived<int[,]>))]
-[DerivedTypeShape(typeof(Derived<string[,,]>))]
-public partial record ClassWithMultiDimensionalArrayDerivedType
-{
-    public record Derived<T>(T Value) : ClassWithMultiDimensionalArrayDerivedType;
 }
 
 [GenerateShape]
