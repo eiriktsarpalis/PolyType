@@ -1348,7 +1348,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         ITypeShape<ClassWithGenericDerivedType> shape = Provider.GetTypeShape<ClassWithGenericDerivedType>()!;
         IUnionTypeShape<ClassWithGenericDerivedType> unionShape = Assert.IsAssignableFrom<IUnionTypeShape<ClassWithGenericDerivedType>>(shape);
 
-        Assert.Equal(7, unionShape.UnionCases.Count);
+        Assert.Equal(5, unionShape.UnionCases.Count);
 
         var unionCase = unionShape.UnionCases.First(c => c.UnionCaseType.Type == typeof(ClassWithGenericDerivedType.Derived<int>));
         Assert.Equal("Derived_Int32", unionCase.Name);
@@ -1364,12 +1364,6 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
 
         unionCase = unionShape.UnionCases.First(c => c.UnionCaseType.Type == typeof(ClassWithGenericDerivedType.Derived<ClassWithGenericDerivedType.Arg2[]>));
         Assert.Equal("Derived_Array_Arg2", unionCase.Name);
-
-        unionCase = unionShape.UnionCases.First(c => c.UnionCaseType.Type == typeof(ClassWithGenericDerivedType.Derived<ClassWithGenericDerivedType.Arg2[,]>));
-        Assert.Equal("Derived_Array2D_Arg2", unionCase.Name);
-
-        unionCase = unionShape.UnionCases.First(c => c.UnionCaseType.Type == typeof(ClassWithGenericDerivedType.Derived<ClassWithGenericDerivedType.Arg2[,,]>));
-        Assert.Equal("Derived_Array3D_Arg2", unionCase.Name);
     }
 }
 

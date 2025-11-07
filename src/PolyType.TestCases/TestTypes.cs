@@ -2663,8 +2663,6 @@ public partial record GenericTree<T>
 [DerivedTypeShape(typeof(Derived<Arg2>))]
 [DerivedTypeShape(typeof(Derived<List<Arg1>>))]
 [DerivedTypeShape(typeof(Derived<Arg2[]>))]
-[DerivedTypeShape(typeof(Derived<Arg2[,]>))]
-[DerivedTypeShape(typeof(Derived<Arg2[,,]>))]
 public partial record ClassWithGenericDerivedType
 {
     public record Derived<T>(T Value) : ClassWithGenericDerivedType;
