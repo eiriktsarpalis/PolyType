@@ -63,7 +63,7 @@ public static class ReflectionUtilities
     public static string GetDerivedTypeShapeName(Type type)
     {
         Throw.IfNull(type);
-        StringBuilder builder = new StringBuilder();
+        StringBuilder builder = new();
         Type? skipDeclaringType = type.DeclaringType;
         FormatTypeWithUnderscores(type, builder, skipDeclaringType);
         return builder.ToString();
@@ -72,13 +72,15 @@ public static class ReflectionUtilities
         {
             if (type.IsArray)
             {
-                FormatTypeWithUnderscores(type.GetElementType()!, builder, skipDeclaringType);
                 builder.Append("Array");
-                if (type.GetArrayRank() > 1)
+                if (type.GetArrayRank() is > 1 and int rk)
                 {
-                    builder.Append(type.GetArrayRank());
+                    builder.Append(rk);
+                    builder.Append('D');
                 }
 
+                builder.Append('_');
+                FormatTypeWithUnderscores(type.GetElementType()!, builder, skipDeclaringType);
                 return;
             }
 

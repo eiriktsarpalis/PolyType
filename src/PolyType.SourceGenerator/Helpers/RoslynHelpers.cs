@@ -274,13 +274,15 @@ internal static partial class RoslynHelpers
         {
             if (type is IArrayTypeSymbol arrayType)
             {
-                FormatTypeWithUnderscores(arrayType.ElementType, builder, skipContainingType);
                 builder.Append("Array");
                 if (arrayType.Rank > 1)
                 {
                     builder.Append(arrayType.Rank);
+                    builder.Append('D');
                 }
 
+                builder.Append('_');
+                FormatTypeWithUnderscores(arrayType.ElementType, builder, skipContainingType);
                 return;
             }
 

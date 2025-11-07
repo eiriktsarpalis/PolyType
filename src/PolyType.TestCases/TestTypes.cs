@@ -589,6 +589,7 @@ public static class TestTypes
         yield return TestCase.Create<Tree>(new Tree.Node(42, new Tree.Leaf(), new Tree.Leaf()), additionalValues: [new Tree.Leaf()], isUnion: true);
         yield return TestCase.Create((GenericTree<string>)new GenericTree<string>.Node("str", new GenericTree<string>.Leaf(), new GenericTree<string>.Leaf()), additionalValues: [new GenericTree<string>.Leaf()], isUnion: true, provider: p);
         yield return TestCase.Create((GenericTree<int>)new GenericTree<int>.Node(42, new GenericTree<int>.Leaf(), new GenericTree<int>.Leaf()), additionalValues: [new GenericTree<int>.Leaf()], isUnion: true, provider: p);
+        yield return TestCase.Create<ClassWithGenericDerivedType>(new ClassWithGenericDerivedType.Derived<int>(42), additionalValues: [new ClassWithGenericDerivedType.Derived<ClassWithGenericDerivedType.Arg1>(new())], isUnion: true);
 
         yield return TestCase.Create(new RecordWithoutNamespace(42));
         yield return TestCase.Create(new GenericRecordWithoutNamespace<int>(42), p);
@@ -2657,15 +2658,16 @@ public partial record GenericTree<T>
 }
 
 [GenerateShape]
-[DerivedTypeShape(typeof(Animal.Horse))]
-[DerivedTypeShape(typeof(Animal.Cow<Animal.SolidHoof>), Tag = 1)]
-[DerivedTypeShape(typeof(Animal.Cow<Animal.ClovenHoof>), Tag = 2)]
-public partial record Animal(string Name)
+[DerivedTypeShape(typeof(Derived<int>))]
+[DerivedTypeShape(typeof(Derived<Arg1>))]
+[DerivedTypeShape(typeof(Derived<Arg2>))]
+[DerivedTypeShape(typeof(Derived<List<Arg1>>))]
+[DerivedTypeShape(typeof(Derived<Arg2[]>))]
+public partial record ClassWithGenericDerivedType
 {
-    public record Horse(string Name) : Animal(Name);
-    public record Cow<THoof>(string Name, THoof Hoof) : Animal(Name);
-    public record SolidHoof;
-    public record ClovenHoof;
+    public record Derived<T>(T Value) : ClassWithGenericDerivedType;
+    public class Arg1;
+    public class Arg2;
 }
 
 [GenerateShape]
