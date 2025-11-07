@@ -1119,6 +1119,33 @@ public static partial class CompilationTests
     }
 
     [Fact]
+    public static void PolymorphicClassWithGenericDerivedTypes_IncludingArrays_NoWarnings()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+            using System.Collections.Generic;
+
+            [GenerateShape]
+            [DerivedTypeShape(typeof(Derived<int>))]
+            [DerivedTypeShape(typeof(Derived<Arg1>))]
+            [DerivedTypeShape(typeof(Derived<Arg2>))]
+            [DerivedTypeShape(typeof(Derived<List<Arg1>>))]
+            [DerivedTypeShape(typeof(Derived<Arg2[]>))]
+            [DerivedTypeShape(typeof(Derived<Arg2[,]>))]
+            [DerivedTypeShape(typeof(Derived<Arg2[,,]>))]
+            public partial record ClassWithGenericDerivedType
+            {
+                public record Derived<T>(T Value) : ClassWithGenericDerivedType;
+                public class Arg1;
+                public class Arg2;
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
     public static void Dictionary()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
