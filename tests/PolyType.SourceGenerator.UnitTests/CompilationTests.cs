@@ -1650,4 +1650,29 @@ public static partial class CompilationTests
         Assert.Empty(result.Diagnostics);
     }
 #endif
+
+    [Fact]
+    public static void ArrayTypes_NoHintNameCollision()
+    {
+        // Regression test for issue #338: array suffix notation can result in ambiguous hint names.
+        // Dictionary<string, int[]> and Dictionary<string, int>[] previously generated the same hint name
+        // causing "The hintName must be unique within a generator" error.
+        // With prefix notation (Array_T instead of T_Array), these generate unique names.
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+            using System.Collections.Generic;
+
+            [GenerateShapeFor(typeof(Dictionary<string, int[]>))]
+            [GenerateShapeFor(typeof(Dictionary<string, int>[]))]
+            [GenerateShapeFor(typeof(int[]))]
+            [GenerateShapeFor(typeof(int[][]))]
+            [GenerateShapeFor(typeof(int[,]))]
+            [GenerateShapeFor(typeof(int[,,]))]
+            partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        // If there were hint name collisions, the generator would fail with CS8785
+        Assert.Empty(result.Diagnostics);
+    }
 }
