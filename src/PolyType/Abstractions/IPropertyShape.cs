@@ -20,9 +20,38 @@ public interface IPropertyShape
     string Name { get; }
 
     /// <summary>
+    /// Gets the underlying <see cref="MemberInfo"/> representing the property or field, if available.
+    /// </summary>
+    /// <remarks>
+    /// Typically returns either <see cref="FieldInfo"/> or <see cref="PropertyInfo"/> depending on the underlying member.
+    /// </remarks>
+    MemberInfo? MemberInfo { get; }
+
+    /// <summary>
     /// Gets the provider used for property-level attribute resolution.
     /// </summary>
-    ICustomAttributeProvider? AttributeProvider { get; }
+    /// <remarks>
+    /// <para>
+    /// Provides fast attribute resolution when using the source generator,
+    /// otherwise this is wrapping standard reflection-based attribute resolution.
+    /// </para>
+    /// <para>
+    /// When using the source generator, the following categories of attributes are excluded to reduce trimmed application size:
+    /// <list type="bullet">
+    /// <item><description><c>PolyType.*</c> - PolyType's own shape configuration attributes</description></item>
+    /// <item><description><c>System.Runtime.CompilerServices.*</c> - Compiler-generated attributes</description></item>
+    /// <item><description><c>System.Runtime.InteropServices.*</c> - COM interop attributes</description></item>
+    /// <item><description><c>System.Diagnostics.*</c> - Diagnostic attributes</description></item>
+    /// <item><description><c>System.Reflection.DefaultMemberAttribute</c> - Default member metadata</description></item>
+    /// <item><description><c>System.CLSCompliantAttribute</c> - CLS compliance marker</description></item>
+    /// <item><description><c>Microsoft.FSharp.Core.*</c> - F# compiler generated attributes</description></item>
+    /// <item><description>Attributes marked with <c>[Conditional("NEVER")]</c></description></item>
+    /// </list>
+    /// Users requiring complete attribute resolution can use the <see cref="MemberInfo"/> property
+    /// to access standard reflection-based attribute APIs, though this will be slower.
+    /// </para>
+    /// </remarks>
+    IGenericCustomAttributeProvider AttributeProvider { get; }
 
     /// <summary>
     /// Gets the shape of the declaring type.

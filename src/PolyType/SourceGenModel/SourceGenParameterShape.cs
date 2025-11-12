@@ -46,7 +46,12 @@ public sealed class SourceGenParameterShape<TArgumentState, TParameter> : IParam
     public required Setter<TArgumentState, TParameter> Setter { get; init; }
 
     /// <summary>
-    /// Gets a constructor delegate for the custom attribute provider of the parameter.
+    /// Gets a constructor delegate for the custom attributes of the parameter.
+    /// </summary>
+    public Func<SourceGenAttributeInfo[]>? AttributeFactory { get; init; }
+
+    /// <summary>
+    /// Gets the factory for retrieving the ParameterInfo or MemberInfo corresponding to the parameter.
     /// </summary>
     public Func<ICustomAttributeProvider?>? AttributeProviderFunc { get; init; }
 
@@ -58,10 +63,22 @@ public sealed class SourceGenParameterShape<TArgumentState, TParameter> : IParam
 
     object? IParameterShape.DefaultValue => HasDefaultValue ? DefaultValue : null;
     ITypeShape IParameterShape.ParameterType => ParameterType;
-    ICustomAttributeProvider? IParameterShape.AttributeProvider => AttributeProviderFunc?.Invoke();
     object? IParameterShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitParameter(this, state);
     Getter<TArgumentState, TParameter> IParameterShape<TArgumentState, TParameter>.GetGetter() => Getter;
     Setter<TArgumentState, TParameter> IParameterShape<TArgumentState, TParameter>.GetSetter() => Setter;
+
+    ParameterInfo? IParameterShape.ParameterInfo => ReflectionAttributeProvider as ParameterInfo;
+    MemberInfo? IParameterShape.MemberInfo => ReflectionAttributeProvider as MemberInfo;
+
+    private ICustomAttributeProvider? ReflectionAttributeProvider => _reflectionAttributeProvider ??= AttributeProviderFunc?.Invoke();
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private ICustomAttributeProvider? _reflectionAttributeProvider;
+
+    /// <inheritdoc />
+    public IGenericCustomAttributeProvider AttributeProvider => _attributeProvider ??= SourceGenCustomAttributeProvider.Create(AttributeFactory);
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private IGenericCustomAttributeProvider? _attributeProvider;
 
     private string DebuggerDisplay => $"{{Type = \"{typeof(TParameter)}\", Name = \"{Name}\"}}";
 }

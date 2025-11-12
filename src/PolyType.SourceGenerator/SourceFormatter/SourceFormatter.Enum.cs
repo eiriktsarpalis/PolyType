@@ -9,6 +9,7 @@ internal sealed partial class SourceFormatter
     {
         string memberDictionaryFactoryName = $"__CreateMemberDictionary_{enumTypeShape.SourceIdentifier}";
         string? associatedTypesFactoryMethodName = GetAssociatedTypesFactoryName(enumTypeShape);
+        string? attributeFactoryName = GetAttributesFactoryName(enumTypeShape);
 
         writer.WriteLine($$"""
             private global::PolyType.ITypeShape<{{enumTypeShape.Type.FullyQualifiedName}}> {{methodName}}()
@@ -18,6 +19,7 @@ internal sealed partial class SourceFormatter
                     UnderlyingType = {{GetShapeModel(enumTypeShape.UnderlyingType).SourceIdentifier}},
                     GetAssociatedTypeShapeFunc = {{FormatNull(associatedTypesFactoryMethodName)}},
                     Members = {{memberDictionaryFactoryName}}(),
+                    AttributeFactory = {{FormatNull(attributeFactoryName)}},
                     IsFlags = {{FormatBool(enumTypeShape.IsFlags)}},
                     Provider = this,
                 };
@@ -31,6 +33,12 @@ internal sealed partial class SourceFormatter
         {
             writer.WriteLine();
             FormatAssociatedTypesFactory(writer, enumTypeShape, associatedTypesFactoryMethodName);
+        }
+
+        if (attributeFactoryName is not null)
+        {
+            writer.WriteLine();
+            FormatAttributesFactory(writer, attributeFactoryName, enumTypeShape.Attributes);
         }
     }
 

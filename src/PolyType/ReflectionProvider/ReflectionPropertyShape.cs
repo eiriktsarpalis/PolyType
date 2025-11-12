@@ -1,6 +1,6 @@
-﻿using System.Diagnostics;
+﻿using PolyType.Abstractions;
+using System.Diagnostics;
 using System.Reflection;
-using PolyType.Abstractions;
 
 namespace PolyType.ReflectionProvider;
 
@@ -9,7 +9,7 @@ namespace PolyType.ReflectionProvider;
 internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : IPropertyShape<TDeclaringType, TPropertyType>
 {
     private readonly ReflectionTypeShapeProvider _provider;
-    private readonly MemberInfo _memberInfo;
+    private readonly MemberInfo _baseMemberInfo;
     private readonly MemberInfo[]? _parentMembers; // stack of parent members reserved for nested tuple representations
 
     private Getter<TDeclaringType, TPropertyType>? _getter;
@@ -17,20 +17,20 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
 
     public ReflectionPropertyShape(ReflectionTypeShapeProvider provider, IObjectTypeShape<TDeclaringType> declaringType, PropertyShapeInfo shapeInfo, int position)
     {
-        Debug.Assert(shapeInfo.MemberInfo.DeclaringType!.IsAssignableFrom(typeof(TDeclaringType)) || shapeInfo.ParentMembers is not null);
-        Debug.Assert(shapeInfo.MemberInfo is PropertyInfo or FieldInfo);
+        Debug.Assert(shapeInfo.BaseMemberInfo.DeclaringType!.IsAssignableFrom(typeof(TDeclaringType)) || shapeInfo.ParentMembers is not null);
+        Debug.Assert(shapeInfo.BaseMemberInfo is PropertyInfo or FieldInfo);
         Debug.Assert(shapeInfo.ParentMembers is null || typeof(TDeclaringType).IsNestedTupleRepresentation());
 
         _provider = provider;
-        _memberInfo = shapeInfo.MemberInfo;
         _parentMembers = shapeInfo.ParentMembers;
+        _baseMemberInfo = shapeInfo.BaseMemberInfo;
         DeclaringType = declaringType;
-        AttributeProvider = shapeInfo.AttributeProvider;
+        MemberInfo = shapeInfo.DerivedMemberInfo;
 
         Position = position;
-        Name = shapeInfo.LogicalName ?? shapeInfo.MemberInfo.Name;
+        Name = shapeInfo.LogicalName ?? shapeInfo.BaseMemberInfo.Name;
 
-        if (shapeInfo.MemberInfo is FieldInfo f)
+        if (shapeInfo.BaseMemberInfo is FieldInfo f)
         {
             HasGetter = true;
             HasSetter = !f.IsInitOnly;
@@ -40,7 +40,7 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
         }
         else
         {
-            PropertyInfo p = (PropertyInfo)shapeInfo.MemberInfo;
+            PropertyInfo p = (PropertyInfo)shapeInfo.BaseMemberInfo;
             HasGetter = p.CanRead && (shapeInfo.IncludeNonPublicAccessors || p.GetMethod!.IsPublic);
             HasSetter = p.CanWrite && (shapeInfo.IncludeNonPublicAccessors || p.SetMethod!.IsPublic) && !p.IsInitOnly();
             IsGetterPublic = HasGetter && p.GetMethod!.IsPublic;
@@ -53,7 +53,11 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
 
     public int Position { get; }
     public string Name { get; }
-    public ICustomAttributeProvider AttributeProvider { get; }
+    public MemberInfo MemberInfo { get; }
+
+    public IGenericCustomAttributeProvider AttributeProvider => _attributeProvider ?? CommonHelpers.ExchangeIfNull(ref _attributeProvider, new(MemberInfo));
+    private ReflectionCustomAttributeProvider? _attributeProvider;
+
     public IObjectTypeShape<TDeclaringType> DeclaringType { get; }
     public ITypeShape<TPropertyType> PropertyType => _provider.GetTypeShape<TPropertyType>();
 
@@ -81,7 +85,7 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
         return _getter ?? CommonHelpers.ExchangeIfNull(ref _getter, CreateGetter());
 
         Getter<TDeclaringType, TPropertyType> CreateGetter() =>
-            _provider.MemberAccessor.CreateGetter<TDeclaringType, TPropertyType>(_memberInfo, _parentMembers);
+            _provider.MemberAccessor.CreateGetter<TDeclaringType, TPropertyType>(_baseMemberInfo, _parentMembers);
     }
 
     public Setter<TDeclaringType, TPropertyType> GetSetter()
@@ -95,7 +99,7 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
         return _setter ?? CommonHelpers.ExchangeIfNull(ref _setter, CreateSetter());
 
         Setter<TDeclaringType, TPropertyType> CreateSetter() =>
-            _provider.MemberAccessor.CreateSetter<TDeclaringType, TPropertyType>(_memberInfo, _parentMembers);
+            _provider.MemberAccessor.CreateSetter<TDeclaringType, TPropertyType>(_baseMemberInfo, _parentMembers);
     }
 
     private string DebuggerDisplay => $"{{Type = \"{typeof(TPropertyType)}\", Name = \"{Name}\"}}";
@@ -103,8 +107,8 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
 
 internal sealed record PropertyShapeInfo(
     Type DeclaringType,
-    MemberInfo MemberInfo,
-    ICustomAttributeProvider AttributeProvider,
+    MemberInfo BaseMemberInfo,
+    MemberInfo DerivedMemberInfo,
     MemberInfo[]? ParentMembers = null,
     string? LogicalName = null,
     int Order = 0,

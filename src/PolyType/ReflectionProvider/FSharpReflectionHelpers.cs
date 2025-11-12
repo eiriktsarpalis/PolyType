@@ -20,14 +20,14 @@ internal sealed record FSharpFuncInfo(
     : IMethodShapeInfo
 {
     public bool IsPublic => true;
-    public ICustomAttributeProvider? AttributeProvider => Type;
+    public MethodBase? Method => CurriedInvocationChain[0];
     IParameterShapeInfo[] IMethodShapeInfo.Parameters => Parameters;
 }
 
 internal sealed record FSharpFuncParameter(Type Type, string Name, ParameterInfo ParameterInfo) : IParameterShapeInfo
 {
     public ParameterKind Kind => ParameterKind.MethodParameter;
-    public ICustomAttributeProvider? AttributeProvider => ParameterInfo;
+    public ICustomAttributeProvider AttributeProvider => ParameterInfo;
     public bool IsByRef => false;
     public bool IsRequired => true;
     public bool IsNonNullable => false;

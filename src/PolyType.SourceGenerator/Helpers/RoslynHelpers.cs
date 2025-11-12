@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text;
 
 namespace PolyType.SourceGenerator.Helpers;
@@ -439,6 +440,28 @@ internal static partial class RoslynHelpers
         return asr?.SyntaxTree.GetLocation(asr.Span);
     }
 
+    public static IEnumerable<(AttributeData Attribute, bool IsInherited)> GetAllAttributes(this ISymbol symbol)
+    {
+        foreach (AttributeData attr in symbol.GetAttributes())
+        {
+            yield return (attr, IsInherited: false);
+        }
+
+        IEnumerable<(AttributeData, bool)> baseAttrs = symbol switch
+        {
+            ITypeSymbol { BaseType: { } baseType } => baseType.GetAllAttributes(),
+            IPropertySymbol { OverriddenProperty: { } baseProperty } => baseProperty.GetAllAttributes(),
+            IMethodSymbol { OverriddenMethod: { } baseMethod } => baseMethod.GetAllAttributes(),
+            IEventSymbol { OverriddenEvent: { } baseEvent } => baseEvent.GetAllAttributes(),
+            _ => [],
+        };
+
+        foreach ((AttributeData attr, _) in baseAttrs)
+        {
+            yield return (attr, IsInherited: true);
+        }
+    }
+
     public static AttributeData? GetAttribute(this ISymbol symbol, INamedTypeSymbol? attributeType, bool inherit = true)
     {
         if (attributeType is null)
@@ -466,6 +489,11 @@ internal static partial class RoslynHelpers
             if (symbol is IMethodSymbol { OverriddenMethod: { } baseMethod })
             {
                 return baseMethod.GetAttribute(attributeType, inherit: true);
+            }
+
+            if (symbol is IEventSymbol { OverriddenEvent: { } baseEvent })
+            {
+                return baseEvent.GetAttribute(attributeType, inherit: true);
             }
         }
 
@@ -529,6 +557,223 @@ internal static partial class RoslynHelpers
             default:
                 Debug.Fail("unexpected syntax kind");
                 return null!;
+        }
+    }
+
+    public static string FormatTypedConstant(this Compilation compilation, ISymbol context, TypedConstant constant)
+    {
+        switch (constant.Kind)
+        {
+            case TypedConstantKind.Primitive:
+                return FormatPrimitive(constant.Value);
+
+            case TypedConstantKind.Enum:
+                return FormatEnum(constant.Value, constant.Type);
+
+            case TypedConstantKind.Type:
+                var type = (ITypeSymbol)constant.Value!;
+                if (compilation.IsSymbolAccessibleWithin(type, context))
+                {
+                    return $"typeof({type.GetFullyQualifiedName()})";
+                }
+
+                string assemblyQualifiedName = type.GetAssemblyQualifiedName();
+                return $"global::System.Type.GetType({SymbolDisplay.FormatLiteral(assemblyQualifiedName, quote: true)})!";
+
+            case TypedConstantKind.Array:
+                return FormatArray(constant.Values, constant.Type);
+
+            default:
+                return "default";
+        }
+
+        static string EscapeChar(char c)
+        {
+            return c switch
+            {
+                '\'' => "\\'",
+                '\\' => "\\\\",
+                '\0' => "\\0",
+                '\a' => "\\a",
+                '\b' => "\\b",
+                '\f' => "\\f",
+                '\n' => "\\n",
+                '\r' => "\\r",
+                '\t' => "\\t",
+                '\v' => "\\v",
+                _ => c.ToString()
+            };
+        }
+
+        static string FormatEnum(object? value, ITypeSymbol? type)
+        {
+            if (value is null || type is not INamedTypeSymbol enumType)
+            {
+                return "null";
+            }
+
+            return $"({enumType.GetFullyQualifiedName()}){value}";
+        }
+
+        string FormatArray(ImmutableArray<TypedConstant> values, ITypeSymbol? arrayType)
+        {
+            Debug.Assert(arrayType is IArrayTypeSymbol);
+
+            if (values.IsDefaultOrEmpty)
+            {
+                var elementType = ((IArrayTypeSymbol)arrayType!).ElementType;
+                return $"new {elementType.GetFullyQualifiedName()}[] {{ }}";
+            }
+
+            string items = string.Join(", ", values.Select(tc => FormatTypedConstant(compilation, context, tc)));
+            return $"new[] {{ {items} }}";
+        }
+
+        static string FormatPrimitive(object? value)
+        {
+            return value switch
+            {
+                null => "null",
+                string str => SymbolDisplay.FormatLiteral(str, quote: true),
+                bool boolValue => boolValue ? "true" : "false",
+                char charValue => $"'{EscapeChar(charValue)}'",
+                byte byteValue => $"(byte){byteValue}",
+                sbyte sbyteValue => $"(sbyte){sbyteValue}",
+                short shortValue => $"(short){shortValue}",
+                ushort ushortValue => $"(ushort){ushortValue}",
+                int intValue => intValue.ToString(CultureInfo.InvariantCulture),
+                uint uintValue => $"{uintValue.ToString(CultureInfo.InvariantCulture)}u",
+                long longValue => $"{longValue.ToString(CultureInfo.InvariantCulture)}L",
+                ulong ulongValue => $"{ulongValue.ToString(CultureInfo.InvariantCulture)}UL",
+                float floatValue => floatValue.ToString("R", CultureInfo.InvariantCulture) + "f",
+                double doubleValue => doubleValue.ToString("R", CultureInfo.InvariantCulture) + "d",
+                decimal decimalValue => decimalValue.ToString(CultureInfo.InvariantCulture) + "m",
+                _ => value.ToString() ?? "null"
+            };
+        }
+    }
+
+    /// <summary>
+    /// Returns the runtime <see cref="Type.AssemblyQualifiedName"/> value of the specified type symbol.
+    /// </summary>
+    public static string GetAssemblyQualifiedName(this ITypeSymbol type)
+    {
+        StringBuilder builder = new();
+        FormatType(type, builder);
+        return builder.ToString();
+
+        static void FormatType(ITypeSymbol type, StringBuilder builder, bool appendAssemblyIdentity = true)
+        {
+            switch (type)
+            {
+                case IArrayTypeSymbol arrayType:
+                    FormatType(arrayType.ElementType, builder, appendAssemblyIdentity: false);
+                    builder.Append('[');
+                    builder.Append(',', arrayType.Rank - 1);
+                    builder.Append(']');
+                    break;
+
+                case IPointerTypeSymbol pointerType:
+                    FormatType(pointerType.PointedAtType, builder, appendAssemblyIdentity: false);
+                    builder.Append('*');
+                    break;
+
+                case ITypeParameterSymbol typeParam:
+                    // Open generic parameter (only appears for unbound generic types).
+                    builder.Append(typeParam.Name);
+                    return;
+
+                case INamedTypeSymbol namedType:
+                    List<ITypeSymbol>? aggregateGenericParams = null;
+                    FormatNamedType(namedType, builder, ref aggregateGenericParams);
+
+                    // Only emit concrete generic arguments if the type is a constructed generic (no type parameters).
+                    if (aggregateGenericParams is not null &&
+                        aggregateGenericParams.Count > 0 &&
+                        aggregateGenericParams.TrueForAll(tp => tp is not ITypeParameterSymbol))
+                    {
+                        builder.Append('[');
+                        foreach (ITypeSymbol tp in aggregateGenericParams)
+                        {
+                            builder.Append('[');
+                            FormatType(tp, builder);
+                            builder.Append(']');
+                            builder.Append(',');
+                        }
+
+                        builder.Length -= 1; // remove last comma
+                        builder.Append(']');
+                    }
+                    break;
+
+                default:
+                    Debug.Fail($"Unsupported type symbol: {type}");
+                    break;
+            }
+
+            if (appendAssemblyIdentity && type.ContainingAssembly is not null)
+            {
+                builder.Append(", ");
+                FormatAssemblyIdentity(type.ContainingAssembly, builder);
+            }
+        }
+
+        static void FormatNamedType(INamedTypeSymbol namedType, StringBuilder builder, ref List<ITypeSymbol>? aggregateGenericParams)
+        {
+            if (namedType.ContainingType is { } containingType)
+            {
+                FormatNamedType(containingType, builder, ref aggregateGenericParams);
+                builder.Append('+');
+            }
+            else
+            {
+                FormatNamespace(namedType.ContainingNamespace, builder);
+            }
+
+            builder.Append(namedType.Name);
+
+            // Backtick + arity for generic types (both open and constructed).
+            if (namedType.TypeArguments.Length > 0)
+            {
+                builder.Append('`');
+                builder.Append(namedType.TypeArguments.Length);
+                // Collect only if constructed (arguments may still be type parameters; filtering happens later).
+                (aggregateGenericParams ??= new()).AddRange(namedType.TypeArguments);
+            }
+        }
+
+        static void FormatNamespace(INamespaceSymbol? ns, StringBuilder builder)
+        {
+            if (ns is null || ns.IsGlobalNamespace)
+            {
+                return;
+            }
+
+            FormatNamespace(ns.ContainingNamespace, builder);
+            builder.Append(ns.Name);
+            builder.Append('.');
+        }
+
+        static void FormatAssemblyIdentity(IAssemblySymbol assembly, StringBuilder builder)
+        {
+            AssemblyIdentity id = assembly.Identity;
+            builder.Append(id.Name);
+            builder.Append(", Version=");
+            builder.Append(id.Version);
+            builder.Append(", Culture=");
+            builder.Append(string.IsNullOrEmpty(id.CultureName) ? "neutral" : id.CultureName);
+            builder.Append(", PublicKeyToken=");
+            if (id.PublicKeyToken.IsDefaultOrEmpty)
+            {
+                builder.Append("null");
+            }
+            else
+            {
+                foreach (byte b in id.PublicKeyToken)
+                {
+                    builder.Append(b.ToString("x2", CultureInfo.InvariantCulture));
+                }
+            }
         }
     }
 }

@@ -555,7 +555,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
     internal IPropertyShape CreateProperty(IObjectTypeShape declaringType, PropertyShapeInfo propertyShapeInfo, int position)
     {
-        Type memberType = propertyShapeInfo.MemberInfo.GetMemberType();
+        Type memberType = propertyShapeInfo.BaseMemberInfo.GetMemberType();
         Type reflectionPropertyType = typeof(ReflectionPropertyShape<,>).MakeGenericType(propertyShapeInfo.DeclaringType, memberType);
         return (IPropertyShape)Activator.CreateInstance(reflectionPropertyType, this, declaringType, propertyShapeInfo, position)!;
     }

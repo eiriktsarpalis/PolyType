@@ -16,6 +16,7 @@ public sealed record ConstructorShapeModel
     public required bool StaticFactoryIsProperty { get; init; }
     public required bool ResultRequiresCast { get; init; }
     public required bool IsFSharpUnitConstructor { get; init; }
+    public required ImmutableEquatableArray<AttributeDataModel> Attributes { get; init; }
 
     public int TotalArity => Parameters.Length + RequiredMembers.Length + OptionalMembers.Length;
     public bool IsStaticFactory => StaticFactoryName != null;

@@ -36,6 +36,8 @@ internal sealed partial class SourceFormatter
                 IsSetterNonNullable: true,
             };
 
+            string? attributeFactoryName = GetAttributeFactoryName(property);
+
             writer.WriteLine($$"""
                 new global::PolyType.SourceGenModel.SourceGenPropertyShape<{{type.Type.FullyQualifiedName}}, {{property.PropertyType.FullyQualifiedName}}>
                 {
@@ -45,7 +47,8 @@ internal sealed partial class SourceFormatter
                     PropertyType = {{GetShapeModel(property.PropertyType).SourceIdentifier}},
                     Getter = {{(property.EmitGetter ? $"static (ref {type.Type.FullyQualifiedName} obj) => {FormatGetterBody("obj", type, property)}{(suppressGetter ? "!" : "")}" : "null")}},
                     Setter = {{(property.EmitSetter ? $"static (ref {type.Type.FullyQualifiedName} obj, {property.PropertyType.FullyQualifiedName} value) => {FormatSetterBody("obj", "value" + (suppressSetter ? "!" : ""), type, property)}" : "null")}},
-                    AttributeProviderFunc = {{FormatAttributeProviderFunc(type, property)}},
+                    AttributeFactory = {{FormatNull(attributeFactoryName)}},
+                    MemberInfoFunc = {{FormatAttributeProviderFunc(type, property)}},
                     IsField = {{FormatBool(property.IsField)}},
                     IsGetterPublic = {{FormatBool(property.IsGetterPublic)}},
                     IsSetterPublic = {{FormatBool(property.IsSetterPublic)}},
@@ -123,6 +126,20 @@ internal sealed partial class SourceFormatter
 
         writer.Indentation--;
         writer.WriteLine("};");
+
+        foreach (PropertyShapeModel property in type.Properties)
+        {
+            if (GetAttributeFactoryName(property) is { } factoryName)
+            {
+                writer.WriteLine();
+                FormatAttributesFactory(writer, factoryName, property.Attributes);
+            }
+        }
+
+        string? GetAttributeFactoryName(PropertyShapeModel property) =>
+            property.Attributes.Length > 0
+            ? $"__AttributeFactory_{type.SourceIdentifier}_{property.UnderlyingMemberName.Replace(".", "_")}"
+            : null;
     }
 
     private static string GetFieldAccessorName(TypeShapeModel declaringType, string underlyingMemberName)

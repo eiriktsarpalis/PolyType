@@ -1,4 +1,6 @@
-﻿namespace PolyType.SourceGenerator.Model;
+﻿using PolyType.Roslyn;
+
+namespace PolyType.SourceGenerator.Model;
 
 public sealed record EventShapeModel
 {
@@ -11,4 +13,5 @@ public sealed record EventShapeModel
     public required bool RequiresDisambiguation { get; init; }
     public required bool IsPublic { get; init; }
     public required bool IsStatic { get; init; }
+    public required ImmutableEquatableArray<AttributeDataModel> Attributes { get; init; }
 }

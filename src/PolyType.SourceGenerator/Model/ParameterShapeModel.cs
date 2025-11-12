@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using PolyType.Roslyn;
 
 namespace PolyType.SourceGenerator.Model;
 
@@ -22,6 +23,7 @@ public sealed record ParameterShapeModel
     public required bool IsField { get; init; }
     public required bool HasDefaultValue { get; init; }
     public required string? DefaultValueExpr { get; init; }
+    public required ImmutableEquatableArray<AttributeDataModel> Attributes { get; init; }
 }
 
 public enum ParameterKind
