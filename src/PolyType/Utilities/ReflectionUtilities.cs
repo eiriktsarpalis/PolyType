@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Text;
 
 namespace PolyType.Utilities;
 
@@ -47,5 +48,84 @@ public static class ReflectionUtilities
     {
         Throw.IfNull(attributeProvider);
         return attributeProvider.GetCustomAttributes(typeof(TAttribute), inherit).OfType<TAttribute>();
+    }
+
+    /// <summary>
+    /// Returns a name suitable for auto-deriving DerivedTypeShapeAttribute.Name that includes type arguments separated by underscores.
+    /// </summary>
+    /// <param name="type">The type to format.</param>
+    /// <returns>The formatted name with type arguments separated by underscores.</returns>
+    /// <remarks>
+    /// Examples:
+    /// - Cow&lt;SolidHoof&gt; → Cow_SolidHoof
+    /// - Cow&lt;List&lt;SolidHoof&gt;&gt; → Cow_List_SolidHoof
+    /// </remarks>
+    public static string GetDerivedTypeShapeName(Type type)
+    {
+        Throw.IfNull(type);
+        StringBuilder builder = new();
+        Type? skipDeclaringType = type.DeclaringType;
+        FormatTypeWithUnderscores(type, builder, skipDeclaringType);
+        return builder.ToString();
+
+        static void FormatTypeWithUnderscores(Type type, StringBuilder builder, Type? skipDeclaringType)
+        {
+            if (type.IsArray)
+            {
+                builder.Append("Array");
+                if (type.GetArrayRank() is > 1 and int rk)
+                {
+                    builder.Append(rk);
+                    builder.Append('D');
+                }
+
+                builder.Append('_');
+                FormatTypeWithUnderscores(type.GetElementType()!, builder, skipDeclaringType);
+                return;
+            }
+
+            if (type.IsPointer)
+            {
+                FormatTypeWithUnderscores(type.GetElementType()!, builder, skipDeclaringType);
+                builder.Append("Pointer");
+                return;
+            }
+
+            if (type.IsGenericParameter)
+            {
+                builder.Append(type.Name);
+                return;
+            }
+
+            // For nested types, include declaring type unless it matches the skip type
+            if (type.DeclaringType is { } declaringType && declaringType != skipDeclaringType)
+            {
+                FormatTypeWithUnderscores(declaringType, builder, skipDeclaringType);
+                builder.Append('_');
+            }
+
+            // Get the base name without generic arity marker
+            string name = type.Name;
+            int backtickIndex = name.IndexOf('`');
+            if (backtickIndex >= 0)
+            {
+                name = name.Substring(0, backtickIndex);
+            }
+
+            builder.Append(name);
+
+            // Append type arguments separated by underscores
+            if (type.IsGenericType)
+            {
+                Type[] typeArgs = type.GetGenericArguments();
+                // For nested types, filter out parent type arguments
+                int startIndex = type.DeclaringType?.GetGenericArguments().Length ?? 0;
+                for (int i = startIndex; i < typeArgs.Length; i++)
+                {
+                    builder.Append('_');
+                    FormatTypeWithUnderscores(typeArgs[i], builder, skipDeclaringType);
+                }
+            }
+        }
     }
 }
