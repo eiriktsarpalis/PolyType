@@ -42,8 +42,6 @@ jobs:
 
     - name: Test 🧪
       run: make test CONFIGURATION=${{ matrix.configuration }}
-      env:
-        ENABLE_CODECOV: ${{ runner.os == 'Linux' && matrix.configuration == 'Release' }}
 
     - name: Pack 📦
       if: matrix.configuration == 'Release'
