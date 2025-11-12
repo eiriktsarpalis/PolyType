@@ -1139,7 +1139,8 @@ public static partial class CompilationTests
                 public class Arg1;
                 public class Arg2;
             }
-            """);
+            """,
+            parseOptions: new(languageVersion: LanguageVersion.CSharp12));
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
