@@ -565,13 +565,18 @@ internal static partial class RoslynHelpers
         switch (constant.Kind)
         {
             case TypedConstantKind.Primitive:
-                return FormatPrimitive(constant.Value);
+                return PolyType.Roslyn.Helpers.RoslynHelpers.FormatPrimitiveConstant(constant.Value);
 
             case TypedConstantKind.Enum:
                 return FormatEnum(constant.Value, constant.Type);
 
             case TypedConstantKind.Type:
-                var type = (ITypeSymbol)constant.Value!;
+                var type = (ITypeSymbol?)constant.Value;
+                if (type is null)
+                {
+                    return "null";
+                }
+
                 if (compilation.IsSymbolAccessibleWithin(type, context))
                 {
                     return $"typeof({type.GetFullyQualifiedName()})";
@@ -585,24 +590,6 @@ internal static partial class RoslynHelpers
 
             default:
                 return "default";
-        }
-
-        static string EscapeChar(char c)
-        {
-            return c switch
-            {
-                '\'' => "\\'",
-                '\\' => "\\\\",
-                '\0' => "\\0",
-                '\a' => "\\a",
-                '\b' => "\\b",
-                '\f' => "\\f",
-                '\n' => "\\n",
-                '\r' => "\\r",
-                '\t' => "\\t",
-                '\v' => "\\v",
-                _ => c.ToString()
-            };
         }
 
         static string FormatEnum(object? value, ITypeSymbol? type)
@@ -619,37 +606,27 @@ internal static partial class RoslynHelpers
         {
             Debug.Assert(arrayType is IArrayTypeSymbol);
 
+            var arraySymbol = (IArrayTypeSymbol)arrayType!;
+            var elementType = arraySymbol.ElementType;
+
             if (values.IsDefaultOrEmpty)
             {
-                var elementType = ((IArrayTypeSymbol)arrayType!).ElementType;
                 return $"new {elementType.GetFullyQualifiedName()}[] {{ }}";
             }
 
+            // Check if any element is null - if so, we need explicit nullable array type
+            bool hasNullElements = values.Any(v => v.IsNull);
             string items = string.Join(", ", values.Select(tc => FormatTypedConstant(compilation, context, tc)));
-            return $"new[] {{ {items} }}";
-        }
 
-        static string FormatPrimitive(object? value)
-        {
-            return value switch
+            // Use explicit nullable array type when there are null elements and element type is a reference type
+            if (hasNullElements && elementType.IsReferenceType)
             {
-                null => "null",
-                string str => SymbolDisplay.FormatLiteral(str, quote: true),
-                bool boolValue => boolValue ? "true" : "false",
-                char charValue => $"'{EscapeChar(charValue)}'",
-                byte byteValue => $"(byte){byteValue}",
-                sbyte sbyteValue => $"(sbyte){sbyteValue}",
-                short shortValue => $"(short){shortValue}",
-                ushort ushortValue => $"(ushort){ushortValue}",
-                int intValue => intValue.ToString(CultureInfo.InvariantCulture),
-                uint uintValue => $"{uintValue.ToString(CultureInfo.InvariantCulture)}u",
-                long longValue => $"{longValue.ToString(CultureInfo.InvariantCulture)}L",
-                ulong ulongValue => $"{ulongValue.ToString(CultureInfo.InvariantCulture)}UL",
-                float floatValue => floatValue.ToString("R", CultureInfo.InvariantCulture) + "f",
-                double doubleValue => doubleValue.ToString("R", CultureInfo.InvariantCulture) + "d",
-                decimal decimalValue => decimalValue.ToString(CultureInfo.InvariantCulture) + "m",
-                _ => value.ToString() ?? "null"
-            };
+                // For reference types, append ? to make it explicitly nullable
+                string nullableElementType = elementType.GetFullyQualifiedName() + "?";
+                return $"new {nullableElementType}[] {{ {items} }}";
+            }
+
+            return $"new[] {{ {items} }}";
         }
     }
 

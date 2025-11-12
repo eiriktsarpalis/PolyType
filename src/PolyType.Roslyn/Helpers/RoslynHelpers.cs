@@ -519,16 +519,16 @@ internal static class RoslynHelpers
         return method.Construct(arguments);
     }
 
-    public static string? FormatDefaultValueExpr(this IParameterSymbol parameter)
+    /// <summary>
+    /// Formats a primitive constant value as a C# literal expression.
+    /// </summary>
+    /// <param name="value">The constant value to format.</param>
+    /// <returns>A C# literal expression representing the value.</returns>
+    public static string FormatPrimitiveConstant(object? value)
     {
-        if (!parameter.HasExplicitDefaultValue)
+        return value switch
         {
-            return null;
-        }
-
-        string literalExpr = parameter.ExplicitDefaultValue switch
-        {
-            null => parameter.Type.IsNullable() ? "null!" : "default",
+            null => "null",
             false => "false",
             true => "true",
 
@@ -550,6 +550,18 @@ internal static class RoslynHelpers
             // Must be one of the other numeric types or an enum
             object num => Convert.ToString(num, CultureInfo.InvariantCulture),
         };
+    }
+
+    public static string? FormatDefaultValueExpr(this IParameterSymbol parameter)
+    {
+        if (!parameter.HasExplicitDefaultValue)
+        {
+            return null;
+        }
+
+        string literalExpr = parameter.ExplicitDefaultValue is null
+            ? (parameter.Type.IsNullable() ? "null!" : "default")
+            : FormatPrimitiveConstant(parameter.ExplicitDefaultValue);
 
         bool requiresCast = parameter.Type
             is { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T }
