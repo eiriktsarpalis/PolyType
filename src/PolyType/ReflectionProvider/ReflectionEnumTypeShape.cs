@@ -23,6 +23,7 @@ internal sealed class ReflectionEnumTypeShape<TEnum, TUnderlying>
     public ITypeShape<TUnderlying> UnderlyingType => Provider.GetTypeShape<TUnderlying>();
     ITypeShape IEnumTypeShape.UnderlyingType => UnderlyingType;
     public IReadOnlyDictionary<string, TUnderlying> Members => _members ?? InitializeMembers();
+    public bool IsFlags => typeof(TEnum).IsDefined(typeof(FlagsAttribute), inherit: false);
 
     private Dictionary<string, TUnderlying> InitializeMembers()
     {

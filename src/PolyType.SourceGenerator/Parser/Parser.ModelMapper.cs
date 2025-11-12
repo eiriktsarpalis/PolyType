@@ -33,6 +33,7 @@ public sealed partial class Parser
                 Methods = [],
                 Events = [],
                 Members = enumModel.Members.ToImmutableEquatableDictionary(m => m.Key, m => EnumValueToString(m.Value)),
+                IsFlags = enumModel.IsFlags,
             },
 
             OptionalDataModel optionalModel => new OptionalShapeModel

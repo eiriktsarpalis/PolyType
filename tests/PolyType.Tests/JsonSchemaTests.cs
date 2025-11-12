@@ -23,7 +23,7 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
         {
             case IEnumTypeShape enumShape:
                 AssertType("string");
-                if (enumShape.Type.GetCustomAttribute<FlagsAttribute>() != null)
+                if (enumShape.IsFlags)
                 {
                     Assert.DoesNotContain("enum", schema);
                 }

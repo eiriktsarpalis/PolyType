@@ -68,6 +68,7 @@ internal sealed class DictionaryTypeShapeDebugView(IDictionaryTypeShape typeShap
 internal sealed class EnumTypeShapeDebugView(IEnumTypeShape typeShape) : TypeShapeDebugView(typeShape), IEnumTypeShape
 {
     public ITypeShape UnderlyingType => typeShape.UnderlyingType;
+    public bool IsFlags => typeShape.IsFlags;
 }
 
 /// <summary>

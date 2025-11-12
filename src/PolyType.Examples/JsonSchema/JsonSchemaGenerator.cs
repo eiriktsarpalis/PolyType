@@ -117,7 +117,7 @@ public static class JsonSchemaGenerator
             {
                 case IEnumTypeShape enumShape:
                     schema = new JsonObject { ["type"] = "string" };
-                    if (enumShape.Type.GetCustomAttribute<FlagsAttribute>() is null)
+                    if (!enumShape.IsFlags)
                     {
                         schema["enum"] = CreateArray(Enum.GetNames(enumShape.Type).Select(name => (JsonNode)name));
                     }

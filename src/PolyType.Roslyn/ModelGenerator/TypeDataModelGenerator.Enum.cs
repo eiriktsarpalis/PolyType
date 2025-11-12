@@ -29,12 +29,17 @@ public partial class TypeDataModelGenerator
             }
         }
 
+        bool isFlags = enumType.GetAttributes().Any(attr =>
+            attr.AttributeClass?.Name == "FlagsAttribute" &&
+            attr.AttributeClass.ContainingNamespace.ToDisplayString() == "System");
+
         model = new EnumDataModel
         {
             Type = type,
             Requirements = TypeShapeRequirements.Full,
             UnderlyingType = underlyingType,
             Members = members,
+            IsFlags = isFlags,
         };
 
         return true;

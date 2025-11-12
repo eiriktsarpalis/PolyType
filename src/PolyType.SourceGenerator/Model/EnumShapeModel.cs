@@ -7,4 +7,6 @@ public sealed record EnumShapeModel : TypeShapeModel
     public required TypeId UnderlyingType { get; init; }
 
     public required ImmutableEquatableDictionary<string, string> Members { get; init; }
+
+    public bool IsFlags { get; init; }
 }
