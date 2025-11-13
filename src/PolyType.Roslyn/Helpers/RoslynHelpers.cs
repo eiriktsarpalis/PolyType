@@ -596,28 +596,29 @@ internal static class RoslynHelpers
                         }
                     }
                 }
-
-                List<int>? matches = null;
-                foreach (var field in fields.OrderByDescending(f => f.NumericValue))
+                else
                 {
-                    // Greedy match of flag values from highest to lowest numeric value.
-                    if (field.NumericValue != 0 && (numericValue & field.NumericValue) == field.NumericValue)
+                    List<int>? matches = null;
+                    foreach (var field in fields.OrderByDescending(f => f.NumericValue))
                     {
-                        (matches ??= new()).Add(field.Index);
-                        numericValue &= ~field.NumericValue;
-                        if (numericValue == 0)
+                        // Greedy match of flag values from highest to lowest numeric value.
+                        if (field.NumericValue != 0 && (numericValue & field.NumericValue) == field.NumericValue)
                         {
-                            break; // All bits accounted for
+                            (matches ??= new()).Add(field.Index);
+                            numericValue &= ~field.NumericValue;
+                            if (numericValue == 0)
+                            {
+                                break; // All bits accounted for
+                            }
                         }
                     }
-                }
 
-                if (numericValue == 0)
-                {
-                    DebugExt.Assert(matches?.Count > 1);
-                    // Format components using the original declaration order.
-                    matches.Sort();
-                    return string.Join(" | ", matches.Select(i => FormatEnumField(fields[i].Symbol)));
+                    if (numericValue == 0)
+                    {
+                        DebugExt.Assert(matches?.Count > 1);
+                        matches.Sort(); // Format components using the original declaration order.
+                        return string.Join(" | ", matches.Select(i => FormatEnumField(fields[i].Symbol)));
+                    }
                 }
             }
 
