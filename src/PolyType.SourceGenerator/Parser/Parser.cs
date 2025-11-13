@@ -342,8 +342,21 @@ public sealed partial class Parser : TypeDataModelGenerator
             if (prop.IncludeGetter)
             {
                 var key = (prop.PropertyType, prop.Name);
-                readableProperties.TryGetValue(key, out bool isReadOnly);
-                readableProperties[key] = isReadOnly && !prop.IncludeSetter;
+                // For each property, check if it's read-only.
+                // If we've already seen this property (by type and name), keep it marked as read-only
+                // only if ALL occurrences are read-only (e.g., handling shadowing/overrides).
+                bool isCurrentPropertyReadOnly = !prop.IncludeSetter;
+                
+                if (readableProperties.TryGetValue(key, out bool isReadOnly))
+                {
+                    // If already exists, AND with current property's read-only status
+                    readableProperties[key] = isReadOnly && isCurrentPropertyReadOnly;
+                }
+                else
+                {
+                    // First occurrence, just set to current property's read-only status
+                    readableProperties[key] = isCurrentPropertyReadOnly;
+                }
             }
         }
 

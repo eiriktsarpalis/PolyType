@@ -557,6 +557,7 @@ public static class TestTypes
         yield return TestCase.Create(new ClassWithAmbiguousCtors2(1, 2, 3));
         yield return TestCase.Create(new ClassWithAmbiguousCtors3(1, 2));
         yield return TestCase.Create(new Point(1, 2), p);
+        yield return TestCase.Create(new ServiceMoniker("MyService", new Version(1, 0, 0, 0)));
         yield return TestCase.Create(new @class(@string: "string", @__makeref: 42, @yield: true));
         yield return TestCase.Create(new TypeWithStringSurrogate("string"));
         yield return TestCase.Create(new TypeWithRecordSurrogate(42, "string"));
@@ -1912,6 +1913,24 @@ public static class GenericDictionaryWithBuilderAttribute
         }
         return result;
     }
+}
+
+[GenerateShape]
+public partial class ServiceMoniker
+{
+    public ServiceMoniker(string name)
+    {
+        Name = name;
+    }
+
+    public ServiceMoniker(string name, Version? version)
+    {
+        Name = name;
+        Version = version;
+    }
+
+    public string Name { get; }
+    public Version? Version { get; }
 }
 
 public class MyKeyedCollection<T> : KeyedCollection<int, T>
