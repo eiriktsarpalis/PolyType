@@ -1440,6 +1440,32 @@ public static partial class CompilationTests
         }
 
         [Fact]
+        public static void AttributeWithPrivateTypeConstants_NoErrors()
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation("""
+                using PolyType;
+                using System;
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public class TestAttribute : Attribute
+                {
+                    public TestAttribute(Type type) => Type = type;
+                    public Type Type { get; }
+                }
+
+                [GenerateShape]
+                [Test(typeof(NestedPrivate))]
+                public partial class MyClass2 
+                {
+                    private class NestedPrivate { }
+                }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
         public static void MultipleAttributesWithDifferentConstants_NoErrors()
         {
             Compilation compilation = CompilationHelpers.CreateCompilation("""
