@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using PolyType.Roslyn;
 using PolyType.Roslyn.Helpers;
 using PolyType.SourceGenerator.Helpers;
@@ -799,7 +800,7 @@ public sealed partial class Parser
     private record struct CustomAttributeAssociatedTypeProvider(ImmutableDictionary<string, TypeShapeRequirements> NamesAndRequirements);
 
     private readonly Dictionary<INamedTypeSymbol, CustomAttributeAssociatedTypeProvider> _customAttributes = new(SymbolEqualityComparer.Default);
-    private readonly Dictionary<INamedTypeSymbol, bool> _attributeSkippabilityCache = new(SymbolEqualityComparer.Default);
+    private readonly Dictionary<INamedTypeSymbol, bool> _skipAttributeCache = new(SymbolEqualityComparer.Default);
 
     protected override void ParseCustomAssociatedTypeAttributes(
         ISymbol symbol,
@@ -1131,20 +1132,31 @@ public sealed partial class Parser
 
         bool ShouldSkipAttribute(INamedTypeSymbol attributeClass)
         {
-            // Check cache first
-            if (_attributeSkippabilityCache.TryGetValue(attributeClass, out bool shouldSkip))
+            if (_skipAttributeCache.TryGetValue(attributeClass, out bool shouldSkip))
             {
                 return shouldSkip;
             }
 
-            // Check if the attribute class itself has [Conditional("NEVER")]
-            if (HasConditionalNeverAttribute(attributeClass))
+            bool result = ShouldSkipAttributeCore(attributeClass);
+            _skipAttributeCache[attributeClass] = result;
+            return result;
+
+            bool ShouldSkipAttributeCore(INamedTypeSymbol attributeClass)
             {
-                shouldSkip = true;
-            }
-            else
-            {
-                shouldSkip = GetQualifiedNameTokens() switch
+                if (_knownSymbols.ConditionalAttribute is not null)
+                {
+                    foreach (AttributeData attr in attributeClass.GetAttributes())
+                    {
+                        if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, _knownSymbols.ConditionalAttribute) &&
+                            attr.ConstructorArguments is [{ Value: string condition }])
+                        {
+                            bool isConditionDefined = _knownSymbols.Compilation.SyntaxTrees.Any(tree => tree.Options is CSharpParseOptions { PreprocessorSymbolNames: var names } && names.Contains(condition));
+                            return !isConditionDefined;
+                        }
+                    }
+                }
+
+                return GetQualifiedNameTokens() switch
                 {
                     // Skip PolyType attributes from the main assembly.
                     ["PolyType", ..] => SymbolEqualityComparer.Default.Equals(attributeClass.ContainingAssembly, _knownSymbols.TypeShapeAttribute?.ContainingAssembly),
@@ -1159,9 +1171,6 @@ public sealed partial class Parser
                     _ => false,
                 };
             }
-
-            _attributeSkippabilityCache[attributeClass] = shouldSkip;
-            return shouldSkip;
 
             ReadOnlySpan<string> GetQualifiedNameTokens()
             {
@@ -1191,25 +1200,6 @@ public sealed partial class Parser
                 tokens.Reverse();
                 return tokens;
             }
-        }
-
-        bool HasConditionalNeverAttribute(INamedTypeSymbol attributeClass)
-        {
-            if (_knownSymbols.ConditionalAttribute is null)
-            {
-                return false;
-            }
-
-            foreach (AttributeData attr in attributeClass.GetAttributes())
-            {
-                if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, _knownSymbols.ConditionalAttribute) &&
-                    attr.ConstructorArguments is [{ Value: "NEVER" }])
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
     }
 }

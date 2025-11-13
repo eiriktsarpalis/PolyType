@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics;
+using System.Reflection;
 
 namespace PolyType.Abstractions;
 
@@ -41,7 +42,7 @@ public interface IConstructorShape
     /// <item><description><c>System.Reflection.DefaultMemberAttribute</c> - Default member metadata</description></item>
     /// <item><description><c>System.CLSCompliantAttribute</c> - CLS compliance marker</description></item>
     /// <item><description><c>Microsoft.FSharp.Core.*</c> - F# compiler generated attributes</description></item>
-    /// <item><description>Attributes marked with <c>[Conditional("NEVER")]</c></description></item>
+    /// <item><description>Attributes marked with <see cref="ConditionalAttribute" /></description></item>
     /// </list>
     /// Users requiring complete attribute resolution can use the <see cref="MethodBase"/> property
     /// to access standard reflection-based attribute APIs, though this will be slower.

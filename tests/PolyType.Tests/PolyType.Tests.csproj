@@ -9,7 +9,8 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
     <EmitCompilerGeneratedFiles>false</EmitCompilerGeneratedFiles>
-    <DefineConstants Condition="'$(OS)' != 'Windows_NT' and '$(TargetFramework)' == 'net472'">MONO</DefineConstants>
+    <DefineConstants>$(DefineConstants);ENABLE_CONDITIONALATTRIBUTE_ATTRIBUTE</DefineConstants>
+    <DefineConstants Condition="'$(OS)' != 'Windows_NT' and '$(TargetFramework)' == 'net472'">$(DefineConstants);MONO</DefineConstants>
     <NoWarn>$(NoWarn);PT0022</NoWarn>
   </PropertyGroup>
 
