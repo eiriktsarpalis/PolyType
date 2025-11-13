@@ -560,7 +560,7 @@ internal static partial class RoslynHelpers
         }
     }
 
-    public static string FormatAttributeConstant(this Compilation compilation, ISymbol context, TypedConstant constant, List<ITypeSymbol> inaccessibleTypes)
+    public static string FormatAttributeConstant(this Compilation compilation, ISymbol context, TypedConstant constant)
     {
         switch (constant.Kind)
         {
@@ -574,22 +574,22 @@ internal static partial class RoslynHelpers
                     return "null!";
                 }
 
-                if (!compilation.IsSymbolAccessibleWithin(type, context))
+                if (compilation.IsSymbolAccessibleWithin(type, context))
                 {
-                    inaccessibleTypes.Add(type);
-                    return "null!";
+                    return $"typeof({type.GetFullyQualifiedName()})";
                 }
 
-                return $"typeof({type.GetFullyQualifiedName()})";
+                string assemblyQualifiedName = type.GetAssemblyQualifiedName();
+                return $"global::System.Type.GetType({SymbolDisplay.FormatLiteral(assemblyQualifiedName, quote: true)})!";
 
             case TypedConstantKind.Array:
-                return FormatArray(constant.Values, constant.Type, inaccessibleTypes);
+                return FormatArray(constant.Values, constant.Type);
 
             default:
                 return "default";
         }
 
-        string FormatArray(ImmutableArray<TypedConstant> values, ITypeSymbol? arrayType, List<ITypeSymbol> inaccessibleTypes)
+        string FormatArray(ImmutableArray<TypedConstant> values, ITypeSymbol? arrayType)
         {
             Debug.Assert(arrayType is IArrayTypeSymbol);
 
@@ -603,7 +603,7 @@ internal static partial class RoslynHelpers
 
             // Check if any element is null - if so, we need explicit nullable array type
             bool hasNullElements = values.Any(v => v.IsNull);
-            string items = string.Join(", ", values.Select(tc => FormatAttributeConstant(compilation, context, tc, inaccessibleTypes)));
+            string items = string.Join(", ", values.Select(tc => FormatAttributeConstant(compilation, context, tc)));
 
             // Use explicit nullable array type when there are null elements and element type is a reference type
             if (hasNullElements && elementType.IsReferenceType)
@@ -614,6 +614,130 @@ internal static partial class RoslynHelpers
             }
 
             return $"new[] {{ {items} }}";
+        }
+    }
+
+    /// <summary>
+    /// Returns the runtime <see cref="Type.AssemblyQualifiedName"/> value of the specified type symbol.
+    /// </summary>
+    public static string GetAssemblyQualifiedName(this ITypeSymbol type)
+    {
+        StringBuilder builder = new();
+        FormatType(type, builder);
+        return builder.ToString();
+
+        static void FormatType(ITypeSymbol type, StringBuilder builder, bool appendAssemblyIdentity = true)
+        {
+            switch (type)
+            {
+                case IArrayTypeSymbol arrayType:
+                    FormatType(arrayType.ElementType, builder, appendAssemblyIdentity: false);
+                    builder.Append('[');
+                    builder.Append(',', arrayType.Rank - 1);
+                    builder.Append(']');
+                    break;
+
+                case IPointerTypeSymbol pointerType:
+                    FormatType(pointerType.PointedAtType, builder, appendAssemblyIdentity: false);
+                    builder.Append('*');
+                    break;
+
+                case ITypeParameterSymbol typeParam:
+                    // Open generic parameter (only appears for unbound generic types).
+                    builder.Append(typeParam.Name);
+                    return;
+
+                case INamedTypeSymbol namedType:
+                    List<ITypeSymbol>? aggregateGenericParams = null;
+                    FormatNamedType(namedType, builder, ref aggregateGenericParams);
+
+                    // Only emit concrete generic arguments if the type is a constructed generic (no type parameters).
+                    if (aggregateGenericParams is not null &&
+                        aggregateGenericParams.Count > 0 &&
+                        aggregateGenericParams.TrueForAll(tp => tp is not ITypeParameterSymbol))
+                    {
+                        builder.Append('[');
+                        foreach (ITypeSymbol tp in aggregateGenericParams)
+                        {
+                            builder.Append('[');
+                            FormatType(tp, builder);
+                            builder.Append(']');
+                            builder.Append(',');
+                        }
+
+                        builder.Length -= 1; // remove last comma
+                        builder.Append(']');
+                    }
+                    break;
+
+                default:
+                    Debug.Fail($"Unsupported type symbol: {type}");
+                    break;
+            }
+
+            if (appendAssemblyIdentity && type.ContainingAssembly is not null)
+            {
+                builder.Append(", ");
+                FormatAssemblyIdentity(type.ContainingAssembly, builder);
+            }
+        }
+
+        static void FormatNamedType(INamedTypeSymbol namedType, StringBuilder builder, ref List<ITypeSymbol>? aggregateGenericParams)
+        {
+            if (namedType.ContainingType is { } containingType)
+            {
+                FormatNamedType(containingType, builder, ref aggregateGenericParams);
+                builder.Append('+');
+            }
+            else
+            {
+                FormatNamespace(namedType.ContainingNamespace, builder);
+            }
+
+            builder.Append(namedType.Name);
+
+            // Backtick + arity for generic types (both open and constructed).
+            if (namedType.TypeArguments.Length > 0)
+            {
+                builder.Append('`');
+                builder.Append(namedType.TypeArguments.Length);
+                // Collect only if constructed (arguments may still be type parameters; filtering happens later).
+                (aggregateGenericParams ??= new()).AddRange(namedType.TypeArguments);
+            }
+        }
+
+        static void FormatNamespace(INamespaceSymbol? ns, StringBuilder builder)
+        {
+            if (ns is null || ns.IsGlobalNamespace)
+            {
+                return;
+            }
+
+            FormatNamespace(ns.ContainingNamespace, builder);
+            builder.Append(ns.Name);
+            builder.Append('.');
+        }
+
+        static void FormatAssemblyIdentity(IAssemblySymbol assembly, StringBuilder builder)
+        {
+            AssemblyIdentity id = assembly.Identity;
+            builder.Append(id.Name);
+            builder.Append(", Version=");
+            builder.Append(id.Version);
+            builder.Append(", Culture=");
+            builder.Append(string.IsNullOrEmpty(id.CultureName) ? "neutral" : id.CultureName);
+            builder.Append(", PublicKeyToken=");
+            if (id.PublicKeyToken.IsDefaultOrEmpty)
+            {
+                builder.Append("null");
+            }
+            else
+            {
+                foreach (byte b in id.PublicKeyToken)
+                {
+                    builder.Append(b.ToString("x2", CultureInfo.InvariantCulture));
+                }
+            }
         }
     }
 }
