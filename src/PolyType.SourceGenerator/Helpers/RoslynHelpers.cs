@@ -560,15 +560,12 @@ internal static partial class RoslynHelpers
         }
     }
 
-    public static string FormatTypedConstant(this Compilation compilation, ISymbol context, TypedConstant constant)
+    public static string FormatAttributeConstant(this Compilation compilation, ISymbol context, TypedConstant constant)
     {
         switch (constant.Kind)
         {
-            case TypedConstantKind.Primitive:
-                return PolyType.Roslyn.Helpers.RoslynHelpers.FormatPrimitiveConstant(constant.Value);
-
-            case TypedConstantKind.Enum:
-                return FormatEnum(constant.Value, constant.Type);
+            case TypedConstantKind.Primitive or TypedConstantKind.Enum:
+                return PolyType.Roslyn.Helpers.RoslynHelpers.FormatPrimitiveConstant(constant.Type, constant.Value);
 
             case TypedConstantKind.Type:
                 var type = (ITypeSymbol?)constant.Value;
@@ -592,16 +589,6 @@ internal static partial class RoslynHelpers
                 return "default";
         }
 
-        static string FormatEnum(object? value, ITypeSymbol? type)
-        {
-            if (value is null || type is not INamedTypeSymbol enumType)
-            {
-                return "null";
-            }
-
-            return $"({enumType.GetFullyQualifiedName()}){value}";
-        }
-
         string FormatArray(ImmutableArray<TypedConstant> values, ITypeSymbol? arrayType)
         {
             Debug.Assert(arrayType is IArrayTypeSymbol);
@@ -616,7 +603,7 @@ internal static partial class RoslynHelpers
 
             // Check if any element is null - if so, we need explicit nullable array type
             bool hasNullElements = values.Any(v => v.IsNull);
-            string items = string.Join(", ", values.Select(tc => FormatTypedConstant(compilation, context, tc)));
+            string items = string.Join(", ", values.Select(tc => FormatAttributeConstant(compilation, context, tc)));
 
             // Use explicit nullable array type when there are null elements and element type is a reference type
             if (hasNullElements && elementType.IsReferenceType)

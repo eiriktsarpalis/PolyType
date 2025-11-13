@@ -1110,12 +1110,12 @@ public sealed partial class Parser
             
             // Format constructor arguments
             var ctorArgs = attr.ConstructorArguments
-                .Select(arg => Helpers.RoslynHelpers.FormatTypedConstant(_knownSymbols.Compilation, GenerationScope, arg))
+                .Select(arg => Helpers.RoslynHelpers.FormatAttributeConstant(_knownSymbols.Compilation, GenerationScope, arg))
                 .ToImmutableEquatableArray();
             
             // Format named arguments
             var namedArgs = attr.NamedArguments
-                .Select(kvp => (kvp.Key, Helpers.RoslynHelpers.FormatTypedConstant(_knownSymbols.Compilation, GenerationScope, kvp.Value)))
+                .Select(kvp => (kvp.Key, Helpers.RoslynHelpers.FormatAttributeConstant(_knownSymbols.Compilation, GenerationScope, kvp.Value)))
                 .ToImmutableEquatableArray();
             
             attributes.Add(new AttributeDataModel

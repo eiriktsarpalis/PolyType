@@ -532,6 +532,498 @@ public static partial class CompilationTests
         }
 
         [Fact]
+        public static void AttributeWithFlagsEnumConstants_NoErrors()
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation("""
+                using PolyType;
+                using System;
+
+                [Flags]
+                public enum FileAccess { None = 0, Read = 1, Write = 2, Execute = 4, All = 7 }
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public class TestAttribute : Attribute
+                {
+                    public TestAttribute(FileAccess value) => Value = value;
+                    public FileAccess Value { get; }
+                }
+
+                [GenerateShape]
+                [Test(FileAccess.None)]
+                public partial class MyClass1 { }
+
+                [GenerateShape]
+                [Test(FileAccess.Read)]
+                public partial class MyClass2 { }
+
+                [GenerateShape]
+                [Test(FileAccess.Read | FileAccess.Write)]
+                public partial class MyClass3 { }
+
+                [GenerateShape]
+                [Test(FileAccess.Read | FileAccess.Write | FileAccess.Execute)]
+                public partial class MyClass4 { }
+
+                [GenerateShape]
+                [Test(FileAccess.All)]
+                public partial class MyClass5 { }
+
+                [GenerateShape]
+                [Test((FileAccess)15)]
+                public partial class MyClass6 { }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public static void AttributeWithEnumNegativeConstants_NoErrors()
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation("""
+                using PolyType;
+                using System;
+
+                public enum SignedEnum { NegativeTwo = -2, NegativeOne = -1, Zero = 0, One = 1, Two = 2 }
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public class TestAttribute : Attribute
+                {
+                    public TestAttribute(SignedEnum value) => Value = value;
+                    public SignedEnum Value { get; }
+                }
+
+                [GenerateShape]
+                [Test(SignedEnum.NegativeTwo)]
+                public partial class MyClass1 { }
+
+                [GenerateShape]
+                [Test(SignedEnum.NegativeOne)]
+                public partial class MyClass2 { }
+
+                [GenerateShape]
+                [Test(SignedEnum.Zero)]
+                public partial class MyClass3 { }
+
+                [GenerateShape]
+                [Test((SignedEnum)(-100))]
+                public partial class MyClass4 { }
+
+                [GenerateShape]
+                [Test((SignedEnum)(-5))]
+                public partial class MyClass5 { }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public static void AttributeWithByteEnumConstants_NoErrors()
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation("""
+                using PolyType;
+                using System;
+
+                public enum ByteEnum : byte { Min = 0, Low = 10, Mid = 127, High = 200, Max = 255 }
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public class TestAttribute : Attribute
+                {
+                    public TestAttribute(ByteEnum value) => Value = value;
+                    public ByteEnum Value { get; }
+                }
+
+                [GenerateShape]
+                [Test(ByteEnum.Min)]
+                public partial class MyClass1 { }
+
+                [GenerateShape]
+                [Test(ByteEnum.Max)]
+                public partial class MyClass2 { }
+
+                [GenerateShape]
+                [Test((ByteEnum)50)]
+                public partial class MyClass3 { }
+
+                [GenerateShape]
+                [Test((ByteEnum)128)]
+                public partial class MyClass4 { }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public static void AttributeWithSByteEnumConstants_NoErrors()
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation("""
+                using PolyType;
+                using System;
+
+                public enum SByteEnum : sbyte { Min = -128, Negative = -50, Zero = 0, Positive = 50, Max = 127 }
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public class TestAttribute : Attribute
+                {
+                    public TestAttribute(SByteEnum value) => Value = value;
+                    public SByteEnum Value { get; }
+                }
+
+                [GenerateShape]
+                [Test(SByteEnum.Min)]
+                public partial class MyClass1 { }
+
+                [GenerateShape]
+                [Test(SByteEnum.Negative)]
+                public partial class MyClass2 { }
+
+                [GenerateShape]
+                [Test(SByteEnum.Max)]
+                public partial class MyClass3 { }
+
+                [GenerateShape]
+                [Test((SByteEnum)(-100))]
+                public partial class MyClass4 { }
+
+                [GenerateShape]
+                [Test((SByteEnum)(-1))]
+                public partial class MyClass5 { }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public static void AttributeWithShortEnumConstants_NoErrors()
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation("""
+                using PolyType;
+                using System;
+
+                public enum ShortEnum : short { Min = -32768, Negative = -1000, Zero = 0, Positive = 1000, Max = 32767 }
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public class TestAttribute : Attribute
+                {
+                    public TestAttribute(ShortEnum value) => Value = value;
+                    public ShortEnum Value { get; }
+                }
+
+                [GenerateShape]
+                [Test(ShortEnum.Min)]
+                public partial class MyClass1 { }
+
+                [GenerateShape]
+                [Test(ShortEnum.Negative)]
+                public partial class MyClass2 { }
+
+                [GenerateShape]
+                [Test(ShortEnum.Max)]
+                public partial class MyClass3 { }
+
+                [GenerateShape]
+                [Test((ShortEnum)(-15000))]
+                public partial class MyClass4 { }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public static void AttributeWithUShortEnumConstants_NoErrors()
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation("""
+                using PolyType;
+                using System;
+
+                public enum UShortEnum : ushort { Min = 0, Low = 1000, Mid = 32767, High = 50000, Max = 65535 }
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public class TestAttribute : Attribute
+                {
+                    public TestAttribute(UShortEnum value) => Value = value;
+                    public UShortEnum Value { get; }
+                }
+
+                [GenerateShape]
+                [Test(UShortEnum.Min)]
+                public partial class MyClass1 { }
+
+                [GenerateShape]
+                [Test(UShortEnum.Max)]
+                public partial class MyClass2 { }
+
+                [GenerateShape]
+                [Test((UShortEnum)40000)]
+                public partial class MyClass3 { }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public static void AttributeWithLongEnumConstants_NoErrors()
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation("""
+                using PolyType;
+                using System;
+
+                public enum LongEnum : long { Min = long.MinValue, Negative = -1000000000000L, Zero = 0, Positive = 1000000000000L, Max = long.MaxValue }
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public class TestAttribute : Attribute
+                {
+                    public TestAttribute(LongEnum value) => Value = value;
+                    public LongEnum Value { get; }
+                }
+
+                [GenerateShape]
+                [Test(LongEnum.Min)]
+                public partial class MyClass1 { }
+
+                [GenerateShape]
+                [Test(LongEnum.Negative)]
+                public partial class MyClass2 { }
+
+                [GenerateShape]
+                [Test(LongEnum.Max)]
+                public partial class MyClass3 { }
+
+                [GenerateShape]
+                [Test((LongEnum)(-5000000000L))]
+                public partial class MyClass4 { }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public static void AttributeWithULongEnumConstants_NoErrors()
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation("""
+                using PolyType;
+                using System;
+
+                public enum ULongEnum : ulong { Min = 0, Low = 1000UL, Mid = 9223372036854775807UL, High = 15000000000000000000UL, Max = ulong.MaxValue }
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public class TestAttribute : Attribute
+                {
+                    public TestAttribute(ULongEnum value) => Value = value;
+                    public ULongEnum Value { get; }
+                }
+
+                [GenerateShape]
+                [Test(ULongEnum.Min)]
+                public partial class MyClass1 { }
+
+                [GenerateShape]
+                [Test(ULongEnum.Max)]
+                public partial class MyClass2 { }
+
+                [GenerateShape]
+                [Test((ULongEnum)10000000000000000000UL)]
+                public partial class MyClass3 { }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public static void AttributeWithUIntEnumConstants_NoErrors()
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation("""
+                using PolyType;
+                using System;
+
+                public enum UIntEnum : uint { Min = 0u, Low = 1000u, Mid = 2147483647u, High = 3000000000u, Max = uint.MaxValue }
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public class TestAttribute : Attribute
+                {
+                    public TestAttribute(UIntEnum value) => Value = value;
+                    public UIntEnum Value { get; }
+                }
+
+                [GenerateShape]
+                [Test(UIntEnum.Min)]
+                public partial class MyClass1 { }
+
+                [GenerateShape]
+                [Test(UIntEnum.Max)]
+                public partial class MyClass2 { }
+
+                [GenerateShape]
+                [Test((UIntEnum)3500000000u)]
+                public partial class MyClass3 { }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public static void AttributeWithComplexFlagsEnumCombinations_NoErrors()
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation("""
+                using PolyType;
+                using System;
+
+                [Flags]
+                public enum Permissions { None = 0, Read = 1, Write = 2, Execute = 4, Delete = 8, ReadWrite = Read | Write, All = Read | Write | Execute | Delete }
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public class TestAttribute : Attribute
+                {
+                    public TestAttribute(Permissions value) => Value = value;
+                    public Permissions Value { get; }
+                }
+
+                [GenerateShape]
+                [Test(Permissions.None)]
+                public partial class MyClass1 { }
+
+                [GenerateShape]
+                [Test(Permissions.ReadWrite)]
+                public partial class MyClass2 { }
+
+                [GenerateShape]
+                [Test(Permissions.All)]
+                public partial class MyClass3 { }
+
+                [GenerateShape]
+                [Test(Permissions.Read | Permissions.Execute)]
+                public partial class MyClass4 { }
+
+                [GenerateShape]
+                [Test(Permissions.Write | Permissions.Delete)]
+                public partial class MyClass5 { }
+
+                [GenerateShape]
+                [Test((Permissions)16)]
+                public partial class MyClass6 { }
+
+                [GenerateShape]
+                [Test((Permissions)31)]
+                public partial class MyClass7 { }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public static void AttributeWithEmptyEnumConstants_NoErrors()
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation("""
+                using PolyType;
+                using System;
+
+                public enum EmptyEnum { }
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public class TestAttribute : Attribute
+                {
+                    public TestAttribute(EmptyEnum value) => Value = value;
+                    public EmptyEnum Value { get; }
+                }
+
+                [GenerateShape]
+                [Test((EmptyEnum)0)]
+                public partial class MyClass1 { }
+
+                [GenerateShape]
+                [Test((EmptyEnum)1)]
+                public partial class MyClass2 { }
+
+                [GenerateShape]
+                [Test((EmptyEnum)(-1))]
+                public partial class MyClass3 { }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public static void AttributeWithEnumArrayConstants_NoErrors()
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation("""
+                using PolyType;
+                using System;
+
+                public enum Status { Pending = 0, Active = 1, Completed = 2, Failed = -1 }
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public class TestAttribute : Attribute
+                {
+                    public TestAttribute(Status[] values) => Values = values;
+                    public Status[] Values { get; }
+                }
+
+                [GenerateShape]
+                [Test(new Status[] { Status.Pending, Status.Active })]
+                public partial class MyClass1 { }
+
+                [GenerateShape]
+                [Test(new Status[] { Status.Failed, Status.Completed })]
+                public partial class MyClass2 { }
+
+                [GenerateShape]
+                [Test(new[] { Status.Active })]
+                public partial class MyClass3 { }
+
+                [GenerateShape]
+                [Test(new Status[] { (Status)10, (Status)(-5) })]
+                public partial class MyClass4 { }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public static void AttributeWithEnumNamedArguments_NoErrors()
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation("""
+                using PolyType;
+                using System;
+
+                [Flags]
+                public enum Options { None = 0, OptionA = 1, OptionB = 2, OptionC = 4 }
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public class TestAttribute : Attribute
+                {
+                    public Options Primary { get; set; }
+                    public Options Secondary { get; set; }
+                }
+
+                [GenerateShape]
+                [Test(Primary = Options.OptionA)]
+                public partial class MyClass1 { }
+
+                [GenerateShape]
+                [Test(Primary = Options.OptionA | Options.OptionB, Secondary = Options.OptionC)]
+                public partial class MyClass2 { }
+
+                [GenerateShape]
+                [Test(Primary = (Options)8, Secondary = (Options)(-1))]
+                public partial class MyClass3 { }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
         public static void AttributeWithTypeConstants_NoErrors()
         {
             Compilation compilation = CompilationHelpers.CreateCompilation("""

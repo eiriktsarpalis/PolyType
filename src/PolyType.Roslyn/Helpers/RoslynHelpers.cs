@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Text;
 
 namespace PolyType.Roslyn.Helpers;
 
@@ -519,16 +520,22 @@ internal static class RoslynHelpers
         return method.Construct(arguments);
     }
 
-    /// <summary>
-    /// Formats a primitive constant value as a C# literal expression.
-    /// </summary>
-    /// <param name="value">The constant value to format.</param>
-    /// <returns>A C# literal expression representing the value.</returns>
-    public static string FormatPrimitiveConstant(object? value)
+    public static string FormatPrimitiveConstant(ITypeSymbol? type, object? value)
     {
+        if (type?.OriginalDefinition.SpecialType is SpecialType.System_Nullable_T)
+        {
+            var elementType = ((INamedTypeSymbol)type).TypeArguments[0];
+            return value is null ? "null" : FormatPrimitiveConstant(elementType, value);
+        }
+
+        if (type?.TypeKind is TypeKind.Enum)
+        {
+            return FormatEnumLiteral((INamedTypeSymbol)type, value!);
+        }
+
         return value switch
         {
-            null => "null",
+            null => type?.IsNullable() is null or true ? "null!" : "default",
             false => "false",
             true => "true",
 
@@ -550,26 +557,100 @@ internal static class RoslynHelpers
             // Must be one of the other numeric types or an enum
             object num => Convert.ToString(num, CultureInfo.InvariantCulture),
         };
+
+        static string FormatEnumLiteral(INamedTypeSymbol enumType, object value)
+        {
+            Debug.Assert(enumType.TypeKind is TypeKind.Enum);
+
+            foreach (ISymbol member in enumType.GetMembers())
+            {
+                if (member is IFieldSymbol { IsConst: true, ConstantValue: { } constantValue } field)
+                {
+                    if (Equals(constantValue, value))
+                    {
+                        return FormatEnumField(field);
+                    }
+                }
+            }
+
+            bool isFlagsEnum = enumType.GetAttributes().Any(attr =>
+                attr.AttributeClass?.Name == "FlagsAttribute" &&
+                attr.AttributeClass.ContainingNamespace.ToDisplayString() == "System");
+
+            if (isFlagsEnum)
+            {
+                // Convert the value to ulong for bitwise operations
+                ulong numericValue = ConvertToUInt64(value);
+                var fields = enumType.GetMembers().OfType<IFieldSymbol>()
+                    .Select((f, i) => (Index: i, Symbol: f, NumericValue: ConvertToUInt64(f.ConstantValue!)))
+                    .ToArray();
+
+                // Check for any zero numeric values.
+                if (numericValue == 0)
+                {
+                    foreach (var field in fields)
+                    {
+                        if (field.NumericValue == 0)
+                        {
+                            return FormatEnumField(field.Symbol);
+                        }
+                    }
+                }
+
+                List<int>? matches = null;
+                foreach (var field in fields.OrderByDescending(f => f.NumericValue))
+                {
+                    // Greedy match of flag values from highest to lowest numeric value.
+                    if (field.NumericValue != 0 && (numericValue & field.NumericValue) == field.NumericValue)
+                    {
+                        (matches ??= new()).Add(field.Index);
+                        numericValue &= ~field.NumericValue;
+                        if (numericValue == 0)
+                        {
+                            break; // All bits accounted for
+                        }
+                    }
+                }
+
+                if (numericValue == 0)
+                {
+                    DebugExt.Assert(matches?.Count > 1);
+                    // Format components using the original declaration order.
+                    matches.Sort();
+                    return string.Join(" | ", matches.Select(i => FormatEnumField(fields[i].Symbol)));
+                }
+            }
+
+            // Value does not correspond to any combination of defined constants, just cast the numeric value.
+            return $"({enumType.GetFullyQualifiedName()})({Convert.ToString(value, CultureInfo.InvariantCulture)!})";
+
+            static string FormatEnumField(IFieldSymbol field)
+            {
+                return $"{field.ContainingType.GetFullyQualifiedName()}.{field.Name}";
+            }
+
+            static ulong ConvertToUInt64(object value)
+            {
+                return value switch
+                {
+                    byte b => b,
+                    sbyte sb => (ulong)sb,
+                    short s => (ulong)s,
+                    ushort us => us,
+                    char c => c,
+                    int i => (ulong)i,
+                    uint ui => ui,
+                    long l => (ulong)l,
+                    ulong ul => ul,
+                    _ => 0
+                };
+            }
+        }
     }
 
     public static string? FormatDefaultValueExpr(this IParameterSymbol parameter)
     {
-        if (!parameter.HasExplicitDefaultValue)
-        {
-            return null;
-        }
-
-        string literalExpr = parameter.ExplicitDefaultValue is null
-            ? (parameter.Type.IsNullable() ? "null!" : "default")
-            : FormatPrimitiveConstant(parameter.ExplicitDefaultValue);
-
-        bool requiresCast = parameter.Type
-            is { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T }
-            or { TypeKind: TypeKind.Enum };
-
-        return requiresCast
-            ? $"({parameter.Type.GetFullyQualifiedName()}){literalExpr}"
-            : literalExpr;
+        return parameter.HasExplicitDefaultValue ? FormatPrimitiveConstant(parameter.Type, parameter.ExplicitDefaultValue) : null;
     }
 
     // Applies the type arguments to the type, working recursively on container types that may also be generic.
