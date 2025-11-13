@@ -29,12 +29,16 @@ public partial class TypeDataModelGenerator
             }
         }
 
+        bool isFlags = KnownSymbols.FlagsAttribute is { } flagsAttr && 
+            enumType.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, flagsAttr));
+
         model = new EnumDataModel
         {
             Type = type,
             Requirements = TypeShapeRequirements.Full,
             UnderlyingType = underlyingType,
             Members = members,
+            IsFlags = isFlags,
         };
 
         return true;

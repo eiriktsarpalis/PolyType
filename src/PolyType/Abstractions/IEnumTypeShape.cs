@@ -10,6 +10,11 @@ public interface IEnumTypeShape : ITypeShape
     /// Gets the shape of the underlying type used to represent the enum.
     /// </summary>
     ITypeShape UnderlyingType { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the enum is annotated with the <see cref="FlagsAttribute"/>.
+    /// </summary>
+    bool IsFlags { get; }
 }
 
 /// <summary>

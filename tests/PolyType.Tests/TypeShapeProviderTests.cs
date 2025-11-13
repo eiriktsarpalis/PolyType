@@ -246,6 +246,11 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             IEnumTypeShape enumTypeShape = Assert.IsAssignableFrom<IEnumTypeShape>(shape);
             Assert.Equal(typeof(T), enumTypeShape.Type);
             Assert.Equal(typeof(T).GetEnumUnderlyingType(), enumTypeShape.UnderlyingType.Type);
+            
+            // Compare IsFlags with expected reflection data
+            bool expectedIsFlags = typeof(T).IsDefined(typeof(FlagsAttribute), inherit: false);
+            Assert.Equal(expectedIsFlags, enumTypeShape.IsFlags);
+            
             var visitor = new EnumTestVisitor();
             enumTypeShape.Accept(visitor, state: typeof(T));
         }

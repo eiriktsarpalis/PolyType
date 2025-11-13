@@ -19,4 +19,9 @@ public sealed class EnumDataModel : TypeDataModel
     /// The members of the enum, represented as a dictionary of member names to their underlying values.
     /// </summary>
     public required IReadOnlyDictionary<string, object> Members { get; init; } = new Dictionary<string, object>();
+
+    /// <summary>
+    /// Gets a value indicating whether the enum is annotated with the <see cref="FlagsAttribute"/>.
+    /// </summary>
+    public required bool IsFlags { get; init; }
 }
