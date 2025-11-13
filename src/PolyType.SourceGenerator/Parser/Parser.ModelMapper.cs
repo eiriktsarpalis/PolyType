@@ -1117,7 +1117,7 @@ public sealed partial class Parser
 
             if (inaccessibleTypes.Count > 0)
             {
-                ReportDiagnostic(InaccessibleAttributeType, symbol.Locations.FirstOrDefault(), symbol.ToDisplayString(), attr.AttributeClass.ToDisplayString());
+                ReportDiagnostic(InaccessibleAttributeType, attr.GetLocation(), symbol.ToDisplayString(), attr.AttributeClass.ToDisplayString());
                 continue;
             }
             
