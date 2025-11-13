@@ -3495,7 +3495,6 @@ public delegate Task<int> LargeAsyncDelegate(
 [GenerateShapeFor<ClassWithNullableProperty<string>>]
 [GenerateShapeFor<ClassWithNullabilityAttributes<string>>]
 [GenerateShapeFor<ClassWithNotNullProperty<string>>]
-[GenerateShapeFor<ServiceMoniker>]
 [GenerateShapeFor<GenericClassWithPrivateConstructor<int>>]
 [GenerateShapeFor<GenericClassWithPrivateConstructor<string>>]
 [GenerateShapeFor<GenericClassWithPrivateField<int>>]
