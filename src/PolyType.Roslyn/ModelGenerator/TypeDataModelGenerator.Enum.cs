@@ -29,9 +29,8 @@ public partial class TypeDataModelGenerator
             }
         }
 
-        bool isFlags = enumType.GetAttributes().Any(attr =>
-            attr.AttributeClass?.Name == "FlagsAttribute" &&
-            attr.AttributeClass.ContainingNamespace.ToDisplayString() == "System");
+        bool isFlags = KnownSymbols.FlagsAttribute is { } flagsAttr && 
+            enumType.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, flagsAttr));
 
         model = new EnumDataModel
         {

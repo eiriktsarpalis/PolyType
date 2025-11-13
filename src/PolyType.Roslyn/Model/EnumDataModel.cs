@@ -23,5 +23,5 @@ public sealed class EnumDataModel : TypeDataModel
     /// <summary>
     /// Gets a value indicating whether the enum is annotated with the <see cref="FlagsAttribute"/>.
     /// </summary>
-    public bool IsFlags { get; init; }
+    public required bool IsFlags { get; init; }
 }

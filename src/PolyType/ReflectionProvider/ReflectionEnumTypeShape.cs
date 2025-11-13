@@ -17,13 +17,27 @@ internal sealed class ReflectionEnumTypeShape<TEnum, TUnderlying>
     where TUnderlying : unmanaged
 {
     private Dictionary<string, TUnderlying>? _members;
+    private bool _isFlagsInitialized;
+    private bool _isFlags;
 
     public override TypeShapeKind Kind => TypeShapeKind.Enum;
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnum(this, state);
     public ITypeShape<TUnderlying> UnderlyingType => Provider.GetTypeShape<TUnderlying>();
     ITypeShape IEnumTypeShape.UnderlyingType => UnderlyingType;
     public IReadOnlyDictionary<string, TUnderlying> Members => _members ?? InitializeMembers();
-    public bool IsFlags => typeof(TEnum).IsDefined(typeof(FlagsAttribute), inherit: false);
+    public bool IsFlags
+    {
+        get
+        {
+            if (!_isFlagsInitialized)
+            {
+                _isFlags = typeof(TEnum).IsDefined(typeof(FlagsAttribute), inherit: false);
+                _isFlagsInitialized = true;
+            }
+
+            return _isFlags;
+        }
+    }
 
     private Dictionary<string, TUnderlying> InitializeMembers()
     {

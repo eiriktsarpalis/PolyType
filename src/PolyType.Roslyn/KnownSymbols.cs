@@ -50,6 +50,12 @@ public class KnownSymbols(Compilation compilation)
     private Option<INamedTypeSymbol?> _CompilerGeneratedAttribute;
 
     /// <summary>
+    /// The type symbol for <see cref="System.FlagsAttribute"/>.
+    /// </summary>
+    public INamedTypeSymbol? FlagsAttribute => GetOrResolveType("System.FlagsAttribute", ref _FlagsAttribute);
+    private Option<INamedTypeSymbol?> _FlagsAttribute;
+
+    /// <summary>
     /// The type symbol for <see cref="System.Threading.Tasks.ValueTask"/>.
     /// </summary>
     public INamedTypeSymbol? ValueTaskType => GetOrResolveType("System.Threading.Tasks.ValueTask", ref _ValueTaskType);

@@ -8,5 +8,5 @@ public sealed record EnumShapeModel : TypeShapeModel
 
     public required ImmutableEquatableDictionary<string, string> Members { get; init; }
 
-    public bool IsFlags { get; init; }
+    public required bool IsFlags { get; init; }
 }
