@@ -1092,31 +1092,34 @@ public sealed partial class Parser
     private ImmutableEquatableArray<AttributeDataModel> CollectAttributes(ISymbol symbol)
     {
         List<AttributeDataModel> attributes = [];
+        List<ITypeSymbol> inaccessibleTypes = [];
         string[] tokenBuffer = new string[8];
         
         foreach ((AttributeData attr, bool isInherited) in symbol.GetAllAttributes())
         {
-            // Skip if attribute class is null or not accessible
-            if (attr.AttributeClass is null || !IsAccessibleSymbol(attr.AttributeClass))
+            // Filter out unwanted attribute types
+            if (attr.AttributeClass is null || ShouldSkipAttribute(attr.AttributeClass) || !IsAccessibleSymbol(attr.AttributeClass))
             {
                 continue;
             }
-            
-            // Filter out unwanted attributes
-            if (ShouldSkipAttribute(attr.AttributeClass))
-            {
-                continue;
-            }
-            
+
+            inaccessibleTypes.Clear();
+
             // Format constructor arguments
             var ctorArgs = attr.ConstructorArguments
-                .Select(arg => Helpers.RoslynHelpers.FormatAttributeConstant(_knownSymbols.Compilation, GenerationScope, arg))
+                .Select(arg => Helpers.RoslynHelpers.FormatAttributeConstant(_knownSymbols.Compilation, GenerationScope, arg, inaccessibleTypes))
                 .ToImmutableEquatableArray();
-            
+
             // Format named arguments
             var namedArgs = attr.NamedArguments
-                .Select(kvp => (kvp.Key, Helpers.RoslynHelpers.FormatAttributeConstant(_knownSymbols.Compilation, GenerationScope, kvp.Value)))
+                .Select(kvp => (kvp.Key, Helpers.RoslynHelpers.FormatAttributeConstant(_knownSymbols.Compilation, GenerationScope, kvp.Value, inaccessibleTypes)))
                 .ToImmutableEquatableArray();
+
+            if (inaccessibleTypes.Count > 0)
+            {
+                ReportDiagnostic(InaccessibleAttributeType, symbol.Locations.FirstOrDefault(), symbol.ToDisplayString(), attr.AttributeClass.ToDisplayString());
+                continue;
+            }
             
             attributes.Add(new AttributeDataModel
             {

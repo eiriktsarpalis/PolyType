@@ -1036,4 +1036,68 @@ public static class DiagnosticTests
         // Should have no diagnostics - names are auto-generated as "Cow_SolidHoof" and "Cow_ClovenHoof"
         Assert.Empty(result.Diagnostics);
     }
+
+    [Fact]
+    public static void InaccessibleAttributeType_OnProperty_ProducesWarning()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+            using System;
+
+            [GenerateShape]
+            public partial class MyClass
+            {
+                [CustomAttribute(typeof(PrivateType))]
+                public int MyProperty { get; set; }
+                
+                private class PrivateType { }
+            }
+
+            [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
+            public class CustomAttribute : Attribute
+            {
+                public CustomAttribute(Type type) { }
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic? diagnostic = result.Diagnostics.FirstOrDefault(d => d.Id == "PT0023");
+        Assert.NotNull(diagnostic);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Contains("MyProperty", diagnostic.GetMessage());
+        Assert.Contains("CustomAttribute", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public static void InaccessibleAttributeType_OnType_ProducesWarning()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+            using System;
+
+            [GenerateShape]
+            [CustomAttribute(typeof(PrivateType))]
+            public partial class MyClass
+            {
+                public int MyProperty { get; set; }
+                
+                private class PrivateType { }
+            }
+
+            [AttributeUsage(AttributeTargets.Class)]
+            public class CustomAttribute : Attribute
+            {
+                public CustomAttribute(Type type) { }
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic? diagnostic = result.Diagnostics.FirstOrDefault(d => d.Id == "PT0023");
+        Assert.NotNull(diagnostic);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Contains("MyClass", diagnostic.GetMessage());
+        Assert.Contains("CustomAttribute", diagnostic.GetMessage());
+    }
 }

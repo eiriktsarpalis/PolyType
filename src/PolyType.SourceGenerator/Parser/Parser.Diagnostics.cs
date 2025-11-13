@@ -162,4 +162,15 @@ public sealed partial class Parser
         category: "PolyType.SourceGenerator",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
+
+    internal static DiagnosticDescriptor InaccessibleAttributeType { get; } = new DiagnosticDescriptor(
+        id: "PT0023",
+        title: "Inaccessible type on attribute declaration.",
+        messageFormat:
+            "The member '{0}' contains attribute declaration '{1}' that points to inaccessible types. " +
+            "The attribute will not be included in the source generated shape.",
+
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
 }
