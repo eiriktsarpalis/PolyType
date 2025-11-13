@@ -1158,15 +1158,12 @@ public sealed partial class Parser
 
                 return GetQualifiedNameTokens() switch
                 {
-                    // Skip PolyType attributes from the main assembly.
-                    ["PolyType", ..] => SymbolEqualityComparer.Default.Equals(attributeClass.ContainingAssembly, _knownSymbols.TypeShapeAttribute?.ContainingAssembly),
                     // Skip framework and compiler specific attributes
                     ["System", "CLSCompliantAttribute"] => true,
                     ["System", "Runtime", "CompilerServices", ..] => true,
                     ["System", "Runtime", "InteropServices", ..] => true,
                     ["System", "Diagnostics", ..] => true,
                     ["System", "Reflection", "DefaultMemberAttribute"] => true,
-                    // Skip F# Core attributes
                     ["Microsoft", "FSharp", "Core", ..] => true,
                     _ => false,
                 };

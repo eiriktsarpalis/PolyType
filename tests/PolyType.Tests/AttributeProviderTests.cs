@@ -199,22 +199,13 @@ public abstract partial class AttributeProviderTests(ProviderUnderTest providerU
         Assert.NotNull(shape);
 
         // CompilerGenerated and DebuggerDisplay should be present in reflection providers
-        if (ProviderUnderTest.Kind != ProviderKind.SourceGen)
-        {
-            Assert.True(shape.AttributeProvider.IsDefined<CompilerGeneratedAttribute>());
-            Assert.True(shape.AttributeProvider.IsDefined<DebuggerDisplayAttribute>());
-        }
+        Assert.Equal(ProviderUnderTest.Kind is not ProviderKind.SourceGen, shape.AttributeProvider.IsDefined<CompilerGeneratedAttribute>());
+        Assert.Equal(ProviderUnderTest.Kind is not ProviderKind.SourceGen, shape.AttributeProvider.IsDefined<DebuggerDisplayAttribute>());
     }
 
     [Fact]
-    public void PolyTypeAttributes_PresentOnPropertyInReflection()
+    public void PolyTypeAttributes_PresentOnProperty()
     {
-        // Only test reflection providers
-        if (ProviderUnderTest.Kind == ProviderKind.SourceGen)
-        {
-            return;
-        }
-
         ITypeShape<ClassWithPolyTypeAttributes>? shape = Provider.GetTypeShape<ClassWithPolyTypeAttributes>();
         Assert.NotNull(shape);
 
@@ -344,14 +335,8 @@ public abstract partial class AttributeProviderTests(ProviderUnderTest providerU
     }
 
     [Fact]
-    public void IsDefined_WithInheritTrue_FindsNonInheritableAttributesViaReflection()
+    public void IsDefined_WithInheritTrue_FindsNonInheritableAttributes()
     {
-        // Only test reflection providers - source gen may filter based on Inherited property
-        if (ProviderUnderTest.Kind == ProviderKind.SourceGen)
-        {
-            return;
-        }
-
         ITypeShape<DerivedClassWithInheritableAttributes>? shape = Provider.GetTypeShape<DerivedClassWithInheritableAttributes>();
         Assert.NotNull(shape);
 
@@ -499,12 +484,6 @@ public abstract partial class AttributeProviderTests(ProviderUnderTest providerU
     [InlineData("StaticMethod")]
     public void MethodsWithVariousAccessibility_AttributesPreserved(string methodName)
     {
-        // SourceGen with AllPublic doesn't include private methods
-        if (ProviderUnderTest.Kind == ProviderKind.SourceGen && methodName == "PrivateMethod")
-        {
-            return;
-        }
-
         ITypeShape<ClassWithMethodAttributes>? shape = Provider.GetTypeShape<ClassWithMethodAttributes>();
         Assert.NotNull(shape);
 
@@ -522,12 +501,6 @@ public abstract partial class AttributeProviderTests(ProviderUnderTest providerU
     [InlineData("StaticEvent")]
     public void EventsWithVariousAccessibility_AttributesPreserved(string eventName)
     {
-        // SourceGen with AllPublic doesn't include private events
-        if (ProviderUnderTest.Kind == ProviderKind.SourceGen && eventName == "PrivateEvent")
-        {
-            return;
-        }
-
         ITypeShape<ClassWithEventAttributes>? shape = Provider.GetTypeShape<ClassWithEventAttributes>();
         Assert.NotNull(shape);
 
@@ -537,6 +510,91 @@ public abstract partial class AttributeProviderTests(ProviderUnderTest providerU
         CustomAttribute? attr = eventShape.AttributeProvider.GetCustomAttribute<CustomAttribute>();
         Assert.NotNull(attr);
         Assert.Equal(eventName, attr.Name);
+    }
+
+    [Fact]
+    public void PropertyShapeAttribute_PresentOnProperty()
+    {
+        ITypeShape<ClassWithPolyTypeAttributes>? shape = Provider.GetTypeShape<ClassWithPolyTypeAttributes>();
+        Assert.NotNull(shape);
+
+        IObjectTypeShape objectShape = Assert.IsAssignableFrom<IObjectTypeShape>(shape);
+        IPropertyShape? propShape = objectShape.Properties.FirstOrDefault(p => p.Name == "Value" || p.Name == "CustomName");
+        Assert.NotNull(propShape);
+
+        // Reflection providers include all attributes, including shape attributes
+        Assert.True(propShape.AttributeProvider.IsDefined<PropertyShapeAttribute>());
+        PropertyShapeAttribute? attr = propShape.AttributeProvider.GetCustomAttribute<PropertyShapeAttribute>();
+        Assert.NotNull(attr);
+        Assert.Equal("CustomName", attr.Name);
+    }
+
+    [Fact]
+    public void MethodShapeAttribute_PresentOnMethod()
+    {
+        ITypeShape<ClassWithAttributes>? shape = Provider.GetTypeShape<ClassWithAttributes>();
+        Assert.NotNull(shape);
+
+        IMethodShape? methodShape = shape.Methods.FirstOrDefault(m => m.Name == "TestMethod");
+        Assert.NotNull(methodShape);
+
+        // Reflection providers include MethodShapeAttribute
+        Assert.True(methodShape.AttributeProvider.IsDefined<MethodShapeAttribute>());
+        MethodShapeAttribute? attr = methodShape.AttributeProvider.GetCustomAttribute<MethodShapeAttribute>();
+        Assert.NotNull(attr);
+    }
+
+    [Fact]
+    public void EventShapeAttribute_PresentOnEvent()
+    {
+        ITypeShape<ClassWithAttributes>? shape = Provider.GetTypeShape<ClassWithAttributes>();
+        Assert.NotNull(shape);
+
+        IEventShape? eventShape = shape.Events.FirstOrDefault(e => e.Name == "TestEvent");
+        Assert.NotNull(eventShape);
+
+        // Reflection providers include EventShapeAttribute
+        Assert.True(eventShape.AttributeProvider.IsDefined<EventShapeAttribute>());
+        EventShapeAttribute? attr = eventShape.AttributeProvider.GetCustomAttribute<EventShapeAttribute>();
+        Assert.NotNull(attr);
+    }
+
+    [Fact]
+    public void ConstructorShapeAttribute_PresentOnConstructor()
+    {
+        ITypeShape<ClassWithShapeAttributeOnConstructor>? shape = Provider.GetTypeShape<ClassWithShapeAttributeOnConstructor>();
+        Assert.NotNull(shape);
+
+        IObjectTypeShape objectShape = Assert.IsAssignableFrom<IObjectTypeShape>(shape);
+        IConstructorShape? ctor = objectShape.Constructor;
+
+        Assert.NotNull(ctor);
+        
+        // Reflection providers include ConstructorShapeAttribute
+        Assert.True(ctor.AttributeProvider.IsDefined<ConstructorShapeAttribute>());
+        ConstructorShapeAttribute? attr = ctor.AttributeProvider.GetCustomAttribute<ConstructorShapeAttribute>();
+        Assert.NotNull(attr);
+    }
+
+    [Fact]
+    public void ParameterShapeAttribute_PresentOnParameter()
+    {
+        ITypeShape<ClassWithShapeAttributeOnParameter>? shape = Provider.GetTypeShape<ClassWithShapeAttributeOnParameter>();
+        Assert.NotNull(shape);
+
+        IObjectTypeShape objectShape = Assert.IsAssignableFrom<IObjectTypeShape>(shape);
+        IConstructorShape? ctor = objectShape.Constructor;
+
+        Assert.NotNull(ctor);
+        // Find parameter by matching against the Value property name or the custom name
+        IParameterShape? param = ctor.Parameters.FirstOrDefault(p => p.Name == "CustomValue" || p.Name == "Value" || p.Name == "value");
+        Assert.NotNull(param);
+
+        // Reflection providers include ParameterShapeAttribute
+        Assert.True(param.AttributeProvider.IsDefined<ParameterShapeAttribute>());
+        ParameterShapeAttribute? attr = param.AttributeProvider.GetCustomAttribute<ParameterShapeAttribute>();
+        Assert.NotNull(attr);
+        Assert.Equal("CustomValue", attr.Name);
     }
 
     // Helper visitor to extract parameter by name
@@ -973,6 +1031,35 @@ public abstract partial class AttributeProviderTests(ProviderUnderTest providerU
             Value = value;
         }
     }
+
+    /// <summary>
+    /// Class with ConstructorShapeAttribute for testing.
+    /// </summary>
+    [GenerateShape]
+    public partial class ClassWithShapeAttributeOnConstructor
+    {
+        public int Value { get; set; }
+
+        [ConstructorShape]
+        public ClassWithShapeAttributeOnConstructor(int value)
+        {
+            Value = value;
+        }
+    }
+
+    /// <summary>
+    /// Class with ParameterShapeAttribute for testing.
+    /// </summary>
+    [GenerateShape]
+    public partial class ClassWithShapeAttributeOnParameter
+    {
+        public int Value { get; set; }
+
+        public ClassWithShapeAttributeOnParameter([ParameterShape(Name = "CustomValue")] int value)
+        {
+            Value = value;
+        }
+    }
 }
 
 public sealed class AttributeProviderTests_Reflection()
@@ -1148,5 +1235,7 @@ public sealed partial class AttributeProviderTests_SourceGen()
     [GenerateShapeFor(typeof(DerivedGenericWithInheritedAttributes<int>))]
     [GenerateShapeFor(typeof(GenericBaseWithInheritableAttributes<int>))]
     [GenerateShapeFor(typeof(ClassWithConditionalSatisfiedAttribute))]
+    [GenerateShapeFor(typeof(ClassWithShapeAttributeOnConstructor))]
+    [GenerateShapeFor(typeof(ClassWithShapeAttributeOnParameter))]
     public partial class Witness;
 }

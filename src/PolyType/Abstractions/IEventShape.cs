@@ -50,7 +50,6 @@ public interface IEventShape
     /// <para>
     /// When using the source generator, the following categories of attributes are excluded to reduce trimmed application size:
     /// <list type="bullet">
-    /// <item><description><c>PolyType.*</c> - PolyType's own shape configuration attributes</description></item>
     /// <item><description><c>System.Runtime.CompilerServices.*</c> - Compiler-generated attributes</description></item>
     /// <item><description><c>System.Runtime.InteropServices.*</c> - COM interop attributes</description></item>
     /// <item><description><c>System.Diagnostics.*</c> - Diagnostic attributes</description></item>
