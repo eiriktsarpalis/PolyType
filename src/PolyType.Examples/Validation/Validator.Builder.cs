@@ -46,8 +46,7 @@ public static partial class Validator
         public override object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> property, object? state)
         {
             (Predicate<TPropertyType> Predicate, string ErrorMessage)[]? validationPredicates = property.AttributeProvider
-                .GetCustomAttributes(typeof(ValidationAttribute), inherit: true)
-                .Select(attr => (ValidationAttribute)attr)
+                .GetCustomAttributes<ValidationAttribute>(inherit: true)
                 .Select(attr => (Predicate: attr.CreateValidationPredicate<TPropertyType>(), attr.ErrorMessage))
                 .Where(pair => pair.Predicate != null)
                 .ToArray()!;
