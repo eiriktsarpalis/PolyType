@@ -105,7 +105,7 @@ public interface IParameterShape
     /// <item><description><c>System.Reflection.DefaultMemberAttribute</c> - Default member metadata</description></item>
     /// <item><description><c>System.CLSCompliantAttribute</c> - CLS compliance marker</description></item>
     /// <item><description><c>Microsoft.FSharp.Core.*</c> - F# compiler generated attributes</description></item>
-    /// <item><description>Attributes marked with <see cref="ConditionalAttribute" /></description></item>
+    /// <item><description>Attributes marked with unmet <see cref="ConditionalAttribute" /> annotations</description></item>
     /// </list>
     /// Users requiring complete attribute resolution can use the <see cref="ParameterInfo"/> or <see cref="MemberInfo"/> properties
     /// to access standard reflection-based attribute APIs, though this will be slower.
