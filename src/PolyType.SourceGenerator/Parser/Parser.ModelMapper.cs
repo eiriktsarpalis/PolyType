@@ -800,7 +800,7 @@ public sealed partial class Parser
     private record struct CustomAttributeAssociatedTypeProvider(ImmutableDictionary<string, TypeShapeRequirements> NamesAndRequirements);
 
     private readonly Dictionary<INamedTypeSymbol, CustomAttributeAssociatedTypeProvider> _customAttributes = new(SymbolEqualityComparer.Default);
-    private readonly Dictionary<INamedTypeSymbol, bool> _skipAttributeCache = new(SymbolEqualityComparer.Default);
+    private readonly Dictionary<INamedTypeSymbol, (bool ShouldSkip, bool AllowMultiple, bool IsInherited)> _attributeMetadataCache = new(SymbolEqualityComparer.Default);
 
     protected override void ParseCustomAssociatedTypeAttributes(
         ISymbol symbol,
@@ -1093,6 +1093,7 @@ public sealed partial class Parser
     private ImmutableEquatableArray<AttributeDataModel> CollectAttributes(ISymbol symbol)
     {
         List<AttributeDataModel> attributes = [];
+        HashSet<INamedTypeSymbol>? uniqueAttrs = null;
         string[] tokenBuffer = new string[8];
         
         foreach ((AttributeData attr, bool isInherited) in symbol.GetAllAttributes())
@@ -1102,11 +1103,21 @@ public sealed partial class Parser
             {
                 continue;
             }
-            
-            // Filter out unwanted attributes
-            if (ShouldSkipAttribute(attr.AttributeClass))
+
+            var attrMetadata = GetAttributeMetadata(attr.AttributeClass);
+            if (attrMetadata.ShouldSkip)
             {
-                continue;
+                continue; // filter skipped attributes
+            }
+
+            if (isInherited && !attrMetadata.IsInherited)
+            {
+                continue; // filter inherited attributes whose usage is not marked as inherited
+            }
+
+            if (!attrMetadata.AllowMultiple && !(uniqueAttrs ??= new(SymbolEqualityComparer.Default)).Add(attr.AttributeClass))
+            {
+                continue; // filter duplicate attributes when multiple usage is not allowed
             }
             
             // Format constructor arguments
@@ -1130,18 +1141,48 @@ public sealed partial class Parser
         
         return attributes.ToImmutableEquatableArray();
 
-        bool ShouldSkipAttribute(INamedTypeSymbol attributeClass)
+        (bool ShouldSkip, bool AllowMultiple, bool IsInherited) GetAttributeMetadata(INamedTypeSymbol attributeClass)
         {
-            if (_skipAttributeCache.TryGetValue(attributeClass, out bool shouldSkip))
+            if (_attributeMetadataCache.TryGetValue(attributeClass, out var result))
             {
-                return shouldSkip;
+                return result;
             }
 
-            bool result = ShouldSkipAttributeCore(attributeClass);
-            _skipAttributeCache[attributeClass] = result;
+            GetAttributeUsage(attributeClass, out bool allowMultiple, out bool isInherited);
+            result = (ShouldSkip: ShouldSkipAttribute(attributeClass), AllowMultiple: allowMultiple, IsInherited: isInherited);
+            _attributeMetadataCache[attributeClass] = result;
             return result;
 
-            bool ShouldSkipAttributeCore(INamedTypeSymbol attributeClass)
+            void GetAttributeUsage(INamedTypeSymbol attributeClass, out bool allowMultiple, out bool isInherited)
+            {
+                // Set default settings
+                allowMultiple = false;
+                isInherited = true;
+
+                var allAttributes = attributeClass.GetAllAttributes();
+                for (int i = allAttributes.Count - 1; i >= 0; i--)
+                {
+                    // Use reverse traversal so that most derived attribute types are processed last
+                    var (attr, _) = allAttributes[i];
+                    if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, _knownSymbols.AttributeUsageAttribute))
+                    {
+                        foreach (KeyValuePair<string, TypedConstant> namedArg in attr.NamedArguments)
+                        {
+                            switch (namedArg.Key)
+                            {
+                                case nameof(AttributeUsageAttribute.AllowMultiple):
+                                    allowMultiple = (bool)namedArg.Value.Value!;
+                                    break;
+                                case nameof(AttributeUsageAttribute.Inherited):
+                                    isInherited = (bool)namedArg.Value.Value!;
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            bool ShouldSkipAttribute(INamedTypeSymbol attributeClass)
             {
                 if (_knownSymbols.ConditionalAttribute is not null)
                 {
@@ -1180,8 +1221,8 @@ public sealed partial class Parser
                 int index = 0;
                 tokenBuffer[index++] = attributeClass.Name;
 
-                for (INamespaceSymbol? nsToken = attributeClass.ContainingNamespace; 
-                    nsToken is { IsGlobalNamespace: false }; 
+                for (INamespaceSymbol? nsToken = attributeClass.ContainingNamespace;
+                    nsToken is { IsGlobalNamespace: false };
                     nsToken = nsToken.ContainingNamespace)
                 {
                     if (index >= tokenBuffer.Length)

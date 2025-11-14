@@ -11,7 +11,7 @@ public readonly struct SourceGenAttributeInfo
     public required Attribute Attribute { get; init; }
 
     /// <summary>
-    /// Gets whether the attribute is inherited.
+    /// Gets whether the attribute is inherited from a base member.
     /// </summary>
     public bool IsInherited { get; init; }
 }

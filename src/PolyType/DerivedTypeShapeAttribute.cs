@@ -12,9 +12,7 @@ public class DerivedTypeShapeAttribute : Attribute
     /// <param name="type">The derived type associated with the current union case.</param>
     public DerivedTypeShapeAttribute(Type type)
     {
-        Throw.IfNull(type);
-        Type = type;
-        Name = Utilities.ReflectionUtilities.GetDerivedTypeShapeName(type);
+        Type = Throw.IfNull(type);
     }
 
     /// <summary>
@@ -28,7 +26,11 @@ public class DerivedTypeShapeAttribute : Attribute
     /// <remarks>
     /// Defaults to the name of the derived type if left unspecified.
     /// </remarks>
-    public string Name { get; init; }
+    public string Name
+    {
+        get => field ??= Utilities.ReflectionUtilities.GetDerivedTypeShapeName(Type);
+        init => field = Throw.IfNull(value);
+    }
 
     /// <summary>
     /// Gets a unique numeric identifier for the current union case.

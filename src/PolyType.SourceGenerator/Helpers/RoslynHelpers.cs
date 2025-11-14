@@ -440,25 +440,33 @@ internal static partial class RoslynHelpers
         return asr?.SyntaxTree.GetLocation(asr.Span);
     }
 
-    public static IEnumerable<(AttributeData Attribute, bool IsInherited)> GetAllAttributes(this ISymbol symbol)
+    public static List<(AttributeData Attribute, bool IsInherited)> GetAllAttributes(this ISymbol symbol)
     {
-        foreach (AttributeData attr in symbol.GetAttributes())
-        {
-            yield return (attr, IsInherited: false);
-        }
+        List<(AttributeData Attribute, bool IsInherited)> accumulator = new();
+        GetAllAttributesCore(symbol, isBaseSymbol: false);
+        return accumulator;
 
-        IEnumerable<(AttributeData, bool)> baseAttrs = symbol switch
+        void GetAllAttributesCore(ISymbol symbol, bool isBaseSymbol)
         {
-            ITypeSymbol { BaseType: { } baseType } => baseType.GetAllAttributes(),
-            IPropertySymbol { OverriddenProperty: { } baseProperty } => baseProperty.GetAllAttributes(),
-            IMethodSymbol { OverriddenMethod: { } baseMethod } => baseMethod.GetAllAttributes(),
-            IEventSymbol { OverriddenEvent: { } baseEvent } => baseEvent.GetAllAttributes(),
-            _ => [],
-        };
+            foreach (AttributeData attr in symbol.GetAttributes())
+            {
+                accumulator.Add((attr, IsInherited: isBaseSymbol));
+            }
 
-        foreach ((AttributeData attr, _) in baseAttrs)
-        {
-            yield return (attr, IsInherited: true);
+            // Check for any inherited attributes from base symbols.
+            ISymbol? baseSymbol = symbol switch
+            {
+                ITypeSymbol { BaseType: { } baseType } => baseType,
+                IPropertySymbol { OverriddenProperty: { } baseProperty } => baseProperty,
+                IMethodSymbol { OverriddenMethod: { } baseMethod } => baseMethod,
+                IEventSymbol { OverriddenEvent: { } baseEvent } => baseEvent,
+                _ => null,
+            };
+
+            if (baseSymbol is not null)
+            {
+                GetAllAttributesCore(baseSymbol, isBaseSymbol: true);
+            }
         }
     }
 

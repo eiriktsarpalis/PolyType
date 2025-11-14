@@ -597,6 +597,64 @@ public abstract partial class AttributeProviderTests(ProviderUnderTest providerU
         Assert.Equal("CustomValue", attr.Name);
     }
 
+    [Fact]
+    public void PropertyShapeAttribute_AllowMultipleFalse_OnlyOneInstanceReturned()
+    {
+        ITypeShape<DerivedClassWithPropertyShapeAnnotation>? shape = Provider.GetTypeShape<DerivedClassWithPropertyShapeAnnotation>();
+        Assert.NotNull(shape);
+        IObjectTypeShape objectShape = Assert.IsAssignableFrom<IObjectTypeShape>(shape);
+
+        IPropertyShape? propShape = objectShape.Properties.FirstOrDefault(p => p.Name == "Value" || p.Name == "DerivedValue");
+        Assert.NotNull(propShape);
+
+        // Since AllowMultiple=false, only the most derived attribute should be present
+        PropertyShapeAttribute[] attrs = propShape.AttributeProvider.GetCustomAttributes<PropertyShapeAttribute>(inherit: true).ToArray();
+        
+        // Should only return one attribute instance, not multiple from inheritance chain
+        Assert.Single(attrs);
+        
+        // For source gen and reflection, the derived attribute should be used
+        Assert.Equal("DerivedValue", attrs[0].Name);
+        Assert.Equal(2, attrs[0].Order);
+    }
+
+    [Fact]
+    public void PropertyShapeAttribute_AllowMultipleFalse_GetCustomAttribute_ReturnsOnlyOne()
+    {
+        ITypeShape<DerivedClassWithPropertyShapeAnnotation>? shape = Provider.GetTypeShape<DerivedClassWithPropertyShapeAnnotation>();
+        Assert.NotNull(shape);
+        IObjectTypeShape objectShape = Assert.IsAssignableFrom<IObjectTypeShape>(shape);
+
+        IPropertyShape? propShape = objectShape.Properties.FirstOrDefault(p => p.Name == "Value" || p.Name == "DerivedValue");
+        Assert.NotNull(propShape);
+
+        // GetCustomAttribute should return the most derived one
+        PropertyShapeAttribute? attr = propShape.AttributeProvider.GetCustomAttribute<PropertyShapeAttribute>(inherit: true);
+        Assert.NotNull(attr);
+        Assert.Equal("DerivedValue", attr.Name);
+    }
+
+    [Fact]
+    public void PropertyShapeAttribute_WithInheritedTrue_HonorsAllowMultipleFalse()
+    {
+        ITypeShape<DerivedClassWithPropertyShapeAnnotation>? shape = Provider.GetTypeShape<DerivedClassWithPropertyShapeAnnotation>();
+        Assert.NotNull(shape);
+        IObjectTypeShape objectShape = Assert.IsAssignableFrom<IObjectTypeShape>(shape);
+
+        // Get all properties - there should be only one property (the overridden one)
+        var properties = objectShape.Properties.ToList();
+        Assert.NotEmpty(properties);
+
+        // Find the Value property (may have different resolved names)
+        IPropertyShape? valuePropShape = properties.FirstOrDefault(p => p.Name.Contains("Value"));
+        Assert.NotNull(valuePropShape);
+
+        // Even with inherit: true, PropertyShapeAttribute has AllowMultiple=false
+        // so only one instance should be returned (the most specific one)
+        PropertyShapeAttribute[] attrs = valuePropShape.AttributeProvider.GetCustomAttributes<PropertyShapeAttribute>(inherit: true).ToArray();
+        Assert.Single(attrs);
+    }
+
     // Helper visitor to extract parameter by name
     private sealed class ParameterExtractor : TypeShapeVisitor
     {
@@ -1060,6 +1118,32 @@ public abstract partial class AttributeProviderTests(ProviderUnderTest providerU
             Value = value;
         }
     }
+
+    // Test classes for AllowMultiple=false validation
+    [GenerateShape]
+    public partial class BaseClassWithPropertyShapeAnnotation
+    {
+        [PropertyShape(Name = "BaseValue", Order = 1)]
+        public virtual int Value { get; set; }
+    }
+
+    [GenerateShape]
+    public partial class DerivedClassWithPropertyShapeAnnotation : BaseClassWithPropertyShapeAnnotation
+    {
+        // Override property - should only have one PropertyShapeAttribute due to AllowMultiple=false
+        [PropertyShape(Name = "DerivedValue", Order = 2)]
+        public override int Value { get; set; }
+    }
+
+    // Test classes for Inherited=false validation with enum member attributes
+    public enum BaseEnumWithMembers
+    {
+        [EnumMemberShape(Name = "CustomName1")]
+        Value1 = 1,
+
+        [EnumMemberShape(Name = "CustomName2")]
+        Value2 = 2
+    }
 }
 
 public sealed class AttributeProviderTests_Reflection()
@@ -1237,5 +1321,6 @@ public sealed partial class AttributeProviderTests_SourceGen()
     [GenerateShapeFor(typeof(ClassWithConditionalSatisfiedAttribute))]
     [GenerateShapeFor(typeof(ClassWithShapeAttributeOnConstructor))]
     [GenerateShapeFor(typeof(ClassWithShapeAttributeOnParameter))]
+    [GenerateShapeFor(typeof(BaseEnumWithMembers))]
     public partial class Witness;
 }

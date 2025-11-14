@@ -58,6 +58,7 @@ internal static class DebugGuard
             return false;
         }
 
-        return int.TryParse(value, out int result) ? result is 1 : bool.Parse(value);
+        return int.TryParse(value, out int intResult) ? intResult is not 0 :
+            bool.TryParse(value, out bool boolResult) && boolResult;
     }
 }
