@@ -19,13 +19,13 @@ internal sealed partial class SourceFormatter
             {
                 return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<{{objectShapeModel.Type.FullyQualifiedName}}>
                 {
-                    CreatePropertiesFunc = {{FormatNullOrThrowPartial("CreatePropertiesFunc", propertiesFactoryMethodName, !objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Properties))}},
-                    CreateConstructorFunc = {{FormatNullOrThrowPartial("CreateConstructorFunc", constructorFactoryMethodName, !objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Constructor))}},
-                    CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
-                    CreateEventsFunc = {{FormatNull(eventFactoryMethodName)}},
+                    PropertiesFactory = {{FormatNullOrThrowPartial("PropertiesFactory", propertiesFactoryMethodName, !objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Properties))}},
+                    ConstructorFactory = {{FormatNullOrThrowPartial("ConstructorFactory", constructorFactoryMethodName, !objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Constructor))}},
+                    MethodsFactory = {{FormatNull(methodFactoryMethodName)}},
+                    EventsFactory = {{FormatNull(eventFactoryMethodName)}},
                     IsRecordType = {{FormatBool(objectShapeModel.IsRecordType)}},
                     IsTupleType = {{FormatBool(objectShapeModel.IsTupleType)}},
-                    GetAssociatedTypeShapeFunc = {{FormatNull(associatedTypesFactoryMethodName)}},
+                    GetAssociatedTypeShape = {{FormatNull(associatedTypesFactoryMethodName)}},
                     AttributeFactory = {{FormatNull(attributesFactoryName)}},
                     Provider = this,
                 };

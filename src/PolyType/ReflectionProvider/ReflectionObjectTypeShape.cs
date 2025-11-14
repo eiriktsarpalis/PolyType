@@ -19,8 +19,7 @@ internal abstract class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider
     public virtual bool IsRecordType => false;
     public virtual bool IsTupleType => false;
 
-    public IReadOnlyList<IPropertyShape> Properties => _properties ?? CommonHelpers.ExchangeIfNull(ref _properties, GetProperties().AsReadOnlyList());
-    private IReadOnlyList<IPropertyShape>? _properties;
+    public IReadOnlyList<IPropertyShape> Properties => field ?? CommonHelpers.ExchangeIfNull(ref field, GetProperties().AsReadOnlyList());
 
     public IConstructorShape? Constructor
     {

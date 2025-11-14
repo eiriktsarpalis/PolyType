@@ -28,57 +28,45 @@ public sealed class SourceGenConstructorShape<TDeclaringType, TArgumentState> : 
     /// <summary>
     /// Gets the method base resolver factory.
     /// </summary>
-    public Func<MethodBase?>? MethodBaseFunc { get; init; }
+    public Func<MethodBase?>? MethodBaseFactory { get; init; }
 
     /// <summary>
     /// Gets the parameter shapes for the constructor.
     /// </summary>
-    public Func<IEnumerable<IParameterShape>>? GetParametersFunc { get; init; }
+    public Func<IEnumerable<IParameterShape>>? ParametersFactory { get; init; }
 
     /// <summary>
     /// Gets the default constructor for the declaring type.
     /// </summary>
-    public Func<TDeclaringType>? DefaultConstructorFunc { get; init; }
+    public Func<TDeclaringType>? DefaultConstructor { get; init; }
 
     /// <summary>
     /// Gets the argument state constructor for the constructor.
     /// </summary>
-    public Func<TArgumentState>? ArgumentStateConstructorFunc { get; init; }
+    public Func<TArgumentState>? ArgumentStateConstructor { get; init; }
 
     /// <summary>
     /// Gets the parameterized constructor for the constructor.
     /// </summary>
-    public Constructor<TArgumentState, TDeclaringType>? ParameterizedConstructorFunc { get; init; }
+    public Constructor<TArgumentState, TDeclaringType>? ParameterizedConstructor { get; init; }
 
-    /// <inheritdoc/>
-    public IReadOnlyList<IParameterShape> Parameters => _parameters ?? CommonHelpers.ExchangeIfNull(ref _parameters, (GetParametersFunc?.Invoke()).AsReadOnlyList());
-
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private IReadOnlyList<IParameterShape>? _parameters;
+    IReadOnlyList<IParameterShape> IConstructorShape.Parameters => field ?? CommonHelpers.ExchangeIfNull(ref field, (ParametersFactory?.Invoke()).AsReadOnlyList());
 
     Func<TDeclaringType> IConstructorShape<TDeclaringType, TArgumentState>.GetDefaultConstructor() =>
-        DefaultConstructorFunc ?? throw new InvalidOperationException("Constructor shape does not specify a default constructor.");
+        DefaultConstructor ?? throw new InvalidOperationException("Constructor shape does not specify a default constructor.");
 
     Func<TArgumentState> IConstructorShape<TDeclaringType, TArgumentState>.GetArgumentStateConstructor() =>
-        ArgumentStateConstructorFunc ?? throw new InvalidOperationException("Constructor shape does not specify a parameterized constructor.");
+        ArgumentStateConstructor ?? throw new InvalidOperationException("Constructor shape does not specify a parameterized constructor.");
 
     Constructor<TArgumentState, TDeclaringType> IConstructorShape<TDeclaringType, TArgumentState>.GetParameterizedConstructor() =>
-        ParameterizedConstructorFunc ?? throw new InvalidOperationException("Constructor shape does not specify a parameterized constructor.");
+        ParameterizedConstructor ?? throw new InvalidOperationException("Constructor shape does not specify a parameterized constructor.");
 
     object? IConstructorShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitConstructor(this, state);
     IObjectTypeShape IConstructorShape.DeclaringType => DeclaringType;
 
-    /// <inheritdoc />
-    public MethodBase? MethodBase => _methodBase ??= MethodBaseFunc?.Invoke();
+    MethodBase? IConstructorShape.MethodBase => field ??= MethodBaseFactory?.Invoke();
 
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private MethodBase? _methodBase;
+    IGenericCustomAttributeProvider IConstructorShape.AttributeProvider => field ?? CommonHelpers.ExchangeIfNull(ref field, SourceGenCustomAttributeProvider.Create(AttributeFactory));
 
-    /// <inheritdoc />
-    public IGenericCustomAttributeProvider AttributeProvider => _attributeProvider ??= SourceGenCustomAttributeProvider.Create(AttributeFactory);
-
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private IGenericCustomAttributeProvider? _attributeProvider;
-
-    private string DebuggerDisplay => $".ctor({string.Join(", ", Parameters.Select(p => $"{p.ParameterType} {p.Name}"))})";
+    private string DebuggerDisplay => $".ctor({string.Join(", ", ((IConstructorShape)this).Parameters.Select(p => $"{p.ParameterType} {p.Name}"))})";
 }

@@ -26,7 +26,7 @@ public sealed class SourceGenFunctionTypeShape<TFunction, TArgumentState, TResul
     /// <summary>
     /// Gets a factory method for creating parameter shapes.
     /// </summary>
-    public Func<IEnumerable<IParameterShape>>? CreateParametersFunc { get; init; }
+    public Func<IEnumerable<IParameterShape>>? ParametersFactory { get; init; }
 
     /// <summary>
     /// Gets a delegate for creating argument state constructor.
@@ -41,12 +41,12 @@ public sealed class SourceGenFunctionTypeShape<TFunction, TArgumentState, TResul
     /// <summary>
     /// Gets a delegate wrapping a generic user-defined delegate into an instance of <typeparamref name="TFunction"/>.
     /// </summary>
-    public Func<RefFunc<TArgumentState, TResult>, TFunction>? FromDelegateFunc { get; init; }
+    public Func<RefFunc<TArgumentState, TResult>, TFunction>? FromDelegate { get; init; }
 
     /// <summary>
     /// Gets a delegate wrapping a generic user-defined async delegate into an instance of <typeparamref name="TFunction"/>.
     /// </summary>
-    public Func<RefFunc<TArgumentState, ValueTask<TResult>>, TFunction>? FromAsyncDelegateFunc { get; init; }
+    public Func<RefFunc<TArgumentState, ValueTask<TResult>>, TFunction>? FromAsyncDelegate { get; init; }
 
     /// <inheritdoc/>
     public override TypeShapeKind Kind => TypeShapeKind.Function;
@@ -54,11 +54,7 @@ public sealed class SourceGenFunctionTypeShape<TFunction, TArgumentState, TResul
     /// <inheritdoc/>
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitFunction(this, state);
 
-    /// <inheritdoc/>
-    public IReadOnlyList<IParameterShape> Parameters => _parameters ?? CommonHelpers.ExchangeIfNull(ref _parameters, (CreateParametersFunc?.Invoke()).AsReadOnlyList());
-
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private IReadOnlyList<IParameterShape>? _parameters;
+    IReadOnlyList<IParameterShape> IFunctionTypeShape.Parameters => field ?? CommonHelpers.ExchangeIfNull(ref field, (ParametersFactory?.Invoke()).AsReadOnlyList());
 
     ITypeShape IFunctionTypeShape.ReturnType => ReturnType;
 
@@ -68,7 +64,7 @@ public sealed class SourceGenFunctionTypeShape<TFunction, TArgumentState, TResul
 
     TFunction IFunctionTypeShape<TFunction, TArgumentState, TResult>.FromDelegate(RefFunc<TArgumentState, TResult> innerFunc)
     {
-        if (FromDelegateFunc is not { } wrapper)
+        if (FromDelegate is not { } wrapper)
         {
             throw new InvalidOperationException("The underlying delegate is asynchronous.");
         }
@@ -78,7 +74,7 @@ public sealed class SourceGenFunctionTypeShape<TFunction, TArgumentState, TResul
 
     TFunction IFunctionTypeShape<TFunction, TArgumentState, TResult>.FromAsyncDelegate(RefFunc<TArgumentState, ValueTask<TResult>> innerFunc)
     {
-        if (FromAsyncDelegateFunc is not { } wrapper)
+        if (FromAsyncDelegate is not { } wrapper)
         {
             throw new InvalidOperationException("The underlying delegate is not asynchronous.");
         }

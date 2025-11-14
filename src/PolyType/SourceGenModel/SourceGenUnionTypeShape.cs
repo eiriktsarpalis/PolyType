@@ -16,12 +16,12 @@ public sealed class SourceGenUnionTypeShape<TUnion> : SourceGenTypeShape<TUnion>
     /// <summary>
     /// Gets a factory method for creating union case shapes.
     /// </summary>
-    public required Func<IEnumerable<IUnionCaseShape>> CreateUnionCasesFunc { get; init; }
+    public required Func<IEnumerable<IUnionCaseShape>> UnionCasesFactory { get; init; }
 
     /// <summary>
     /// Gets a delegate that computes the union case index for a given value.
     /// </summary>
-    public required Getter<TUnion, int> GetUnionCaseIndexFunc { get; init; }
+    public required Getter<TUnion, int> GetUnionCaseIndex { get; init; }
 
     /// <inheritdoc/>
     public override TypeShapeKind Kind => TypeShapeKind.Union;
@@ -29,9 +29,8 @@ public sealed class SourceGenUnionTypeShape<TUnion> : SourceGenTypeShape<TUnion>
     /// <inheritdoc/>
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnion(this, state);
 
-    IReadOnlyList<IUnionCaseShape> IUnionTypeShape.UnionCases => _unionCases ?? CommonHelpers.ExchangeIfNull(ref _unionCases, CreateUnionCasesFunc().AsReadOnlyList());
-    private IReadOnlyList<IUnionCaseShape>? _unionCases;
+    IReadOnlyList<IUnionCaseShape> IUnionTypeShape.UnionCases => field ?? CommonHelpers.ExchangeIfNull(ref field, UnionCasesFactory().AsReadOnlyList());
 
-    Getter<TUnion, int> IUnionTypeShape<TUnion>.GetGetUnionCaseIndex() => GetUnionCaseIndexFunc;
+    Getter<TUnion, int> IUnionTypeShape<TUnion>.GetGetUnionCaseIndex() => GetUnionCaseIndex;
     ITypeShape IUnionTypeShape.BaseType => BaseType;
 }

@@ -55,8 +55,7 @@ internal sealed class ReflectionPropertyShape<TDeclaringType, TPropertyType> : I
     public string Name { get; }
     public MemberInfo MemberInfo { get; }
 
-    public IGenericCustomAttributeProvider AttributeProvider => _attributeProvider ?? CommonHelpers.ExchangeIfNull(ref _attributeProvider, new(MemberInfo));
-    private ReflectionCustomAttributeProvider? _attributeProvider;
+    public IGenericCustomAttributeProvider AttributeProvider => field ?? CommonHelpers.ExchangeIfNull(ref field, new ReflectionCustomAttributeProvider(MemberInfo));
 
     public IObjectTypeShape<TDeclaringType> DeclaringType { get; }
     public ITypeShape<TPropertyType> PropertyType => _provider.GetTypeShape<TPropertyType>();

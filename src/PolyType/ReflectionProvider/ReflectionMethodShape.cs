@@ -12,7 +12,6 @@ internal sealed class ReflectionMethodShape<TDeclaringType, TArgumentState, TRes
 {
     private readonly ReflectionTypeShapeProvider _provider;
     private readonly MethodShapeInfo _methodShapeInfo;
-    private IReadOnlyList<IParameterShape>? _parameters;
     private Func<TArgumentState>? _argumentStateConstructor;
     private MethodInvoker<TDeclaringType?, TArgumentState, TResult>? _methodInvoker;
 
@@ -32,10 +31,9 @@ internal sealed class ReflectionMethodShape<TDeclaringType, TArgumentState, TRes
     public bool IsAsync => _methodShapeInfo.IsAsync;
     public MethodBase? MethodBase => _methodShapeInfo.Method;
 
-    public IGenericCustomAttributeProvider AttributeProvider => _attributeProvider ?? CommonHelpers.ExchangeIfNull(ref _attributeProvider, ReflectionCustomAttributeProvider.Create(_methodShapeInfo.Method));
-    private IGenericCustomAttributeProvider? _attributeProvider;
+    public IGenericCustomAttributeProvider AttributeProvider => field ?? CommonHelpers.ExchangeIfNull(ref field, ReflectionCustomAttributeProvider.Create(_methodShapeInfo.Method));
 
-    public IReadOnlyList<IParameterShape> Parameters => _parameters ?? CommonHelpers.ExchangeIfNull(ref _parameters, GetParameters().AsReadOnlyList());
+    public IReadOnlyList<IParameterShape> Parameters => field ?? CommonHelpers.ExchangeIfNull(ref field, GetParameters().AsReadOnlyList());
     ITypeShape IMethodShape.DeclaringType => DeclaringType;
     ITypeShape IMethodShape.ReturnType => ReturnType;
 

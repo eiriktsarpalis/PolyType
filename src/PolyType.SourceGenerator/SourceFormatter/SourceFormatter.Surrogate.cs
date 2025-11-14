@@ -19,9 +19,9 @@ internal sealed partial class SourceFormatter
                 {
                     Marshaler = new {{surrogateShapeModel.MarshalerType.FullyQualifiedName}}()!,
                     SurrogateType = {{GetShapeModel(surrogateShapeModel.SurrogateType).SourceIdentifier}},
-                    CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
-                    CreateEventsFunc = {{FormatNull(eventFactoryMethodName)}},
-                    GetAssociatedTypeShapeFunc = {{FormatNull(associatedTypesFactoryMethodName)}},
+                    MethodsFactory = {{FormatNull(methodFactoryMethodName)}},
+                    EventsFactory = {{FormatNull(eventFactoryMethodName)}},
+                    GetAssociatedTypeShape = {{FormatNull(associatedTypesFactoryMethodName)}},
                     AttributeFactory = {{FormatNull(attributeFactoryName)}},
                     Provider = this,
                 };

@@ -72,8 +72,8 @@ internal sealed partial class SourceFormatter
                 IsAsync = {{FormatBool(IsAsync(method))}},
                 DeclaringType = {{declaringType.SourceIdentifier}},
                 ReturnType = {{GetShapeModel(method.ReturnType).SourceIdentifier}},
-                CreateParametersFunc = {{FormatNull(methodParameterFactoryName)}},
-                MethodBaseFunc = {{FormatAttributeProviderFunc(declaringType, method)}},
+                ParametersFactory = {{FormatNull(methodParameterFactoryName)}},
+                MethodBaseFactory = {{FormatAttributeProviderFunc(declaringType, method)}},
                 AttributeFactory = {{FormatNull(methodAttributeFactory)}},
                 ArgumentStateConstructor = {{FormatArgumentStateConstructor(declaringType, method, methodArgumentStateFQN)}},
                 MethodInvoker = {{FormatMethodInvoker(declaringType, method, methodArgumentStateFQN)}},
@@ -250,7 +250,7 @@ internal sealed partial class SourceFormatter
                     Getter = static (ref {{methodArgumentStateFQN}} state) => {{FormatGetterBody(method, parameter)}},
                     Setter = static (ref {{methodArgumentStateFQN}} state, {{parameter.ParameterType.FullyQualifiedName}} value) => {{FormatSetterBody(method, parameter)}},
                     AttributeFactory = {{FormatNull(attributeFactoryName)}},
-                    AttributeProviderFunc = {{FormatAttributeProviderFunc(declaringType, method, parameter)}},
+                    ReflectionInfoFactory = {{FormatAttributeProviderFunc(declaringType, method, parameter)}},
                 },
                 """, trimDefaultAssignmentLines: true);
 

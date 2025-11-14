@@ -19,11 +19,11 @@ internal sealed partial class SourceFormatter
                 return new global::PolyType.SourceGenModel.SourceGenUnionTypeShape<{{unionShapeModel.Type.FullyQualifiedName}}>
                 {
                     BaseType = {{unionShapeModel.UnderlyingModel.SourceIdentifier}},
-                    CreateUnionCasesFunc = {{createUnionCasesMethodName}},
-                    GetUnionCaseIndexFunc = {{FormatFSharpUnionTagReader(unionShapeModel)}},
-                    CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
-                    CreateEventsFunc = {{FormatNull(eventFactoryMethodName)}},
-                    GetAssociatedTypeShapeFunc = {{FormatNull(associatedTypesFactoryMethodName)}},
+                    UnionCasesFactory = {{createUnionCasesMethodName}},
+                    GetUnionCaseIndex = {{FormatFSharpUnionTagReader(unionShapeModel)}},
+                    MethodsFactory = {{FormatNull(methodFactoryMethodName)}},
+                    EventsFactory = {{FormatNull(eventFactoryMethodName)}},
+                    GetAssociatedTypeShape = {{FormatNull(associatedTypesFactoryMethodName)}},
                     AttributeFactory = {{FormatNull(attributeFactoryMethodName)}},
                     Provider = this,
                 };

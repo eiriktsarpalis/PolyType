@@ -39,7 +39,7 @@ public sealed class SourceGenMethodShape<TDeclaringType, TArgumentState, TResult
     /// <summary>
     /// Gets a factory method for creating parameter shapes.
     /// </summary>
-    public Func<IEnumerable<IParameterShape>>? CreateParametersFunc { get; init; }
+    public Func<IEnumerable<IParameterShape>>? ParametersFactory { get; init; }
 
     /// <summary>
     /// Gets a constructor delegate for the custom attribute provider of the method.
@@ -49,7 +49,7 @@ public sealed class SourceGenMethodShape<TDeclaringType, TArgumentState, TResult
     /// <summary>
     /// Gets the method base resolver factory.
     /// </summary>
-    public Func<MethodBase?>? MethodBaseFunc { get; init; }
+    public Func<MethodBase?>? MethodBaseFactory { get; init; }
 
     /// <summary>
     /// Gets a delegate for creating argument state constructor.
@@ -61,23 +61,11 @@ public sealed class SourceGenMethodShape<TDeclaringType, TArgumentState, TResult
     /// </summary>
     public required MethodInvoker<TDeclaringType?, TArgumentState, TResult> MethodInvoker { get; init; }
 
-    /// <inheritdoc/>
-    public IReadOnlyList<IParameterShape> Parameters => _parameters ?? CommonHelpers.ExchangeIfNull(ref _parameters, (CreateParametersFunc?.Invoke()).AsReadOnlyList());
+    IReadOnlyList<IParameterShape> IMethodShape.Parameters => field ?? CommonHelpers.ExchangeIfNull(ref field, (ParametersFactory?.Invoke()).AsReadOnlyList());
 
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private IReadOnlyList<IParameterShape>? _parameters;
+    MethodBase? IMethodShape.MethodBase => field ??= MethodBaseFactory?.Invoke();
 
-    /// <inheritdoc />
-    public MethodBase? MethodBase => _methodBase ??= MethodBaseFunc?.Invoke();
-
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private MethodBase? _methodBase;
-
-    /// <inheritdoc />
-    public IGenericCustomAttributeProvider AttributeProvider => _attributeProvider ??= SourceGenCustomAttributeProvider.Create(AttributeFactory);
-
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private IGenericCustomAttributeProvider? _attributeProvider;
+    IGenericCustomAttributeProvider IMethodShape.AttributeProvider => field ?? CommonHelpers.ExchangeIfNull(ref field, SourceGenCustomAttributeProvider.Create(AttributeFactory));
 
     ITypeShape IMethodShape.DeclaringType => DeclaringType;
 
@@ -89,5 +77,5 @@ public sealed class SourceGenMethodShape<TDeclaringType, TArgumentState, TResult
 
     MethodInvoker<TDeclaringType?, TArgumentState, TResult> IMethodShape<TDeclaringType, TArgumentState, TResult>.GetMethodInvoker() => MethodInvoker;
 
-    private string DebuggerDisplay => $"{ReturnType} {Name}({string.Join(", ", Parameters.Select(p => $"{p.ParameterType} {p.Name}"))})";
+    private string DebuggerDisplay => $"{ReturnType} {Name}({string.Join(", ", ((IMethodShape)this).Parameters.Select(p => $"{p.ParameterType} {p.Name}"))})";
 }

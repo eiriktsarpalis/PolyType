@@ -28,17 +28,17 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
     /// <summary>
     /// Gets the factory method for creating method shapes.
     /// </summary>
-    public Func<IEnumerable<IMethodShape>>? CreateMethodsFunc { get; init; }
+    public Func<IEnumerable<IMethodShape>>? MethodsFactory { get; init; }
 
     /// <summary>
     /// Gets the factory method for creating event shapes.
     /// </summary>
-    public Func<IEnumerable<IEventShape>>? CreateEventsFunc { get; init; }
+    public Func<IEnumerable<IEventShape>>? EventsFactory { get; init; }
 
     /// <summary>
     /// Gets the function that looks up associated type shapes by type.
     /// </summary>
-    public Func<Type, ITypeShape?>? GetAssociatedTypeShapeFunc { get; init; }
+    public Func<Type, ITypeShape?>? GetAssociatedTypeShape { get; init; }
 
     /// <inheritdoc/>
     public abstract object? Accept(TypeShapeVisitor visitor, object? state = null);
@@ -46,23 +46,11 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
     /// <inheritdoc/>
     object? ITypeShape.Invoke(ITypeShapeFunc func, object? state) => func.Invoke(this, state);
 
-    /// <inheritdoc/>
-    public IReadOnlyList<IMethodShape> Methods => _methods ?? CommonHelpers.ExchangeIfNull(ref _methods, (CreateMethodsFunc?.Invoke()).AsReadOnlyList());
+    IReadOnlyList<IMethodShape> ITypeShape.Methods => field ?? CommonHelpers.ExchangeIfNull(ref field, (MethodsFactory?.Invoke()).AsReadOnlyList());
 
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private IReadOnlyList<IMethodShape>? _methods;
+    IReadOnlyList<IEventShape> ITypeShape.Events => field ?? CommonHelpers.ExchangeIfNull(ref field, (EventsFactory?.Invoke()).AsReadOnlyList());
 
-    /// <inheritdoc/>
-    public IReadOnlyList<IEventShape> Events => _events ?? CommonHelpers.ExchangeIfNull(ref _events, (CreateEventsFunc?.Invoke()).AsReadOnlyList());
-
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private IReadOnlyList<IEventShape>? _events;
-
-    /// <inheritdoc />
-    public IGenericCustomAttributeProvider AttributeProvider => _attributeProvider ??= SourceGenCustomAttributeProvider.Create(AttributeFactory);
-
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private IGenericCustomAttributeProvider? _attributeProvider;
+    IGenericCustomAttributeProvider ITypeShape.AttributeProvider => field ?? CommonHelpers.ExchangeIfNull(ref field, SourceGenCustomAttributeProvider.Create(AttributeFactory));
 
     ITypeShape? ITypeShape.GetAssociatedTypeShape(Type associatedType)
     {
@@ -80,7 +68,7 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
             static void ThrowArgumentException() => throw new ArgumentException("Type is not a generic type definition or does not have an equal count of generic type parameters with this type shape.", nameof(associatedType));
         }
 
-        return GetAssociatedTypeShapeFunc?.Invoke(associatedType);
+        return GetAssociatedTypeShape?.Invoke(associatedType);
     }
 
     private protected string DebuggerDisplay => $"{{Type = \"{typeof(T)}\", Kind = {Kind}}}";
