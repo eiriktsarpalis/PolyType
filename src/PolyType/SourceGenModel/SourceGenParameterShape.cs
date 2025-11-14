@@ -51,9 +51,9 @@ public sealed class SourceGenParameterShape<TArgumentState, TParameter> : IParam
     public Func<SourceGenAttributeInfo[]>? AttributeFactory { get; init; }
 
     /// <summary>
-    /// Gets the factory for retrieving the ParameterInfo or MemberInfo corresponding to the parameter.
+    /// Gets the factory for retrieving the <see cref="ParameterInfo"/> or <see cref="MemberInfo"/> corresponding to the parameter.
     /// </summary>
-    public Func<ICustomAttributeProvider?>? AttributeProviderFunc { get; init; }
+    public Func<ICustomAttributeProvider?>? ReflectionInfoFactory { get; init; }
 
     /// <inheritdoc/>
     public bool HasDefaultValue { get; init; }
@@ -67,18 +67,12 @@ public sealed class SourceGenParameterShape<TArgumentState, TParameter> : IParam
     Getter<TArgumentState, TParameter> IParameterShape<TArgumentState, TParameter>.GetGetter() => Getter;
     Setter<TArgumentState, TParameter> IParameterShape<TArgumentState, TParameter>.GetSetter() => Setter;
 
-    ParameterInfo? IParameterShape.ParameterInfo => ReflectionAttributeProvider as ParameterInfo;
-    MemberInfo? IParameterShape.MemberInfo => ReflectionAttributeProvider as MemberInfo;
+    ParameterInfo? IParameterShape.ParameterInfo => ReflectionInfo as ParameterInfo;
+    MemberInfo? IParameterShape.MemberInfo => ReflectionInfo as MemberInfo;
 
-    private ICustomAttributeProvider? ReflectionAttributeProvider => _reflectionAttributeProvider ??= AttributeProviderFunc?.Invoke();
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private ICustomAttributeProvider? _reflectionAttributeProvider;
+    private ICustomAttributeProvider? ReflectionInfo => field ??= ReflectionInfoFactory?.Invoke();
 
-    /// <inheritdoc />
-    public IGenericCustomAttributeProvider AttributeProvider => _attributeProvider ??= SourceGenCustomAttributeProvider.Create(AttributeFactory);
-
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private IGenericCustomAttributeProvider? _attributeProvider;
+    IGenericCustomAttributeProvider IParameterShape.AttributeProvider => field ?? CommonHelpers.ExchangeIfNull(ref field, SourceGenCustomAttributeProvider.Create(AttributeFactory));
 
     private string DebuggerDisplay => $"{{Type = \"{typeof(TParameter)}\", Name = \"{Name}\"}}";
 }

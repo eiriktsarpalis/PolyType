@@ -19,12 +19,12 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
     /// <summary>
     /// Gets the factory method for creating property shapes.
     /// </summary>
-    public Func<IEnumerable<IPropertyShape>>? CreatePropertiesFunc { get; init; }
+    public Func<IEnumerable<IPropertyShape>>? PropertiesFactory { get; init; }
 
     /// <summary>
     /// Gets the factory method for creating constructor shapes.
     /// </summary>
-    public Func<IConstructorShape>? CreateConstructorFunc { get; init; }
+    public Func<IConstructorShape>? ConstructorFactory { get; init; }
 
     /// <inheritdoc/>
     public override TypeShapeKind Kind => TypeShapeKind.Object;
@@ -32,34 +32,26 @@ public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObje
     /// <inheritdoc/>
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);
 
-    /// <inheritdoc/>
-    public IReadOnlyList<IPropertyShape> Properties => _properties ?? CommonHelpers.ExchangeIfNull(ref _properties, (CreatePropertiesFunc?.Invoke()).AsReadOnlyList());
+    IReadOnlyList<IPropertyShape> IObjectTypeShape.Properties => field ?? CommonHelpers.ExchangeIfNull(ref field, (PropertiesFactory?.Invoke()).AsReadOnlyList());
 
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private IReadOnlyList<IPropertyShape>? _properties;
-
-    /// <inheritdoc/>
-    public IConstructorShape? Constructor
+    IConstructorShape? IObjectTypeShape.Constructor
     {
         get
         {
             if (!_isConstructorResolved)
             {
-                if (CreateConstructorFunc?.Invoke() is { } constructor)
+                if (ConstructorFactory?.Invoke() is { } constructor)
                 {
-                    CommonHelpers.ExchangeIfNull(ref _constructor, constructor);
+                    CommonHelpers.ExchangeIfNull(ref field, constructor);
                 }
 
                 Volatile.Write(ref _isConstructorResolved, true);
             }
 
-            return _constructor;
+            return field;
         }
     }
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private bool _isConstructorResolved;
-
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private IConstructorShape? _constructor;
 }

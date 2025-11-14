@@ -48,21 +48,13 @@ public sealed class SourceGenEventShape<TDeclaringType, TEventHandler> : IEventS
     /// <summary>
     /// Gets the factory function for retrieving the EventInfo of the event.
     /// </summary>
-    public Func<EventInfo?>? EventInfoFunc { get; init; }
+    public Func<EventInfo?>? EventInfoFactory { get; init; }
 
     ITypeShape IEventShape.DeclaringType => DeclaringType;
 
-    /// <inheritdoc />
-    public EventInfo? EventInfo => _eventInfo ??= EventInfoFunc?.Invoke();
+    EventInfo? IEventShape.EventInfo => field ??= EventInfoFactory?.Invoke();
 
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private EventInfo? _eventInfo;
-
-    /// <inheritdoc />
-    public IGenericCustomAttributeProvider AttributeProvider => _attributeProvider ??= SourceGenCustomAttributeProvider.Create(AttributeFactory);
-
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private IGenericCustomAttributeProvider? _attributeProvider;
+    IGenericCustomAttributeProvider IEventShape.AttributeProvider => field ?? CommonHelpers.ExchangeIfNull(ref field, SourceGenCustomAttributeProvider.Create(AttributeFactory));
 
     object? IEventShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitEvent(this, state);
 

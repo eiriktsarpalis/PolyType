@@ -48,7 +48,7 @@ internal sealed partial class SourceFormatter
                     Getter = {{(property.EmitGetter ? $"static (ref {type.Type.FullyQualifiedName} obj) => {FormatGetterBody("obj", type, property)}{(suppressGetter ? "!" : "")}" : "null")}},
                     Setter = {{(property.EmitSetter ? $"static (ref {type.Type.FullyQualifiedName} obj, {property.PropertyType.FullyQualifiedName} value) => {FormatSetterBody("obj", "value" + (suppressSetter ? "!" : ""), type, property)}" : "null")}},
                     AttributeFactory = {{FormatNull(attributeFactoryName)}},
-                    MemberInfoFunc = {{FormatAttributeProviderFunc(type, property)}},
+                    MemberInfoFactory = {{FormatMemberInfoFactory(type, property)}},
                     IsField = {{FormatBool(property.IsField)}},
                     IsGetterPublic = {{FormatBool(property.IsGetterPublic)}},
                     IsSetterPublic = {{FormatBool(property.IsSetterPublic)}},
@@ -59,7 +59,7 @@ internal sealed partial class SourceFormatter
 
             i++;
 
-            static string FormatAttributeProviderFunc(ObjectShapeModel type, PropertyShapeModel property)
+            static string FormatMemberInfoFactory(ObjectShapeModel type, PropertyShapeModel property)
             {
                 if (type.IsTupleType)
                 {

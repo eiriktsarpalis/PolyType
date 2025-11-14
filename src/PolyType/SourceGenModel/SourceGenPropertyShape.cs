@@ -27,7 +27,7 @@ public sealed class SourceGenPropertyShape<TDeclaringType, TPropertyType> : IPro
     /// <summary>
     /// Gets the factory function for retrieving the MemberInfo of the property.
     /// </summary>
-    public Func<MemberInfo?>? MemberInfoFunc { get; init; }
+    public Func<MemberInfo?>? MemberInfoFactory { get; init; }
 
     /// <inheritdoc/>
     public required IObjectTypeShape<TDeclaringType> DeclaringType { get; init; }
@@ -66,17 +66,9 @@ public sealed class SourceGenPropertyShape<TDeclaringType, TPropertyType> : IPro
     Setter<TDeclaringType, TPropertyType> IPropertyShape<TDeclaringType, TPropertyType>.GetSetter()
         => Setter is { } setter ? setter : throw new InvalidOperationException("Property shape does not specify a setter.");
 
-    /// <inheritdoc />
-    public MemberInfo? MemberInfo => _memberInfo ??= MemberInfoFunc?.Invoke();
+    MemberInfo? IPropertyShape.MemberInfo => field ??= MemberInfoFactory?.Invoke();
 
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private MemberInfo? _memberInfo;
-
-    /// <inheritdoc />
-    public IGenericCustomAttributeProvider AttributeProvider => _attributeProvider ??= SourceGenCustomAttributeProvider.Create(AttributeFactory);
-
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    private IGenericCustomAttributeProvider? _attributeProvider;
+    IGenericCustomAttributeProvider IPropertyShape.AttributeProvider => field ?? CommonHelpers.ExchangeIfNull(ref field, SourceGenCustomAttributeProvider.Create(AttributeFactory));
 
     ITypeShape IPropertyShape.PropertyType => PropertyType;
     IObjectTypeShape IPropertyShape.DeclaringType => DeclaringType;

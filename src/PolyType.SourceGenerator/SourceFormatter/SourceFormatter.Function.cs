@@ -23,12 +23,12 @@ internal sealed partial class SourceFormatter
                     IsVoidLike = {{FormatBool(IsVoidLike(functionShapeModel))}},
                     IsAsync = {{FormatBool(IsAsync(functionShapeModel))}},
                     ReturnType = {{GetShapeModel(functionShapeModel.ReturnType).SourceIdentifier}},
-                    CreateParametersFunc = {{FormatNull(functionParameterFactoryName)}},
+                    ParametersFactory = {{FormatNull(functionParameterFactoryName)}},
                     ArgumentStateConstructor = {{FormatArgumentStateConstructor(functionShapeModel, functionArgumentStateFQN, requiredParametersMaskFieldName)}},
                     FunctionInvoker = {{FormatFunctionInvoker(functionShapeModel, functionArgumentStateFQN)}},
-                    FromDelegateFunc = {{FormatNull(FormatFromDelegateFunc(functionShapeModel, functionArgumentStateFQN, requiredParametersMaskFieldName, requireAsync: false))}},
-                    FromAsyncDelegateFunc = {{FormatNull(FormatFromDelegateFunc(functionShapeModel, functionArgumentStateFQN, requiredParametersMaskFieldName, requireAsync: true))}},
-                    GetAssociatedTypeShapeFunc = {{FormatNull(associatedTypesFactoryMethodName)}},
+                    FromDelegate = {{FormatNull(FormatFromDelegateFunc(functionShapeModel, functionArgumentStateFQN, requiredParametersMaskFieldName, requireAsync: false))}},
+                    FromAsyncDelegate = {{FormatNull(FormatFromDelegateFunc(functionShapeModel, functionArgumentStateFQN, requiredParametersMaskFieldName, requireAsync: true))}},
+                    GetAssociatedTypeShape = {{FormatNull(associatedTypesFactoryMethodName)}},
                     AttributeFactory = {{FormatNull(attributeFactoryMethodName)}},
                     Provider = this,
                 };
@@ -268,7 +268,7 @@ internal sealed partial class SourceFormatter
                     Getter = static (ref {{functionArgumentStateFQN}} state) => {{FormatGetterBody(functionShapeModel, parameter)}},
                     Setter = static (ref {{functionArgumentStateFQN}} state, {{parameter.ParameterType.FullyQualifiedName}} value) => {{FormatSetterBody(functionShapeModel, parameter)}},
                     AttributeFactory = {{FormatNull(attributeFactoryName)}},
-                    AttributeProviderFunc = {{FormatAttributeProviderFunc(functionShapeModel, parameter)}},
+                    ReflectionInfoFactory = {{FormatAttributeProviderFunc(functionShapeModel, parameter)}},
                 },
                 """, trimDefaultAssignmentLines: true);
 

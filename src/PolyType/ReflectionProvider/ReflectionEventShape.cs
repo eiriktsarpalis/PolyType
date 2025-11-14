@@ -10,7 +10,6 @@ internal sealed class ReflectionEventShape<TDeclaringType, TEventHandler> : IEve
 {
     private readonly ReflectionTypeShapeProvider _provider;
     private readonly EventInfo _eventInfo;
-    private IFunctionTypeShape? _handlerType;
     private Setter<TDeclaringType?, TEventHandler>? _addHandler;
     private Setter<TDeclaringType?, TEventHandler>? _removeHandler;
 
@@ -26,11 +25,10 @@ internal sealed class ReflectionEventShape<TDeclaringType, TEventHandler> : IEve
     public bool IsStatic => _eventInfo.AddMethod!.IsStatic;
     public bool IsPublic => _eventInfo.AddMethod!.IsPublic;
     public ITypeShape<TDeclaringType> DeclaringType => _provider.GetTypeShape<TDeclaringType>();
-    public IFunctionTypeShape HandlerType => _handlerType ?? CommonHelpers.ExchangeIfNull(ref _handlerType, (IFunctionTypeShape)_provider.GetTypeShape<TEventHandler>());
+    public IFunctionTypeShape HandlerType => field ?? CommonHelpers.ExchangeIfNull(ref field, (IFunctionTypeShape)_provider.GetTypeShape<TEventHandler>());
     EventInfo? IEventShape.EventInfo => _eventInfo;
 
-    public IGenericCustomAttributeProvider AttributeProvider => _attributeProvider ?? CommonHelpers.ExchangeIfNull(ref _attributeProvider, new(_eventInfo));
-    private ReflectionCustomAttributeProvider? _attributeProvider;
+    public IGenericCustomAttributeProvider AttributeProvider => field ?? CommonHelpers.ExchangeIfNull(ref field, new ReflectionCustomAttributeProvider(_eventInfo));
 
     public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEvent(this, state);
     ITypeShape IEventShape.DeclaringType => DeclaringType;

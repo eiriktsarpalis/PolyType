@@ -23,9 +23,9 @@ internal sealed partial class SourceFormatter
                     NoneConstructor = {{FormatNoneCtor()}},
                     SomeConstructor = {{FormatSomeCtor()}},
                     Deconstructor = {{FormatDeconstructor()}},
-                    CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
-                    CreateEventsFunc = {{FormatNull(eventFactoryMethodName)}},
-                    GetAssociatedTypeShapeFunc = {{FormatNull(associatedTypesFactoryMethodName)}},
+                    MethodsFactory = {{FormatNull(methodFactoryMethodName)}},
+                    EventsFactory = {{FormatNull(eventFactoryMethodName)}},
+                    GetAssociatedTypeShape = {{FormatNull(associatedTypesFactoryMethodName)}},
                     AttributeFactory = {{FormatNull(attributesFactoryName)}},
                     Provider = this,
                 };

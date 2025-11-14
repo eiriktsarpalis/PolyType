@@ -22,7 +22,7 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     /// <summary>
     /// Gets the function that extracts a <see cref="IReadOnlyDictionary{TKey,TValue}"/> from an instance of the dictionary type.
     /// </summary>
-    public required Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> GetDictionaryFunc { get; init; }
+    public required Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> GetDictionary { get; init; }
 
     /// <inheritdoc/>
     public required CollectionConstructionStrategy ConstructionStrategy { get; init; }
@@ -33,7 +33,7 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     /// <summary>
     /// Gets the function that constructs an empty instance of the dictionary type.
     /// </summary>
-    public MutableCollectionConstructor<TKey, TDictionary>? DefaultConstructorFunc { get; init; }
+    public MutableCollectionConstructor<TKey, TDictionary>? DefaultConstructor { get; init; }
 
     /// <summary>
     /// Gets the inserter function for adding key-value pairs to the dictionary with overwrite semantics.
@@ -53,7 +53,7 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     /// <summary>
     /// Gets the function that constructs a dictionary from a span of key-value pairs.
     /// </summary>
-    public ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>? ParameterizedConstructorFunc { get; init; }
+    public ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary>? ParameterizedConstructor { get; init; }
 
     /// <inheritdoc/>
     public override TypeShapeKind Kind => TypeShapeKind.Dictionary;
@@ -64,10 +64,10 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     ITypeShape IDictionaryTypeShape.KeyType => KeyType;
     ITypeShape IDictionaryTypeShape.ValueType => ValueType;
 
-    Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetGetDictionary() => GetDictionaryFunc;
+    Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetGetDictionary() => GetDictionary;
 
     MutableCollectionConstructor<TKey, TDictionary> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetDefaultConstructor() =>
-        DefaultConstructorFunc ?? throw new InvalidOperationException("Dictionary shape does not specify a default constructor.");
+        DefaultConstructor ?? throw new InvalidOperationException("Dictionary shape does not specify a default constructor.");
 
     /// <inheritdoc/>
     public DictionaryInsertionMode AvailableInsertionModes
@@ -128,5 +128,5 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     }
 
     ParameterizedCollectionConstructor<TKey, KeyValuePair<TKey, TValue>, TDictionary> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetParameterizedConstructor() =>
-        ParameterizedConstructorFunc ?? throw new InvalidOperationException("Dictionary shape does not specify a span constructor.");
+        ParameterizedConstructor ?? throw new InvalidOperationException("Dictionary shape does not specify a span constructor.");
 }

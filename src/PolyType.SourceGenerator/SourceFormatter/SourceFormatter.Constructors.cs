@@ -26,11 +26,11 @@ internal sealed partial class SourceFormatter
             return new global::PolyType.SourceGenModel.SourceGenConstructorShape<{{type.Type.FullyQualifiedName}}, {{constructorArgumentStateFQN}}>
             {
                 DeclaringType = (global::PolyType.Abstractions.IObjectTypeShape<{{type.Type.FullyQualifiedName}}>){{type.SourceIdentifier}},
-                GetParametersFunc = {{FormatNull(constructorParameterFactoryName)}},
-                DefaultConstructorFunc = {{FormatDefaultCtor(type, constructor)}},
-                ArgumentStateConstructorFunc = {{FormatArgumentStateCtor(type, constructor, constructorArgumentStateFQN)}},
-                ParameterizedConstructorFunc = {{FormatParameterizedCtor(type, constructor, constructorArgumentStateFQN)}},
-                MethodBaseFunc = {{FormatConstructorInfoResolver(type, constructor)}},
+                ParametersFactory = {{FormatNull(constructorParameterFactoryName)}},
+                DefaultConstructor = {{FormatDefaultCtor(type, constructor)}},
+                ArgumentStateConstructor = {{FormatArgumentStateCtor(type, constructor, constructorArgumentStateFQN)}},
+                ParameterizedConstructor = {{FormatParameterizedCtor(type, constructor, constructorArgumentStateFQN)}},
+                MethodBaseFactory = {{FormatConstructorInfoResolver(type, constructor)}},
                 AttributeFactory = {{FormatNull(attributeFactoryName)}},
                 IsPublic = {{FormatBool(constructor.IsPublic)}},
             };
@@ -311,7 +311,7 @@ internal sealed partial class SourceFormatter
                     Getter = static (ref {{constructorArgumentStateFQN}} state) => {{FormatGetterBody(constructor, parameter)}},
                     Setter = static (ref {{constructorArgumentStateFQN}} state, {{parameter.ParameterType.FullyQualifiedName}} value) => {{FormatSetterBody(constructor, parameter)}},
                     AttributeFactory = {{FormatNull(attributeFactoryName)}},
-                    AttributeProviderFunc = {{FormatAttributeProviderFunc(type, constructor, parameter)}},
+                    ReflectionInfoFactory = {{FormatAttributeProviderFunc(type, constructor, parameter)}},
                 },
                 """, trimDefaultAssignmentLines: true);
 
