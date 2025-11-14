@@ -115,12 +115,25 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                 if (member.BaseMemberInfo is PropertyInfo { CanRead: true } or FieldInfo)
                 {
                     var key = (member.BaseMemberInfo.GetMemberType(), member.BaseMemberInfo.Name);
-                    readableMembers.TryGetValue(key, out bool isReadOnly);
-                    readableMembers[key] = isReadOnly && member.BaseMemberInfo switch
+                    // For each member, check if it's read-only.
+                    // If we've already seen this member (by type and name), keep it marked as read-only
+                    // only if ALL occurrences are read-only (e.g., handling shadowing/overrides).
+                    bool isCurrentMemberReadOnly = member.BaseMemberInfo switch
                     {
                         PropertyInfo prop => !prop.CanWrite,
                         var field => ((FieldInfo)field).IsInitOnly,
                     };
+
+                    if (readableMembers.TryGetValue(key, out bool isReadOnly))
+                    {
+                        // If already exists, AND with current member's read-only status
+                        readableMembers[key] = isReadOnly && isCurrentMemberReadOnly;
+                    }
+                    else
+                    {
+                        // First occurrence, just set to current member's read-only status
+                        readableMembers[key] = isCurrentMemberReadOnly;
+                    }
                 }
             }
 

@@ -1374,6 +1374,26 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         unionCase = unionShape.UnionCases.First(c => c.UnionCaseType.Type == typeof(ClassWithGenericDerivedType.Derived<ClassWithGenericDerivedType.Arg2[]>));
         Assert.Equal("Derived_Array_Arg2", unionCase.Name);
     }
+
+    [Fact]
+    public void ServiceMoniker_SelectsConstructorWithMoreParameters()
+    {
+        // ServiceMoniker has two constructors:
+        // 1. ServiceMoniker(string name) - 1 parameter
+        // 2. ServiceMoniker(string name, Version? version) - 2 parameters
+        // The Version property is read-only, so constructor #2 should be selected
+        ITypeShape<ServiceMoniker>? typeShape = Provider.GetTypeShape<ServiceMoniker>();
+        Assert.NotNull(typeShape);
+        var objectShape = Assert.IsAssignableFrom<IObjectTypeShape<ServiceMoniker>>(typeShape);
+        
+        Assert.NotNull(objectShape.Constructor);
+        Assert.Equal(2, objectShape.Constructor.Parameters.Count);
+        
+        // Verify the parameter names match the expected constructor
+        var parameters = objectShape.Constructor.Parameters.ToList();
+        Assert.Equal("name", parameters[0].Name, ignoreCase: true);
+        Assert.Equal("version", parameters[1].Name, ignoreCase: true);
+    }
 }
 
 public static class ReflectionExtensions
