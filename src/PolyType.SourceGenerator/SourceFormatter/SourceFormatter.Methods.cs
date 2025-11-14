@@ -56,6 +56,7 @@ internal sealed partial class SourceFormatter
     {
         string methodArgumentStateFQN = FormatMethodArgumentStateFQN(method);
         string? methodParameterFactoryName = method.Parameters.Length > 0 ? $"__CreateMethodParameters_{declaringType.SourceIdentifier}_{method.Position}" : null;
+        string? methodAttributeFactory = method.Attributes.Length > 0 ? $"__CreateAttributes_{declaringType.SourceIdentifier}_{method.Position}" : null;
 
         writer.WriteLine($"private global::PolyType.Abstractions.IMethodShape {methodName}()");
         writer.WriteLine('{');
@@ -72,7 +73,8 @@ internal sealed partial class SourceFormatter
                 DeclaringType = {{declaringType.SourceIdentifier}},
                 ReturnType = {{GetShapeModel(method.ReturnType).SourceIdentifier}},
                 CreateParametersFunc = {{FormatNull(methodParameterFactoryName)}},
-                AttributeProviderFunc = {{FormatAttributeProviderFunc(declaringType, method)}},
+                MethodBaseFunc = {{FormatAttributeProviderFunc(declaringType, method)}},
+                AttributeFactory = {{FormatNull(methodAttributeFactory)}},
                 ArgumentStateConstructor = {{FormatArgumentStateConstructor(declaringType, method, methodArgumentStateFQN)}},
                 MethodInvoker = {{FormatMethodInvoker(declaringType, method, methodArgumentStateFQN)}},
             };
@@ -96,6 +98,11 @@ internal sealed partial class SourceFormatter
                 method.Parameters.Length,
                 method.ArgumentStateType,
                 method.Parameters);
+        }
+
+        if (methodAttributeFactory is not null)
+        {
+            FormatAttributesFactory(writer, methodAttributeFactory, method.Attributes);
         }
 
         static bool IsVoidLike(MethodShapeModel method)
@@ -227,6 +234,7 @@ internal sealed partial class SourceFormatter
                 writer.WriteLine();
             }
 
+            string? attributeFactoryName = GetAttributeFactoryName(parameter);
             writer.WriteLine($$"""
                 new global::PolyType.SourceGenModel.SourceGenParameterShape<{{methodArgumentStateFQN}}, {{parameter.ParameterType.FullyQualifiedName}}>
                 {
@@ -241,6 +249,7 @@ internal sealed partial class SourceFormatter
                     DefaultValue = {{FormatDefaultValueExpr(parameter)}},
                     Getter = static (ref {{methodArgumentStateFQN}} state) => {{FormatGetterBody(method, parameter)}},
                     Setter = static (ref {{methodArgumentStateFQN}} state, {{parameter.ParameterType.FullyQualifiedName}} value) => {{FormatSetterBody(method, parameter)}},
+                    AttributeFactory = {{FormatNull(attributeFactoryName)}},
                     AttributeProviderFunc = {{FormatAttributeProviderFunc(declaringType, method, parameter)}},
                 },
                 """, trimDefaultAssignmentLines: true);
@@ -304,6 +313,20 @@ internal sealed partial class SourceFormatter
 
         writer.Indentation--;
         writer.WriteLine("};");
+
+        foreach (ParameterShapeModel parameter in method.Parameters)
+        {
+            if (GetAttributeFactoryName(parameter) is { } attributeFactoryName)
+            {
+                writer.WriteLine();
+                FormatAttributesFactory(writer, attributeFactoryName, parameter.Attributes);
+            }
+        }
+
+        string? GetAttributeFactoryName(ParameterShapeModel parameter) =>
+            parameter.Attributes.Length > 0
+            ? $"__CreateParameterAttributes_{declaringType.SourceIdentifier}_{method.Position}_{parameter.Position}_{parameter.UnderlyingMemberName}"
+            : null;
     }
 
     private static string FormatMethodArgumentStateFQN(MethodShapeModel method)

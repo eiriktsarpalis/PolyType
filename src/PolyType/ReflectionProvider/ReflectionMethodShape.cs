@@ -30,7 +30,11 @@ internal sealed class ReflectionMethodShape<TDeclaringType, TArgumentState, TRes
     public bool IsStatic => _methodShapeInfo.Method!.IsStatic;
     public bool IsVoidLike => _methodShapeInfo.IsVoidLike;
     public bool IsAsync => _methodShapeInfo.IsAsync;
-    public ICustomAttributeProvider? AttributeProvider => _methodShapeInfo.Method;
+    public MethodBase? MethodBase => _methodShapeInfo.Method;
+
+    public IGenericCustomAttributeProvider AttributeProvider => _attributeProvider ?? CommonHelpers.ExchangeIfNull(ref _attributeProvider, ReflectionCustomAttributeProvider.Create(_methodShapeInfo.Method));
+    private IGenericCustomAttributeProvider? _attributeProvider;
+
     public IReadOnlyList<IParameterShape> Parameters => _parameters ?? CommonHelpers.ExchangeIfNull(ref _parameters, GetParameters().AsReadOnlyList());
     ITypeShape IMethodShape.DeclaringType => DeclaringType;
     ITypeShape IMethodShape.ReturnType => ReturnType;

@@ -208,6 +208,76 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
         return typeShapeModel.AssociatedTypes.Count > 0 ? $"__GetAssociatedTypes_{typeShapeModel.SourceIdentifier}" : null;
     }
 
+    private static string? GetAttributesFactoryName(TypeShapeModel declaringType)
+    {
+        if (declaringType.Attributes.Length == 0)
+        {
+            return null;
+        }
+
+        return $"__CreateAttributes_{declaringType.SourceIdentifier}";
+    }
+
+    private static void FormatAttributesFactory(SourceWriter writer, string factoryName, ImmutableEquatableArray<AttributeDataModel> attributes)
+    {
+        Debug.Assert(attributes.Length > 0);
+
+        writer.WriteLine($$"""
+            private static global::PolyType.SourceGenModel.SourceGenAttributeInfo[] {{factoryName}}() => new global::PolyType.SourceGenModel.SourceGenAttributeInfo[]
+            {
+            """);
+
+        writer.Indentation++;
+        foreach (AttributeDataModel attr in attributes)
+        {
+            writer.WriteLine($$"""
+                new()
+                {
+                    Attribute = {{FormatAttributeConstructor(attr)}},
+                    IsInherited = {{FormatBool(attr.IsInherited)}},
+                },
+                """);
+        }
+
+        writer.Indentation--;
+        writer.WriteLine("};");
+
+        static string FormatAttributeConstructor(AttributeDataModel attr)
+        {
+            StringBuilder sb = new();
+            sb.Append($"new {attr.AttributeType.FullyQualifiedName}(");
+            
+            // Add constructor arguments
+            foreach (string arg in attr.ConstructorArguments)
+            {
+                sb.Append(arg);
+                sb.Append(", ");
+            }
+            
+            if (attr.ConstructorArguments.Length > 0)
+            {
+                sb.Length -= 2; // Remove the last ", "
+            }
+
+            sb.Append(')');
+            
+            // Add named arguments (property/field initializers)
+            if (attr.NamedArguments.Length > 0)
+            {
+                sb.Append(" {");
+                foreach (var (Name, Value) in attr.NamedArguments)
+                {
+                    sb.Append($" {Name} = {Value},");
+                }
+
+                sb.Length -= 1; // Remove the last ","
+                sb.Append(" }");
+            }
+
+            return sb.ToString();
+        }
+    }
+
     private void FormatAssociatedTypesFactory(SourceWriter writer, TypeShapeModel objectShapeModel, string factoryName)
     {
         Debug.Assert(objectShapeModel.AssociatedTypes.Count > 0);

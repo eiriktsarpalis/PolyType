@@ -113,13 +113,13 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
             Dictionary<(Type, string), bool> readableMembers = new(ReflectionTypeShapeProvider.CtorParameterEqualityComparer);
             foreach (var member in allMembers)
             {
-                if (member.MemberInfo is PropertyInfo { CanRead: true } or FieldInfo)
+                if (member.BaseMemberInfo is PropertyInfo { CanRead: true } or FieldInfo)
                 {
-                    var key = (member.MemberInfo.GetMemberType(), member.MemberInfo.Name);
+                    var key = (member.BaseMemberInfo.GetMemberType(), member.BaseMemberInfo.Name);
                     // For each member, check if it's read-only.
                     // If we've already seen this member (by type and name), keep it marked as read-only
                     // only if ALL occurrences are read-only (e.g., handling shadowing/overrides).
-                    bool isCurrentMemberReadOnly = member.MemberInfo switch
+                    bool isCurrentMemberReadOnly = member.BaseMemberInfo switch
                     {
                         PropertyInfo prop => !prop.CanWrite,
                         var field => ((FieldInfo)field).IsInitOnly,
@@ -179,20 +179,20 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
             Type parameterType = parameter.GetEffectiveParameterType();
             bool isNonNullable = parameter.IsNonNullableAnnotation(nullabilityCtx);
             PropertyShapeInfo? matchingMember = allMembers.FirstOrDefault(member =>
-                member.MemberInfo.GetMemberType() == parameterType &&
-                CommonHelpers.CamelCaseInvariantComparer.Instance.Equals(parameter.Name, member.MemberInfo.Name));
+                member.BaseMemberInfo.GetMemberType() == parameterType &&
+                CommonHelpers.CamelCaseInvariantComparer.Instance.Equals(parameter.Name, member.BaseMemberInfo.Name));
 
             ParameterShapeAttribute? parameterShapeAttribute = parameter.GetCustomAttribute<ParameterShapeAttribute>();
             string? logicalName = parameterShapeAttribute?.Name;
             if (logicalName is null && matchingMember is not null)
             {
                 // If no custom name is specified, adopt the name from the matching property.
-                logicalName = matchingMember.LogicalName ?? matchingMember.MemberInfo.Name;
+                logicalName = matchingMember.LogicalName ?? matchingMember.BaseMemberInfo.Name;
             }
 
             bool? isRequired = parameterShapeAttribute?.IsRequiredSpecified is true ? parameterShapeAttribute.IsRequired : null;
 
-            parameterShapeInfos[i++] = new(parameter, isNonNullable, matchingMember?.MemberInfo, logicalName, isRequired);
+            parameterShapeInfos[i++] = new(parameter, isNonNullable, matchingMember?.BaseMemberInfo, logicalName, isRequired);
         }
 
         bool setsRequiredMembers = constructorInfo.SetsRequiredMembers();
@@ -225,8 +225,8 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
         static MemberInitializerShapeInfo[] GetSettableMembers(PropertyShapeInfo[] allMembers, bool ctorSetsRequiredMembers)
         {
             return allMembers
-                .Where(m => m.MemberInfo is PropertyInfo { CanWrite: true } or FieldInfo { IsInitOnly: false })
-                .Select(m => new MemberInitializerShapeInfo(m.MemberInfo, m.LogicalName, ctorSetsRequiredMembers, m.IsSetterNonNullable, m.IsRequiredByAttribute))
+                .Where(m => m.BaseMemberInfo is PropertyInfo { CanWrite: true } or FieldInfo { IsInitOnly: false })
+                .Select(m => new MemberInitializerShapeInfo(m.BaseMemberInfo, m.LogicalName, ctorSetsRequiredMembers, m.IsSetterNonNullable, m.IsRequiredByAttribute))
                 .OrderByDescending(m => m.IsRequired || m.IsInitOnly) // Shift required or init members first
                 .ToArray();
         }
@@ -293,7 +293,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
             int i = 0;
             foreach (var field in ReflectionHelpers.EnumerateTupleMemberPaths(typeof(T)))
             {
-                PropertyShapeInfo propertyShapeInfo = new(typeof(T), field.Member, field.Member, field.ParentMembers, field.LogicalName);
+                PropertyShapeInfo propertyShapeInfo = new(typeof(T), field.Member, DerivedMemberInfo: field.Member, field.ParentMembers, field.LogicalName);
                 yield return Provider.CreateProperty(this, propertyShapeInfo, position: i++);
             }
 
@@ -340,7 +340,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
             // Use the most derived member for attribute resolution but
             // use the base definition to determine the member signatures
             // (overrides might declare partial signatures, e.g. only overriding the getter or setter).
-            MemberInfo attributeProvider = memberInfo;
+            MemberInfo derivedMemberInfo = memberInfo;
             memberInfo = memberInfo is PropertyInfo p ? p.GetBaseDefinition() : memberInfo;
 
             string? logicalName = null;
@@ -348,7 +348,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
             int order = 0;
             bool? isRequiredByAttribute = null;
 
-            if (attributeProvider.GetCustomAttribute<PropertyShapeAttribute>(inherit: true) is { } propertyShapeAttr)
+            if (derivedMemberInfo.GetCustomAttribute<PropertyShapeAttribute>(inherit: true) is { } propertyShapeAttr)
             {
                 // If the attribute is present, use the value of the Ignore property to determine its inclusion.
                 if (propertyShapeAttr.Ignore)
@@ -369,9 +369,9 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                     isRequiredByAttribute = propertyShapeAttr.IsRequired;
                 }
             }
-            else if (memberInfo.DeclaringType!.IsDefined<DataContractAttribute>())
+            else if (memberInfo.DeclaringType!.IsDefined(typeof(DataContractAttribute), inherit: false))
             {
-                if (attributeProvider.GetCustomAttribute<DataMemberAttribute>() is not { } dataMemberAttr)
+                if (derivedMemberInfo.GetCustomAttribute<DataMemberAttribute>() is not { } dataMemberAttr)
                 {
                     // Always skip members not explicitly annotated with DataMemberAttribute.
                     return;
@@ -390,7 +390,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                     isRequiredByAttribute = true;
                 }
             }
-            else if (attributeProvider.GetCustomAttribute<IgnoreDataMemberAttribute>() is not null)
+            else if (derivedMemberInfo.GetCustomAttribute<IgnoreDataMemberAttribute>() is not null)
             {
                 // If not a data contract and no property shape attribute is present,
                 // ignore members annotated with IgnoreDataMemberAttribute.
@@ -418,7 +418,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
             results.Add(new(
                 typeof(T),
                 memberInfo,
-                attributeProvider,
+                derivedMemberInfo,
                 LogicalName: logicalName,
                 Order: order,
                 IncludeNonPublicAccessors: includeNonPublic,

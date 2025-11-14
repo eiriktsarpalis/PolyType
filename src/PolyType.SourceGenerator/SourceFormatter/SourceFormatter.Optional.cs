@@ -10,6 +10,7 @@ internal sealed partial class SourceFormatter
         string? methodFactoryMethodName = CreateMethodsFactoryName(optionalShapeModel);
         string? eventFactoryMethodName = CreateEventsFactoryName(optionalShapeModel);
         string? associatedTypesFactoryMethodName = GetAssociatedTypesFactoryName(optionalShapeModel);
+        string? attributesFactoryName = GetAttributesFactoryName(optionalShapeModel);
 
         // Disable CS8622 to avoid a dependency on MaybeNullWhenAttribute in netfx
         writer.WriteLine("#pragma warning disable CS8622 // Nullability warning for out parameter mismatch", disableIndentation: true);
@@ -25,6 +26,7 @@ internal sealed partial class SourceFormatter
                     CreateMethodsFunc = {{FormatNull(methodFactoryMethodName)}},
                     CreateEventsFunc = {{FormatNull(eventFactoryMethodName)}},
                     GetAssociatedTypeShapeFunc = {{FormatNull(associatedTypesFactoryMethodName)}},
+                    AttributeFactory = {{FormatNull(attributesFactoryName)}},
                     Provider = this,
                 };
             }
@@ -47,6 +49,12 @@ internal sealed partial class SourceFormatter
         {
             writer.WriteLine();
             FormatAssociatedTypesFactory(writer, optionalShapeModel, associatedTypesFactoryMethodName);
+        }
+
+        if (attributesFactoryName is not null)
+        {
+            writer.WriteLine();
+            FormatAttributesFactory(writer, attributesFactoryName, optionalShapeModel.Attributes);
         }
 
         string FormatNoneCtor() =>

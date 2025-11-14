@@ -44,7 +44,12 @@ public sealed class SourceGenMethodShape<TDeclaringType, TArgumentState, TResult
     /// <summary>
     /// Gets a constructor delegate for the custom attribute provider of the method.
     /// </summary>
-    public Func<ICustomAttributeProvider?>? AttributeProviderFunc { get; init; }
+    public Func<SourceGenAttributeInfo[]>? AttributeFactory { get; init; }
+
+    /// <summary>
+    /// Gets the method base resolver factory.
+    /// </summary>
+    public Func<MethodBase?>? MethodBaseFunc { get; init; }
 
     /// <summary>
     /// Gets a delegate for creating argument state constructor.
@@ -62,11 +67,21 @@ public sealed class SourceGenMethodShape<TDeclaringType, TArgumentState, TResult
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private IReadOnlyList<IParameterShape>? _parameters;
 
+    /// <inheritdoc />
+    public MethodBase? MethodBase => _methodBase ??= MethodBaseFunc?.Invoke();
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private MethodBase? _methodBase;
+
+    /// <inheritdoc />
+    public IGenericCustomAttributeProvider AttributeProvider => _attributeProvider ??= SourceGenCustomAttributeProvider.Create(AttributeFactory);
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private IGenericCustomAttributeProvider? _attributeProvider;
+
     ITypeShape IMethodShape.DeclaringType => DeclaringType;
 
     ITypeShape IMethodShape.ReturnType => ReturnType;
-
-    ICustomAttributeProvider? IMethodShape.AttributeProvider => AttributeProviderFunc?.Invoke();
 
     object? IMethodShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitMethod(this, state);
 

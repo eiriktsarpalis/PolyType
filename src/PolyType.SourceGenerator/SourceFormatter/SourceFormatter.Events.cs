@@ -27,6 +27,7 @@ internal sealed partial class SourceFormatter
         foreach (EventShapeModel eventModel in declaringType.Events)
         {
             string nullableSuffix = declaringType.Type.IsValueType ? "" : "?";
+            string? attributeFactory = GetEventAttributeFactoryName(eventModel);
             writer.WriteLine($$"""
                 new global::PolyType.SourceGenModel.SourceGenEventShape<{{declaringType.Type.FullyQualifiedName}},{{eventModel.HandlerType.FullyQualifiedName}}>
                 {
@@ -37,13 +38,22 @@ internal sealed partial class SourceFormatter
                     IsPublic = {{FormatBool(eventModel.IsPublic)}},
                     AddHandler = static (ref {{declaringType.Type.FullyQualifiedName}}{{nullableSuffix}} obj, {{eventModel.HandlerType.FullyQualifiedName}} handler) => {{FormatHandlerExpr("obj", "handler", declaringType, eventModel, isAdd: true)}},
                     RemoveHandler = static (ref {{declaringType.Type.FullyQualifiedName}}{{nullableSuffix}} obj, {{eventModel.HandlerType.FullyQualifiedName}} handler) => {{FormatHandlerExpr("obj", "handler", declaringType, eventModel, isAdd: false)}},
-                    AttributeProviderFunc = static () => typeof({{eventModel.DeclaringType.FullyQualifiedName}}).GetEvent({{FormatStringLiteral(eventModel.UnderlyingMemberName)}}, {{AllBindingFlagsConstMember}}),
+                    AttributeFactory = {{FormatNull(attributeFactory)}},
+                    EventInfoFunc = static () => typeof({{eventModel.DeclaringType.FullyQualifiedName}}).GetEvent({{FormatStringLiteral(eventModel.UnderlyingMemberName)}}, {{AllBindingFlagsConstMember}}),
                 },
                 """, trimDefaultAssignmentLines: true);
         }
 
         writer.Indentation--;
         writer.WriteLine("};");
+
+        foreach (EventShapeModel eventModel in declaringType.Events)
+        {
+            if (GetEventAttributeFactoryName(eventModel) is string attributeFactoryName)
+            {
+                FormatAttributesFactory(writer, attributeFactoryName, eventModel.Attributes);
+            }
+        }
 
         foreach (EventShapeModel eventModel in declaringType.Events)
         {
@@ -75,6 +85,11 @@ internal sealed partial class SourceFormatter
                 return eventModel.RequiresDisambiguation ? $"(({eventModel.DeclaringType.FullyQualifiedName}?){objExpr})" : $"{objExpr}";
             }
         }
+
+        string? GetEventAttributeFactoryName(EventShapeModel eventDataModel) =>
+            eventDataModel.Attributes.Length > 0
+            ? $"__CreateEventAttributes_{declaringType.SourceIdentifier}_{eventDataModel.UnderlyingMemberName}"
+            : null;
     }
 
     private static string GetEventAccessorName(TypeShapeModel declaringType, EventShapeModel eventShapeModel, bool isAdd)

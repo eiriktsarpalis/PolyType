@@ -1,4 +1,5 @@
 ﻿using PolyType.Abstractions;
+using PolyType.Utilities;
 using System.Diagnostics;
 using System.Reflection;
 
@@ -40,7 +41,12 @@ internal sealed class ReflectionParameterShape<TArgumentState, TParameter> : IPa
     public bool IsPublic => _parameterInfo.IsPublic;
     public TParameter? DefaultValue => (TParameter?)_parameterInfo.DefaultValue;
     object? IParameterShape.DefaultValue => _parameterInfo.DefaultValue;
-    public ICustomAttributeProvider? AttributeProvider => _parameterInfo.AttributeProvider;
+    public ParameterInfo? ParameterInfo => _parameterInfo.AttributeProvider as ParameterInfo;
+    public MemberInfo? MemberInfo => _parameterInfo.AttributeProvider as MemberInfo;
+
+    public IGenericCustomAttributeProvider AttributeProvider => _attributeProvider ?? CommonHelpers.ExchangeIfNull(ref _attributeProvider, ReflectionCustomAttributeProvider.Create(_parameterInfo.AttributeProvider));
+    private IGenericCustomAttributeProvider? _attributeProvider;
+
     ITypeShape IParameterShape.ParameterType => ParameterType;
     object? IParameterShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitParameter(this, state);
 

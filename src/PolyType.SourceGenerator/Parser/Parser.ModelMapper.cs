@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using PolyType.Roslyn;
 using PolyType.Roslyn.Helpers;
 using PolyType.SourceGenerator.Helpers;
@@ -33,6 +34,7 @@ public sealed partial class Parser
                 Methods = [],
                 Events = [],
                 Members = enumModel.Members.ToImmutableEquatableDictionary(m => m.Key, m => EnumValueToString(m.Value)),
+                Attributes = CollectAttributes(model.Type),
                 IsFlags = enumModel.IsFlags,
             },
 
@@ -52,6 +54,7 @@ public sealed partial class Parser
                 Events = MapEvents(model, typeId),
                 ElementType = CreateTypeId(optionalModel.ElementType),
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
             },
 
             SurrogateTypeDataModel surrogateModel => new SurrogateShapeModel
@@ -64,6 +67,7 @@ public sealed partial class Parser
                 Methods = MapMethods(model, typeId),
                 Events = MapEvents(model, typeId),
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
             },
 
             EnumerableDataModel enumerableModel => new EnumerableShapeModel
@@ -103,6 +107,7 @@ public sealed partial class Parser
                 InsertionMode = enumerableModel.InsertionMode,
                 AppendMethodReturnsBoolean = enumerableModel.AppendMethod?.ReturnType.SpecialType is SpecialType.System_Boolean,
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
             },
 
             DictionaryDataModel dictionaryModel => new DictionaryShapeModel
@@ -139,6 +144,7 @@ public sealed partial class Parser
                     dictionaryModel.ValueType.ContainsNullabilityAnnotations(),
                 AvailableInsertionModes = dictionaryModel.AvailableInsertionModes,
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
             },
 
             ObjectDataModel objectModel => new ObjectShapeModel
@@ -162,6 +168,7 @@ public sealed partial class Parser
                 IsTupleType = false,
                 IsRecordType = model.Type.IsRecord,
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
             },
 
             TupleDataModel tupleModel => new ObjectShapeModel
@@ -181,6 +188,7 @@ public sealed partial class Parser
                 IsTupleType = true,
                 IsRecordType = false,
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
             },
 
             FSharpUnionDataModel unionModel => new FSharpUnionShapeModel
@@ -211,6 +219,7 @@ public sealed partial class Parser
                     IsTupleType = false,
                     IsRecordType = false,
                     AssociatedTypes = associatedTypes,
+                    Attributes = [],
                 },
                 UnionCases = unionModel.UnionCases
                     .Select(unionCase => new FSharpUnionCaseShapeModel(
@@ -219,6 +228,7 @@ public sealed partial class Parser
                         TypeModel: MapModelCore(unionCase.Type, CreateTypeId(unionCase.Type.Type), $"{sourceIdentifier}__Case_{unionCase.Name}", isFSharpUnionCase: true)))
                     .ToImmutableEquatableArray(),
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
             },
 
             DelegateDataModel delegateModel => new FunctionShapeModel
@@ -233,6 +243,7 @@ public sealed partial class Parser
                 UnderlyingReturnType = CreateTypeId(delegateModel.InvokeMethod.ReturnType),
                 ReturnsByRef = delegateModel.InvokeMethod.ReturnsByRef || delegateModel.InvokeMethod.ReturnsByRefReadonly,
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
                 IsFsharpFunc = false,
                 Parameters = delegateModel.Parameters
                     .Select(p => MapParameter(declaringObjectForConstructor: null, typeId, p, false))
@@ -258,6 +269,7 @@ public sealed partial class Parser
                 UnderlyingReturnType = CreateTypeId(fsharpFunc.ReturnType),
                 ReturnsByRef = false,
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
                 IsFsharpFunc = true,
                 Parameters = MapFSharpFunctionParameters(fsharpFunc, typeId, out int effectiveParameterCount),
                 ArgumentStateType = effectiveParameterCount switch
@@ -282,6 +294,7 @@ public sealed partial class Parser
                 IsTupleType = false,
                 IsRecordType = false,
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
             },
 
             _ => new ObjectShapeModel
@@ -298,6 +311,7 @@ public sealed partial class Parser
                 IsTupleType = false,
                 IsRecordType = false,
                 AssociatedTypes = associatedTypes,
+                Attributes = CollectAttributes(model.Type),
             }
         };
     }
@@ -379,6 +393,7 @@ public sealed partial class Parser
                 SourceIdentifier = underlyingIncrementalModel.SourceIdentifier + "__Underlying",
             },
 
+            Attributes = CollectAttributes(model.Type),
             Methods = MapMethods(model, underlyingIncrementalModel.Type),
             Events = MapEvents(model, underlyingIncrementalModel.Type),
             UnionCases = model.DerivedTypes
@@ -432,6 +447,7 @@ public sealed partial class Parser
             RequiresDisambiguation = property.IsAmbiguous,
             IsField = property.IsField,
             Order = property.Order,
+            Attributes = CollectAttributes(property.PropertySymbol),
         };
     }
 
@@ -479,6 +495,7 @@ public sealed partial class Parser
                 IsField = propertyModel.IsField,
                 HasDefaultValue = false,
                 DefaultValueExpr = null,
+                Attributes = CollectAttributes(propertyModel.PropertySymbol),
             };
 
             if (memberInitializer.Kind is ParameterKind.RequiredMember)
@@ -526,6 +543,7 @@ public sealed partial class Parser
             },
             IsAccessible = isAccessibleConstructor,
             IsFSharpUnitConstructor = false,
+            Attributes = CollectAttributes(constructor.Constructor),
         };
     }
 
@@ -567,6 +585,8 @@ public sealed partial class Parser
                     var target when target >= TargetFramework.Net80 => !m.Method.ContainingType.IsGenericType && !m.Method.IsStatic,
                     _ => false
                 },
+
+                Attributes = CollectAttributes(m.Method),
             })
             .ToImmutableEquatableArray();
     }
@@ -592,6 +612,7 @@ public sealed partial class Parser
                     var target when target >= TargetFramework.Net80 => !e.Event.ContainingType.IsGenericType && !e.Event.IsStatic,
                     _ => false
                 },
+                Attributes = CollectAttributes(e.Event),
             })
             .ToImmutableEquatableArray();
     }
@@ -654,6 +675,7 @@ public sealed partial class Parser
             IsField = false,
             HasDefaultValue = parameter.HasDefaultValue,
             DefaultValueExpr = parameter.DefaultValueExpr,
+            Attributes = CollectAttributes(parameter.Parameter),
         };
     }
 
@@ -690,6 +712,7 @@ public sealed partial class Parser
                     IsField = false,
                     HasDefaultValue = false,
                     DefaultValueExpr = null,
+                    Attributes = [], // F# func parameters don't have attributes
                 })
             .ToImmutableEquatableArray();
     }
@@ -723,6 +746,7 @@ public sealed partial class Parser
             CanUseUnsafeAccessors = false,
             IsPublic = true,
             IsFSharpUnitConstructor = false,
+            Attributes = [],
         };
 
         ParameterShapeModel MapTupleConstructorParameter(TypeId typeId, PropertyDataModel tupleElement, int position)
@@ -748,6 +772,7 @@ public sealed partial class Parser
                 NullableAnnotation = NullableAnnotation.NotAnnotated,
                 ParameterTypeContainsNullabilityAnnotations = tupleElement.PropertyType.ContainsNullabilityAnnotations(),
                 DefaultValueExpr = null,
+                Attributes = [],
             };
         }
     }
@@ -768,12 +793,14 @@ public sealed partial class Parser
             CanUseUnsafeAccessors = false,
             IsPublic = true,
             IsFSharpUnitConstructor = true,
+            Attributes = [],
         };
     }
 
     private record struct CustomAttributeAssociatedTypeProvider(ImmutableDictionary<string, TypeShapeRequirements> NamesAndRequirements);
 
     private readonly Dictionary<INamedTypeSymbol, CustomAttributeAssociatedTypeProvider> _customAttributes = new(SymbolEqualityComparer.Default);
+    private readonly Dictionary<INamedTypeSymbol, (bool ShouldSkip, bool AllowMultiple, bool IsInherited)> _attributeMetadataCache = new(SymbolEqualityComparer.Default);
 
     protected override void ParseCustomAssociatedTypeAttributes(
         ISymbol symbol,
@@ -1061,5 +1088,156 @@ public sealed partial class Parser
         }
 
         return false;
+    }
+
+    private ImmutableEquatableArray<AttributeDataModel> CollectAttributes(ISymbol symbol)
+    {
+        List<AttributeDataModel> attributes = [];
+        HashSet<INamedTypeSymbol>? uniqueAttrs = null;
+        string[] tokenBuffer = new string[8];
+        
+        foreach ((AttributeData attr, bool isInherited) in symbol.GetAllAttributes())
+        {
+            // Skip if attribute class is null or not accessible
+            if (attr.AttributeClass is null || !IsAccessibleSymbol(attr.AttributeClass))
+            {
+                continue;
+            }
+
+            var attrMetadata = GetAttributeMetadata(attr.AttributeClass);
+            if (attrMetadata.ShouldSkip)
+            {
+                continue; // filter skipped attributes
+            }
+
+            if (isInherited && !attrMetadata.IsInherited)
+            {
+                continue; // filter inherited attributes whose usage is not marked as inherited
+            }
+
+            if (!attrMetadata.AllowMultiple && !(uniqueAttrs ??= new(SymbolEqualityComparer.Default)).Add(attr.AttributeClass))
+            {
+                continue; // filter duplicate attributes when multiple usage is not allowed
+            }
+            
+            // Format constructor arguments
+            var ctorArgs = attr.ConstructorArguments
+                .Select(arg => Helpers.RoslynHelpers.FormatAttributeConstant(_knownSymbols.Compilation, GenerationScope, arg))
+                .ToImmutableEquatableArray();
+            
+            // Format named arguments
+            var namedArgs = attr.NamedArguments
+                .Select(kvp => (kvp.Key, Helpers.RoslynHelpers.FormatAttributeConstant(_knownSymbols.Compilation, GenerationScope, kvp.Value)))
+                .ToImmutableEquatableArray();
+            
+            attributes.Add(new AttributeDataModel
+            {
+                AttributeType = CreateTypeId(attr.AttributeClass),
+                ConstructorArguments = ctorArgs,
+                NamedArguments = namedArgs,
+                IsInherited = isInherited,
+            });
+        }
+        
+        return attributes.ToImmutableEquatableArray();
+
+        (bool ShouldSkip, bool AllowMultiple, bool IsInherited) GetAttributeMetadata(INamedTypeSymbol attributeClass)
+        {
+            if (_attributeMetadataCache.TryGetValue(attributeClass, out var result))
+            {
+                return result;
+            }
+
+            GetAttributeUsage(attributeClass, out bool allowMultiple, out bool isInherited);
+            result = (ShouldSkip: ShouldSkipAttribute(attributeClass), AllowMultiple: allowMultiple, IsInherited: isInherited);
+            _attributeMetadataCache[attributeClass] = result;
+            return result;
+
+            void GetAttributeUsage(INamedTypeSymbol attributeClass, out bool allowMultiple, out bool isInherited)
+            {
+                // Set default settings
+                allowMultiple = false;
+                isInherited = true;
+
+                var allAttributes = attributeClass.GetAllAttributes();
+                for (int i = allAttributes.Count - 1; i >= 0; i--)
+                {
+                    // Use reverse traversal so that most derived attribute types are processed last
+                    var (attr, _) = allAttributes[i];
+                    if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, _knownSymbols.AttributeUsageAttribute))
+                    {
+                        foreach (KeyValuePair<string, TypedConstant> namedArg in attr.NamedArguments)
+                        {
+                            switch (namedArg.Key)
+                            {
+                                case nameof(AttributeUsageAttribute.AllowMultiple):
+                                    allowMultiple = (bool)namedArg.Value.Value!;
+                                    break;
+                                case nameof(AttributeUsageAttribute.Inherited):
+                                    isInherited = (bool)namedArg.Value.Value!;
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            bool ShouldSkipAttribute(INamedTypeSymbol attributeClass)
+            {
+                if (_knownSymbols.ConditionalAttribute is not null)
+                {
+                    foreach (AttributeData attr in attributeClass.GetAttributes())
+                    {
+                        if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, _knownSymbols.ConditionalAttribute) &&
+                            attr.ConstructorArguments is [{ Value: string condition }])
+                        {
+                            bool isConditionDefined = _knownSymbols.Compilation.SyntaxTrees.Any(tree => tree.Options is CSharpParseOptions { PreprocessorSymbolNames: var names } && names.Contains(condition));
+                            return !isConditionDefined;
+                        }
+                    }
+                }
+
+                return GetQualifiedNameTokens() switch
+                {
+                    // Skip framework and compiler specific attributes
+                    ["System", "CLSCompliantAttribute"] => true,
+                    ["System", "Runtime", "CompilerServices", ..] => true,
+                    ["System", "Runtime", "InteropServices", ..] => true,
+                    ["System", "Diagnostics", ..] => true,
+                    ["System", "Reflection", "DefaultMemberAttribute"] => true,
+                    ["Microsoft", "FSharp", "Core", ..] => true,
+                    _ => false,
+                };
+            }
+
+            ReadOnlySpan<string> GetQualifiedNameTokens()
+            {
+                if (attributeClass.ContainingType is not null)
+                {
+                    // Ignore nested types since we're not filtering any here.
+                    return [];
+                }
+
+                int index = 0;
+                tokenBuffer[index++] = attributeClass.Name;
+
+                for (INamespaceSymbol? nsToken = attributeClass.ContainingNamespace;
+                    nsToken is { IsGlobalNamespace: false };
+                    nsToken = nsToken.ContainingNamespace)
+                {
+                    if (index >= tokenBuffer.Length)
+                    {
+                        // We're definitely not filtering a namespace this deep.
+                        return [];
+                    }
+
+                    tokenBuffer[index++] = nsToken.Name;
+                }
+
+                Span<string> tokens = tokenBuffer.AsSpan(0, index);
+                tokens.Reverse();
+                return tokens;
+            }
+        }
     }
 }

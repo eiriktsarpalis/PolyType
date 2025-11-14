@@ -100,7 +100,7 @@ internal sealed class FSharpUnionCaseTypeShape<TUnionCase>(FSharpUnionCaseInfo? 
         foreach (PropertyInfo property in unionCaseInfo.Properties)
         {
             property.ResolveNullableAnnotation(nullabilityCtx, out bool isGetterNonNullable, out _);
-            PropertyShapeInfo propertyShapeInfo = new(typeof(TUnionCase), property, AttributeProvider: property, IsGetterNonNullable: isGetterNonNullable);
+            PropertyShapeInfo propertyShapeInfo = new(typeof(TUnionCase), property, DerivedMemberInfo: property, IsGetterNonNullable: isGetterNonNullable);
             yield return Provider.CreateProperty(this, propertyShapeInfo, position: i++);
         }
     }

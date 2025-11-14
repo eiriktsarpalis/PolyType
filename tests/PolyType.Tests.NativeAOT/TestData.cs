@@ -1,4 +1,5 @@
 using PolyType;
+using PolyType.Examples.Validation;
 
 namespace PolyType.Tests.NativeAOT;
 
@@ -49,4 +50,76 @@ public static class TestDataFactory
             DateValue: new DateTime(2024, 1, 15, 14, 30, 45)
         );
     }
+
+    public static ValidationBindingModel CreateValidBindingModel()
+    {
+        return new ValidationBindingModel
+        {
+            Id = "12345",
+            Components = ["Item1", "Item2", "Item3"],
+            Sample = 0.5,
+            PhoneNumber = "+1234567890"
+        };
+    }
+
+    public static ValidationBindingModel CreateInvalidBindingModel()
+    {
+        return new ValidationBindingModel
+        {
+            Id = null, // Required violation
+            Components = ["Item1"], // Length violation (min 2, max 5)
+            Sample = 1.5, // Range violation (max 1.0)
+            PhoneNumber = "invalid" // Regex violation
+        };
+    }
+
+    public static NestedValidationModel CreateValidNestedModel()
+    {
+        return new NestedValidationModel
+        {
+            Name = "ValidModel",
+            Binding = CreateValidBindingModel()
+        };
+    }
+
+    public static NestedValidationModel CreateInvalidNestedModel()
+    {
+        return new NestedValidationModel
+        {
+            Name = "InvalidModel",
+            Binding = CreateInvalidBindingModel()
+        };
+    }
+}
+
+/// <summary>
+/// Validation test model matching the ValidationApp.AOT structure.
+/// </summary>
+[GenerateShape]
+public partial class ValidationBindingModel
+{
+    [Required]
+    public string? Id { get; set; }
+
+    [Length(Min = 2, Max = 5)]
+    public List<string>? Components { get; set; }
+
+    [Range<double>(Min = 0, Max = 1)]
+    public double Sample { get; set; }
+
+    [RegularExpression(Pattern = @"^\+?[0-9]{7,14}$")]
+    public string? PhoneNumber { get; set; }
+}
+
+/// <summary>
+/// Nested validation test model for testing nested validation.
+/// </summary>
+[GenerateShape]
+public partial class NestedValidationModel
+{
+    [Required]
+    public string? Name { get; set; }
+
+    [Required]
+    public ValidationBindingModel? Binding { get; set; }
 }

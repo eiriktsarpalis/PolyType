@@ -1,4 +1,6 @@
-﻿namespace PolyType.SourceGenerator.Model;
+﻿using PolyType.Roslyn;
+
+namespace PolyType.SourceGenerator.Model;
 
 public sealed record PropertyShapeModel
 {
@@ -39,4 +41,5 @@ public sealed record PropertyShapeModel
     public required int Order { get; init; }
 
     public required bool RequiresDisambiguation { get; init; }
+    public required ImmutableEquatableArray<AttributeDataModel> Attributes { get; init; }
 }

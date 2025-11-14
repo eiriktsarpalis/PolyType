@@ -23,7 +23,12 @@ public sealed class SourceGenConstructorShape<TDeclaringType, TArgumentState> : 
     /// <summary>
     /// Gets the attribute provider for the constructor.
     /// </summary>
-    public Func<ICustomAttributeProvider?>? AttributeProviderFunc { get; init; }
+    public Func<SourceGenAttributeInfo[]>? AttributeFactory { get; init; }
+
+    /// <summary>
+    /// Gets the method base resolver factory.
+    /// </summary>
+    public Func<MethodBase?>? MethodBaseFunc { get; init; }
 
     /// <summary>
     /// Gets the parameter shapes for the constructor.
@@ -61,8 +66,19 @@ public sealed class SourceGenConstructorShape<TDeclaringType, TArgumentState> : 
         ParameterizedConstructorFunc ?? throw new InvalidOperationException("Constructor shape does not specify a parameterized constructor.");
 
     object? IConstructorShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitConstructor(this, state);
-    ICustomAttributeProvider? IConstructorShape.AttributeProvider => AttributeProviderFunc?.Invoke();
     IObjectTypeShape IConstructorShape.DeclaringType => DeclaringType;
+
+    /// <inheritdoc />
+    public MethodBase? MethodBase => _methodBase ??= MethodBaseFunc?.Invoke();
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private MethodBase? _methodBase;
+
+    /// <inheritdoc />
+    public IGenericCustomAttributeProvider AttributeProvider => _attributeProvider ??= SourceGenCustomAttributeProvider.Create(AttributeFactory);
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private IGenericCustomAttributeProvider? _attributeProvider;
 
     private string DebuggerDisplay => $".ctor({string.Join(", ", Parameters.Select(p => $"{p.ParameterType} {p.Name}"))})";
 }

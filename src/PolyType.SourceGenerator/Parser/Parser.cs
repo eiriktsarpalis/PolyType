@@ -193,6 +193,9 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
     }
 
+    // Provide no location for diagnostics by default.
+    public override Location? DefaultLocation => null;
+
     // We want to flatten System.Tuple types for consistency with
     // the reflection-based provider (which caters to F# model types).
     protected override bool FlattenSystemTupleTypes => true;

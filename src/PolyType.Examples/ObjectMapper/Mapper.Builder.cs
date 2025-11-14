@@ -354,9 +354,9 @@ public static partial class Mapper
         public TypeShapeKind Kind => (TypeShapeKind)101;
         public ITypeShapeProvider Provider => source.Provider;
         public Type Type => typeof(Mapper<TSource, TTarget>);
-        public ICustomAttributeProvider? AttributeProvider => typeof(Mapper<TSource, TTarget>);
         public IReadOnlyList<IMethodShape> Methods => [];
         public IReadOnlyList<IEventShape> Events => [];
+        public IGenericCustomAttributeProvider AttributeProvider => throw new NotImplementedException();
         public object? Accept(TypeShapeVisitor visitor, object? state = null) => ((MapperTypeShapeVisitor)visitor).VisitMapper(source, target, state);
         public object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
         public Func<object>? GetAssociatedTypeFactory(Type relatedType) => throw new NotImplementedException();

@@ -105,4 +105,10 @@ public sealed class PolyTypeKnownSymbols(Compilation compilation) : KnownSymbols
 
     public INamedTypeSymbol? KnownTypeAttribute => GetOrResolveType("System.Runtime.Serialization.KnownTypeAttribute", ref _KnownTypeAttribute);
     private Option<INamedTypeSymbol?> _KnownTypeAttribute;
+
+    public INamedTypeSymbol? ConditionalAttribute => GetOrResolveType("System.Diagnostics.ConditionalAttribute", ref _ConditionalAttribute);
+    private Option<INamedTypeSymbol?> _ConditionalAttribute;
+
+    public INamedTypeSymbol? AttributeUsageAttribute => GetOrResolveType("System.AttributeUsageAttribute", ref _AttributeUsageAttribute);
+    private Option<INamedTypeSymbol?> _AttributeUsageAttribute;
 }

@@ -18,8 +18,12 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
     /// <inheritdoc/>
     public required ITypeShapeProvider Provider { get; init; }
 
+    /// <summary>
+    /// Gets the factory method for creating the custom attribute provider of the type.
+    /// </summary>
+    public Func<SourceGenAttributeInfo[]>? AttributeFactory { get; init; }
+
     Type ITypeShape.Type => typeof(T);
-    ICustomAttributeProvider? ITypeShape.AttributeProvider => typeof(T);
 
     /// <summary>
     /// Gets the factory method for creating method shapes.
@@ -53,6 +57,12 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private IReadOnlyList<IEventShape>? _events;
+
+    /// <inheritdoc />
+    public IGenericCustomAttributeProvider AttributeProvider => _attributeProvider ??= SourceGenCustomAttributeProvider.Create(AttributeFactory);
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private IGenericCustomAttributeProvider? _attributeProvider;
 
     ITypeShape? ITypeShape.GetAssociatedTypeShape(Type associatedType)
     {

@@ -7,7 +7,7 @@ internal interface IMethodShapeInfo
 {
     Type ReturnType { get; }
     bool IsPublic { get; }
-    ICustomAttributeProvider? AttributeProvider { get; }
+    MethodBase? Method { get; }
     IParameterShapeInfo[] Parameters { get; }
 }
 
@@ -66,7 +66,7 @@ internal sealed class TupleConstructorShapeInfo(
     public TupleConstructorShapeInfo? NestedTupleConstructor { get; } = nestedTupleCtor;
     public bool IsValueTuple => ReturnType.IsValueType;
 
-    public ICustomAttributeProvider? AttributeProvider => ConstructorInfo;
+    public MethodBase? Method => ConstructorInfo;
     public IParameterShapeInfo[] Parameters => _allParameters ??= GetAllParameters().ToArray();
     public bool IsPublic => true;
 

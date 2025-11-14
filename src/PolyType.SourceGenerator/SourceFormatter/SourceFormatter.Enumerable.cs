@@ -10,6 +10,7 @@ internal sealed partial class SourceFormatter
         string? methodFactoryMethodName = CreateMethodsFactoryName(enumerableShapeModel);
         string? eventFactoryMethodName = CreateEventsFactoryName(enumerableShapeModel);
         string? associatedTypesFactoryMethodName = GetAssociatedTypesFactoryName(enumerableShapeModel);
+        string? attributeFactoryMethodName = GetAttributesFactoryName(enumerableShapeModel);
 
         writer.WriteLine($$"""
             private global::PolyType.ITypeShape<{{enumerableShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
@@ -29,6 +30,7 @@ internal sealed partial class SourceFormatter
                     IsSetType = {{FormatBool(enumerableShapeModel.IsSetType)}},
                     Rank = {{enumerableShapeModel.Rank}},
                     GetAssociatedTypeShapeFunc = {{FormatNull(associatedTypesFactoryMethodName)}},
+                    AttributeFactory = {{FormatNull(attributeFactoryMethodName)}},
                     Provider = this,
                };
             }
@@ -50,6 +52,12 @@ internal sealed partial class SourceFormatter
         {
             writer.WriteLine();
             FormatAssociatedTypesFactory(writer, enumerableShapeModel, associatedTypesFactoryMethodName);
+        }
+
+        if (attributeFactoryMethodName is not null)
+        {
+            writer.WriteLine();
+            FormatAttributesFactory(writer, attributeFactoryMethodName, enumerableShapeModel.Attributes);
         }
 
         static string FormatGetEnumerableFunc(EnumerableShapeModel enumerableType)
