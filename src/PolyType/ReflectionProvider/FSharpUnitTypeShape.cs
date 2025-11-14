@@ -1,5 +1,6 @@
 ﻿using PolyType.Abstractions;
 using PolyType.SourceGenModel;
+using PolyType.SourceGenModel.Helpers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -29,7 +30,8 @@ internal sealed class FSharpUnitTypeShape<TUnit>(ReflectionTypeShapeProvider pro
     {
         public IObjectTypeShape<TUnit> DeclaringType => declaringType;
         public bool IsPublic => true;
-        public ICustomAttributeProvider? AttributeProvider => null;
+        public MethodBase? MethodBase => null;
+        public IGenericCustomAttributeProvider AttributeProvider => EmptyCustomAttributeProvider.Instance;
         public IReadOnlyList<IParameterShape> Parameters => [];
         IObjectTypeShape IConstructorShape.DeclaringType => DeclaringType;
         public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitConstructor(this, state);

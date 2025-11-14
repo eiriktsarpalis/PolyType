@@ -19,6 +19,9 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
     public ReflectionTypeShapeOptions Options => options;
     public Type Type => typeof(T);
 
+    public IGenericCustomAttributeProvider AttributeProvider => _attributeProvider ?? CommonHelpers.ExchangeIfNull(ref _attributeProvider, new(typeof(T)));
+    private ReflectionCustomAttributeProvider? _attributeProvider;
+
     public IReadOnlyList<IMethodShape> Methods => _methods ?? CommonHelpers.ExchangeIfNull(ref _methods, GetMethods().AsReadOnlyList());
     private IReadOnlyList<IMethodShape>? _methods;
 
@@ -26,7 +29,6 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
     private IReadOnlyList<IEventShape>? _events;
 
     ITypeShapeProvider ITypeShape.Provider => provider;
-    ICustomAttributeProvider? ITypeShape.AttributeProvider => typeof(T);
     object? ITypeShape.Invoke(ITypeShapeFunc func, object? state) => func.Invoke(this, state);
 
     public ITypeShape? GetAssociatedTypeShape(Type associatedType)

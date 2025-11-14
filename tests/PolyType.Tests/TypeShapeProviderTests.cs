@@ -19,7 +19,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         ITypeShape<T> shape = providerUnderTest.ResolveShape(testCase);
 
         Assert.Equal(typeof(T), shape.Type);
-        Assert.Equal(typeof(T), shape.AttributeProvider);
+        Assert.NotNull(shape.AttributeProvider);
         Assert.Equal(typeof(T).IsRecordType() && testCase is { UsesMarshaler: false, IsUnion: false }, shape is IObjectTypeShape { IsRecordType: true });
         Assert.Equal(typeof(T).IsTupleType() && testCase is { UsesMarshaler: false, IsUnion: false }, shape is IObjectTypeShape { IsTupleType: true });
 
@@ -346,7 +346,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         if (shape.Kind is TypeShapeKind.Union)
         {
             IUnionTypeShape<T> unionShape = Assert.IsAssignableFrom<IUnionTypeShape<T>>(shape);
-            DerivedTypeShapeAttribute[] attributes = unionShape.AttributeProvider?.GetCustomAttributes(typeof(DerivedTypeShapeAttribute), false)?.Cast<DerivedTypeShapeAttribute>().ToArray() ?? [];
+            DerivedTypeShapeAttribute[] attributes = unionShape.Type.GetCustomAttributes<DerivedTypeShapeAttribute>(inherit: false).ToArray() ?? [];
             Assert.NotSame(shape, unionShape.BaseType);
             Assert.NotEmpty(unionShape.UnionCases);
             int i = 0;
@@ -666,7 +666,8 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                 Assert.Equal(ParameterKind.MethodParameter, paramShape.Kind);
                 Assert.True(paramShape.IsPublic);
 
-                ParameterInfo paramInfo = Assert.IsAssignableFrom<ParameterInfo>(paramShape.AttributeProvider);
+                Assert.NotNull(paramShape.ParameterInfo);
+                ParameterInfo paramInfo = paramShape.ParameterInfo;
                 Assert.Equal(actualParameter.Position, paramInfo.Position);
                 Assert.Equal(actualParameter.Name, paramInfo.Name);
                 Assert.Equal(actualParameter.ParameterType, paramInfo.ParameterType);
@@ -823,7 +824,6 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         }
 
         ITypeShape<T> shape = providerUnderTest.ResolveShape(testCase);
-        Assert.Equal(typeof(T), shape.AttributeProvider);
 
         if (shape is not IObjectTypeShape objectShape)
         {
@@ -833,13 +833,13 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         int pos = 0;
         foreach (IPropertyShape property in objectShape.Properties)
         {
-            MemberInfo attributeProvider = Assert.IsAssignableFrom<MemberInfo>(property.AttributeProvider);
-            PropertyShapeAttribute? attr = attributeProvider.GetCustomAttribute<PropertyShapeAttribute>();
+            Assert.NotNull(property.MemberInfo);
+            PropertyShapeAttribute? attr = property.MemberInfo.GetCustomAttribute<PropertyShapeAttribute>();
             Assert.Equal(pos++, property.Position);
 
             if (property.IsField)
             {
-                FieldInfo fieldInfo = Assert.IsAssignableFrom<FieldInfo>(attributeProvider);
+                FieldInfo fieldInfo = Assert.IsAssignableFrom<FieldInfo>(property.MemberInfo);
                 Assert.True(fieldInfo.DeclaringType!.IsAssignableFrom(typeof(T)));
                 Assert.Equal(attr?.Name ?? fieldInfo.Name, property.Name);
                 Assert.Equal(property.PropertyType.Type, fieldInfo.FieldType);
@@ -850,7 +850,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             }
             else
             {
-                PropertyInfo propertyInfo = Assert.IsAssignableFrom<PropertyInfo>(attributeProvider);
+                PropertyInfo propertyInfo = Assert.IsAssignableFrom<PropertyInfo>(property.MemberInfo);
                 PropertyInfo basePropertyInfo = propertyInfo.GetBaseDefinition();
                 Assert.True(propertyInfo.DeclaringType!.IsAssignableFrom(typeof(T)));
                 Assert.Equal(attr?.Name ?? propertyInfo.Name, property.Name);
@@ -862,9 +862,8 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             }
         }
 
-        if (objectShape.Constructor is { AttributeProvider: not null } constructor)
+        if (objectShape.Constructor is { MethodBase: { } ctorInfo } constructor)
         {
-            MethodBase ctorInfo = Assert.IsAssignableFrom<MethodBase>(constructor.AttributeProvider);
             Assert.True(ctorInfo is MethodInfo { IsStatic: true } or ConstructorInfo);
             Assert.True(typeof(T).IsAssignableFrom(ctorInfo is MethodInfo m ? m.ReturnType : ctorInfo.DeclaringType));
             ParameterInfo[] parameters = ctorInfo.GetParameters();
@@ -901,14 +900,15 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                     Assert.Equal(ParameterKind.MethodParameter, ctorParam.Kind);
                     Assert.True(ctorParam.IsPublic);
 
-                    ParameterInfo paramInfo = Assert.IsAssignableFrom<ParameterInfo>(ctorParam.AttributeProvider);
+                    Assert.NotNull(ctorParam.ParameterInfo);
+                    ParameterInfo paramInfo = ctorParam.ParameterInfo;
                     Assert.Equal(actualParameter.Position, paramInfo.Position);
                     Assert.Equal(actualParameter.Name, paramInfo.Name);
                     Assert.Equal(actualParameter.ParameterType, paramInfo.ParameterType);
                 }
                 else
                 {
-                    MemberInfo memberInfo = Assert.IsAssignableFrom<MemberInfo>(ctorParam.AttributeProvider);
+                    MemberInfo? memberInfo = ctorParam.MemberInfo;
                     Assert.True(memberInfo is PropertyInfo or FieldInfo);
 
                     PropertyShapeAttribute? attr = memberInfo.GetCustomAttribute<PropertyShapeAttribute>();
@@ -965,29 +965,30 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
 
         foreach (IPropertyShape property in objectShape.Properties)
         {
-            MemberInfo memberInfo = Assert.IsAssignableFrom<MemberInfo>(property.AttributeProvider);
+            Assert.NotNull(property.MemberInfo);
+            var memberInfo = property.MemberInfo;
 
             memberInfo.ResolveNullableAnnotation(nullabilityCtx, out bool isGetterNonNullable, out bool isSetterNonNullable);
             Assert.Equal(property.HasGetter && isGetterNonNullable, property.IsGetterNonNullable);
             Assert.Equal(property.HasSetter && isSetterNonNullable, property.IsSetterNonNullable);
         }
 
-        if (objectShape.Constructor is { AttributeProvider: not null } constructor)
+        if (objectShape.Constructor is { MethodBase: MethodBase ctorInfo } constructor)
         {
-            MethodBase ctorInfo = Assert.IsAssignableFrom<MethodBase>(constructor.AttributeProvider);
             ParameterInfo[] parameters = ctorInfo.GetParameters();
             Assert.True(parameters.Length <= constructor.Parameters.Count);
 
             foreach (IParameterShape ctorParam in constructor.Parameters)
             {
-                if (ctorParam.AttributeProvider is ParameterInfo pInfo)
+                if (ctorParam.ParameterInfo is ParameterInfo pInfo)
                 {
                     bool isNonNullableReferenceType = pInfo.IsNonNullableAnnotation(nullabilityCtx);
                     Assert.Equal(isNonNullableReferenceType, ctorParam.IsNonNullable);
                 }
                 else
                 {
-                    MemberInfo memberInfo = Assert.IsAssignableFrom<MemberInfo>(ctorParam.AttributeProvider);
+                    Assert.NotNull(ctorParam.MemberInfo);
+                    var memberInfo = ctorParam.MemberInfo;
                     memberInfo.ResolveNullableAnnotation(nullabilityCtx, out _, out bool isSetterNonNullable);
                     Assert.Equal(isSetterNonNullable, ctorParam.IsNonNullable);
                 }
@@ -1011,7 +1012,8 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         foreach (IMethodShape method in shape.Methods)
         {
             Assert.Equal(typeof(T), method.DeclaringType.Type);
-            var methodInfo = Assert.IsType<MethodInfo>(method.AttributeProvider, exactMatch: false);
+
+            var methodInfo = Assert.IsType<MethodInfo>(method.MethodBase, exactMatch: false);
             var methodShapeAttribute = methodInfo.GetCustomAttribute<MethodShapeAttribute>();
             Type? effectiveReturnType = methodInfo.GetEffectiveReturnType();
 
@@ -1042,7 +1044,8 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                 Assert.Equal(ParameterKind.MethodParameter, paramShape.Kind);
                 Assert.True(paramShape.IsPublic);
 
-                ParameterInfo paramInfo = Assert.IsAssignableFrom<ParameterInfo>(paramShape.AttributeProvider);
+                Assert.NotNull(paramShape.ParameterInfo);
+                ParameterInfo paramInfo = paramShape.ParameterInfo;
                 Assert.Equal(actualParameter.Position, paramInfo.Position);
                 Assert.Equal(actualParameter.Name, paramInfo.Name);
                 Assert.Equal(actualParameter.ParameterType, paramInfo.ParameterType);
@@ -1084,7 +1087,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             Assert.Same(methodShape.GetMethodInvoker(), methodShape.GetMethodInvoker());
 
 #if !NET
-            if (methodShape.AttributeProvider is MethodInfo { ReturnType.IsByRef: true } method && IsReflectionInvokedMethod(method, providerUnderTest))
+            if (methodShape.MethodBase is MethodInfo { ReturnType.IsByRef: true } method && IsReflectionInvokedMethod(method, providerUnderTest))
             {
                 var ex = Assert.Throws<NotSupportedException>(() => parameterizedCtor.Invoke(ref instance, ref argumentState).Result);
                 Assert.Contains("ByRef", ex.Message);
@@ -1134,7 +1137,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         {
             var invoker = (Func<int, int, ValueTask<int>>)methodShape.Accept(invokerBuilder, instance)!;
 #if !NET
-            if (methodShape.AttributeProvider is MethodInfo { ReturnType.IsByRef: true } method && IsReflectionInvokedMethod(method, providerUnderTest))
+            if (methodShape.MethodBase is MethodInfo { ReturnType.IsByRef: true } method && IsReflectionInvokedMethod(method, providerUnderTest))
             {
                 var ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await invoker(7, 5));
                 Assert.Contains("ByRef", ex.Message);
@@ -1206,7 +1209,8 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         foreach (IEventShape eventShape in shape.Events)
         {
             Assert.Equal(typeof(T), eventShape.DeclaringType.Type);
-            EventInfo eventInfo = Assert.IsType<EventInfo>(eventShape.AttributeProvider, exactMatch: false);
+            Assert.NotNull(eventShape.EventInfo);
+            EventInfo eventInfo = eventShape.EventInfo;
             Assert.True(eventInfo.DeclaringType!.IsAssignableFrom(eventShape.DeclaringType.Type));
             Assert.Equal(eventInfo.EventHandlerType, eventShape.HandlerType.Type);
 

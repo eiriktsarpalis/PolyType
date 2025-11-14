@@ -19,4 +19,5 @@ public sealed record MethodShapeModel
     public required MethodReturnTypeKind ReturnTypeKind { get; init; }
     public required ImmutableEquatableArray<ParameterShapeModel> Parameters { get; init; }
     public required ArgumentStateType ArgumentStateType { get; init; }
+    public required ImmutableEquatableArray<AttributeDataModel> Attributes { get; init; }
 }

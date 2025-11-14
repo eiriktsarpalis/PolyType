@@ -13,6 +13,7 @@ internal sealed partial class SourceFormatter
         string? functionParameterFactoryName = functionShapeModel.Parameters.Length > 0 ? $"__CreateFunctionParameters_{functionShapeModel.SourceIdentifier}" : null;
         string? requiredParametersMaskFieldName = FormatRequiredParametersMaskFieldName(functionShapeModel);
         string? associatedTypesFactoryMethodName = GetAssociatedTypesFactoryName(functionShapeModel);
+        string? attributeFactoryMethodName = GetAttributesFactoryName(functionShapeModel);
 
         writer.WriteLine($$"""
             private global::PolyType.ITypeShape<{{functionShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
@@ -28,6 +29,7 @@ internal sealed partial class SourceFormatter
                     FromDelegateFunc = {{FormatNull(FormatFromDelegateFunc(functionShapeModel, functionArgumentStateFQN, requiredParametersMaskFieldName, requireAsync: false))}},
                     FromAsyncDelegateFunc = {{FormatNull(FormatFromDelegateFunc(functionShapeModel, functionArgumentStateFQN, requiredParametersMaskFieldName, requireAsync: true))}},
                     GetAssociatedTypeShapeFunc = {{FormatNull(associatedTypesFactoryMethodName)}},
+                    AttributeFactory = {{FormatNull(attributeFactoryMethodName)}},
                     Provider = this,
                 };
             }
@@ -43,6 +45,12 @@ internal sealed partial class SourceFormatter
         {
             writer.WriteLine();
             FormatAssociatedTypesFactory(writer, functionShapeModel, associatedTypesFactoryMethodName);
+        }
+
+        if (attributeFactoryMethodName is not null)
+        {
+            writer.WriteLine();
+            FormatAttributesFactory(writer, attributeFactoryMethodName, functionShapeModel.Attributes);
         }
 
         if (requiredParametersMaskFieldName is not null)
@@ -244,6 +252,7 @@ internal sealed partial class SourceFormatter
                 writer.WriteLine();
             }
 
+            string? attributeFactoryName = GetParameterAttributeFactoryMethodName(parameter);
             writer.WriteLine($$"""
                 new global::PolyType.SourceGenModel.SourceGenParameterShape<{{functionArgumentStateFQN}}, {{parameter.ParameterType.FullyQualifiedName}}>
                 {
@@ -258,6 +267,7 @@ internal sealed partial class SourceFormatter
                     DefaultValue = {{FormatDefaultValueExpr(parameter)}},
                     Getter = static (ref {{functionArgumentStateFQN}} state) => {{FormatGetterBody(functionShapeModel, parameter)}},
                     Setter = static (ref {{functionArgumentStateFQN}} state, {{parameter.ParameterType.FullyQualifiedName}} value) => {{FormatSetterBody(functionShapeModel, parameter)}},
+                    AttributeFactory = {{FormatNull(attributeFactoryName)}},
                     AttributeProviderFunc = {{FormatAttributeProviderFunc(functionShapeModel, parameter)}},
                 },
                 """, trimDefaultAssignmentLines: true);
@@ -327,6 +337,20 @@ internal sealed partial class SourceFormatter
 
         writer.Indentation--;
         writer.WriteLine("};");
+
+        foreach (ParameterShapeModel parameter in functionShapeModel.Parameters)
+        {
+            if (GetParameterAttributeFactoryMethodName(parameter) is string attributeFactoryName)
+            {
+                writer.WriteLine();
+                FormatAttributesFactory(writer, attributeFactoryName, parameter.Attributes);
+            }
+        }
+
+        string? GetParameterAttributeFactoryMethodName(ParameterShapeModel parameterShapeModel) =>
+            parameterShapeModel.Attributes.Length > 0
+            ? $"__CreateParameterAttributes_{functionShapeModel.SourceIdentifier}_{parameterShapeModel.UnderlyingMemberName}"
+            : null;
     }
 
     private static string FormatRefPrefix(ParameterShapeModel parameter)

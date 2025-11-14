@@ -16,6 +16,7 @@ internal sealed partial class SourceFormatter
     {
         string constructorArgumentStateFQN = FormatConstructorArgumentStateFQN(type, constructor);
         string? constructorParameterFactoryName = constructor.TotalArity > 0 ? $"__CreateConstructorParameters_{type.SourceIdentifier}" : null;
+        string? attributeFactoryName = constructor.Attributes.Length > 0 ? $"__CreateConstructorAttributes_{type.SourceIdentifier}" : null;
 
         writer.WriteLine($"private global::PolyType.Abstractions.IConstructorShape {methodName}()");
         writer.WriteLine('{');
@@ -29,7 +30,8 @@ internal sealed partial class SourceFormatter
                 DefaultConstructorFunc = {{FormatDefaultCtor(type, constructor)}},
                 ArgumentStateConstructorFunc = {{FormatArgumentStateCtor(type, constructor, constructorArgumentStateFQN)}},
                 ParameterizedConstructorFunc = {{FormatParameterizedCtor(type, constructor, constructorArgumentStateFQN)}},
-                AttributeProviderFunc = {{FormatAttributeProviderFunc(type, constructor)}},
+                MethodBaseFunc = {{FormatConstructorInfoResolver(type, constructor)}},
+                AttributeFactory = {{FormatNull(attributeFactoryName)}},
                 IsPublic = {{FormatBool(constructor.IsPublic)}},
             };
             """, trimDefaultAssignmentLines: true);
@@ -41,6 +43,12 @@ internal sealed partial class SourceFormatter
         {
             writer.WriteLine();
             FormatParameterFactory(writer, type, constructorParameterFactoryName, constructor, constructorArgumentStateFQN);
+        }
+
+        if (attributeFactoryName is not null)
+        {             
+            writer.WriteLine();
+            FormatAttributesFactory(writer, attributeFactoryName, constructor.Attributes);
         }
 
         if (FormatRequiredParametersMaskFieldName(type) is { } requiredParametersMaskFieldName)
@@ -55,7 +63,7 @@ internal sealed partial class SourceFormatter
                 constructor.GetAllParameters());
         }
         
-        static string FormatAttributeProviderFunc(ObjectShapeModel type, ConstructorShapeModel constructor)
+        static string FormatConstructorInfoResolver(ObjectShapeModel type, ConstructorShapeModel constructor)
         {
             if (type.IsTupleType || constructor.IsStaticFactory || constructor.IsFSharpUnitConstructor)
             {
@@ -276,15 +284,17 @@ internal sealed partial class SourceFormatter
         writer.WriteLine('{');
         writer.Indentation++;
 
+        var allParams = constructor.Parameters.Concat(constructor.RequiredMembers).Concat(constructor.OptionalMembers);
+
         int i = 0;
-        foreach (ParameterShapeModel parameter in constructor.Parameters
-                                                            .Concat(constructor.RequiredMembers)
-                                                            .Concat(constructor.OptionalMembers))
+        foreach (ParameterShapeModel parameter in allParams)
         {
             if (i > 0)
             {
                 writer.WriteLine();
             }
+
+            string? attributeFactoryName = GetAttributeFactoryName(parameter);
 
             writer.WriteLine($$"""
                 new global::PolyType.SourceGenModel.SourceGenParameterShape<{{constructorArgumentStateFQN}}, {{parameter.ParameterType.FullyQualifiedName}}>
@@ -300,6 +310,7 @@ internal sealed partial class SourceFormatter
                     DefaultValue = {{FormatDefaultValueExpr(parameter)}},
                     Getter = static (ref {{constructorArgumentStateFQN}} state) => {{FormatGetterBody(constructor, parameter)}},
                     Setter = static (ref {{constructorArgumentStateFQN}} state, {{parameter.ParameterType.FullyQualifiedName}} value) => {{FormatSetterBody(constructor, parameter)}},
+                    AttributeFactory = {{FormatNull(attributeFactoryName)}},
                     AttributeProviderFunc = {{FormatAttributeProviderFunc(type, constructor, parameter)}},
                 },
                 """, trimDefaultAssignmentLines: true);
@@ -377,6 +388,21 @@ internal sealed partial class SourceFormatter
 
         writer.Indentation--;
         writer.WriteLine("};");
+
+        foreach (ParameterShapeModel parameter in allParams)
+        {
+            string? attributeFactoryName = GetAttributeFactoryName(parameter);
+            if (attributeFactoryName is not null)
+            {
+                writer.WriteLine();
+                FormatAttributesFactory(writer, attributeFactoryName, parameter.Attributes);
+            }
+        }
+
+        string? GetAttributeFactoryName(ParameterShapeModel parameter) =>
+            parameter.Attributes.Length > 0
+            ? $"__CreateConstructorParameterAttributes_{type.SourceIdentifier}_{parameter.Position}"
+            : null;
     }
 
     private static string FormatDefaultValueExpr(ParameterShapeModel parameter)

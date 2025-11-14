@@ -1,5 +1,4 @@
 ﻿using PolyType.Examples.Validation;
-using Xunit;
 
 namespace PolyType.Tests;
 

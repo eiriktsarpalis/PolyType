@@ -9,7 +9,7 @@ internal interface IParameterShapeInfo
     Type Type { get; }
     string Name { get; }
     ParameterKind Kind { get; }
-    ICustomAttributeProvider? AttributeProvider { get; }
+    ICustomAttributeProvider AttributeProvider { get; }
     bool IsByRef { get; }
     bool IsRequired { get; }
     bool IsNonNullable { get; }
@@ -46,7 +46,7 @@ internal sealed class MethodParameterShapeInfo : IParameterShapeInfo
     public Type Type { get; }
     public string Name { get; }
     public ParameterKind Kind => ParameterKind.MethodParameter;
-    public ICustomAttributeProvider? AttributeProvider => ParameterInfo;
+    public ICustomAttributeProvider AttributeProvider => ParameterInfo;
     public bool IsByRef => ParameterInfo.ParameterType.IsByRef;
     public bool IsRequired { get; }
     public bool IsNonNullable { get; }
@@ -79,7 +79,7 @@ internal sealed class MemberInitializerShapeInfo : IParameterShapeInfo
     public bool IsPublic { get; }
 
     public string Name { get; }
-    public ICustomAttributeProvider? AttributeProvider => MemberInfo;
+    public ICustomAttributeProvider AttributeProvider => MemberInfo;
     public bool HasDefaultValue => false;
     public object? DefaultValue => null;
     public ParameterKind Kind => ParameterKind.MemberInitializer;

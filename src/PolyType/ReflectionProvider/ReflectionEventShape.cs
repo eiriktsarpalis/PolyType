@@ -27,7 +27,11 @@ internal sealed class ReflectionEventShape<TDeclaringType, TEventHandler> : IEve
     public bool IsPublic => _eventInfo.AddMethod!.IsPublic;
     public ITypeShape<TDeclaringType> DeclaringType => _provider.GetTypeShape<TDeclaringType>();
     public IFunctionTypeShape HandlerType => _handlerType ?? CommonHelpers.ExchangeIfNull(ref _handlerType, (IFunctionTypeShape)_provider.GetTypeShape<TEventHandler>());
-    public ICustomAttributeProvider? AttributeProvider => _eventInfo;
+    EventInfo? IEventShape.EventInfo => _eventInfo;
+
+    public IGenericCustomAttributeProvider AttributeProvider => _attributeProvider ?? CommonHelpers.ExchangeIfNull(ref _attributeProvider, new(_eventInfo));
+    private ReflectionCustomAttributeProvider? _attributeProvider;
+
     public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEvent(this, state);
     ITypeShape IEventShape.DeclaringType => DeclaringType;
 

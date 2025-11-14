@@ -13,7 +13,7 @@ internal abstract class TypeShapeDebugView(ITypeShape typeShape) : ITypeShape
     public Type Type => typeShape.Type;
     public TypeShapeKind Kind => typeShape.Kind;
     public ITypeShapeProvider Provider => typeShape.Provider;
-    public ICustomAttributeProvider? AttributeProvider => typeShape.AttributeProvider;
+    public IGenericCustomAttributeProvider AttributeProvider => typeShape.AttributeProvider;
     public IReadOnlyList<IMethodShape> Methods => typeShape.Methods;
     public IReadOnlyList<IEventShape> Events => typeShape.Events;
 
@@ -120,7 +120,8 @@ internal sealed class ConstructorShapeDebugView(IConstructorShape ctorShape) : I
     public IObjectTypeShape DeclaringType => ctorShape.DeclaringType;
     public bool IsPublic => ctorShape.IsPublic;
     public IReadOnlyList<IParameterShape> Parameters => ctorShape.Parameters;
-    public ICustomAttributeProvider? AttributeProvider => ctorShape.AttributeProvider;
+    public MethodBase? MethodBase => ctorShape.MethodBase;
+    public IGenericCustomAttributeProvider AttributeProvider => ctorShape.AttributeProvider;
     object? IConstructorShape.Accept(TypeShapeVisitor visitor, object? state) => ctorShape.Accept(visitor, state);
 }
 
@@ -138,7 +139,8 @@ internal sealed class MethodShapeDebugView(IMethodShape methodShape) : IMethodSh
     public bool IsVoidLike => methodShape.IsVoidLike;
     public bool IsAsync => methodShape.IsAsync;
     public IReadOnlyList<IParameterShape> Parameters => methodShape.Parameters;
-    public ICustomAttributeProvider? AttributeProvider => methodShape.AttributeProvider;
+    public MethodBase? MethodBase => methodShape.MethodBase;
+    public IGenericCustomAttributeProvider AttributeProvider => methodShape.AttributeProvider;
     object? IMethodShape.Accept(TypeShapeVisitor visitor, object? state) => methodShape.Accept(visitor, state);
 }
 
@@ -157,7 +159,9 @@ internal sealed class ParameterShapeDebugView(IParameterShape parameterShape) : 
     public bool IsNonNullable => parameterShape.IsNonNullable;
     public bool IsPublic => parameterShape.IsPublic;
     public ITypeShape ParameterType => parameterShape.ParameterType;
-    public ICustomAttributeProvider? AttributeProvider => parameterShape.AttributeProvider;
+    public ParameterInfo? ParameterInfo => parameterShape.ParameterInfo;
+    public MemberInfo? MemberInfo => parameterShape.MemberInfo;
+    public IGenericCustomAttributeProvider AttributeProvider => parameterShape.AttributeProvider;
     object? IParameterShape.Accept(TypeShapeVisitor visitor, object? state) => parameterShape.Accept(visitor, state);
 }
 
@@ -178,7 +182,8 @@ internal sealed class PropertyShapeDebugView(IPropertyShape propertyShape) : IPr
     public bool IsSetterPublic => propertyShape.IsSetterPublic;
     public bool IsGetterNonNullable => propertyShape.IsGetterNonNullable;
     public bool IsSetterNonNullable => propertyShape.IsSetterNonNullable;
-    public ICustomAttributeProvider? AttributeProvider => propertyShape.AttributeProvider;
+    public MemberInfo? MemberInfo => propertyShape.MemberInfo;
+    public IGenericCustomAttributeProvider AttributeProvider => propertyShape.AttributeProvider;
     object? IPropertyShape.Accept(TypeShapeVisitor visitor, object? state) => propertyShape.Accept(visitor, state);
 }
 
@@ -193,7 +198,8 @@ internal sealed class EventShapeDebugView(IEventShape eventShape) : IEventShape
     public bool IsPublic => eventShape.IsPublic;
     public bool IsStatic => eventShape.IsStatic;
     public IFunctionTypeShape HandlerType => eventShape.HandlerType;
-    public ICustomAttributeProvider? AttributeProvider => eventShape.AttributeProvider;
+    public EventInfo? EventInfo => eventShape.EventInfo;
+    public IGenericCustomAttributeProvider AttributeProvider => eventShape.AttributeProvider;
     object? IEventShape.Accept(TypeShapeVisitor visitor, object? state) => eventShape.Accept(visitor, state);
 }
 

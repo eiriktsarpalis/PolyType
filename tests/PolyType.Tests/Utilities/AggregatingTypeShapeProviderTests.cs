@@ -173,16 +173,13 @@ public class AggregatingTypeShapeProviderTests
 
         public ITypeShapeProvider Provider => throw new NotImplementedException();
 
-        public ICustomAttributeProvider? AttributeProvider => throw new NotImplementedException();
+        public IGenericCustomAttributeProvider AttributeProvider => throw new NotImplementedException();
 
         public IReadOnlyList<IMethodShape> Methods => throw new NotImplementedException();
 
         public IReadOnlyList<IEventShape> Events => throw new NotImplementedException();
 
-        public object? Accept(TypeShapeVisitor visitor, object? state = null)
-        {
-            throw new NotImplementedException();
-        }
+        public object? Accept(TypeShapeVisitor visitor, object? state = null) => throw new NotImplementedException();
 
         public Func<object>? GetAssociatedTypeFactory(Type associatedType) => throw new NotImplementedException();
 

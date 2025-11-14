@@ -1,8 +1,7 @@
 ﻿using PolyType.Abstractions;
+using PolyType.SourceGenModel.Helpers;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Xml.Linq;
 
 namespace PolyType.ReflectionProvider;
 
@@ -21,7 +20,11 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
     private Func<TDeclaringType>? _defaultConstructor;
 
     public IObjectTypeShape<TDeclaringType> DeclaringType { get; } = declaringType;
-    public ICustomAttributeProvider? AttributeProvider => ctorInfo.AttributeProvider;
+    public MethodBase? MethodBase => ctorInfo.Method;
+
+    public IGenericCustomAttributeProvider AttributeProvider => _attributeProvider ?? CommonHelpers.ExchangeIfNull(ref _attributeProvider, ReflectionCustomAttributeProvider.Create(ctorInfo.Method));
+    private IGenericCustomAttributeProvider? _attributeProvider;
+
     public bool IsPublic => ctorInfo.IsPublic;
     IObjectTypeShape IConstructorShape.DeclaringType => DeclaringType;
     object? IConstructorShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitConstructor(this, state);
