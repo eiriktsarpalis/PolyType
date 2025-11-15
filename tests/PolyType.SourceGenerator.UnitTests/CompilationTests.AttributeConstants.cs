@@ -1579,5 +1579,166 @@ public static partial class CompilationTests
             PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
             Assert.Empty(result.Diagnostics);
         }
+
+        [Fact]
+        public static void AttributeWithObjectArrayDiverseTypes_NoErrors()
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation("""
+                using PolyType;
+                using System;
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public class TestAttribute : Attribute
+                {
+                    public TestAttribute(object[] values) => Values = values;
+                    public object[] Values { get; }
+                }
+
+                [GenerateShape]
+                [Test(new object[] { true, "kind" })]
+                public partial class MyClass1 { }
+
+                [GenerateShape]
+                [Test(new object[] { 1, "text", 3.14, false })]
+                public partial class MyClass2 { }
+
+                [GenerateShape]
+                [Test(new object[] { "single" })]
+                public partial class MyClass3 { }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public static void AttributeWithObjectArrayContainingTypes_NoErrors()
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation("""
+                using PolyType;
+                using System;
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public class TestAttribute : Attribute
+                {
+                    public TestAttribute(object[] values) => Values = values;
+                    public object[] Values { get; }
+                }
+
+                [GenerateShape]
+                [Test(new object[] { typeof(int), "string", 42 })]
+                public partial class MyClass1 { }
+
+                [GenerateShape]
+                [Test(new object[] { typeof(string), typeof(double) })]
+                public partial class MyClass2 { }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public static void AttributeWithNestedObjectArrays_NoErrors()
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation("""
+                using PolyType;
+                using System;
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public class TestAttribute : Attribute
+                {
+                    public TestAttribute(object[] values) => Values = values;
+                    public object[] Values { get; }
+                }
+
+                [GenerateShape]
+                [Test(new object[] { new object[] { 1, 2 }, "text", new object[] { true, false } })]
+                public partial class MyClass1 { }
+
+                [GenerateShape]
+                [Test(new object[] { new int[] { 1, 2, 3 }, new string[] { "a", "b" } })]
+                public partial class MyClass2 { }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public static void AttributeWithObjectArrayContainingNulls_NoErrors()
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation("""
+                using PolyType;
+                using System;
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public class TestAttribute : Attribute
+                {
+                    public TestAttribute(object?[] values) => Values = values;
+                    public object?[] Values { get; }
+                }
+
+                [GenerateShape]
+                [Test(new object?[] { true, null, "text" })]
+                public partial class MyClass1 { }
+
+                [GenerateShape]
+                [Test(new object?[] { null, 42, null })]
+                public partial class MyClass2 { }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public static void AttributeWithObjectArrayInNamedArgument_NoErrors()
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation("""
+                using PolyType;
+                using System;
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public class TestAttribute : Attribute
+                {
+                    public object[]? OptionalValues { get; set; }
+                }
+
+                [GenerateShape]
+                [Test(OptionalValues = new object[] { true, "kind", 123 })]
+                public partial class MyClass1 { }
+
+                [GenerateShape]
+                [Test(OptionalValues = new object[] { "a", 1, 2.5, false })]
+                public partial class MyClass2 { }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
+
+        [Fact]
+        public static void AttributeWithEmptyObjectArray_NoErrors()
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation("""
+                using PolyType;
+                using System;
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public class TestAttribute : Attribute
+                {
+                    public TestAttribute(object[] values) => Values = values;
+                    public object[] Values { get; }
+                }
+
+                [GenerateShape]
+                [Test(new object[] { })]
+                public partial class MyClass1 { }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+        }
     }
 }

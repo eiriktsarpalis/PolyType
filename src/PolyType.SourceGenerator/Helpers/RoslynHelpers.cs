@@ -613,6 +613,7 @@ internal static partial class RoslynHelpers
             bool hasNullElements = values.Any(v => v.IsNull);
             string items = string.Join(", ", values.Select(tc => FormatAttributeConstant(compilation, context, tc)));
 
+            // Always use explicit array type to avoid CS0826 errors with diverse element types
             // Use explicit nullable array type when there are null elements and element type is a reference type
             if (hasNullElements && elementType.IsReferenceType)
             {
@@ -621,7 +622,7 @@ internal static partial class RoslynHelpers
                 return $"new {nullableElementType}[] {{ {items} }}";
             }
 
-            return $"new[] {{ {items} }}";
+            return $"new {elementType.GetFullyQualifiedName()}[] {{ {items} }}";
         }
     }
 
