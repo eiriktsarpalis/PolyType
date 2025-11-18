@@ -20,9 +20,12 @@ restore:
 	dotnet restore
 
 build: restore
+	dotnet build --no-restore --configuration $(CONFIGURATION) $(ADDITIONAL_ARGS)
+
+build-skip-tunit: restore
 	dotnet build --no-restore --configuration $(CONFIGURATION) $(ADDITIONAL_ARGS) -p:SkipTUnitTestRuns=true
 
-test-clr: build
+test-clr: build-skip-tunit
 	dotnet test \
 		--configuration $(CONFIGURATION) \
 		--no-build \

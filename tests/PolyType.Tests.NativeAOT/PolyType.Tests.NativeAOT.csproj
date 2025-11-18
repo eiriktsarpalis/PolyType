@@ -14,6 +14,10 @@
     <UseMicrosoftTestingPlatformRunner>false</UseMicrosoftTestingPlatformRunner>
     <EnableMicrosoftTestingPlatformCodeGeneration>false</EnableMicrosoftTestingPlatformCodeGeneration>
     <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
+    <!-- Disable TUnit source generation -->
+    <EnableTUnitSourceGeneration>false</EnableTUnitSourceGeneration>
+    <!-- Treat this specific warning as a warning, not an error -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);CS8892</WarningsNotAsErrors>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(SkipTUnitTestRuns)' != 'true'">
@@ -31,6 +35,13 @@
     <Compile Remove="**/*.cs" />
     <Compile Include="Program.cs" />
   </ItemGroup>
+
+  <!-- Remove MTP-generated files when SkipTUnitTestRuns is true -->
+  <Target Name="RemoveMTPGeneratedFiles" BeforeTargets="CoreCompile" Condition="'$(SkipTUnitTestRuns)' == 'true'">
+    <ItemGroup>
+      <Compile Remove="$(IntermediateOutputPath)**/*MicrosoftTestingPlatformEntryPoint.cs" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\PolyType\PolyType.csproj" />
