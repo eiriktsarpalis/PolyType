@@ -10,10 +10,13 @@
   <PropertyGroup Condition="'$(SkipTUnitTestRuns)' == 'true'">
     <!-- TUnit doesn't like it when run together with other xunit projects & codecov enabled -->
     <DefineConstants>$(DefineConstants);POLYFILL_TUNIT_CORE</DefineConstants>
-    <OutputType>Library</OutputType>
+    <OutputType>Exe</OutputType>
+    <UseMicrosoftTestingPlatformRunner>false</UseMicrosoftTestingPlatformRunner>
+    <EnableMicrosoftTestingPlatformCodeGeneration>false</EnableMicrosoftTestingPlatformCodeGeneration>
+    <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(SkipTUnitTestRuns)' != 'true'">
     <PackageReference Include="TUnit.Assertions" />
   </ItemGroup>
 
@@ -21,6 +24,12 @@
     <!-- TUnit doesn't like it when run together with other xunit projects & codecov enabled -->
     <PackageReference Include="TUnit" />
     <PackageReference Include="TUnit.Engine" />
+  </ItemGroup>
+
+  <!-- Exclude all test source files when skipping TUnit runs -->
+  <ItemGroup Condition="'$(SkipTUnitTestRuns)' == 'true'">
+    <Compile Remove="**/*.cs" />
+    <Compile Include="Program.cs" />
   </ItemGroup>
 
   <ItemGroup>
