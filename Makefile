@@ -23,27 +23,7 @@ build: restore
 	dotnet build --no-restore --configuration $(CONFIGURATION) $(ADDITIONAL_ARGS)
 
 test-clr: build
-	dotnet test --project tests/PolyType.Tests/PolyType.Tests.csproj \
-		--configuration $(CONFIGURATION) \
-		--no-build \
-		--no-progress \
-		--crashdump \
-		--hangdump \
-		--hangdump-timeout 7m \
-		--coverage \
-		--coverage-output-format cobertura \
-		-p:_MTPResultsDirectory=$(ARTIFACT_PATH)/testResults
-	dotnet test --project tests/PolyType.Roslyn.Tests/PolyType.Roslyn.Tests.csproj \
-		--configuration $(CONFIGURATION) \
-		--no-build \
-		--no-progress \
-		--crashdump \
-		--hangdump \
-		--hangdump-timeout 7m \
-		--coverage \
-		--coverage-output-format cobertura \
-		-p:_MTPResultsDirectory=$(ARTIFACT_PATH)/testResults
-	dotnet test --project tests/PolyType.SourceGenerator.UnitTests/PolyType.SourceGenerator.UnitTests.csproj \
+	dotnet test \
 		--configuration $(CONFIGURATION) \
 		--no-build \
 		--no-progress \
