@@ -4,6 +4,7 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
     <RoslynVersion>4.8.0</RoslynVersion>
     <RoslynVersionForAnalyzers>4.3.0</RoslynVersionForAnalyzers>
+    <MicrosoftTestingPlatformVersion>2.0.2</MicrosoftTestingPlatformVersion>
   </PropertyGroup>
   <ItemGroup>
     <!-- Product dependencies -->
@@ -22,14 +23,16 @@
     <PackageVersion Include="Nerdbank.GitVersioning" Version="3.9.50" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
     <!-- Testing dependencies -->
-    <PackageVersion Include="xunit.v3" Version="3.2.0" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.1.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="$(MicrosoftTestingPlatformVersion)" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CrashDump" Version="$(MicrosoftTestingPlatformVersion)" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="$(MicrosoftTestingPlatformVersion)" />
+    <PackageVersion Include="xunit.v3.mtp-v2" Version="3.2.0" />
     <PackageVersion Include="TUnit" Version="1.2.3" />
     <PackageVersion Include="TUnit.Assertions" Version="1.2.3" />
     <PackageVersion Include="TUnit.Engine" Version="1.2.3" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.8" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="9.0.8" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.6" />
     <!-- Earliest version of the library supporting literals and frozen collections -->
     <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />

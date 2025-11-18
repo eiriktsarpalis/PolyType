@@ -25,6 +25,7 @@ updates:
         patterns:
           - "xunit*"
           - "TUnit*"
+          - "Microsoft.Testing.*"
       # Group build and analyzer tools
       build-tools:
         patterns:
