@@ -23,6 +23,8 @@ jobs:
       run: sudo apt-get install -y mono-devel
     - name: Build & Test
       run: make pack
+      env:
+        VSTEST_CONNECTION_TIMEOUT: 1800000
     - name: Upload artifacts
       uses: actions/upload-artifact@v5
       with:

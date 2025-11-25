@@ -42,6 +42,8 @@ jobs:
 
     - name: Test 🧪
       run: make test CONFIGURATION=${{ matrix.configuration }}
+      env:
+        VSTEST_CONNECTION_TIMEOUT: 1800000
 
     - name: Pack 📦
       if: matrix.configuration == 'Release'
