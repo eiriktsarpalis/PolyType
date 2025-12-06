@@ -1,8 +1,12 @@
-﻿using PolyType.Abstractions;
+﻿#pragma warning disable CA1512 // Use ArgumentOutOfRangeException throw helper
+
+using PolyType.Abstractions;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace PolyType.ReflectionProvider;
@@ -335,4 +339,104 @@ internal sealed class ReflectionAsyncEnumerableShape<TEnumerable, TElement>(Refl
     public override bool IsAsyncEnumerable => true;
     public override Func<TEnumerable, IEnumerable<TElement>> GetGetEnumerable() =>
         static _ => throw new InvalidOperationException("Sync enumeration of IAsyncEnumerable instances is not supported.");
+}
+
+[RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
+[RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
+internal sealed class ReflectionInlineArrayTypeShape<TArray, TElement>(int length, ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+    : ReflectionEnumerableTypeShape<TArray, TElement>(provider, options)
+    where TArray : struct
+{
+    public override CollectionComparerOptions SupportedComparer => CollectionComparerOptions.None;
+    public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Parameterized;
+
+    public override Func<TArray, IEnumerable<TElement>> GetGetEnumerable()
+    {
+        return array => new InlineArrayEnumerable(array, length);
+    }
+
+    public override ParameterizedCollectionConstructor<TElement, TElement, TArray> GetParameterizedConstructor()
+    {
+        return (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) =>
+        {
+            if (span.Length != length)
+            {
+                throw new ArgumentException($"Expected {length} elements, but got {span.Length}.");
+            }
+
+            TArray array = default;
+            ref TElement destination = ref Unsafe.As<TArray, TElement>(ref array);
+#if NETSTANDARD2_0 || NETFRAMEWORK
+            for (int i = 0; i < length; i++)
+            {
+                Unsafe.Add(ref destination, i) = span[i];
+            }
+#else
+            span.CopyTo(MemoryMarshal.CreateSpan(ref destination, length));
+#endif
+            return array;
+        };
+    }
+
+    private sealed class InlineArrayEnumerable(TArray array, int length) : ICollection<TElement>, IReadOnlyCollection<TElement>
+    {
+        public int Count => length;
+        public bool IsReadOnly => true;
+        public void Add(TElement item) => throw new NotSupportedException();
+        public void Clear() => throw new NotSupportedException();
+        public bool Contains(TElement item)
+        {
+            foreach (var element in this)
+            {
+                if (EqualityComparer<TElement>.Default.Equals(element, item))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public void CopyTo(TElement[] destination, int arrayIndex)
+        {
+            if (destination is null)
+            {
+                throw new ArgumentNullException(nameof(destination));
+            }
+
+            if (arrayIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+            }
+
+            if (destination.Length - arrayIndex < length)
+            {
+                throw new ArgumentException("Destination array is too small.");
+            }
+
+            int i = 0;
+            foreach (var element in this)
+            {
+                destination[arrayIndex + i++] = element;
+            }
+        }
+
+        public bool Remove(TElement item) => throw new NotSupportedException();
+
+        public IEnumerator<TElement> GetEnumerator() => new Enumerator(array, length);
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        private sealed class Enumerator(TArray array, int length) : IEnumerator<TElement>
+        {
+            private int _index = -1;
+            private TArray _array = array;
+
+            public TElement Current => Unsafe.Add(ref Unsafe.As<TArray, TElement>(ref _array), _index);
+            object? IEnumerator.Current => Current;
+
+            public bool MoveNext() => ++_index < length;
+            public void Reset() => _index = -1;
+            public void Dispose() { }
+        }
+    }
 }

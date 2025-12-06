@@ -5,8 +5,8 @@ using System.Collections.Immutable;
 namespace PolyType.Roslyn;
 
 /// <summary>
-/// List-like data model for types implementing <see cref="IEnumerable"/> 
-/// that are not dictionaries or are <see cref="Span{T}"/>, 
+/// List-like data model for types implementing <see cref="IEnumerable"/>
+/// that are not dictionaries or are <see cref="Span{T}"/>,
 /// <see cref="ReadOnlySpan{T}"/>, <see cref="Memory{T}"/> or <see cref="ReadOnlyMemory{T}"/>.
 /// </summary>
 public sealed class EnumerableDataModel : TypeDataModel
@@ -15,8 +15,8 @@ public sealed class EnumerableDataModel : TypeDataModel
     public override TypeDataKind Kind => TypeDataKind.Enumerable;
 
     /// <summary>
-    /// The element type of the enumerable. Typically the type parameter 
-    /// of the implemented <see cref="IEnumerable{T}"/> interface or 
+    /// The element type of the enumerable. Typically the type parameter
+    /// of the implemented <see cref="IEnumerable{T}"/> interface or
     /// <see cref="object"/> if using the non-generic <see cref="IEnumerable"/>.
     /// </summary>
     public required ITypeSymbol ElementType { get; init; }
@@ -25,6 +25,11 @@ public sealed class EnumerableDataModel : TypeDataModel
     /// Gets the kind of enumerable model.
     /// </summary>
     public required EnumerableKind EnumerableKind { get; init; }
+
+    /// <summary>
+    /// The length of the array if it is an inline array.
+    /// </summary>
+    public int? Length { get; init; }
 
     /// <summary>
     /// Instance method used for appending an element to the collection.
@@ -104,6 +109,10 @@ public enum EnumerableKind
     /// An IAsyncEnumerable{T} type.
     /// </summary>
     IAsyncEnumerableOfT,
+    /// <summary>
+    /// An inline array or fixed buffer struct.
+    /// </summary>
+    InlineArrayOfT,
 }
 
 /// <summary>

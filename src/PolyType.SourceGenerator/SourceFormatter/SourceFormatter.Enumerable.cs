@@ -72,6 +72,7 @@ internal sealed partial class SourceFormatter
                 EnumerableKind.IEnumerable => $"static obj => global::System.Linq.Enumerable.Cast<object>(obj{suppressSuffix})",
                 EnumerableKind.MultiDimensionalArrayOfT => $"static obj => global::System.Linq.Enumerable.Cast<{enumerableType.ElementType.FullyQualifiedName}>(obj{suppressSuffix})",
                 EnumerableKind.IAsyncEnumerableOfT => $"static obj => throw new global::System.InvalidOperationException(\"Sync enumeration of IAsyncEnumerable instances is not supported.\")",
+                EnumerableKind.InlineArrayOfT => $"static obj => new global::PolyType.SourceGenModel.InlineArrayEnumerable<{enumerableType.Type.FullyQualifiedName}, {enumerableType.ElementType.FullyQualifiedName}>(obj, {enumerableType.Length})",
                 _ => throw new ArgumentException(enumerableType.Kind.ToString()),
             };
         }
@@ -112,6 +113,31 @@ internal sealed partial class SourceFormatter
             }
 
             string elementType = enumerableType.ElementType.FullyQualifiedName;
+            if (enumerableType.Kind is EnumerableKind.InlineArrayOfT)
+            {
+                return $$"""
+                    static (global::System.ReadOnlySpan<{{elementType}}> span, in {{FormatCollectionConstructionOptionsTypeName(enumerableType.ElementType)}} options) =>
+                    {
+                        if (span.Length != {{enumerableType.Length}})
+                        {
+                            throw new global::System.ArgumentException($"Expected {{enumerableType.Length}} elements, but got {span.Length}.");
+                        }
+
+                        {{enumerableType.Type.FullyQualifiedName}} array = default;
+                        ref {{elementType}} destination = ref global::System.Runtime.CompilerServices.Unsafe.As<{{enumerableType.Type.FullyQualifiedName}}, {{elementType}}>(ref array);
+                        #if NETSTANDARD2_0 || NETFRAMEWORK
+                        for (int i = 0; i < {{enumerableType.Length}}; i++)
+                        {
+                            global::System.Runtime.CompilerServices.Unsafe.Add(ref destination, i) = span[i];
+                        }
+                        #else
+                        span.CopyTo(global::System.Runtime.InteropServices.MemoryMarshal.CreateSpan(ref destination, {{enumerableType.Length}}));
+                        #endif
+                        return array;
+                    }
+                    """;
+            }
+
             if (enumerableType.Kind is EnumerableKind.ArrayOfT or EnumerableKind.ReadOnlyMemoryOfT or EnumerableKind.MemoryOfT)
             {
                 string suppressSuffix = enumerableType.ElementTypeContainsNullableAnnotations ? "!" : "";

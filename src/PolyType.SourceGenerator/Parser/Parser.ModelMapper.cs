@@ -78,7 +78,7 @@ public sealed partial class Parser
                 ElementType = CreateTypeId(enumerableModel.ElementType),
                 ConstructionStrategy = enumerableModel switch
                 {
-                    { EnumerableKind: EnumerableKind.ArrayOfT or EnumerableKind.MemoryOfT or EnumerableKind.ReadOnlyMemoryOfT } =>
+                    { EnumerableKind: EnumerableKind.ArrayOfT or EnumerableKind.MemoryOfT or EnumerableKind.ReadOnlyMemoryOfT or EnumerableKind.InlineArrayOfT } =>
                         CollectionConstructionStrategy.Parameterized, // use ReadOnlySpan.ToArray() to create the collection
                     { FactoryMethod: not null } =>
                         IsParameterizedConstructor(enumerableModel.FactorySignature)
@@ -108,6 +108,7 @@ public sealed partial class Parser
                 AppendMethodReturnsBoolean = enumerableModel.AppendMethod?.ReturnType.SpecialType is SpecialType.System_Boolean,
                 AssociatedTypes = associatedTypes,
                 Attributes = CollectAttributes(model.Type),
+                Length = enumerableModel.Length,
             },
 
             DictionaryDataModel dictionaryModel => new DictionaryShapeModel
@@ -121,7 +122,7 @@ public sealed partial class Parser
                 Events = MapEvents(model, typeId),
                 ConstructionStrategy = dictionaryModel switch
                 {
-                    { FactoryMethod: not null } => 
+                    { FactoryMethod: not null } =>
                         IsParameterizedConstructor(dictionaryModel.FactorySignature)
                         ? CollectionConstructionStrategy.Parameterized
                         : CollectionConstructionStrategy.Mutable,
@@ -1095,7 +1096,7 @@ public sealed partial class Parser
         List<AttributeDataModel> attributes = [];
         HashSet<INamedTypeSymbol>? uniqueAttrs = null;
         string[] tokenBuffer = new string[8];
-        
+
         foreach ((AttributeData attr, bool isInherited) in symbol.GetAllAttributes())
         {
             // Skip if attribute class is null or not accessible
@@ -1119,17 +1120,17 @@ public sealed partial class Parser
             {
                 continue; // filter duplicate attributes when multiple usage is not allowed
             }
-            
+
             // Format constructor arguments
             var ctorArgs = attr.ConstructorArguments
                 .Select(arg => Helpers.RoslynHelpers.FormatAttributeConstant(_knownSymbols.Compilation, GenerationScope, arg))
                 .ToImmutableEquatableArray();
-            
+
             // Format named arguments
             var namedArgs = attr.NamedArguments
                 .Select(kvp => (kvp.Key, Helpers.RoslynHelpers.FormatAttributeConstant(_knownSymbols.Compilation, GenerationScope, kvp.Value)))
                 .ToImmutableEquatableArray();
-            
+
             attributes.Add(new AttributeDataModel
             {
                 AttributeType = CreateTypeId(attr.AttributeClass),
@@ -1138,7 +1139,7 @@ public sealed partial class Parser
                 IsInherited = isInherited,
             });
         }
-        
+
         return attributes.ToImmutableEquatableArray();
 
         (bool ShouldSkip, bool AllowMultiple, bool IsInherited) GetAttributeMetadata(INamedTypeSymbol attributeClass)
