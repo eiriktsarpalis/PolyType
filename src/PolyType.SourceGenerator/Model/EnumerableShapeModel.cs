@@ -17,4 +17,5 @@ public sealed record EnumerableShapeModel : TypeShapeModel
     public required bool ElementTypeContainsNullableAnnotations { get; init; }
     public required bool AppendMethodReturnsBoolean { get; init; }
     public required EnumerableInsertionMode InsertionMode { get; init; }
+    public int? Length { get; init; }
 }

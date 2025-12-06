@@ -1,7 +1,10 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using PolyType.Roslyn.Helpers;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace PolyType.Roslyn;
@@ -34,6 +37,7 @@ public partial class TypeDataModelGenerator
         IMethodSymbol? factoryMethod = null;
         CollectionConstructorParameter[]? factorySignature = null;
         EnumerableInsertionMode insertionMode = EnumerableInsertionMode.None;
+        int? length = null;
 
         if (type is IArrayTypeSymbol array)
         {
@@ -73,6 +77,11 @@ public partial class TypeDataModelGenerator
         {
             kind = EnumerableKind.ReadOnlyMemoryOfT;
             elementType = namedType.TypeArguments[0];
+        }
+        else if (TryGetInlineArrayElementType(namedType, KnownSymbols.Compilation, out elementType, out int inlineLength))
+        {
+            kind = EnumerableKind.InlineArrayOfT;
+            length = inlineLength;
         }
         else // IAsyncEnumerable<T>, IEnumerable<T>, IEnumerable
         {
@@ -152,6 +161,7 @@ public partial class TypeDataModelGenerator
             FactorySignature = factorySignature?.ToImmutableArray() ?? ImmutableArray<CollectionConstructorParameter>.Empty,
             IsSetType = isSetType,
             Rank = rank,
+            Length = length,
         };
 
         return true;
@@ -205,7 +215,7 @@ public partial class TypeDataModelGenerator
 
         (IMethodSymbol Factory, CollectionConstructorParameter[] Signature, bool IsParameterized)? GetImmutableCollectionFactory(INamedTypeSymbol namedType)
         {
-            if (namedType.OriginalDefinition.SpecialType 
+            if (namedType.OriginalDefinition.SpecialType
                     is SpecialType.System_Collections_IEnumerable or SpecialType.System_Collections_Generic_IEnumerable_T
                     or SpecialType.System_Collections_Generic_IReadOnlyCollection_T or SpecialType.System_Collections_Generic_IReadOnlyList_T ||
                 SymbolEqualityComparer.Default.Equals(namedType, KnownSymbols.ICollection))
@@ -290,7 +300,7 @@ public partial class TypeDataModelGenerator
         {
             if (namedType.TypeKind is TypeKind.Interface)
             {
-                if (namedType.OriginalDefinition.SpecialType is SpecialType.System_Collections_Generic_ICollection_T 
+                if (namedType.OriginalDefinition.SpecialType is SpecialType.System_Collections_Generic_ICollection_T
                                                              or SpecialType.System_Collections_Generic_IList_T ||
                     SymbolEqualityComparer.Default.Equals(namedType, KnownSymbols.IList))
                 {
@@ -410,7 +420,7 @@ public partial class TypeDataModelGenerator
         {
             return null; // The method does not return a matching type.
         }
-        
+
         if (method.Parameters.IsEmpty)
         {
             if (!hasAddMethod)
@@ -541,5 +551,122 @@ public partial class TypeDataModelGenerator
                      (KnownSymbols.TargetFramework is not TargetFramework.Legacy || collectionType.Name is not "ConcurrentDictionary"));
             }
         }
+    }
+
+    private static bool TryGetInlineArrayElementType(INamedTypeSymbol type, Compilation compilation, [NotNullWhen(true)] out ITypeSymbol? elementType, out int length)
+    {
+        elementType = null;
+        length = 0;
+
+        if (!type.IsValueType)
+        {
+            return false;
+        }
+
+        foreach (AttributeData attr in type.GetAttributes())
+        {
+            if (attr.AttributeClass is { Name: "InlineArrayAttribute" } && attr.AttributeClass.ToDisplayString() == "System.Runtime.CompilerServices.InlineArrayAttribute")
+            {
+                if (attr.ConstructorArguments is [{ Value: int len }])
+                {
+                    length = len;
+                    foreach (ISymbol member in type.GetMembers())
+                    {
+                        if (member is IFieldSymbol field && !field.IsStatic)
+                        {
+                            elementType = field.Type;
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        IFieldSymbol? singleField = null;
+        int fieldCount = 0;
+        foreach (ISymbol member in type.GetMembers())
+        {
+            if (member is IFieldSymbol field && !field.IsStatic)
+            {
+                singleField = field;
+                fieldCount++;
+            }
+        }
+
+        if (fieldCount == 1 && singleField != null)
+        {
+            bool isFixedBuffer = singleField.IsFixedSizeBuffer;
+
+            foreach (AttributeData attr in singleField.GetAttributes())
+            {
+                if (attr.AttributeClass is { Name: "FixedBufferAttribute" } && attr.AttributeClass.ToDisplayString() == "System.Runtime.CompilerServices.FixedBufferAttribute")
+                {
+                    if (attr.ConstructorArguments is [{ Value: ITypeSymbol elemType }, { Value: int len }])
+                    {
+                        length = len;
+                        elementType = elemType;
+                        return true;
+                    }
+                }
+            }
+
+            if (singleField.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() is VariableDeclaratorSyntax declarator &&
+                declarator.Parent is VariableDeclarationSyntax declaration &&
+                declarator.ArgumentList?.Arguments.Count == 1)
+            {
+                if (!isFixedBuffer && declaration.Parent is FieldDeclarationSyntax fieldDecl)
+                {
+                    isFixedBuffer = fieldDecl.Modifiers.Any(m => m.IsKind(SyntaxKind.FixedKeyword));
+                }
+
+                if (isFixedBuffer)
+                {
+                    ExpressionSyntax sizeExpr = declarator.ArgumentList.Arguments[0].Expression;
+                    SemanticModel semanticModel = compilation.GetSemanticModel(declarator.SyntaxTree);
+                    Optional<object?> constantValue = semanticModel.GetConstantValue(sizeExpr);
+
+                    if (!constantValue.HasValue)
+                    {
+                        var symbolInfo = semanticModel.GetSymbolInfo(sizeExpr);
+                        if (symbolInfo.Symbol is IFieldSymbol { HasConstantValue: true } constField)
+                        {
+                            constantValue = new Optional<object?>(constField.ConstantValue);
+                        }
+                        else if (symbolInfo.Symbol is ILocalSymbol { HasConstantValue: true } constLocal)
+                        {
+                            constantValue = new Optional<object?>(constLocal.ConstantValue);
+                        }
+
+                        if (!constantValue.HasValue && sizeExpr is IdentifierNameSyntax id)
+                        {
+                            var member = type.GetMembers(id.Identifier.Text).FirstOrDefault();
+                            if (member is IFieldSymbol { HasConstantValue: true } fieldMember)
+                            {
+                                constantValue = new Optional<object?>(fieldMember.ConstantValue);
+                            }
+                        }
+                    }
+
+                    if (constantValue.HasValue && constantValue.Value is int len)
+                    {
+                        length = len;
+                        Microsoft.CodeAnalysis.TypeInfo typeInfo = semanticModel.GetTypeInfo(declaration.Type);
+                        if (typeInfo.Type != null)
+                        {
+                            elementType = typeInfo.Type;
+                            return true;
+                        }
+
+                        if (singleField.Type is IPointerTypeSymbol ptrType)
+                        {
+                            elementType = ptrType.PointedAtType;
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 }

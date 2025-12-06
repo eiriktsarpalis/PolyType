@@ -20,8 +20,25 @@ public abstract partial class InlineArrayTests(ProviderUnderTest providerUnderTe
         Assert.Equal(2, value.Element0[1]);
         Assert.Equal(3, value.Element0[2]);
 
-        var getEnumerable = shape.GetGetEnumerable();
-        Assert.Equal([1, 2, 3], getEnumerable(value).ToArray());
+        var enumerable = shape.GetGetEnumerable()(value);
+        Assert.Equal([1, 2, 3], enumerable.ToArray());
+    }
+
+    [Fact]
+    public unsafe void FixedArrays_Count()
+    {
+        var shape = Assert.IsAssignableFrom<IEnumerableTypeShape<StructWithFixedArrayInt, int>>(
+            providerUnderTest.Provider.GetTypeShapeOrThrow<StructWithFixedArrayInt>());
+
+        StructWithFixedArrayInt value = new();
+        value.Element0[0] = 1;
+        value.Element0[1] = 2;
+        value.Element0[2] = 3;
+
+        var enumerable = shape.GetGetEnumerable()(value);
+
+        Assert.True(enumerable.TryGetNonEnumeratedCount(out int count));
+        Assert.Equal(3, count);
     }
 
     [Fact]
@@ -37,8 +54,32 @@ public abstract partial class InlineArrayTests(ProviderUnderTest providerUnderTe
         Assert.Equal(2, value.Element0[1]);
         Assert.Equal(3, value.Element0[2]);
 
-        var getEnumerable = shape.GetGetEnumerable();
-        Assert.Equal([1, 2, 3], getEnumerable(value).ToArray());
+        var enumerable = shape.GetGetEnumerable()(value);
+        Assert.Equal([1, 2, 3], enumerable.ToArray());
+    }
+
+    [Fact]
+    public unsafe void FixedArrays_EnumeratorsHaveOwnState()
+    {
+        var shape = Assert.IsAssignableFrom<IEnumerableTypeShape<StructWithFixedArrayInt, int>>(
+            providerUnderTest.Provider.GetTypeShapeOrThrow<StructWithFixedArrayInt>());
+
+        StructWithFixedArrayInt value = new();
+        value.Element0[0] = 1;
+        value.Element0[1] = 2;
+        value.Element0[2] = 3;
+
+        var enumerable = shape.GetGetEnumerable()(value);
+        var enumerator1 = enumerable.GetEnumerator();
+        var enumerator2 = enumerable.GetEnumerator();
+
+        Assert.True(enumerator1.MoveNext());
+        Assert.True(enumerator1.MoveNext());
+
+        Assert.True(enumerator2.MoveNext());
+
+        Assert.Equal(2, enumerator1.Current);
+        Assert.Equal(1, enumerator2.Current);
     }
 
 #if NET
@@ -55,9 +96,27 @@ public abstract partial class InlineArrayTests(ProviderUnderTest providerUnderTe
         Assert.Equal(2, value[1]);
         Assert.Equal(3, value[2]);
 
-        var getEnumerable = shape.GetGetEnumerable();
-        Assert.Equal([1, 2, 3], getEnumerable(value).ToArray());
+        var enumerable = shape.GetGetEnumerable()(value);
+        Assert.Equal([1, 2, 3], enumerable.ToArray());
     }
+
+#if NET
+    [Fact]
+    public unsafe void InlineArrays_Count()
+    {
+        var shape = Assert.IsAssignableFrom<IEnumerableTypeShape<StructWithInlineArrayPrimitive, byte>>(
+            providerUnderTest.Provider.GetTypeShapeOrThrow<StructWithInlineArrayPrimitive>());
+
+        StructWithInlineArrayPrimitive value = new();
+        value[0] = 1;
+        value[1] = 2;
+        value[2] = 3;
+
+        var enumerable = shape.GetGetEnumerable()(value);
+        Assert.True(enumerable.TryGetNonEnumeratedCount(out int count));
+        Assert.Equal(3, count);
+    }
+#endif
 
     [Fact]
     public void InlineArrays_String()
@@ -74,6 +133,30 @@ public abstract partial class InlineArrayTests(ProviderUnderTest providerUnderTe
 
         var getEnumerable = shape.GetGetEnumerable();
         Assert.Equal(["a", "b", "c"], getEnumerable(value).ToArray());
+    }
+
+    [Fact]
+    public unsafe void InlineArrays_EnumeratorsHaveOwnState()
+    {
+        var shape = Assert.IsAssignableFrom<IEnumerableTypeShape<StructWithInlineArrayPrimitive, byte>>(
+            providerUnderTest.Provider.GetTypeShapeOrThrow<StructWithInlineArrayPrimitive>());
+
+        StructWithInlineArrayPrimitive value = new();
+        value[0] = 1;
+        value[1] = 2;
+        value[2] = 3;
+
+        var enumerable = shape.GetGetEnumerable()(value);
+        var enumerator1 = enumerable.GetEnumerator();
+        var enumerator2 = enumerable.GetEnumerator();
+
+        Assert.True(enumerator1.MoveNext());
+        Assert.True(enumerator1.MoveNext());
+
+        Assert.True(enumerator2.MoveNext());
+
+        Assert.Equal(2, enumerator1.Current);
+        Assert.Equal(1, enumerator2.Current);
     }
 #endif
 
