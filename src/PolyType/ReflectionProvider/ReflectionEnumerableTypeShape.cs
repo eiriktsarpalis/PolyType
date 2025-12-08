@@ -361,7 +361,8 @@ internal sealed class ReflectionInlineArrayTypeShape<TArray, TElement>(int lengt
         {
             if (span.Length != length)
             {
-                throw new ArgumentException($"Expected {length} elements, but got {span.Length}.");
+                Throw(span, length);
+                static void Throw(ReadOnlySpan<TElement> span, int expectedLength) => throw new ArgumentException($"Expected {expectedLength} elements, but got {span.Length}.");
             }
 
             TArray array = default;

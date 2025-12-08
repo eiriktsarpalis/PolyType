@@ -98,9 +98,10 @@ public sealed class InlineArrayEnumerable<TArray, TElement>(TArray array, int le
         {
             get
             {
-                if (_index >= _length || _index < 0)
+                if (unchecked((uint)_index >= (uint)_length))
                 {
-                    throw new InvalidOperationException();
+                    Throw();
+                    static void Throw() => throw new InvalidOperationException();
                 }
 
                 return Unsafe.Add(ref Unsafe.As<TArray, TElement>(ref _array), _index);
