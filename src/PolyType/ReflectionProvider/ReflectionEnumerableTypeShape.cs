@@ -352,7 +352,7 @@ internal sealed class ReflectionInlineArrayTypeShape<TArray, TElement>(int lengt
 
     public override Func<TArray, IEnumerable<TElement>> GetGetEnumerable()
     {
-        return array => new InlineArrayEnumerable(array, length);
+        return array => new SourceGenModel.InlineArrayEnumerable<TArray, TElement>(array, length);
     }
 
     public override ParameterizedCollectionConstructor<TElement, TElement, TArray> GetParameterizedConstructor()
@@ -376,67 +376,5 @@ internal sealed class ReflectionInlineArrayTypeShape<TArray, TElement>(int lengt
 #endif
             return array;
         };
-    }
-
-    private sealed class InlineArrayEnumerable(TArray array, int length) : ICollection<TElement>, IReadOnlyCollection<TElement>
-    {
-        public int Count => length;
-        public bool IsReadOnly => true;
-        public void Add(TElement item) => throw new NotSupportedException();
-        public void Clear() => throw new NotSupportedException();
-        public bool Contains(TElement item)
-        {
-            foreach (var element in this)
-            {
-                if (EqualityComparer<TElement>.Default.Equals(element, item))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        public void CopyTo(TElement[] destination, int arrayIndex)
-        {
-            if (destination is null)
-            {
-                throw new ArgumentNullException(nameof(destination));
-            }
-
-            if (arrayIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex));
-            }
-
-            if (destination.Length - arrayIndex < length)
-            {
-                throw new ArgumentException("Destination array is too small.");
-            }
-
-            int i = 0;
-            foreach (var element in this)
-            {
-                destination[arrayIndex + i++] = element;
-            }
-        }
-
-        public bool Remove(TElement item) => throw new NotSupportedException();
-
-        public IEnumerator<TElement> GetEnumerator() => new Enumerator(array, length);
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-        private sealed class Enumerator(TArray array, int length) : IEnumerator<TElement>
-        {
-            private int _index = -1;
-            private TArray _array = array;
-
-            public TElement Current => Unsafe.Add(ref Unsafe.As<TArray, TElement>(ref _array), _index);
-            object? IEnumerator.Current => Current;
-
-            public bool MoveNext() => ++_index < length;
-            public void Reset() => _index = -1;
-            public void Dispose() { }
-        }
     }
 }

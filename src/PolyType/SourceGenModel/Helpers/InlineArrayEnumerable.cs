@@ -70,19 +70,47 @@ public sealed class InlineArrayEnumerable<TArray, TElement>(TArray array, int le
 
     /// <inheritdoc/>
     public IEnumerator<TElement> GetEnumerator() => new Enumerator(array, length);
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 
-    private sealed class Enumerator(TArray array, int length) : IEnumerator<TElement>
+    /// <summary>
+    /// Enumerator for the inline array.
+    /// </summary>
+    public struct Enumerator : IEnumerator<TElement>
     {
-        private int _index = -1;
-        private TArray _array = array;
+        private readonly int _length;
+        private TArray _array;
+        private int _index;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Enumerator"/> struct.
+        /// </summary>
+        /// <param name="array">The inline array to enumerate.</param>
+        /// <param name="length">The number of elements in the array.</param>
+        public Enumerator(TArray array, int length)
+        {
+            _array = array;
+            _length = length;
+            _index = -1;
+        }
 
         /// <inheritdoc/>
-        public TElement Current => Unsafe.Add(ref Unsafe.As<TArray, TElement>(ref _array), _index);
+        public TElement Current
+        {
+            get
+            {
+                if (_index >= _length || _index < 0)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                return Unsafe.Add(ref Unsafe.As<TArray, TElement>(ref _array), _index);
+            }
+        }
+
         object? IEnumerator.Current => Current;
 
         /// <inheritdoc/>
-        public bool MoveNext() => ++_index < length;
+        public bool MoveNext() => ++_index < _length;
 
         /// <inheritdoc/>
         public void Reset() => _index = -1;
