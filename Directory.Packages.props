@@ -19,7 +19,7 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="$(RoslynVersion)" />
     <!-- Build Infra & Packaging -->
     <PackageVersion Include="PolySharp" Version="1.15.0" />
-    <PackageVersion Include="Nerdbank.GitVersioning" Version="3.9.50" />
+    <PackageVersion Include="Nerdbank.GitVersioning" Version="3.10.8-alpha" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
     <!-- Testing dependencies -->
     <PackageVersion Include="xunit.v3" Version="3.2.1" />

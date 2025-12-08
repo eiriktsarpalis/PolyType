@@ -1,8 +1,5 @@
 {
   "$schema": "https://raw.githubusercontent.com/dotnet/Nerdbank.GitVersioning/main/src/NerdBank.GitVersioning/version.schema.json",
   "inherit": true,
-  "assemblyVersion": {
-    "precision": "revision"
-  },
   "prerelease": "unstable"
 }
