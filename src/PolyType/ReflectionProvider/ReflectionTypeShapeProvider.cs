@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace PolyType.ReflectionProvider;
@@ -190,6 +191,12 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
                 Type enumerableTypeTy = typeof(MultiDimensionalArrayTypeShape<,>).MakeGenericType(type, elementType);
                 return (IEnumerableTypeShape)Activator.CreateInstance(enumerableTypeTy, this, rank, options)!;
             }
+        }
+
+        if (TryGetInlineArrayElementType(type, out Type? inlineElementType, out int length))
+        {
+            Type enumerableTypeTy = typeof(ReflectionInlineArrayTypeShape<,>).MakeGenericType(type, inlineElementType);
+            return (IEnumerableTypeShape)Activator.CreateInstance(enumerableTypeTy, length, this, options)!;
         }
 
         foreach (Type interfaceTy in type.GetAllInterfaces().Where(t => t.IsGenericType).OrderByDescending(t => t.Name))
@@ -550,6 +557,11 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             return TypeShapeKind.Enumerable;
         }
 
+        if (TryGetInlineArrayElementType(type, out _, out _))
+        {
+            return TypeShapeKind.Enumerable;
+        }
+
         return TypeShapeKind.Object;
     }
 
@@ -900,6 +912,49 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
                      (!ReflectionHelpers.IsNetFramework || collectionType.Name is not "ConcurrentDictionary`2"));
             }
         }
+    }
+
+    private static bool TryGetInlineArrayElementType(Type type, [NotNullWhen(true)] out Type? elementType, out int length)
+    {
+        elementType = null;
+        length = 0;
+
+        if (!type.IsValueType)
+        {
+            return false;
+        }
+
+#if NET
+        foreach (CustomAttributeData attr in type.GetCustomAttributesData())
+        {
+            if (attr.AttributeType == typeof(InlineArrayAttribute))
+            {
+                length = (int)attr.ConstructorArguments[0].Value!;
+                FieldInfo[] fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (fields.Length > 0)
+                {
+                    elementType = fields[0].FieldType;
+                    return true;
+                }
+            }
+        }
+#endif
+
+        // Check for single fixed buffer field
+        if (type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) is [FieldInfo field])
+        {
+            foreach (CustomAttributeData attr in field.GetCustomAttributesData())
+            {
+                if (attr.AttributeType == typeof(FixedBufferAttribute))
+                {
+                    elementType = (Type)attr.ConstructorArguments[0].Value!;
+                    length = (int)attr.ConstructorArguments[1].Value!;
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     internal static MethodShapeInfo CreateMethodShapeInfo(

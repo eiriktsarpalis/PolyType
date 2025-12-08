@@ -1,8 +1,12 @@
-﻿using PolyType.Abstractions;
+﻿#pragma warning disable CA1512 // Use ArgumentOutOfRangeException throw helper
+
+using PolyType.Abstractions;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace PolyType.ReflectionProvider;
@@ -335,4 +339,43 @@ internal sealed class ReflectionAsyncEnumerableShape<TEnumerable, TElement>(Refl
     public override bool IsAsyncEnumerable => true;
     public override Func<TEnumerable, IEnumerable<TElement>> GetGetEnumerable() =>
         static _ => throw new InvalidOperationException("Sync enumeration of IAsyncEnumerable instances is not supported.");
+}
+
+[RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
+[RequiresDynamicCode(ReflectionTypeShapeProvider.RequiresDynamicCodeMessage)]
+internal sealed class ReflectionInlineArrayTypeShape<TArray, TElement>(int length, ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
+    : ReflectionEnumerableTypeShape<TArray, TElement>(provider, options)
+    where TArray : struct
+{
+    public override CollectionComparerOptions SupportedComparer => CollectionComparerOptions.None;
+    public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Parameterized;
+
+    public override Func<TArray, IEnumerable<TElement>> GetGetEnumerable()
+    {
+        return array => new SourceGenModel.InlineArrayEnumerable<TArray, TElement>(array, length);
+    }
+
+    public override ParameterizedCollectionConstructor<TElement, TElement, TArray> GetParameterizedConstructor()
+    {
+        return (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) =>
+        {
+            if (span.Length != length)
+            {
+                Throw(span, length);
+                static void Throw(ReadOnlySpan<TElement> span, int expectedLength) => throw new ArgumentException($"Expected {expectedLength} elements, but got {span.Length}.");
+            }
+
+            TArray array = default;
+            ref TElement destination = ref Unsafe.As<TArray, TElement>(ref array);
+#if NETSTANDARD2_0 || NETFRAMEWORK
+            for (int i = 0; i < length; i++)
+            {
+                Unsafe.Add(ref destination, i) = span[i];
+            }
+#else
+            span.CopyTo(MemoryMarshal.CreateSpan(ref destination, length));
+#endif
+            return array;
+        };
+    }
 }
