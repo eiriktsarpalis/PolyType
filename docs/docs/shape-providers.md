@@ -170,7 +170,7 @@ The `TypeShape` attribute can also be used to specify associated types for the t
 In the context of source generated/AOT applications, this provides a Reflection-free way to leap from one @PolyType.ITypeShape to an associated shape, and get all the functionality of the associated shape.
 For example, serializers may need to jump from a type shape to its converter.
 
-[!code-csharp[](CSharpSamples/AssociatedTypes.cs#TypeShapeOneType)]
+[!code-csharp[](../CSharpSamples/AssociatedTypes.cs#TypeShapeOneType)]
 
 Use the <xref:PolyType.ITypeShape.GetAssociatedTypeShape*> method to obtain the shape of an associated type.
 The <xref:PolyType.SourceGenModel.SourceGenTypeShapeProvider> implementation of this method requires that the associated types be pre-determined at compile time via attributes.
@@ -182,13 +182,13 @@ Making the type `public` is highly recommended so that when the data type is use
 
 Registering associated types is particularly important when the associated type is generic, and the generic type arguments come from the target type.
 
-[!code-csharp[](CSharpSamples/AssociatedTypes.cs#GenericAssociatedType)]
+[!code-csharp[](../CSharpSamples/AssociatedTypes.cs#GenericAssociatedType)]
 
 Associated shapes can be only partially defined.
 If for example you only need to be able to activate an instance of an associated type but don't need its properties (and their respective types) defined, you can indicate this and shrink the output of source generation.
 This can be appropriate for a serializer that needs to jump from a generic data type to a generic converter, for example.
 
-[!code-csharp[](CSharpSamples/AssociatedTypes.cs#SerializerConverter)]
+[!code-csharp[](../CSharpSamples/AssociatedTypes.cs#SerializerConverter)]
 
 Only <xref:PolyType.SourceGenModel.SourceGenTypeShapeProvider> produces partial shapes.
 The <xref:PolyType.ReflectionProvider.ReflectionTypeShapeProvider> always produces complete shapes.
