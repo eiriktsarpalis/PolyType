@@ -15,4 +15,9 @@ jobs:
       - name: Markup Link Checker (mlc)
         uses: becheran/mlc@v1.1.0
         with:
-          user-agent: 'PolyTypeLinkChecker/1.1.0'
+          http-headers: |
+            {
+              "*": {
+                "User-Agent": "PolyTypeLinkChecker/1.1.0"
+              }
+            }
