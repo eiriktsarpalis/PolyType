@@ -1,0 +1,2 @@
+# Custom HTTP headers to send with web requests
+http-headers=["User-Agent: Mozilla/5.0"]
