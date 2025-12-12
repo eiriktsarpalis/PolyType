@@ -1,0 +1,2 @@
+# Custom HTTP headers to send with web requests
+http-headers=["User-Agent: PolyTypeLinkChecker/1.1.0"]
