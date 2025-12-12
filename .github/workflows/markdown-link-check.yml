@@ -13,4 +13,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@main
       - name: Markup Link Checker (mlc)
-        uses: becheran/mlc@v1.0.0
+        uses: becheran/mlc@v1.1.0
+        with:
+          user-agent: 'PolyTypeLinkChecker/1.1.0'
