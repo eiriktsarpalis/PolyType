@@ -16,4 +16,5 @@ jobs:
         uses: becheran/mlc@v1.2.0
         with:
           args: >-
+            **/*.md
             -H "User-Agent: Mozilla/5.0"
