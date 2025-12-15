@@ -98,7 +98,7 @@ record MyPoco(string? x, string? y);
 It should be noted that the visitor is only used when constructing, or _folding_ the counter delegate but not when the delegate itself is being invoked. At the same time, traversing the type graph via the visitor requires casting of the intermediate delegates, however the traversal of the object graph via the resultant delegate is fully type-safe and doesn't require any casting.
 
 > [!NOTE]
-> In technical terms, <xref:PolyType.ITypeShape> encodes a [GADT representation](https://en.wikipedia.org/wiki/Generalized_algebraic_data_type) over .NET types and <xref:PolyType.Abstractions.TypeShapeVisitor> encodes a pattern match over the GADT. This technique was originally described in [this publication](https://www.microsoft.com/research/publication/generalized-algebraic-data-types-and-object-oriented-programming/).
+> In technical terms, <xref:PolyType.ITypeShape> encodes a [GADT representation](https://en.wikipedia.org/wiki/Generalized_algebraic_data_type) over .NET types and <xref:PolyType.Abstractions.TypeShapeVisitor> encodes a pattern match over the GADT. This technique was originally described in [this publication](https://www.microsoft.com/en-us/research/publication/generalized-algebraic-data-types-and-object-oriented-programming/).
 >
 > The casting requirement for visitors is a known restriction of this approach, and possible extensions to the C# type system that allow type-safe pattern matching on GADTs are discussed in the paper.
 
