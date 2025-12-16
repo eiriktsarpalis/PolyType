@@ -16,7 +16,7 @@ public class RandomGenerationTests
             .Take(10)
             .ToArray();
 
-        await Assert.That(instances).Count().EqualTo(10);
+        await Assert.That(instances).Count().IsEqualTo(10);
     }
 
     [Test]
@@ -27,6 +27,6 @@ public class RandomGenerationTests
             .Take(10)
             .ToArray();
 
-        await Assert.That(todosList).Count().EqualTo(10);
+        await Assert.That(todosList).Count().IsEqualTo(10);
     }
 }
