@@ -55,7 +55,7 @@ jobs:
 
     - name: Upload artifacts 🚀
       if: runner.os == 'Linux' && matrix.configuration == 'Release' && github.ref == 'refs/heads/main'
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: build-artifacts
         path: artifacts/
