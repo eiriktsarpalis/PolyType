@@ -1225,7 +1225,7 @@ public sealed partial class Parser : TypeDataModelGenerator
             
             // Strip "global::" prefix if present for pattern matching
             string nameForMatching = fullyQualifiedName.StartsWith("global::")
-                ? fullyQualifiedName.Substring("global::".Length)
+                ? fullyQualifiedName[8..]
                 : fullyQualifiedName;
             
             if (Helpers.GlobPatternMatcher.Matches(nameForMatching, patterns))

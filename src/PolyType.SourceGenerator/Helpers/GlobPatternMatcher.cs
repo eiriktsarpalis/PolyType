@@ -43,7 +43,7 @@ internal static class GlobPatternMatcher
         
         try
         {
-            return Regex.IsMatch(typeName, regexPattern, RegexOptions.None, TimeSpan.FromMilliseconds(100));
+            return Regex.IsMatch(typeName, regexPattern, RegexOptions.None, TimeSpan.FromMilliseconds(500));
         }
         catch (RegexMatchTimeoutException)
         {
