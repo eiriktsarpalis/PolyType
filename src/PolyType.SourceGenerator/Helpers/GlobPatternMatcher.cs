@@ -7,7 +7,7 @@ namespace PolyType.SourceGenerator.Helpers;
 /// </summary>
 internal sealed class GlobPatternMatcher
 {
-    private readonly Regex[] _regexes;
+    private readonly Regex?[] _regexes;
     private readonly string[] _patterns;
 
     /// <summary>
@@ -17,7 +17,7 @@ internal sealed class GlobPatternMatcher
     public GlobPatternMatcher(IEnumerable<string> patterns)
     {
         _patterns = patterns.ToArray();
-        _regexes = new Regex[_patterns.Length];
+        _regexes = new Regex?[_patterns.Length];
 
         for (int i = 0; i < _patterns.Length; i++)
         {
@@ -31,12 +31,12 @@ internal sealed class GlobPatternMatcher
                 catch (ArgumentException)
                 {
                     // Invalid regex pattern, will fall back to null check
-                    _regexes[i] = null!;
+                    _regexes[i] = null;
                 }
             }
             else
             {
-                _regexes[i] = null!;
+                _regexes[i] = null;
             }
         }
     }
@@ -62,7 +62,7 @@ internal sealed class GlobPatternMatcher
             {
                 try
                 {
-                    if (_regexes[i].IsMatch(typeName))
+                    if (_regexes[i]!.IsMatch(typeName))
                     {
                         return true;
                     }

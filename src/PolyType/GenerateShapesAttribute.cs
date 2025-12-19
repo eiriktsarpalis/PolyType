@@ -29,12 +29,25 @@ namespace PolyType;
 [Conditional("NEVER")] // only the source generator uses this.
 public sealed class GenerateShapesAttribute(string typeNamePattern, params string[] additionalPatterns) : Attribute
 {
+    private readonly string[] _typeNamePatterns = CreatePatternsArray(typeNamePattern, additionalPatterns);
+
     /// <summary>
     /// Gets the type name patterns to match.
     /// </summary>
-    public string[] TypeNamePatterns { get; } = additionalPatterns.Length == 0
-        ? [typeNamePattern]
-        : [typeNamePattern, .. additionalPatterns];
+    public string[] TypeNamePatterns => _typeNamePatterns;
+
+    private static string[] CreatePatternsArray(string firstPattern, string[] additionalPatterns)
+    {
+        if (additionalPatterns.Length == 0)
+        {
+            return [firstPattern];
+        }
+
+        string[] result = new string[additionalPatterns.Length + 1];
+        result[0] = firstPattern;
+        additionalPatterns.CopyTo(result, 1);
+        return result;
+    }
 
     /// <inheritdoc cref="TypeShapeAttribute.Marshaler"/>
     public Type? Marshaler { get; init; }
