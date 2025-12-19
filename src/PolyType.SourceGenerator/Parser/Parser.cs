@@ -1127,24 +1127,28 @@ public sealed partial class Parser : TypeDataModelGenerator
             }
             else if (
                 SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.GenerateShapeForAttribute) &&
-                attributeData.ConstructorArguments is [{ Kind: TypedConstantKind.Array, Values: var patternValues }] &&
-                patternValues.Length > 0)
+                attributeData.ConstructorArguments.Length >= 1 &&
+                attributeData.ConstructorArguments[0].Kind == TypedConstantKind.Primitive &&
+                attributeData.ConstructorArguments[0].Value is string firstPattern)
             {
-                // [GenerateShapeFor("pattern1", "pattern2", ...)]
-                List<string> patterns = new(patternValues.Length);
-                foreach (TypedConstant patternConstant in patternValues)
+                // [GenerateShapeFor("pattern")] or [GenerateShapeFor("pattern1", "pattern2", ...)]
+                List<string> patterns = new() { firstPattern };
+                
+                // Check if there's a second argument (params array)
+                if (attributeData.ConstructorArguments.Length > 1 &&
+                    attributeData.ConstructorArguments[1].Kind == TypedConstantKind.Array)
                 {
-                    if (patternConstant.Value is string pattern)
+                    foreach (TypedConstant patternConstant in attributeData.ConstructorArguments[1].Values)
                     {
-                        patterns.Add(pattern);
+                        if (patternConstant.Value is string additionalPattern)
+                        {
+                            patterns.Add(additionalPattern);
+                        }
                     }
                 }
 
-                if (patterns.Count > 0)
-                {
-                    isWitnessTypeDeclaration = true;
-                    IncludeTypesMatchingPatterns(patterns, attributeData, ref shapeableImplementations);
-                }
+                isWitnessTypeDeclaration = true;
+                IncludeTypesMatchingPatterns(patterns, attributeData, ref shapeableImplementations);
             }
             else if (
                 attributeData.AttributeClass is { TypeArguments: [ITypeSymbol typeArgument] } &&
@@ -1219,7 +1223,12 @@ public sealed partial class Parser : TypeDataModelGenerator
 
             string fullyQualifiedName = type.GetFullyQualifiedName();
             
-            if (Helpers.GlobPatternMatcher.Matches(fullyQualifiedName, patterns))
+            // Strip "global::" prefix if present for pattern matching
+            string nameForMatching = fullyQualifiedName.StartsWith("global::")
+                ? fullyQualifiedName.Substring("global::".Length)
+                : fullyQualifiedName;
+            
+            if (Helpers.GlobPatternMatcher.Matches(nameForMatching, patterns))
             {
                 switch (IncludeType(type))
                 {

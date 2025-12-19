@@ -63,16 +63,27 @@ public sealed class GenerateShapeForAttribute : Attribute
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="GenerateShapeForAttribute"/> class with type name patterns.
+    /// Initializes a new instance of the <see cref="GenerateShapeForAttribute"/> class with a single type name pattern.
     /// </summary>
-    /// <param name="typeNamePatterns">
-    /// One or more glob patterns matching fully qualified type names.
+    /// <param name="typeNamePattern">
+    /// A glob pattern matching fully qualified type names.
     /// Patterns support wildcards: '*' matches any sequence of characters, '?' matches a single character.
     /// Examples: "MyNamespace.*", "*.Dtos.*", "MyNamespace.Person*".
     /// </param>
-    public GenerateShapeForAttribute(params string[] typeNamePatterns)
+    /// <param name="additionalPatterns">Additional patterns to match.</param>
+    public GenerateShapeForAttribute(string typeNamePattern, params string[] additionalPatterns)
     {
-        TypeNamePatterns = typeNamePatterns;
+        if (additionalPatterns.Length == 0)
+        {
+            TypeNamePatterns = [typeNamePattern];
+        }
+        else
+        {
+            string[] patterns = new string[additionalPatterns.Length + 1];
+            patterns[0] = typeNamePattern;
+            additionalPatterns.CopyTo(patterns, 1);
+            TypeNamePatterns = patterns;
+        }
     }
 
     /// <summary>

@@ -15,12 +15,12 @@ public static class PatternMatchingTests
             {
                 public class PersonDto
                 {
-                    public string Name { get; set; }
+                    public string? Name { get; set; }
                 }
 
                 public class AddressDto
                 {
-                    public string Street { get; set; }
+                    public string? Street { get; set; }
                 }
             }
 
@@ -55,7 +55,7 @@ public static class PatternMatchingTests
             {
                 public class PersonDto
                 {
-                    public string Name { get; set; }
+                    public string? Name { get; set; }
                 }
             }
 
@@ -63,7 +63,7 @@ public static class PatternMatchingTests
             {
                 public class Person
                 {
-                    public string Name { get; set; }
+                    public string? Name { get; set; }
                 }
             }
 
@@ -90,17 +90,17 @@ public static class PatternMatchingTests
             {
                 public class PersonDto
                 {
-                    public string Name { get; set; }
+                    public string? Name { get; set; }
                 }
 
                 public class AddressDto
                 {
-                    public string Street { get; set; }
+                    public string? Street { get; set; }
                 }
 
                 public class PersonModel
                 {
-                    public string Name { get; set; }
+                    public string? Name { get; set; }
                 }
             }
 
@@ -127,7 +127,7 @@ public static class PatternMatchingTests
             {
                 public class PersonDto
                 {
-                    public string Name { get; set; }
+                    public string? Name { get; set; }
                 }
             }
 
@@ -135,7 +135,7 @@ public static class PatternMatchingTests
             {
                 public class AddressDto
                 {
-                    public string Street { get; set; }
+                    public string? Street { get; set; }
                 }
             }
 
@@ -162,7 +162,7 @@ public static class PatternMatchingTests
             {
                 public class Person
                 {
-                    public string Name { get; set; }
+                    public string? Name { get; set; }
                 }
             }
 
@@ -186,7 +186,7 @@ public static class PatternMatchingTests
             {
                 public class PersonDto
                 {
-                    public string Name { get; set; }
+                    public string? Name { get; set; }
                 }
             }
 
@@ -222,17 +222,17 @@ public static class PatternMatchingTests
             {
                 public class Dto1
                 {
-                    public string Name { get; set; }
+                    public string? Name { get; set; }
                 }
 
                 public class Dto2
                 {
-                    public string Name { get; set; }
+                    public string? Name { get; set; }
                 }
 
                 public class Dto10
                 {
-                    public string Name { get; set; }
+                    public string? Name { get; set; }
                 }
             }
 
