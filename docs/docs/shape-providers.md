@@ -36,15 +36,15 @@ Alternatively, you can use glob patterns to generate shapes for multiple types a
 
 ```csharp
 // Generate shapes for all types in a namespace
-[GenerateShapeFor("MyApp.Dtos.*")]
+[GenerateShapes("MyApp.Dtos.*")]
 public partial class Witness;
 
 // Generate shapes matching multiple patterns
-[GenerateShapeFor("MyApp.Dtos.*", "MyApp.Models.*")]
+[GenerateShapes("MyApp.Dtos.*", "MyApp.Models.*")]
 public partial class Witness;
 
 // Mix pattern-based and explicit type generation
-[GenerateShapeFor("MyApp.Dtos.*")]
+[GenerateShapes("MyApp.Dtos.*")]
 [GenerateShapeFor(typeof(ThirdParty.SpecialType))]
 public partial class Witness;
 ```

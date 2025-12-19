@@ -5,51 +5,80 @@ namespace PolyType.SourceGenerator.Helpers;
 /// <summary>
 /// Provides glob pattern matching functionality for type names.
 /// </summary>
-internal static class GlobPatternMatcher
+internal sealed class GlobPatternMatcher
 {
+    private readonly Regex[] _regexes;
+    private readonly string[] _patterns;
+
     /// <summary>
-    /// Checks if a type name matches any of the provided glob patterns.
+    /// Initializes a new instance of the <see cref="GlobPatternMatcher"/> class.
     /// </summary>
-    /// <param name="typeName">The fully qualified type name to match.</param>
     /// <param name="patterns">The glob patterns to match against.</param>
-    /// <returns>True if the type name matches any pattern, false otherwise.</returns>
-    public static bool Matches(string typeName, IEnumerable<string> patterns)
+    public GlobPatternMatcher(IEnumerable<string> patterns)
     {
-        foreach (string pattern in patterns)
+        _patterns = patterns.ToArray();
+        _regexes = new Regex[_patterns.Length];
+
+        for (int i = 0; i < _patterns.Length; i++)
         {
-            if (Matches(typeName, pattern))
+            if (!string.IsNullOrEmpty(_patterns[i]))
             {
-                return true;
+                string regexPattern = ConvertGlobToRegex(_patterns[i]);
+                try
+                {
+                    _regexes[i] = new Regex(regexPattern, RegexOptions.None, TimeSpan.FromMilliseconds(500));
+                }
+                catch (ArgumentException)
+                {
+                    // Invalid regex pattern, will fall back to null check
+                    _regexes[i] = null!;
+                }
+            }
+            else
+            {
+                _regexes[i] = null!;
             }
         }
-        return false;
     }
 
     /// <summary>
-    /// Checks if a type name matches a single glob pattern.
+    /// Checks if a type name matches any of the configured glob patterns.
     /// </summary>
     /// <param name="typeName">The fully qualified type name to match.</param>
-    /// <param name="pattern">The glob pattern to match against.</param>
-    /// <returns>True if the type name matches the pattern, false otherwise.</returns>
-    public static bool Matches(string typeName, string pattern)
+    /// <returns>True if the type name matches any pattern, false otherwise.</returns>
+    public bool Matches(string typeName)
     {
-        if (string.IsNullOrEmpty(pattern))
+        for (int i = 0; i < _regexes.Length; i++)
         {
-            return false;
+            if (_regexes[i] is null)
+            {
+                // Fall back to exact match for invalid patterns
+                if (typeName == _patterns[i])
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                try
+                {
+                    if (_regexes[i].IsMatch(typeName))
+                    {
+                        return true;
+                    }
+                }
+                catch (RegexMatchTimeoutException)
+                {
+                    // If regex times out, fall back to exact match
+                    if (typeName == _patterns[i])
+                    {
+                        return true;
+                    }
+                }
+            }
         }
 
-        // Convert glob pattern to regex
-        string regexPattern = ConvertGlobToRegex(pattern);
-        
-        try
-        {
-            return Regex.IsMatch(typeName, regexPattern, RegexOptions.None, TimeSpan.FromMilliseconds(500));
-        }
-        catch (RegexMatchTimeoutException)
-        {
-            // If regex times out, fall back to exact match
-            return typeName == pattern;
-        }
+        return false;
     }
 
     /// <summary>

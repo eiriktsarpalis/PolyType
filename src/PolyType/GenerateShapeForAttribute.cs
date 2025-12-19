@@ -34,9 +34,10 @@ public sealed class GenerateShapeForAttribute<T> : Attribute
 }
 
 /// <summary>
-/// Instructs the PolyType source generator to include types matching the specified patterns
+/// Instructs the PolyType source generator to include <paramref name="target"/>
 /// in the <see cref="ITypeShapeProvider"/> that it generates.
 /// </summary>
+/// <param name="target">The type for which shape metadata will be generated. This must not be an open-generic type.</param>
 /// <remarks>
 /// <para>
 /// The source generator will include a static property in the annotated class pointing
@@ -44,57 +45,19 @@ public sealed class GenerateShapeForAttribute<T> : Attribute
 /// </para>
 /// <para>
 /// For projects targeting .NET 8 or later, this additionally augments the class
-/// with an implementation of IShapeable for matched types.
+/// with an implementation of IShapeable for <paramref name="target"/>.
 /// </para>
 /// </remarks>
 /// <seealso cref="GenerateShapeForAttribute{T}"/>
 /// <seealso cref="GenerateShapeAttribute"/>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
 [Conditional("NEVER")] // only the source generator uses this.
-public sealed class GenerateShapeForAttribute : Attribute
+public sealed class GenerateShapeForAttribute(Type target) : Attribute
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="GenerateShapeForAttribute"/> class with a specific type.
+    /// Gets the target type being generated.
     /// </summary>
-    /// <param name="target">The type for which shape metadata will be generated. This must not be an open-generic type.</param>
-    public GenerateShapeForAttribute(Type target)
-    {
-        Target = target;
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GenerateShapeForAttribute"/> class with a single type name pattern.
-    /// </summary>
-    /// <param name="typeNamePattern">
-    /// A glob pattern matching fully qualified type names.
-    /// Patterns support wildcards: '*' matches any sequence of characters, '?' matches a single character.
-    /// Examples: "MyNamespace.*", "*.Dtos.*", "MyNamespace.Person*".
-    /// </param>
-    /// <param name="additionalPatterns">Additional patterns to match.</param>
-    public GenerateShapeForAttribute(string typeNamePattern, params string[] additionalPatterns)
-    {
-        if (additionalPatterns.Length == 0)
-        {
-            TypeNamePatterns = [typeNamePattern];
-        }
-        else
-        {
-            string[] patterns = new string[additionalPatterns.Length + 1];
-            patterns[0] = typeNamePattern;
-            additionalPatterns.CopyTo(patterns, 1);
-            TypeNamePatterns = patterns;
-        }
-    }
-
-    /// <summary>
-    /// Gets the target type being generated, or null if patterns are used.
-    /// </summary>
-    public Type? Target { get; }
-
-    /// <summary>
-    /// Gets the type name patterns to match, or null if a specific type is used.
-    /// </summary>
-    public string[]? TypeNamePatterns { get; }
+    public Type Target { get; } = target;
 
     /// <inheritdoc cref="TypeShapeAttribute.Marshaler"/>
     public Type? Marshaler { get; init; }

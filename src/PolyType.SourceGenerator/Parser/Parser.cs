@@ -1126,12 +1126,12 @@ public sealed partial class Parser : TypeDataModelGenerator
                 (shapeableImplementations ??= new()).Add(typeIdToInclude);
             }
             else if (
-                SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.GenerateShapeForAttribute) &&
+                SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.GenerateShapesAttribute) &&
                 attributeData.ConstructorArguments.Length >= 1 &&
                 attributeData.ConstructorArguments[0].Kind == TypedConstantKind.Primitive &&
                 attributeData.ConstructorArguments[0].Value is string firstPattern)
             {
-                // [GenerateShapeFor("pattern")] or [GenerateShapeFor("pattern1", "pattern2", ...)]
+                // [GenerateShapes("pattern")] or [GenerateShapes("pattern1", "pattern2", ...)]
                 List<string> patterns = new() { firstPattern };
                 
                 // Check if there's a second argument (params array)
@@ -1213,6 +1213,9 @@ public sealed partial class Parser : TypeDataModelGenerator
         // Get all types from the compilation that are accessible
         IEnumerable<INamedTypeSymbol> allTypes = GetAllAccessibleTypes(_knownSymbols.Compilation.Assembly);
 
+        // Precompute the regex matcher for all patterns
+        var matcher = new Helpers.GlobPatternMatcher(patterns);
+
         foreach (INamedTypeSymbol type in allTypes)
         {
             // Skip types that are generic definitions or otherwise unsupported
@@ -1228,7 +1231,7 @@ public sealed partial class Parser : TypeDataModelGenerator
                 ? fullyQualifiedName[8..]
                 : fullyQualifiedName;
             
-            if (Helpers.GlobPatternMatcher.Matches(nameForMatching, patterns))
+            if (matcher.Matches(nameForMatching))
             {
                 switch (IncludeType(type))
                 {
