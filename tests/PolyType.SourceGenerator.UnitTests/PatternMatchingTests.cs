@@ -173,7 +173,7 @@ public static class PatternMatchingTests
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         // Empty pattern should not cause errors, but won't match anything
         // Just verify no diagnostics are reported
-        Assert.Empty(result.Diagnostics.Where(d => d.Severity >= Microsoft.CodeAnalysis.DiagnosticSeverity.Warning));
+        Assert.DoesNotContain(result.Diagnostics, d => d.Severity >= Microsoft.CodeAnalysis.DiagnosticSeverity.Warning);
     }
 
     [Fact]
