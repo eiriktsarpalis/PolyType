@@ -1084,47 +1084,90 @@ public sealed partial class Parser : TypeDataModelGenerator
 
         foreach (AttributeData attributeData in context.TypeSymbol.GetAttributes())
         {
-            ITypeSymbol typeToInclude;
-            TypeId typeIdToInclude;
-
             if (SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.GenerateShapeAttribute))
             {
-                typeToInclude = context.TypeSymbol;
-                typeIdToInclude = typeId;
+                // [GenerateShape] on the type itself
+                ITypeSymbol typeToInclude = context.TypeSymbol;
+                TypeId typeIdToInclude = typeId;
+
+                switch (IncludeType(typeToInclude))
+                {
+                    case TypeDataModelGenerationStatus.UnsupportedType:
+                        ReportDiagnostic(TypeNotSupported, attributeData.GetLocation(), typeToInclude.ToDisplayString());
+                        continue;
+
+                    case TypeDataModelGenerationStatus.InaccessibleType:
+                        ReportDiagnostic(TypeNotAccessible, attributeData.GetLocation(), typeToInclude.ToDisplayString());
+                        continue;
+                }
+
+                (shapeableImplementations ??= new()).Add(typeIdToInclude);
             }
             else if (
                 SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.GenerateShapeForAttribute) &&
                 attributeData.ConstructorArguments is [{ Kind: TypedConstantKind.Type, Value: ITypeSymbol nonGenericTypeArgument }])
             {
-                typeToInclude = nonGenericTypeArgument;
-                typeIdToInclude = CreateTypeId(nonGenericTypeArgument);
+                // [GenerateShapeFor(typeof(T))]
+                ITypeSymbol typeToInclude = nonGenericTypeArgument;
+                TypeId typeIdToInclude = CreateTypeId(nonGenericTypeArgument);
                 isWitnessTypeDeclaration = true;
+
+                switch (IncludeType(typeToInclude))
+                {
+                    case TypeDataModelGenerationStatus.UnsupportedType:
+                        ReportDiagnostic(TypeNotSupported, attributeData.GetLocation(), typeToInclude.ToDisplayString());
+                        continue;
+
+                    case TypeDataModelGenerationStatus.InaccessibleType:
+                        ReportDiagnostic(TypeNotAccessible, attributeData.GetLocation(), typeToInclude.ToDisplayString());
+                        continue;
+                }
+
+                (shapeableImplementations ??= new()).Add(typeIdToInclude);
+            }
+            else if (
+                SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.GenerateShapeForAttribute) &&
+                attributeData.ConstructorArguments is [{ Kind: TypedConstantKind.Array, Values: var patternValues }] &&
+                patternValues.Length > 0)
+            {
+                // [GenerateShapeFor("pattern1", "pattern2", ...)]
+                List<string> patterns = new(patternValues.Length);
+                foreach (TypedConstant patternConstant in patternValues)
+                {
+                    if (patternConstant.Value is string pattern)
+                    {
+                        patterns.Add(pattern);
+                    }
+                }
+
+                if (patterns.Count > 0)
+                {
+                    isWitnessTypeDeclaration = true;
+                    IncludeTypesMatchingPatterns(patterns, attributeData, ref shapeableImplementations);
+                }
             }
             else if (
                 attributeData.AttributeClass is { TypeArguments: [ITypeSymbol typeArgument] } &&
                 SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass.ConstructedFrom, _knownSymbols.GenerateShapeForAttributeOfT))
             {
-                typeToInclude = typeArgument;
-                typeIdToInclude = CreateTypeId(typeArgument);
+                // [GenerateShapeFor<T>()]
+                ITypeSymbol typeToInclude = typeArgument;
+                TypeId typeIdToInclude = CreateTypeId(typeArgument);
                 isWitnessTypeDeclaration = true;
-            }
-            else
-            {
-                continue;
-            }
 
-            switch (IncludeType(typeToInclude))
-            {
-                case TypeDataModelGenerationStatus.UnsupportedType:
-                    ReportDiagnostic(TypeNotSupported, attributeData.GetLocation(), typeToInclude.ToDisplayString());
-                    continue;
+                switch (IncludeType(typeToInclude))
+                {
+                    case TypeDataModelGenerationStatus.UnsupportedType:
+                        ReportDiagnostic(TypeNotSupported, attributeData.GetLocation(), typeToInclude.ToDisplayString());
+                        continue;
 
-                case TypeDataModelGenerationStatus.InaccessibleType:
-                    ReportDiagnostic(TypeNotAccessible, attributeData.GetLocation(), typeToInclude.ToDisplayString());
-                    continue;
+                    case TypeDataModelGenerationStatus.InaccessibleType:
+                        ReportDiagnostic(TypeNotAccessible, attributeData.GetLocation(), typeToInclude.ToDisplayString());
+                        continue;
+                }
+
+                (shapeableImplementations ??= new()).Add(typeIdToInclude);
             }
-
-            (shapeableImplementations ??= new()).Add(typeIdToInclude);
         }
 
         return new TypeDeclarationModel
@@ -1158,6 +1201,85 @@ public sealed partial class Parser : TypeDataModelGenerator
             stringBuilder.Append(typeName);
 
             return stringBuilder.ToString();
+        }
+    }
+
+    private void IncludeTypesMatchingPatterns(List<string> patterns, AttributeData attributeData, ref HashSet<TypeId>? shapeableImplementations)
+    {
+        // Get all types from the compilation that are accessible
+        IEnumerable<INamedTypeSymbol> allTypes = GetAllAccessibleTypes(_knownSymbols.Compilation.Assembly);
+
+        foreach (INamedTypeSymbol type in allTypes)
+        {
+            // Skip types that are generic definitions or otherwise unsupported
+            if (type.IsGenericTypeDefinition() || !IsSupportedType(type))
+            {
+                continue;
+            }
+
+            string fullyQualifiedName = type.GetFullyQualifiedName();
+            
+            if (Helpers.GlobPatternMatcher.Matches(fullyQualifiedName, patterns))
+            {
+                switch (IncludeType(type))
+                {
+                    case TypeDataModelGenerationStatus.UnsupportedType:
+                        // Silently skip unsupported types when using patterns
+                        continue;
+
+                    case TypeDataModelGenerationStatus.InaccessibleType:
+                        // Silently skip inaccessible types when using patterns
+                        continue;
+                }
+
+                TypeId typeIdToInclude = CreateTypeId(type);
+                (shapeableImplementations ??= new()).Add(typeIdToInclude);
+            }
+        }
+    }
+
+    private static IEnumerable<INamedTypeSymbol> GetAllAccessibleTypes(IAssemblySymbol assembly)
+    {
+        foreach (INamedTypeSymbol type in GetTypesFromNamespace(assembly.GlobalNamespace))
+        {
+            yield return type;
+        }
+
+        static IEnumerable<INamedTypeSymbol> GetTypesFromNamespace(INamespaceSymbol namespaceSymbol)
+        {
+            foreach (INamespaceOrTypeSymbol member in namespaceSymbol.GetMembers())
+            {
+                if (member is INamedTypeSymbol namedType)
+                {
+                    yield return namedType;
+                    
+                    // Recursively get nested types
+                    foreach (INamedTypeSymbol nestedType in GetNestedTypes(namedType))
+                    {
+                        yield return nestedType;
+                    }
+                }
+                else if (member is INamespaceSymbol childNamespace)
+                {
+                    foreach (INamedTypeSymbol childType in GetTypesFromNamespace(childNamespace))
+                    {
+                        yield return childType;
+                    }
+                }
+            }
+        }
+
+        static IEnumerable<INamedTypeSymbol> GetNestedTypes(INamedTypeSymbol type)
+        {
+            foreach (INamedTypeSymbol nestedType in type.GetTypeMembers())
+            {
+                yield return nestedType;
+                
+                foreach (INamedTypeSymbol deeplyNestedType in GetNestedTypes(nestedType))
+                {
+                    yield return deeplyNestedType;
+                }
+            }
         }
     }
 
