@@ -452,8 +452,8 @@ public partial class TypeDataModelGenerator
         {
             if (parameter.RefKind is RefKind.Out)
             {
-                result = default;
-                return TypeDataModelGenerationStatus.UnsupportedType;
+                // Skip out parameters - they are not included in the parameter list
+                continue;
             }
 
             if ((status = IncludeNestedType(parameter.Type, ref ctx)) != TypeDataModelGenerationStatus.Success)
