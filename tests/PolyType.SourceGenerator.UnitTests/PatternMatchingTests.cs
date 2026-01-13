@@ -32,7 +32,7 @@ public static class PatternMatchingTests
                 }
             }
 
-            [GenerateShapes("MyNamespace.Dtos.*")]
+            [GenerateShapeFor("MyNamespace.Dtos.*")]
             public partial class Witness { }
             """);
 
@@ -67,7 +67,7 @@ public static class PatternMatchingTests
                 }
             }
 
-            [GenerateShapes("MyNamespace.Dtos.*", "MyNamespace.Models.*")]
+            [GenerateShapeFor("MyNamespace.Dtos.*", "MyNamespace.Models.*")]
             public partial class Witness { }
             """);
 
@@ -104,7 +104,7 @@ public static class PatternMatchingTests
                 }
             }
 
-            [GenerateShapes("MyNamespace.*Dto")]
+            [GenerateShapeFor("MyNamespace.*Dto")]
             public partial class Witness { }
             """);
 
@@ -139,7 +139,7 @@ public static class PatternMatchingTests
                 }
             }
 
-            [GenerateShapes("*.Dtos.*")]
+            [GenerateShapeFor("*.Dtos.*")]
             public partial class Witness { }
             """);
 
@@ -166,7 +166,7 @@ public static class PatternMatchingTests
                 }
             }
 
-            [GenerateShapes("")]
+            [GenerateShapeFor("")]
             public partial class Witness { }
             """);
 
@@ -198,7 +198,7 @@ public static class PatternMatchingTests
                 }
             }
 
-            [GenerateShapes("MyNamespace.Dtos.*")]
+            [GenerateShapeFor("MyNamespace.Dtos.*")]
             [GenerateShapeFor(typeof(OtherNamespace.SpecialType))]
             public partial class Witness { }
             """);
@@ -236,7 +236,7 @@ public static class PatternMatchingTests
                 }
             }
 
-            [GenerateShapes("MyNamespace.Dto?")]
+            [GenerateShapeFor("MyNamespace.Dto?")]
             public partial class Witness { }
             """);
 

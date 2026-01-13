@@ -22,7 +22,7 @@ internal static partial class RoslynHelpers
         string[] attributeFullyQualifiedNames,
         Func<BaseTypeDeclarationSyntax, CancellationToken, bool> predicate)
     {
-        Debug.Assert(attributeFullyQualifiedNames.Length is > 0 and <= 4, "Does not optimize for large lists of attributes.");
+        Debug.Assert(attributeFullyQualifiedNames.Length is > 0 and <= 3, "Does not optimize for large lists of attributes.");
         ParseAttributeFullyQualifiedNames(attributeFullyQualifiedNames, out var attributeData, out var attributeSyntaxNodeCandidates);
 
         return provider.CreateSyntaxProvider(

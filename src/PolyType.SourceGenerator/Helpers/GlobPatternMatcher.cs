@@ -71,16 +71,9 @@ internal sealed class GlobPatternMatcher
         // Then check regex patterns
         foreach (Regex regex in _regexPatterns)
         {
-            try
+            if (regex.IsMatch(typeName))
             {
-                if (regex.IsMatch(typeName))
-                {
-                    return true;
-                }
-            }
-            catch (RegexMatchTimeoutException)
-            {
-                // Continue to next pattern if timeout occurs
+                return true;
             }
         }
 

@@ -1126,12 +1126,12 @@ public sealed partial class Parser : TypeDataModelGenerator
                 (shapeableImplementations ??= new()).Add(typeIdToInclude);
             }
             else if (
-                SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.GenerateShapesAttribute) &&
+                SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.GenerateShapeForAttribute) &&
                 attributeData.ConstructorArguments.Length >= 1 &&
                 attributeData.ConstructorArguments[0].Kind == TypedConstantKind.Primitive &&
                 attributeData.ConstructorArguments[0].Value is string firstPattern)
             {
-                // [GenerateShapes("pattern")] or [GenerateShapes("pattern1", "pattern2", ...)]
+                // [GenerateShapeFor("pattern")] or [GenerateShapeFor("pattern1", "pattern2", ...)]
                 List<string> patterns = new() { firstPattern };
                 
                 // Check if there's a second argument (params array)
