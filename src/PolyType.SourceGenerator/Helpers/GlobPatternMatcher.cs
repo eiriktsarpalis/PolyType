@@ -7,7 +7,7 @@ namespace PolyType.SourceGenerator.Helpers;
 /// </summary>
 internal sealed class GlobPatternMatcher
 {
-    private readonly Regex?[] _regexes;
+    private readonly List<Regex> _regexes;
     private readonly string[] _patterns;
 
     /// <summary>
@@ -17,7 +17,7 @@ internal sealed class GlobPatternMatcher
     public GlobPatternMatcher(IEnumerable<string> patterns)
     {
         _patterns = patterns.ToArray();
-        _regexes = new Regex?[_patterns.Length];
+        _regexes = new List<Regex>(_patterns.Length);
 
         for (int i = 0; i < _patterns.Length; i++)
         {
@@ -26,17 +26,12 @@ internal sealed class GlobPatternMatcher
                 string regexPattern = ConvertGlobToRegex(_patterns[i]);
                 try
                 {
-                    _regexes[i] = new Regex(regexPattern, RegexOptions.None, TimeSpan.FromMilliseconds(500));
+                    _regexes.Add(new Regex(regexPattern, RegexOptions.None, TimeSpan.FromMilliseconds(500)));
                 }
                 catch (ArgumentException)
                 {
-                    // Invalid regex pattern, will fall back to null check
-                    _regexes[i] = null;
+                    // Invalid regex pattern, will fall back to exact pattern match
                 }
-            }
-            else
-            {
-                _regexes[i] = null;
             }
         }
     }
@@ -48,33 +43,28 @@ internal sealed class GlobPatternMatcher
     /// <returns>True if the type name matches any pattern, false otherwise.</returns>
     public bool Matches(string typeName)
     {
-        for (int i = 0; i < _regexes.Length; i++)
+        // First try regex matches
+        foreach (Regex regex in _regexes)
         {
-            if (_regexes[i] is null)
+            try
             {
-                // Fall back to exact match for invalid patterns
-                if (typeName == _patterns[i])
+                if (regex.IsMatch(typeName))
                 {
                     return true;
                 }
             }
-            else
+            catch (RegexMatchTimeoutException)
             {
-                try
-                {
-                    if (_regexes[i]!.IsMatch(typeName))
-                    {
-                        return true;
-                    }
-                }
-                catch (RegexMatchTimeoutException)
-                {
-                    // If regex times out, fall back to exact match
-                    if (typeName == _patterns[i])
-                    {
-                        return true;
-                    }
-                }
+                // Continue to next pattern if timeout occurs
+            }
+        }
+
+        // Fall back to exact pattern match for invalid or empty patterns
+        foreach (string pattern in _patterns)
+        {
+            if (typeName == pattern)
+            {
+                return true;
             }
         }
 
