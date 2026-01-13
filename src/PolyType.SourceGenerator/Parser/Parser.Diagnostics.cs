@@ -162,4 +162,12 @@ public sealed partial class Parser
         category: "PolyType.SourceGenerator",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
+
+    private static DiagnosticDescriptor PatternMatchesNoTypes { get; } = new DiagnosticDescriptor(
+        id: "PT0014",
+        title: "Pattern matches no types.",
+        messageFormat: "The pattern '{0}' did not match any types in the compilation.",
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
 }

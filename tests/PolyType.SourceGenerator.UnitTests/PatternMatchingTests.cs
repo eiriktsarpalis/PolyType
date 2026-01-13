@@ -171,10 +171,9 @@ public static class PatternMatchingTests
             public partial class Witness { }
             """);
 
-        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
-        // Empty pattern should not cause errors, but won't match anything
-        // Just verify no diagnostics are reported
-        Assert.DoesNotContain(result.Diagnostics, d => d.Severity >= Microsoft.CodeAnalysis.DiagnosticSeverity.Warning);
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        // Empty pattern should generate a warning for matching no types
+        Assert.Contains(result.Diagnostics, d => d.Id == "PT0014" && d.Severity == DiagnosticSeverity.Warning);
     }
 
     [Fact]
@@ -248,5 +247,87 @@ public static class PatternMatchingTests
         string generatedCode = string.Join("\n", result.NewCompilation.SyntaxTrees.Select(t => t.ToString()));
         Assert.Contains("Dto1", generatedCode);
         Assert.Contains("Dto2", generatedCode);
+    }
+
+    [Fact]
+    public static void GenerateShapeFor_PatternMatchesNoTypes_ReportsWarning()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            namespace MyNamespace
+            {
+                public class Person
+                {
+                    public string? Name { get; set; }
+                }
+            }
+
+            [GenerateShapeFor("NonExistent.Namespace.*")]
+            public partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        
+        // Should have a warning for pattern matching no types
+        Assert.Contains(result.Diagnostics, d => 
+            d.Id == "PT0014" && 
+            d.Severity == DiagnosticSeverity.Warning &&
+            d.GetMessage().Contains("NonExistent.Namespace.*"));
+    }
+
+    [Fact]
+    public static void GenerateShapeFor_MultiplePatterns_OnlyUnmatchedReportsWarning()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            namespace MyNamespace.Dtos
+            {
+                public class PersonDto
+                {
+                    public string? Name { get; set; }
+                }
+            }
+
+            [GenerateShapeFor("MyNamespace.Dtos.*")]
+            [GenerateShapeFor("NonExistent.*")]
+            public partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        
+        // Should have exactly one warning for the unmatched pattern
+        var warnings = result.Diagnostics.Where(d => d.Id == "PT0014").ToList();
+        Assert.Single(warnings);
+        Assert.Contains("NonExistent.*", warnings[0].GetMessage());
+        
+        // Verify the matched pattern still generates code
+        string generatedCode = string.Join("\n", result.NewCompilation.SyntaxTrees.Select(t => t.ToString()));
+        Assert.Contains("PersonDto", generatedCode);
+    }
+
+    [Fact]
+    public static void GenerateShapeFor_EmptyPattern_ReportsWarningForNoMatch()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            namespace MyNamespace
+            {
+                public class Person
+                {
+                    public string? Name { get; set; }
+                }
+            }
+
+            [GenerateShapeFor("")]
+            public partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        
+        // Empty pattern should report warning for matching no types
+        Assert.Contains(result.Diagnostics, d => d.Id == "PT0014");
     }
 }

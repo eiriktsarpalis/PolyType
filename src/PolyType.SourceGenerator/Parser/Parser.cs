@@ -1081,7 +1081,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         TypeId typeId = CreateTypeId(context.TypeSymbol);
         HashSet<TypeId>? shapeableImplementations = null;
         bool isWitnessTypeDeclaration = false;
-        List<string>? patternList = null;
+        List<(string Pattern, AttributeData AttributeData)>? patternList = null;
 
         foreach (AttributeData attributeData in context.TypeSymbol.GetAttributes())
         {
@@ -1134,7 +1134,7 @@ public sealed partial class Parser : TypeDataModelGenerator
             {
                 // [GenerateShapeFor("pattern")] - collect patterns to process together
                 isWitnessTypeDeclaration = true;
-                (patternList ??= new()).Add(pattern);
+                (patternList ??= new()).Add((pattern, attributeData));
             }
             else if (
                 attributeData.AttributeClass is { TypeArguments: [ITypeSymbol typeArgument] } &&
@@ -1200,13 +1200,19 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
     }
 
-    private void IncludeTypesMatchingPatterns(List<string> patterns, ref HashSet<TypeId>? shapeableImplementations)
+    private void IncludeTypesMatchingPatterns(List<(string Pattern, AttributeData AttributeData)> patterns, ref HashSet<TypeId>? shapeableImplementations)
     {
         // Get all types from the compilation including referenced assemblies
         IEnumerable<INamedTypeSymbol> allTypes = GetAllAccessibleTypes(_knownSymbols.Compilation);
 
+        // Extract just the pattern strings for the matcher
+        List<string> patternStrings = patterns.ConvertAll(p => p.Pattern);
+        
         // Create single matcher for all patterns
-        var matcher = new Helpers.GlobPatternMatcher(patterns);
+        var matcher = new Helpers.GlobPatternMatcher(patternStrings);
+        
+        // Track which patterns matched at least one type
+        HashSet<string> matchedPatterns = new();
 
         foreach (INamedTypeSymbol type in allTypes)
         {
@@ -1225,6 +1231,21 @@ public sealed partial class Parser : TypeDataModelGenerator
             
             if (matcher.Matches(nameForMatching))
             {
+                // Check which specific pattern(s) matched this type
+                foreach (string pattern in patternStrings)
+                {
+                    if (string.IsNullOrEmpty(pattern))
+                    {
+                        continue; // Skip empty patterns for individual matching
+                    }
+                    
+                    var singleMatcher = new Helpers.GlobPatternMatcher([pattern]);
+                    if (singleMatcher.Matches(nameForMatching))
+                    {
+                        matchedPatterns.Add(pattern);
+                    }
+                }
+                
                 switch (IncludeType(type))
                 {
                     case TypeDataModelGenerationStatus.UnsupportedType:
@@ -1238,6 +1259,15 @@ public sealed partial class Parser : TypeDataModelGenerator
 
                 TypeId typeIdToInclude = CreateTypeId(type);
                 (shapeableImplementations ??= new()).Add(typeIdToInclude);
+            }
+        }
+        
+        // Report warnings for patterns that matched no types
+        foreach ((string pattern, AttributeData attributeData) in patterns)
+        {
+            if (!matchedPatterns.Contains(pattern))
+            {
+                ReportDiagnostic(PatternMatchesNoTypes, attributeData.GetLocation(), pattern);
             }
         }
     }
