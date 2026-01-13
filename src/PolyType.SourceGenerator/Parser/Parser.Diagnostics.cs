@@ -170,4 +170,12 @@ public sealed partial class Parser
         category: "PolyType.SourceGenerator",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
+
+    private static DiagnosticDescriptor InvalidOrOverlyBroadPattern { get; } = new DiagnosticDescriptor(
+        id: "PT0015",
+        title: "Pattern is invalid or overly broad.",
+        messageFormat: "The pattern '{0}' is invalid or too broad. Patterns must contain at least one non-wildcard character (besides periods) to prevent matching thousands of types.",
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
 }

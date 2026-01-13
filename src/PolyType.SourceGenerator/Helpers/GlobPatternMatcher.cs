@@ -9,6 +9,7 @@ namespace PolyType.SourceGenerator.Helpers;
 internal sealed class GlobPatternMatcher
 {
     private readonly (string Pattern, Regex? Regex, AttributeData AttributeData, bool Matched)[] _patterns;
+    private readonly List<(string Pattern, AttributeData AttributeData)> _invalidPatterns = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GlobPatternMatcher"/> class.
@@ -24,6 +25,13 @@ internal sealed class GlobPatternMatcher
             {
                 // Track empty patterns so we can report warnings for them
                 patternList.Add((pattern, null, attributeData, false));
+                continue;
+            }
+
+            // Validate pattern - must contain at least one non-wildcard character (besides periods)
+            if (!IsValidPattern(pattern))
+            {
+                _invalidPatterns.Add((pattern, attributeData));
                 continue;
             }
 
@@ -103,6 +111,15 @@ internal sealed class GlobPatternMatcher
     }
 
     /// <summary>
+    /// Gets the patterns that are invalid or overly broad, along with their attribute data.
+    /// </summary>
+    /// <returns>An enumerable of tuples containing invalid patterns and their attribute data.</returns>
+    public IEnumerable<(string Pattern, AttributeData AttributeData)> GetInvalidPatterns()
+    {
+        return _invalidPatterns;
+    }
+
+    /// <summary>
     /// Converts a glob pattern to a regular expression pattern.
     /// </summary>
     /// <param name="pattern">The glob pattern.</param>
@@ -119,5 +136,25 @@ internal sealed class GlobPatternMatcher
         
         // Anchor the pattern to match the entire string
         return "^" + escaped + "$";
+    }
+
+    /// <summary>
+    /// Validates that a pattern contains at least one constant character (besides periods).
+    /// This prevents overly broad patterns like "*", "*.*", "***" etc. that would match thousands of types.
+    /// </summary>
+    /// <param name="pattern">The pattern to validate.</param>
+    /// <returns>True if the pattern is valid, false otherwise.</returns>
+    private static bool IsValidPattern(string pattern)
+    {
+        // Pattern must contain at least one character that is not a wildcard or period
+        foreach (char c in pattern)
+        {
+            if (c != '*' && c != '?' && c != '.')
+            {
+                return true;
+            }
+        }
+        
+        return false;
     }
 }

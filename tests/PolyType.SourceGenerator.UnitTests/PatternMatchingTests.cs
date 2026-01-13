@@ -330,4 +330,136 @@ public static class PatternMatchingTests
         // Empty pattern should report warning for matching no types
         Assert.Contains(result.Diagnostics, d => d.Id == "PT0014");
     }
+
+    [Fact]
+    public static void GenerateShapeFor_OverlyBroadPattern_SingleAsterisk_ReportsWarning()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            namespace MyNamespace
+            {
+                public class Person
+                {
+                    public string? Name { get; set; }
+                }
+            }
+
+            [GenerateShapeFor("*")]
+            public partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        
+        // Pattern "*" is overly broad and should report PT0015 warning
+        Assert.Contains(result.Diagnostics, d => 
+            d.Id == "PT0015" && 
+            d.Severity == DiagnosticSeverity.Warning &&
+            d.GetMessage().Contains("*"));
+    }
+
+    [Fact]
+    public static void GenerateShapeFor_OverlyBroadPattern_DotStar_ReportsWarning()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            namespace MyNamespace
+            {
+                public class Person
+                {
+                    public string? Name { get; set; }
+                }
+            }
+
+            [GenerateShapeFor("*.*")]
+            public partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        
+        // Pattern "*.*" is overly broad and should report PT0015 warning
+        Assert.Contains(result.Diagnostics, d => 
+            d.Id == "PT0015" && 
+            d.Severity == DiagnosticSeverity.Warning &&
+            d.GetMessage().Contains("*.*"));
+    }
+
+    [Fact]
+    public static void GenerateShapeFor_OverlyBroadPattern_MultipleAsterisks_ReportsWarning()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            namespace MyNamespace
+            {
+                public class Person
+                {
+                    public string? Name { get; set; }
+                }
+            }
+
+            [GenerateShapeFor("***")]
+            public partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        
+        // Pattern "***" is overly broad and should report PT0015 warning
+        Assert.Contains(result.Diagnostics, d => 
+            d.Id == "PT0015" && 
+            d.Severity == DiagnosticSeverity.Warning &&
+            d.GetMessage().Contains("***"));
+    }
+
+    [Fact]
+    public static void GenerateShapeFor_OverlyBroadPattern_OnlyWildcardsAndDots_ReportsWarning()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            namespace MyNamespace
+            {
+                public class Person
+                {
+                    public string? Name { get; set; }
+                }
+            }
+
+            [GenerateShapeFor("*.*.*")]
+            public partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        
+        // Pattern "*.*.*" is overly broad and should report PT0015 warning
+        Assert.Contains(result.Diagnostics, d => 
+            d.Id == "PT0015" && 
+            d.Severity == DiagnosticSeverity.Warning);
+    }
+
+    [Fact]
+    public static void GenerateShapeFor_ValidPatternWithConstantCharacters_NoWarning()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            namespace MyNamespace.Dtos
+            {
+                public class PersonDto
+                {
+                    public string? Name { get; set; }
+                }
+            }
+
+            [GenerateShapeFor("MyNamespace.Dtos.*")]
+            public partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        
+        // Valid pattern should not report PT0015 warning
+        Assert.DoesNotContain(result.Diagnostics, d => d.Id == "PT0015");
+        Assert.Empty(result.Diagnostics);
+    }
 }

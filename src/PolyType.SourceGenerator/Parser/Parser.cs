@@ -1208,6 +1208,12 @@ public sealed partial class Parser : TypeDataModelGenerator
         // Create single matcher for all patterns
         var matcher = new Helpers.GlobPatternMatcher(patterns);
 
+        // Report warnings for invalid or overly broad patterns
+        foreach ((string pattern, AttributeData attributeData) in matcher.GetInvalidPatterns())
+        {
+            ReportDiagnostic(InvalidOrOverlyBroadPattern, attributeData.GetLocation(), pattern);
+        }
+
         foreach (INamedTypeSymbol type in allTypes)
         {
             // Skip types that are generic definitions or otherwise unsupported
