@@ -969,8 +969,8 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
         ParameterInfo[] parameters = methodInfo.GetParameters();
 
-        // Check for unsupported parameter types (excluding out parameters which are filtered below)
-        if (parameters.FirstOrDefault(param => !param.IsOut && !param.GetEffectiveParameterType().CanBeGenericArgument()) is { } param)
+        // Check for unsupported parameter types including out parameters
+        if (parameters.FirstOrDefault(param => param.IsOut || !param.GetEffectiveParameterType().CanBeGenericArgument()) is { } param)
         {
             throw new NotSupportedException($"Method '{methodInfo}' contains unsupported parameter type '{param.Name}'.");
         }
@@ -980,16 +980,10 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             throw new NotSupportedException($"Method '{methodInfo}' has an unsupported return type '{methodInfo.ReturnType}'.");
         }
 
-        // Filter out parameters - exclude out parameters
-        var parameterShapeInfos = new List<MethodParameterShapeInfo>();
+        int i = 0;
+        var parameterShapeInfos = new MethodParameterShapeInfo[parameters.Length];
         foreach (ParameterInfo parameter in parameters)
         {
-            if (parameter.IsOut)
-            {
-                // Skip out parameters - they are not included in the parameter list
-                continue;
-            }
-
             ParameterShapeAttribute? parameterShapeAttribute = parameter.GetCustomAttribute<ParameterShapeAttribute>();
             string? paramName = parameterShapeAttribute?.Name ?? parameter.Name;
             if (string.IsNullOrEmpty(paramName))
@@ -998,16 +992,16 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             }
 
             bool? isRequired = parameterShapeAttribute?.IsRequiredSpecified is true ? parameterShapeAttribute.IsRequired : null;
-            parameterShapeInfos.Add(new MethodParameterShapeInfo(
+            parameterShapeInfos[i++] = new MethodParameterShapeInfo(
                 parameter,
                 isNonNullable: parameter.IsNonNullableAnnotation(nullabilityCtx),
                 logicalName: paramName,
-                isRequired: isRequired));
+                isRequired: isRequired);
         }
 
         string name = shapeAttribute?.Name ?? methodInfo.Name;
         Type returnType = methodInfo.GetEffectiveReturnType() ?? typeof(Unit);
-        return new MethodShapeInfo(returnType, methodInfo, [.. parameterShapeInfos], name: name);
+        return new MethodShapeInfo(returnType, methodInfo, parameterShapeInfos, name: name);
     }
 
     internal static NullabilityInfoContext? CreateNullabilityInfoContext()
