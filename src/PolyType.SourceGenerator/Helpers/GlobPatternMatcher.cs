@@ -7,8 +7,8 @@ namespace PolyType.SourceGenerator.Helpers;
 /// </summary>
 internal sealed class GlobPatternMatcher
 {
-    private readonly List<Regex> _regexes;
-    private readonly string[] _patterns;
+    private readonly Regex[] _regexPatterns;
+    private readonly string[] _exactPatterns;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GlobPatternMatcher"/> class.
@@ -16,24 +16,40 @@ internal sealed class GlobPatternMatcher
     /// <param name="patterns">The glob patterns to match against.</param>
     public GlobPatternMatcher(IEnumerable<string> patterns)
     {
-        _patterns = patterns.ToArray();
-        _regexes = new List<Regex>(_patterns.Length);
+        List<Regex> regexList = new();
+        List<string> exactList = new();
 
-        for (int i = 0; i < _patterns.Length; i++)
+        foreach (string pattern in patterns)
         {
-            if (!string.IsNullOrEmpty(_patterns[i]))
+            if (string.IsNullOrEmpty(pattern))
             {
-                string regexPattern = ConvertGlobToRegex(_patterns[i]);
+                continue;
+            }
+
+            // Check if pattern contains glob wildcard characters
+            if (pattern.Contains('*') || pattern.Contains('?'))
+            {
+                // Pattern has wildcards, compile as regex
+                string regexPattern = ConvertGlobToRegex(pattern);
                 try
                 {
-                    _regexes.Add(new Regex(regexPattern, RegexOptions.None, TimeSpan.FromMilliseconds(500)));
+                    regexList.Add(new Regex(regexPattern, RegexOptions.None, TimeSpan.FromMilliseconds(500)));
                 }
                 catch (ArgumentException)
                 {
-                    // Invalid regex pattern, will fall back to exact pattern match
+                    // Invalid regex pattern, fall back to exact match
+                    exactList.Add(pattern);
                 }
             }
+            else
+            {
+                // No wildcards, use exact matching
+                exactList.Add(pattern);
+            }
         }
+
+        _regexPatterns = regexList.ToArray();
+        _exactPatterns = exactList.ToArray();
     }
 
     /// <summary>
@@ -43,8 +59,17 @@ internal sealed class GlobPatternMatcher
     /// <returns>True if the type name matches any pattern, false otherwise.</returns>
     public bool Matches(string typeName)
     {
-        // First try regex matches
-        foreach (Regex regex in _regexes)
+        // Check exact matches first (faster)
+        foreach (string pattern in _exactPatterns)
+        {
+            if (typeName == pattern)
+            {
+                return true;
+            }
+        }
+
+        // Then check regex patterns
+        foreach (Regex regex in _regexPatterns)
         {
             try
             {
@@ -56,15 +81,6 @@ internal sealed class GlobPatternMatcher
             catch (RegexMatchTimeoutException)
             {
                 // Continue to next pattern if timeout occurs
-            }
-        }
-
-        // Fall back to exact pattern match for invalid or empty patterns
-        foreach (string pattern in _patterns)
-        {
-            if (typeName == pattern)
-            {
-                return true;
             }
         }
 
