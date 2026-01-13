@@ -8,23 +8,7 @@ namespace PolyType.SourceGenerator.Helpers;
 /// </summary>
 internal sealed class GlobPatternMatcher
 {
-    private struct PatternEntry
-    {
-        public string Pattern;
-        public Regex? Regex;
-        public AttributeData AttributeData;
-        public bool Matched;
-
-        public PatternEntry(string pattern, Regex? regex, AttributeData attributeData)
-        {
-            Pattern = pattern;
-            Regex = regex;
-            AttributeData = attributeData;
-            Matched = false;
-        }
-    }
-
-    private readonly PatternEntry[] _patterns;
+    private readonly (string Pattern, Regex? Regex, AttributeData AttributeData, bool Matched)[] _patterns;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GlobPatternMatcher"/> class.
@@ -32,14 +16,14 @@ internal sealed class GlobPatternMatcher
     /// <param name="patterns">The glob patterns with their associated attribute data.</param>
     public GlobPatternMatcher(IEnumerable<(string Pattern, AttributeData AttributeData)> patterns)
     {
-        var patternList = new List<PatternEntry>();
+        var patternList = new List<(string Pattern, Regex? Regex, AttributeData AttributeData, bool Matched)>();
         
         foreach ((string pattern, AttributeData attributeData) in patterns)
         {
             if (string.IsNullOrEmpty(pattern))
             {
                 // Track empty patterns so we can report warnings for them
-                patternList.Add(new PatternEntry(pattern, null, attributeData));
+                patternList.Add((pattern, null, attributeData, false));
                 continue;
             }
 
@@ -49,12 +33,12 @@ internal sealed class GlobPatternMatcher
                 // Pattern has wildcards, compile as regex
                 string regexPattern = ConvertGlobToRegex(pattern);
                 Regex regex = new Regex(regexPattern, RegexOptions.None);
-                patternList.Add(new PatternEntry(pattern, regex, attributeData));
+                patternList.Add((pattern, regex, attributeData, false));
             }
             else
             {
                 // No wildcards, use exact matching (no regex needed)
-                patternList.Add(new PatternEntry(pattern, null, attributeData));
+                patternList.Add((pattern, null, attributeData, false));
             }
         }
         
@@ -73,7 +57,7 @@ internal sealed class GlobPatternMatcher
 
         for (int i = 0; i < _patterns.Length; i++)
         {
-            ref PatternEntry patternEntry = ref _patterns[i];
+            ref var patternEntry = ref _patterns[i];
             
             if (string.IsNullOrEmpty(patternEntry.Pattern))
             {
@@ -109,7 +93,7 @@ internal sealed class GlobPatternMatcher
     /// <returns>An enumerable of tuples containing unmatched patterns and their attribute data.</returns>
     public IEnumerable<(string Pattern, AttributeData AttributeData)> GetUnmatchedPatterns()
     {
-        foreach (PatternEntry entry in _patterns)
+        foreach (var entry in _patterns)
         {
             if (!entry.Matched)
             {
