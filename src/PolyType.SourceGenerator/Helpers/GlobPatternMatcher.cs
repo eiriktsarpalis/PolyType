@@ -147,14 +147,6 @@ internal sealed class GlobPatternMatcher
     private static bool IsValidPattern(string pattern)
     {
         // Pattern must contain at least one character that is not a wildcard or period
-        foreach (char c in pattern)
-        {
-            if (c != '*' && c != '?' && c != '.')
-            {
-                return true;
-            }
-        }
-        
-        return false;
+        return Regex.IsMatch(pattern, @"[^*?.]");
     }
 }
