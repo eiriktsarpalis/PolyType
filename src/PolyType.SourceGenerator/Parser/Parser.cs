@@ -1081,6 +1081,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         TypeId typeId = CreateTypeId(context.TypeSymbol);
         HashSet<TypeId>? shapeableImplementations = null;
         bool isWitnessTypeDeclaration = false;
+        List<string>? patternList = null;
 
         foreach (AttributeData attributeData in context.TypeSymbol.GetAttributes())
         {
@@ -1131,9 +1132,9 @@ public sealed partial class Parser : TypeDataModelGenerator
                 attributeData.ConstructorArguments[0].Kind == TypedConstantKind.Primitive &&
                 attributeData.ConstructorArguments[0].Value is string pattern)
             {
-                // [GenerateShapeFor("pattern")]
+                // [GenerateShapeFor("pattern")] - collect patterns to process together
                 isWitnessTypeDeclaration = true;
-                IncludeTypesMatchingPattern(pattern, attributeData, ref shapeableImplementations);
+                (patternList ??= new()).Add(pattern);
             }
             else if (
                 attributeData.AttributeClass is { TypeArguments: [ITypeSymbol typeArgument] } &&
@@ -1157,6 +1158,12 @@ public sealed partial class Parser : TypeDataModelGenerator
 
                 (shapeableImplementations ??= new()).Add(typeIdToInclude);
             }
+        }
+
+        // Process all collected patterns together with a single matcher
+        if (patternList is not null)
+        {
+            IncludeTypesMatchingPatterns(patternList, ref shapeableImplementations);
         }
 
         return new TypeDeclarationModel
@@ -1193,13 +1200,13 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
     }
 
-    private void IncludeTypesMatchingPattern(string pattern, AttributeData attributeData, ref HashSet<TypeId>? shapeableImplementations)
+    private void IncludeTypesMatchingPatterns(List<string> patterns, ref HashSet<TypeId>? shapeableImplementations)
     {
         // Get all types from the compilation including referenced assemblies
         IEnumerable<INamedTypeSymbol> allTypes = GetAllAccessibleTypes(_knownSymbols.Compilation);
 
-        // Create matcher for the single pattern
-        var matcher = new Helpers.GlobPatternMatcher([pattern]);
+        // Create single matcher for all patterns
+        var matcher = new Helpers.GlobPatternMatcher(patterns);
 
         foreach (INamedTypeSymbol type in allTypes)
         {
