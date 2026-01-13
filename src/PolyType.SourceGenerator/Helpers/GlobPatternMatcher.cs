@@ -8,7 +8,23 @@ namespace PolyType.SourceGenerator.Helpers;
 /// </summary>
 internal sealed class GlobPatternMatcher
 {
-    private readonly List<(string Pattern, Regex? Regex, AttributeData AttributeData, bool Matched)> _patterns = new();
+    private struct PatternEntry
+    {
+        public string Pattern;
+        public Regex? Regex;
+        public AttributeData AttributeData;
+        public bool Matched;
+
+        public PatternEntry(string pattern, Regex? regex, AttributeData attributeData)
+        {
+            Pattern = pattern;
+            Regex = regex;
+            AttributeData = attributeData;
+            Matched = false;
+        }
+    }
+
+    private readonly List<PatternEntry> _patterns = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GlobPatternMatcher"/> class.
@@ -21,7 +37,7 @@ internal sealed class GlobPatternMatcher
             if (string.IsNullOrEmpty(pattern))
             {
                 // Track empty patterns so we can report warnings for them
-                _patterns.Add((pattern, null, attributeData, Matched: false));
+                _patterns.Add(new PatternEntry(pattern, null, attributeData));
                 continue;
             }
 
@@ -31,12 +47,12 @@ internal sealed class GlobPatternMatcher
                 // Pattern has wildcards, compile as regex
                 string regexPattern = ConvertGlobToRegex(pattern);
                 Regex regex = new Regex(regexPattern, RegexOptions.None);
-                _patterns.Add((pattern, regex, attributeData, Matched: false));
+                _patterns.Add(new PatternEntry(pattern, regex, attributeData));
             }
             else
             {
                 // No wildcards, use exact matching (no regex needed)
-                _patterns.Add((pattern, null, attributeData, Matched: false));
+                _patterns.Add(new PatternEntry(pattern, null, attributeData));
             }
         }
     }
@@ -56,32 +72,30 @@ internal sealed class GlobPatternMatcher
 
         for (int i = 0; i < _patterns.Count; i++)
         {
-            (string pattern, Regex? regex, AttributeData _, bool matched) = _patterns[i];
+            PatternEntry patternEntry = _patterns[i];
             
-            if (string.IsNullOrEmpty(pattern))
+            if (string.IsNullOrEmpty(patternEntry.Pattern))
             {
                 continue;
             }
 
             bool isMatch;
-            if (regex is not null)
+            if (patternEntry.Regex is not null)
             {
                 // Pattern has wildcards, use regex
-                isMatch = regex.IsMatch(nameForMatching);
+                isMatch = patternEntry.Regex.IsMatch(nameForMatching);
             }
             else
             {
                 // No wildcards, use exact matching
-                isMatch = nameForMatching == pattern;
+                isMatch = nameForMatching == patternEntry.Pattern;
             }
 
             if (isMatch)
             {
-                if (!matched)
-                {
-                    // Update the matched flag
-                    _patterns[i] = (pattern, regex, _patterns[i].AttributeData, Matched: true);
-                }
+                // Update the matched flag
+                patternEntry.Matched = true;
+                _patterns[i] = patternEntry;
                 return true;
             }
         }
@@ -95,11 +109,11 @@ internal sealed class GlobPatternMatcher
     /// <returns>An enumerable of tuples containing unmatched patterns and their attribute data.</returns>
     public IEnumerable<(string Pattern, AttributeData AttributeData)> GetUnmatchedPatterns()
     {
-        foreach ((string pattern, Regex? _, AttributeData attributeData, bool matched) in _patterns)
+        foreach (PatternEntry entry in _patterns)
         {
-            if (!matched)
+            if (!entry.Matched)
             {
-                yield return (pattern, attributeData);
+                yield return (entry.Pattern, entry.AttributeData);
             }
         }
     }
