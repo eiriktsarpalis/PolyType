@@ -68,11 +68,8 @@ internal sealed class GlobPatternMatcher
     /// <returns>True if the type symbol matches any pattern, false otherwise.</returns>
     public bool Matches(INamedTypeSymbol typeSymbol)
     {
-        // Get the fully qualified name and strip "global::" prefix if present
-        string fullyQualifiedName = typeSymbol.GetFullyQualifiedName();
-        string nameForMatching = fullyQualifiedName.StartsWith("global::", StringComparison.Ordinal)
-            ? fullyQualifiedName.Substring(8)
-            : fullyQualifiedName;
+        // Get the fully qualified name without the global:: prefix using Roslyn formatting
+        string nameForMatching = typeSymbol.ToDisplayString(RoslynHelpers.QualifiedNameOnlyFormat);
 
         for (int i = 0; i < _patterns.Length; i++)
         {
