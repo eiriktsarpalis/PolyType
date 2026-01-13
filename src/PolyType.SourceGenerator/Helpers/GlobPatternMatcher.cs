@@ -7,8 +7,8 @@ namespace PolyType.SourceGenerator.Helpers;
 /// </summary>
 internal sealed class GlobPatternMatcher
 {
-    private readonly Regex[] _regexPatterns;
-    private readonly string[] _exactPatterns;
+    private readonly Regex[]? _regexPatterns;
+    private readonly string[]? _exactPatterns;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GlobPatternMatcher"/> class.
@@ -16,8 +16,8 @@ internal sealed class GlobPatternMatcher
     /// <param name="patterns">The glob patterns to match against.</param>
     public GlobPatternMatcher(IEnumerable<string> patterns)
     {
-        List<Regex> regexList = new();
-        List<string> exactList = new();
+        List<Regex>? regexList = null;
+        List<string>? exactList = null;
 
         foreach (string pattern in patterns)
         {
@@ -31,17 +31,17 @@ internal sealed class GlobPatternMatcher
             {
                 // Pattern has wildcards, compile as regex
                 string regexPattern = ConvertGlobToRegex(pattern);
-                regexList.Add(new Regex(regexPattern, RegexOptions.None));
+                (regexList ??= new()).Add(new Regex(regexPattern, RegexOptions.None));
             }
             else
             {
                 // No wildcards, use exact matching
-                exactList.Add(pattern);
+                (exactList ??= new()).Add(pattern);
             }
         }
 
-        _regexPatterns = regexList.ToArray();
-        _exactPatterns = exactList.ToArray();
+        _regexPatterns = regexList?.ToArray();
+        _exactPatterns = exactList?.ToArray();
     }
 
     /// <summary>
@@ -52,20 +52,26 @@ internal sealed class GlobPatternMatcher
     public bool Matches(string typeName)
     {
         // Check exact matches first (faster)
-        foreach (string pattern in _exactPatterns)
+        if (_exactPatterns is not null)
         {
-            if (typeName == pattern)
+            foreach (string pattern in _exactPatterns)
             {
-                return true;
+                if (typeName == pattern)
+                {
+                    return true;
+                }
             }
         }
 
         // Then check regex patterns
-        foreach (Regex regex in _regexPatterns)
+        if (_regexPatterns is not null)
         {
-            if (regex.IsMatch(typeName))
+            foreach (Regex regex in _regexPatterns)
             {
-                return true;
+                if (regex.IsMatch(typeName))
+                {
+                    return true;
+                }
             }
         }
 
