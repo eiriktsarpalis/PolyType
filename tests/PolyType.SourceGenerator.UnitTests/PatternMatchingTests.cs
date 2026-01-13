@@ -67,7 +67,8 @@ public static class PatternMatchingTests
                 }
             }
 
-            [GenerateShapeFor("MyNamespace.Dtos.*", "MyNamespace.Models.*")]
+            [GenerateShapeFor("MyNamespace.Dtos.*")]
+            [GenerateShapeFor("MyNamespace.Models.*")]
             public partial class Witness { }
             """);
 

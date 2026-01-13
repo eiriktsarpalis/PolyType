@@ -39,8 +39,9 @@ Alternatively, you can use glob patterns to generate shapes for multiple types a
 [GenerateShapeFor("MyApp.Dtos.*")]
 public partial class Witness;
 
-// Generate shapes matching multiple patterns
-[GenerateShapeFor("MyApp.Dtos.*", "MyApp.Models.*")]
+// Generate shapes matching multiple patterns using multiple attributes
+[GenerateShapeFor("MyApp.Dtos.*")]
+[GenerateShapeFor("MyApp.Models.*")]
 public partial class Witness;
 
 // Mix pattern-based and explicit type generation

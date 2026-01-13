@@ -1128,21 +1128,12 @@ public sealed partial class Parser : TypeDataModelGenerator
             else if (
                 SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.GenerateShapeForAttribute) &&
                 attributeData.ConstructorArguments.Length == 1 &&
-                attributeData.ConstructorArguments[0].Kind == TypedConstantKind.Array)
+                attributeData.ConstructorArguments[0].Kind == TypedConstantKind.Primitive &&
+                attributeData.ConstructorArguments[0].Value is string pattern)
             {
-                // [GenerateShapeFor("pattern")] or [GenerateShapeFor("pattern1", "pattern2", ...)]
-                List<string> patterns = new();
-                
-                foreach (TypedConstant patternConstant in attributeData.ConstructorArguments[0].Values)
-                {
-                    if (patternConstant.Value is string pattern)
-                    {
-                        patterns.Add(pattern);
-                    }
-                }
-
+                // [GenerateShapeFor("pattern")]
                 isWitnessTypeDeclaration = true;
-                IncludeTypesMatchingPatterns(patterns, attributeData, ref shapeableImplementations);
+                IncludeTypesMatchingPattern(pattern, attributeData, ref shapeableImplementations);
             }
             else if (
                 attributeData.AttributeClass is { TypeArguments: [ITypeSymbol typeArgument] } &&
@@ -1202,13 +1193,13 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
     }
 
-    private void IncludeTypesMatchingPatterns(List<string> patterns, AttributeData attributeData, ref HashSet<TypeId>? shapeableImplementations)
+    private void IncludeTypesMatchingPattern(string pattern, AttributeData attributeData, ref HashSet<TypeId>? shapeableImplementations)
     {
         // Get all types from the compilation including referenced assemblies
         IEnumerable<INamedTypeSymbol> allTypes = GetAllAccessibleTypes(_knownSymbols.Compilation);
 
-        // Precompute the regex matcher for all patterns
-        var matcher = new Helpers.GlobPatternMatcher(patterns);
+        // Create matcher for the single pattern
+        var matcher = new Helpers.GlobPatternMatcher([pattern]);
 
         foreach (INamedTypeSymbol type in allTypes)
         {

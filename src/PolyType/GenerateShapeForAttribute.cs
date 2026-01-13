@@ -63,28 +63,29 @@ public sealed class GenerateShapeForAttribute : Attribute
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="GenerateShapeForAttribute"/> class with glob patterns.
+    /// Initializes a new instance of the <see cref="GenerateShapeForAttribute"/> class with a glob pattern.
     /// </summary>
-    /// <param name="typeNamePatterns">Glob patterns matching fully qualified type names.</param>
+    /// <param name="typeNamePattern">Glob pattern matching fully qualified type names.</param>
     /// <remarks>
     /// Patterns support wildcards: '*' matches any sequence of characters, '?' matches a single character.
     /// Patterns without wildcard characters are matched exactly against fully qualified type names.
     /// Examples: "MyNamespace.*", "*.Dtos.*", "MyNamespace.Person*", "MyNamespace.ExactTypeName".
+    /// Use multiple attribute declarations to specify multiple patterns.
     /// </remarks>
-    public GenerateShapeForAttribute(params string[] typeNamePatterns)
+    public GenerateShapeForAttribute(string typeNamePattern)
     {
-        TypeNamePatterns = typeNamePatterns;
+        TypeNamePattern = typeNamePattern;
     }
 
     /// <summary>
-    /// Gets the target type being generated, or null if patterns are used.
+    /// Gets the target type being generated, or null if a pattern is used.
     /// </summary>
     public Type? Target { get; }
 
     /// <summary>
-    /// Gets the type name patterns to match, or null if a specific type is used.
+    /// Gets the type name pattern to match, or null if a specific type is used.
     /// </summary>
-    public string[]? TypeNamePatterns { get; }
+    public string? TypeNamePattern { get; }
 
     /// <inheritdoc cref="TypeShapeAttribute.Marshaler"/>
     public Type? Marshaler { get; init; }
