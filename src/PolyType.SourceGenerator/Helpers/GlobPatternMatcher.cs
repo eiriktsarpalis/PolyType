@@ -24,7 +24,7 @@ internal sealed class GlobPatternMatcher
         }
     }
 
-    private readonly List<PatternEntry> _patterns = new();
+    private readonly PatternEntry[] _patterns;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GlobPatternMatcher"/> class.
@@ -32,12 +32,14 @@ internal sealed class GlobPatternMatcher
     /// <param name="patterns">The glob patterns with their associated attribute data.</param>
     public GlobPatternMatcher(IEnumerable<(string Pattern, AttributeData AttributeData)> patterns)
     {
+        var patternList = new List<PatternEntry>();
+        
         foreach ((string pattern, AttributeData attributeData) in patterns)
         {
             if (string.IsNullOrEmpty(pattern))
             {
                 // Track empty patterns so we can report warnings for them
-                _patterns.Add(new PatternEntry(pattern, null, attributeData));
+                patternList.Add(new PatternEntry(pattern, null, attributeData));
                 continue;
             }
 
@@ -47,14 +49,16 @@ internal sealed class GlobPatternMatcher
                 // Pattern has wildcards, compile as regex
                 string regexPattern = ConvertGlobToRegex(pattern);
                 Regex regex = new Regex(regexPattern, RegexOptions.None);
-                _patterns.Add(new PatternEntry(pattern, regex, attributeData));
+                patternList.Add(new PatternEntry(pattern, regex, attributeData));
             }
             else
             {
                 // No wildcards, use exact matching (no regex needed)
-                _patterns.Add(new PatternEntry(pattern, null, attributeData));
+                patternList.Add(new PatternEntry(pattern, null, attributeData));
             }
         }
+        
+        _patterns = patternList.ToArray();
     }
 
     /// <summary>
@@ -70,9 +74,9 @@ internal sealed class GlobPatternMatcher
             ? fullyQualifiedName.Substring(8)
             : fullyQualifiedName;
 
-        for (int i = 0; i < _patterns.Count; i++)
+        for (int i = 0; i < _patterns.Length; i++)
         {
-            PatternEntry patternEntry = _patterns[i];
+            ref PatternEntry patternEntry = ref _patterns[i];
             
             if (string.IsNullOrEmpty(patternEntry.Pattern))
             {
@@ -93,9 +97,8 @@ internal sealed class GlobPatternMatcher
 
             if (isMatch)
             {
-                // Update the matched flag
+                // Update the matched flag directly via ref
                 patternEntry.Matched = true;
-                _patterns[i] = patternEntry;
                 return true;
             }
         }
