@@ -31,15 +31,7 @@ internal sealed class GlobPatternMatcher
             {
                 // Pattern has wildcards, compile as regex
                 string regexPattern = ConvertGlobToRegex(pattern);
-                try
-                {
-                    regexList.Add(new Regex(regexPattern, RegexOptions.None, TimeSpan.FromMilliseconds(500)));
-                }
-                catch (ArgumentException)
-                {
-                    // Invalid regex pattern, fall back to exact match
-                    exactList.Add(pattern);
-                }
+                regexList.Add(new Regex(regexPattern, RegexOptions.None));
             }
             else
             {

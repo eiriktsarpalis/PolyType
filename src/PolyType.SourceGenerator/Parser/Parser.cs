@@ -1127,23 +1127,17 @@ public sealed partial class Parser : TypeDataModelGenerator
             }
             else if (
                 SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.GenerateShapeForAttribute) &&
-                attributeData.ConstructorArguments.Length >= 1 &&
-                attributeData.ConstructorArguments[0].Kind == TypedConstantKind.Primitive &&
-                attributeData.ConstructorArguments[0].Value is string firstPattern)
+                attributeData.ConstructorArguments.Length == 1 &&
+                attributeData.ConstructorArguments[0].Kind == TypedConstantKind.Array)
             {
                 // [GenerateShapeFor("pattern")] or [GenerateShapeFor("pattern1", "pattern2", ...)]
-                List<string> patterns = new() { firstPattern };
+                List<string> patterns = new();
                 
-                // Check if there's a second argument (params array)
-                if (attributeData.ConstructorArguments.Length > 1 &&
-                    attributeData.ConstructorArguments[1].Kind == TypedConstantKind.Array)
+                foreach (TypedConstant patternConstant in attributeData.ConstructorArguments[0].Values)
                 {
-                    foreach (TypedConstant patternConstant in attributeData.ConstructorArguments[1].Values)
+                    if (patternConstant.Value is string pattern)
                     {
-                        if (patternConstant.Value is string additionalPattern)
-                        {
-                            patterns.Add(additionalPattern);
-                        }
+                        patterns.Add(pattern);
                     }
                 }
 
@@ -1210,8 +1204,8 @@ public sealed partial class Parser : TypeDataModelGenerator
 
     private void IncludeTypesMatchingPatterns(List<string> patterns, AttributeData attributeData, ref HashSet<TypeId>? shapeableImplementations)
     {
-        // Get all types from the compilation that are accessible
-        IEnumerable<INamedTypeSymbol> allTypes = GetAllAccessibleTypes(_knownSymbols.Compilation.Assembly);
+        // Get all types from the compilation including referenced assemblies
+        IEnumerable<INamedTypeSymbol> allTypes = GetAllAccessibleTypes(_knownSymbols.Compilation);
 
         // Precompute the regex matcher for all patterns
         var matcher = new Helpers.GlobPatternMatcher(patterns);
@@ -1250,13 +1244,32 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
     }
 
-    private static IEnumerable<INamedTypeSymbol> GetAllAccessibleTypes(IAssemblySymbol assembly)
+    private static IEnumerable<INamedTypeSymbol> GetAllAccessibleTypes(Compilation compilation)
     {
-        foreach (INamedTypeSymbol type in GetTypesFromNamespace(assembly.GlobalNamespace))
+        // Include types from the current assembly
+        foreach (INamedTypeSymbol type in GetTypesFromAssembly(compilation.Assembly))
         {
             yield return type;
         }
 
+        // Include types from referenced assemblies
+        foreach (IAssemblySymbol referencedAssembly in compilation.References
+            .Select(r => compilation.GetAssemblyOrModuleSymbol(r))
+            .OfType<IAssemblySymbol>())
+        {
+            foreach (INamedTypeSymbol type in GetTypesFromAssembly(referencedAssembly))
+            {
+                yield return type;
+            }
+        }
+
+        static IEnumerable<INamedTypeSymbol> GetTypesFromAssembly(IAssemblySymbol assembly)
+        {
+            foreach (INamedTypeSymbol type in GetTypesFromNamespace(assembly.GlobalNamespace))
+            {
+                yield return type;
+            }
+        }
         static IEnumerable<INamedTypeSymbol> GetTypesFromNamespace(INamespaceSymbol namespaceSymbol)
         {
             foreach (INamespaceOrTypeSymbol member in namespaceSymbol.GetMembers())
