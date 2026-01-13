@@ -1205,14 +1205,8 @@ public sealed partial class Parser : TypeDataModelGenerator
         // Get all types from the compilation including referenced assemblies
         IEnumerable<INamedTypeSymbol> allTypes = GetAllAccessibleTypes(_knownSymbols.Compilation);
 
-        // Extract just the pattern strings for the matcher
-        List<string> patternStrings = patterns.ConvertAll(p => p.Pattern);
-        
         // Create single matcher for all patterns
-        var matcher = new Helpers.GlobPatternMatcher(patternStrings);
-        
-        // Track which patterns matched at least one type
-        HashSet<string> matchedPatterns = new();
+        var matcher = new Helpers.GlobPatternMatcher(patterns);
 
         foreach (INamedTypeSymbol type in allTypes)
         {
@@ -1222,30 +1216,8 @@ public sealed partial class Parser : TypeDataModelGenerator
                 continue;
             }
 
-            string fullyQualifiedName = type.GetFullyQualifiedName();
-            
-            // Strip "global::" prefix if present for pattern matching
-            string nameForMatching = fullyQualifiedName.StartsWith("global::", StringComparison.Ordinal)
-                ? fullyQualifiedName[8..]
-                : fullyQualifiedName;
-            
-            if (matcher.Matches(nameForMatching))
+            if (matcher.Matches(type))
             {
-                // Check which specific pattern(s) matched this type
-                foreach (string pattern in patternStrings)
-                {
-                    if (string.IsNullOrEmpty(pattern))
-                    {
-                        continue; // Skip empty patterns for individual matching
-                    }
-                    
-                    var singleMatcher = new Helpers.GlobPatternMatcher([pattern]);
-                    if (singleMatcher.Matches(nameForMatching))
-                    {
-                        matchedPatterns.Add(pattern);
-                    }
-                }
-                
                 switch (IncludeType(type))
                 {
                     case TypeDataModelGenerationStatus.UnsupportedType:
@@ -1263,12 +1235,9 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
         
         // Report warnings for patterns that matched no types
-        foreach ((string pattern, AttributeData attributeData) in patterns)
+        foreach ((string pattern, AttributeData attributeData) in matcher.GetUnmatchedPatterns())
         {
-            if (!matchedPatterns.Contains(pattern))
-            {
-                ReportDiagnostic(PatternMatchesNoTypes, attributeData.GetLocation(), pattern);
-            }
+            ReportDiagnostic(PatternMatchesNoTypes, attributeData.GetLocation(), pattern);
         }
     }
 

@@ -1,28 +1,28 @@
 using System.Text.RegularExpressions;
+using Microsoft.CodeAnalysis;
 
 namespace PolyType.SourceGenerator.Helpers;
 
 /// <summary>
-/// Provides glob pattern matching functionality for type names.
+/// Provides glob pattern matching functionality for type symbols.
 /// </summary>
 internal sealed class GlobPatternMatcher
 {
-    private readonly Regex[]? _regexPatterns;
-    private readonly string[]? _exactPatterns;
+    private readonly List<(string Pattern, Regex? Regex, AttributeData AttributeData)> _patterns = new();
+    private readonly HashSet<string> _matchedPatterns = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GlobPatternMatcher"/> class.
     /// </summary>
-    /// <param name="patterns">The glob patterns to match against.</param>
-    public GlobPatternMatcher(IEnumerable<string> patterns)
+    /// <param name="patterns">The glob patterns with their associated attribute data.</param>
+    public GlobPatternMatcher(IEnumerable<(string Pattern, AttributeData AttributeData)> patterns)
     {
-        List<Regex>? regexList = null;
-        List<string>? exactList = null;
-
-        foreach (string pattern in patterns)
+        foreach ((string pattern, AttributeData attributeData) in patterns)
         {
             if (string.IsNullOrEmpty(pattern))
             {
+                // Track empty patterns so we can report warnings for them
+                _patterns.Add((pattern, null, attributeData));
                 continue;
             }
 
@@ -31,51 +31,72 @@ internal sealed class GlobPatternMatcher
             {
                 // Pattern has wildcards, compile as regex
                 string regexPattern = ConvertGlobToRegex(pattern);
-                (regexList ??= new()).Add(new Regex(regexPattern, RegexOptions.None));
+                Regex regex = new Regex(regexPattern, RegexOptions.None);
+                _patterns.Add((pattern, regex, attributeData));
+            }
+            else
+            {
+                // No wildcards, use exact matching (no regex needed)
+                _patterns.Add((pattern, null, attributeData));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Checks if a type symbol matches any of the configured glob patterns.
+    /// </summary>
+    /// <param name="typeSymbol">The type symbol to match.</param>
+    /// <returns>True if the type symbol matches any pattern, false otherwise.</returns>
+    public bool Matches(INamedTypeSymbol typeSymbol)
+    {
+        // Get the fully qualified name and strip "global::" prefix if present
+        string fullyQualifiedName = typeSymbol.GetFullyQualifiedName();
+        string nameForMatching = fullyQualifiedName.StartsWith("global::", StringComparison.Ordinal)
+            ? fullyQualifiedName.Substring(8)
+            : fullyQualifiedName;
+
+        foreach ((string pattern, Regex? regex, AttributeData _) in _patterns)
+        {
+            if (string.IsNullOrEmpty(pattern))
+            {
+                continue;
+            }
+
+            bool isMatch;
+            if (regex is not null)
+            {
+                // Pattern has wildcards, use regex
+                isMatch = regex.IsMatch(nameForMatching);
             }
             else
             {
                 // No wildcards, use exact matching
-                (exactList ??= new()).Add(pattern);
+                isMatch = nameForMatching == pattern;
             }
-        }
 
-        _regexPatterns = regexList?.ToArray();
-        _exactPatterns = exactList?.ToArray();
-    }
-
-    /// <summary>
-    /// Checks if a type name matches any of the configured glob patterns.
-    /// </summary>
-    /// <param name="typeName">The fully qualified type name to match.</param>
-    /// <returns>True if the type name matches any pattern, false otherwise.</returns>
-    public bool Matches(string typeName)
-    {
-        // Check exact matches first (faster)
-        if (_exactPatterns is not null)
-        {
-            foreach (string pattern in _exactPatterns)
+            if (isMatch)
             {
-                if (typeName == pattern)
-                {
-                    return true;
-                }
-            }
-        }
-
-        // Then check regex patterns
-        if (_regexPatterns is not null)
-        {
-            foreach (Regex regex in _regexPatterns)
-            {
-                if (regex.IsMatch(typeName))
-                {
-                    return true;
-                }
+                _matchedPatterns.Add(pattern);
+                return true;
             }
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Gets the patterns that did not match any types, along with their attribute data.
+    /// </summary>
+    /// <returns>An enumerable of tuples containing unmatched patterns and their attribute data.</returns>
+    public IEnumerable<(string Pattern, AttributeData AttributeData)> GetUnmatchedPatterns()
+    {
+        foreach ((string pattern, Regex? _, AttributeData attributeData) in _patterns)
+        {
+            if (!_matchedPatterns.Contains(pattern))
+            {
+                yield return (pattern, attributeData);
+            }
+        }
     }
 
     /// <summary>
