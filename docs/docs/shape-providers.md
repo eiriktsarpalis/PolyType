@@ -32,6 +32,33 @@ The source generator also supports shape generation for third-party types using 
 public partial class Witness; // : IShapeable<Person[]>, IShapeable<List<int>>
 ```
 
+Alternatively, you can use glob patterns to generate shapes for multiple types at once:
+
+```csharp
+// Generate shapes for all types in a namespace
+[GenerateShapeFor("MyApp.Dtos.*")]
+public partial class Witness;
+
+// Generate shapes matching multiple patterns using multiple attributes
+[GenerateShapeFor("MyApp.Dtos.*")]
+[GenerateShapeFor("MyApp.Models.*")]
+public partial class Witness;
+
+// Mix pattern-based and explicit type generation
+[GenerateShapeFor("MyApp.Dtos.*")]
+[GenerateShapeFor(typeof(ThirdParty.SpecialType))]
+public partial class Witness;
+```
+
+Glob patterns support wildcards:
+- `*` matches any sequence of characters
+- `?` matches a single character
+
+Examples:
+- `MyNamespace.*` - all types directly in `MyNamespace`
+- `MyNamespace.Dto*` - types in `MyNamespace` starting with "Dto"
+- `*.Models.*` - all types in any namespace ending with "Models"
+
 which can be applied against supported libraries like so:
 
 ```csharp
