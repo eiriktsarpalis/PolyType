@@ -477,7 +477,7 @@ public static class PatternMatchingTests
                 }
             }
 
-            [GenerateShapeFor("Foo.Bar")]
+            [GenerateShapeFor("Foo.*")]
             [GenerateShapeFor("Foo.Bar")]
             public partial class Witness { }
             """);
