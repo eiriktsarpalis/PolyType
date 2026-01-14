@@ -63,6 +63,8 @@ internal sealed class GlobPatternMatcher
         // Get the fully qualified name without the global:: prefix using Roslyn formatting
         string nameForMatching = typeSymbol.ToDisplayString(RoslynHelpers.QualifiedNameOnlyFormat);
 
+        bool anyMatch = false;
+        
         for (int i = 0; i < _patterns.Length; i++)
         {
             ref var patternEntry = ref _patterns[i];
@@ -87,12 +89,13 @@ internal sealed class GlobPatternMatcher
             if (isMatch)
             {
                 // Update the matched flag directly via ref
+                // Continue checking remaining patterns to mark all matching duplicates
                 patternEntry.Matched = true;
-                return true;
+                anyMatch = true;
             }
         }
 
-        return false;
+        return anyMatch;
     }
 
     /// <summary>

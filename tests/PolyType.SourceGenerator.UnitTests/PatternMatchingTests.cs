@@ -462,4 +462,34 @@ public static class PatternMatchingTests
         Assert.DoesNotContain(result.Diagnostics, d => d.Id == "PT0015");
         Assert.Empty(result.Diagnostics);
     }
+
+    [Fact]
+    public static void GenerateShapeFor_DuplicatePattern_NoWarningForSecondPattern()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            namespace Foo
+            {
+                public class Bar
+                {
+                    public string? Name { get; set; }
+                }
+            }
+
+            [GenerateShapeFor("Foo.Bar")]
+            [GenerateShapeFor("Foo.Bar")]
+            public partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        
+        // Duplicate patterns should not report PT0014 warnings since the type is matched
+        Assert.DoesNotContain(result.Diagnostics, d => d.Id == "PT0014");
+        Assert.Empty(result.Diagnostics);
+        
+        // Verify that Foo.Bar is generated
+        string generatedCode = string.Join("\n", result.NewCompilation.SyntaxTrees.Select(t => t.ToString()));
+        Assert.Contains("Bar", generatedCode);
+    }
 }
