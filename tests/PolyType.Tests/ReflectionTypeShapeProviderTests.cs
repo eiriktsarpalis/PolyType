@@ -150,6 +150,12 @@ public static class ReflectionTypeShapeProviderTests
         var getShapeMethod = providerType.GetMethod("GetTypeShape", [typeof(Type)])!;
         var typeShape = getShapeMethod.Invoke(provider, [testType]);
 
+        // Verify that the type shape was created successfully
+        if (typeShape is null)
+        {
+            throw new InvalidOperationException("Failed to create type shape for test type.");
+        }
+
         // Get a weak reference to the test type
         var weakRef = new WeakReference(testType);
 
