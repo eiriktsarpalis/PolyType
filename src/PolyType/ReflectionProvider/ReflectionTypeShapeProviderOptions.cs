@@ -38,7 +38,7 @@ public sealed record ReflectionTypeShapeProviderOptions
 
     // Lazily initialized HashSet for efficient O(n) equality comparison
     private HashSet<Assembly>? _assemblySet;
-    private HashSet<Assembly> AssemblySet => _assemblySet ??= new HashSet<Assembly>(TypeShapeExtensionAssemblies);
+    private HashSet<Assembly> AssemblySet => _assemblySet ??= new(TypeShapeExtensionAssemblies);
 
     /// <inheritdoc/>
     public bool Equals(ReflectionTypeShapeProviderOptions? other)
