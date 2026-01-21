@@ -45,9 +45,20 @@ public sealed record ReflectionTypeShapeProviderOptions
         }
 
         return UseReflectionEmit == other.UseReflectionEmit
-            && TypeShapeExtensionAssemblies.SequenceEqual(other.TypeShapeExtensionAssemblies);
+            && TypeShapeExtensionAssemblies.Count == other.TypeShapeExtensionAssemblies.Count
+            && TypeShapeExtensionAssemblies.All(other.TypeShapeExtensionAssemblies.Contains);
     }
 
     /// <inheritdoc/>
-    public override int GetHashCode() => unchecked((UseReflectionEmit ? 1 << 30 : 0) + TypeShapeExtensionAssemblies.Aggregate(0, (n, a) => a.GetHashCode()));
+    public override int GetHashCode()
+    {
+        // Use XOR for order-independent hashing of assemblies
+        int assemblyHash = 0;
+        foreach (var assembly in TypeShapeExtensionAssemblies)
+        {
+            assemblyHash ^= assembly.GetHashCode();
+        }
+
+        return unchecked((UseReflectionEmit ? 1 << 30 : 0) + assemblyHash);
+    }
 }
