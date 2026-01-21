@@ -17,7 +17,9 @@ namespace PolyType.Utilities;
 public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
 {
     private readonly ConditionalWeakTable<Type, Entry> _cache = new();
+#if !NET
     private readonly List<WeakReference<Type>> _keys = new();
+#endif
     private readonly object _lockObject = new();
 
     /// <summary>
@@ -122,11 +124,6 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
             lock (_lockObject)
             {
 #if NET
-                if (!_cache.TryGetValue(type, out _))
-                {
-                    _keys.Add(new WeakReference<Type>(type));
-                }
-
                 _cache.AddOrUpdate(type, new Entry(value));
 #else
                 bool isNew = !_cache.TryGetValue(type, out _);
@@ -248,7 +245,9 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
         if (!_cache.TryGetValue(type, out Entry? existingEntry))
         {
             _cache.Add(type, new Entry(value));
+#if !NET
             _keys.Add(new WeakReference<Type>(type));
+#endif
         }
         else
         {
@@ -266,7 +265,9 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
             }
 
             _cache.Add(type, entry);
+#if !NET
             _keys.Add(new WeakReference<Type>(type));
+#endif
             return true;
         }
     }
@@ -282,6 +283,9 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     private IEnumerable<KeyValuePair<Type, Entry>> GetLiveEntriesCore()
     {
         Debug.Assert(Monitor.IsEntered(_lockObject), "Must be called within a lock.");
+#if NET
+        return _cache;
+#else
         foreach (var weakRef in _keys)
         {
             if (weakRef.TryGetTarget(out Type? type) && _cache.TryGetValue(type, out Entry? entry))
@@ -289,6 +293,7 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
                 yield return new KeyValuePair<Type, Entry>(type, entry);
             }
         }
+#endif
     }
 
     private sealed class Entry
