@@ -37,8 +37,7 @@ public sealed record ReflectionTypeShapeProviderOptions
     public IReadOnlyList<Assembly> TypeShapeExtensionAssemblies { get; init; } = [];
 
     // Lazily initialized HashSet for efficient O(n) equality comparison
-    private HashSet<Assembly>? _assemblySet;
-    private HashSet<Assembly> AssemblySet => _assemblySet ??= new(TypeShapeExtensionAssemblies);
+    private HashSet<Assembly> AssemblySet => field ??= new(TypeShapeExtensionAssemblies);
 
     /// <inheritdoc/>
     public bool Equals(ReflectionTypeShapeProviderOptions? other)
