@@ -1,8 +1,8 @@
 ﻿using PolyType.Abstractions;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 
 namespace PolyType.Utilities;
@@ -16,7 +16,9 @@ namespace PolyType.Utilities;
 /// </remarks>
 public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
 {
-    private readonly ConcurrentDictionary<Type, Entry> _cache = new();
+    private readonly ConditionalWeakTable<Type, Entry> _cache = new();
+    private readonly List<WeakReference<Type>> _keys = new();
+    private readonly object _lockObject = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TypeCache"/> class.
@@ -80,14 +82,23 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     /// <summary>
     /// Gets the total number of entries in the cache.
     /// </summary>
-    public int Count => _cache.Count;
+    public int Count
+    {
+        get
+        {
+            lock (_lockObject)
+            {
+                return GetLiveEntriesCore().Count();
+            }
+        }
+    }
 
     /// <summary>
     /// Determines whether the cache contains a value for the specified type.
     /// </summary>
     /// <param name="type">The key type.</param>
     /// <returns><see langword="true"/> is found, or <see langword="false"/> otherwise.</returns>
-    public bool ContainsKey(Type type) => _cache.ContainsKey(type);
+    public bool ContainsKey(Type type) => _cache.TryGetValue(type, out _);
 
     /// <summary>
     /// Gets or sets the value associated with the specified type.
@@ -96,12 +107,36 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     /// <returns>The value associated with the specified key.</returns>
     public object? this[Type type]
     {
-        get => _cache[type].GetValueOrException();
+        get
+        {
+            if (_cache.TryGetValue(type, out Entry? entry))
+            {
+                return entry.GetValueOrException();
+            }
+
+            throw new KeyNotFoundException($"The given key '{type}' was not present in the cache.");
+        }
+
         set
         {
-            lock (LockObject)
+            lock (_lockObject)
             {
-                _cache[type] = new Entry(value);
+#if NET
+                if (!_cache.TryGetValue(type, out _))
+                {
+                    _keys.Add(new WeakReference<Type>(type));
+                }
+
+                _cache.AddOrUpdate(type, new Entry(value));
+#else
+                bool isNew = !_cache.TryGetValue(type, out _);
+                _cache.Remove(type);
+                _cache.Add(type, new Entry(value));
+                if (isNew)
+                {
+                    _keys.Add(new WeakReference<Type>(type));
+                }
+#endif
             }
         }
     }
@@ -112,7 +147,7 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     /// <param name="type">The type associated with the value.</param>
     /// <param name="value">The value to attempt to add.</param>
     /// <returns><see langword="true"/> if the value was added successfully, <see langword="false"/> otherwise.</returns>
-    public bool TryAdd(Type type, object? value) => TryAdd(type, new Entry(value));
+    public bool TryAdd(Type type, object? value) => TryAddEntry(type, new Entry(value));
 
     /// <summary>
     /// Attempts to get the value associated with the specified type.
@@ -122,7 +157,7 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     /// <returns><see langword="true"/> if the cache contains an element with the specified type; otherwise, <see langword="false"/>.</returns>
     public bool TryGetValue(Type type, out object? value)
     {
-        if (_cache.TryGetValue(type, out Entry entry))
+        if (_cache.TryGetValue(type, out Entry? entry))
         {
             value = entry.GetValueOrThrowException();
             return true;
@@ -141,7 +176,7 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     {
         Throw.IfNull(type);
 
-        if (_cache.TryGetValue(type, out Entry entry))
+        if (_cache.TryGetValue(type, out Entry? entry))
         {
             return entry.GetValueOrThrowException();
         }
@@ -165,7 +200,7 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     {
         Throw.IfNull(typeShape);
 
-        if (_cache.TryGetValue(typeShape.Type, out Entry entry))
+        if (_cache.TryGetValue(typeShape.Type, out Entry? entry))
         {
             return entry.GetValueOrThrowException();
         }
@@ -189,7 +224,7 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
             }
             catch (Exception ex) when (CacheExceptions)
             {
-                TryAdd(typeShape.Type, new Entry(ExceptionDispatchInfo.Capture(ex)));
+                TryAddEntry(typeShape.Type, new Entry(ExceptionDispatchInfo.Capture(ex)));
                 throw;
             }
 
@@ -198,26 +233,41 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
                 return value;
             }
 
-            if (_cache.TryGetValue(typeShape.Type, out Entry entry))
+            if (_cache.TryGetValue(typeShape.Type, out Entry? entry))
             {
                 return entry.GetValueOrThrowException();
             }
         }
     }
 
-    internal object LockObject => _cache;
+    internal object LockObject => _lockObject;
+
     internal void AddUnsynchronized(Type type, object? value)
     {
-        Debug.Assert(Monitor.IsEntered(LockObject), "Must be called within a lock.");
-        bool result = _cache.TryAdd(type, new Entry(value));
-        Debug.Assert(result || ReferenceEquals(_cache[type].Value, value), "should only be pre-populated with the same value.");
+        Debug.Assert(Monitor.IsEntered(_lockObject), "Must be called within a lock.");
+        if (!_cache.TryGetValue(type, out Entry? existingEntry))
+        {
+            _cache.Add(type, new Entry(value));
+            _keys.Add(new WeakReference<Type>(type));
+        }
+        else
+        {
+            Debug.Assert(ReferenceEquals(existingEntry.Value, value), "should only be pre-populated with the same value.");
+        }
     }
 
-    private bool TryAdd(Type type, Entry entry)
+    private bool TryAddEntry(Type type, Entry entry)
     {
-        lock (LockObject)
+        lock (_lockObject)
         {
-            return _cache.TryAdd(type, entry);
+            if (_cache.TryGetValue(type, out _))
+            {
+                return false;
+            }
+
+            _cache.Add(type, entry);
+            _keys.Add(new WeakReference<Type>(type));
+            return true;
         }
     }
 
@@ -229,12 +279,26 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
         }
     }
 
-    private readonly struct Entry
+    private IEnumerable<KeyValuePair<Type, Entry>> GetLiveEntriesCore()
     {
-        public readonly object? Value;
-        public readonly ExceptionDispatchInfo? Exception;
+        Debug.Assert(Monitor.IsEntered(_lockObject), "Must be called within a lock.");
+        foreach (var weakRef in _keys)
+        {
+            if (weakRef.TryGetTarget(out Type? type) && _cache.TryGetValue(type, out Entry? entry))
+            {
+                yield return new KeyValuePair<Type, Entry>(type, entry);
+            }
+        }
+    }
+
+    private sealed class Entry
+    {
         public Entry(object? value) => Value = value;
         public Entry(ExceptionDispatchInfo exception) => Exception = exception;
+
+        public object? Value { get; }
+        public ExceptionDispatchInfo? Exception { get; }
+
         public object? GetValueOrThrowException()
         {
             Exception?.Throw();
@@ -244,9 +308,35 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
         public object? GetValueOrException() => Exception is { } e ? e : Value;
     }
 
-    IEnumerable<Type> IReadOnlyDictionary<Type, object?>.Keys => _cache.Keys;
-    IEnumerable<object?> IReadOnlyDictionary<Type, object?>.Values => _cache.Values.Select(e => e.GetValueOrException());
+    IEnumerable<Type> IReadOnlyDictionary<Type, object?>.Keys
+    {
+        get
+        {
+            lock (_lockObject)
+            {
+                return GetLiveEntriesCore().Select(kvp => kvp.Key).ToList();
+            }
+        }
+    }
+
+    IEnumerable<object?> IReadOnlyDictionary<Type, object?>.Values
+    {
+        get
+        {
+            lock (_lockObject)
+            {
+                return GetLiveEntriesCore().Select(e => e.Value.GetValueOrException()).ToList();
+            }
+        }
+    }
+
     IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<KeyValuePair<Type, object?>>)this).GetEnumerator();
-    IEnumerator<KeyValuePair<Type, object?>> IEnumerable<KeyValuePair<Type, object?>>.GetEnumerator() =>
-        _cache.Select(kvp => new KeyValuePair<Type, object?>(kvp.Key, kvp.Value.GetValueOrException())).GetEnumerator();
+
+    IEnumerator<KeyValuePair<Type, object?>> IEnumerable<KeyValuePair<Type, object?>>.GetEnumerator()
+    {
+        lock (_lockObject)
+        {
+            return GetLiveEntriesCore().Select(kvp => new KeyValuePair<Type, object?>(kvp.Key, kvp.Value.GetValueOrException())).ToList().GetEnumerator();
+        }
+    }
 }
