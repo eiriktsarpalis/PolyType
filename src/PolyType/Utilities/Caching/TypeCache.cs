@@ -17,7 +17,6 @@ namespace PolyType.Utilities;
 public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
 {
     private readonly ConditionalWeakTable<Type, Entry> _cache = new();
-    private readonly object _lockObject = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TypeCache"/> class.
@@ -180,7 +179,7 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     {
         Throw.IfNull(typeShape);
 
-        if (_cache.TryGetValue(typeShape.Type, out Entry entry))
+        if (_cache.TryGetValue(typeShape.Type, out Entry? entry))
         {
             return entry.GetValueOrThrowException();
         }
@@ -213,7 +212,7 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
                 return value;
             }
 
-            if (_cache.TryGetValue(typeShape.Type, out Entry entry))
+            if (_cache.TryGetValue(typeShape.Type, out Entry? entry))
             {
                 return entry.GetValueOrThrowException();
             }
@@ -224,15 +223,39 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     internal void AddUnsynchronized(Type type, object? value)
     {
         Debug.Assert(Monitor.IsEntered(LockObject), "Must be called within a lock.");
+#if NET
+        if (!_cache.TryGetValue(type, out Entry? existingEntry))
+        {
+            _cache.Add(type, new Entry(value));
+        }
+        else
+        {
+            Debug.Assert(ReferenceEquals(existingEntry.Value, value), "should only be pre-populated with the same value.");
+        }
+#else
         bool result = _cache.TryAdd(type, new Entry(value));
-        Debug.Assert(result || ReferenceEquals(_cache[type].Value, value), "should only be pre-populated with the same value.");
+        if (!result && _cache.TryGetValue(type, out Entry? existingEntry))
+        {
+            Debug.Assert(ReferenceEquals(existingEntry.Value, value), "should only be pre-populated with the same value.");
+        }
+#endif
     }
 
     private bool TryAdd(Type type, Entry entry)
     {
         lock (LockObject)
         {
+#if NET
             return _cache.TryAdd(type, entry);
+#else
+            if (_cache.TryGetValue(type, out _))
+            {
+                return false;
+            }
+
+            _cache.Add(type, entry);
+            return true;
+#endif
         }
     }
 
@@ -244,7 +267,7 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
         }
     }
 
-    private readonly struct Entry
+    private sealed class Entry
     {
         public readonly object? Value;
         public readonly ExceptionDispatchInfo? Exception;
@@ -259,8 +282,8 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
         public object? GetValueOrException() => Exception is { } e ? e : Value;
     }
 
-    IEnumerable<Type> IReadOnlyDictionary<Type, object?>.Keys => _cache.Keys;
-    IEnumerable<object?> IReadOnlyDictionary<Type, object?>.Values => _cache.Values.Select(e => e.GetValueOrException());
+    IEnumerable<Type> IReadOnlyDictionary<Type, object?>.Keys => _cache.Select(kvp => kvp.Key);
+    IEnumerable<object?> IReadOnlyDictionary<Type, object?>.Values => _cache.Select(e => e.Value.GetValueOrException());
     IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<KeyValuePair<Type, object?>>)this).GetEnumerator();
     IEnumerator<KeyValuePair<Type, object?>> IEnumerable<KeyValuePair<Type, object?>>.GetEnumerator() =>
         _cache.Select(kvp => new KeyValuePair<Type, object?>(kvp.Key, kvp.Value.GetValueOrException())).GetEnumerator();
