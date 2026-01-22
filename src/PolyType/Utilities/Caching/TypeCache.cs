@@ -113,12 +113,13 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     {
         get
         {
-            if (_cache.TryGetValue(type, out Entry? entry))
+            if (!_cache.TryGetValue(type, out Entry? entry))
             {
-                return entry.GetValueOrException();
+                Throw();
+                [DoesNotReturn] static void Throw() => throw new KeyNotFoundException();
             }
 
-            throw new KeyNotFoundException();
+            return entry.GetValueOrException();
         }
 
         set
