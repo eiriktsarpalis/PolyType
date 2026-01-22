@@ -1,8 +1,11 @@
 ﻿using PolyType.Abstractions;
 using System.Collections;
+#if !NET
 using System.Collections.Concurrent;
+#endif
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 
 namespace PolyType.Utilities;
@@ -16,7 +19,15 @@ namespace PolyType.Utilities;
 /// </remarks>
 public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
 {
-    private readonly ConcurrentDictionary<Type, Entry> _cache = new();
+    private readonly ConditionalWeakTable<Type, Entry> _cache = new();
+#if !NET
+    // .NET Standard 2.0's ConditionalWeakTable doesn't support enumeration or Count,
+    // so we track keys separately using weak references to avoid rooting types.
+    // This is an append-only collection; dead entries are periodically compacted.
+    private ConcurrentQueue<WeakReference<Type>> _keys = new();
+    private int _insertionsSinceLastCompaction;
+    private const int CompactionThreshold = 64;
+#endif
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TypeCache"/> class.
@@ -80,14 +91,18 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     /// <summary>
     /// Gets the total number of entries in the cache.
     /// </summary>
-    public int Count => _cache.Count;
+#if NET
+    public int Count => _cache.Count();
+#else
+    public int Count => GetLiveKeys().Count();
+#endif
 
     /// <summary>
     /// Determines whether the cache contains a value for the specified type.
     /// </summary>
     /// <param name="type">The key type.</param>
     /// <returns><see langword="true"/> is found, or <see langword="false"/> otherwise.</returns>
-    public bool ContainsKey(Type type) => _cache.ContainsKey(type);
+    public bool ContainsKey(Type type) => _cache.TryGetValue(type, out _);
 
     /// <summary>
     /// Gets or sets the value associated with the specified type.
@@ -96,12 +111,36 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     /// <returns>The value associated with the specified key.</returns>
     public object? this[Type type]
     {
-        get => _cache[type].GetValueOrException();
+        get
+        {
+            if (!_cache.TryGetValue(type, out Entry? entry))
+            {
+                Throw();
+                [DoesNotReturn] static void Throw() => throw new KeyNotFoundException();
+            }
+
+            return entry.GetValueOrException();
+        }
+
         set
         {
             lock (LockObject)
             {
-                _cache[type] = new Entry(value);
+#if NET
+                _cache.AddOrUpdate(type, new Entry(value));
+#else
+                if (_cache.TryGetValue(type, out _))
+                {
+                    Debug.Assert(_keys.Any(wr => wr.TryGetTarget(out Type? t) && t == type), "Type should already be present in the key queue.");
+                    _cache.Remove(type);
+                }
+                else
+                {
+                    InsertTypeIntoKeyQueueUnsynchronized(type);
+                }
+
+                _cache.Add(type, new Entry(value));
+#endif
             }
         }
     }
@@ -122,7 +161,7 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     /// <returns><see langword="true"/> if the cache contains an element with the specified type; otherwise, <see langword="false"/>.</returns>
     public bool TryGetValue(Type type, out object? value)
     {
-        if (_cache.TryGetValue(type, out Entry entry))
+        if (_cache.TryGetValue(type, out Entry? entry))
         {
             value = entry.GetValueOrThrowException();
             return true;
@@ -141,7 +180,7 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     {
         Throw.IfNull(type);
 
-        if (_cache.TryGetValue(type, out Entry entry))
+        if (_cache.TryGetValue(type, out Entry? entry))
         {
             return entry.GetValueOrThrowException();
         }
@@ -165,7 +204,7 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     {
         Throw.IfNull(typeShape);
 
-        if (_cache.TryGetValue(typeShape.Type, out Entry entry))
+        if (_cache.TryGetValue(typeShape.Type, out Entry? entry))
         {
             return entry.GetValueOrThrowException();
         }
@@ -198,7 +237,7 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
                 return value;
             }
 
-            if (_cache.TryGetValue(typeShape.Type, out Entry entry))
+            if (_cache.TryGetValue(typeShape.Type, out Entry? entry))
             {
                 return entry.GetValueOrThrowException();
             }
@@ -209,15 +248,40 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     internal void AddUnsynchronized(Type type, object? value)
     {
         Debug.Assert(Monitor.IsEntered(LockObject), "Must be called within a lock.");
+#if NET
         bool result = _cache.TryAdd(type, new Entry(value));
-        Debug.Assert(result || ReferenceEquals(_cache[type].Value, value), "should only be pre-populated with the same value.");
+        Debug.Assert(result || ReferenceEquals(_cache.GetOrCreateValue(type).Value, value), "should only be pre-populated with the same value.");
+#else
+        if (_cache.TryGetValue(type, out Entry? existing))
+        {
+            Debug.Assert(ReferenceEquals(existing.Value, value), "should only be pre-populated with the same value.");
+            Debug.Assert(_keys.Any(wr => wr.TryGetTarget(out Type? t) && t == type), "Type should already be present in the key queue.");
+        }
+        else
+        {
+            _cache.Add(type, new Entry(value));
+            InsertTypeIntoKeyQueueUnsynchronized(type);
+        }
+#endif
     }
 
     private bool TryAdd(Type type, Entry entry)
     {
         lock (LockObject)
         {
+#if NET
             return _cache.TryAdd(type, entry);
+#else
+            if (_cache.TryGetValue(type, out _))
+            {
+                Debug.Assert(_keys.Any(wr => wr.TryGetTarget(out Type? t) && t == type), "Type should already be present in the key queue.");
+                return false;
+            }
+
+            _cache.Add(type, entry);
+            InsertTypeIntoKeyQueueUnsynchronized(type);
+            return true;
+#endif
         }
     }
 
@@ -229,10 +293,10 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
         }
     }
 
-    private readonly struct Entry
+    private sealed class Entry
     {
-        public readonly object? Value;
-        public readonly ExceptionDispatchInfo? Exception;
+        public object? Value { get; }
+        public ExceptionDispatchInfo? Exception { get; }
         public Entry(object? value) => Value = value;
         public Entry(ExceptionDispatchInfo exception) => Exception = exception;
         public object? GetValueOrThrowException()
@@ -244,9 +308,82 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
         public object? GetValueOrException() => Exception is { } e ? e : Value;
     }
 
-    IEnumerable<Type> IReadOnlyDictionary<Type, object?>.Keys => _cache.Keys;
-    IEnumerable<object?> IReadOnlyDictionary<Type, object?>.Values => _cache.Values.Select(e => e.GetValueOrException());
+#if NET
+    IEnumerable<Type> IReadOnlyDictionary<Type, object?>.Keys => _cache.Select(kvp => kvp.Key);
+    IEnumerable<object?> IReadOnlyDictionary<Type, object?>.Values => _cache.Select(kvp => kvp.Value.GetValueOrException());
     IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<KeyValuePair<Type, object?>>)this).GetEnumerator();
     IEnumerator<KeyValuePair<Type, object?>> IEnumerable<KeyValuePair<Type, object?>>.GetEnumerator() =>
         _cache.Select(kvp => new KeyValuePair<Type, object?>(kvp.Key, kvp.Value.GetValueOrException())).GetEnumerator();
+#else
+    IEnumerable<Type> IReadOnlyDictionary<Type, object?>.Keys => GetLiveKeys();
+    IEnumerable<object?> IReadOnlyDictionary<Type, object?>.Values => GetLiveEntries().Select(kvp => kvp.Value.GetValueOrException());
+    IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<KeyValuePair<Type, object?>>)this).GetEnumerator();
+    IEnumerator<KeyValuePair<Type, object?>> IEnumerable<KeyValuePair<Type, object?>>.GetEnumerator() =>
+        GetLiveEntries().Select(kvp => new KeyValuePair<Type, object?>(kvp.Key, kvp.Value.GetValueOrException())).GetEnumerator();
+
+    private IEnumerable<KeyValuePair<Type, Entry>> GetLiveEntries()
+    {
+        foreach (WeakReference<Type> weakRef in _keys)
+        {
+            if (weakRef.TryGetTarget(out Type? key) && _cache.TryGetValue(key, out Entry? entry))
+            {
+                yield return new KeyValuePair<Type, Entry>(key, entry);
+            }
+        }
+    }
+
+    private IEnumerable<Type> GetLiveKeys()
+    {
+        foreach (WeakReference<Type> weakRef in _keys)
+        {
+            if (weakRef.TryGetTarget(out Type? key))
+            {
+                yield return key;
+            }
+        }
+    }
+
+    private void InsertTypeIntoKeyQueueUnsynchronized(Type type)
+    {
+        Debug.Assert(Monitor.IsEntered(LockObject), "Must be called within a lock.");
+        Debug.Assert(!_keys.Any(wr => wr.TryGetTarget(out Type? t) && t == type), "Type should not already be present in the key queue.");
+
+        _keys.Enqueue(new WeakReference<Type>(type));
+        if (++_insertionsSinceLastCompaction >= CompactionThreshold)
+        {
+            TryCompactKeyQueueUnsynchronized();
+        }
+
+        void TryCompactKeyQueueUnsynchronized()
+        {
+            // Search for any dead entries
+            bool hasDeadEntries = false;
+            foreach (WeakReference<Type> weakRef in _keys)
+            {
+                if (!weakRef.TryGetTarget(out _))
+                {
+                    hasDeadEntries = true;
+                    break;
+                }
+            }
+
+            if (hasDeadEntries)
+            {
+                // Rebuild the queue with only live entries.
+                var newQueue = new ConcurrentQueue<WeakReference<Type>>();
+                foreach (WeakReference<Type> weakRef in _keys)
+                {
+                    if (weakRef.TryGetTarget(out _))
+                    {
+                        newQueue.Enqueue(weakRef);
+                    }
+                }
+
+                _keys = newQueue;
+            }
+
+            _insertionsSinceLastCompaction = 0;
+        }
+    }
+#endif
 }

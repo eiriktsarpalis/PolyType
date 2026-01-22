@@ -36,6 +36,9 @@ public sealed record ReflectionTypeShapeProviderOptions
     /// </remarks>
     public IReadOnlyList<Assembly> TypeShapeExtensionAssemblies { get; init; } = [];
 
+    // Lazily initialized HashSet for efficient O(n) equality comparison
+    private HashSet<Assembly> AssemblySet => field ??= new(TypeShapeExtensionAssemblies);
+
     /// <inheritdoc/>
     public bool Equals(ReflectionTypeShapeProviderOptions? other)
     {
@@ -45,9 +48,19 @@ public sealed record ReflectionTypeShapeProviderOptions
         }
 
         return UseReflectionEmit == other.UseReflectionEmit
-            && TypeShapeExtensionAssemblies.SequenceEqual(other.TypeShapeExtensionAssemblies);
+            && AssemblySet.SetEquals(other.TypeShapeExtensionAssemblies);
     }
 
     /// <inheritdoc/>
-    public override int GetHashCode() => unchecked((UseReflectionEmit ? 1 << 30 : 0) + TypeShapeExtensionAssemblies.Aggregate(0, (n, a) => a.GetHashCode()));
+    public override int GetHashCode()
+    {
+        // Use XOR for order-independent hashing of assemblies
+        int assemblyHash = 0;
+        foreach (var assembly in TypeShapeExtensionAssemblies)
+        {
+            assemblyHash ^= assembly.GetHashCode();
+        }
+
+        return unchecked((UseReflectionEmit ? 1 << 30 : 0) + assemblyHash);
+    }
 }

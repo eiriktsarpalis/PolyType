@@ -44,8 +44,8 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         return s_providers.GetOrAdd(options, _ => new ReflectionTypeShapeProvider(options));
     }
 
-    private readonly ConcurrentDictionary<Type, ITypeShape> _cache = new();
-    private readonly Func<Type, ITypeShape> _typeShapeFactory;
+    private readonly ConditionalWeakTable<Type, ITypeShape> _cache = new();
+    private readonly ConditionalWeakTable<Type, ITypeShape>.CreateValueCallback _typeShapeFactory;
     private readonly TypeShapeExtensionAttribute[] _typeShapeExtensions;
 
     private ReflectionTypeShapeProvider(ReflectionTypeShapeProviderOptions options)
@@ -95,7 +95,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
     public ITypeShape GetTypeShape(Type type)
     {
         Throw.IfNull(type);
-        return _cache.GetOrAdd(type, _typeShapeFactory);
+        return _cache.GetValue(type, _typeShapeFactory);
     }
 
     internal ITypeShape CreateTypeShapeCore(Type type, bool allowUnionShapes = true)
