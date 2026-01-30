@@ -452,6 +452,7 @@ public partial class TypeDataModelGenerator
         {
             if (parameter.RefKind is RefKind.Out)
             {
+                // Methods with out parameters are not supported
                 result = default;
                 return TypeDataModelGenerationStatus.UnsupportedType;
             }
