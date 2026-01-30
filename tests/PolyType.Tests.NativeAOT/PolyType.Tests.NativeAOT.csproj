@@ -11,6 +11,9 @@
     <!-- TUnit doesn't like it when run together with other xunit projects & codecov enabled -->
     <DefineConstants>$(DefineConstants);POLYFILL_TUNIT_CORE</DefineConstants>
     <OutputType>Library</OutputType>
+    <IsTestProject>false</IsTestProject>
+    <TestProject>false</TestProject>
+    <IsTestingPlatformApplication>false</IsTestingPlatformApplication>
   </PropertyGroup>
 
   <ItemGroup>
