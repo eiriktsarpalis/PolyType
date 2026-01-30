@@ -4,6 +4,7 @@
     <LangVersion>14</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))</RepoRoot>
     <AssemblyOriginatorKeyFile>$(RepoRoot)\OpenKey.snk</AssemblyOriginatorKeyFile>
     <VSTestLogger>trx%3bLogFileName=$(MSBuildProjectName).$(TargetFramework).$(OS).trx</VSTestLogger>

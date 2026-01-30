@@ -22,14 +22,16 @@
     <PackageVersion Include="Nerdbank.GitVersioning" Version="3.10.8-alpha" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
     <!-- Testing dependencies -->
-    <PackageVersion Include="xunit.v3" Version="3.2.2" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <PackageVersion Include="xunit.v3.mtp-v2" Version="3.2.2" />
     <PackageVersion Include="TUnit" Version="1.12.65" />
     <PackageVersion Include="TUnit.Assertions" Version="1.12.65" />
     <PackageVersion Include="TUnit.Engine" Version="1.12.65" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.8" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="9.0.8" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.0.2" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.3.2" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CrashDump" Version="2.0.2" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="2.0.2" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
     <!-- Earliest version of the library supporting literals and frozen collections -->
     <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />

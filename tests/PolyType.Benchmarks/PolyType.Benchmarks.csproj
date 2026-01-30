@@ -8,6 +8,8 @@
     <WarningsAsErrors>Nullable</WarningsAsErrors>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <ServerGarbageCollection>true</ServerGarbageCollection>
+    <IsTestProject>false</IsTestProject>
+    <IsTestingPlatformApplication>false</IsTestingPlatformApplication>
   </PropertyGroup>
 
   <ItemGroup>

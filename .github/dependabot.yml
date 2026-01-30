@@ -15,22 +15,32 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
-    # Exclude System.* and Microsoft.* packages - these should only be updated manually
+    # Exclude System.* and most Microsoft.* packages - these should only be updated manually
+    # Exception: Microsoft.Testing.* packages are allowed for MTP updates
     ignore:
       - dependency-name: "System.*"
       - dependency-name: "Microsoft.*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+    allow:
+      - dependency-name: "Microsoft.Testing.*"
+      - dependency-name: "Microsoft.CodeAnalysis.*"
     groups:
       # Group test framework updates together
       test-frameworks:
         patterns:
           - "xunit*"
           - "TUnit*"
+      # Group Microsoft Testing Platform extensions
+      testing-platform:
+        patterns:
+          - "Microsoft.Testing.*"
       # Group build and analyzer tools
       build-tools:
         patterns:
           - "StyleCop.Analyzers"
           - "PolySharp"
           - "Nerdbank.GitVersioning"
+          - "Microsoft.CodeAnalysis.*"
       # Group benchmarking tools
       benchmarking:
         patterns:

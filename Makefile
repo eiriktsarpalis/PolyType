@@ -2,7 +2,7 @@ SOURCE_DIRECTORY := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 ARTIFACT_PATH := $(SOURCE_DIRECTORY)artifacts
 DOCS_PATH := $(SOURCE_DIRECTORY)docs
 CONFIGURATION ?= Release
-ADDITIONAL_ARGS ?= -p:ContinuousIntegrationBuild=true -warnAsError
+ADDITIONAL_ARGS ?= -p:ContinuousIntegrationBuild=true
 NUGET_SOURCE ?= "https://api.nuget.org/v3/index.json"
 NUGET_API_KEY ?= ""
 DOCKER_IMAGE_NAME ?= "polytype-docker-build"
@@ -25,14 +25,16 @@ build: restore
 test-clr: build
 	dotnet test \
 		--configuration $(CONFIGURATION) \
+		--no-build \
 		$(ADDITIONAL_ARGS) \
-		--blame \
 		-p:SkipTUnitTestRuns=true \
-		--logger "trx" \
-		--collect "Code Coverage;Format=cobertura" \
-		--results-directory $(ARTIFACT_PATH)/testResults \
-		-- \
-		RunConfiguration.CollectSourceInformation=true
+		--report-trx \
+		--coverage \
+		--coverage-output-format cobertura \
+		--crashdump \
+		--hangdump \
+		--hangdump-timeout 10m \
+		--results-directory $(ARTIFACT_PATH)/testResults
 
 test-aot: build
 	dotnet publish $(SOURCE_DIRECTORY)/tests/PolyType.Tests.NativeAOT/PolyType.Tests.NativeAOT.csproj \
