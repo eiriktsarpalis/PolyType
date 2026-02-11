@@ -505,6 +505,9 @@ public static class TestTypes
 
         yield return TestCase.Create(new DerivedClassWithShadowingMember { PropA = "propA", PropB = 2, FieldA = 1, FieldB = "fieldB" });
         yield return TestCase.Create(new ClassWithMultipleSelfReferences { First = new ClassWithMultipleSelfReferences() });
+        // Note: SelfReferentialList and SelfReferentialDictionary are not included in the test cases
+        // because they break tests that assume non-recursive type graphs (e.g., JSON schema comparison tests).
+        // They are tested separately in TypeShapeResolverTests to ensure they can be resolved without stack overflow.
         yield return TestCase.Create(new ClassWithNullableTypeParameters());
         yield return TestCase.Create(new ClassWithNullableTypeParameters<int>(), p);
         yield return TestCase.Create(new ClassWithNullableTypeParameters<int?>(), p);
@@ -2007,6 +2010,20 @@ public partial class ClassWithMultipleSelfReferences
     public ClassWithMultipleSelfReferences? First { get; set; }
     public ClassWithMultipleSelfReferences[] FirstArray { get; set; } = [];
 }
+
+/// <summary>
+/// A self-referential enumerable type where the element type is the same as the enumerable type.
+/// Used to test that source generation handles recursive type graphs correctly.
+/// </summary>
+[GenerateShape]
+public partial class SelfReferentialList : List<SelfReferentialList>;
+
+/// <summary>
+/// A self-referential dictionary type where the value type is the same as the dictionary type.
+/// Used to test that source generation handles recursive type graphs correctly.
+/// </summary>
+[GenerateShape]
+public partial class SelfReferentialDictionary : Dictionary<string, SelfReferentialDictionary>;
 
 [GenerateShape]
 public partial class ClassWithNullableTypeParameters

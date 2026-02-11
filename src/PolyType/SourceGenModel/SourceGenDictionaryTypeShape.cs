@@ -13,11 +13,35 @@ namespace PolyType.SourceGenModel;
 public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : SourceGenTypeShape<TDictionary>, IDictionaryTypeShape<TDictionary, TKey, TValue>
     where TKey : notnull
 {
-    /// <inheritdoc/>
-    public required ITypeShape<TKey> KeyType { get; init; }
+    /// <summary>
+    /// Gets a delayed key type shape factory for use with potentially recursive type graphs.
+    /// </summary>
+    public Func<ITypeShape<TKey>>? KeyTypeFunc { get; init; }
 
     /// <inheritdoc/>
-    public required ITypeShape<TValue> ValueType { get; init; }
+    [Obsolete("Use KeyTypeFunc for delayed initialization to avoid stack overflows with recursive types.")]
+    public ITypeShape<TKey> KeyType
+    {
+        get => _keyType ??= KeyTypeFunc?.Invoke() ?? throw new InvalidOperationException("KeyTypeFunc has not been initialized.");
+        init => _keyType = value;
+    }
+
+    private ITypeShape<TKey>? _keyType;
+
+    /// <summary>
+    /// Gets a delayed value type shape factory for use with potentially recursive type graphs.
+    /// </summary>
+    public Func<ITypeShape<TValue>>? ValueTypeFunc { get; init; }
+
+    /// <inheritdoc/>
+    [Obsolete("Use ValueTypeFunc for delayed initialization to avoid stack overflows with recursive types.")]
+    public ITypeShape<TValue> ValueType
+    {
+        get => _valueType ??= ValueTypeFunc?.Invoke() ?? throw new InvalidOperationException("ValueTypeFunc has not been initialized.");
+        init => _valueType = value;
+    }
+
+    private ITypeShape<TValue>? _valueType;
 
     /// <summary>
     /// Gets the function that extracts a <see cref="IReadOnlyDictionary{TKey,TValue}"/> from an instance of the dictionary type.
@@ -61,8 +85,10 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     /// <inheritdoc/>
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitDictionary(this, state);
 
+#pragma warning disable CS0618 // Type or member is obsolete -- used internally for interface implementation
     ITypeShape IDictionaryTypeShape.KeyType => KeyType;
     ITypeShape IDictionaryTypeShape.ValueType => ValueType;
+#pragma warning restore CS0618
 
     Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetGetDictionary() => GetDictionary;
 

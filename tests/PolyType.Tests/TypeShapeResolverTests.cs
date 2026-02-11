@@ -45,6 +45,26 @@ public static partial class TypeShapeResolverTests
         Assert.Throws<NotSupportedException>(() => TypeShapeResolver.ResolveDynamicOrThrow<Unannotated, ResolverShapeProvider>());
     }
 
+    [Fact]
+    public static void ResolveDynamic_SelfReferentialEnumerable_DoesNotStackOverflow()
+    {
+        // Regression test: self-referential enumerable types previously caused stack overflow
+        // when source-generated shapes were resolved because child shapes were eagerly evaluated.
+        ITypeShape<SelfReferentialList>? shape = TypeShapeResolver.ResolveDynamic<SelfReferentialList>();
+        Assert.NotNull(shape);
+        Assert.IsAssignableFrom<PolyType.Abstractions.IEnumerableTypeShape>(shape);
+    }
+
+    [Fact]
+    public static void ResolveDynamic_SelfReferentialDictionary_DoesNotStackOverflow()
+    {
+        // Regression test: self-referential dictionary types previously caused stack overflow
+        // when source-generated shapes were resolved because child shapes were eagerly evaluated.
+        ITypeShape<SelfReferentialDictionary>? shape = TypeShapeResolver.ResolveDynamic<SelfReferentialDictionary>();
+        Assert.NotNull(shape);
+        Assert.IsAssignableFrom<PolyType.Abstractions.IDictionaryTypeShape>(shape);
+    }
+
     // Shapeable type under test.
     [GenerateShape]
     public partial record ResolverShapeable(int X, string Y);

@@ -24,8 +24,8 @@ internal sealed partial class SourceFormatter
             {
                 return new global::PolyType.SourceGenModel.SourceGenDictionaryTypeShape<{{dictionaryShapeModel.Type.FullyQualifiedName}}, {{dictionaryShapeModel.KeyType.FullyQualifiedName}}, {{dictionaryShapeModel.ValueType.FullyQualifiedName}}>
                 {
-                    KeyType = {{GetShapeModel(dictionaryShapeModel.KeyType).SourceIdentifier}},
-                    ValueType = {{GetShapeModel(dictionaryShapeModel.ValueType).SourceIdentifier}},
+                    KeyTypeFunc = () => {{GetShapeModel(dictionaryShapeModel.KeyType).SourceIdentifier}},
+                    ValueTypeFunc = () => {{GetShapeModel(dictionaryShapeModel.ValueType).SourceIdentifier}},
                     GetDictionary = {{FormatGetDictionaryFunc(dictionaryShapeModel)}},
                     SupportedComparer = {{FormatComparerOptions(dictionaryShapeModel.ConstructorParameters)}},
                     ConstructionStrategy = {{FormatCollectionConstructionStrategy(dictionaryShapeModel.ConstructionStrategy)}},
