@@ -19,7 +19,7 @@ internal sealed partial class SourceFormatter
             {
                 return new global::PolyType.SourceGenModel.SourceGenOptionalTypeShape<{{optionalShapeModel.Type.FullyQualifiedName}}, {{optionalShapeModel.ElementType.FullyQualifiedName}}>
                 {
-                    ElementTypeFunc = () => {{GetShapeModel(optionalShapeModel.ElementType).SourceIdentifier}},
+                    ElementType = {{GetShapeModel(optionalShapeModel.ElementType).SourceIdentifier}},
                     NoneConstructor = {{FormatNoneCtor()}},
                     SomeConstructor = {{FormatSomeCtor()}},
                     Deconstructor = {{FormatDeconstructor()}},

@@ -14,13 +14,13 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     /// <summary>
     /// Gets a delayed element type shape factory for use with potentially recursive type graphs.
     /// </summary>
-    public Func<ITypeShape<TElement>>? ElementTypeFunc { get; init; }
+    public required Func<ITypeShape<TElement>> ElementTypeFunc { get; init; }
 
     /// <inheritdoc/>
-    [Obsolete("Use ElementTypeFunc for delayed initialization to avoid stack overflows with recursive types.")]
+    [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
     public ITypeShape<TElement> ElementType
     {
-        get => _elementType ??= ElementTypeFunc?.Invoke() ?? throw new InvalidOperationException("ElementTypeFunc has not been initialized.");
+        get => _elementType ??= ElementTypeFunc.Invoke();
         init => _elementType = value;
     }
 
@@ -69,9 +69,7 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     /// <inheritdoc/>
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnumerable(this, state);
 
-#pragma warning disable CS0618 // Type or member is obsolete -- used internally for interface implementation
-    ITypeShape IEnumerableTypeShape.ElementType => ElementType;
-#pragma warning restore CS0618
+    ITypeShape IEnumerableTypeShape.ElementType => _elementType ??= ElementTypeFunc.Invoke();
 
     Func<TEnumerable, IEnumerable<TElement>> IEnumerableTypeShape<TEnumerable, TElement>.GetGetEnumerable() => GetEnumerable;
 

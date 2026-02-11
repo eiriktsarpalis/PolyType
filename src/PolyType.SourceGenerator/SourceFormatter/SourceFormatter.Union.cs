@@ -20,7 +20,7 @@ internal sealed partial class SourceFormatter
             {
                 return new global::PolyType.SourceGenModel.SourceGenUnionTypeShape<{{unionShapeModel.Type.FullyQualifiedName}}>
                 {
-                    BaseTypeFunc = () => {{unionShapeModel.UnderlyingModel.SourceIdentifier}},
+                    BaseType = {{unionShapeModel.UnderlyingModel.SourceIdentifier}},
                     UnionCasesFactory = {{createUnionCasesMethodName}},
                     GetUnionCaseIndex = {{getUnionCaseIndexMethod}},
                     MethodsFactory = {{FormatNull(methodFactoryMethodName)}},
@@ -82,7 +82,7 @@ internal sealed partial class SourceFormatter
             writer.WriteLine($$"""
                 new global::PolyType.SourceGenModel.SourceGenUnionCaseShape<{{unionCase.Type.FullyQualifiedName}}, {{unionShapeModel.Type.FullyQualifiedName}}>
                 {
-                    UnionCaseTypeFunc = () => {{unionCaseType.SourceIdentifier}},
+                    UnionCaseType = {{unionCaseType.SourceIdentifier}},
                     Marshaler = global::PolyType.SourceGenModel.SubtypeMarshaler<{{unionCase.Type.FullyQualifiedName}}, {{unionShapeModel.Type.FullyQualifiedName}}>.Instance,
                     Name = {{FormatStringLiteral(unionCase.Name)}},
                     Tag = {{unionCase.Tag}},
