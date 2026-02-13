@@ -13,11 +13,31 @@ namespace PolyType.SourceGenModel;
 public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : SourceGenTypeShape<TDictionary>, IDictionaryTypeShape<TDictionary, TKey, TValue>
     where TKey : notnull
 {
-    /// <inheritdoc/>
-    public required ITypeShape<TKey> KeyType { get; init; }
+    /// <summary>
+    /// Gets a delayed key type shape factory for use with potentially recursive type graphs.
+    /// </summary>
+    public required Func<ITypeShape<TKey>> KeyTypeFactory { get; init; }
 
     /// <inheritdoc/>
-    public required ITypeShape<TValue> ValueType { get; init; }
+    [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
+    public ITypeShape<TKey> KeyType
+    {
+        get => field ??= KeyTypeFactory.Invoke();
+        init;
+    }
+
+    /// <summary>
+    /// Gets a delayed value type shape factory for use with potentially recursive type graphs.
+    /// </summary>
+    public required Func<ITypeShape<TValue>> ValueTypeFactory { get; init; }
+
+    /// <inheritdoc/>
+    [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
+    public ITypeShape<TValue> ValueType
+    {
+        get => field ??= ValueTypeFactory.Invoke();
+        init;
+    }
 
     /// <summary>
     /// Gets the function that extracts a <see cref="IReadOnlyDictionary{TKey,TValue}"/> from an instance of the dictionary type.
@@ -61,8 +81,10 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     /// <inheritdoc/>
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitDictionary(this, state);
 
+#pragma warning disable CS0618 // Type or member is obsolete
     ITypeShape IDictionaryTypeShape.KeyType => KeyType;
     ITypeShape IDictionaryTypeShape.ValueType => ValueType;
+#pragma warning restore CS0618
 
     Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetGetDictionary() => GetDictionary;
 

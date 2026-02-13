@@ -18,7 +18,7 @@ internal sealed partial class SourceFormatter
                 return new global::PolyType.SourceGenModel.SourceGenSurrogateTypeShape<{{surrogateShapeModel.Type.FullyQualifiedName}}, {{surrogateShapeModel.SurrogateType.FullyQualifiedName}}>
                 {
                     Marshaler = new {{surrogateShapeModel.MarshalerType.FullyQualifiedName}}()!,
-                    SurrogateType = {{GetShapeModel(surrogateShapeModel.SurrogateType).SourceIdentifier}},
+                    SurrogateTypeFactory = () => {{GetShapeModel(surrogateShapeModel.SurrogateType).SourceIdentifier}},
                     MethodsFactory = {{FormatNull(methodFactoryMethodName)}},
                     EventsFactory = {{FormatNull(eventFactoryMethodName)}},
                     GetAssociatedTypeShape = {{FormatNull(associatedTypesFactoryMethodName)}},

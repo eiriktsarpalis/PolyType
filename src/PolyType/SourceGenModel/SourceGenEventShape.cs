@@ -52,6 +52,8 @@ public sealed class SourceGenEventShape<TDeclaringType, TEventHandler> : IEventS
 
     ITypeShape IEventShape.DeclaringType => DeclaringType;
 
+    IFunctionTypeShape IEventShape.HandlerType => HandlerType;
+
     EventInfo? IEventShape.EventInfo => field ??= EventInfoFactory?.Invoke();
 
     IGenericCustomAttributeProvider IEventShape.AttributeProvider => field ?? CommonHelpers.ExchangeIfNull(ref field, SourceGenCustomAttributeProvider.Create(AttributeFactory));

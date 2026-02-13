@@ -13,8 +13,18 @@ public sealed class SourceGenEnumTypeShape<TEnum, TUnderlying> : SourceGenTypeSh
     where TEnum : struct, Enum
     where TUnderlying : unmanaged
 {
+    /// <summary>
+    /// Gets a delayed underlying type shape factory for use with potentially recursive type graphs.
+    /// </summary>
+    public required Func<ITypeShape<TUnderlying>> UnderlyingTypeFactory { get; init; }
+
     /// <inheritdoc/>
-    public required ITypeShape<TUnderlying> UnderlyingType { get; init; }
+    [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
+    public ITypeShape<TUnderlying> UnderlyingType
+    {
+        get => field ??= UnderlyingTypeFactory.Invoke();
+        init;
+    }
 
     /// <inheritdoc/>
     public override TypeShapeKind Kind => TypeShapeKind.Enum;
@@ -28,5 +38,7 @@ public sealed class SourceGenEnumTypeShape<TEnum, TUnderlying> : SourceGenTypeSh
     /// <inheritdoc/>
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnum(this, state);
 
+#pragma warning disable CS0618 // Type or member is obsolete
     ITypeShape IEnumTypeShape.UnderlyingType => UnderlyingType;
+#pragma warning restore CS0618
 }

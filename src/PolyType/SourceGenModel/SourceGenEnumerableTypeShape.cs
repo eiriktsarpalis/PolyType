@@ -11,8 +11,18 @@ namespace PolyType.SourceGenModel;
 [DebuggerTypeProxy(typeof(PolyType.Debugging.EnumerableTypeShapeDebugView))]
 public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : SourceGenTypeShape<TEnumerable>, IEnumerableTypeShape<TEnumerable, TElement>
 {
+    /// <summary>
+    /// Gets a delayed element type shape factory for use with potentially recursive type graphs.
+    /// </summary>
+    public required Func<ITypeShape<TElement>> ElementTypeFactory { get; init; }
+
     /// <inheritdoc/>
-    public required ITypeShape<TElement> ElementType { get; init; }
+    [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
+    public ITypeShape<TElement> ElementType
+    {
+        get => field ??= ElementTypeFactory.Invoke();
+        init;
+    }
 
     /// <inheritdoc/>
     public required int Rank { get; init; }
@@ -57,7 +67,9 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     /// <inheritdoc/>
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnumerable(this, state);
 
+#pragma warning disable CS0618 // Type or member is obsolete
     ITypeShape IEnumerableTypeShape.ElementType => ElementType;
+#pragma warning restore CS0618
 
     Func<TEnumerable, IEnumerable<TElement>> IEnumerableTypeShape<TEnumerable, TElement>.GetGetEnumerable() => GetEnumerable;
 

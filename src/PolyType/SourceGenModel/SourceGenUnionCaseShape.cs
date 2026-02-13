@@ -12,8 +12,18 @@ namespace PolyType.SourceGenModel;
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
 public sealed class SourceGenUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShape<TUnionCase, TUnion>
 {
+    /// <summary>
+    /// Gets a delayed union case type shape factory for use with potentially recursive type graphs.
+    /// </summary>
+    public required Func<ITypeShape<TUnionCase>> UnionCaseTypeFactory { get; init; }
+
     /// <inheritdoc/>
-    public required ITypeShape<TUnionCase> UnionCaseType { get; init; }
+    [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
+    public ITypeShape<TUnionCase> UnionCaseType
+    {
+        get => field ??= UnionCaseTypeFactory.Invoke();
+        init;
+    }
 
     /// <inheritdoc/>
     public required IMarshaler<TUnionCase, TUnion> Marshaler { get; init; }
@@ -30,7 +40,9 @@ public sealed class SourceGenUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShap
     /// <inheritdoc/>
     public required int Index { get; init; }
 
+#pragma warning disable CS0618 // Type or member is obsolete
     ITypeShape IUnionCaseShape.UnionCaseType => UnionCaseType;
+#pragma warning restore CS0618
     object? IUnionCaseShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitUnionCase(this, state);
 
     private string DebuggerDisplay => $"{{ Name = \"{Name}\", CaseType = \"{typeof(TUnionCase)}\" }}";

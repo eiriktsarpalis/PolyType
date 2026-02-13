@@ -2009,6 +2009,12 @@ public partial class ClassWithMultipleSelfReferences
 }
 
 [GenerateShape]
+public partial class SelfReferentialList : List<SelfReferentialList>;
+
+[GenerateShape]
+public partial class SelfReferentialDictionary : Dictionary<string, SelfReferentialDictionary>;
+
+[GenerateShape]
 public partial class ClassWithNullableTypeParameters
 {
     public string?[] DataArray { get; set; } = [null, "str"];

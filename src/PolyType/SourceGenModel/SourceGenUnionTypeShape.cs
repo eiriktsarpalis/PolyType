@@ -10,8 +10,18 @@ namespace PolyType.SourceGenModel;
 [DebuggerTypeProxy(typeof(PolyType.Debugging.UnionTypeShapeDebugView))]
 public sealed class SourceGenUnionTypeShape<TUnion> : SourceGenTypeShape<TUnion>, IUnionTypeShape<TUnion>
 {
+    /// <summary>
+    /// Gets a delayed base type shape factory for use with potentially recursive type graphs.
+    /// </summary>
+    public required Func<ITypeShape<TUnion>> BaseTypeFactory { get; init; }
+
     /// <inheritdoc/>
-    public required ITypeShape<TUnion> BaseType { get; init; }
+    [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
+    public ITypeShape<TUnion> BaseType
+    {
+        get => field ??= BaseTypeFactory.Invoke();
+        init;
+    }
 
     /// <summary>
     /// Gets a factory method for creating union case shapes.
@@ -32,5 +42,7 @@ public sealed class SourceGenUnionTypeShape<TUnion> : SourceGenTypeShape<TUnion>
     IReadOnlyList<IUnionCaseShape> IUnionTypeShape.UnionCases => field ?? CommonHelpers.ExchangeIfNull(ref field, UnionCasesFactory().AsReadOnlyList());
 
     Getter<TUnion, int> IUnionTypeShape<TUnion>.GetGetUnionCaseIndex() => GetUnionCaseIndex;
+#pragma warning disable CS0618 // Type or member is obsolete
     ITypeShape IUnionTypeShape.BaseType => BaseType;
+#pragma warning restore CS0618
 }

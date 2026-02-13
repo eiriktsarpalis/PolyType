@@ -11,8 +11,18 @@ namespace PolyType.SourceGenModel;
 [DebuggerTypeProxy(typeof(PolyType.Debugging.OptionalTypeShapeDebugView))]
 public sealed class SourceGenOptionalTypeShape<TOptional, TElement> : SourceGenTypeShape<TOptional>, IOptionalTypeShape<TOptional, TElement>
 {
+    /// <summary>
+    /// Gets a delayed element type shape factory for use with potentially recursive type graphs.
+    /// </summary>
+    public required Func<ITypeShape<TElement>> ElementTypeFactory { get; init; }
+
     /// <inheritdoc/>
-    public required ITypeShape<TElement> ElementType { get; init; }
+    [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
+    public ITypeShape<TElement> ElementType
+    {
+        get => field ??= ElementTypeFactory.Invoke();
+        init;
+    }
 
     /// <summary>
     /// Gets a constructor for creating empty instances of <typeparamref name="TOptional"/>.
@@ -38,5 +48,7 @@ public sealed class SourceGenOptionalTypeShape<TOptional, TElement> : SourceGenT
     Func<TOptional> IOptionalTypeShape<TOptional, TElement>.GetNoneConstructor() => NoneConstructor;
     Func<TElement, TOptional> IOptionalTypeShape<TOptional, TElement>.GetSomeConstructor() => SomeConstructor;
     OptionDeconstructor<TOptional, TElement> IOptionalTypeShape<TOptional, TElement>.GetDeconstructor() => Deconstructor;
+#pragma warning disable CS0618 // Type or member is obsolete
     ITypeShape IOptionalTypeShape.ElementType => ElementType;
+#pragma warning restore CS0618
 }

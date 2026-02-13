@@ -14,8 +14,18 @@ public sealed class SourceGenSurrogateTypeShape<T, TSurrogate> : SourceGenTypeSh
     /// <inheritdoc/>
     public required IMarshaler<T, TSurrogate> Marshaler { get; init; }
 
+    /// <summary>
+    /// Gets a delayed surrogate type shape factory for use with potentially recursive type graphs.
+    /// </summary>
+    public required Func<ITypeShape<TSurrogate>> SurrogateTypeFactory { get; init; }
+
     /// <inheritdoc/>
-    public required ITypeShape<TSurrogate> SurrogateType { get; init; }
+    [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
+    public ITypeShape<TSurrogate> SurrogateType
+    {
+        get => field ??= SurrogateTypeFactory.Invoke();
+        init;
+    }
 
     /// <inheritdoc/>
     public override TypeShapeKind Kind => TypeShapeKind.Surrogate;
@@ -23,5 +33,7 @@ public sealed class SourceGenSurrogateTypeShape<T, TSurrogate> : SourceGenTypeSh
     /// <inheritdoc/>
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitSurrogate(this, state);
 
+#pragma warning disable CS0618 // Type or member is obsolete
     ITypeShape ISurrogateTypeShape.SurrogateType => SurrogateType;
+#pragma warning restore CS0618
 }
