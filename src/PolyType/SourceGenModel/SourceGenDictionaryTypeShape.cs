@@ -16,26 +16,26 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     /// <summary>
     /// Gets a delayed key type shape factory for use with potentially recursive type graphs.
     /// </summary>
-    public required Func<ITypeShape<TKey>> KeyTypeFunc { get; init; }
+    public required Func<ITypeShape<TKey>> KeyTypeFactory { get; init; }
 
     /// <inheritdoc/>
     [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
     public ITypeShape<TKey> KeyType
     {
-        get => field ??= KeyTypeFunc.Invoke();
+        get => field ??= KeyTypeFactory.Invoke();
         init;
     }
 
     /// <summary>
     /// Gets a delayed value type shape factory for use with potentially recursive type graphs.
     /// </summary>
-    public required Func<ITypeShape<TValue>> ValueTypeFunc { get; init; }
+    public required Func<ITypeShape<TValue>> ValueTypeFactory { get; init; }
 
     /// <inheritdoc/>
     [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
     public ITypeShape<TValue> ValueType
     {
-        get => field ??= ValueTypeFunc.Invoke();
+        get => field ??= ValueTypeFactory.Invoke();
         init;
     }
 

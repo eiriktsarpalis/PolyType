@@ -22,7 +22,7 @@ internal sealed partial class SourceFormatter
                 {
                     IsVoidLike = {{FormatBool(IsVoidLike(functionShapeModel))}},
                     IsAsync = {{FormatBool(IsAsync(functionShapeModel))}},
-                    ReturnTypeFunc = () => {{GetShapeModel(functionShapeModel.ReturnType).SourceIdentifier}},
+                    ReturnTypeFactory = () => {{GetShapeModel(functionShapeModel.ReturnType).SourceIdentifier}},
                     ParametersFactory = {{FormatNull(functionParameterFactoryName)}},
                     ArgumentStateConstructor = {{FormatArgumentStateConstructor(functionShapeModel, functionArgumentStateFQN, requiredParametersMaskFieldName)}},
                     FunctionInvoker = {{FormatFunctionInvoker(functionShapeModel, functionArgumentStateFQN)}},

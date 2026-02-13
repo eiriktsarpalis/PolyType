@@ -19,7 +19,7 @@ public static class ObsoletePropertyTests
         var enumerableShape = new SourceGenEnumerableTypeShape<List<int>, int>
         {
             Provider = mockProvider,
-            ElementTypeFunc = () => throw new InvalidOperationException("ElementTypeFunc should not be called"),
+            ElementTypeFactory = () => throw new InvalidOperationException("ElementTypeFactory should not be called"),
             ElementType = expectedElementType,
             Rank = 1,
             GetEnumerable = list => list,
@@ -54,8 +54,8 @@ public static class ObsoletePropertyTests
         var dictionaryShape = new SourceGenDictionaryTypeShape<Dictionary<string, int>, string, int>
         {
             Provider = mockProvider,
-            KeyTypeFunc = () => throw new InvalidOperationException("KeyTypeFunc should not be called"),
-            ValueTypeFunc = () => expectedValueType,
+            KeyTypeFactory = () => throw new InvalidOperationException("KeyTypeFactory should not be called"),
+            ValueTypeFactory = () => expectedValueType,
             KeyType = expectedKeyType,
             GetDictionary = dict => dict,
             SupportedComparer = CollectionComparerOptions.None,
@@ -89,8 +89,8 @@ public static class ObsoletePropertyTests
         var dictionaryShape = new SourceGenDictionaryTypeShape<Dictionary<string, int>, string, int>
         {
             Provider = mockProvider,
-            KeyTypeFunc = () => expectedKeyType,
-            ValueTypeFunc = () => throw new InvalidOperationException("ValueTypeFunc should not be called"),
+            KeyTypeFactory = () => expectedKeyType,
+            ValueTypeFactory = () => throw new InvalidOperationException("ValueTypeFactory should not be called"),
             ValueType = expectedValueType,
             GetDictionary = dict => dict,
             SupportedComparer = CollectionComparerOptions.None,
@@ -120,7 +120,7 @@ public static class ObsoletePropertyTests
         var optionalShape = new SourceGenOptionalTypeShape<int?, int>
         {
             Provider = mockProvider,
-            ElementTypeFunc = () => throw new InvalidOperationException("ElementTypeFunc should not be called"),
+            ElementTypeFactory = () => throw new InvalidOperationException("ElementTypeFactory should not be called"),
             ElementType = expectedElementType,
             NoneConstructor = () => null,
             SomeConstructor = value => value,
@@ -158,7 +158,7 @@ public static class ObsoletePropertyTests
         var surrogateShape = new SourceGenSurrogateTypeShape<int, string>
         {
             Provider = mockProvider,
-            SurrogateTypeFunc = () => throw new InvalidOperationException("SurrogateTypeFunc should not be called"),
+            SurrogateTypeFactory = () => throw new InvalidOperationException("SurrogateTypeFactory should not be called"),
             SurrogateType = expectedSurrogateType,
             Marshaler = new TestMarshaler<int, string>(i => i.ToString(), s => int.Parse(s!)),
         };
@@ -184,7 +184,7 @@ public static class ObsoletePropertyTests
         var unionShape = new SourceGenUnionTypeShape<object>
         {
             Provider = mockProvider,
-            BaseTypeFunc = () => throw new InvalidOperationException("BaseTypeFunc should not be called"),
+            BaseTypeFactory = () => throw new InvalidOperationException("BaseTypeFactory should not be called"),
             BaseType = expectedBaseType,
             UnionCasesFactory = () => [],
             GetUnionCaseIndex = (ref object _) => 0,
@@ -210,7 +210,7 @@ public static class ObsoletePropertyTests
 #pragma warning disable CS0618 // Type or member is obsolete
         var unionCaseShape = new SourceGenUnionCaseShape<string, object>
         {
-            UnionCaseTypeFunc = () => throw new InvalidOperationException("UnionCaseTypeFunc should not be called"),
+            UnionCaseTypeFactory = () => throw new InvalidOperationException("UnionCaseTypeFactory should not be called"),
             UnionCaseType = expectedUnionCaseType,
             Name = "StringCase",
             Tag = 0,
@@ -239,7 +239,7 @@ public static class ObsoletePropertyTests
         var enumShape = new SourceGenEnumTypeShape<DayOfWeek, int>
         {
             Provider = mockProvider,
-            UnderlyingTypeFunc = () => throw new InvalidOperationException("UnderlyingTypeFunc should not be called"),
+            UnderlyingTypeFactory = () => throw new InvalidOperationException("UnderlyingTypeFactory should not be called"),
             UnderlyingType = expectedUnderlyingType,
             Members = new Dictionary<string, int>(),
         };
@@ -265,7 +265,7 @@ public static class ObsoletePropertyTests
         var functionShape = new SourceGenFunctionTypeShape<Func<int>, EmptyArgumentState, int>
         {
             Provider = mockProvider,
-            ReturnTypeFunc = () => throw new InvalidOperationException("ReturnTypeFunc should not be called"),
+            ReturnTypeFactory = () => throw new InvalidOperationException("ReturnTypeFactory should not be called"),
             ReturnType = expectedReturnType,
             ArgumentStateConstructor = () => EmptyArgumentState.Instance,
             FunctionInvoker = (ref Func<int> func, ref EmptyArgumentState state) => new ValueTask<int>(func()),

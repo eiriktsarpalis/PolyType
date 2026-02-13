@@ -14,13 +14,13 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     /// <summary>
     /// Gets a delayed element type shape factory for use with potentially recursive type graphs.
     /// </summary>
-    public required Func<ITypeShape<TElement>> ElementTypeFunc { get; init; }
+    public required Func<ITypeShape<TElement>> ElementTypeFactory { get; init; }
 
     /// <inheritdoc/>
     [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
     public ITypeShape<TElement> ElementType
     {
-        get => field ??= ElementTypeFunc.Invoke();
+        get => field ??= ElementTypeFactory.Invoke();
         init;
     }
 

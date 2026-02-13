@@ -16,7 +16,7 @@ internal sealed partial class SourceFormatter
             {
                 return new global::PolyType.SourceGenModel.SourceGenEnumTypeShape<{{enumTypeShape.Type.FullyQualifiedName}}, {{enumTypeShape.UnderlyingType.FullyQualifiedName}}>
                 {
-                    UnderlyingTypeFunc = () => {{GetShapeModel(enumTypeShape.UnderlyingType).SourceIdentifier}},
+                    UnderlyingTypeFactory = () => {{GetShapeModel(enumTypeShape.UnderlyingType).SourceIdentifier}},
                     GetAssociatedTypeShape = {{FormatNull(associatedTypesFactoryMethodName)}},
                     Members = {{memberDictionaryFactoryName}}(),
                     AttributeFactory = {{FormatNull(attributeFactoryName)}},

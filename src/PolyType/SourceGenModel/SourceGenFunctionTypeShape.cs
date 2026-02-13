@@ -23,13 +23,13 @@ public sealed class SourceGenFunctionTypeShape<TFunction, TArgumentState, TResul
     /// <summary>
     /// Gets a delayed return type shape factory for use with potentially recursive type graphs.
     /// </summary>
-    public required Func<ITypeShape<TResult>> ReturnTypeFunc { get; init; }
+    public required Func<ITypeShape<TResult>> ReturnTypeFactory { get; init; }
 
     /// <inheritdoc/>
     [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
     public ITypeShape<TResult> ReturnType
     {
-        get => field ??= ReturnTypeFunc.Invoke();
+        get => field ??= ReturnTypeFactory.Invoke();
         init;
     }
 

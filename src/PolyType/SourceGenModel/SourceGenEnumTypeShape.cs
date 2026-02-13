@@ -16,13 +16,13 @@ public sealed class SourceGenEnumTypeShape<TEnum, TUnderlying> : SourceGenTypeSh
     /// <summary>
     /// Gets a delayed underlying type shape factory for use with potentially recursive type graphs.
     /// </summary>
-    public required Func<ITypeShape<TUnderlying>> UnderlyingTypeFunc { get; init; }
+    public required Func<ITypeShape<TUnderlying>> UnderlyingTypeFactory { get; init; }
 
     /// <inheritdoc/>
     [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
     public ITypeShape<TUnderlying> UnderlyingType
     {
-        get => field ??= UnderlyingTypeFunc.Invoke();
+        get => field ??= UnderlyingTypeFactory.Invoke();
         init;
     }
 

@@ -13,13 +13,13 @@ public sealed class SourceGenUnionTypeShape<TUnion> : SourceGenTypeShape<TUnion>
     /// <summary>
     /// Gets a delayed base type shape factory for use with potentially recursive type graphs.
     /// </summary>
-    public required Func<ITypeShape<TUnion>> BaseTypeFunc { get; init; }
+    public required Func<ITypeShape<TUnion>> BaseTypeFactory { get; init; }
 
     /// <inheritdoc/>
     [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
     public ITypeShape<TUnion> BaseType
     {
-        get => field ??= BaseTypeFunc.Invoke();
+        get => field ??= BaseTypeFactory.Invoke();
         init;
     }
 

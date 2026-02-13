@@ -15,13 +15,13 @@ public sealed class SourceGenUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShap
     /// <summary>
     /// Gets a delayed union case type shape factory for use with potentially recursive type graphs.
     /// </summary>
-    public required Func<ITypeShape<TUnionCase>> UnionCaseTypeFunc { get; init; }
+    public required Func<ITypeShape<TUnionCase>> UnionCaseTypeFactory { get; init; }
 
     /// <inheritdoc/>
     [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
     public ITypeShape<TUnionCase> UnionCaseType
     {
-        get => field ??= UnionCaseTypeFunc.Invoke();
+        get => field ??= UnionCaseTypeFactory.Invoke();
         init;
     }
 

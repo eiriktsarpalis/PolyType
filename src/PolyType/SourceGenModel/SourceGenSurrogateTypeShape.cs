@@ -17,13 +17,13 @@ public sealed class SourceGenSurrogateTypeShape<T, TSurrogate> : SourceGenTypeSh
     /// <summary>
     /// Gets a delayed surrogate type shape factory for use with potentially recursive type graphs.
     /// </summary>
-    public required Func<ITypeShape<TSurrogate>> SurrogateTypeFunc { get; init; }
+    public required Func<ITypeShape<TSurrogate>> SurrogateTypeFactory { get; init; }
 
     /// <inheritdoc/>
     [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
     public ITypeShape<TSurrogate> SurrogateType
     {
-        get => field ??= SurrogateTypeFunc.Invoke();
+        get => field ??= SurrogateTypeFactory.Invoke();
         init;
     }
 
