@@ -20,11 +20,9 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
     public ITypeShape<TElement> ElementType
     {
-        get => _elementType ??= ElementTypeFunc.Invoke();
-        init => _elementType = value;
+        get => field ??= ElementTypeFunc.Invoke();
+        init;
     }
-
-    private ITypeShape<TElement>? _elementType;
 
     /// <inheritdoc/>
     public required int Rank { get; init; }
@@ -69,7 +67,9 @@ public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : Source
     /// <inheritdoc/>
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnumerable(this, state);
 
-    ITypeShape IEnumerableTypeShape.ElementType => _elementType ??= ElementTypeFunc.Invoke();
+#pragma warning disable CS0618 // Type or member is obsolete
+    ITypeShape IEnumerableTypeShape.ElementType => ElementType;
+#pragma warning restore CS0618
 
     Func<TEnumerable, IEnumerable<TElement>> IEnumerableTypeShape<TEnumerable, TElement>.GetGetEnumerable() => GetEnumerable;
 

@@ -22,11 +22,9 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
     public ITypeShape<TKey> KeyType
     {
-        get => _keyType ??= KeyTypeFunc.Invoke();
-        init => _keyType = value;
+        get => field ??= KeyTypeFunc.Invoke();
+        init;
     }
-
-    private ITypeShape<TKey>? _keyType;
 
     /// <summary>
     /// Gets a delayed value type shape factory for use with potentially recursive type graphs.
@@ -37,11 +35,9 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
     public ITypeShape<TValue> ValueType
     {
-        get => _valueType ??= ValueTypeFunc.Invoke();
-        init => _valueType = value;
+        get => field ??= ValueTypeFunc.Invoke();
+        init;
     }
-
-    private ITypeShape<TValue>? _valueType;
 
     /// <summary>
     /// Gets the function that extracts a <see cref="IReadOnlyDictionary{TKey,TValue}"/> from an instance of the dictionary type.
@@ -85,8 +81,10 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
     /// <inheritdoc/>
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitDictionary(this, state);
 
-    ITypeShape IDictionaryTypeShape.KeyType => _keyType ??= KeyTypeFunc.Invoke();
-    ITypeShape IDictionaryTypeShape.ValueType => _valueType ??= ValueTypeFunc.Invoke();
+#pragma warning disable CS0618 // Type or member is obsolete
+    ITypeShape IDictionaryTypeShape.KeyType => KeyType;
+    ITypeShape IDictionaryTypeShape.ValueType => ValueType;
+#pragma warning restore CS0618
 
     Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> IDictionaryTypeShape<TDictionary, TKey, TValue>.GetGetDictionary() => GetDictionary;
 
