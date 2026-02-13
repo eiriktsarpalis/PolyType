@@ -23,11 +23,9 @@ public sealed class SourceGenSurrogateTypeShape<T, TSurrogate> : SourceGenTypeSh
     [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
     public ITypeShape<TSurrogate> SurrogateType
     {
-        get => _surrogateType ??= SurrogateTypeFunc.Invoke();
-        init => _surrogateType = value;
+        get => field ??= SurrogateTypeFunc.Invoke();
+        init;
     }
-
-    private ITypeShape<TSurrogate>? _surrogateType;
 
     /// <inheritdoc/>
     public override TypeShapeKind Kind => TypeShapeKind.Surrogate;
@@ -35,5 +33,7 @@ public sealed class SourceGenSurrogateTypeShape<T, TSurrogate> : SourceGenTypeSh
     /// <inheritdoc/>
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitSurrogate(this, state);
 
-    ITypeShape ISurrogateTypeShape.SurrogateType => _surrogateType ??= SurrogateTypeFunc.Invoke();
+#pragma warning disable CS0618 // Type or member is obsolete
+    ITypeShape ISurrogateTypeShape.SurrogateType => SurrogateType;
+#pragma warning restore CS0618
 }

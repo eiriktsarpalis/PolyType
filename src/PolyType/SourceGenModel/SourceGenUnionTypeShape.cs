@@ -19,11 +19,9 @@ public sealed class SourceGenUnionTypeShape<TUnion> : SourceGenTypeShape<TUnion>
     [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
     public ITypeShape<TUnion> BaseType
     {
-        get => _baseType ??= BaseTypeFunc.Invoke();
-        init => _baseType = value;
+        get => field ??= BaseTypeFunc.Invoke();
+        init;
     }
-
-    private ITypeShape<TUnion>? _baseType;
 
     /// <summary>
     /// Gets a factory method for creating union case shapes.
@@ -44,5 +42,7 @@ public sealed class SourceGenUnionTypeShape<TUnion> : SourceGenTypeShape<TUnion>
     IReadOnlyList<IUnionCaseShape> IUnionTypeShape.UnionCases => field ?? CommonHelpers.ExchangeIfNull(ref field, UnionCasesFactory().AsReadOnlyList());
 
     Getter<TUnion, int> IUnionTypeShape<TUnion>.GetGetUnionCaseIndex() => GetUnionCaseIndex;
-    ITypeShape IUnionTypeShape.BaseType => _baseType ??= BaseTypeFunc.Invoke();
+#pragma warning disable CS0618 // Type or member is obsolete
+    ITypeShape IUnionTypeShape.BaseType => BaseType;
+#pragma warning restore CS0618
 }

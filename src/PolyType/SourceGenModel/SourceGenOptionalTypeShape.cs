@@ -20,11 +20,9 @@ public sealed class SourceGenOptionalTypeShape<TOptional, TElement> : SourceGenT
     [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
     public ITypeShape<TElement> ElementType
     {
-        get => _elementType ??= ElementTypeFunc.Invoke();
-        init => _elementType = value;
+        get => field ??= ElementTypeFunc.Invoke();
+        init;
     }
-
-    private ITypeShape<TElement>? _elementType;
 
     /// <summary>
     /// Gets a constructor for creating empty instances of <typeparamref name="TOptional"/>.
@@ -50,5 +48,7 @@ public sealed class SourceGenOptionalTypeShape<TOptional, TElement> : SourceGenT
     Func<TOptional> IOptionalTypeShape<TOptional, TElement>.GetNoneConstructor() => NoneConstructor;
     Func<TElement, TOptional> IOptionalTypeShape<TOptional, TElement>.GetSomeConstructor() => SomeConstructor;
     OptionDeconstructor<TOptional, TElement> IOptionalTypeShape<TOptional, TElement>.GetDeconstructor() => Deconstructor;
-    ITypeShape IOptionalTypeShape.ElementType => _elementType ??= ElementTypeFunc.Invoke();
+#pragma warning disable CS0618 // Type or member is obsolete
+    ITypeShape IOptionalTypeShape.ElementType => ElementType;
+#pragma warning restore CS0618
 }

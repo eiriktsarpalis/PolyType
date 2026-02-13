@@ -20,8 +20,18 @@ public sealed class SourceGenFunctionTypeShape<TFunction, TArgumentState, TResul
     /// <inheritdoc/>
     public bool IsAsync { get; init; }
 
+    /// <summary>
+    /// Gets a delayed return type shape factory for use with potentially recursive type graphs.
+    /// </summary>
+    public required Func<ITypeShape<TResult>> ReturnTypeFunc { get; init; }
+
     /// <inheritdoc/>
-    public required ITypeShape<TResult> ReturnType { get; init; }
+    [Obsolete("This member has been marked for deprecation and will be removed in the future.")]
+    public ITypeShape<TResult> ReturnType
+    {
+        get => field ??= ReturnTypeFunc.Invoke();
+        init;
+    }
 
     /// <summary>
     /// Gets a factory method for creating parameter shapes.
@@ -56,7 +66,9 @@ public sealed class SourceGenFunctionTypeShape<TFunction, TArgumentState, TResul
 
     IReadOnlyList<IParameterShape> IFunctionTypeShape.Parameters => field ?? CommonHelpers.ExchangeIfNull(ref field, (ParametersFactory?.Invoke()).AsReadOnlyList());
 
+#pragma warning disable CS0618 // Type or member is obsolete
     ITypeShape IFunctionTypeShape.ReturnType => ReturnType;
+#pragma warning restore CS0618
 
     Func<TArgumentState> IFunctionTypeShape<TFunction, TArgumentState, TResult>.GetArgumentStateConstructor() => ArgumentStateConstructor;
 
