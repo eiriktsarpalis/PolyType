@@ -11,7 +11,10 @@
           ]
         }
       ],
-      "output": "api"
+      "output": "api",
+      "properties": {
+        "LangVersion": "preview"
+      }
     }
   ],
   "build": {
