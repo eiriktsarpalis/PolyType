@@ -387,7 +387,7 @@ public partial interface IFunctionTypeShape<TFunction, TArguments, TResult> : IT
 Visitors accessing function shapes can be used to invoke instances of type `TFunction` or to create new instances of type `TFunction` by wrapping a generic `Func<TArgumentState, TResult>` delegate. For more information on how function or method shapes work, please refer to the [method shapes](#method-shapes) section below.
 
 
-To recap, the <xref:PolyType.ITypeShape> model splits .NET types into seven separate kinds:
+To recap, the <xref:PolyType.ITypeShape> model splits .NET types into eight separate kinds:
 
 * <xref:PolyType.Abstractions.IObjectTypeShape> instances which may or may not define properties,
 * <xref:PolyType.Abstractions.IEnumerableTypeShape> instances describing enumerable types,
@@ -423,20 +423,20 @@ public delegate void Mutator<T>(ref T obj);
 
 class MutatorVisitor : TypeShapeVisitor
 {
-    public override object? VisitObject(IObjectTypeShape<T> objectShape, object? _)
+    public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? _)
     {
         Mutator<T>[] propertyMutators = objectShape.Properties
             .Where(prop => prop.HasSetter)
             .Select(prop => (Mutator<T>)prop.Accept(this)!)
             .ToArray();
 
-        return new Mutator<T>(ref T value => foreach (var mutator in propertyMutators) mutator(ref value));
+        return new Mutator<T>((ref T value) => { foreach (var mutator in propertyMutators) mutator(ref value); });
     }
 
     public override object? VisitProperty<TDeclaringType, TPropertyType>(IPropertyShape<TDeclaringType, TPropertyType> propertyShape, object? _)
     {
         Setter<TDeclaringType, TPropertyType> setter = propertyShape.GetSetter();
-        return new Mutator<TDeclaringType>(ref TDeclaringType obj => setter(ref obj, default(TPropertyType)!));
+        return new Mutator<TDeclaringType>((ref TDeclaringType obj) => setter(ref obj, default(TPropertyType)!));
     }
 }
 ```
@@ -483,12 +483,12 @@ public abstract partial class TypeShapeVisitor
 The constructor shape specifies two type parameters: `TDeclaringType` represents the declaring type of the constructor while `TArgumentState` represents an opaque, mutable token that encapsulates all parameters that will be passed to constructor. The choice of `TArgumentState` is up to the particular type shape provider implementation, but typically a value tuple is used:
 
 ```csharp
-record MyPoco(int x = 42, string y);
+record MyPoco(string y, int x = 42);
 
-class MyPocoConstructorShape : IConstructorShape<MyPoco, (int, string)>
+class MyPocoConstructorShape : IConstructorShape<MyPoco, (string, int)>
 {
-    public Func<(int, string)> GetArgumentStateConstructor() => () => (42, null!);
-    public Func<(int, string), MyPoco> GetParameterizedConstructor() => state => new MyPoco(state.Item1, state.Item2);
+    public Func<(string, int)> GetArgumentStateConstructor() => () => (null!, 42);
+    public Func<(string, int), MyPoco> GetParameterizedConstructor() => state => new MyPoco(state.Item1, state.Item2);
 }
 ```
 
@@ -517,7 +517,7 @@ Which exposes strongly typed setters for each of the constructor parameters. Put
 ```csharp
 class EmptyConstructorVisitor : TypeShapeVisitor
 {
-    private delegate void ParameterSetter<T>(ref T object);
+    private delegate void ParameterSetter<T>(ref T obj);
 
     public override object? VisitObject<T>(IObjectTypeShape<T> objectShape, object? _)
     {
@@ -548,7 +548,7 @@ class EmptyConstructorVisitor : TypeShapeVisitor
     {
         var parameterFactory = (Func<TParameter>)parameter.ParameterType.Accept(this);
         Setter<TArgumentState, TParameter> setter = parameter.GetSetter();
-        return new ParameterSetter<TArgumentState>(ref TArgumentState state => setter(ref state, parameterFactory()));
+        return new ParameterSetter<TArgumentState>((ref TArgumentState state) => setter(ref state, parameterFactory()));
     }
 }
 ```
@@ -594,15 +594,15 @@ public partial interface IEnumerableTypeShape<TEnumerable, TElement>
     CollectionConstructionStrategy ConstructionStrategy { get; }
 
     // Implemented by CollectionConstructionStrategy.Mutable types
-    MutableCollectionConstructor<TKey, TEnumerable> GetDefaultConstructor();
+    MutableCollectionConstructor<TElement, TEnumerable> GetDefaultConstructor();
     EnumerableAppender<TEnumerable, TElement> GetAppender();
 
     // Implemented by CollectionConstructionStrategy.Parameterized types
-    ParameterizedCollectionConstructor<TKey, TElement, TEnumerable> GetParameterizedConstructor();
+    ParameterizedCollectionConstructor<TElement, TElement, TEnumerable> GetParameterizedConstructor();
 }
 
-public delegate TEnumerable MutableCollectionConstructor<TKey, TEnumerable>(in CollectionConstructionOptions<TKey> options = default)
-public delegate TEnumerable ParameterizedCollectionConstructor<TKey, TElement, TDeclaringType>(ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey> options = default);
+public delegate TDeclaringType MutableCollectionConstructor<TKey, TDeclaringType>(in CollectionConstructionOptions<TKey> options = default);
+public delegate TDeclaringType ParameterizedCollectionConstructor<TKey, TElement, TDeclaringType>(ReadOnlySpan<TElement> values, in CollectionConstructionOptions<TKey> options = default);
 ```
 
 Putting it all together, we can extend `EmptyConstructorVisitor` to collection types like so:
@@ -765,7 +765,7 @@ public partial interface IFunctionTypeShape<TFunction, TArgumentState, TResult> 
     IReadOnlyList<IParameterShape> Parameters { get; }
     
     Func<TArgumentState> GetArgumentStateConstructor();
-    MethodInvoker<TFunction, TArgumentState, TResult> GetMethodInvoker();
+    MethodInvoker<TFunction, TArgumentState, TResult> GetFunctionInvoker();
 }
 ```
 

@@ -40,7 +40,7 @@ A type is mapped to <xref:PolyType.Abstractions.IFunctionTypeShape> when:
 ### Surrogate Types
 
 A type is mapped to <xref:PolyType.Abstractions.ISurrogateTypeShape> if and only if the type has been given an <xref:PolyType.IMarshaler`2> implementation to a surrogate type.
-This is typically configured via the `Marshaller` property on the <xref:PolyType.TypeShapeAttribute>, <xref:PolyType.GenerateShapeAttribute>, or <xref:PolyType.TypeShapeExtensionAttribute>
+This is typically configured via the `Marshaler` property on the <xref:PolyType.TypeShapeAttribute>, <xref:PolyType.GenerateShapeAttribute>, or <xref:PolyType.TypeShapeExtensionAttribute>
 attributes and doing so overrides the built-in shape kind inferred for the type.
 
 ### Union Types
