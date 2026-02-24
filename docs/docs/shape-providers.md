@@ -345,7 +345,7 @@ class PocoWithConstructors
 
 ### Including method shapes for RPC
 
-PolyType supports the creation of RPC libraries capable of invoking methods of user-defined types. Users can opt in by configuring the <xref:PolyType.TypeShapeAttribute.IncludeMethods> which generates shapes for a type's methods and their parameter parameters:
+PolyType supports the creation of RPC libraries capable of invoking methods of user-defined types. Users can opt in by configuring the <xref:PolyType.TypeShapeAttribute.IncludeMethods> which generates shapes for a type's methods and their parameters:
 
 ```csharp
 [TypeShape(IncludeMethods = MethodShapeFlags.PublicInstance)]
