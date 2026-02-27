@@ -4,7 +4,7 @@ You MUST make your best effort to ensure any code changes satisfy those criteria
 
 If you make code changes, do not complete without checking the relevant code builds and relevant tests still pass after the last edits you make. Do not simply assume that your changes fix test failures you see — actually build and run those tests again to confirm.
 
-You MUST follow all code-formatting and naming conventions defined in [`.editorconfig`](/.editorconfig).
+You MUST follow all code-formatting and naming conventions defined in `.editorconfig`.
 
 ---
 
@@ -25,7 +25,7 @@ dotnet test --framework net10.0
 
 ### Full E2E Validation (Makefile)
 
-The [`Makefile`](/Makefile) at the repo root defines all steps that must pass in CI/CD. Use it for full end-to-end validation:
+The `Makefile` at the repo root defines all steps that must pass in CI/CD. Use it for full end-to-end validation:
 
 | Target | Description |
 |--------|-------------|
