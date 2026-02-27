@@ -31,6 +31,26 @@ public sealed class PolyTypeGenerator : IIncrementalGenerator
             .Select((tuple, token) => DebugGuard.Invoke(Parser.ParseFromGenerateShapeAttributes, tuple.Left, tuple.Right, token));
 
         context.RegisterSourceOutput(providerModel, (ctxt, model) => DebugGuard.Invoke(GenerateSource, ctxt, model));
+
+        // Use a separate pipeline for diagnostics that combines the model with the
+        // CompilationProvider. This lets us recover the SyntaxTree from the Compilation
+        // at emission time, producing SourceLocation instances that are pragma-suppressible.
+        // See https://github.com/dotnet/runtime/issues/92509 for context.
+        context.RegisterSourceOutput(
+            providerModel.Combine(context.CompilationProvider),
+            static (context, tuple) =>
+            {
+                var (model, compilation) = tuple;
+                if (model is null)
+                {
+                    return;
+                }
+
+                foreach (EquatableDiagnostic diagnostic in model.Diagnostics)
+                {
+                    context.ReportDiagnostic(diagnostic.CreateDiagnostic(compilation));
+                }
+            });
     }
 
     private void GenerateSource(SourceProductionContext context, TypeShapeProviderModel? provider)
@@ -41,12 +61,6 @@ public sealed class PolyTypeGenerator : IIncrementalGenerator
         }
 
         OnGeneratingSource?.Invoke(provider);
-
-        foreach (EquatableDiagnostic diagnostic in provider.Diagnostics)
-        {
-            context.ReportDiagnostic(diagnostic.CreateDiagnostic());
-        }
-
         SourceFormatter.GenerateSourceFiles(context, provider);
     }
 

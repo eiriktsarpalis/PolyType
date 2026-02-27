@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using PolyType.Roslyn.Helpers;
-using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Linq;
 
 namespace PolyType.Roslyn;
 
@@ -33,6 +34,36 @@ public readonly struct EquatableDiagnostic(
     /// </summary>
     public Diagnostic CreateDiagnostic()
         => Diagnostic.Create(Descriptor, Location, MessageArgs);
+
+    /// <summary>
+    /// Creates a new <see cref="Diagnostic"/> instance, recovering the <see cref="SyntaxTree"/>
+    /// from the <paramref name="compilation"/> to produce a pragma-suppressible <c>SourceLocation</c>.
+    /// </summary>
+    /// <remarks>
+    /// See https://github.com/dotnet/runtime/issues/92509 for context.
+    /// Locations created via <c>Location.Create(string, TextSpan, LinePositionSpan)</c> produce
+    /// <c>ExternalFileLocation</c> instances which are not suppressible via <c>#pragma warning disable</c>.
+    /// By looking up the <see cref="SyntaxTree"/> from the compilation at emission time, we can
+    /// create a <c>SourceLocation</c> that properly respects inline suppressions.
+    /// </remarks>
+    public Diagnostic CreateDiagnostic(Compilation compilation)
+    {
+        Location? location = Location;
+        if (location is not null)
+        {
+            Debug.Assert(location.Kind is LocationKind.ExternalFile, "Trimmed locations should always be ExternalFileLocation.");
+            string filePath = location.GetLineSpan().Path;
+            SyntaxTree? tree = compilation.SyntaxTrees
+                .FirstOrDefault(t => t.FilePath == filePath);
+
+            if (tree is not null)
+            {
+                location = Location.Create(tree, location.SourceSpan);
+            }
+        }
+
+        return Diagnostic.Create(Descriptor, location, MessageArgs);
+    }
 
     /// <inheritdoc/>
     public override readonly bool Equals(object? obj) => obj is EquatableDiagnostic info && Equals(info);
