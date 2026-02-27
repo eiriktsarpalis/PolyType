@@ -176,7 +176,7 @@ internal sealed partial class SourceFormatter
             }
 
             string delegateSignature = string.Join(", ", functionShapeModel.Parameters
-                .Select(parameter => $"{FormatRefPrefix(parameter)}{parameter.ParameterType.FullyQualifiedName}{GetNullableSuffix(parameter)} {parameter.Name}"));
+                .Select(parameter => $"{FormatRefPrefix(parameter)}{FormatDelegateParameterType(parameter)} {parameter.Name}"));
 
             string argumentStateCtorExpr = functionShapeModel.Parameters switch
             {
@@ -199,7 +199,19 @@ internal sealed partial class SourceFormatter
 
             return $$"""static {{innerFuncVar}} => ({{delegateSignature}}) => { {{functionArgumentStateFQN}} {{stateVar}} = {{argumentStateCtorExpr}}; {{tailExpr}}; }""";
 
-            static string GetNullableSuffix(ParameterShapeModel parameter) => parameter.NullableAnnotation is NullableAnnotation.Annotated ? "?" : "";
+            static string FormatDelegateParameterType(ParameterShapeModel parameter)
+            {
+                string parameterType = parameter.ParameterType.FullyQualifiedName;
+                if (parameter.NullableAnnotation is not NullableAnnotation.Annotated)
+                {
+                    return parameterType;
+                }
+
+                return parameterType.Length > 0 && parameterType[^1] == '?'
+                    ? parameterType
+                    : parameterType + "?";
+            }
+
             static string GetSuppressionSuffix(ParameterShapeModel parameter) => parameter.ParameterTypeContainsNullabilityAnnotations ? "!" : "";
         }
 
