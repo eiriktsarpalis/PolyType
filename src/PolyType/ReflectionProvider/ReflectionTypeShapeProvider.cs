@@ -968,6 +968,8 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         }
 
         ParameterInfo[] parameters = methodInfo.GetParameters();
+
+        // Check for unsupported parameter types including out parameters
         if (parameters.FirstOrDefault(param => param.IsOut || !param.GetEffectiveParameterType().CanBeGenericArgument()) is { } param)
         {
             throw new NotSupportedException($"Method '{methodInfo}' contains unsupported parameter type '{param.Name}'.");

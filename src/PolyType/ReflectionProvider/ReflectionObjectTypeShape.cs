@@ -260,9 +260,17 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                 }
 
                 ParameterInfo[] parameters = constructorInfo.GetParameters();
-                if (parameters.Any(param => param.IsOut || !param.GetEffectiveParameterType().CanBeGenericArgument()))
+
+                // Skip constructors with out parameters - they cannot be meaningfully invoked through the shape system
+                if (parameters.Any(param => param.IsOut))
                 {
-                    // Skip constructors with unsupported parameter types or out parameters
+                    continue;
+                }
+
+                // Filter out any unsupported parameter types
+                if (parameters.Any(param => !param.GetEffectiveParameterType().CanBeGenericArgument()))
+                {
+                    // Skip constructors with unsupported parameter types
                     continue;
                 }
 
