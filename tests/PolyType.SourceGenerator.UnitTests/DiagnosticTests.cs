@@ -1036,4 +1036,31 @@ public static class DiagnosticTests
         // Should have no diagnostics - names are auto-generated as "Cow_SolidHoof" and "Cow_ClovenHoof"
         Assert.Empty(result.Diagnostics);
     }
+
+    [Fact]
+    public static void Diagnostic_CanBeSuppressedViaPragma()
+    {
+        // Verify that generator diagnostics can be suppressed using #pragma warning disable.
+        // This is a regression test for https://github.com/dotnet/runtime/issues/92509.
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [GenerateShape]
+            public partial class MyPoco
+            {
+            #pragma warning disable PT0020
+                [MethodShape]
+                public void GenericMethod<T>(T value) { }
+            #pragma warning restore PT0020
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        // With a proper SourceLocation, the diagnostic should either be absent
+        // or marked as IsSuppressed by the pragma directive.
+        Diagnostic? diagnostic = result.Diagnostics.FirstOrDefault(d => d.Id == "PT0020");
+        Assert.True(diagnostic is null || diagnostic.IsSuppressed,
+            $"Expected PT0020 to be suppressed by #pragma, but it was present with IsSuppressed={diagnostic?.IsSuppressed}");
+    }
 }

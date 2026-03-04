@@ -1,6 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
 using PolyType.Roslyn.Helpers;
-using System.Collections.Immutable;
 
 namespace PolyType.Roslyn;
 

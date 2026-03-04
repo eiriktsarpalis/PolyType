@@ -32,7 +32,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         _typeShapeExtensions = typeShapeExtensions;
     }
 
-    public static TypeShapeProviderModel? ParseFromGenerateShapeAttributes(
+    public static (TypeShapeProviderModel Model, ImmutableArray<Diagnostic> Diagnostics)? ParseFromGenerateShapeAttributes(
         ImmutableArray<TypeWithAttributeDeclarationContext> generateShapeDeclarations,
         PolyTypeKnownSymbols knownSymbols,
         CancellationToken cancellationToken)
@@ -46,7 +46,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         Parser parser = new(knownSymbols.Compilation.Assembly, typeShapeExtensions, knownSymbols, cancellationToken);
         TypeDeclarationModel shapeProviderDeclaration = CreateShapeProviderDeclaration(knownSymbols.Compilation);
         ImmutableEquatableArray<TypeDeclarationModel> generateShapeTypes = parser.IncludeTypesUsingGenerateShapeAttributes(generateShapeDeclarations);
-        return parser.ExportTypeShapeProviderModel(shapeProviderDeclaration, generateShapeTypes);
+        return (parser.ExportTypeShapeProviderModel(shapeProviderDeclaration, generateShapeTypes), parser.Diagnostics.ToImmutableArray());
     }
 
     private static Dictionary<ITypeSymbol, TypeExtensionModel> DiscoverTypeShapeExtensions(
@@ -1022,7 +1022,6 @@ public sealed partial class Parser : TypeDataModelGenerator
 
             AnnotatedTypes = generateShapeTypes,
             TargetSupportsIShapeableOfT = _knownSymbols.TargetFramework >= TargetFramework.Net80,
-            Diagnostics = Diagnostics.ToImmutableEquatableSet(),
         };
     }
 
