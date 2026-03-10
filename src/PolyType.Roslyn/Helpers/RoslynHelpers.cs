@@ -341,15 +341,6 @@ internal static class RoslynHelpers
             return builderType is { IsGenericType: false } && builderMethod is not null;
         }
     }
-
-    /// <summary>
-    /// Get a location object that doesn't capture a reference to Compilation.
-    /// </summary>
-    public static Location GetLocationTrimmed(this Location location)
-    {
-        return Location.Create(location.SourceTree?.FilePath ?? string.Empty, location.SourceSpan, location.GetLineSpan().Span);
-    }
-
     public static ICollection<ITypeSymbol> GetSortedTypeHierarchy(this ITypeSymbol type)
     {
         if (type.TypeKind is not TypeKind.Interface)
