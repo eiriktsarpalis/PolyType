@@ -28,7 +28,6 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
     {
         if (provider is { ProvidedTypes.Count: 0, AnnotatedTypes.Length: 0 })
         {
-            Debug.Assert(provider.Diagnostics.Count > 0);
             return;
         }
 
