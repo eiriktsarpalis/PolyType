@@ -13,6 +13,7 @@
     <Project Path="applications/SerializationApp.AOT/SerializationApp.AOT.csproj" />
     <Project Path="applications/SerializationApp.Reflection/SerializationApp.Reflection.csproj" />
     <Project Path="applications/ValidationApp.AOT/ValidationApp.AOT.csproj" />
+    <Project Path="applications/AsyncValidationApp.AOT/AsyncValidationApp.AOT.csproj" />
   </Folder>
   <Folder Name="/docs/">
     <File Path="docs/core-abstractions.md" />
