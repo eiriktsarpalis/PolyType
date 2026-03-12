@@ -318,16 +318,16 @@ public partial class TypeDataModelGenerator
     {
         Debug.Assert(constructor.MethodKind is MethodKind.Constructor || constructor.IsStatic);
 
+        // Skip constructors with out parameters - they cannot be meaningfully invoked through the shape system
+        if (constructor.Parameters.Any(p => p.RefKind is RefKind.Out))
+        {
+            return null;
+        }
+
         var parameters = new List<ParameterDataModel>();
         TypeDataModelGenerationContext scopedCtx = ctx;
         foreach (IParameterSymbol parameter in constructor.Parameters)
         {
-            if (parameter.RefKind is RefKind.Out)
-            {
-                // Skip constructors with out parameters
-                return null;
-            }
-
             if (IncludeNestedType(parameter.Type, ref scopedCtx) != TypeDataModelGenerationStatus.Success)
             {
                 // Skip constructors with unsupported parameter types
