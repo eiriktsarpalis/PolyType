@@ -111,4 +111,16 @@ public sealed class PolyTypeKnownSymbols(Compilation compilation) : KnownSymbols
 
     public INamedTypeSymbol? AttributeUsageAttribute => GetOrResolveType("System.AttributeUsageAttribute", ref _AttributeUsageAttribute);
     private Option<INamedTypeSymbol?> _AttributeUsageAttribute;
+
+    public INamedTypeSymbol? ClosedAttribute => GetOrResolveType("System.Runtime.CompilerServices.ClosedAttribute", ref _ClosedAttribute);
+    private Option<INamedTypeSymbol?> _ClosedAttribute;
+
+    public INamedTypeSymbol? ClosedSubtypeAttribute => GetOrResolveType("System.Runtime.CompilerServices.ClosedSubtypeAttribute", ref _ClosedSubtypeAttribute);
+    private Option<INamedTypeSymbol?> _ClosedSubtypeAttribute;
+
+    public INamedTypeSymbol? UnionAttribute => GetOrResolveType("System.Runtime.CompilerServices.UnionAttribute", ref _UnionAttribute);
+    private Option<INamedTypeSymbol?> _UnionAttribute;
+
+    public INamedTypeSymbol? IUnionInterface => GetOrResolveType("System.IUnion", ref _IUnionInterface);
+    private Option<INamedTypeSymbol?> _IUnionInterface;
 }

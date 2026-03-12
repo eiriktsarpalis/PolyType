@@ -294,6 +294,12 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             return (IUnionTypeShape)Activator.CreateInstance(fsharpUnionTypeTy, fSharpUnionInfo, this, options)!;
         }
 
+        // Check for C# union types (has [Union] attribute and implements IUnion)
+        if (CSharpUnionHelpers.IsCSharpUnion(unionType))
+        {
+            return CreateCSharpUnionTypeShape(unionType, options);
+        }
+
         List<DerivedTypeShapeAttribute> derivedTypeAttributes = unionType.GetCustomAttributes<DerivedTypeShapeAttribute>().ToList();
         if (unionType.GetCustomAttribute<DataContractAttribute>() is { })
         {
@@ -370,8 +376,47 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             derivedTypeInfos.Add(new(derivedType, name, tag, index, isTagSpecified));
         }
 
+        // If no explicit derived types were declared, try [ClosedSubtype] attributes
+        // (always honored) or assembly scanning (requires InferDerivedTypes opt-in)
+        if (derivedTypeInfos.Count == 0)
+        {
+            DerivedTypeInfo[] closedSubtypeInfos = ClosedHierarchyHelpers.GetClosedSubtypeDerivedInfos(unionType);
+            if (closedSubtypeInfos.Length > 0)
+            {
+                derivedTypeInfos.AddRange(closedSubtypeInfos);
+            }
+            else if (options.InferDerivedTypes)
+            {
+                DerivedTypeInfo[] inferredInfos = ClosedHierarchyHelpers.GetAssemblyScanDerivedInfos(unionType);
+                derivedTypeInfos.AddRange(inferredInfos);
+            }
+        }
+
         Type unionTypeTy = typeof(ReflectionUnionTypeShape<>).MakeGenericType(unionType);
         return (IUnionTypeShape)Activator.CreateInstance(unionTypeTy, derivedTypeInfos.ToArray(), this, options)!;
+    }
+
+    private IUnionTypeShape CreateCSharpUnionTypeShape(Type unionType, ReflectionTypeShapeOptions options)
+    {
+        CSharpUnionCaseInfo[] caseInfos = CSharpUnionHelpers.GetCaseInfos(unionType, out Func<object, object?> valueAccessor);
+        // Create a typed accessor delegate: Func<TUnion, object?>
+        // We wrap the untyped accessor to work with the generic shape
+        Type csharpUnionTypeTy = typeof(CSharpUnionTypeShape<>).MakeGenericType(unionType);
+        // Build Func<TUnion, object?> from Func<object, object?>
+        Type funcType = typeof(Func<,>).MakeGenericType(unionType, typeof(object));
+        Delegate typedAccessor = CreateTypedValueAccessor(unionType, valueAccessor);
+
+        return (IUnionTypeShape)Activator.CreateInstance(csharpUnionTypeTy, caseInfos, typedAccessor, this, options)!;
+    }
+
+    private static Delegate CreateTypedValueAccessor(Type unionType, Func<object, object?> valueAccessor)
+    {
+        // Creates a Func<TUnion, object?> from a Func<object, object?>
+        // using a helper method to avoid reflection emit
+        Type helperType = typeof(CSharpUnionValueAccessorHelper<>).MakeGenericType(unionType);
+        var createMethod = helperType.GetMethod("Create", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!;
+
+        return (Delegate)createMethod.Invoke(null, [valueAccessor])!;
     }
 
     private IFunctionTypeShape CreateFunctionTypeShape(Type functionType, FSharpFuncInfo? fSharpFuncInfo, ReflectionTypeShapeOptions options)
@@ -440,6 +485,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             RequestedKind = requestedKind,
             Marshaler = marshaler,
             IncludeMethods = methodFlags ?? MethodShapeFlags.None,
+            InferDerivedTypes = typeShapeAttr?.GetRequestedInferDerivedTypes() ?? false,
         };
     }
 
@@ -509,6 +555,11 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
         if (allowUnionShapes)
         {
+            if (CSharpUnionHelpers.IsCSharpUnion(type))
+            {
+                return TypeShapeKind.Union;
+            }
+
             var customAttributeData = type.GetCustomAttributesData();
             if (customAttributeData.Any(attrData => attrData.AttributeType == typeof(DerivedTypeShapeAttribute)))
             {
@@ -519,6 +570,23 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
                 customAttributeData.Any(attrData => attrData.AttributeType == typeof(KnownTypeAttribute))))
             {
                 return TypeShapeKind.Union;
+            }
+
+            // InferDerivedTypes: discover subtypes from [ClosedSubtype] or assembly scanning
+            if ((type.IsClass || type.IsInterface) && !type.IsSealed)
+            {
+                // [ClosedSubtype] attributes are always honored (similar to [DerivedTypeShapeAttribute])
+                if (ClosedHierarchyHelpers.HasClosedSubtypeAttributes(type))
+                {
+                    return TypeShapeKind.Union;
+                }
+
+                // Assembly scanning requires explicit opt-in via InferDerivedTypes
+                if (options?.InferDerivedTypes == true &&
+                    ClosedHierarchyHelpers.FindDirectSubtypesInAssembly(type).Length > 0)
+                {
+                    return TypeShapeKind.Union;
+                }
             }
         }
 
@@ -603,6 +671,13 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
     {
         Type unionCaseType = typeof(ReflectionUnionCaseShape<,>).MakeGenericType(derivedTypeInfo.Type, unionTypeShape.Type);
         return (IUnionCaseShape)Activator.CreateInstance(unionCaseType, unionTypeShape, derivedTypeInfo, this)!;
+    }
+
+    internal IUnionCaseShape CreateCSharpUnionCaseShape(IUnionTypeShape unionTypeShape, CSharpUnionCaseInfo caseInfo)
+    {
+        Type unionCaseType = typeof(CSharpUnionCaseShape<,>).MakeGenericType(caseInfo.CaseType, unionTypeShape.Type);
+
+        return (IUnionCaseShape)Activator.CreateInstance(unionCaseType, caseInfo, this)!;
     }
 
     internal static IMethodShapeInfo CreateTupleConstructorShapeInfo(Type tupleType)

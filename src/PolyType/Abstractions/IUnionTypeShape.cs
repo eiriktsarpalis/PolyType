@@ -11,6 +11,11 @@
 public interface IUnionTypeShape : ITypeShape
 {
     /// <summary>
+    /// Gets the kind of union represented by this shape.
+    /// </summary>
+    UnionKind UnionKind { get; }
+
+    /// <summary>
     /// Gets the underlying type shape of the union base type.
     /// </summary>
     /// <remarks>
