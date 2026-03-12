@@ -1,4 +1,4 @@
-﻿using Microsoft.FSharp.Collections;
+using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using PolyType.Abstractions;
 using PolyType.Tests.FSharp;
@@ -715,6 +715,21 @@ public static class TestTypes
         yield return TestCase.Create(new ClassWithPrivateStaticEvent());
         yield return TestCase.Create<InterfaceWithEvent>(new DerivedInterfaceWithEvent.Impl());
         yield return TestCase.Create<DerivedInterfaceWithEvent>(new DerivedInterfaceWithEvent.Impl());
+
+        // C# union types (mock) — Dog and Cat are regular objects
+        yield return TestCase.Create(new Dog { Name = "Rex", Age = 5 }, p);
+        yield return TestCase.Create(new Cat { Name = "Whiskers", IsIndoor = true }, p);
+
+        // Closed enums (mock)
+        yield return TestCase.Create(ClosedColor.Red, additionalValues: [ClosedColor.Green, ClosedColor.Blue], provider: p);
+
+        // Closed hierarchies (mock)
+        yield return TestCase.Create<Shape>(new Circle { Color = "Red", Radius = 3.14 },
+            additionalValues: [new Rectangle { Color = "Blue", Width = 2.0, Height = 4.0 }],
+            isUnion: true);
+        yield return TestCase.Create<Vehicle>(new Car { Make = "Toyota", Doors = 4 },
+            additionalValues: [new Truck { Make = "Ford", PayloadTons = 5.0 }],
+            isUnion: true);
     }
 
     private static ExpandoObject CreateExpandoObject(IEnumerable<KeyValuePair<string, object?>> values)
@@ -3314,6 +3329,92 @@ public delegate Task<int> LargeAsyncDelegate(
     int p51, int p52, int p53, int p54, int p55, int p56, int p57, int p58, int p59, int p60,
     int p61, int p62, int p63, int p64, int p65, int p66, int p67, int p68, int p69, int p70);
 
+// --- C# Union Types (mock) ---
+
+[GenerateShape]
+public partial class Dog
+{
+    public string Name { get; set; } = "";
+    public int Age { get; set; }
+}
+
+[GenerateShape]
+public partial class Cat
+{
+    public string Name { get; set; } = "";
+    public bool IsIndoor { get; set; }
+}
+
+[System.Runtime.CompilerServices.Union]
+[GenerateShape]
+public partial class Pet : IUnion
+{
+    private readonly object? _value;
+
+    public Pet(Dog value) => _value = value;
+    public Pet(Cat value) => _value = value;
+    public Pet(int value) => _value = value;
+
+    public object? Value => _value;
+}
+
+// --- Closed Enum Types (mock) ---
+
+[System.Runtime.CompilerServices.Closed]
+public enum ClosedColor
+{
+    Red,
+    Green,
+    Blue,
+}
+
+// --- Closed Class Hierarchy (mock) ---
+
+[System.Runtime.CompilerServices.Closed]
+[System.Runtime.CompilerServices.ClosedSubtype(typeof(Circle))]
+[System.Runtime.CompilerServices.ClosedSubtype(typeof(Rectangle))]
+[GenerateShape]
+public abstract partial class Shape
+{
+    public string Color { get; set; } = "Black";
+}
+
+[GenerateShape]
+public partial class Circle : Shape
+{
+    public double Radius { get; set; }
+}
+
+[GenerateShape]
+public partial class Rectangle : Shape
+{
+    public double Width { get; set; }
+    public double Height { get; set; }
+}
+
+// Closed hierarchy with [ClosedSubtype] attributes and InferDerivedTypes fallback
+[System.Runtime.CompilerServices.Closed]
+[System.Runtime.CompilerServices.ClosedSubtype(typeof(Car))]
+[System.Runtime.CompilerServices.ClosedSubtype(typeof(Truck))]
+[TypeShape(InferDerivedTypes = true)]
+[GenerateShape]
+public abstract partial class Vehicle
+{
+    public string Make { get; set; } = "Unknown";
+}
+
+[GenerateShape]
+public partial class Car : Vehicle
+{
+    public int Doors { get; set; }
+}
+
+[GenerateShape]
+public partial class Truck : Vehicle
+{
+    public double PayloadTons { get; set; }
+}
+
 [GenerateShapeFor<object>]
 [GenerateShapeFor<bool>]
 [GenerateShapeFor<char>]
@@ -3578,4 +3679,14 @@ public delegate Task<int> LargeAsyncDelegate(
 [GenerateShapeFor<FSharpFunc<Tuple<int, int>, int>>]
 [GenerateShapeFor<FSharpFunc<int, Task<int>>>]
 [GenerateShapeFor<FSharpFunc<int, FSharpFunc<int, FSharpFunc<int, Task<int>>>>>]
+[GenerateShapeFor<Pet>]
+[GenerateShapeFor<Dog>]
+[GenerateShapeFor<Cat>]
+[GenerateShapeFor<ClosedColor>]
+[GenerateShapeFor<Shape>]
+[GenerateShapeFor<Circle>]
+[GenerateShapeFor<Rectangle>]
+[GenerateShapeFor<Vehicle>]
+[GenerateShapeFor<Car>]
+[GenerateShapeFor<Truck>]
 public partial class Witness;

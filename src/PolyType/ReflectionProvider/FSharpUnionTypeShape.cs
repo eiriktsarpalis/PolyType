@@ -14,6 +14,7 @@ internal sealed class FSharpUnionTypeShape<TUnion>(FSharpUnionInfo unionInfo, Re
 {
     public override TypeShapeKind Kind => TypeShapeKind.Union;
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnion(this, state);
+    public UnionKind UnionKind => UnionKind.FSharpUnion;
     public ITypeShape<TUnion> BaseType { get; } = new FSharpUnionCaseTypeShape<TUnion>(null, provider, options);
 
     public IReadOnlyList<IUnionCaseShape> UnionCases => _unionCases ?? CommonHelpers.ExchangeIfNull(ref _unionCases, CreateUnionCaseShapes().AsReadOnlyList());

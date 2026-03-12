@@ -11,6 +11,11 @@ namespace PolyType.SourceGenModel;
 public sealed class SourceGenUnionTypeShape<TUnion> : SourceGenTypeShape<TUnion>, IUnionTypeShape<TUnion>
 {
     /// <summary>
+    /// Gets the kind of union represented by this shape.
+    /// </summary>
+    public required UnionKind UnionKind { get; init; }
+
+    /// <summary>
     /// Gets a delayed base type shape factory for use with potentially recursive type graphs.
     /// </summary>
     public required Func<ITypeShape<TUnion>> BaseTypeFactory { get; init; }

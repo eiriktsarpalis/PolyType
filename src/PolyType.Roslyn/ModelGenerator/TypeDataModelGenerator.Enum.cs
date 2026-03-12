@@ -32,6 +32,8 @@ public partial class TypeDataModelGenerator
         bool isFlags = KnownSymbols.FlagsAttribute is { } flagsAttr && 
             enumType.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, flagsAttr));
 
+        bool isClosed = enumType.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == "System.Runtime.CompilerServices.ClosedAttribute");
+
         model = new EnumDataModel
         {
             Type = type,
@@ -39,6 +41,7 @@ public partial class TypeDataModelGenerator
             UnderlyingType = underlyingType,
             Members = members,
             IsFlags = isFlags,
+            IsClosed = isClosed,
         };
 
         return true;

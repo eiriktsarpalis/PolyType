@@ -15,6 +15,14 @@ public interface IEnumTypeShape : ITypeShape
     /// Gets a value indicating whether the enum is annotated with the <see cref="FlagsAttribute"/>.
     /// </summary>
     bool IsFlags { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the enum is a closed enum.
+    /// </summary>
+    /// <remarks>
+    /// A closed enum restricts its values to the declared members only.
+    /// </remarks>
+    bool IsClosed { get; }
 }
 
 /// <summary>
