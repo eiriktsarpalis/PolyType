@@ -13,6 +13,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>TargetFramework</_Parameter1>
+      <_Parameter2>$(TargetFramework)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>Configuration</_Parameter1>
+      <_Parameter2>$(Configuration)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers">
@@ -35,5 +46,18 @@
     <ProjectReference Include="..\..\src\PolyType.SourceGenerator\PolyType.SourceGenerator.csproj" />
     <ProjectReference Include="..\..\src\PolyType\PolyType.csproj" />
   </ItemGroup>
+
+  <!--
+    Usage: dotnet msbuild -t:UpdateSnapshots
+    Rebuilds the project in both Debug and Release configurations and runs only
+    the snapshot tests with POLYTYPE_UPDATE_SNAPSHOTS=true, overwriting the
+    baseline files in Snapshots/{TFM}-{Configuration}/.
+  -->
+  <Target Name="UpdateSnapshots">
+    <Exec Command="dotnet test --project &quot;$(MSBuildProjectFullPath)&quot; -c Debug --filter-class PolyType.SourceGenerator.UnitTests.SnapshotTests"
+          EnvironmentVariables="POLYTYPE_UPDATE_SNAPSHOTS=true" />
+    <Exec Command="dotnet test --project &quot;$(MSBuildProjectFullPath)&quot; -c Release --filter-class PolyType.SourceGenerator.UnitTests.SnapshotTests"
+          EnvironmentVariables="POLYTYPE_UPDATE_SNAPSHOTS=true" />
+  </Target>
 
 </Project>

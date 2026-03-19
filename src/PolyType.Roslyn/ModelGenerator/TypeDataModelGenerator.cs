@@ -452,8 +452,9 @@ public partial class TypeDataModelGenerator
         {
             if (parameter.RefKind is RefKind.Out)
             {
-                result = default;
-                return TypeDataModelGenerationStatus.UnsupportedType;
+                // Out parameters are discarded from the shape model but the
+                // method is still included. Don't traverse the type graph.
+                continue;
             }
 
             if ((status = IncludeNestedType(parameter.Type, ref ctx)) != TypeDataModelGenerationStatus.Success)

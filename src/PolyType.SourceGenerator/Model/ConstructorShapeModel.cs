@@ -1,4 +1,5 @@
-﻿using PolyType.Roslyn;
+﻿using Microsoft.CodeAnalysis;
+using PolyType.Roslyn;
 
 namespace PolyType.SourceGenerator.Model;
 
@@ -18,11 +19,16 @@ public sealed record ConstructorShapeModel
     public required bool IsFSharpUnitConstructor { get; init; }
     public required ImmutableEquatableArray<AttributeDataModel> Attributes { get; init; }
 
-    public int TotalArity => Parameters.Length + RequiredMembers.Length + OptionalMembers.Length;
+    public int TotalArity => Parameters.Count(p => p.RefKind is not RefKind.Out) + RequiredMembers.Length + OptionalMembers.Length;
     public bool IsStaticFactory => StaticFactoryName != null;
+    public bool HasOutParameters => Parameters.Any(p => p.RefKind is RefKind.Out);
+
+    /// <summary>Gets the parameters that are included in the argument state (excludes <c>out</c> parameters).</summary>
+    public IEnumerable<ParameterShapeModel> ShapedParameters => Parameters.Where(p => p.RefKind is not RefKind.Out);
+
     public IEnumerable<ParameterShapeModel> GetAllParameters()
     {
-        foreach (var param in Parameters)
+        foreach (var param in ShapedParameters)
         {
             yield return param;
         }

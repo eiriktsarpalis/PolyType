@@ -862,7 +862,6 @@ public static class DiagnosticTests
     [Theory]
     [InlineData("public System.Span<int> MethodWithSpanReturn() => default;")]
     [InlineData("public void MethodWithReadOnlySpanParameter(System.ReadOnlySpan<byte> span) { }")]
-    [InlineData("public void MethodWithOutParameter(out int value) { value = 0; }")]
     [InlineData("public unsafe int* MethodWithPointerReturn() => null;")]
     [InlineData("public unsafe void MethodWithPointerParameter(int* ptr) { }")]
     public static void MethodShape_UnsupportedParameterOrReturnType_ProducesWarning(string methodSignature)

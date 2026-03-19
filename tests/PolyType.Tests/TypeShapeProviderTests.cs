@@ -866,7 +866,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         {
             Assert.True(ctorInfo is MethodInfo { IsStatic: true } or ConstructorInfo);
             Assert.True(typeof(T).IsAssignableFrom(ctorInfo is MethodInfo m ? m.ReturnType : ctorInfo.DeclaringType));
-            ParameterInfo[] parameters = ctorInfo.GetParameters();
+            ParameterInfo[] parameters = ctorInfo.GetParameters().Where(p => !p.IsOut).ToArray();
             Assert.True(parameters.Length <= constructor.Parameters.Count);
             Assert.Equal(ctorInfo.IsPublic, constructor.IsPublic);
             bool hasSetsRequiredMembersAttribute = ctorInfo.SetsRequiredMembers();
@@ -975,7 +975,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
 
         if (objectShape.Constructor is { MethodBase: MethodBase ctorInfo } constructor)
         {
-            ParameterInfo[] parameters = ctorInfo.GetParameters();
+            ParameterInfo[] parameters = ctorInfo.GetParameters().Where(p => !p.IsOut).ToArray();
             Assert.True(parameters.Length <= constructor.Parameters.Count);
 
             foreach (IParameterShape ctorParam in constructor.Parameters)

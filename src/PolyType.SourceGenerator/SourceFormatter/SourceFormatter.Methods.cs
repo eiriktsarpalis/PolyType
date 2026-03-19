@@ -55,7 +55,7 @@ internal sealed partial class SourceFormatter
     private void FormatMethodFactory(SourceWriter writer, string methodName, TypeShapeModel declaringType, MethodShapeModel method)
     {
         string methodArgumentStateFQN = FormatMethodArgumentStateFQN(method);
-        string? methodParameterFactoryName = method.Parameters.Length > 0 ? $"__CreateMethodParameters_{declaringType.SourceIdentifier}_{method.Position}" : null;
+        string? methodParameterFactoryName = method.ShapedParameterCount > 0 ? $"__CreateMethodParameters_{declaringType.SourceIdentifier}_{method.Position}" : null;
         string? methodAttributeFactory = method.Attributes.Length > 0 ? $"__CreateAttributes_{declaringType.SourceIdentifier}_{method.Position}" : null;
 
         writer.WriteLine($"private global::PolyType.Abstractions.IMethodShape {methodName}()");
@@ -95,9 +95,9 @@ internal sealed partial class SourceFormatter
             FormatRequiredParametersMaskField(
                 writer,
                 requiredParametersMaskFieldName,
-                method.Parameters.Length,
+                method.ShapedParameterCount,
                 method.ArgumentStateType,
-                method.Parameters);
+                method.ShapedParameters);
         }
 
         if (methodAttributeFactory is not null)
@@ -122,29 +122,28 @@ internal sealed partial class SourceFormatter
 
         static string FormatAttributeProviderFunc(TypeShapeModel declaringType, MethodShapeModel method)
         {
-            string parameterTypes = method.Parameters.Length == 0
-                ? "global::System.Type.EmptyTypes"
-                : $$"""new global::System.Type[] { {{string.Join(", ", method.Parameters.Select(FormatParameterTypeExpr))}} }""";
-
+            string parameterTypes = FormatAllMethodParameterTypes(method);
             return $"static () => typeof({method.DeclaringType.FullyQualifiedName}).GetMethod({FormatStringLiteral(method.UnderlyingMethodName)}, {AllBindingFlagsConstMember}, null, {parameterTypes}, null)";
         }
 
         static string FormatArgumentStateConstructor(TypeShapeModel declaringType, MethodShapeModel method, string methodArgumentStateFQN)
         {
-            if (method.Parameters.Length == 0)
+            int shapedCount = method.ShapedParameterCount;
+            if (shapedCount == 0)
             {
                 Debug.Assert(methodArgumentStateFQN == "global::PolyType.SourceGenModel.EmptyArgumentState");
                 return "static () => global::PolyType.SourceGenModel.EmptyArgumentState.Instance";
             }
 
-            string stateValueExpr = method.Parameters.Length switch
+            ParameterShapeModel[] shaped = method.ShapedParameters.ToArray();
+            string stateValueExpr = shapedCount switch
             {
-                1 => FormatDefaultValueExpr(method.Parameters[0]),
-                _ => FormatTupleConstructor(method.Parameters.Select(FormatDefaultValueExpr)),
+                1 => FormatDefaultValueExpr(shaped[0]),
+                _ => FormatTupleConstructor(shaped.Select(FormatDefaultValueExpr)),
             };
 
             string requiredParametersMaskFieldName = FormatRequiredParametersMaskFieldName(declaringType, method)!;
-            return $"static () => new {methodArgumentStateFQN}({stateValueExpr}, count: {method.Parameters.Length}, requiredArgumentsMask: {requiredParametersMaskFieldName})";
+            return $"static () => new {methodArgumentStateFQN}({stateValueExpr}, count: {shapedCount}, requiredArgumentsMask: {requiredParametersMaskFieldName})";
             
             static string FormatTupleConstructor(IEnumerable<string> parameters)
                 => $"({string.Join(", ", parameters)})";
@@ -157,12 +156,7 @@ internal sealed partial class SourceFormatter
 
         static string FormatMethodInvocationExpr(TypeShapeModel declaringType, MethodShapeModel method, string targetVar, string stateVar)
         {
-            string parametersExpression = method.Parameters.Length switch
-            {
-                0 => "",
-                1 => FormatMethodParameterExpr(method.Parameters[0], isSingleParameter: true),
-                _ => string.Join(", ", method.Parameters.Select(p => FormatMethodParameterExpr(p, isSingleParameter: false)))
-            };
+            string parametersExpression = FormatAllArguments(method);
 
             string refPrefix = method.DeclaringType.IsValueType ? "ref " : "";
             string targetExpr = method.RequiresDisambiguation ? $"(({method.DeclaringType.FullyQualifiedName}){targetVar}!)" : $"{targetVar}!";
@@ -199,19 +193,30 @@ internal sealed partial class SourceFormatter
                 {
                     RefKind.Ref or RefReadOnlyParameter => "ref ",
                     RefKind.In => "in ",
-                    RefKind.Out => "out ",
                     _ => ""
                 };
-                
+
                 return isSingleParameter
                     ? $"{refPrefix}state.Arguments{(requiresSuppression ? "!" : "")}"
                     : $"{refPrefix}state.Arguments.Item{parameter.Position + 1}{(requiresSuppression ? "!" : "")}";
+            }
+
+            static string FormatAllArguments(MethodShapeModel method)
+            {
+                if (method.Parameters.Length == 0)
+                {
+                    return "";
+                }
+
+                bool isSingleShaped = method.ShapedParameterCount == 1;
+                return string.Join(", ", method.Parameters.Select(p =>
+                    p.RefKind is RefKind.Out ? "out _" : FormatMethodParameterExpr(p, isSingleShaped)));
             }
         }
 
         static string? FormatRequiredParametersMaskFieldName(TypeShapeModel declaringType, MethodShapeModel method)
         {
-            if (method.Parameters.Length == 0)
+            if (method.ShapedParameterCount == 0)
             {
                 return null;
             }
@@ -226,10 +231,10 @@ internal sealed partial class SourceFormatter
         writer.WriteLine('{');
         writer.Indentation++;
 
-        for (int i = 0; i < method.Parameters.Length; i++)
+        int emitted = 0;
+        foreach (ParameterShapeModel parameter in method.ShapedParameters)
         {
-            ParameterShapeModel parameter = method.Parameters[i];
-            if (i > 0)
+            if (emitted++ > 0)
             {
                 writer.WriteLine();
             }
@@ -256,9 +261,7 @@ internal sealed partial class SourceFormatter
 
             static string FormatAttributeProviderFunc(TypeShapeModel declaringType, MethodShapeModel method, ParameterShapeModel parameter)
             {
-                string parameterTypes = method.Parameters.Length == 0
-                    ? "global::System.Type.EmptyTypes"
-                    : $$"""new global::System.Type[] { {{string.Join(", ", method.Parameters.Select(FormatParameterTypeExpr))}} }""";
+                string parameterTypes = FormatAllMethodParameterTypes(method);
 
                 return $"static () => typeof({method.DeclaringType.FullyQualifiedName}).GetMethod({FormatStringLiteral(method.UnderlyingMethodName)}, {AllBindingFlagsConstMember}, null, {parameterTypes}, null)?.GetParameters()[{parameter.Position}]";
             }
@@ -272,7 +275,7 @@ internal sealed partial class SourceFormatter
                     IsNonNullable: true,
                 };
 
-                return method.Parameters.Length switch
+                return method.ShapedParameterCount switch
                 {
                     1 => $"state.Arguments{(suppressGetter ? "!" : "")}",
                     _ => $"state.Arguments.Item{parameter.Position + 1}{(suppressGetter ? "!" : "")}",
@@ -282,13 +285,13 @@ internal sealed partial class SourceFormatter
             static string FormatSetterBody(MethodShapeModel method, ParameterShapeModel parameter)
             {
                 // Suppress non-nullable Nullable<T> parameter setters (i.e. setters with [DisallowNull] annotation)
-                bool suppressSetter = parameter.ParameterTypeContainsNullabilityAnnotations || parameter is 
-                { 
+                bool suppressSetter = parameter.ParameterTypeContainsNullabilityAnnotations || parameter is
+                {
                     ParameterType.SpecialType: SpecialType.System_Nullable_T,
                     IsNonNullable: true,
                 };
-                
-                string assignValueExpr = method.Parameters.Length switch
+
+                string assignValueExpr = method.ShapedParameterCount switch
                 {
                     1 => $"state.Arguments = value{(suppressSetter ? "!" : "")}",
                     _ => $"state.Arguments.Item{parameter.Position + 1} = value{(suppressSetter ? "!" : "")}",
@@ -314,7 +317,7 @@ internal sealed partial class SourceFormatter
         writer.Indentation--;
         writer.WriteLine("};");
 
-        foreach (ParameterShapeModel parameter in method.Parameters)
+        foreach (ParameterShapeModel parameter in method.ShapedParameters)
         {
             if (GetAttributeFactoryName(parameter) is { } attributeFactoryName)
             {
@@ -342,10 +345,10 @@ internal sealed partial class SourceFormatter
 
         string FormatArgumentStateTypeTypeParameter()
         {
-            return method.Parameters.Length switch
+            return method.ShapedParameterCount switch
             {
-                1 => method.Parameters[0].ParameterType.FullyQualifiedName,
-                _ => FormatTupleType(method.Parameters.Select(p => p.ParameterType.FullyQualifiedName)),
+                1 => method.ShapedParameters.First().ParameterType.FullyQualifiedName,
+                _ => FormatTupleType(method.ShapedParameters.Select(p => p.ParameterType.FullyQualifiedName)),
             };
 
             static string FormatTupleType(IEnumerable<string> parameterTypes)
@@ -393,9 +396,7 @@ internal sealed partial class SourceFormatter
         if (!method.CanUseUnsafeAccessors)
         {
             // Emit a reflection-based workaround.
-            string parameterTypes = method.Parameters.Length == 0
-                ? "global::System.Type.EmptyTypes"
-                : $$"""new global::System.Type[] { {{string.Join(", ", method.Parameters.Select(FormatParameterTypeExpr))}} }""";
+            string parameterTypes = FormatAllMethodParameterTypes(method);
 
             writer.WriteLine($$"""
                 private static global::System.Reflection.MethodInfo? __s_{{accessorName}}_MethodInfo;
@@ -419,5 +420,19 @@ internal sealed partial class SourceFormatter
             [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = {FormatStringLiteral(method.UnderlyingMethodName)})]
             private static extern {methodRefPrefix}{method.UnderlyingReturnType.FullyQualifiedName} {accessorName}({allParameters});
             """);
+    }
+
+    private static string FormatAllMethodParameterTypes(MethodShapeModel method)
+    {
+        if (method.Parameters.Length == 0)
+        {
+            return "global::System.Type.EmptyTypes";
+        }
+
+        string FormatType(ParameterShapeModel p) => p.RefKind is RefKind.Out
+            ? $"typeof({p.ParameterType.FullyQualifiedName}).MakeByRefType()"
+            : FormatParameterTypeExpr(p);
+
+        return $$"""new global::System.Type[] { {{string.Join(", ", method.Parameters.Select(FormatType))}} }""";
     }
 }
