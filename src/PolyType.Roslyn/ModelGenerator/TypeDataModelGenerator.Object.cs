@@ -324,8 +324,9 @@ public partial class TypeDataModelGenerator
         {
             if (parameter.RefKind is RefKind.Out)
             {
-                // Skip constructors with out parameters
-                return null;
+                // Out parameters are discarded from the shape model but the
+                // constructor is still included. Don't traverse the type graph.
+                continue;
             }
 
             if (IncludeNestedType(parameter.Type, ref scopedCtx) != TypeDataModelGenerationStatus.Success)

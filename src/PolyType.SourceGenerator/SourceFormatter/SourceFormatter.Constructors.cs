@@ -70,9 +70,19 @@ internal sealed partial class SourceFormatter
                 return "null";
             }
 
-            string parameterTypes = constructor.Parameters.Length == 0
-                ? "global::System.Type.EmptyTypes"
-                : $$"""new global::System.Type[] { {{string.Join(", ", constructor.Parameters.Select(FormatParameterTypeExpr))}} }""";
+            string parameterTypes;
+            if (constructor.Parameters.Length == 0)
+            {
+                parameterTypes = "global::System.Type.EmptyTypes";
+            }
+            else
+            {
+                string FormatType(ParameterShapeModel p) => p.RefKind is RefKind.Out
+                    ? $"typeof({p.ParameterType.FullyQualifiedName}).MakeByRefType()"
+                    : FormatParameterTypeExpr(p);
+
+                parameterTypes = $$"""new global::System.Type[] { {{string.Join(", ", constructor.Parameters.Select(FormatType))}} }""";
+            }
 
             return $"static () => typeof({constructor.DeclaringType.FullyQualifiedName}).GetConstructor({InstanceBindingFlagsConstMember}, null, {parameterTypes}, null)";
         }
@@ -155,12 +165,13 @@ internal sealed partial class SourceFormatter
 
                 string castPrefix = constructor.ResultRequiresCast ? $"({type.Type.FullyQualifiedName})" : "";
                 string constructorName = FormatConstructorName(type, constructor);
-                string constructorExpr = constructor.Parameters.Length switch
+                int shapedParamCount = constructor.Parameters.Count(p => p.RefKind is not RefKind.Out);
+                string constructorExpr = constructor switch
                 {
-                    0 when constructor.StaticFactoryIsProperty => castPrefix + constructorName,
-                    0 when memberInitializerBlock is null => $"{castPrefix}{constructorName}()",
-                    0 => $"{castPrefix}{constructorName}{memberInitializerBlock}",
-                    1 when constructor.TotalArity == 1 => $"{castPrefix}{constructorName}({FormatCtorParameterExpr(constructor.Parameters[0], isSingleParameter: true)})",
+                    _ when !constructor.HasOutParameters && shapedParamCount == 0 && constructor.StaticFactoryIsProperty => castPrefix + constructorName,
+                    _ when !constructor.HasOutParameters && shapedParamCount == 0 && memberInitializerBlock is null => $"{castPrefix}{constructorName}()",
+                    _ when !constructor.HasOutParameters && shapedParamCount == 0 => $"{castPrefix}{constructorName}{memberInitializerBlock}",
+                    _ when !constructor.HasOutParameters && shapedParamCount == 1 && constructor.TotalArity == 1 => $"{castPrefix}{constructorName}({FormatCtorParameterExpr(constructor.ShapedParameters.First(), isSingleParameter: true)})",
                     _ => $"{castPrefix}{constructorName}({FormatCtorArgumentsBody()}){memberInitializerBlock}",
                 };
 
@@ -182,7 +193,12 @@ internal sealed partial class SourceFormatter
                     (string requiredAssignments, string optionalAssignments) => $$"""{ var obj = {{constructorExpr}}; {{requiredAssignments}} {{optionalAssignments}} return obj; }""",
                 };
 
-                string FormatCtorArgumentsBody() => string.Join(", ", constructor.Parameters.Select(p => FormatCtorParameterExpr(p, isSingleParameter: constructor.TotalArity == 1)));
+                string FormatCtorArgumentsBody()
+                {
+                    bool isSingleParameter = constructor.TotalArity == 1;
+                    return string.Join(", ", constructor.Parameters.Select(p =>
+                        p.RefKind is RefKind.Out ? "out _" : FormatCtorParameterExpr(p, isSingleParameter)));
+                }
                 string FormatInitializerBody() => string.Join(", ", constructor.RequiredMembers.Select(p => $"{p.UnderlyingMemberName} = {FormatCtorParameterExpr(p, isSingleParameter: constructor.TotalArity == 1)}"));
                 string FormatRequiredMemberAssignments() => string.Join(" ", constructor.RequiredMembers.Select(p => FormatMemberAssignment(p, isSingleParameter: constructor.TotalArity == 1)));
                 string FormatOptionalMemberAssignments() => string.Join(" ", constructor.OptionalMembers.Select(p => FormatOptionalMemberAssignment(p, isSingleParameter: constructor.TotalArity == 1)));
@@ -229,7 +245,6 @@ internal sealed partial class SourceFormatter
                     {
                         RefKind.Ref or RefReadOnlyParameter => "ref ",
                         RefKind.In => "in ",
-                        RefKind.Out => "out ",
                         _ => ""
                     };
                     
@@ -248,11 +263,16 @@ internal sealed partial class SourceFormatter
             }
 
             string castPrefix = constructor.ResultRequiresCast ? $"({declaringType.Type.FullyQualifiedName})" : "";
-            return constructor.TotalArity switch
+            string outDiscards = constructor.HasOutParameters
+                ? string.Join(", ", constructor.Parameters.Where(p => p.RefKind is RefKind.Out).Select(_ => "out _"))
+                : "";
+
+            return (constructor.TotalArity, constructor.HasOutParameters) switch
             {
-                0 when declaringType.IsValueTupleType => $"static () => default({declaringType.Type.FullyQualifiedName})",
-                0 when constructor.StaticFactoryIsProperty => $"static () => {castPrefix}{FormatConstructorName(declaringType, constructor)}",
-                0 => $"static () => {castPrefix}{FormatConstructorName(declaringType, constructor)}()",
+                (0, false) when declaringType.IsValueTupleType => $"static () => default({declaringType.Type.FullyQualifiedName})",
+                (0, false) when constructor.StaticFactoryIsProperty => $"static () => {castPrefix}{FormatConstructorName(declaringType, constructor)}",
+                (0, false) => $"static () => {castPrefix}{FormatConstructorName(declaringType, constructor)}()",
+                (0, true) => $"static () => {castPrefix}{FormatConstructorName(declaringType, constructor)}({outDiscards})",
                 _ => "null",
             };
         }
@@ -284,7 +304,7 @@ internal sealed partial class SourceFormatter
         writer.WriteLine('{');
         writer.Indentation++;
 
-        var allParams = constructor.Parameters.Concat(constructor.RequiredMembers).Concat(constructor.OptionalMembers);
+        var allParams = constructor.ShapedParameters.Concat(constructor.RequiredMembers).Concat(constructor.OptionalMembers);
 
         int i = 0;
         foreach (ParameterShapeModel parameter in allParams)

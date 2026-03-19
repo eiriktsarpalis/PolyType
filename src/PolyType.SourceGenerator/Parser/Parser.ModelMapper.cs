@@ -511,13 +511,18 @@ public sealed partial class Parser
             }
         }
 
+        var mappedParameters = MapParametersWithOutDiscards(
+            constructor.Constructor.Parameters,
+            constructor.Parameters,
+            p => MapParameter(objectModel, declaringTypeId, p, isFSharpUnionCase));
+
         return new ConstructorShapeModel
         {
             DeclaringType = SymbolEqualityComparer.Default.Equals(constructor.DeclaringType, objectModel.Type)
                 ? declaringTypeId
                 : CreateTypeId(constructor.DeclaringType),
 
-            Parameters = constructor.Parameters.Select(p => MapParameter(objectModel, declaringTypeId, p, isFSharpUnionCase)).ToImmutableEquatableArray(),
+            Parameters = mappedParameters,
             RequiredMembers = requiredMembers?.ToImmutableEquatableArray() ?? [],
             OptionalMembers = optionalMembers?.ToImmutableEquatableArray() ?? [],
             ArgumentStateType = (constructor.Parameters.Length + (requiredMembers?.Count ?? 0) + (optionalMembers?.Count ?? 0)) switch
@@ -551,45 +556,110 @@ public sealed partial class Parser
     private ImmutableEquatableArray<MethodShapeModel> MapMethods(TypeDataModel typeModel, TypeId typeId)
     {
         return typeModel.Methods
-            .Select((m, i) => new MethodShapeModel
-            {
-                Name = m.Name,
-                UnderlyingMethodName = m.Method.Name,
-                Position = i,
-                IsPublic = m.Method.DeclaredAccessibility is Accessibility.Public,
-                IsStatic = m.Method.IsStatic,
-                ReturnTypeKind = m.ReturnTypeKind,
-                DeclaringType = !SymbolEqualityComparer.Default.Equals(m.Method.ContainingType, typeModel.Type)
-                    ? CreateTypeId(m.Method.ContainingType)
-                    : typeId,
-
-                UnderlyingReturnType = CreateTypeId(m.Method.ReturnType),
-                ReturnType = CreateTypeId(m.ReturnedValueType ?? _knownSymbols.UnitType!),
-                ReturnsByRef = m.Method.ReturnsByRef || m.Method.ReturnsByRefReadonly,
-                RequiresDisambiguation = m.IsAmbiguous,
-                Parameters = m.Parameters
-                    .Select(p => MapParameter(declaringObjectForConstructor: null, CreateTypeId(m.Method.ContainingType), p, false))
-                    .ToImmutableEquatableArray(),
-
-                ArgumentStateType = m.Parameters.Length switch
-                {
-                    0 => ArgumentStateType.EmptyArgumentState,
-                    <= 64 => ArgumentStateType.SmallArgumentState,
-                    _ => ArgumentStateType.LargeArgumentState,
-                },
-
-                IsAccessible = IsAccessibleSymbol(m.Method),
-                CanUseUnsafeAccessors = _knownSymbols.TargetFramework switch
-                {
-                    // .NET 8 or later supports unsafe accessors for methods of non-generic types.
-                    // .NET 10 or later supports unsafe accessors for static methods cf. https://github.com/eiriktsarpalis/PolyType/issues/220
-                    var target when target >= TargetFramework.Net80 => !m.Method.ContainingType.IsGenericType && !m.Method.IsStatic,
-                    _ => false
-                },
-
-                Attributes = CollectAttributes(m.Method),
-            })
+            .Select((m, i) => MapMethod(m, i, typeModel, typeId))
             .ToImmutableEquatableArray();
+    }
+
+    private MethodShapeModel MapMethod(MethodDataModel m, int position, TypeDataModel typeModel, TypeId typeId)
+    {
+        TypeId declaringTypeId = !SymbolEqualityComparer.Default.Equals(m.Method.ContainingType, typeModel.Type)
+            ? CreateTypeId(m.Method.ContainingType)
+            : typeId;
+
+        var mappedParameters = MapParametersWithOutDiscards(
+            m.Method.Parameters,
+            m.Parameters,
+            p => MapParameter(declaringObjectForConstructor: null, declaringTypeId, p, false));
+
+        return new MethodShapeModel
+        {
+            Name = m.Name,
+            UnderlyingMethodName = m.Method.Name,
+            Position = position,
+            IsPublic = m.Method.DeclaredAccessibility is Accessibility.Public,
+            IsStatic = m.Method.IsStatic,
+            ReturnTypeKind = m.ReturnTypeKind,
+            DeclaringType = declaringTypeId,
+
+            UnderlyingReturnType = CreateTypeId(m.Method.ReturnType),
+            ReturnType = CreateTypeId(m.ReturnedValueType ?? _knownSymbols.UnitType!),
+            ReturnsByRef = m.Method.ReturnsByRef || m.Method.ReturnsByRefReadonly,
+            RequiresDisambiguation = m.IsAmbiguous,
+            Parameters = mappedParameters,
+
+            ArgumentStateType = m.Parameters.Length switch
+            {
+                0 => ArgumentStateType.EmptyArgumentState,
+                <= 64 => ArgumentStateType.SmallArgumentState,
+                _ => ArgumentStateType.LargeArgumentState,
+            },
+
+            IsAccessible = IsAccessibleSymbol(m.Method),
+            CanUseUnsafeAccessors = _knownSymbols.TargetFramework switch
+            {
+                // .NET 8 or later supports unsafe accessors for methods of non-generic types.
+                // .NET 10 or later supports unsafe accessors for static methods cf. https://github.com/eiriktsarpalis/PolyType/issues/220
+                var target when target >= TargetFramework.Net80 => !m.Method.ContainingType.IsGenericType && !m.Method.IsStatic,
+                _ => false
+            },
+
+            Attributes = CollectAttributes(m.Method),
+        };
+    }
+
+    /// <summary>
+    /// Builds a unified parameter list that includes both shaped parameters (with sequential positions)
+    /// and out parameters (with <c>Position = -1</c> and <c>RefKind.Out</c>), preserving original ordinal order.
+    /// </summary>
+    private ImmutableEquatableArray<ParameterShapeModel> MapParametersWithOutDiscards(
+        ImmutableArray<IParameterSymbol> allSymbolParams,
+        ImmutableArray<ParameterDataModel> shapedDataParams,
+        Func<ParameterDataModel, ParameterShapeModel> mapParameter)
+    {
+        if (!allSymbolParams.Any(p => p.RefKind is RefKind.Out))
+        {
+            return shapedDataParams
+                .Select((p, idx) => mapParameter(p) with { Position = idx })
+                .ToImmutableEquatableArray();
+        }
+
+        var result = ImmutableArray.CreateBuilder<ParameterShapeModel>(allSymbolParams.Length);
+        int shapedIndex = 0;
+        foreach (IParameterSymbol symbol in allSymbolParams)
+        {
+            if (symbol.RefKind is RefKind.Out)
+            {
+                result.Add(new ParameterShapeModel
+                {
+                    Name = symbol.Name,
+                    UnderlyingMemberName = symbol.Name,
+                    Position = -1,
+                    ParameterType = CreateTypeId(symbol.Type),
+                    DeclaringType = CreateTypeId(symbol.ContainingType),
+                    Kind = ParameterKind.MethodParameter,
+                    RefKind = RefKind.Out,
+                    IsRequired = false,
+                    IsAccessible = true,
+                    CanUseUnsafeAccessors = false,
+                    IsInitOnlyProperty = false,
+                    IsNonNullable = false,
+                    NullableAnnotation = symbol.NullableAnnotation,
+                    ParameterTypeContainsNullabilityAnnotations = symbol.Type.ContainsNullabilityAnnotations(),
+                    IsPublic = true,
+                    IsField = false,
+                    HasDefaultValue = false,
+                    DefaultValueExpr = null,
+                    Attributes = [],
+                });
+            }
+            else
+            {
+                result.Add(mapParameter(shapedDataParams[shapedIndex]) with { Position = shapedIndex });
+                shapedIndex++;
+            }
+        }
+
+        return result.ToImmutable().ToImmutableEquatableArray();
     }
 
     private ImmutableEquatableArray<EventShapeModel> MapEvents(TypeDataModel typeModel, TypeId typeId)

@@ -26,7 +26,7 @@ public abstract class ProviderUnderTest
 
         return !(testCase.IsAbstract && !typeof(IEnumerable).IsAssignableFrom(testCase.Type)) &&
             !testCase.IsMultiDimensionalArray &&
-            !testCase.HasOutConstructorParameters &&
+            !(testCase.HasOutConstructorParameters && Kind is not ProviderKind.SourceGen) &&
             !testCase.IsFunctionType &&
             testCase.CustomKind is not TypeShapeKind.None &&
             (!testCase.UsesSpanConstructor || Kind is not ProviderKind.ReflectionNoEmit);

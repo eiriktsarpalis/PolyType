@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis;
 using PolyType.Roslyn;
 
 namespace PolyType.SourceGenerator.Model;
@@ -20,4 +21,10 @@ public sealed record MethodShapeModel
     public required ImmutableEquatableArray<ParameterShapeModel> Parameters { get; init; }
     public required ArgumentStateType ArgumentStateType { get; init; }
     public required ImmutableEquatableArray<AttributeDataModel> Attributes { get; init; }
+
+    /// <summary>Gets the parameters that are included in the argument state (excludes <c>out</c> parameters).</summary>
+    public IEnumerable<ParameterShapeModel> ShapedParameters => Parameters.Where(p => p.RefKind is not RefKind.Out);
+
+    /// <summary>Gets the number of shaped (non-<c>out</c>) parameters.</summary>
+    public int ShapedParameterCount => Parameters.Count(p => p.RefKind is not RefKind.Out);
 }
