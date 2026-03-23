@@ -536,6 +536,7 @@ public static class TestTypes
 
         yield return TestCase.Create(ClassWithRefConstructorParameter.Create(), hasRefConstructorParameters: true);
         yield return TestCase.Create(new ClassWithOutConstructorParameter(out _), hasRefConstructorParameters: true, hasOutConstructorParameters: true);
+        yield return TestCase.Create(ClassWithMixedRefAndOutConstructorParameters.Create(), hasRefConstructorParameters: true, hasOutConstructorParameters: true);
         yield return TestCase.Create(ClassWithMultipleRefConstructorParameters.Create(), hasRefConstructorParameters: true);
         yield return TestCase.Create(ClassWithRefConstructorParameterPrivate.Create(), hasRefConstructorParameters: true);
         yield return TestCase.Create(ClassWithMultipleRefConstructorParametersPrivate.Create(), hasRefConstructorParameters: true);
@@ -2112,6 +2113,26 @@ public partial class ClassWithOutConstructorParameter
     }
 
     public int Value { get; }
+}
+
+[GenerateShape]
+public partial class ClassWithMixedRefAndOutConstructorParameters
+{
+    public ClassWithMixedRefAndOutConstructorParameters(ref int intValue, in string stringValue, out bool isValid)
+    {
+        IntValue = intValue;
+        StringValue = stringValue;
+        isValid = true;
+    }
+
+    public int IntValue { get; }
+    public string StringValue { get; }
+
+    public static ClassWithMixedRefAndOutConstructorParameters Create()
+    {
+        int intValue = 42;
+        return new ClassWithMixedRefAndOutConstructorParameters(ref intValue, "hello", out _);
+    }
 }
 
 [GenerateShape]
