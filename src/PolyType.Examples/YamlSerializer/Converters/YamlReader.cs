@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Text;
 
 namespace PolyType.Examples.YamlSerializer;
 
@@ -286,13 +287,14 @@ public sealed class YamlReader
         if (value.Length >= 2 && value[0] == '\'')
         {
             string inner = value.Substring(1, value.Length - 2);
+
             return inner.Replace("''", "'");
         }
 
-        // Handle double-quoted strings
+        // Handle double-quoted strings with escape sequences
         if (value.Length >= 2 && value[0] == '"')
         {
-            return value.Substring(1, value.Length - 2);
+            return UnescapeDoubleQuoted(value.Substring(1, value.Length - 2));
         }
 
         return value;
@@ -300,15 +302,25 @@ public sealed class YamlReader
 
     private static bool IsMappingKey(string line)
     {
-        // Look for a colon followed by a space or end of line, not inside quotes
         bool inSingleQuote = false;
         bool inDoubleQuote = false;
         for (int i = 0; i < line.Length; i++)
         {
             char c = line[i];
-            if (c == '\'' && !inDoubleQuote)
+            if (c == '\\' && inDoubleQuote && i + 1 < line.Length)
             {
-                inSingleQuote = !inSingleQuote;
+                i++; // Skip escaped character
+            }
+            else if (c == '\'' && !inDoubleQuote)
+            {
+                if (inSingleQuote && i + 1 < line.Length && line[i + 1] == '\'')
+                {
+                    i++; // Skip escaped single quote
+                }
+                else
+                {
+                    inSingleQuote = !inSingleQuote;
+                }
             }
             else if (c == '"' && !inSingleQuote)
             {
@@ -316,7 +328,6 @@ public sealed class YamlReader
             }
             else if (c == ':' && !inSingleQuote && !inDoubleQuote)
             {
-                // Colon at end of line or followed by space
                 if (i + 1 >= line.Length || line[i + 1] == ' ')
                 {
                     return true;
@@ -352,7 +363,11 @@ public sealed class YamlReader
         for (int i = 0; i < line.Length; i++)
         {
             char c = line[i];
-            if (c == '\'' && !inDoubleQuote)
+            if (c == '\\' && inDoubleQuote && i + 1 < line.Length)
+            {
+                i++; // Skip escaped character inside double-quoted string
+            }
+            else if (c == '\'' && !inDoubleQuote)
             {
                 if (inSingleQuote && i + 1 < line.Length && line[i + 1] == '\'')
                 {
@@ -390,10 +405,45 @@ public sealed class YamlReader
 
         if (key.Length >= 2 && key[0] == '"')
         {
-            return key.Substring(1, key.Length - 2);
+            return UnescapeDoubleQuoted(key.Substring(1, key.Length - 2));
         }
 
         return key;
+    }
+
+    private static string UnescapeDoubleQuoted(string value)
+    {
+        var sb = new StringBuilder(value.Length);
+        for (int i = 0; i < value.Length; i++)
+        {
+            if (value[i] == '\\' && i + 1 < value.Length)
+            {
+                char next = value[i + 1];
+                i++;
+                switch (next)
+                {
+                    case '"': sb.Append('"'); break;
+                    case '\\': sb.Append('\\'); break;
+                    case '0': sb.Append('\0'); break;
+                    case 'a': sb.Append('\a'); break;
+                    case 'b': sb.Append('\b'); break;
+                    case 't': sb.Append('\t'); break;
+                    case 'n': sb.Append('\n'); break;
+                    case 'f': sb.Append('\f'); break;
+                    case 'r': sb.Append('\r'); break;
+                    default:
+                        sb.Append('\\');
+                        sb.Append(next);
+                        break;
+                }
+            }
+            else
+            {
+                sb.Append(value[i]);
+            }
+        }
+
+        return sb.ToString();
     }
 }
 

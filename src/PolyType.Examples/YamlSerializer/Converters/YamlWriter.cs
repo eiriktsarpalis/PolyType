@@ -29,6 +29,12 @@ public sealed class YamlWriter
             return;
         }
 
+        if (NeedsDoubleQuoting(value))
+        {
+            WriteRawScalar(DoubleQuote(value));
+            return;
+        }
+
         if (NeedsQuoting(value))
         {
             WriteRawScalar($"'{EscapeSingleQuoted(value)}'");
@@ -104,7 +110,11 @@ public sealed class YamlWriter
     {
         EmitNewLineIfNeeded();
         WriteIndent();
-        if (KeyNeedsQuoting(key))
+        if (KeyNeedsDoubleQuoting(key))
+        {
+            _sb.Append(DoubleQuote(key));
+        }
+        else if (KeyNeedsQuoting(key))
         {
             _sb.Append('\'');
             _sb.Append(EscapeSingleQuoted(key));
@@ -278,6 +288,68 @@ public sealed class YamlWriter
         }
 
         return false;
+    }
+
+    private static bool NeedsDoubleQuoting(string value)
+    {
+        foreach (char c in value)
+        {
+            if (c is '\n' or '\r' or '\t' or '\f' or '\b' or '\0')
+            {
+                return true;
+            }
+
+            if (char.IsControl(c) && c is not ' ')
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool KeyNeedsDoubleQuoting(string key)
+    {
+        foreach (char c in key)
+        {
+            if (c is '\n' or '\r' or '\t' or '\f' or '\b' or '\0')
+            {
+                return true;
+            }
+
+            if (char.IsControl(c) && c is not ' ')
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static string DoubleQuote(string value)
+    {
+        var sb = new StringBuilder(value.Length + 2);
+        sb.Append('"');
+        foreach (char c in value)
+        {
+            switch (c)
+            {
+                case '"': sb.Append("\\\""); break;
+                case '\\': sb.Append("\\\\"); break;
+                case '\0': sb.Append("\\0"); break;
+                case '\a': sb.Append("\\a"); break;
+                case '\b': sb.Append("\\b"); break;
+                case '\t': sb.Append("\\t"); break;
+                case '\n': sb.Append("\\n"); break;
+                case '\f': sb.Append("\\f"); break;
+                case '\r': sb.Append("\\r"); break;
+                default: sb.Append(c); break;
+            }
+        }
+
+        sb.Append('"');
+
+        return sb.ToString();
     }
 
     private static string EscapeSingleQuoted(string value)
