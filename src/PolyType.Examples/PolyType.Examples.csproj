@@ -26,6 +26,7 @@
   <ItemGroup>
     <PackageReference Include="System.Formats.Cbor" />
     <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="YamlDotNet" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">

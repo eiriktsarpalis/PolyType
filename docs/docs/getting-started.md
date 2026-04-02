@@ -21,17 +21,19 @@ Doing this will augment `Person` with an implementation of the `IShapeable<Perso
 $ dotnet add package PolyType.Examples
 ```
 
-Here's how the same value can be serialized to three separate formats:
+Here's how the same value can be serialized to four separate formats:
 
 ```csharp
 using PolyType.Examples.JsonSerializer;
 using PolyType.Examples.CborSerializer;
 using PolyType.Examples.XmlSerializer;
+using PolyType.Examples.YamlSerializer;
 
 Person person = new("Pete", 70);
 JsonSerializerTS.Serialize(person); // {"Name":"Pete","Age":70}
 XmlSerializer.Serialize(person);    // <value><Name>Pete</Name><Age>70</Age></value>
 CborSerializer.EncodeToHex(person); // A2644E616D656450657465634167651846
+YamlSerializer.Serialize(person);   // Name: Pete\nAge: 70
 ```
 
 Since the application uses a source generator to produce the shape for `Person`, it is fully compatible with Native AOT. See the [shape providers](shape-providers.md) article for more details on how to use the library with your types.
