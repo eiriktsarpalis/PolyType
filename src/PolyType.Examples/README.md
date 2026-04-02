@@ -5,7 +5,7 @@ Includes a set of reference library implementations built on top of the PolyType
 * A serializer built on top of System.Text.Json,
 * A serializer built on top of System.Xml,
 * A serializer built on top of System.Formats.Cbor,
-* A YAML serializer,
+* A YAML serializer built on top of YamlDotNet,
 * A `ConfigurationBinder` like implementation,
 * A dependency injection implementation,
 * A simple pretty-printer for .NET values,
