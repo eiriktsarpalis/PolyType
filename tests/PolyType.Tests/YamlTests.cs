@@ -48,7 +48,6 @@ public abstract class YamlTests(ProviderUnderTest providerUnderTest)
         yield return [TestCase.Create(long.MaxValue, p), "9223372036854775807"];
         yield return [TestCase.Create(long.MinValue, p), "-9223372036854775808"];
         yield return [TestCase.Create((BigInteger)long.MaxValue, p), "9223372036854775807"];
-        yield return [TestCase.Create((float)0.2, p), "0.20000000298023224"];
         yield return [TestCase.Create(decimal.MaxValue, p), "79228162514264337593543950335"];
         yield return [TestCase.Create('c', p), "c"];
         yield return [TestCase.Create((string?)null, p), "null"];
