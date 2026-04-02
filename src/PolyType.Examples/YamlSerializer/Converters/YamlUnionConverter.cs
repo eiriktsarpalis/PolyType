@@ -17,22 +17,24 @@ internal sealed class YamlUnionConverter<TUnion>(
             return default;
         }
 
-        // Peek at the first mapping entry to find the type discriminator
-        int expectedIndent = reader.CurrentIndent;
+        reader.ReadMappingStart();
 
-        if (reader.TryReadMappingEntry(expectedIndent, out string key, out string? inlineValue) && key == TypeKey)
+        if (reader.TryReadMappingKey(out string firstKey) && firstKey == TypeKey)
         {
-            string? typeName = inlineValue is not null ? YamlReader.ReadInlineScalar(inlineValue) : reader.ReadScalar();
+            string? typeName = reader.ReadScalar();
 
             if (typeName is not null && _unionCaseConverters.TryGetValue(typeName, out YamlConverter<TUnion>? derivedConverter))
             {
-                return derivedConverter.Read(reader);
+                TUnion? result = derivedConverter.ReadMappingContent(reader);
+                reader.ReadMappingEnd();
+
+                return result;
             }
 
             throw new InvalidOperationException($"Unrecognized union case type '{typeName}'.");
         }
 
-        return baseConverter.Read(reader);
+        return baseConverter.ReadMappingContent(reader);
     }
 
     public override void Write(YamlWriter writer, TUnion value)
@@ -48,7 +50,7 @@ internal sealed class YamlUnionConverter<TUnion>(
         writer.BeginMapping();
         writer.WriteKey(TypeKey);
         writer.WriteString(entry.Key);
-        entry.Value.Write(writer, value);
+        entry.Value.WriteMappingContent(writer, value);
         writer.EndMapping();
     }
 }

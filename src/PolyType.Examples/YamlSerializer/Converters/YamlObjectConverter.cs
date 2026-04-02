@@ -14,29 +14,22 @@ internal class YamlObjectConverter<T>(YamlPropertyConverter<T>[] properties) : Y
             return default;
         }
 
-        if (reader.TryReadEmptyMapping())
-        {
-            throw new NotSupportedException($"Deserialization for type {typeof(T)} is not supported.");
-        }
-
         throw new NotSupportedException($"Deserialization for type {typeof(T)} is not supported.");
     }
 
     public sealed override void Write(YamlWriter writer, T value)
     {
-        if (_propertiesToWrite.Length == 0)
-        {
-            writer.WriteRawScalar("{}");
-            return;
-        }
-
         writer.BeginMapping();
+        WriteMappingContent(writer, value);
+        writer.EndMapping();
+    }
+
+    internal sealed override void WriteMappingContent(YamlWriter writer, T value)
+    {
         foreach (YamlPropertyConverter<T> property in _propertiesToWrite)
         {
             property.Write(writer, ref value);
         }
-
-        writer.EndMapping();
     }
 }
 
@@ -51,29 +44,29 @@ internal sealed class YamlObjectConverterWithDefaultCtor<T>(Func<T> defaultConst
             return default;
         }
 
-        if (reader.TryReadEmptyMapping())
-        {
-            return defaultConstructor();
-        }
+        reader.ReadMappingStart();
+        T result = ReadMappingContentCore(reader);
+        reader.ReadMappingEnd();
 
+        return result;
+    }
+
+    internal sealed override T? ReadMappingContent(YamlReader reader) => ReadMappingContentCore(reader);
+
+    private T ReadMappingContentCore(YamlReader reader)
+    {
         T result = defaultConstructor();
-        int expectedIndent = reader.CurrentIndent;
-
         Dictionary<string, YamlPropertyConverter<T>> propertiesToRead = _propertiesToRead;
 
-        while (reader.TryReadMappingEntry(expectedIndent, out string key, out string? inlineValue))
+        while (reader.TryReadMappingKey(out string key))
         {
             if (!propertiesToRead.TryGetValue(key, out YamlPropertyConverter<T>? propConverter))
             {
-                if (inlineValue is null)
-                {
-                    reader.SkipNode(expectedIndent);
-                }
-
+                reader.SkipValue();
                 continue;
             }
 
-            propConverter.Read(reader, inlineValue, ref result);
+            propConverter.Read(reader, ref result);
         }
 
         return result;
@@ -98,35 +91,29 @@ internal sealed class YamlObjectConverterWithParameterizedCtor<TDeclaringType, T
             return default;
         }
 
-        if (reader.TryReadEmptyMapping())
-        {
-            TArgumentState emptyState = createArgumentState();
-            if (!emptyState.AreRequiredArgumentsSet)
-            {
-                Helpers.ThrowMissingRequiredArguments(ref emptyState, parameters);
-            }
+        reader.ReadMappingStart();
+        TDeclaringType result = ReadMappingContentCore(reader);
+        reader.ReadMappingEnd();
 
-            return createObject(ref emptyState);
-        }
+        return result;
+    }
 
+    internal override TDeclaringType? ReadMappingContent(YamlReader reader) => ReadMappingContentCore(reader);
+
+    private TDeclaringType ReadMappingContentCore(YamlReader reader)
+    {
         TArgumentState argumentState = createArgumentState();
-        int expectedIndent = reader.CurrentIndent;
-
         Dictionary<string, YamlPropertyConverter<TArgumentState>> ctorParams = _constructorParameters;
 
-        while (reader.TryReadMappingEntry(expectedIndent, out string key, out string? inlineValue))
+        while (reader.TryReadMappingKey(out string key))
         {
             if (!ctorParams.TryGetValue(key, out YamlPropertyConverter<TArgumentState>? propertyConverter))
             {
-                if (inlineValue is null)
-                {
-                    reader.SkipNode(expectedIndent);
-                }
-
+                reader.SkipValue();
                 continue;
             }
 
-            propertyConverter.Read(reader, inlineValue, ref argumentState);
+            propertyConverter.Read(reader, ref argumentState);
         }
 
         if (!argumentState.AreRequiredArgumentsSet)

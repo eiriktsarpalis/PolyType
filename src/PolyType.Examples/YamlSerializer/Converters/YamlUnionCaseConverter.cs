@@ -4,4 +4,6 @@ internal sealed class YamlUnionCaseConverter<TUnionCase, TUnion>(YamlConverter<T
 {
     public override TUnion? Read(YamlReader reader) => marshaler.Marshal(underlying.Read(reader));
     public override void Write(YamlWriter writer, TUnion value) => underlying.Write(writer, marshaler.Unmarshal(value)!);
+    internal override void WriteMappingContent(YamlWriter writer, TUnion value) => underlying.WriteMappingContent(writer, marshaler.Unmarshal(value)!);
+    internal override TUnion? ReadMappingContent(YamlReader reader) => marshaler.Marshal(underlying.ReadMappingContent(reader));
 }

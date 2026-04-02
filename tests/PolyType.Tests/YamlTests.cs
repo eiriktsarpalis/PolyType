@@ -65,7 +65,7 @@ public abstract class YamlTests(ProviderUnderTest providerUnderTest)
         yield return
         [
             TestCase.Create(new Dictionary<string, string> { ["key1"] = "value", ["key2"] = "value" }, p),
-            "-\n  key: key1\n  value: value\n-\n  key: key2\n  value: value"
+            "- key: key1\n  value: value\n- key: key2\n  value: value"
         ];
     }
 

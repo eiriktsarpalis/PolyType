@@ -1,58 +1,68 @@
 ﻿using System.Globalization;
-using System.Text;
+using YamlDotNet.Core;
+using YamlDotNet.Core.Events;
 
 namespace PolyType.Examples.YamlSerializer;
 
 /// <summary>
-/// A simple YAML writer that produces block-style YAML output.
+/// A YAML writer that wraps YamlDotNet's <see cref="Emitter"/>.
 /// </summary>
-public sealed class YamlWriter
+public sealed class YamlWriter : IDisposable
 {
-    private readonly StringBuilder _sb = new();
-    private int _indent = -1;
-    private bool _isInline;
-    private bool _needsNewLine;
+    private readonly StringWriter _stringWriter;
+    private readonly Emitter _emitter;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="YamlWriter"/> class.
+    /// </summary>
+    public YamlWriter()
+    {
+        _stringWriter = new StringWriter();
+        _emitter = new Emitter(_stringWriter);
+        _emitter.Emit(new StreamStart());
+        _emitter.Emit(new DocumentStart());
+    }
 
     /// <summary>
     /// Writes a null value.
     /// </summary>
-    public void WriteNull() => WriteRawScalar("null");
+    public void WriteNull() => WriteRawScalar("null", ScalarStyle.Plain);
 
     /// <summary>
-    /// Writes a string value, quoting it if necessary.
+    /// Writes a string value, selecting the appropriate YAML quoting style.
     /// </summary>
     public void WriteString(string value)
     {
         if (value.Length == 0)
         {
-            WriteRawScalar("''");
+            WriteRawScalar(value, ScalarStyle.SingleQuoted);
             return;
         }
 
         if (NeedsDoubleQuoting(value))
         {
-            WriteRawScalar(DoubleQuote(value));
+            WriteRawScalar(value, ScalarStyle.DoubleQuoted);
             return;
         }
 
         if (NeedsQuoting(value))
         {
-            WriteRawScalar($"'{EscapeSingleQuoted(value)}'");
+            WriteRawScalar(value, ScalarStyle.SingleQuoted);
             return;
         }
 
-        WriteRawScalar(value);
+        WriteRawScalar(value, ScalarStyle.Plain);
     }
 
     /// <summary>
     /// Writes an integer value.
     /// </summary>
-    public void WriteInteger(long value) => WriteRawScalar(value.ToString(CultureInfo.InvariantCulture));
+    public void WriteInteger(long value) => WriteRawScalar(value.ToString(CultureInfo.InvariantCulture), ScalarStyle.Plain);
 
     /// <summary>
     /// Writes an unsigned integer value.
     /// </summary>
-    public void WriteUnsignedInteger(ulong value) => WriteRawScalar(value.ToString(CultureInfo.InvariantCulture));
+    public void WriteUnsignedInteger(ulong value) => WriteRawScalar(value.ToString(CultureInfo.InvariantCulture), ScalarStyle.Plain);
 
     /// <summary>
     /// Writes a floating-point value.
@@ -61,144 +71,96 @@ public sealed class YamlWriter
     {
         if (double.IsPositiveInfinity(value))
         {
-            WriteRawScalar(".inf");
+            WriteRawScalar(".inf", ScalarStyle.Plain);
         }
         else if (double.IsNegativeInfinity(value))
         {
-            WriteRawScalar("-.inf");
+            WriteRawScalar("-.inf", ScalarStyle.Plain);
         }
         else if (double.IsNaN(value))
         {
-            WriteRawScalar(".nan");
+            WriteRawScalar(".nan", ScalarStyle.Plain);
         }
         else
         {
-            WriteRawScalar(value.ToString("G", CultureInfo.InvariantCulture));
+            WriteRawScalar(value.ToString("G", CultureInfo.InvariantCulture), ScalarStyle.Plain);
         }
     }
 
     /// <summary>
     /// Writes a boolean value.
     /// </summary>
-    public void WriteBool(bool value) => WriteRawScalar(value ? "true" : "false");
+    public void WriteBool(bool value) => WriteRawScalar(value ? "true" : "false", ScalarStyle.Plain);
 
     /// <summary>
     /// Begins a YAML mapping (object).
     /// </summary>
-    public void BeginMapping()
-    {
-        if (_isInline)
-        {
-            _isInline = false;
-            _indent++;
-            _needsNewLine = true;
-            return;
-        }
-
-        _indent++;
-    }
+    public void BeginMapping() => _emitter.Emit(new MappingStart(null, null, isImplicit: true, MappingStyle.Block));
 
     /// <summary>
     /// Ends a YAML mapping (object).
     /// </summary>
-    public void EndMapping() => _indent--;
+    public void EndMapping() => _emitter.Emit(new MappingEnd());
 
     /// <summary>
     /// Writes a mapping key.
     /// </summary>
     public void WriteKey(string key)
     {
-        EmitNewLineIfNeeded();
-        WriteIndent();
-        if (KeyNeedsDoubleQuoting(key))
-        {
-            _sb.Append(DoubleQuote(key));
-        }
-        else if (KeyNeedsQuoting(key))
-        {
-            _sb.Append('\'');
-            _sb.Append(EscapeSingleQuoted(key));
-            _sb.Append('\'');
-        }
-        else
-        {
-            _sb.Append(key);
-        }
-
-        _sb.Append(':');
-        _isInline = true;
+        ScalarStyle style = NeedsDoubleQuoting(key) ? ScalarStyle.DoubleQuoted
+            : KeyNeedsQuoting(key) ? ScalarStyle.SingleQuoted
+            : ScalarStyle.Plain;
+        bool isPlainImplicit = style is ScalarStyle.Plain;
+        bool isQuotedImplicit = style is not ScalarStyle.Plain;
+        _emitter.Emit(new Scalar(null, null, key, style, isPlainImplicit, isQuotedImplicit));
     }
 
     /// <summary>
     /// Begins a YAML sequence (array/list).
     /// </summary>
-    public void BeginSequence()
-    {
-        if (_isInline)
-        {
-            _isInline = false;
-            _indent++;
-            _needsNewLine = true;
-            return;
-        }
-
-        _indent++;
-    }
+    public void BeginSequence() => _emitter.Emit(new SequenceStart(null, null, isImplicit: true, SequenceStyle.Block));
 
     /// <summary>
     /// Ends a YAML sequence (array/list).
     /// </summary>
-    public void EndSequence() => _indent--;
-
-    /// <summary>
-    /// Writes a sequence item prefix ("-").
-    /// </summary>
-    public void WriteSequenceEntry()
-    {
-        EmitNewLineIfNeeded();
-        WriteIndent();
-        _sb.Append('-');
-        _isInline = true;
-    }
+    public void EndSequence() => _emitter.Emit(new SequenceEnd());
 
     /// <summary>
     /// Returns the generated YAML string.
     /// </summary>
-    public override string ToString() => _sb.ToString().TrimEnd('\n');
-
-    internal void WriteRawScalar(string value)
+    public override string ToString()
     {
-        if (_isInline)
+        _emitter.Emit(new DocumentEnd(true));
+        _emitter.Emit(new StreamEnd());
+        string result = _stringWriter.ToString();
+
+        // Normalize line endings and trim trailing whitespace/document markers
+        result = result.Replace("\r\n", "\n");
+        result = result.TrimEnd('\n', '\r', '.').TrimEnd();
+
+        // Strip leading document start marker ("---") if present
+        if (result.StartsWith("--- ", StringComparison.Ordinal))
         {
-            _sb.Append(' ');
-            _isInline = false;
+            result = result.Substring(4);
         }
-        else
+        else if (result is "---")
         {
-            EmitNewLineIfNeeded();
-            WriteIndent();
+            result = string.Empty;
         }
 
-        _sb.Append(value);
-        _sb.Append('\n');
+        return result;
     }
 
-    private void EmitNewLineIfNeeded()
-    {
-        if (_needsNewLine)
-        {
-            _sb.Append('\n');
-            _needsNewLine = false;
-        }
-    }
+    /// <inheritdoc/>
+    public void Dispose() => _stringWriter.Dispose();
 
-    private void WriteIndent()
+    internal void WriteRawScalar(string value) => WriteRawScalar(value, ScalarStyle.Plain);
+
+    private void WriteRawScalar(string value, ScalarStyle style)
     {
-        int effectiveIndent = Math.Max(0, _indent);
-        for (int i = 0; i < effectiveIndent; i++)
-        {
-            _sb.Append("  ");
-        }
+        bool isPlainImplicit = style is ScalarStyle.Plain;
+        bool isQuotedImplicit = style is not ScalarStyle.Plain;
+        _emitter.Emit(new Scalar(null, null, value, style, isPlainImplicit, isQuotedImplicit));
     }
 
     private static bool NeedsQuoting(string value)
@@ -208,6 +170,7 @@ public sealed class YamlWriter
             value.Equals("false", StringComparison.OrdinalIgnoreCase) ||
             value.Equals("~", StringComparison.Ordinal) ||
             value.Equals("{}", StringComparison.Ordinal) ||
+            value.Equals("[]", StringComparison.Ordinal) ||
             value.Equals(".inf", StringComparison.OrdinalIgnoreCase) ||
             value.Equals("-.inf", StringComparison.OrdinalIgnoreCase) ||
             value.Equals(".nan", StringComparison.OrdinalIgnoreCase))
@@ -220,85 +183,18 @@ public sealed class YamlWriter
             return true;
         }
 
-        foreach (char c in value)
-        {
-            switch (c)
-            {
-                case ':':
-                case '#':
-                case '[':
-                case ']':
-                case '{':
-                case '}':
-                case '&':
-                case '*':
-                case '!':
-                case '|':
-                case '>':
-                case '\'':
-                case '"':
-                case '%':
-                case '@':
-                case '`':
-                case '\n':
-                case '\r':
-                case '\t':
-                    return true;
-            }
-        }
-
-        if (char.IsWhiteSpace(value[0]) || char.IsWhiteSpace(value[value.Length - 1]))
-        {
-            return true;
-        }
-
-        if (value[0] is '-' or '?' or ',' or '.')
-        {
-            return true;
-        }
-
         return false;
     }
 
     private static bool KeyNeedsQuoting(string key)
     {
-        if (key.Length == 0)
-        {
-            return true;
-        }
-
-        foreach (char c in key)
-        {
-            if (c is ':' or '#' or '[' or ']' or '{' or '}' or '&' or '*' or '!' or
-                '|' or '>' or '\'' or '"' or '%' or '@' or '`' or '\n' or '\r' or '\t' or
-                '\f' or '\b' or ',' or '.')
-            {
-                return true;
-            }
-        }
-
-        if (char.IsWhiteSpace(key[0]) || char.IsWhiteSpace(key[key.Length - 1]))
-        {
-            return true;
-        }
-
-        if (key[0] is '-' or '?')
-        {
-            return true;
-        }
-
-        return false;
+        return key.Length == 0 || NeedsQuoting(key);
     }
 
     private static bool NeedsDoubleQuoting(string value)
     {
         foreach (char c in value)
         {
-            if (c is '\n' or '\r' or '\t' or '\f' or '\b' or '\0')
-            {
-                return true;
-            }
-
             if (char.IsControl(c) && c is not ' ')
             {
                 return true;
@@ -306,54 +202,5 @@ public sealed class YamlWriter
         }
 
         return false;
-    }
-
-    private static bool KeyNeedsDoubleQuoting(string key)
-    {
-        foreach (char c in key)
-        {
-            if (c is '\n' or '\r' or '\t' or '\f' or '\b' or '\0')
-            {
-                return true;
-            }
-
-            if (char.IsControl(c) && c is not ' ')
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static string DoubleQuote(string value)
-    {
-        var sb = new StringBuilder(value.Length + 2);
-        sb.Append('"');
-        foreach (char c in value)
-        {
-            switch (c)
-            {
-                case '"': sb.Append("\\\""); break;
-                case '\\': sb.Append("\\\\"); break;
-                case '\0': sb.Append("\\0"); break;
-                case '\a': sb.Append("\\a"); break;
-                case '\b': sb.Append("\\b"); break;
-                case '\t': sb.Append("\\t"); break;
-                case '\n': sb.Append("\\n"); break;
-                case '\f': sb.Append("\\f"); break;
-                case '\r': sb.Append("\\r"); break;
-                default: sb.Append(c); break;
-            }
-        }
-
-        sb.Append('"');
-
-        return sb.ToString();
-    }
-
-    private static string EscapeSingleQuoted(string value)
-    {
-        return value.Replace("'", "''");
     }
 }

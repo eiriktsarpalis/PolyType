@@ -53,7 +53,7 @@ public static partial class YamlSerializer
     /// <returns>A YAML encoded string containing the serialized value.</returns>
     public static string Serialize<T>(this YamlConverter<T> converter, T? value)
     {
-        var writer = new YamlWriter();
+        using var writer = new YamlWriter();
 
         if (value is null)
         {

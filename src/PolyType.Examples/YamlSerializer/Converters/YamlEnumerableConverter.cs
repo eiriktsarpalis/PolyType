@@ -23,16 +23,9 @@ internal class YamlEnumerableConverter<TEnumerable, TElement>(
 
     public override void Write(YamlWriter writer, TEnumerable value)
     {
-        bool hasElements = false;
+        writer.BeginSequence();
         foreach (TElement element in _getEnumerable(value))
         {
-            if (!hasElements)
-            {
-                writer.BeginSequence();
-                hasElements = true;
-            }
-
-            writer.WriteSequenceEntry();
             if (element is null)
             {
                 writer.WriteNull();
@@ -43,14 +36,7 @@ internal class YamlEnumerableConverter<TEnumerable, TElement>(
             }
         }
 
-        if (hasElements)
-        {
-            writer.EndSequence();
-        }
-        else
-        {
-            writer.WriteRawScalar("[]");
-        }
+        writer.EndSequence();
     }
 }
 
@@ -70,30 +56,17 @@ internal sealed class YamlMutableEnumerableConverter<TEnumerable, TElement>(
             return default;
         }
 
-        if (reader.TryReadEmptyCollection())
-        {
-            return createObject();
-        }
-
+        reader.ReadSequenceStart();
         TEnumerable result = createObject();
-        int expectedIndent = reader.CurrentIndent;
         EnumerableAppender<TEnumerable, TElement> appender = _appender;
 
-        while (reader.TryReadSequenceEntry(expectedIndent, out string? inlineValue))
+        while (!reader.IsSequenceEnd)
         {
-            TElement? element;
-            if (inlineValue is not null)
-            {
-                var inlineReader = new YamlReader(inlineValue);
-                element = _elementConverter.Read(inlineReader);
-            }
-            else
-            {
-                element = _elementConverter.Read(reader);
-            }
-
+            TElement? element = _elementConverter.Read(reader);
             appender(ref result, element!);
         }
+
+        reader.ReadSequenceEnd();
 
         return result;
     }
@@ -112,29 +85,16 @@ internal sealed class YamlParameterizedEnumerableConverter<TEnumerable, TElement
             return default;
         }
 
-        if (reader.TryReadEmptyCollection())
-        {
-            return spanConstructor([]);
-        }
-
+        reader.ReadSequenceStart();
         using PooledList<TElement> elements = new();
-        int expectedIndent = reader.CurrentIndent;
 
-        while (reader.TryReadSequenceEntry(expectedIndent, out string? inlineValue))
+        while (!reader.IsSequenceEnd)
         {
-            TElement? element;
-            if (inlineValue is not null)
-            {
-                var inlineReader = new YamlReader(inlineValue);
-                element = _elementConverter.Read(inlineReader);
-            }
-            else
-            {
-                element = _elementConverter.Read(reader);
-            }
-
+            TElement? element = _elementConverter.Read(reader);
             elements.Add(element!);
         }
+
+        reader.ReadSequenceEnd();
 
         return spanConstructor(elements.AsSpan());
     }

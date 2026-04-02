@@ -225,8 +225,11 @@ internal sealed class ObjectConverter(TypeCache cache) : YamlConverter<object>
             return null;
         }
 
-        if (reader.TryReadEmptyMapping())
+        if (reader.IsMappingStart)
         {
+            reader.ReadMappingStart();
+            reader.ReadMappingEnd();
+
             return new object();
         }
 
@@ -236,7 +239,6 @@ internal sealed class ObjectConverter(TypeCache cache) : YamlConverter<object>
             return new object();
         }
 
-        // Infer types from YAML scalar values
         if (scalar.Equals("true", StringComparison.Ordinal))
         {
             return true;
@@ -275,7 +277,8 @@ internal sealed class ObjectConverter(TypeCache cache) : YamlConverter<object>
         }
         else
         {
-            writer.WriteRawScalar("{}");
+            writer.BeginMapping();
+            writer.EndMapping();
         }
     }
 }

@@ -11,7 +11,7 @@ internal abstract class YamlPropertyConverter<TDeclaringType>(string name)
     public bool IsParameter { get; private protected init; }
 
     public abstract void Write(YamlWriter writer, ref TDeclaringType value);
-    public abstract void Read(YamlReader reader, string? inlineValue, ref TDeclaringType value);
+    public abstract void Read(YamlReader reader, ref TDeclaringType value);
 }
 
 internal sealed class YamlPropertyConverter<TDeclaringType, TPropertyType> : YamlPropertyConverter<TDeclaringType>
@@ -47,20 +47,10 @@ internal sealed class YamlPropertyConverter<TDeclaringType, TPropertyType> : Yam
     public override bool HasGetter => _getter is not null;
     public override bool HasSetter => _setter is not null;
 
-    public override void Read(YamlReader reader, string? inlineValue, ref TDeclaringType declaringType)
+    public override void Read(YamlReader reader, ref TDeclaringType declaringType)
     {
         DebugExt.Assert(_setter is not null);
-
-        TPropertyType? result;
-        if (inlineValue is not null)
-        {
-            result = ReadInlineValue(reader, inlineValue);
-        }
-        else
-        {
-            result = _propertyConverter.Read(reader);
-        }
-
+        TPropertyType? result = _propertyConverter.Read(reader);
         _setter(ref declaringType, result!);
     }
 
@@ -78,14 +68,5 @@ internal sealed class YamlPropertyConverter<TDeclaringType, TPropertyType> : Yam
         {
             _propertyConverter.Write(writer, value);
         }
-    }
-
-    private TPropertyType? ReadInlineValue(YamlReader reader, string inlineValue)
-    {
-        // For inline values, we need to parse the scalar directly
-        // Create a mini reader for the inline value
-        var inlineReader = new YamlReader(inlineValue);
-
-        return _propertyConverter.Read(inlineReader);
     }
 }

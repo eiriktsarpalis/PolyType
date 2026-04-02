@@ -26,16 +26,9 @@ internal class YamlDictionaryConverter<TDictionary, TKey, TValue>(
 
     public sealed override void Write(YamlWriter writer, TDictionary value)
     {
-        bool hasEntries = false;
+        writer.BeginSequence();
         foreach (KeyValuePair<TKey, TValue> entry in _getEnumerable(value))
         {
-            if (!hasEntries)
-            {
-                writer.BeginSequence();
-                hasEntries = true;
-            }
-
-            writer.WriteSequenceEntry();
             writer.BeginMapping();
             writer.WriteKey("key");
             _keyConverter.Write(writer, entry.Key);
@@ -52,14 +45,7 @@ internal class YamlDictionaryConverter<TDictionary, TKey, TValue>(
             writer.EndMapping();
         }
 
-        if (hasEntries)
-        {
-            writer.EndSequence();
-        }
-        else
-        {
-            writer.WriteRawScalar("[]");
-        }
+        writer.EndSequence();
     }
 }
 
@@ -81,50 +67,36 @@ internal sealed class YamlMutableDictionaryConverter<TDictionary, TKey, TValue>(
             return default;
         }
 
-        if (reader.TryReadEmptyCollection())
-        {
-            return createObject();
-        }
-
+        reader.ReadSequenceStart();
         TDictionary result = createObject();
-        int expectedIndent = reader.CurrentIndent;
 
-        while (reader.TryReadSequenceEntry(expectedIndent, out _))
+        while (!reader.IsSequenceEnd)
         {
-            int entryIndent = reader.CurrentIndent;
+            reader.ReadMappingStart();
             TKey? key = default;
             TValue? val = default;
 
-            while (reader.TryReadMappingEntry(entryIndent, out string mappingKey, out string? inlineValue))
+            while (reader.TryReadMappingKey(out string mappingKey))
             {
                 if (mappingKey == "key")
                 {
-                    if (inlineValue is not null)
-                    {
-                        var inlineReader = new YamlReader(inlineValue);
-                        key = _keyConverter.Read(inlineReader);
-                    }
-                    else
-                    {
-                        key = _keyConverter.Read(reader);
-                    }
+                    key = _keyConverter.Read(reader);
                 }
                 else if (mappingKey == "value")
                 {
-                    if (inlineValue is not null)
-                    {
-                        var inlineReader = new YamlReader(inlineValue);
-                        val = _valueConverter.Read(inlineReader);
-                    }
-                    else
-                    {
-                        val = _valueConverter.Read(reader);
-                    }
+                    val = _valueConverter.Read(reader);
+                }
+                else
+                {
+                    reader.SkipValue();
                 }
             }
 
+            reader.ReadMappingEnd();
             _inserter(ref result, key!, val!);
         }
+
+        reader.ReadSequenceEnd();
 
         return result;
     }
@@ -145,50 +117,36 @@ internal sealed class YamlParameterizedDictionaryConverter<TDictionary, TKey, TV
             return default;
         }
 
-        if (reader.TryReadEmptyCollection())
-        {
-            return constructor([]);
-        }
-
+        reader.ReadSequenceStart();
         using PooledList<KeyValuePair<TKey, TValue>> buffer = new();
-        int expectedIndent = reader.CurrentIndent;
 
-        while (reader.TryReadSequenceEntry(expectedIndent, out _))
+        while (!reader.IsSequenceEnd)
         {
-            int entryIndent = reader.CurrentIndent;
+            reader.ReadMappingStart();
             TKey? key = default;
             TValue? val = default;
 
-            while (reader.TryReadMappingEntry(entryIndent, out string mappingKey, out string? inlineValue))
+            while (reader.TryReadMappingKey(out string mappingKey))
             {
                 if (mappingKey == "key")
                 {
-                    if (inlineValue is not null)
-                    {
-                        var inlineReader = new YamlReader(inlineValue);
-                        key = _keyConverter.Read(inlineReader);
-                    }
-                    else
-                    {
-                        key = _keyConverter.Read(reader);
-                    }
+                    key = _keyConverter.Read(reader);
                 }
                 else if (mappingKey == "value")
                 {
-                    if (inlineValue is not null)
-                    {
-                        var inlineReader = new YamlReader(inlineValue);
-                        val = _valueConverter.Read(inlineReader);
-                    }
-                    else
-                    {
-                        val = _valueConverter.Read(reader);
-                    }
+                    val = _valueConverter.Read(reader);
+                }
+                else
+                {
+                    reader.SkipValue();
                 }
             }
 
+            reader.ReadMappingEnd();
             buffer.Add(new(key!, val!));
         }
+
+        reader.ReadSequenceEnd();
 
         return constructor(buffer.AsSpan());
     }

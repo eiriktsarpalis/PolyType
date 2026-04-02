@@ -1,15 +1,14 @@
-﻿using System.Globalization;
-using System.Text;
+﻿using YamlDotNet.Core;
+using YamlDotNet.Core.Events;
 
 namespace PolyType.Examples.YamlSerializer;
 
 /// <summary>
-/// A simple YAML reader/parser that supports block-style YAML.
+/// A YAML reader that wraps YamlDotNet's <see cref="Parser"/>.
 /// </summary>
 public sealed class YamlReader
 {
-    private readonly string[] _lines;
-    private int _lineIndex;
+    private readonly Parser _parser;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="YamlReader"/> class.
@@ -17,19 +16,21 @@ public sealed class YamlReader
     /// <param name="yaml">The YAML string to parse.</param>
     public YamlReader(string yaml)
     {
-        _lines = yaml.Split('\n');
-        _lineIndex = 0;
+        _parser = new Parser(new StringReader(yaml));
+        _parser.MoveNext(); // StreamStart
+        _parser.MoveNext(); // DocumentStart
+        _parser.MoveNext(); // Position at the first content event
     }
 
     /// <summary>
-    /// Gets the current indentation level of the reader.
+    /// Gets a value indicating whether the current position is a sequence end.
     /// </summary>
-    public int CurrentIndent => _lineIndex < _lines.Length ? GetIndent(_lines[_lineIndex]) : 0;
+    public bool IsSequenceEnd => _parser.Current is SequenceEnd;
 
     /// <summary>
-    /// Gets a value indicating whether the reader has reached the end of the input.
+    /// Gets a value indicating whether the current position is a mapping start.
     /// </summary>
-    public bool IsEof => _lineIndex >= _lines.Length;
+    public bool IsMappingStart => _parser.Current is MappingStart;
 
     /// <summary>
     /// Reads a scalar value at the current position.
@@ -37,40 +38,19 @@ public sealed class YamlReader
     /// <returns>The scalar value as a string, or null if the value is null.</returns>
     public string? ReadScalar()
     {
-        if (IsEof)
+        if (_parser.Current is not Scalar scalar)
         {
-            throw new InvalidOperationException("Unexpected end of YAML input.");
+            throw new InvalidOperationException($"Expected a scalar but got {_parser.Current?.GetType().Name ?? "null"}.");
         }
 
-        string line = _lines[_lineIndex].TrimStart();
-        _lineIndex++;
+        _parser.MoveNext();
 
-        return ParseScalarValue(line);
-    }
-
-    /// <summary>
-    /// Reads an inline scalar value (the value part after "key: value").
-    /// </summary>
-    /// <param name="rawValue">The raw inline value to parse.</param>
-    /// <returns>The scalar value as a string, or null if the value is null.</returns>
-    public static string? ReadInlineScalar(string rawValue)
-    {
-        return ParseScalarValue(rawValue.Trim());
-    }
-
-    /// <summary>
-    /// Determines whether the current line is a null value.
-    /// </summary>
-    public bool IsNull()
-    {
-        if (IsEof)
+        if (scalar.Value is "null" or "~" or "" && scalar.Style is ScalarStyle.Plain)
         {
-            return false;
+            return null;
         }
 
-        string line = _lines[_lineIndex].TrimStart();
-
-        return line is "null" or "~" or "";
+        return scalar.Value;
     }
 
     /// <summary>
@@ -78,9 +58,10 @@ public sealed class YamlReader
     /// </summary>
     public bool TryReadNull()
     {
-        if (IsNull())
+        if (_parser.Current is Scalar { Style: ScalarStyle.Plain, Value: "null" or "~" or "" })
         {
-            _lineIndex++;
+            _parser.MoveNext();
+
             return true;
         }
 
@@ -88,376 +69,113 @@ public sealed class YamlReader
     }
 
     /// <summary>
-    /// Peeks at the current line to determine what kind of YAML node it is.
+    /// Consumes a <see cref="MappingStart"/> event.
     /// </summary>
-    public YamlNodeKind PeekNodeKind()
+    public void ReadMappingStart()
     {
-        if (IsEof)
+        if (_parser.Current is not MappingStart)
         {
-            return YamlNodeKind.Scalar;
+            throw new InvalidOperationException($"Expected MappingStart but got {_parser.Current?.GetType().Name ?? "null"}.");
         }
 
-        string line = _lines[_lineIndex].TrimStart();
-
-        if (line.StartsWith("- ", StringComparison.Ordinal))
-        {
-            return YamlNodeKind.Sequence;
-        }
-
-        // Check if it's a mapping key (contains ":" not inside quotes)
-        if (IsMappingKey(line))
-        {
-            return YamlNodeKind.Mapping;
-        }
-
-        return YamlNodeKind.Scalar;
+        _parser.MoveNext();
     }
 
     /// <summary>
-    /// Tries to read a mapping entry. Returns the key and whether there's an inline value.
+    /// Consumes a <see cref="MappingEnd"/> event.
     /// </summary>
-    /// <param name="expectedIndent">The expected indentation level for the mapping entry.</param>
-    /// <param name="key">The mapping key.</param>
-    /// <param name="inlineValue">The inline value, if any.</param>
-    /// <returns>True if an entry was read.</returns>
-    public bool TryReadMappingEntry(int expectedIndent, out string key, out string? inlineValue)
+    public void ReadMappingEnd()
+    {
+        if (_parser.Current is not MappingEnd)
+        {
+            throw new InvalidOperationException($"Expected MappingEnd but got {_parser.Current?.GetType().Name ?? "null"}.");
+        }
+
+        _parser.MoveNext();
+    }
+
+    /// <summary>
+    /// Tries to read a mapping key. Returns false when the mapping has ended.
+    /// </summary>
+    /// <param name="key">The mapping key that was read.</param>
+    /// <returns>True if a key was read; false if the current event is <see cref="MappingEnd"/>.</returns>
+    public bool TryReadMappingKey(out string key)
     {
         key = string.Empty;
-        inlineValue = null;
 
-        if (IsEof)
+        if (_parser.Current is MappingEnd)
         {
             return false;
         }
 
-        string line = _lines[_lineIndex];
-        int indent = GetIndent(line);
-
-        if (indent != expectedIndent)
+        if (_parser.Current is not Scalar keyScalar)
         {
             return false;
         }
 
-        string trimmed = line.TrimStart();
-        if (!IsMappingKey(trimmed))
-        {
-            return false;
-        }
-
-        int colonIndex = FindKeyColonIndex(trimmed);
-        if (colonIndex < 0)
-        {
-            return false;
-        }
-
-        string rawKey = trimmed.Substring(0, colonIndex);
-        key = UnquoteKey(rawKey);
-        string remainder = trimmed.Substring(colonIndex + 1).Trim();
-
-        _lineIndex++;
-
-        if (remainder.Length > 0)
-        {
-            inlineValue = remainder;
-        }
+        key = keyScalar.Value;
+        _parser.MoveNext();
 
         return true;
     }
 
     /// <summary>
-    /// Tries to read a sequence entry prefix ("- " or bare "-").
+    /// Consumes a <see cref="SequenceStart"/> event.
     /// </summary>
-    /// <param name="expectedIndent">The expected indentation for the sequence item.</param>
-    /// <param name="inlineValue">The inline value after the "- " prefix, if any.</param>
-    /// <returns>True if a sequence entry was read.</returns>
-    public bool TryReadSequenceEntry(int expectedIndent, out string? inlineValue)
+    public void ReadSequenceStart()
     {
-        inlineValue = null;
-
-        if (IsEof)
+        if (_parser.Current is not SequenceStart)
         {
-            return false;
+            throw new InvalidOperationException($"Expected SequenceStart but got {_parser.Current?.GetType().Name ?? "null"}.");
         }
 
-        string line = _lines[_lineIndex];
-        int indent = GetIndent(line);
-
-        if (indent != expectedIndent)
-        {
-            return false;
-        }
-
-        string trimmed = line.TrimStart();
-
-        if (trimmed == "-")
-        {
-            _lineIndex++;
-
-            return true;
-        }
-
-        if (!trimmed.StartsWith("- ", StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        _lineIndex++;
-        string remainder = trimmed.Substring(2).Trim();
-
-        if (remainder.Length > 0)
-        {
-            inlineValue = remainder;
-        }
-
-        return true;
+        _parser.MoveNext();
     }
 
     /// <summary>
-    /// Tries to read an empty mapping ("{}").
+    /// Consumes a <see cref="SequenceEnd"/> event.
     /// </summary>
-    /// <returns>True if an empty mapping was consumed.</returns>
-    public bool TryReadEmptyMapping()
+    public void ReadSequenceEnd()
     {
-        if (!IsEof)
+        if (_parser.Current is not SequenceEnd)
         {
-            string line = _lines[_lineIndex].TrimStart();
-            if (line == "{}")
-            {
-                _lineIndex++;
-
-                return true;
-            }
+            throw new InvalidOperationException($"Expected SequenceEnd but got {_parser.Current?.GetType().Name ?? "null"}.");
         }
 
-        return false;
+        _parser.MoveNext();
     }
 
     /// <summary>
-    /// Tries to read an empty collection ("[]" or "{}").
+    /// Skips the current value node, including all children if it is a mapping or sequence.
     /// </summary>
-    /// <returns>True if an empty collection was consumed.</returns>
-    public bool TryReadEmptyCollection()
+    public void SkipValue()
     {
-        if (!IsEof)
+        if (_parser.Current is null)
         {
-            string line = _lines[_lineIndex].TrimStart();
-            if (line is "[]" or "{}")
-            {
-                _lineIndex++;
-
-                return true;
-            }
+            return;
         }
 
-        return false;
+        if (_parser.Current is Scalar)
+        {
+            _parser.MoveNext();
+
+            return;
+        }
+
+        int depth = 0;
+        do
+        {
+            if (_parser.Current is MappingStart or SequenceStart)
+            {
+                depth++;
+            }
+            else if (_parser.Current is MappingEnd or SequenceEnd)
+            {
+                depth--;
+            }
+
+            _parser.MoveNext();
+        }
+        while (depth > 0 && _parser.Current is not null);
     }
-
-    /// <summary>
-    /// Skips all lines at or deeper than the specified indent level.
-    /// </summary>
-    public void SkipNode(int baseIndent)
-    {
-        // Skip the first line (if any)
-        if (!IsEof)
-        {
-            _lineIndex++;
-        }
-
-        // Skip any lines that are indented deeper
-        while (!IsEof)
-        {
-            int indent = GetIndent(_lines[_lineIndex]);
-            if (indent <= baseIndent)
-            {
-                break;
-            }
-
-            _lineIndex++;
-        }
-    }
-
-    private static string? ParseScalarValue(string value)
-    {
-        if (value is "null" or "~" or "")
-        {
-            return null;
-        }
-
-        // Handle single-quoted strings
-        if (value.Length >= 2 && value[0] == '\'')
-        {
-            string inner = value.Substring(1, value.Length - 2);
-
-            return inner.Replace("''", "'");
-        }
-
-        // Handle double-quoted strings with escape sequences
-        if (value.Length >= 2 && value[0] == '"')
-        {
-            return UnescapeDoubleQuoted(value.Substring(1, value.Length - 2));
-        }
-
-        return value;
-    }
-
-    private static bool IsMappingKey(string line)
-    {
-        bool inSingleQuote = false;
-        bool inDoubleQuote = false;
-        for (int i = 0; i < line.Length; i++)
-        {
-            char c = line[i];
-            if (c == '\\' && inDoubleQuote && i + 1 < line.Length)
-            {
-                i++; // Skip escaped character
-            }
-            else if (c == '\'' && !inDoubleQuote)
-            {
-                if (inSingleQuote && i + 1 < line.Length && line[i + 1] == '\'')
-                {
-                    i++; // Skip escaped single quote
-                }
-                else
-                {
-                    inSingleQuote = !inSingleQuote;
-                }
-            }
-            else if (c == '"' && !inSingleQuote)
-            {
-                inDoubleQuote = !inDoubleQuote;
-            }
-            else if (c == ':' && !inSingleQuote && !inDoubleQuote)
-            {
-                if (i + 1 >= line.Length || line[i + 1] == ' ')
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    private static int GetIndent(string line)
-    {
-        int count = 0;
-        foreach (char c in line)
-        {
-            if (c == ' ')
-            {
-                count++;
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        return count / 2; // 2-space indentation
-    }
-
-    private static int FindKeyColonIndex(string line)
-    {
-        bool inSingleQuote = false;
-        bool inDoubleQuote = false;
-        for (int i = 0; i < line.Length; i++)
-        {
-            char c = line[i];
-            if (c == '\\' && inDoubleQuote && i + 1 < line.Length)
-            {
-                i++; // Skip escaped character inside double-quoted string
-            }
-            else if (c == '\'' && !inDoubleQuote)
-            {
-                if (inSingleQuote && i + 1 < line.Length && line[i + 1] == '\'')
-                {
-                    i++; // Skip escaped single quote
-                }
-                else
-                {
-                    inSingleQuote = !inSingleQuote;
-                }
-            }
-            else if (c == '"' && !inSingleQuote)
-            {
-                inDoubleQuote = !inDoubleQuote;
-            }
-            else if (c == ':' && !inSingleQuote && !inDoubleQuote)
-            {
-                if (i + 1 >= line.Length || line[i + 1] == ' ')
-                {
-                    return i;
-                }
-            }
-        }
-
-        return -1;
-    }
-
-    private static string UnquoteKey(string key)
-    {
-        if (key.Length >= 2 && key[0] == '\'')
-        {
-            string inner = key.Substring(1, key.Length - 2);
-
-            return inner.Replace("''", "'");
-        }
-
-        if (key.Length >= 2 && key[0] == '"')
-        {
-            return UnescapeDoubleQuoted(key.Substring(1, key.Length - 2));
-        }
-
-        return key;
-    }
-
-    private static string UnescapeDoubleQuoted(string value)
-    {
-        var sb = new StringBuilder(value.Length);
-        for (int i = 0; i < value.Length; i++)
-        {
-            if (value[i] == '\\' && i + 1 < value.Length)
-            {
-                char next = value[i + 1];
-                i++;
-                switch (next)
-                {
-                    case '"': sb.Append('"'); break;
-                    case '\\': sb.Append('\\'); break;
-                    case '0': sb.Append('\0'); break;
-                    case 'a': sb.Append('\a'); break;
-                    case 'b': sb.Append('\b'); break;
-                    case 't': sb.Append('\t'); break;
-                    case 'n': sb.Append('\n'); break;
-                    case 'f': sb.Append('\f'); break;
-                    case 'r': sb.Append('\r'); break;
-                    default:
-                        sb.Append('\\');
-                        sb.Append(next);
-                        break;
-                }
-            }
-            else
-            {
-                sb.Append(value[i]);
-            }
-        }
-
-        return sb.ToString();
-    }
-}
-
-/// <summary>
-/// Describes the kind of YAML node at the current reader position.
-/// </summary>
-public enum YamlNodeKind
-{
-    /// <summary>A scalar value.</summary>
-    Scalar,
-
-    /// <summary>A sequence (array/list).</summary>
-    Sequence,
-
-    /// <summary>A mapping (object/dictionary).</summary>
-    Mapping,
 }
