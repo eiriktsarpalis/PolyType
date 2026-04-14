@@ -34,7 +34,7 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
         context.CancellationToken.ThrowIfCancellationRequested();
         context.AddSource($"{provider.ProviderDeclaration.SourceFilenamePrefix}.g.cs", FormatTypeShapeProviderMainFile(provider));
 
-        foreach (TypeShapeModel type in provider.ProvidedTypes.Values)
+        foreach (TypeShapeModel type in provider.ProvidedTypes.Values.OrderBy(t => t.SourceIdentifier))
         {
             context.CancellationToken.ThrowIfCancellationRequested();
             context.AddSource($"{provider.ProviderDeclaration.SourceFilenamePrefix}.{type.SourceIdentifier}.g.cs", FormatProvidedType(provider, type));

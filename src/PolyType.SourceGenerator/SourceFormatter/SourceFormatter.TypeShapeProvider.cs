@@ -71,7 +71,7 @@ internal sealed partial class SourceFormatter
             """);
 
         writer.Indentation += 2;
-        foreach (TypeShapeModel typeModel in provider.ProvidedTypes.Values)
+        foreach (TypeShapeModel typeModel in provider.ProvidedTypes.Values.OrderBy(t => t.SourceIdentifier))
         {
             writer.WriteLine($$"""
                 case {{FormatStringLiteral(typeModel.ReflectionName)}}:
