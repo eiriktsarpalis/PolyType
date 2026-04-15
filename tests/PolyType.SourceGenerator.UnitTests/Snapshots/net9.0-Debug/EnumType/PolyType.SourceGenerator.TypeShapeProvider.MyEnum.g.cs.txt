@@ -28,8 +28,8 @@ namespace PolyType.SourceGenerator
         {
             return new global::System.Collections.Generic.Dictionary<string, int>
             {
-                ["None"] = 0,
                 ["First"] = 1,
+                ["None"] = 0,
                 ["Second"] = 2,
                 ["Third"] = 3,
             };

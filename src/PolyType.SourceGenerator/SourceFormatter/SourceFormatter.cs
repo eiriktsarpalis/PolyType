@@ -289,7 +289,7 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
             """);
 
         writer.Indentation += 2;
-        foreach (AssociatedTypeId associatedType in objectShapeModel.AssociatedTypes)
+        foreach (AssociatedTypeId associatedType in objectShapeModel.AssociatedTypes.OrderBy(t => t.ClosedTypeReflectionName))
         {
             if (associatedType.OpenTypeInfo is { } openTypeInfo)
             {
