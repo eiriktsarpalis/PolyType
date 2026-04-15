@@ -18,9 +18,9 @@ namespace TestNamespace
         {
             global::PolyType.ITypeShape? global::PolyType.ITypeShapeProvider.GetTypeShape(global::System.Type type)
             {
-                if (type == typeof(global::TestNamespace.Person))
+                if (type == typeof(global::System.Collections.Generic.List<global::TestNamespace.Person>))
                 {
-                    return global::PolyType.SourceGenerator.TypeShapeProvider_TestAssembly.Default.Person;
+                    return global::PolyType.SourceGenerator.TypeShapeProvider_TestAssembly.Default.List_Person;
                 }
 
                 if (type == typeof(global::TestNamespace.Address))
@@ -28,9 +28,9 @@ namespace TestNamespace
                     return global::PolyType.SourceGenerator.TypeShapeProvider_TestAssembly.Default.Address;
                 }
 
-                if (type == typeof(global::System.Collections.Generic.List<global::TestNamespace.Person>))
+                if (type == typeof(global::TestNamespace.Person))
                 {
-                    return global::PolyType.SourceGenerator.TypeShapeProvider_TestAssembly.Default.List_Person;
+                    return global::PolyType.SourceGenerator.TypeShapeProvider_TestAssembly.Default.Person;
                 }
 
                 return null;
