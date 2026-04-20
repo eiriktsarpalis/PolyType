@@ -119,7 +119,7 @@ At run time, shapes are discovered differently depending on the target framework
 
 ### Static resolution on .NET 8 or later
 
-On .NET 8 or later, the target supports [static abstract interface members](https://learn.microsoft.com/dotnet/csharp/whats-new/tutorials/static-virtual-interface-members), so the generator augments each annotated type with an `IShapeable<T>` implementation. Given:
+On .NET 8 or later, the target supports [static abstract interface members](https://learn.microsoft.com/dotnet/csharp/advanced-topics/interface-implementation/static-virtual-interface-members), so the generator augments each annotated type with an `IShapeable<T>` implementation. Given:
 
 ```csharp
 [GenerateShape]
