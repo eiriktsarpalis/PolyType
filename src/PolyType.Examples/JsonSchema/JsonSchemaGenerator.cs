@@ -18,11 +18,7 @@ public static class JsonSchemaGenerator
     public static JsonObject Generate<T>(ITypeShapeProvider typeShapeProvider)
         => Generate(typeShapeProvider.GetTypeShapeOrThrow<T>());
 
-    /// <summary>
-    /// The JSON Schema URI emitted as the <c>$schema</c> keyword on root schemas
-    /// produced by <see cref="JsonSchemaGenerator"/>.
-    /// </summary>
-    public const string MetaSchemaUri = "https://json-schema.org/draft/2020-12/schema";
+    private const string MetaSchemaUri = "https://json-schema.org/draft/2020-12/schema";
 
     /// <summary>
     /// Generates a JSON schema using the specified shape.

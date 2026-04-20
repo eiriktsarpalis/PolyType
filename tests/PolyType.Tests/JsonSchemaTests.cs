@@ -20,7 +20,7 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
         JsonObject schema = JsonSchemaGenerator.Generate(shape);
 
         // Every root schema must declare the JSON Schema version.
-        Assert.Equal(JsonSchemaGenerator.MetaSchemaUri, (string?)schema["$schema"]);
+        Assert.Equal("https://json-schema.org/draft/2020-12/schema", (string?)schema["$schema"]);
 
         switch (shape)
         {
@@ -186,7 +186,7 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
         JsonNode? actualSchema = JsonSchemaGenerator.Generate(getEventsAsync);
         JsonNode? expectedSchema = JsonNode.Parse($$"""
             {
-                "$schema": "{{JsonSchemaGenerator.MetaSchemaUri}}",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "name": "GetEventsAsync",
                 "type": "object",
                 "properties": {
@@ -211,7 +211,7 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
         actualSchema = JsonSchemaGenerator.Generate(resetAsync);
         expectedSchema = JsonNode.Parse($$"""
             {
-                "$schema": "{{JsonSchemaGenerator.MetaSchemaUri}}",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "name": "ResetAsync",
                 "type": "object",
                 "output": { }
