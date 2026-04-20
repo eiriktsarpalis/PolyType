@@ -15,15 +15,16 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
-    # Exclude System.* and most Microsoft.* packages - these should only be updated manually
-    # Exception: Microsoft.Testing.* packages are allowed for MTP updates
+    # Exclude packages that track .NET runtime versions - these should only be
+    # updated manually as part of broader .NET version updates.
+    # Note: do NOT use a top-level `allow:` block here. When `allow:` is set,
+    # Dependabot only considers the listed dependencies and silently drops
+    # everything else (xunit, TUnit, BenchmarkDotNet, StyleCop, etc.).
     ignore:
       - dependency-name: "System.*"
-      - dependency-name: "Microsoft.*"
-        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
-    allow:
-      - dependency-name: "Microsoft.Testing.*"
-      - dependency-name: "Microsoft.CodeAnalysis.*"
+      - dependency-name: "Microsoft.Bcl.*"
+      - dependency-name: "Microsoft.Extensions.*"
+      - dependency-name: "Microsoft.NET.Test.Sdk"
     groups:
       # Group test framework updates together
       test-frameworks:
