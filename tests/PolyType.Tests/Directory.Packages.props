@@ -1,0 +1,17 @@
+<Project>
+  <!--
+    Test projects can pull in newer dependencies than the library projects.
+    Inherit the central package definitions from the repo root, then add or override
+    versions required only by tests (notably JsonSchema.Net 9.x and the BCL 10
+    minima it transitively requires).
+  -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Packages.props', '$(MSBuildThisFileDirectory)../'))" />
+  <ItemGroup>
+    <PackageVersion Include="JsonSchema.Net" Version="9.2.0" />
+    <PackageVersion Update="System.Memory" Version="4.6.3" />
+    <PackageVersion Update="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
+    <PackageVersion Update="System.Threading.Tasks.Extensions" Version="4.6.3" />
+    <PackageVersion Update="System.Collections.Immutable" Version="10.0.5" />
+    <PackageVersion Update="System.Text.Json" Version="10.0.5" />
+  </ItemGroup>
+</Project>
