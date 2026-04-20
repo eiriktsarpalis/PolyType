@@ -302,11 +302,6 @@ public static class JsonSchemaGenerator
             return CompleteDocument(schema, allowNull, depth);
         }
 
-        // Finalizes a generated schema by applying nullability and, when the schema is the
-        // root document (depth == 0), inserting the `$schema` keyword as its first entry.
-        // The keyword must appear first for JsonSchema.Net 9.x to recognize the schema
-        // version and apply the corresponding semantics (such as treating `format` as an
-        // annotation rather than an assertion) to subsequent keywords.
         internal static JsonObject CompleteDocument(JsonObject schema, bool allowNull, int depth)
         {
             if (allowNull && schema.TryGetPropertyValue("type", out JsonNode? typeValue))
