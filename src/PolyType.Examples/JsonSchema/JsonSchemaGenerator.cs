@@ -19,10 +19,16 @@ public static class JsonSchemaGenerator
         => Generate(typeShapeProvider.GetTypeShapeOrThrow<T>());
 
     /// <summary>
+    /// The JSON Schema dialect URI emitted as the <c>$schema</c> keyword on root schemas
+    /// produced by <see cref="JsonSchemaGenerator"/>.
+    /// </summary>
+    public const string SchemaDialectUri = "https://json-schema.org/draft/2020-12/schema";
+
+    /// <summary>
     /// Generates a JSON schema using the specified shape.
     /// </summary>
     public static JsonObject Generate(ITypeShape typeShape)
-        => new Generator().GenerateSchema(typeShape);
+        => AddSchemaDialect(new Generator().GenerateSchema(typeShape));
 
     /// <summary>
     /// Generates a JSON schema using the specified method shape.
@@ -38,7 +44,7 @@ public static class JsonSchemaGenerator
                 continue;
             }
 
-            (parameterSchemas ??= []).Add(parameter.Name, Generate(parameter.ParameterType));
+            (parameterSchemas ??= []).Add(parameter.Name, new Generator().GenerateSchema(parameter.ParameterType));
             if (parameter.IsRequired)
             {
                 (requiredParams ??= []).Add((JsonNode)parameter.Name);
@@ -61,8 +67,23 @@ public static class JsonSchemaGenerator
             functionSchema["required"] = requiredParams;
         }
 
-        functionSchema["output"] = Generate(methodShape.ReturnType);
-        return functionSchema;
+        functionSchema["output"] = new Generator().GenerateSchema(methodShape.ReturnType);
+        return AddSchemaDialect(functionSchema);
+    }
+
+    // Prepends the $schema dialect declaration as the first keyword of the supplied root schema.
+    // The keyword must appear first for JsonSchema.Net 9.x to apply dialect-specific semantics
+    // (such as treating `format` as an annotation rather than an assertion) to subsequent keywords.
+    private static JsonObject AddSchemaDialect(JsonObject schema)
+    {
+        JsonObject result = new() { ["$schema"] = SchemaDialectUri };
+        foreach (KeyValuePair<string, JsonNode?> kvp in schema.ToArray())
+        {
+            schema.Remove(kvp.Key);
+            result[kvp.Key] = kvp.Value;
+        }
+
+        return result;
     }
 
 #if NET

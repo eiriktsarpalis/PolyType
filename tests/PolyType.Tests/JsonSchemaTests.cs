@@ -19,6 +19,10 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
         ITypeShape shape = providerUnderTest.ResolveShape(testCase);
         JsonObject schema = JsonSchemaGenerator.Generate(shape);
 
+        // Every root schema must declare the JSON Schema dialect.
+        Assert.Equal(JsonSchemaGenerator.SchemaDialectUri, (string?)schema["$schema"]);
+        schema.Remove("$schema");
+
         switch (shape)
         {
             case IEnumTypeShape enumShape:
@@ -35,6 +39,7 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
 
             case IOptionalTypeShape nullableShape:
                 JsonObject nullableElementSchema = JsonSchemaGenerator.Generate(nullableShape.ElementType);
+                nullableElementSchema.Remove("$schema");
                 schema.Remove("type");
                 nullableElementSchema.Remove("type");
                 Assert.True(JsonNode.DeepEquals(nullableElementSchema, schema));
@@ -42,6 +47,7 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
             
             case ISurrogateTypeShape surrogateShape:
                 JsonObject surrogateSchema = JsonSchemaGenerator.Generate(surrogateShape.SurrogateType);
+                surrogateSchema.Remove("$schema");
                 Assert.True(JsonNode.DeepEquals(surrogateSchema, schema));
                 break;
 
@@ -54,6 +60,7 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
 
                 AssertType("array");
                 JsonObject elementSchema = JsonSchemaGenerator.Generate(enumerableShape.ElementType);
+                elementSchema.Remove("$schema");
                 for (int i = 0; i < enumerableShape.Rank; i++) schema = (JsonObject)schema["items"]!;
                 Assert.True(JsonNode.DeepEquals(elementSchema, schema));
                 break;
@@ -61,6 +68,7 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
             case IDictionaryTypeShape dictionaryShape:
                 AssertType("object");
                 JsonObject valueSchema = JsonSchemaGenerator.Generate(dictionaryShape.ValueType);
+                valueSchema.Remove("$schema");
                 Assert.True(JsonNode.DeepEquals(valueSchema, schema["additionalProperties"]));
                 break;
 
@@ -116,18 +124,7 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
         JsonObject schema = JsonSchemaGenerator.Generate(shape);
         string json = JsonSerializerTS.CreateConverter(shape).Serialize(testCase.Value);
 
-        // Declare the JSON Schema dialect as the first keyword so that JsonSchema.Net 9.x
-        // interprets `format` as a draft 2020-12 annotation rather than an assertion.
-        // Without this, values such as DateTime.MaxValue with 7-digit fractional seconds
-        // would fail format validation.
-        JsonObject schemaWithDialect = new() { ["$schema"] = "https://json-schema.org/draft/2020-12/schema" };
-        foreach (KeyValuePair<string, JsonNode?> kvp in schema.ToArray())
-        {
-            schema.Remove(kvp.Key);
-            schemaWithDialect[kvp.Key] = kvp.Value;
-        }
-
-        JsonSchema jsonSchema = JsonSchema.FromText(JsonSerializer.Serialize(schemaWithDialect));
+        JsonSchema jsonSchema = JsonSchema.FromText(JsonSerializer.Serialize(schema));
         EvaluationOptions options = new() { OutputFormat = OutputFormat.List };
         using JsonDocument instanceDoc = JsonDocument.Parse(json);
         EvaluationResults results = jsonSchema.Evaluate(instanceDoc.RootElement, options);
@@ -140,7 +137,7 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
             throw new XunitException($"""
                 Instance JSON document does not match the specified schema.
                 Schema:
-                {JsonSerializer.Serialize(schemaWithDialect)}
+                {JsonSerializer.Serialize(schema)}
                 Instance:
                 {json}
                 Errors:
@@ -157,8 +154,9 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
         IMethodShape resetAsync = serviceShape.Methods.Single(m => m.Name == nameof(RpcService.ResetAsync));
 
         JsonNode? actualSchema = JsonSchemaGenerator.Generate(getEventsAsync);
-        JsonNode? expectedSchema = JsonNode.Parse("""
+        JsonNode? expectedSchema = JsonNode.Parse($$"""
             {
+                "$schema": "{{JsonSchemaGenerator.SchemaDialectUri}}",
                 "name": "GetEventsAsync",
                 "type": "object",
                 "properties": {
@@ -181,8 +179,9 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
         Assert.True(JsonNode.DeepEquals(expectedSchema, actualSchema));
 
         actualSchema = JsonSchemaGenerator.Generate(resetAsync);
-        expectedSchema = JsonNode.Parse("""
+        expectedSchema = JsonNode.Parse($$"""
             {
+                "$schema": "{{JsonSchemaGenerator.SchemaDialectUri}}",
                 "name": "ResetAsync",
                 "type": "object",
                 "output": { }
