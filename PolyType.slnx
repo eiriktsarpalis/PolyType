@@ -55,7 +55,6 @@
     <File Path="tests/PolyType.Benchmarks/Directory.Packages.props" />
     <Project Path="tests/PolyType.Roslyn.Tests/PolyType.Roslyn.Tests.csproj" />
     <Project Path="tests/PolyType.SourceGenerator.UnitTests/PolyType.SourceGenerator.UnitTests.csproj" />
-    <File Path="tests/PolyType.SourceGenerator.UnitTests/Directory.Packages.props" />
     <Project Path="tests/PolyType.Tests/PolyType.Tests.csproj" />
     <Project Path="tests/PolyType.Tests.NativeAOT/PolyType.Tests.NativeAOT.csproj" />
   </Folder>

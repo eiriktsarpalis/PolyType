@@ -2,10 +2,9 @@
   <!--
     This is the root central package management file. Test projects use a scoped
     tests/Directory.Packages.props (which imports this file) to declare test-only
-    package versions and to override BCL minima needed by JsonSchema.Net. Some test
-    projects further override versions via a project-level Directory.Packages.props:
+    package versions and to override BCL minima needed by JsonSchema.Net. One test
+    project further overrides versions via a project-level Directory.Packages.props:
       - tests/PolyType.Benchmarks/Directory.Packages.props
-      - tests/PolyType.SourceGenerator.UnitTests/Directory.Packages.props
   -->
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
@@ -15,10 +14,10 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Product dependencies -->
-    <PackageVersion Include="System.Memory" Version="4.5.5" />
+    <PackageVersion Include="System.Memory" Version="4.6.3" />
     <PackageVersion Include="System.Reflection.Emit.Lightweight" Version="4.7.0" />
-    <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
-    <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
+    <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
+    <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.6.3" />
     <!-- Source Generator dependencies -->
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="$(RoslynVersion)" />
@@ -28,13 +27,15 @@
     <PackageVersion Include="PolySharp" Version="1.15.0" />
     <PackageVersion Include="Nerdbank.GitVersioning" Version="3.10.8-alpha" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
-    <!-- Used by PolyType.Examples and applications/ConfigurationBinder.AOT -->
+    <!-- Used by PolyType.Examples and applications/ConfigurationBinder.AOT.
+         Not bumped to 10.x: M.E.Configuration 10.x changes object binding behavior
+         in a way that causes infinite recursion in the example ConfigurationBinder. -->
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.8" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="9.0.8" />
     <!-- Earliest version of the library supporting literals and frozen collections -->
-    <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
-    <PackageVersion Include="System.Formats.Cbor" Version="9.0.8" />
-    <PackageVersion Include="System.Text.Json" Version="9.0.8" />
+    <PackageVersion Include="System.Collections.Immutable" Version="10.0.5" />
+    <PackageVersion Include="System.Formats.Cbor" Version="10.0.0" />
+    <PackageVersion Include="System.Text.Json" Version="10.0.5" />
     <PackageVersion Include="YamlDotNet" Version="17.0.1" />
     <PackageVersion Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
     <PackageVersion Include="FSharp.Core" Version="10.1.202" />

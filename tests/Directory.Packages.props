@@ -12,13 +12,8 @@
     <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="2.0.2" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="1.1.2" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
-    <!-- Test-only library dependencies. JsonSchema.Net 9.x transitively requires the BCL 10 minima below. -->
+    <!-- Test-only library dependencies. -->
     <PackageVersion Include="JsonSchema.Net" Version="9.2.0" />
-    <PackageVersion Update="System.Memory" Version="4.6.3" />
-    <PackageVersion Update="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
-    <PackageVersion Update="System.Threading.Tasks.Extensions" Version="4.6.3" />
-    <PackageVersion Update="System.Collections.Immutable" Version="10.0.5" />
-    <PackageVersion Update="System.Text.Json" Version="10.0.5" />
   </ItemGroup>
 </Project>
 
