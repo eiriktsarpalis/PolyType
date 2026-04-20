@@ -310,23 +310,7 @@ public static class JsonSchemaGenerator
         {
             if (depth == 0)
             {
-#if NET9_0_OR_GREATER
                 schema.Insert(0, "$schema", SchemaDialectUri);
-#else
-                // JsonObject.Insert is not available on earlier target frameworks; reassign
-                // entries after setting $schema first to preserve insertion order.
-                KeyValuePair<string, JsonNode?>[] entries = schema.ToArray();
-                foreach (KeyValuePair<string, JsonNode?> kvp in entries)
-                {
-                    schema.Remove(kvp.Key);
-                }
-
-                schema["$schema"] = SchemaDialectUri;
-                foreach (KeyValuePair<string, JsonNode?> kvp in entries)
-                {
-                    schema[kvp.Key] = kvp.Value;
-                }
-#endif
             }
 
             return schema;

@@ -29,8 +29,11 @@
     <PackageReference Include="YamlDotNet" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0' or '$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="System.Text.Json" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="Microsoft.Bcl.HashCode" />
   </ItemGroup>
 
