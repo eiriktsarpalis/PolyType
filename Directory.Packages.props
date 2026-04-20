@@ -40,7 +40,7 @@
     <PackageVersion Include="YamlDotNet" Version="16.3.0" />
     <PackageVersion Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
     <PackageVersion Include="JsonSchema.Net" Version="7.4.0" />
-    <PackageVersion Include="FSharp.Core" Version="10.0.102" />
+    <PackageVersion Include="FSharp.Core" Version="10.1.202" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsAnalyzerProject)'=='true'">
     <!-- Keep these versions in sync with what Unity documents as supported at 
