@@ -30,42 +30,7 @@ public static class JsonSchemaGenerator
     /// Generates a JSON schema using the specified method shape.
     /// </summary>
     public static JsonObject Generate(IMethodShape methodShape)
-    {
-        JsonObject? parameterSchemas = null;
-        JsonArray? requiredParams = null;
-        foreach (var parameter in methodShape.Parameters)
-        {
-            if (parameter.ParameterType.Type == typeof(CancellationToken))
-            {
-                continue;
-            }
-
-            (parameterSchemas ??= []).Add(parameter.Name, new Generator().GenerateSchema(parameter.ParameterType, depth: 1));
-            if (parameter.IsRequired)
-            {
-                (requiredParams ??= []).Add((JsonNode)parameter.Name);
-            }
-        }
-
-        JsonObject functionSchema = new JsonObject
-        {
-            ["name"] = methodShape.Name,
-            ["type"] = "object",
-        };
-
-        if (parameterSchemas is not null)
-        {
-            functionSchema["properties"] = parameterSchemas;
-        }
-
-        if (requiredParams is not null)
-        {
-            functionSchema["required"] = requiredParams;
-        }
-
-        functionSchema["output"] = new Generator().GenerateSchema(methodShape.ReturnType, depth: 1);
-        return Generator.CompleteDocument(functionSchema, allowNull: false, depth: 0);
-    }
+        => new Generator().GenerateMethodSchema(methodShape);
 
 #if NET
     /// <summary>
@@ -88,6 +53,50 @@ public static class JsonSchemaGenerator
     {
         private readonly Dictionary<(Type, bool AllowNull), string> _locations = new();
         private readonly List<string> _path = new();
+
+        public JsonObject GenerateMethodSchema(IMethodShape methodShape)
+        {
+            JsonObject? parameterSchemas = null;
+            JsonArray? requiredParams = null;
+            foreach (var parameter in methodShape.Parameters)
+            {
+                if (parameter.ParameterType.Type == typeof(CancellationToken))
+                {
+                    continue;
+                }
+
+                Push("properties");
+                Push(parameter.Name);
+                (parameterSchemas ??= []).Add(parameter.Name, GenerateSchema(parameter.ParameterType, depth: 1));
+                Pop();
+                Pop();
+                if (parameter.IsRequired)
+                {
+                    (requiredParams ??= []).Add((JsonNode)parameter.Name);
+                }
+            }
+
+            JsonObject functionSchema = new JsonObject
+            {
+                ["name"] = methodShape.Name,
+                ["type"] = "object",
+            };
+
+            if (parameterSchemas is not null)
+            {
+                functionSchema["properties"] = parameterSchemas;
+            }
+
+            if (requiredParams is not null)
+            {
+                functionSchema["required"] = requiredParams;
+            }
+
+            Push("output");
+            functionSchema["output"] = GenerateSchema(methodShape.ReturnType, depth: 1);
+            Pop();
+            return CompleteDocument(functionSchema, allowNull: false, depth: 0);
+        }
 
         public JsonObject GenerateSchema(ITypeShape typeShape, bool allowNull = true, bool cacheLocation = true, int depth = 0)
         {
@@ -298,7 +307,7 @@ public static class JsonSchemaGenerator
             return CompleteDocument(schema, allowNull, depth);
         }
 
-        internal static JsonObject CompleteDocument(JsonObject schema, bool allowNull, int depth)
+        private static JsonObject CompleteDocument(JsonObject schema, bool allowNull, int depth)
         {
             if (allowNull && schema.TryGetPropertyValue("type", out JsonNode? typeValue))
             {
