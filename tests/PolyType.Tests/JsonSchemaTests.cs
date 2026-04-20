@@ -1,4 +1,4 @@
-﻿using Json.Schema;
+using Json.Schema;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -19,8 +19,8 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
         ITypeShape shape = providerUnderTest.ResolveShape(testCase);
         JsonObject schema = JsonSchemaGenerator.Generate(shape);
 
-        // Every root schema must declare the JSON Schema dialect.
-        Assert.Equal(JsonSchemaGenerator.SchemaDialectUri, (string?)schema["$schema"]);
+        // Every root schema must declare the JSON Schema version.
+        Assert.Equal(JsonSchemaGenerator.MetaSchemaUri, (string?)schema["$schema"]);
 
         switch (shape)
         {
@@ -186,7 +186,7 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
         JsonNode? actualSchema = JsonSchemaGenerator.Generate(getEventsAsync);
         JsonNode? expectedSchema = JsonNode.Parse($$"""
             {
-                "$schema": "{{JsonSchemaGenerator.SchemaDialectUri}}",
+                "$schema": "{{JsonSchemaGenerator.MetaSchemaUri}}",
                 "name": "GetEventsAsync",
                 "type": "object",
                 "properties": {
@@ -211,7 +211,7 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
         actualSchema = JsonSchemaGenerator.Generate(resetAsync);
         expectedSchema = JsonNode.Parse($$"""
             {
-                "$schema": "{{JsonSchemaGenerator.SchemaDialectUri}}",
+                "$schema": "{{JsonSchemaGenerator.MetaSchemaUri}}",
                 "name": "ResetAsync",
                 "type": "object",
                 "output": { }

@@ -19,10 +19,10 @@ public static class JsonSchemaGenerator
         => Generate(typeShapeProvider.GetTypeShapeOrThrow<T>());
 
     /// <summary>
-    /// The JSON Schema dialect URI emitted as the <c>$schema</c> keyword on root schemas
+    /// The JSON Schema URI emitted as the <c>$schema</c> keyword on root schemas
     /// produced by <see cref="JsonSchemaGenerator"/>.
     /// </summary>
-    public const string SchemaDialectUri = "https://json-schema.org/draft/2020-12/schema";
+    public const string MetaSchemaUri = "https://json-schema.org/draft/2020-12/schema";
 
     /// <summary>
     /// Generates a JSON schema using the specified shape.
@@ -68,7 +68,7 @@ public static class JsonSchemaGenerator
         }
 
         functionSchema["output"] = new Generator().GenerateSchema(methodShape.ReturnType, depth: 1);
-        return Generator.InsertDialectIfRoot(functionSchema, depth: 0);
+        return Generator.CompleteDocument(functionSchema, allowNull: false, depth: 0);
     }
 
 #if NET
@@ -99,7 +99,7 @@ public static class JsonSchemaGenerator
 
             if (s_simpleTypeInfo.TryGetValue(typeShape.Type, out SimpleTypeJsonSchema simpleType))
             {
-                return InsertDialectIfRoot(ApplyNullability(simpleType.ToSchemaDocument(), allowNull), depth);
+                return CompleteDocument(simpleType.ToSchemaDocument(), allowNull, depth);
             }
 
             if (cacheLocation)
@@ -132,11 +132,11 @@ public static class JsonSchemaGenerator
 
                 case IOptionalTypeShape optionalShape:
                     schema = GenerateSchema(optionalShape.ElementType, cacheLocation: false, depth: depth + 1);
-                    ApplyNullability(schema, allowNull: true);
+                    allowNull = true;
                     break;
                 
                 case ISurrogateTypeShape surrogateShape:
-                    return InsertDialectIfRoot(GenerateSchema(surrogateShape.SurrogateType, cacheLocation: false, depth: depth + 1), depth);
+                    return CompleteDocument(GenerateSchema(surrogateShape.SurrogateType, cacheLocation: false, depth: depth + 1), allowNull: false, depth);
 
                 case IEnumerableTypeShape enumerableShape:
                     for (int i = 0; i < enumerableShape.Rank; i++)
@@ -299,18 +299,31 @@ public static class JsonSchemaGenerator
                     break;
             }
 
-            return InsertDialectIfRoot(ApplyNullability(schema, allowNull), depth);
+            return CompleteDocument(schema, allowNull, depth);
         }
 
-        // Inserts the `$schema` dialect declaration at index 0 when the schema is the root
-        // (depth == 0). The keyword must appear first for JsonSchema.Net 9.x to apply
-        // dialect-specific semantics (such as treating `format` as an annotation rather than
-        // an assertion) to subsequent keywords.
-        internal static JsonObject InsertDialectIfRoot(JsonObject schema, int depth)
+        // Finalizes a generated schema by applying nullability and, when the schema is the
+        // root document (depth == 0), inserting the `$schema` keyword as its first entry.
+        // The keyword must appear first for JsonSchema.Net 9.x to recognize the schema
+        // version and apply the corresponding semantics (such as treating `format` as an
+        // annotation rather than an assertion) to subsequent keywords.
+        internal static JsonObject CompleteDocument(JsonObject schema, bool allowNull, int depth)
         {
+            if (allowNull && schema.TryGetPropertyValue("type", out JsonNode? typeValue))
+            {
+                if (typeValue is JsonArray types)
+                {
+                    types.Add((JsonNode)"null");
+                }
+                else
+                {
+                    schema["type"] = new JsonArray { (JsonNode)(string)typeValue!, (JsonNode)"null" };
+                }
+            }
+
             if (depth == 0)
             {
-                schema.Insert(0, "$schema", SchemaDialectUri);
+                schema.Insert(0, "$schema", MetaSchemaUri);
             }
 
             return schema;
@@ -324,23 +337,6 @@ public static class JsonSchemaGenerator
         private void Pop()
         {
             _path.RemoveAt(_path.Count - 1);
-        }
-
-        private static JsonObject ApplyNullability(JsonObject schema, bool allowNull)
-        {
-            if (allowNull && schema.TryGetPropertyValue("type", out JsonNode? typeValue))
-            {
-                if (schema["type"] is JsonArray types)
-                {
-                    types.Add((JsonNode)"null");
-                }
-                else
-                {
-                    schema["type"] = new JsonArray { (JsonNode)(string)typeValue!, (JsonNode)"null" };
-                }
-            }
-
-            return schema;
         }
 
         private static JsonArray CreateArray(IEnumerable<JsonNode> elements)
