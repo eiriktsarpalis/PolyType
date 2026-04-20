@@ -1,0 +1,9 @@
+<Project>
+  <!--
+    This project's CompilationTests build synthesized Roslyn compilations and assert
+    no warnings. Inherit central package versions directly from the repo root so we
+    don't pick up the higher BCL minima from tests/Directory.Packages.props (which
+    would cause CS1702 assembly-version mismatches against project-referenced PolyType).
+  -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Packages.props', '$(MSBuildThisFileDirectory)../../'))" />
+</Project>
