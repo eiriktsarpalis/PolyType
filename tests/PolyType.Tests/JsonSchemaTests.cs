@@ -116,32 +116,31 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
         JsonObject schema = JsonSchemaGenerator.Generate(shape);
         string json = JsonSerializerTS.CreateConverter(shape).Serialize(testCase.Value);
 
-        JsonSchema jsonSchema = JsonSerializer.Deserialize<JsonSchema>(schema)!;
+        // Declare the JSON Schema dialect as the first keyword so that JsonSchema.Net 9.x
+        // interprets `format` as a draft 2020-12 annotation rather than an assertion.
+        // Without this, values such as DateTime.MaxValue with 7-digit fractional seconds
+        // would fail format validation.
+        JsonObject schemaWithDialect = new() { ["$schema"] = "https://json-schema.org/draft/2020-12/schema" };
+        foreach (KeyValuePair<string, JsonNode?> kvp in schema.ToArray())
+        {
+            schema.Remove(kvp.Key);
+            schemaWithDialect[kvp.Key] = kvp.Value;
+        }
+
+        JsonSchema jsonSchema = JsonSchema.FromText(JsonSerializer.Serialize(schemaWithDialect));
         EvaluationOptions options = new() { OutputFormat = OutputFormat.List };
         using JsonDocument instanceDoc = JsonDocument.Parse(json);
         EvaluationResults results = jsonSchema.Evaluate(instanceDoc.RootElement, options);
         if (!results.IsValid)
         {
-            // The PolyType-generated schema uses `format` as an annotation only.
-            // JsonSchema.Net 9.x asserts formats by default for some dialects, which
-            // can reject high-precision date-time/time strings produced by System.Text.Json,
-            // so we filter out format-keyword failures here.
-            List<string> errors = (results.Details ?? [])
+            IEnumerable<string> errors = (results.Details ?? [])
                 .Where(d => d.Errors is { Count: > 0 })
-                .SelectMany(d => d.Errors!
-                    .Where(error => error.Key != "format")
-                    .Select(error => $"Path:${d.InstanceLocation} {error.Key}:{error.Value}"))
-                .ToList();
-
-            if (errors.Count == 0)
-            {
-                return;
-            }
+                .SelectMany(d => d.Errors!.Select(error => $"Path:${d.InstanceLocation} {error.Key}:{error.Value}"));
 
             throw new XunitException($"""
                 Instance JSON document does not match the specified schema.
                 Schema:
-                {JsonSerializer.Serialize(schema)}
+                {JsonSerializer.Serialize(schemaWithDialect)}
                 Instance:
                 {json}
                 Errors:
