@@ -100,7 +100,7 @@ public static class JsonSchemaGenerator
 
             if (s_simpleTypeInfo.TryGetValue(typeShape.Type, out SimpleTypeJsonSchema simpleType))
             {
-                return EnsureSchemaDialect(ApplyNullability(simpleType.ToSchemaDocument(), allowNull), depth);
+                return ApplyNullability(simpleType.ToSchemaDocument(depth), allowNull);
             }
 
             if (cacheLocation)
@@ -123,7 +123,8 @@ public static class JsonSchemaGenerator
             switch (typeShape)
             {
                 case IEnumTypeShape enumShape:
-                    schema = new JsonObject { ["type"] = "string" };
+                    schema = NewSchema(depth);
+                    schema["type"] = "string";
                     if (!enumShape.IsFlags)
                     {
                         schema["enum"] = CreateArray(Enum.GetNames(enumShape.Type).Select(name => (JsonNode)name));
@@ -132,12 +133,12 @@ public static class JsonSchemaGenerator
                     break;
 
                 case IOptionalTypeShape optionalShape:
-                    schema = GenerateSchema(optionalShape.ElementType, cacheLocation: false, depth: depth + 1);
+                    schema = GenerateSchema(optionalShape.ElementType, cacheLocation: false, depth: depth);
                     ApplyNullability(schema, allowNull: true);
                     break;
                 
                 case ISurrogateTypeShape surrogateShape:
-                    return EnsureSchemaDialect(GenerateSchema(surrogateShape.SurrogateType, cacheLocation: false, depth: depth + 1), depth);
+                    return GenerateSchema(surrogateShape.SurrogateType, cacheLocation: false, depth: depth);
 
                 case IEnumerableTypeShape enumerableShape:
                     for (int i = 0; i < enumerableShape.Rank; i++)
@@ -145,16 +146,14 @@ public static class JsonSchemaGenerator
                         Push("items");
                     }
 
-                    schema = GenerateSchema(enumerableShape.ElementType, depth: depth + 1);
+                    schema = GenerateSchema(enumerableShape.ElementType, depth: depth + enumerableShape.Rank);
 
                     for (int i = 0; i < enumerableShape.Rank; i++)
                     {
-                        schema = new JsonObject
-                        {
-                            ["type"] = "array",
-                            ["items"] = schema,
-                        };
-
+                        JsonObject wrapper = NewSchema(depth + enumerableShape.Rank - 1 - i);
+                        wrapper["type"] = "array";
+                        wrapper["items"] = schema;
+                        schema = wrapper;
                         Pop();
                     }
 
@@ -165,16 +164,13 @@ public static class JsonSchemaGenerator
                     JsonObject additionalPropertiesSchema = GenerateSchema(dictionaryShape.ValueType, depth: depth + 1);
                     Pop();
 
-                    schema = new JsonObject
-                    {
-                        ["type"] = "object",
-                        ["additionalProperties"] = additionalPropertiesSchema,
-                    };
-
+                    schema = NewSchema(depth);
+                    schema["type"] = "object";
+                    schema["additionalProperties"] = additionalPropertiesSchema;
                     break;
 
                 case IObjectTypeShape objectShape:
-                    schema = new();
+                    schema = NewSchema(depth);
 
                     if (objectShape.Properties is not [])
                     {
@@ -287,48 +283,27 @@ public static class JsonSchemaGenerator
                         anyOf.Add(caseSchema);
                     }
 
-                    schema = new JsonObject
-                    {
-                        ["anyOf"] = anyOf,
-                    };
+                    schema = NewSchema(depth);
+                    schema["anyOf"] = anyOf;
 
                     Pop();
                     break;
 
                 default:
-                    schema = new JsonObject();
+                    schema = NewSchema(depth);
                     break;
             }
 
-            return EnsureSchemaDialect(ApplyNullability(schema, allowNull), depth);
+            return ApplyNullability(schema, allowNull);
         }
 
-        // At depth 0, reorders the keys of the supplied root schema so that the `$schema` dialect
-        // declaration appears first. The keyword must be the first one parsed for JsonSchema.Net 9.x
-        // to apply dialect-specific semantics (such as treating `format` as an annotation rather
-        // than an assertion) to the remaining keywords. The reorder is done in-place to avoid
-        // allocating a second JsonObject.
-        private static JsonObject EnsureSchemaDialect(JsonObject schema, int depth)
-        {
-            if (depth != 0 || schema.ContainsKey("$schema"))
-            {
-                return schema;
-            }
-
-            KeyValuePair<string, JsonNode?>[] entries = schema.ToArray();
-            foreach (KeyValuePair<string, JsonNode?> kvp in entries)
-            {
-                schema.Remove(kvp.Key);
-            }
-
-            schema["$schema"] = SchemaDialectUri;
-            foreach (KeyValuePair<string, JsonNode?> kvp in entries)
-            {
-                schema[kvp.Key] = kvp.Value;
-            }
-
-            return schema;
-        }
+        // Creates a fresh schema object. Root schemas (depth == 0) are preallocated with the
+        // `$schema` dialect declaration as their first keyword. The keyword must appear first for
+        // JsonSchema.Net 9.x to apply dialect-specific semantics (such as treating `format` as an
+        // annotation rather than an assertion) to subsequent keywords.
+        private static JsonObject NewSchema(int depth) => depth == 0
+            ? new JsonObject { ["$schema"] = SchemaDialectUri }
+            : new JsonObject();
 
         private void Push(string name)
         {
@@ -386,9 +361,9 @@ public static class JsonSchemaGenerator
             public string? Format { get; }
             public string? Pattern { get; }
 
-            public JsonObject ToSchemaDocument()
+            public JsonObject ToSchemaDocument(int depth)
             {
-                var schema = new JsonObject();
+                JsonObject schema = NewSchema(depth);
                 if (Type != null)
                 {
                     schema["type"] = Type;
