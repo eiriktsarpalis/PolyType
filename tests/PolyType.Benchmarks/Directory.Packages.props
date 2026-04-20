@@ -2,7 +2,9 @@
   <Import Project="..\Directory.Packages.props" />
 
   <ItemGroup>
+    <!-- BenchmarkDotNet transitively requires Microsoft.CodeAnalysis.CSharp >= 4.14.0,
+         but the rest of the solution pins RoslynVersion to 4.8.0 to keep the source
+         generator usable in VS 2022. Override the central version just for this project. -->
     <PackageVersion Update="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
-    <PackageVersion Update="System.Collections.Immutable" Version="9.0.0" />
   </ItemGroup>
 </Project>
