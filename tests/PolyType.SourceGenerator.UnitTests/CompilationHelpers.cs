@@ -138,7 +138,11 @@ public static class CompilationHelpers
 
         CSharpGeneratorDriver driver = CreatePolyTypeSourceGeneratorDriver(compilation, generator);
         driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation outCompilation, out ImmutableArray<Diagnostic> diagnostics);
-        var compilationDiagnostics = outCompilation.GetDiagnostics();
+        // Filter out assembly-binding-redirect warnings (CS1701/CS1702) which are environmental
+        // artifacts on .NET Framework, not source-quality issues for the generator under test.
+        var compilationDiagnostics = outCompilation.GetDiagnostics()
+            .Where(d => d.Id is not ("CS1701" or "CS1702"))
+            .ToImmutableArray();
 
         if (TestContext.Current.TestOutputHelper is { } logger)
         {
@@ -267,7 +271,9 @@ public static class CompilationHelpers
 
     public static void AssertMaxSeverity(this IEnumerable<Diagnostic> diagnostics, DiagnosticSeverity maxSeverity)
     {
-        Assert.DoesNotContain(diagnostics, diagnostic => diagnostic.Severity > maxSeverity);
+        // Ignore assembly-binding-redirect warnings (CS1701/CS1702) which are environmental
+        // artifacts on .NET Framework, not source-quality issues for the generator under test.
+        Assert.DoesNotContain(diagnostics.Where(d => d.Id is not ("CS1701" or "CS1702")), diagnostic => diagnostic.Severity > maxSeverity);
     }
 
     public static (int startLine, int startColumn) GetStartPosition(this Location location)
