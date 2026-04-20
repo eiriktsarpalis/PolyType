@@ -28,7 +28,7 @@ public static class JsonSchemaGenerator
     /// Generates a JSON schema using the specified shape.
     /// </summary>
     public static JsonObject Generate(ITypeShape typeShape)
-        => AddSchemaDialect(new Generator().GenerateSchema(typeShape));
+        => new Generator().GenerateSchema(typeShape);
 
     /// <summary>
     /// Generates a JSON schema using the specified method shape.
@@ -44,7 +44,7 @@ public static class JsonSchemaGenerator
                 continue;
             }
 
-            (parameterSchemas ??= []).Add(parameter.Name, new Generator().GenerateSchema(parameter.ParameterType));
+            (parameterSchemas ??= []).Add(parameter.Name, new Generator().GenerateSchema(parameter.ParameterType, depth: 1));
             if (parameter.IsRequired)
             {
                 (requiredParams ??= []).Add((JsonNode)parameter.Name);
@@ -53,6 +53,7 @@ public static class JsonSchemaGenerator
 
         JsonObject functionSchema = new JsonObject
         {
+            ["$schema"] = SchemaDialectUri,
             ["name"] = methodShape.Name,
             ["type"] = "object",
         };
@@ -67,23 +68,8 @@ public static class JsonSchemaGenerator
             functionSchema["required"] = requiredParams;
         }
 
-        functionSchema["output"] = new Generator().GenerateSchema(methodShape.ReturnType);
-        return AddSchemaDialect(functionSchema);
-    }
-
-    // Prepends the $schema dialect declaration as the first keyword of the supplied root schema.
-    // The keyword must appear first for JsonSchema.Net 9.x to apply dialect-specific semantics
-    // (such as treating `format` as an annotation rather than an assertion) to subsequent keywords.
-    private static JsonObject AddSchemaDialect(JsonObject schema)
-    {
-        JsonObject result = new() { ["$schema"] = SchemaDialectUri };
-        foreach (KeyValuePair<string, JsonNode?> kvp in schema.ToArray())
-        {
-            schema.Remove(kvp.Key);
-            result[kvp.Key] = kvp.Value;
-        }
-
-        return result;
+        functionSchema["output"] = new Generator().GenerateSchema(methodShape.ReturnType, depth: 1);
+        return functionSchema;
     }
 
 #if NET
@@ -108,13 +94,13 @@ public static class JsonSchemaGenerator
         private readonly Dictionary<(Type, bool AllowNull), string> _locations = new();
         private readonly List<string> _path = new();
 
-        public JsonObject GenerateSchema(ITypeShape typeShape, bool allowNull = true, bool cacheLocation = true)
+        public JsonObject GenerateSchema(ITypeShape typeShape, bool allowNull = true, bool cacheLocation = true, int depth = 0)
         {
             allowNull = allowNull && IsNullableType(typeShape.Type);
 
             if (s_simpleTypeInfo.TryGetValue(typeShape.Type, out SimpleTypeJsonSchema simpleType))
             {
-                return ApplyNullability(simpleType.ToSchemaDocument(), allowNull);
+                return EnsureSchemaDialect(ApplyNullability(simpleType.ToSchemaDocument(), allowNull), depth);
             }
 
             if (cacheLocation)
@@ -146,12 +132,12 @@ public static class JsonSchemaGenerator
                     break;
 
                 case IOptionalTypeShape optionalShape:
-                    schema = GenerateSchema(optionalShape.ElementType, cacheLocation: false);
+                    schema = GenerateSchema(optionalShape.ElementType, cacheLocation: false, depth: depth + 1);
                     ApplyNullability(schema, allowNull: true);
                     break;
                 
                 case ISurrogateTypeShape surrogateShape:
-                    return GenerateSchema(surrogateShape.SurrogateType, cacheLocation: false);
+                    return EnsureSchemaDialect(GenerateSchema(surrogateShape.SurrogateType, cacheLocation: false, depth: depth + 1), depth);
 
                 case IEnumerableTypeShape enumerableShape:
                     for (int i = 0; i < enumerableShape.Rank; i++)
@@ -159,7 +145,7 @@ public static class JsonSchemaGenerator
                         Push("items");
                     }
 
-                    schema = GenerateSchema(enumerableShape.ElementType);
+                    schema = GenerateSchema(enumerableShape.ElementType, depth: depth + 1);
 
                     for (int i = 0; i < enumerableShape.Rank; i++)
                     {
@@ -176,7 +162,7 @@ public static class JsonSchemaGenerator
 
                 case IDictionaryTypeShape dictionaryShape:
                     Push("additionalProperties");
-                    JsonObject additionalPropertiesSchema = GenerateSchema(dictionaryShape.ValueType);
+                    JsonObject additionalPropertiesSchema = GenerateSchema(dictionaryShape.ValueType, depth: depth + 1);
                     Pop();
 
                     schema = new JsonObject
@@ -212,7 +198,7 @@ public static class JsonSchemaGenerator
                                 (associatedParameter is null || associatedParameter.IsNonNullable);
                             
                             Push(prop.Name);
-                            JsonObject propSchema = GenerateSchema(prop.PropertyType, allowNull: !isNonNullable);
+                            JsonObject propSchema = GenerateSchema(prop.PropertyType, allowNull: !isNonNullable, depth: depth + 1);
                             Pop();
 
                             properties.Add(prop.Name, propSchema);
@@ -241,7 +227,7 @@ public static class JsonSchemaGenerator
                     foreach (IUnionCaseShape caseShape in unionShape.UnionCases)
                     {
                         Push($"{anyOf.Count}");
-                        JsonObject caseSchema = GenerateSchema(caseShape.UnionCaseType, cacheLocation: false);
+                        JsonObject caseSchema = GenerateSchema(caseShape.UnionCaseType, cacheLocation: false, depth: depth + 1);
                         Pop();
 
                         if (caseShape.UnionCaseType is IObjectTypeShape or IDictionaryTypeShape)
@@ -295,7 +281,7 @@ public static class JsonSchemaGenerator
                     if (!unionCasesContainBaseType)
                     {
                         Push($"{anyOf.Count}");
-                        JsonNode caseSchema = GenerateSchema(unionShape.BaseType, cacheLocation: false);
+                        JsonNode caseSchema = GenerateSchema(unionShape.BaseType, cacheLocation: false, depth: depth + 1);
                         Pop();
 
                         anyOf.Add(caseSchema);
@@ -314,7 +300,34 @@ public static class JsonSchemaGenerator
                     break;
             }
 
-            return ApplyNullability(schema, allowNull);
+            return EnsureSchemaDialect(ApplyNullability(schema, allowNull), depth);
+        }
+
+        // At depth 0, reorders the keys of the supplied root schema so that the `$schema` dialect
+        // declaration appears first. The keyword must be the first one parsed for JsonSchema.Net 9.x
+        // to apply dialect-specific semantics (such as treating `format` as an annotation rather
+        // than an assertion) to the remaining keywords. The reorder is done in-place to avoid
+        // allocating a second JsonObject.
+        private static JsonObject EnsureSchemaDialect(JsonObject schema, int depth)
+        {
+            if (depth != 0 || schema.ContainsKey("$schema"))
+            {
+                return schema;
+            }
+
+            KeyValuePair<string, JsonNode?>[] entries = schema.ToArray();
+            foreach (KeyValuePair<string, JsonNode?> kvp in entries)
+            {
+                schema.Remove(kvp.Key);
+            }
+
+            schema["$schema"] = SchemaDialectUri;
+            foreach (KeyValuePair<string, JsonNode?> kvp in entries)
+            {
+                schema[kvp.Key] = kvp.Value;
+            }
+
+            return schema;
         }
 
         private void Push(string name)
