@@ -118,12 +118,25 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
 
         JsonSchema jsonSchema = JsonSerializer.Deserialize<JsonSchema>(schema)!;
         EvaluationOptions options = new() { OutputFormat = OutputFormat.List };
-        EvaluationResults results = jsonSchema.Evaluate(JsonNode.Parse(json), options);
+        using JsonDocument instanceDoc = JsonDocument.Parse(json);
+        EvaluationResults results = jsonSchema.Evaluate(instanceDoc.RootElement, options);
         if (!results.IsValid)
         {
-            IEnumerable<string> errors = results.Details
-                .Where(d => d.HasErrors)
-                .SelectMany(d => d.Errors!.Select(error => $"Path:${d.InstanceLocation} {error.Key}:{error.Value}"));
+            // The PolyType-generated schema uses `format` as an annotation only.
+            // JsonSchema.Net 9.x asserts formats by default for some dialects, which
+            // can reject high-precision date-time/time strings produced by System.Text.Json,
+            // so we filter out format-keyword failures here.
+            List<string> errors = (results.Details ?? [])
+                .Where(d => d.Errors is { Count: > 0 })
+                .SelectMany(d => d.Errors!
+                    .Where(error => error.Key != "format")
+                    .Select(error => $"Path:${d.InstanceLocation} {error.Key}:{error.Value}"))
+                .ToList();
+
+            if (errors.Count == 0)
+            {
+                return;
+            }
 
             throw new XunitException($"""
                 Instance JSON document does not match the specified schema.
