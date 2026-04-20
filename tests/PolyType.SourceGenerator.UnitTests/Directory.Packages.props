@@ -1,9 +1,18 @@
 <Project>
   <!--
-    This project's CompilationTests build synthesized Roslyn compilations and assert
-    no warnings. Inherit central package versions directly from the repo root so we
-    don't pick up the higher BCL minima from tests/Directory.Packages.props (which
-    would cause CS1702 assembly-version mismatches against project-referenced PolyType).
+    Inherit test infrastructure packages from tests/Directory.Packages.props but re-pin
+    the BCL packages back to the conservative root versions. This project's
+    CompilationTests build synthesized Roslyn compilations and assert no warnings; the
+    higher BCL minima would cause CS1702 assembly-version mismatches against the
+    project-referenced PolyType assembly.
   -->
-  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Packages.props', '$(MSBuildThisFileDirectory)../../'))" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Packages.props', '$(MSBuildThisFileDirectory)../'))" />
+  <ItemGroup>
+    <PackageVersion Update="System.Memory" Version="4.5.5" />
+    <PackageVersion Update="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
+    <PackageVersion Update="System.Threading.Tasks.Extensions" Version="4.5.4" />
+    <PackageVersion Update="System.Collections.Immutable" Version="8.0.0" />
+    <PackageVersion Update="System.Text.Json" Version="9.0.8" />
+  </ItemGroup>
 </Project>
+
