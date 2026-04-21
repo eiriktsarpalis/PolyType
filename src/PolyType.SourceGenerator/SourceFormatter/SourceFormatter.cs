@@ -34,7 +34,7 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
         context.CancellationToken.ThrowIfCancellationRequested();
         context.AddSource($"{provider.ProviderDeclaration.SourceFilenamePrefix}.g.cs", FormatTypeShapeProviderMainFile(provider));
 
-        foreach (TypeShapeModel type in provider.ProvidedTypes.Values.OrderBy(t => t.SourceIdentifier))
+        foreach (TypeShapeModel type in provider.ProvidedTypes.Values.OrderBy(t => t.SourceIdentifier, StringComparer.Ordinal))
         {
             context.CancellationToken.ThrowIfCancellationRequested();
             context.AddSource($"{provider.ProviderDeclaration.SourceFilenamePrefix}.{type.SourceIdentifier}.g.cs", FormatProvidedType(provider, type));
@@ -289,7 +289,7 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
             """);
 
         writer.Indentation += 2;
-        foreach (AssociatedTypeId associatedType in objectShapeModel.AssociatedTypes.OrderBy(t => t.ClosedTypeReflectionName))
+        foreach (AssociatedTypeId associatedType in objectShapeModel.AssociatedTypes.OrderBy(t => t.ClosedTypeReflectionName, StringComparer.Ordinal))
         {
             if (associatedType.OpenTypeInfo is { } openTypeInfo)
             {

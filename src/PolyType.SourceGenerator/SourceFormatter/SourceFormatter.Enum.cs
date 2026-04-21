@@ -52,7 +52,7 @@ internal sealed partial class SourceFormatter
             """);
 
         writer.Indentation += 2;
-        foreach (var member in enumTypeShape.Members.OrderBy(m => m.Key))
+        foreach (var member in enumTypeShape.Members.OrderBy(m => m.Key, StringComparer.Ordinal))
         {
             writer.WriteLine($"""["{member.Key}"] = {member.Value},""");
         }
