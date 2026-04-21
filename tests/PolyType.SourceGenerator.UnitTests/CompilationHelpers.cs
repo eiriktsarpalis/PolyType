@@ -109,10 +109,6 @@ public static class CompilationHelpers
             syntaxTrees: syntaxTrees,
             references: references,
             options: new CSharpCompilationOptions(outputKind, nullableContextOptions: nullableContextOptions, allowUnsafe: true)
-                // CS1702 is reported on net472 when PolyType.dll was compiled against an older
-                // System.Memory than the test compilation references (e.g. due to BCL pinning
-                // overrides). The mismatch is benign for test purposes.
-                .WithSpecificDiagnosticOptions(new[] { new KeyValuePair<string, ReportDiagnostic>("CS1702", ReportDiagnostic.Suppress) })
         );
     }
 
