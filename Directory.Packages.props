@@ -25,16 +25,14 @@
     <PackageVersion Include="PolySharp" Version="1.15.0" />
     <PackageVersion Include="Nerdbank.GitVersioning" Version="3.10.8-alpha" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
-    <!-- Used by PolyType.Examples and applications/ConfigurationBinder.AOT -->
+    <!-- Used by PolyType.Examples and applications/ConfigurationBinder.AOT. -->
     <!--
-      Microsoft.Extensions.Configuration is intentionally pinned to 9.0.x.
-      In 10.x, Microsoft.Extensions.Configuration.Json no longer distinguishes
-      a JSON `null` literal from an empty object `{}`: both produce
-      IConfigurationSection.Value == null with no children. The example
-      ConfigurationBinder relies on this distinction to bind null vs empty
-      objects, and the change cannot be worked around at the IConfiguration
-      API surface. Keeping this on 9.0.x is also more conservative for the
-      packable PolyType.Examples library.
+      Pinned to 9.0.x. In 10.x, Microsoft.Extensions.Configuration.Json appears
+      to have changed how empty arrays and JSON null literals are surfaced via
+      IConfigurationSection.Value, which collides with how the example
+      ConfigurationBinder distinguishes null sections from empty objects.
+      Keeping this on 9.0.x is also more conservative for the packable
+      PolyType.Examples library.
     -->
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.8" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="9.0.8" />
