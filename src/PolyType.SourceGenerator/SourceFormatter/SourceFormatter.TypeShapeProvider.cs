@@ -71,7 +71,7 @@ internal sealed partial class SourceFormatter
             """);
 
         writer.Indentation += 2;
-        foreach (TypeShapeModel typeModel in provider.ProvidedTypes.Values.OrderBy(t => t.SourceIdentifier))
+        foreach (TypeShapeModel typeModel in provider.ProvidedTypes.Values.OrderBy(t => t.SourceIdentifier, StringComparer.Ordinal))
         {
             writer.WriteLine($$"""
                 case {{FormatStringLiteral(typeModel.ReflectionName)}}:
@@ -123,7 +123,7 @@ internal sealed partial class SourceFormatter
                 writer.WriteLine($"{typeDeclaration.TypeDeclarationHeader} :");
                 writer.WriteLine("#nullable disable annotations // Use nullable-oblivious interface implementation", disableIndentation: true);
                 writer.Indentation++;
-                foreach (TypeId typeToImplement in typeDeclaration.ShapeableImplementations.OrderBy(t => t.FullyQualifiedName))
+                foreach (TypeId typeToImplement in typeDeclaration.ShapeableImplementations.OrderBy(t => t.FullyQualifiedName, StringComparer.Ordinal))
                 {
                     string separator = --count == 0 ? "" : ",";
                     writer.WriteLine($"global::PolyType.IShapeable<{typeToImplement.FullyQualifiedName}>{separator}");
@@ -150,7 +150,7 @@ internal sealed partial class SourceFormatter
         
         if (provider.TargetSupportsIShapeableOfT)
         {
-            foreach (TypeId typeToImplement in typeDeclaration.ShapeableImplementations.OrderBy(t => t.FullyQualifiedName))
+            foreach (TypeId typeToImplement in typeDeclaration.ShapeableImplementations.OrderBy(t => t.FullyQualifiedName, StringComparer.Ordinal))
             {
                 if (emittedMembers++ > 0)
                 {
@@ -180,7 +180,7 @@ internal sealed partial class SourceFormatter
 
             writer.Indentation += 2;
 
-            foreach (TypeId typeToImplement in typeDeclaration.ShapeableImplementations.OrderBy(t => t.FullyQualifiedName))
+            foreach (TypeId typeToImplement in typeDeclaration.ShapeableImplementations.OrderBy(t => t.FullyQualifiedName, StringComparer.Ordinal))
             {
                 writer.WriteLine($$"""
                     if (type == typeof({{typeToImplement.FullyQualifiedName}}))
