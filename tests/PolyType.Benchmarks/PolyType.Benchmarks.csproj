@@ -13,7 +13,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- BenchmarkDotNet transitively requires Microsoft.CodeAnalysis.CSharp >= 4.14.0,
+         but the rest of the solution pins it to 4.8.0 to keep the source generator
+         usable in VS 2022. Override the central version just for this project. -->
     <PackageReference Include="BenchmarkDotNet" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" VersionOverride="4.14.0" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

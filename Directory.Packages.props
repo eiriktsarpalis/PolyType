@@ -2,9 +2,7 @@
   <!--
     This is the root central package management file. Test projects use a scoped
     tests/Directory.Packages.props (which imports this file) to declare test-only
-    package versions and to override BCL minima needed by JsonSchema.Net. One test
-    project further overrides versions via a project-level Directory.Packages.props:
-      - tests/PolyType.Benchmarks/Directory.Packages.props
+    package versions and to override BCL minima needed by JsonSchema.Net.
   -->
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
