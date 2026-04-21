@@ -27,6 +27,9 @@
     <PackageReference Include="System.Formats.Cbor" />
     <PackageReference Include="Microsoft.Extensions.Configuration" />
     <PackageReference Include="YamlDotNet" />
+    <!-- VersionOverrides required to satisfy transitive minima of Microsoft.Extensions.Configuration 10.x. -->
+    <PackageReference Include="System.Memory" VersionOverride="4.6.3" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" VersionOverride="6.1.2" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0' or '$(TargetFramework)' == 'netstandard2.0'">

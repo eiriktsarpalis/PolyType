@@ -26,16 +26,8 @@
     <PackageVersion Include="Nerdbank.GitVersioning" Version="3.10.8-alpha" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
     <!-- Used by PolyType.Examples and applications/ConfigurationBinder.AOT. -->
-    <!--
-      Pinned to 9.0.x because of the .NET 10 behavioral change documented at
-      https://learn.microsoft.com/dotnet/core/compatibility/extensions/10.0/configuration-null-values-preserved.
-      The example ConfigurationBinder relies on the prior 9.x semantics where
-      JSON `null` literals and `{}` were distinguishable via IConfigurationSection.Value.
-      Pinning here also keeps the packable PolyType.Examples library on a
-      conservative dependency surface.
-    -->
-    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.8" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="9.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.5" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="10.0.5" />
     <!-- Earliest version of the library supporting literals and frozen collections -->
     <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
     <PackageVersion Include="System.Formats.Cbor" Version="9.0.8" />
