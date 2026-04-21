@@ -104,11 +104,18 @@ public static class CompilationHelpers
             .. additionalReferences,
         ];
 
+        var options = new CSharpCompilationOptions(outputKind, nullableContextOptions: nullableContextOptions, allowUnsafe: true);
+#if !NET
+        // On .NET Framework the test process may load newer BCL assemblies (e.g. System.Memory)
+        // than those PolyType was compiled against. CS1702 warns about the version mismatch,
+        // which is benign in an in-memory compilation used for source-generator testing.
+        options = options.WithSpecificDiagnosticOptions([new("CS1702", ReportDiagnostic.Suppress)]);
+#endif
         return CSharpCompilation.Create(
             assemblyName,
             syntaxTrees: syntaxTrees,
             references: references,
-            options: new CSharpCompilationOptions(outputKind, nullableContextOptions: nullableContextOptions, allowUnsafe: true)
+            options: options
         );
     }
 
