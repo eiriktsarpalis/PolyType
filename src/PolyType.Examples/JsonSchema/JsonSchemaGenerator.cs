@@ -307,6 +307,16 @@ public static class JsonSchemaGenerator
             return CompleteDocument(schema, allowNull, depth);
         }
 
+        private void Push(string name)
+        {
+            _path.Add(name);
+        }
+
+        private void Pop()
+        {
+            _path.RemoveAt(_path.Count - 1);
+        }
+
         private static JsonObject CompleteDocument(JsonObject schema, bool allowNull, int depth)
         {
             if (allowNull && schema.TryGetPropertyValue("type", out JsonNode? typeValue))
@@ -327,16 +337,6 @@ public static class JsonSchemaGenerator
             }
 
             return schema;
-        }
-
-        private void Push(string name)
-        {
-            _path.Add(name);
-        }
-
-        private void Pop()
-        {
-            _path.RemoveAt(_path.Count - 1);
         }
 
         private static JsonArray CreateArray(IEnumerable<JsonNode> elements)
