@@ -1,23 +1,17 @@
 <Project>
   <!--
-    This is the root central package management file. The PolyType core library
-    pins conservative BCL minima via VersionOverride in src/PolyType/PolyType.csproj;
-    everything else in the solution consumes the bleeding-edge versions declared here.
-    Test projects use a scoped tests/Directory.Packages.props (which imports this file)
-    to declare additional test-only package versions.
+    This is the root central package management file. Keep compatibility-sensitive
+    dependencies pinned in the specific product projects that consume them directly,
+    rather than centrally pinning transitives for the whole solution. This avoids
+    making the source-generator packages advertise newer VS-hostile transitive
+    dependencies than necessary.
   -->
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
     <RoslynVersion>4.8.0</RoslynVersion>
     <RoslynVersionForAnalyzers>4.3.0</RoslynVersionForAnalyzers>
   </PropertyGroup>
   <ItemGroup>
-    <!-- Product dependencies -->
-    <PackageVersion Include="System.Memory" Version="4.6.3" />
-    <PackageVersion Include="System.Reflection.Emit.Lightweight" Version="4.7.0" />
-    <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
-    <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.6.3" />
     <!-- Source Generator dependencies -->
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="$(RoslynVersion)" />
@@ -30,7 +24,7 @@
     <!-- Used by PolyType.Examples and applications/ConfigurationBinder.AOT. -->
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.5" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="10.0.5" />
-    <!-- Earliest version of the library supporting literals and frozen collections -->
+    <!-- Used by examples and test cases. -->
     <PackageVersion Include="System.Collections.Immutable" Version="10.0.5" />
     <PackageVersion Include="System.Formats.Cbor" Version="10.0.5" />
     <PackageVersion Include="System.Text.Json" Version="10.0.5" />

@@ -51,7 +51,7 @@
     <!-- Pin the BCL minima for the core library at conservative versions, even though
          other projects in the solution consume newer versions transitively. -->
     <PackageReference Include="System.Memory" VersionOverride="4.5.5" />
-    <PackageReference Include="System.Reflection.Emit.Lightweight" />
+    <PackageReference Include="System.Reflection.Emit.Lightweight" VersionOverride="4.7.0" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" VersionOverride="6.0.0" />
     <PackageReference Include="System.Threading.Tasks.Extensions" VersionOverride="4.5.4" />
   </ItemGroup>
