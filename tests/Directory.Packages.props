@@ -14,6 +14,12 @@
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
     <!-- Test-only library dependencies. -->
     <PackageVersion Include="JsonSchema.Net" Version="9.2.0" />
+    <!-- BCL packages overridden to satisfy JsonSchema.Net 9.x transitive minima. -->
+    <PackageVersion Update="System.Memory" Version="4.6.3" />
+    <PackageVersion Update="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
+    <PackageVersion Update="System.Threading.Tasks.Extensions" Version="4.6.3" />
+    <PackageVersion Update="System.Collections.Immutable" Version="10.0.5" />
+    <PackageVersion Update="System.Text.Json" Version="10.0.5" />
   </ItemGroup>
 </Project>
 
