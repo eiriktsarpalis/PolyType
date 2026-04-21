@@ -59,13 +59,15 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
                 JsonObject elementSchema = JsonSchemaGenerator.Generate(enumerableShape.ElementType);
                 JsonNode? itemsSchema = schema;
                 for (int i = 0; i < enumerableShape.Rank; i++) itemsSchema = ((JsonObject)itemsSchema!)["items"];
-                Assert.True(RootEqualsSubschema(elementSchema, itemsSchema));
+                elementSchema.Remove("$schema");
+                Assert.True(JsonNode.DeepEquals(elementSchema, itemsSchema));
                 break;
 
             case IDictionaryTypeShape dictionaryShape:
                 AssertType("object");
                 JsonObject valueSchema = JsonSchemaGenerator.Generate(dictionaryShape.ValueType);
-                Assert.True(RootEqualsSubschema(valueSchema, schema["additionalProperties"]));
+                valueSchema.Remove("$schema");
+                Assert.True(JsonNode.DeepEquals(valueSchema, schema["additionalProperties"]));
                 break;
 
             case IObjectTypeShape objectShape:
@@ -103,39 +105,6 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
                 Assert.Equal(type, (string)typeValue!);
             }
         }
-    }
-
-    // Compares a root-level schema (which carries `$schema`) against a nested sub-schema by
-    // checking that every non-`$schema` entry in `root` structurally matches the corresponding
-    // entry in `sub`. Avoids mutating either operand.
-    private static bool RootEqualsSubschema(JsonObject root, JsonNode? sub)
-    {
-        if (sub is not JsonObject subObj)
-        {
-            return false;
-        }
-
-        int expectedCount = root.ContainsKey("$schema") ? root.Count - 1 : root.Count;
-        if (subObj.Count != expectedCount)
-        {
-            return false;
-        }
-
-        foreach (KeyValuePair<string, JsonNode?> kvp in root)
-        {
-            if (kvp.Key == "$schema")
-            {
-                continue;
-            }
-
-            if (!subObj.TryGetPropertyValue(kvp.Key, out JsonNode? subValue) ||
-                !JsonNode.DeepEquals(kvp.Value, subValue))
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     [Theory]
