@@ -12,6 +12,11 @@
     <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="2.0.2" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="1.1.2" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
+    <!-- Roslyn is pinned at 4.8.0 in the root for source-generator/VS 2022 compatibility,
+         but BenchmarkDotNet (and source generator unit tests) need a newer version. -->
+    <PackageVersion Update="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
+    <PackageVersion Update="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.14.0" />
+    <PackageVersion Update="Microsoft.CodeAnalysis.Workspaces.Common" Version="4.14.0" />
     <!-- Test-only library dependencies. -->
     <PackageVersion Include="JsonSchema.Net" Version="9.2.0" />
     <!-- BCL packages overridden to satisfy JsonSchema.Net 9.x transitive minima. -->
