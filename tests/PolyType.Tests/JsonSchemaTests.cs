@@ -1,4 +1,4 @@
-﻿using Json.Schema;
+using Json.Schema;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -18,6 +18,9 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
     {
         ITypeShape shape = providerUnderTest.ResolveShape(testCase);
         JsonObject schema = JsonSchemaGenerator.Generate(shape);
+
+        // Every root schema must declare the JSON Schema version.
+        Assert.Equal("https://json-schema.org/draft/2020-12/schema", (string?)schema["$schema"]);
 
         switch (shape)
         {
@@ -54,13 +57,16 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
 
                 AssertType("array");
                 JsonObject elementSchema = JsonSchemaGenerator.Generate(enumerableShape.ElementType);
-                for (int i = 0; i < enumerableShape.Rank; i++) schema = (JsonObject)schema["items"]!;
-                Assert.True(JsonNode.DeepEquals(elementSchema, schema));
+                JsonNode? itemsSchema = schema;
+                for (int i = 0; i < enumerableShape.Rank; i++) itemsSchema = ((JsonObject)itemsSchema!)["items"];
+                elementSchema.Remove("$schema");
+                Assert.True(JsonNode.DeepEquals(elementSchema, itemsSchema));
                 break;
 
             case IDictionaryTypeShape dictionaryShape:
                 AssertType("object");
                 JsonObject valueSchema = JsonSchemaGenerator.Generate(dictionaryShape.ValueType);
+                valueSchema.Remove("$schema");
                 Assert.True(JsonNode.DeepEquals(valueSchema, schema["additionalProperties"]));
                 break;
 
@@ -82,7 +88,8 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
                 break;
 
             default:
-                Assert.Empty(schema);
+                Assert.Single(schema);
+                Assert.Contains("$schema", schema);
                 break;
         }
 
@@ -116,13 +123,14 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
         JsonObject schema = JsonSchemaGenerator.Generate(shape);
         string json = JsonSerializerTS.CreateConverter(shape).Serialize(testCase.Value);
 
-        JsonSchema jsonSchema = JsonSerializer.Deserialize<JsonSchema>(schema)!;
+        JsonSchema jsonSchema = JsonSchema.FromText(JsonSerializer.Serialize(schema));
         EvaluationOptions options = new() { OutputFormat = OutputFormat.List };
-        EvaluationResults results = jsonSchema.Evaluate(JsonNode.Parse(json), options);
+        using JsonDocument instanceDoc = JsonDocument.Parse(json);
+        EvaluationResults results = jsonSchema.Evaluate(instanceDoc.RootElement, options);
         if (!results.IsValid)
         {
-            IEnumerable<string> errors = results.Details
-                .Where(d => d.HasErrors)
+            IEnumerable<string> errors = (results.Details ?? [])
+                .Where(d => d.Errors is { Count: > 0 })
                 .SelectMany(d => d.Errors!.Select(error => $"Path:${d.InstanceLocation} {error.Key}:{error.Value}"));
 
             throw new XunitException($"""
@@ -145,8 +153,9 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
         IMethodShape resetAsync = serviceShape.Methods.Single(m => m.Name == nameof(RpcService.ResetAsync));
 
         JsonNode? actualSchema = JsonSchemaGenerator.Generate(getEventsAsync);
-        JsonNode? expectedSchema = JsonNode.Parse("""
+        JsonNode? expectedSchema = JsonNode.Parse($$"""
             {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "name": "GetEventsAsync",
                 "type": "object",
                 "properties": {
@@ -169,8 +178,9 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
         Assert.True(JsonNode.DeepEquals(expectedSchema, actualSchema));
 
         actualSchema = JsonSchemaGenerator.Generate(resetAsync);
-        expectedSchema = JsonNode.Parse("""
+        expectedSchema = JsonNode.Parse($$"""
             {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "name": "ResetAsync",
                 "type": "object",
                 "output": { }

@@ -18,6 +18,8 @@ public static class JsonSchemaGenerator
     public static JsonObject Generate<T>(ITypeShapeProvider typeShapeProvider)
         => Generate(typeShapeProvider.GetTypeShapeOrThrow<T>());
 
+    private const string MetaSchemaUri = "https://json-schema.org/draft/2020-12/schema";
+
     /// <summary>
     /// Generates a JSON schema using the specified shape.
     /// </summary>
@@ -28,42 +30,7 @@ public static class JsonSchemaGenerator
     /// Generates a JSON schema using the specified method shape.
     /// </summary>
     public static JsonObject Generate(IMethodShape methodShape)
-    {
-        JsonObject? parameterSchemas = null;
-        JsonArray? requiredParams = null;
-        foreach (var parameter in methodShape.Parameters)
-        {
-            if (parameter.ParameterType.Type == typeof(CancellationToken))
-            {
-                continue;
-            }
-
-            (parameterSchemas ??= []).Add(parameter.Name, Generate(parameter.ParameterType));
-            if (parameter.IsRequired)
-            {
-                (requiredParams ??= []).Add((JsonNode)parameter.Name);
-            }
-        }
-
-        JsonObject functionSchema = new JsonObject
-        {
-            ["name"] = methodShape.Name,
-            ["type"] = "object",
-        };
-
-        if (parameterSchemas is not null)
-        {
-            functionSchema["properties"] = parameterSchemas;
-        }
-
-        if (requiredParams is not null)
-        {
-            functionSchema["required"] = requiredParams;
-        }
-
-        functionSchema["output"] = Generate(methodShape.ReturnType);
-        return functionSchema;
-    }
+        => new Generator().GenerateMethodSchema(methodShape);
 
 #if NET
     /// <summary>
@@ -87,13 +54,57 @@ public static class JsonSchemaGenerator
         private readonly Dictionary<(Type, bool AllowNull), string> _locations = new();
         private readonly List<string> _path = new();
 
-        public JsonObject GenerateSchema(ITypeShape typeShape, bool allowNull = true, bool cacheLocation = true)
+        public JsonObject GenerateMethodSchema(IMethodShape methodShape)
+        {
+            JsonObject? parameterSchemas = null;
+            JsonArray? requiredParams = null;
+            foreach (var parameter in methodShape.Parameters)
+            {
+                if (parameter.ParameterType.Type == typeof(CancellationToken))
+                {
+                    continue;
+                }
+
+                Push("properties");
+                Push(parameter.Name);
+                (parameterSchemas ??= []).Add(parameter.Name, GenerateSchema(parameter.ParameterType, depth: 1));
+                Pop();
+                Pop();
+                if (parameter.IsRequired)
+                {
+                    (requiredParams ??= []).Add((JsonNode)parameter.Name);
+                }
+            }
+
+            JsonObject functionSchema = new JsonObject
+            {
+                ["name"] = methodShape.Name,
+                ["type"] = "object",
+            };
+
+            if (parameterSchemas is not null)
+            {
+                functionSchema["properties"] = parameterSchemas;
+            }
+
+            if (requiredParams is not null)
+            {
+                functionSchema["required"] = requiredParams;
+            }
+
+            Push("output");
+            functionSchema["output"] = GenerateSchema(methodShape.ReturnType, depth: 1);
+            Pop();
+            return CompleteDocument(functionSchema, allowNull: false, depth: 0);
+        }
+
+        public JsonObject GenerateSchema(ITypeShape typeShape, bool allowNull = true, bool cacheLocation = true, int depth = 0)
         {
             allowNull = allowNull && IsNullableType(typeShape.Type);
 
             if (s_simpleTypeInfo.TryGetValue(typeShape.Type, out SimpleTypeJsonSchema simpleType))
             {
-                return ApplyNullability(simpleType.ToSchemaDocument(), allowNull);
+                return CompleteDocument(simpleType.ToSchemaDocument(), allowNull, depth);
             }
 
             if (cacheLocation)
@@ -125,12 +136,12 @@ public static class JsonSchemaGenerator
                     break;
 
                 case IOptionalTypeShape optionalShape:
-                    schema = GenerateSchema(optionalShape.ElementType, cacheLocation: false);
-                    ApplyNullability(schema, allowNull: true);
+                    schema = GenerateSchema(optionalShape.ElementType, cacheLocation: false, depth: depth + 1);
+                    allowNull = true;
                     break;
                 
                 case ISurrogateTypeShape surrogateShape:
-                    return GenerateSchema(surrogateShape.SurrogateType, cacheLocation: false);
+                    return CompleteDocument(GenerateSchema(surrogateShape.SurrogateType, cacheLocation: false, depth: depth + 1), allowNull: false, depth);
 
                 case IEnumerableTypeShape enumerableShape:
                     for (int i = 0; i < enumerableShape.Rank; i++)
@@ -138,7 +149,7 @@ public static class JsonSchemaGenerator
                         Push("items");
                     }
 
-                    schema = GenerateSchema(enumerableShape.ElementType);
+                    schema = GenerateSchema(enumerableShape.ElementType, depth: depth + 1);
 
                     for (int i = 0; i < enumerableShape.Rank; i++)
                     {
@@ -155,7 +166,7 @@ public static class JsonSchemaGenerator
 
                 case IDictionaryTypeShape dictionaryShape:
                     Push("additionalProperties");
-                    JsonObject additionalPropertiesSchema = GenerateSchema(dictionaryShape.ValueType);
+                    JsonObject additionalPropertiesSchema = GenerateSchema(dictionaryShape.ValueType, depth: depth + 1);
                     Pop();
 
                     schema = new JsonObject
@@ -191,7 +202,7 @@ public static class JsonSchemaGenerator
                                 (associatedParameter is null || associatedParameter.IsNonNullable);
                             
                             Push(prop.Name);
-                            JsonObject propSchema = GenerateSchema(prop.PropertyType, allowNull: !isNonNullable);
+                            JsonObject propSchema = GenerateSchema(prop.PropertyType, allowNull: !isNonNullable, depth: depth + 1);
                             Pop();
 
                             properties.Add(prop.Name, propSchema);
@@ -220,7 +231,7 @@ public static class JsonSchemaGenerator
                     foreach (IUnionCaseShape caseShape in unionShape.UnionCases)
                     {
                         Push($"{anyOf.Count}");
-                        JsonObject caseSchema = GenerateSchema(caseShape.UnionCaseType, cacheLocation: false);
+                        JsonObject caseSchema = GenerateSchema(caseShape.UnionCaseType, cacheLocation: false, depth: depth + 1);
                         Pop();
 
                         if (caseShape.UnionCaseType is IObjectTypeShape or IDictionaryTypeShape)
@@ -274,7 +285,7 @@ public static class JsonSchemaGenerator
                     if (!unionCasesContainBaseType)
                     {
                         Push($"{anyOf.Count}");
-                        JsonNode caseSchema = GenerateSchema(unionShape.BaseType, cacheLocation: false);
+                        JsonNode caseSchema = GenerateSchema(unionShape.BaseType, cacheLocation: false, depth: depth + 1);
                         Pop();
 
                         anyOf.Add(caseSchema);
@@ -293,7 +304,7 @@ public static class JsonSchemaGenerator
                     break;
             }
 
-            return ApplyNullability(schema, allowNull);
+            return CompleteDocument(schema, allowNull, depth);
         }
 
         private void Push(string name)
@@ -306,11 +317,11 @@ public static class JsonSchemaGenerator
             _path.RemoveAt(_path.Count - 1);
         }
 
-        private static JsonObject ApplyNullability(JsonObject schema, bool allowNull)
+        private static JsonObject CompleteDocument(JsonObject schema, bool allowNull, int depth)
         {
             if (allowNull && schema.TryGetPropertyValue("type", out JsonNode? typeValue))
             {
-                if (schema["type"] is JsonArray types)
+                if (typeValue is JsonArray types)
                 {
                     types.Add((JsonNode)"null");
                 }
@@ -318,6 +329,11 @@ public static class JsonSchemaGenerator
                 {
                     schema["type"] = new JsonArray { (JsonNode)(string)typeValue!, (JsonNode)"null" };
                 }
+            }
+
+            if (depth == 0)
+            {
+                schema.Insert(0, "$schema", MetaSchemaUri);
             }
 
             return schema;

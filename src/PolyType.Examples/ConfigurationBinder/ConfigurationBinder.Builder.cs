@@ -313,15 +313,15 @@ public static partial class ConfigurationBinderTS
             yield return Create(text => float.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture));
             yield return Create(text => double.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture));
             yield return Create(text => decimal.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture));
-            yield return Create(text => string.IsNullOrEmpty(text) ? null : text);
+            yield return Create<string?>(text => text);
             yield return Create(char.Parse);
             yield return Create(Guid.Parse);
             yield return Create(text => TimeSpan.Parse(text, CultureInfo.InvariantCulture));
             yield return Create(text => DateTime.Parse(text, CultureInfo.InvariantCulture));
             yield return Create(text => DateTimeOffset.Parse(text, CultureInfo.InvariantCulture));
-            yield return Create(text => text is "" ? null : new Uri(text, UriKind.RelativeOrAbsolute));
-            yield return Create(text => text is "" ? null : Version.Parse(text));
-            yield return Create(text => text is "" ? null : Convert.FromBase64String(text));
+            yield return Create(text => new Uri(text, UriKind.RelativeOrAbsolute));
+            yield return Create(Version.Parse);
+            yield return Create(Convert.FromBase64String);
 #if NET
             yield return Create(text => UInt128.Parse(text, NumberStyles.Integer, CultureInfo.InvariantCulture));
             yield return Create(text => Int128.Parse(text, NumberStyles.Integer, CultureInfo.InvariantCulture));
@@ -332,8 +332,6 @@ public static partial class ConfigurationBinderTS
 #endif
 
             yield return Create<object?>(text =>
-                text is null ? new object() :
-                text is "" ? null :
                 bool.TryParse(text, out bool boolResult) ? boolResult :
                 int.TryParse(text, out int intResult) ? intResult :
                 double.TryParse(text, out double doubleResult) ? doubleResult :
@@ -367,6 +365,11 @@ public static partial class ConfigurationBinderTS
                     throw new InvalidOperationException();
                 }
 
+                if (section.Value is null && default(T) is null)
+                {
+                    return default!;
+                }
+
                 try
                 {
                     return parser(section.Value!);
@@ -379,11 +382,10 @@ public static partial class ConfigurationBinderTS
         }
 
         private static Func<IConfiguration, T> CreateNotSupportedBinder<T>() =>
-            config => default(T) is null && IsNullConfiguration(config) ? default! : throw new NotSupportedException($"Type '{typeof(T)}' is not supported.");
+            config => IsNullConfiguration(config) ? default! : throw new NotSupportedException($"Type '{typeof(T)}' is not supported.");
 
         private static bool IsNullConfiguration(IConfiguration configuration) =>
-            // https://github.com/dotnet/runtime/issues/36510
-            configuration is IConfigurationSection { Value: "" } &&
+            configuration is IConfigurationSection { Value: null } &&
             !configuration.GetChildren().Any();
     }
 
