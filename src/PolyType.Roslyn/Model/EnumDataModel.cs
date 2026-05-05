@@ -24,4 +24,9 @@ public sealed class EnumDataModel : TypeDataModel
     /// Gets a value indicating whether the enum is annotated with the <see cref="FlagsAttribute"/>.
     /// </summary>
     public required bool IsFlags { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the enum is a closed enum.
+    /// </summary>
+    public required bool IsClosed { get; init; }
 }

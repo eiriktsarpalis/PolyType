@@ -31,6 +31,9 @@ public sealed class GenerateShapeForAttribute<T> : Attribute
 
     /// <inheritdoc cref="TypeShapeAttribute.IncludeMethods" />
     public MethodShapeFlags IncludeMethods { get; init; }
+
+    /// <inheritdoc cref="TypeShapeAttribute.InferDerivedTypes" />
+    public bool InferDerivedTypes { get; init; }
 }
 
 /// <summary>
@@ -95,4 +98,7 @@ public sealed class GenerateShapeForAttribute : Attribute
 
     /// <inheritdoc cref="TypeShapeAttribute.IncludeMethods" />
     public MethodShapeFlags IncludeMethods { get; init; }
+
+    /// <inheritdoc cref="TypeShapeAttribute.InferDerivedTypes" />
+    public bool InferDerivedTypes { get; init; }
 }
