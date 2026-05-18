@@ -167,14 +167,10 @@ public static class TypeShapeResolver
 
         private static Func<ITypeShape<T>?>? CreateResolveDynamicFactory()
         {
-            if (typeof(TProvider).GetCustomAttribute<TypeShapeProviderAttribute>() is { } attr)
+            if (typeof(TProvider).GetCustomAttribute<TypeShapeProviderAttribute>() is { TypeShapeProvider: Type providerType })
             {
-                Type typeShapeProviderType = attr.TypeShapeProvider;
-                return () =>
-                {
-                    var typeShapeProvider = (ITypeShapeProvider)Activator.CreateInstance(typeShapeProviderType)!;
-                    return typeShapeProvider.GetTypeShape(typeof(T)) as ITypeShape<T>;
-                };
+                var typeShapeProvider = (ITypeShapeProvider)Activator.CreateInstance(providerType)!;
+                return () => (ITypeShape<T>?)typeShapeProvider.GetTypeShape(typeof(T));
             }
 #if NET
             // For forward compatibility with newer target frameworks
