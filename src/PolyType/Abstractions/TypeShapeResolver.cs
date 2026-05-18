@@ -52,7 +52,7 @@ public static class TypeShapeResolver
     [RequiresDynamicCode(ResolveDynamicMessage)]
 #endif
     public static ITypeShape<T>? ResolveDynamic<T>() =>
-        ResolveDynamicFactoryCache<T, T>.GetTypeShape();
+        ResolveDynamicFactoryCache<T, T>.Shape;
 
     /// <summary>
     /// Uses reflection to resolve the source generated <see cref="ITypeShape{T}"/> implementation from another type.
@@ -75,7 +75,7 @@ public static class TypeShapeResolver
     [RequiresDynamicCode(ResolveDynamicMessage)]
 #endif
     public static ITypeShape<T>? ResolveDynamic<T, TProvider>() =>
-        ResolveDynamicFactoryCache<T, TProvider>.GetTypeShape();
+        ResolveDynamicFactoryCache<T, TProvider>.Shape;
 
     /// <summary>
     /// Uses reflection to resolve the source generated <see cref="ITypeShape{T}"/> implementation of the type.
@@ -99,7 +99,7 @@ public static class TypeShapeResolver
 #endif
     public static ITypeShape<T> ResolveDynamicOrThrow<T>()
     {
-        ITypeShape<T>? result = ResolveDynamicFactoryCache<T, T>.GetTypeShape();
+        ITypeShape<T>? result = ResolveDynamicFactoryCache<T, T>.Shape;
         if (result is null)
         {
             ThrowNotSupported();
@@ -134,7 +134,7 @@ public static class TypeShapeResolver
 #endif
     public static ITypeShape<T> ResolveDynamicOrThrow<T, TProvider>()
     {
-        ITypeShape<T>? result = ResolveDynamicFactoryCache<T, TProvider>.GetTypeShape();
+        ITypeShape<T>? result = ResolveDynamicFactoryCache<T, TProvider>.Shape;
         if (result is null)
         {
             ThrowNotSupported();
@@ -151,36 +151,27 @@ public static class TypeShapeResolver
 #endif
     private static class ResolveDynamicFactoryCache<T, TProvider>
     {
-        private static ITypeShape<T>? s_cachedShape;
-        private static bool s_isCacheInitialized;
+        internal static ITypeShape<T>? Shape { get; } = GetTypeShape();
 
-        public static ITypeShape<T>? GetTypeShape()
+        private static ITypeShape<T>? GetTypeShape()
         {
-            if (!s_isCacheInitialized)
+            if (typeof(TProvider).GetCustomAttribute<TypeShapeProviderAttribute>() is { TypeShapeProvider: Type providerType })
             {
-                if (typeof(TProvider).GetCustomAttribute<TypeShapeProviderAttribute>() is { TypeShapeProvider: Type providerType })
-                {
-                    var typeShapeProvider = (ITypeShapeProvider)Activator.CreateInstance(providerType)!;
-                    s_cachedShape = (ITypeShape<T>?)typeShapeProvider.GetTypeShape(typeof(T));
-                }
+                var typeShapeProvider = (ITypeShapeProvider)Activator.CreateInstance(providerType)!;
+                return (ITypeShape<T>?)typeShapeProvider.GetTypeShape(typeof(T));
+            }
 #if NET
-                else
-                {
-                    // For forward compatibility with newer target frameworks
-                    // also resolve potential IShapeable<T> implementations.
-                    if (typeof(IShapeable<T>).IsAssignableFrom(typeof(TProvider)))
-                    {
-                        MethodInfo genericResolveMethod = typeof(TypeShapeResolver).GetMethod(nameof(Resolve), genericParameterCount: 2, BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null)!;
-                        MethodInfo resolveMethod = genericResolveMethod.MakeGenericMethod(typeof(T), typeof(TProvider));
-                        s_cachedShape = (ITypeShape<T>?)resolveMethod.Invoke(null, []);
-                    }
-                }
+            // For forward compatibility with newer target frameworks
+            // also resolve potential IShapeable<T> implementations.
+            if (typeof(IShapeable<T>).IsAssignableFrom(typeof(TProvider)))
+            {
+                MethodInfo genericResolveMethod = typeof(TypeShapeResolver).GetMethod(nameof(Resolve), genericParameterCount: 2, BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null)!;
+                MethodInfo resolveMethod = genericResolveMethod.MakeGenericMethod(typeof(T), typeof(TProvider));
+                return (ITypeShape<T>?)resolveMethod.Invoke(null, []);
+            }
 #endif
 
-                Volatile.Write(ref s_isCacheInitialized, true);
-            }
-
-            return s_cachedShape;
+            return null;
         }
     }
 }
