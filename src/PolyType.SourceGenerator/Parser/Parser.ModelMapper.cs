@@ -1169,8 +1169,8 @@ public sealed partial class Parser
 
         foreach ((AttributeData attr, bool isInherited) in symbol.GetAllAttributes())
         {
-            // Skip if attribute class is null, unresolved, or not accessible
-            if (attr.AttributeClass is null or IErrorTypeSymbol || !IsAccessibleSymbol(attr.AttributeClass))
+            // Skip if attribute class is null or not accessible
+            if (attr.AttributeClass is null || !IsAccessibleSymbol(attr.AttributeClass))
             {
                 continue;
             }
