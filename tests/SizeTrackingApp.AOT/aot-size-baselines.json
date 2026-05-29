@@ -6,6 +6,12 @@
   "tolerance_bytes": 524288,
   "tolerance_percent": 3,
   "platforms": {
+    "linux-x64": {
+      "size_bytes": 3018952
+    },
+    "osx-arm64": {
+      "size_bytes": 2862912
+    },
     "win-x64": {
       "size_bytes": 2543104
     }
