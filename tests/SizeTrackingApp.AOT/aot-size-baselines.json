@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/base.json",
+  "_comment_1": "Per-platform Native AOT publish-output file-size baselines for SizeTrackingApp.AOT.",
+  "_comment_2": "Updated locally for a single platform via `make update-aot-size-baseline`. To refresh all platforms after a CI run, open each matrix leg's 'Check AOT size' step log, copy the size_bytes value from its AOT-SIZE-RESULT block, and update the matching platforms.<rid>.size_bytes entry below.",
+  "_comment_3": "Bidirectional tolerance: the check fails on growth OR shrinkage beyond max(tolerance_bytes, tolerance_percent% of baseline) so the window can be ratcheted tighter over time.",
+  "tolerance_bytes": 524288,
+  "tolerance_percent": 3,
+  "platforms": {
+    "linux-x64": {
+      "size_bytes": 3018952
+    },
+    "osx-arm64": {
+      "size_bytes": 2862912
+    },
+    "win-x64": {
+      "size_bytes": 2543104
+    }
+  }
+}

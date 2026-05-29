@@ -1,0 +1,42 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <WarningsAsErrors>Nullable</WarningsAsErrors>
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+    <PublishAot>true</PublishAot>
+    <UseCurrentRuntimeIdentifier>true</UseCurrentRuntimeIdentifier>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <StackTraceSupport>false</StackTraceSupport>
+    <!--
+      ============================================================================
+      Native AOT scenario tracked by the AOT-size regression check.
+
+      The published binary's file size is recorded per-RID in
+      aot-size-baselines.json (next to this file) and compared on every CI run
+      by `make test-aot-size` (see eng/AotSizeCheck and .github/workflows/build.yml).
+
+      DO NOT EDIT THIS PROJECT OR Program.cs CASUALLY: any change to the
+      consumed PolyType surface, the project references, or the AOT-related
+      MSBuild properties will shift the measured size on every supported
+      platform and force every committed baseline to be re-generated. Treat
+      changes here the same way you would treat changes to a perf benchmark.
+      ============================================================================
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\PolyType\PolyType.csproj" />
+    <ProjectReference Include="..\..\src\PolyType.SourceGenerator\PolyType.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\src\PolyType.Examples\PolyType.Examples.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="aot-size-baselines.json" />
+  </ItemGroup>
+
+</Project>

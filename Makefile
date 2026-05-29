@@ -43,6 +43,38 @@ test-aot: build
 	&& \
 	$(ARTIFACT_PATH)/native-aot-tests/PolyType.Tests.NativeAOT
 
+# Publishes the canonical Native AOT scenario used to track app size and
+# compares the published binary's file size against the per-platform baseline
+# committed at tests/SizeTrackingApp.AOT/aot-size-baselines.json. The tool
+# prints an agent-parseable "AOT-SIZE-RESULT" block to stdout - a contributor
+# can read each CI leg's log and copy the per-RID size_bytes values into the
+# baselines file to refresh every platform from one CI run.
+test-aot-size:
+	dotnet publish $(SOURCE_DIRECTORY)/tests/SizeTrackingApp.AOT/SizeTrackingApp.AOT.csproj \
+		--configuration $(CONFIGURATION) \
+		$(ADDITIONAL_ARGS) \
+		-o $(ARTIFACT_PATH)/size-tracking-app \
+	&& \
+	dotnet run --project $(SOURCE_DIRECTORY)/eng/AotSizeCheck/AotSizeCheck.csproj -- check \
+		--baselines $(SOURCE_DIRECTORY)/tests/SizeTrackingApp.AOT/aot-size-baselines.json \
+		--publish-dir $(ARTIFACT_PATH)/size-tracking-app \
+		--app-name SizeTrackingApp.AOT
+
+# Refreshes the baseline entry for the current platform's RID only.
+# Use this for local single-platform updates; to update every platform at
+# once, read the AOT-SIZE-RESULT block from each leg of a CI run and merge
+# the size_bytes values into aot-size-baselines.json by hand.
+update-aot-size-baseline:
+	dotnet publish $(SOURCE_DIRECTORY)/tests/SizeTrackingApp.AOT/SizeTrackingApp.AOT.csproj \
+		--configuration $(CONFIGURATION) \
+		$(ADDITIONAL_ARGS) \
+		-o $(ARTIFACT_PATH)/size-tracking-app \
+	&& \
+	dotnet run --project $(SOURCE_DIRECTORY)/eng/AotSizeCheck/AotSizeCheck.csproj -- update \
+		--baselines $(SOURCE_DIRECTORY)/tests/SizeTrackingApp.AOT/aot-size-baselines.json \
+		--publish-dir $(ARTIFACT_PATH)/size-tracking-app \
+		--app-name SizeTrackingApp.AOT
+
 test: test-clr test-aot
 
 pack: build
