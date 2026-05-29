@@ -14,6 +14,9 @@
     <Project Path="applications/SerializationApp.Reflection/SerializationApp.Reflection.csproj" />
     <Project Path="applications/ValidationApp.AOT/ValidationApp.AOT.csproj" />
   </Folder>
+  <Folder Name="/eng/">
+    <Project Path="eng/AotSizeCheck/AotSizeCheck.csproj" />
+  </Folder>
   <Folder Name="/docs/">
     <File Path="docs/core-abstractions.md" />
     <File Path="docs/docfx.json" />
@@ -55,5 +58,6 @@
     <Project Path="tests/PolyType.SourceGenerator.UnitTests/PolyType.SourceGenerator.UnitTests.csproj" />
     <Project Path="tests/PolyType.Tests/PolyType.Tests.csproj" />
     <Project Path="tests/PolyType.Tests.NativeAOT/PolyType.Tests.NativeAOT.csproj" />
+    <Project Path="tests/SizeTrackingApp.AOT/SizeTrackingApp.AOT.csproj" />
   </Folder>
 </Solution>

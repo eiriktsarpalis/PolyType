@@ -45,6 +45,10 @@ jobs:
       env:
         VSTEST_CONNECTION_TIMEOUT: 1800000
 
+    - name: Check AOT size 📏
+      if: matrix.configuration == 'Release'
+      run: make test-aot-size CONFIGURATION=${{ matrix.configuration }}
+
     - name: Pack 📦
       if: matrix.configuration == 'Release'
       run: make pack CONFIGURATION=${{ matrix.configuration }}
