@@ -184,6 +184,7 @@ public static class ObsoletePropertyTests
         var unionShape = new SourceGenUnionTypeShape<object>
         {
             Provider = mockProvider,
+            UnionKind = UnionKind.ClassHierarchy,
             BaseTypeFactory = () => throw new InvalidOperationException("BaseTypeFactory should not be called"),
             BaseType = expectedBaseType,
             UnionCasesFactory = () => [],

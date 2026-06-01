@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Compile Include="..\PolyType\TypeShapeKind.cs" Link="Shared\PolyType\%(Filename).cs" />
+    <Compile Include="..\PolyType\UnionKind.cs" Link="Shared\PolyType\%(Filename).cs" />
     <Compile Include="..\PolyType\MethodShapeFlags.cs" Link="Shared\PolyType\%(Filename).cs" />
     <Compile Include="..\PolyType\SourceGenModel\Helpers\ValueBitArray.cs" Link="Shared\PolyType\SourceGenModel\Helpers\%(Filename).cs" />
     <Compile Include="..\Shared\Helpers\CommonHelpers.cs" Link="PolyType.Roslyn\Shared\Helpers\%(Filename).cs" />

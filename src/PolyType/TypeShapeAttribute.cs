@@ -60,6 +60,28 @@ public sealed class TypeShapeAttribute : Attribute
     /// </remarks>
     public MethodShapeFlags IncludeMethods { get => _includeMethods ?? MethodShapeFlags.None; init => _includeMethods = value; }
 
+    /// <summary>
+    /// Gets a value indicating whether derived types should be automatically inferred for this type.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// When set to <see langword="true"/>, the type shape provider will attempt to auto-discover derived types:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>
+    /// <b>Fast path:</b> Read <c>[ClosedSubtype]</c> attributes emitted by the compiler for closed class hierarchies.
+    /// </description></item>
+    /// <item><description>
+    /// <b>Slow path (reflection only):</b> Scan the type's assembly for direct subtypes.
+    /// </description></item>
+    /// </list>
+    /// <para>
+    /// Explicit <see cref="DerivedTypeShapeAttribute"/> annotations always take precedence over auto-inferred types.
+    /// </para>
+    /// </remarks>
+    public bool InferDerivedTypes { get; init; }
+
     internal TypeShapeKind? GetRequestedKind() => _kind;
     internal MethodShapeFlags? GetRequestedIncludeMethods() => _includeMethods;
+    internal bool? GetRequestedInferDerivedTypes() => InferDerivedTypes ? true : null;
 }

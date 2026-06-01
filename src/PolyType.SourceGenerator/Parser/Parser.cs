@@ -613,6 +613,16 @@ public sealed partial class Parser : TypeDataModelGenerator
 
                 derivedType = dt;
             }
+            else if (SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, _knownSymbols.ClosedSubtypeAttribute))
+            {
+                // [ClosedSubtype(typeof(T))] — emitted by the compiler for closed hierarchies
+                if (attribute.ConstructorArguments is not [{ Value: ITypeSymbol closedDt }])
+                {
+                    continue;
+                }
+
+                derivedType = closedDt;
+            }
             else
             {
                 continue;
@@ -680,7 +690,8 @@ public sealed partial class Parser : TypeDataModelGenerator
             out TypeShapeKind? attrDeclaredKind,
             out ITypeSymbol? marshaler,
             out MethodShapeFlags? attrMethodBindingFlags,
-            out Location? typeShapeLocation);
+            out Location? typeShapeLocation,
+            out bool inferDerivedTypes);
 
         TypeExtensionModel? typeExtensionModel = GetExtensionModel(type);
         if (typeExtensionModel is not null)

@@ -69,6 +69,7 @@ internal sealed class EnumTypeShapeDebugView(IEnumTypeShape typeShape) : TypeSha
 {
     public ITypeShape UnderlyingType => typeShape.UnderlyingType;
     public bool IsFlags => typeShape.IsFlags;
+    public bool IsClosed => typeShape.IsClosed;
 }
 
 /// <summary>
@@ -95,6 +96,7 @@ internal sealed class SurrogateTypeShapeDebugView(ISurrogateTypeShape typeShape)
 [ExcludeFromCodeCoverage]
 internal sealed class UnionTypeShapeDebugView(IUnionTypeShape typeShape) : TypeShapeDebugView(typeShape), IUnionTypeShape
 {
+    public UnionKind UnionKind => typeShape.UnionKind;
     public ITypeShape BaseType => typeShape.BaseType;
     public IReadOnlyList<IUnionCaseShape> UnionCases => typeShape.UnionCases;
 }
