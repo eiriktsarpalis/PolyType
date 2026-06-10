@@ -324,21 +324,17 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
             if (derivedType.IsGenericTypeDefinition)
             {
-                try
+                if (!OpenGenericDerivedTypeResolver.TryResolveOpenGenericDerivedType(
+                        derivedType,
+                        unionType,
+                        out Type? closedDerivedType,
+                        out string? failureReason))
                 {
-                    // Accept generic derived types provided we can apply the type parameters for the base type.
-                    Type derivedWithBaseTypeParams = derivedType.MakeGenericType(unionType.GetGenericArguments());
-                    if (!unionType.IsAssignableFrom(derivedWithBaseTypeParams))
-                    {
-                        throw new InvalidOperationException();
-                    }
+                    throw new InvalidOperationException(
+                        $"The declared open generic derived type '{derivedType}' could not be resolved against the polymorphic base type '{unionType}': {failureReason}.");
+                }
 
-                    derivedType = derivedWithBaseTypeParams;
-                }
-                catch
-                {
-                    throw new InvalidOperationException($"The declared derived type '{derivedType}' introduces unsupported type parameters over '{unionType}'.");
-                }
+                derivedType = closedDerivedType;
             }
             else if (!unionType.IsAssignableFrom(derivedType))
             {

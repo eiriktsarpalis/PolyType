@@ -592,6 +592,26 @@ public static class TestTypes
         yield return TestCase.Create((GenericTree<string>)new GenericTree<string>.Node("str", new GenericTree<string>.Leaf(), new GenericTree<string>.Leaf()), additionalValues: [new GenericTree<string>.Leaf()], isUnion: true, provider: p);
         yield return TestCase.Create((GenericTree<int>)new GenericTree<int>.Node(42, new GenericTree<int>.Leaf(), new GenericTree<int>.Leaf()), additionalValues: [new GenericTree<int>.Leaf()], isUnion: true, provider: p);
         yield return TestCase.Create<ClassWithGenericDerivedType>(new ClassWithGenericDerivedType.Derived<int>(42), additionalValues: [new ClassWithGenericDerivedType.Derived<ClassWithGenericDerivedType.Arg1>(new())], isUnion: true);
+        yield return TestCase.Create(
+            (OpenGenericReorderedBase<int, string>)new OpenGenericReorderedDerived<string, int>("left", 42),
+            isUnion: true,
+            provider: p);
+        yield return TestCase.Create(
+            (OpenGenericPartialBase<string, int>)new OpenGenericPartialDerived<string>("hello"),
+            isUnion: true,
+            provider: p);
+        yield return TestCase.Create(
+            (OpenGenericWrappedBase<List<string>>)new OpenGenericWrappedDerived<string>(["a", "b"]),
+            isUnion: true,
+            provider: p);
+        yield return TestCase.Create(
+            (OpenGenericArrayBase<int[]>)new OpenGenericArrayDerived<int>([1, 2, 3]),
+            isUnion: true,
+            provider: p);
+        yield return TestCase.Create(
+            (OpenGenericMultiLevelBase<List<int>>)new OpenGenericMultiLevelLeaf<int>([10, 20]),
+            isUnion: true,
+            provider: p);
 
         yield return TestCase.Create(new RecordWithoutNamespace(42));
         yield return TestCase.Create(new GenericRecordWithoutNamespace<int>(42), p);
@@ -2725,6 +2745,43 @@ public partial record ClassWithGenericDerivedType
     public class Arg2;
 }
 
+[DerivedTypeShape(typeof(OpenGenericReorderedDerived<,>), Name = "reordered")]
+public partial record OpenGenericReorderedBase<T1, T2>
+{
+    public T1? Value1 { get; set; }
+    public T2? Value2 { get; set; }
+}
+
+public partial record OpenGenericReorderedDerived<U, V>(U Left, V Right) : OpenGenericReorderedBase<V, U>;
+
+[DerivedTypeShape(typeof(OpenGenericPartialDerived<>), Name = "partial")]
+public partial record OpenGenericPartialBase<T1, T2>;
+
+public partial record OpenGenericPartialDerived<T>(T? Value) : OpenGenericPartialBase<T, int>;
+
+[DerivedTypeShape(typeof(OpenGenericWrappedDerived<>), Name = "wrapped")]
+public partial record OpenGenericWrappedBase<T>;
+
+public partial record OpenGenericWrappedDerived<T>(List<T> Data) : OpenGenericWrappedBase<List<T>>;
+
+[DerivedTypeShape(typeof(OpenGenericArrayDerived<>), Name = "array")]
+public partial record OpenGenericArrayBase<T>;
+
+public partial record OpenGenericArrayDerived<T>(T[] Values) : OpenGenericArrayBase<T[]>;
+
+[DerivedTypeShape(typeof(OpenGenericInterfaceImpl<>), Name = "impl")]
+public partial interface IOpenGenericInterfaceBase<T>
+{
+    T? Value { get; }
+}
+
+public partial record OpenGenericInterfaceImpl<T>(T? Value) : IOpenGenericInterfaceBase<T>;
+
+[DerivedTypeShape(typeof(OpenGenericMultiLevelLeaf<>), Name = "leaf")]
+public partial record OpenGenericMultiLevelBase<T>;
+public partial record OpenGenericMultiLevelMid<T> : OpenGenericMultiLevelBase<List<T>>;
+public partial record OpenGenericMultiLevelLeaf<T>(List<T> Items) : OpenGenericMultiLevelMid<T>;
+
 [GenerateShape]
 public partial record PropertyRequiredByAttribute
 {
@@ -3547,6 +3604,12 @@ public delegate Task<int> LargeAsyncDelegate(
 [GenerateShapeFor<GenericDictionaryWithMarshaler<string, int>>]
 [GenerateShapeFor<GenericTree<string>>]
 [GenerateShapeFor<GenericTree<int>>]
+[GenerateShapeFor<OpenGenericReorderedBase<int, string>>]
+[GenerateShapeFor<OpenGenericPartialBase<string, int>>]
+[GenerateShapeFor<OpenGenericWrappedBase<List<string>>>]
+[GenerateShapeFor<OpenGenericArrayBase<int[]>>]
+[GenerateShapeFor<IOpenGenericInterfaceBase<int>>]
+[GenerateShapeFor<OpenGenericMultiLevelBase<List<int>>>]
 [GenerateShapeFor<GenericRecordWithoutNamespace<int>>]
 [GenerateShapeFor<GenericContainerWithoutNamespace<int>.Record<string>>]
 [GenerateShapeFor<IAsyncEnumerable<int>>]

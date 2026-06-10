@@ -7,6 +7,7 @@ using PolyType.SourceGenerator.Helpers;
 using PolyType.SourceGenerator.Model;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -589,7 +590,6 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
 
         int i = 0;
-        ITypeSymbol[]? baseTypeArgs = null;
         HashSet<ITypeSymbol> types = new(SymbolEqualityComparer.Default);
         HashSet<int> tags = new();
         HashSet<string> names = new(StringComparer.Ordinal);
@@ -623,11 +623,9 @@ public sealed partial class Parser : TypeDataModelGenerator
 
             if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true } namedDerivedType)
             {
-                baseTypeArgs ??= ((INamedTypeSymbol)type).GetRecursiveTypeArguments();
-                INamedTypeSymbol? specializedDerivedType = namedDerivedType.OriginalDefinition.ConstructRecursive(baseTypeArgs);
-                if (specializedDerivedType is null || !type.IsAssignableFrom(specializedDerivedType))
+                if (!TryResolveOpenGenericDerivedType(namedDerivedType, type, out INamedTypeSymbol? specializedDerivedType, out OpenGenericResolutionFailure? failure, out string? failedDetail))
                 {
-                    ReportDiagnostic(DerivedTypeUnsupportedGenerics, attribute.GetLocation(), derivedType.ToDisplayString(), type.ToDisplayString());
+                    ReportDiagnostic(DerivedTypeUnsupportedGenerics, attribute.GetLocation(), derivedType.ToDisplayString(), type.ToDisplayString(), FormatOpenGenericFailureReason(failure!.Value, failedDetail));
                     continue;
                 }
 
@@ -672,6 +670,192 @@ public sealed partial class Parser : TypeDataModelGenerator
             };
 
             i++;
+        }
+    }
+
+    /// <summary>
+    /// Closes <paramref name="unboundDerived"/> against <paramref name="baseType"/> via
+    /// structural unification at compile time. Returns <see langword="true"/> when the
+    /// registration can be closed to a unique concrete type. Returns <see langword="false"/>
+    /// with a <see cref="OpenGenericResolutionFailure"/> classification when the derived type
+    /// cannot be resolved against this particular base.
+    /// </summary>
+    /// <remarks>
+    /// This implementation mirrors the reflection-side resolver
+    /// <c>PolyType.Utilities.ReflectionUtilities.TryResolveOpenGenericDerivedType</c>. Both
+    /// implementations -- the structural unbound pre-check, the per-ancestor unification, and
+    /// the ambiguity detection -- must be kept in lockstep so that source-gen and reflection
+    /// produce the same closed type for the same registration. Any algorithmic change here
+    /// must be applied in the reflection mirror as well.
+    ///
+    /// Known intentional asymmetry: source-gen rejects a managed value type (e.g. a struct
+    /// containing reference fields) supplied for a <c>where T : unmanaged</c> constraint because
+    /// emitting such a closed type would produce a C# compile error (CS8377). The reflection
+    /// resolver delegates constraint validation to <see cref="System.Type.MakeGenericType"/>,
+    /// which only enforces the underlying value-type part of the constraint at runtime.
+    /// </remarks>
+    private bool TryResolveOpenGenericDerivedType(
+        INamedTypeSymbol unboundDerived,
+        ITypeSymbol baseType,
+        [NotNullWhen(true)] out INamedTypeSymbol? resolvedType,
+        [NotNullWhen(false)] out OpenGenericResolutionFailure? failure,
+        out string? failureDetail)
+    {
+        resolvedType = null;
+        failure = null;
+        failureDetail = null;
+
+        if (baseType is not INamedTypeSymbol { IsGenericType: true } constructedBase)
+        {
+            failure = OpenGenericResolutionFailure.NotAssignable;
+            return false;
+        }
+
+        INamedTypeSymbol derivedDefinition = unboundDerived.OriginalDefinition;
+        INamedTypeSymbol baseDefinition = constructedBase.OriginalDefinition;
+
+        List<INamedTypeSymbol> matchingBases = derivedDefinition
+            .GetCompatibleGenericBaseTypes(baseDefinition)
+            .ToList();
+
+        if (matchingBases.Count == 0)
+        {
+            failure = OpenGenericResolutionFailure.NotAssignable;
+            return false;
+        }
+
+        List<ITypeParameterSymbol> requiredParams = derivedDefinition.GetAllTypeParameters();
+        ImmutableArray<ITypeSymbol> constructedBaseArgs = constructedBase.TypeArguments;
+
+        // Structural unbound pre-check: every required parameter must appear at least once
+        // in some matching ancestor's type arguments. If a parameter never appears at all,
+        // no closed base could ever bind it.
+        HashSet<ITypeParameterSymbol> referencedParams = new(SymbolEqualityComparer.Default);
+        foreach (INamedTypeSymbol mb in matchingBases)
+        {
+            foreach (ITypeSymbol arg in mb.TypeArguments)
+            {
+                OpenGenericDerivedTypeHelpers.CollectReferencedParameters(arg, referencedParams);
+            }
+        }
+        foreach (ITypeParameterSymbol required in requiredParams)
+        {
+            if (!referencedParams.Contains(required))
+            {
+                failure = OpenGenericResolutionFailure.UnboundParameter;
+                failureDetail = required.Name;
+                return false;
+            }
+        }
+
+        Dictionary<ITypeParameterSymbol, ITypeSymbol>? successfulSubstitution = null;
+        int successCount = 0;
+
+        foreach (INamedTypeSymbol matchingBase in matchingBases)
+        {
+            ImmutableArray<ITypeSymbol> matchingBaseArgs = matchingBase.TypeArguments;
+            Debug.Assert(matchingBaseArgs.Length == constructedBaseArgs.Length,
+                "matchingBase and constructedBase share the same generic definition, so arity must match.");
+
+            var substitution = new Dictionary<ITypeParameterSymbol, ITypeSymbol>(requiredParams.Count, SymbolEqualityComparer.Default);
+            bool unified = true;
+            for (int i = 0; i < matchingBaseArgs.Length; i++)
+            {
+                if (!matchingBaseArgs[i].TryUnifyWith(constructedBaseArgs[i], substitution))
+                {
+                    unified = false;
+                    break;
+                }
+            }
+
+            if (!unified)
+            {
+                continue;
+            }
+
+            // Unification succeeded for every position. Every required parameter must be
+            // bound; otherwise the resulting closed type would have unbound type arguments.
+            // A sibling ancestor may still bind this parameter, so failure here is not fatal.
+            bool allBound = true;
+            foreach (ITypeParameterSymbol p in requiredParams)
+            {
+                if (!substitution.ContainsKey(p))
+                {
+                    allBound = false;
+                    break;
+                }
+            }
+
+            if (!allBound)
+            {
+                continue;
+            }
+
+            successCount++;
+            if (successCount == 1)
+            {
+                successfulSubstitution = substitution;
+            }
+            else
+            {
+                failure = OpenGenericResolutionFailure.AmbiguousMatch;
+                return false;
+            }
+        }
+
+        if (successCount == 0 || successfulSubstitution is null)
+        {
+            failure = OpenGenericResolutionFailure.UnificationFailed;
+            return false;
+        }
+
+        if (!_knownSymbols.Compilation.TryValidateGenericConstraints(requiredParams, successfulSubstitution, out ITypeParameterSymbol? failedParam, out ITypeSymbol? failedArg))
+        {
+            failure = OpenGenericResolutionFailure.ConstraintViolation;
+            failureDetail = $"{failedParam.Name}|{failedArg?.ToDisplayString() ?? string.Empty}";
+            return false;
+        }
+
+        ITypeSymbol[] closedArgs = new ITypeSymbol[requiredParams.Count];
+        for (int i = 0; i < requiredParams.Count; i++)
+        {
+            closedArgs[i] = successfulSubstitution[requiredParams[i]];
+        }
+
+        resolvedType = derivedDefinition.ConstructWithEnclosingTypeArguments(closedArgs);
+        return true;
+    }
+
+    private static string FormatOpenGenericFailureReason(OpenGenericResolutionFailure failure, string? detail)
+    {
+        return failure switch
+        {
+            OpenGenericResolutionFailure.NotAssignable
+                => "the derived type is not assignable to the base type",
+            OpenGenericResolutionFailure.UnificationFailed
+                => "the base type's arguments do not match the derived type's base specification",
+            OpenGenericResolutionFailure.UnboundParameter
+                => $"the type parameter '{detail}' of the derived type is not bound by the base type's arguments",
+            OpenGenericResolutionFailure.AmbiguousMatch
+                => "the derived type matches the base type through multiple ancestors",
+            OpenGenericResolutionFailure.ConstraintViolation
+                => FormatConstraintFailure(detail),
+            _ => "the open generic derived type could not be resolved",
+        };
+
+        static string FormatConstraintFailure(string? detail)
+        {
+            if (string.IsNullOrEmpty(detail))
+            {
+                return "the closed derived type would violate one of its declared generic constraints";
+            }
+
+            string[] parts = detail!.Split(['|'], 2);
+            string paramName = parts[0];
+            string argName = parts.Length > 1 ? parts[1] : string.Empty;
+            return string.IsNullOrEmpty(argName)
+                ? $"the constraint on type parameter '{paramName}' is not satisfied"
+                : $"the constraint on type parameter '{paramName}' is not satisfied by '{argName}'";
         }
     }
 

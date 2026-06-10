@@ -803,7 +803,7 @@ public static class DiagnosticTests
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
         Assert.Equal("PT0013", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
-        Assert.Contains("introduces unsupported type parameters", diagnostic.GetMessage());
+        Assert.Contains("not assignable to the base type", diagnostic.GetMessage());
         Assert.Equal((2, 1), diagnostic.Location.GetStartPosition());
         Assert.Equal((2, 36), diagnostic.Location.GetEndPosition());
     }
@@ -830,9 +830,183 @@ public static class DiagnosticTests
         Diagnostic diagnostic = Assert.Single(result.Diagnostics);
         Assert.Equal("PT0013", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
-        Assert.Contains("introduces unsupported type parameters", diagnostic.GetMessage());
+        // The nested Derived<S> requires both the enclosing T and its own S; only S is bound by the
+        // matching ancestor's arguments, so T is reported as the unbound parameter.
+        Assert.Contains("'T'", diagnostic.GetMessage());
+        Assert.Contains("not bound by the base type's arguments", diagnostic.GetMessage());
         Assert.Equal((3, 1), diagnostic.Location.GetStartPosition());
         Assert.Equal((3, 36), diagnostic.Location.GetEndPosition());
+    }
+
+    [Fact]
+    public static void OpenGenericDerivedType_UnboundParameter_ErrorDiagnostic()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [DerivedTypeShape(typeof(Derived<,>))]
+            class Base<T>
+            {
+                public class Inner;
+            }
+
+            class Derived<T1, T2> : Base<T1>;
+
+            [GenerateShapeFor(typeof(Base<int>))]
+            partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("PT0013", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("'T2'", diagnostic.GetMessage());
+        Assert.Contains("not bound by the base type's arguments", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public static void OpenGenericDerivedType_AmbiguousMatch_ErrorDiagnostic()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+            using System.Collections.Generic;
+
+            [DerivedTypeShape(typeof(Impl<>))]
+            interface IBase<T> { }
+
+            class Impl<T> : IBase<T>, IBase<List<T>> { }
+
+            [GenerateShapeFor(typeof(IBase<List<int>>))]
+            partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("PT0013", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("matches the base type through multiple ancestors", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public static void OpenGenericDerivedType_ConstraintViolation_ErrorDiagnostic()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [DerivedTypeShape(typeof(Derived<>))]
+            class Base<T> { }
+
+            class Derived<T> : Base<T> where T : struct;
+
+            [GenerateShapeFor(typeof(Base<string>))]
+            partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("PT0013", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("constraint on type parameter 'T'", diagnostic.GetMessage());
+        Assert.Contains("'string'", diagnostic.GetMessage());
+    }
+
+    [Fact]
+    public static void OpenGenericDerivedType_Identity_NoDiagnostic()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [DerivedTypeShape(typeof(Derived<>))]
+            class Base<T> { }
+
+            class Derived<T> : Base<T>;
+
+            [GenerateShapeFor(typeof(Base<int>))]
+            partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void OpenGenericDerivedType_ReorderedParameters_NoDiagnostic()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [DerivedTypeShape(typeof(Reordered<,>))]
+            class Base<T1, T2> { }
+
+            class Reordered<U, V> : Base<V, U>;
+
+            [GenerateShapeFor(typeof(Base<int, string>))]
+            partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void OpenGenericDerivedType_PartialConcretization_NoDiagnostic()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [DerivedTypeShape(typeof(Partial<>))]
+            class Base<T1, T2> { }
+
+            class Partial<T> : Base<T, int>;
+
+            [GenerateShapeFor(typeof(Base<bool, int>))]
+            partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void OpenGenericDerivedType_WrappedArgument_NoDiagnostic()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+            using System.Collections.Generic;
+
+            [DerivedTypeShape(typeof(Wrapped<>))]
+            class Base<T> { }
+
+            class Wrapped<T> : Base<List<T>>;
+
+            [GenerateShapeFor(typeof(Base<List<int>>))]
+            partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public static void OpenGenericDerivedType_InterfaceBase_NoDiagnostic()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [DerivedTypeShape(typeof(Impl<>))]
+            interface IBase<T> { }
+
+            class Impl<T> : IBase<T> { }
+
+            [GenerateShapeFor(typeof(IBase<int>))]
+            partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        Assert.Empty(result.Diagnostics);
     }
 
     [Fact]
