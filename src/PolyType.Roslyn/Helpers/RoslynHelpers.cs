@@ -462,28 +462,50 @@ internal static class RoslynHelpers
             return null;
         }
 
-        Debug.Assert(genericType.IsGenericTypeDefinition());
+        return type.GetCompatibleGenericBaseTypes(genericType).FirstOrDefault();
+    }
 
-        if (genericType.TypeKind is TypeKind.Interface)
+    /// <summary>
+    /// Enumerates every ancestor of <paramref name="type"/> whose original definition matches
+    /// <paramref name="baseTypeDefinition"/>. For interface bases this yields every implementing
+    /// instantiation (a type can implement the same interface definition with different type
+    /// arguments); for class bases it yields at most the first match found while walking the
+    /// base-type chain (only one such instantiation is reachable).
+    /// </summary>
+    /// <remarks>
+    /// This implementation mirrors the corresponding reflection helper
+    /// <c>PolyType.Utilities.ReflectionUtilities.GetMatchingGenericBaseTypes</c>. Any change
+    /// to the enumeration order or matching rules MUST be applied on both sides to keep
+    /// reflection and source-gen behaviour in sync.
+    /// </remarks>
+    public static IEnumerable<INamedTypeSymbol> GetCompatibleGenericBaseTypes(this ITypeSymbol type, INamedTypeSymbol baseTypeDefinition)
+    {
+        Debug.Assert(baseTypeDefinition.IsGenericTypeDefinition());
+
+        if (baseTypeDefinition.TypeKind is TypeKind.Interface)
         {
             foreach (INamedTypeSymbol interfaceType in type.AllInterfaces)
             {
-                if (IsMatchingGenericType(interfaceType, genericType))
+                if (IsMatchingGenericType(interfaceType, baseTypeDefinition))
                 {
-                    return interfaceType;
+                    yield return interfaceType;
                 }
             }
+
+            // Note: do NOT yield break here. `AllInterfaces` does not include `type` itself,
+            // so when `type` IS the interface we're looking for, the fall-through to the
+            // BaseType walk below picks it up via the self-check on the first iteration
+            // (interface symbols have a null BaseType, so the loop terminates immediately).
         }
 
-        for (INamedTypeSymbol? current = type as INamedTypeSymbol; current != null; current = current.BaseType)
+        for (INamedTypeSymbol? current = type as INamedTypeSymbol; current is not null; current = current.BaseType)
         {
-            if (IsMatchingGenericType(current, genericType))
+            if (IsMatchingGenericType(current, baseTypeDefinition))
             {
-                return current;
+                yield return current;
+                yield break;
             }
         }
-
-        return null;
 
         static bool IsMatchingGenericType(INamedTypeSymbol candidate, INamedTypeSymbol baseType)
         {
