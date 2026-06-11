@@ -1,7 +1,8 @@
 ﻿// Implements the structural unification algorithm used to close open generic derived types
 // against a constructed base type. This file contains the source-generator-side mirror of the
-// reflection algorithm in PolyType.Utilities.ReflectionUtilities. Any structural change here
-// MUST be applied on both sides to keep reflection and source-gen behaviour in sync.
+// reflection algorithm in PolyType.ReflectionProvider.OpenGenericDerivedTypeResolver. Any
+// structural change here MUST be applied on both sides to keep reflection and source-gen
+// behaviour in sync.
 //
 // The algorithm is a port of the resolver added in dotnet/runtime#127318 (System.Text.Json
 // support for open generic [JsonDerivedType]). See the PR description for the full set of

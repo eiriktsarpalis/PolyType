@@ -335,7 +335,10 @@ record Wrapped<T>(List<T> Data) : Base<List<T>>;
 
 // 5. Interface bases — at most one matching instantiation per closed base.
 [DerivedTypeShape(typeof(Impl<>))]
-partial interface IBase<T>;
+partial interface IBase<T>
+{
+    T? Value { get; }
+}
 record Impl<T>(T? Value) : IBase<T>;
 
 // 6. Multi-level hierarchies — substitution flows through intermediate generic ancestors.

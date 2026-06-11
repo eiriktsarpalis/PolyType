@@ -697,8 +697,8 @@ public sealed partial class Parser : TypeDataModelGenerator
     /// </summary>
     /// <remarks>
     /// This implementation mirrors the reflection-side resolver
-    /// <c>PolyType.Utilities.ReflectionUtilities.TryResolveOpenGenericDerivedType</c>. Both
-    /// implementations -- the structural unbound pre-check, the per-ancestor unification, and
+    /// <c>PolyType.ReflectionProvider.OpenGenericDerivedTypeResolver.TryResolveOpenGenericDerivedType</c>.
+    /// Both implementations -- the structural unbound pre-check, the per-ancestor unification, and
     /// the ambiguity detection -- must be kept in lockstep so that source-gen and reflection
     /// produce the same closed type for the same registration. Any algorithmic change here
     /// must be applied in the reflection mirror as well.
