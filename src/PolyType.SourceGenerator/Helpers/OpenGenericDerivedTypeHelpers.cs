@@ -405,3 +405,15 @@ internal enum OpenGenericResolutionFailure
     /// <summary>The derived type matches the base type through multiple distinct ancestors.</summary>
     AmbiguousMatch,
 }
+
+internal static class OpenGenericResolutionFailureExtensions
+{
+    // Returns true when the failure is caused by the registration not matching THIS particular
+    // closed base, but where the same registration could plausibly apply to a different
+    // instantiation of the base. Such failures are silently skipped rather than reported as
+    // diagnostics, allowing a single attribute on an open base to span multiple closed
+    // instantiations naturally.
+    public static bool IsPerInstantiationFailure(this OpenGenericResolutionFailure failure) =>
+        failure is OpenGenericResolutionFailure.UnificationFailed
+            or OpenGenericResolutionFailure.ConstraintViolation;
+}
