@@ -622,6 +622,14 @@ public sealed partial class Parser : TypeDataModelGenerator
             {
                 if (!TryResolveOpenGenericDerivedType(namedDerivedType, type, out INamedTypeSymbol? specializedDerivedType, out OpenGenericResolutionFailure? failure, out string? failedDetail))
                 {
+                    if (failure!.Value.IsPerInstantiationFailure())
+                    {
+                        // The registration is valid in isolation but does not apply to this
+                        // particular closed base. A different closed instantiation of the
+                        // same base definition may still match it; silently skip.
+                        continue;
+                    }
+
                     ReportDiagnostic(DerivedTypeUnsupportedGenerics, attribute.GetLocation(), derivedType.ToDisplayString(), type.ToDisplayString(), FormatOpenGenericFailureReason(failure!.Value, failedDetail));
                     continue;
                 }
@@ -630,6 +638,16 @@ public sealed partial class Parser : TypeDataModelGenerator
             }
             else if (!type.IsAssignableFrom(derivedType))
             {
+                // The closed derived type does not fit this particular closed base. If the
+                // base is a generic instantiation AND the derived inherits from some other
+                // instantiation of the same base definition, silently skip -- the registration
+                // is targeted at a different closed base. Otherwise treat as a hard error.
+                if (type is INamedTypeSymbol { IsGenericType: true } namedBase &&
+                    derivedType.GetCompatibleGenericBaseTypes(namedBase.OriginalDefinition).Any())
+                {
+                    continue;
+                }
+
                 ReportDiagnostic(DerivedTypeNotAssignableToBase, attribute.GetLocation(), derivedType.ToDisplayString(), type.ToDisplayString());
                 continue;
             }

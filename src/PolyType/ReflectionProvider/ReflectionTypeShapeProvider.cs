@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
@@ -325,8 +326,17 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
                         derivedType,
                         unionType,
                         out Type? closedDerivedType,
-                        out string? failureReason))
+                        out string? failureReason,
+                        out OpenGenericResolutionFailureKind failureKind))
                 {
+                    if (failureKind.IsPerInstantiationFailure())
+                    {
+                        // The registration is valid in isolation but does not apply to this
+                        // particular closed base. A different closed instantiation of the
+                        // same base definition may still match it; silently skip.
+                        continue;
+                    }
+
                     throw new InvalidOperationException(
                         $"The declared open generic derived type '{derivedType}' could not be resolved against the polymorphic base type '{unionType}': {failureReason}.");
                 }
@@ -335,6 +345,17 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             }
             else if (!unionType.IsAssignableFrom(derivedType))
             {
+                // The closed derived type does not fit this particular closed base. If the
+                // base is a generic instantiation AND the derived inherits from some other
+                // instantiation of the same base definition, silently skip -- the registration
+                // is targeted at a different closed base. Otherwise the registration is a
+                // hard misregistration.
+                if (unionType.IsGenericType &&
+                    derivedType.GetMatchingGenericBaseTypes(unionType.GetGenericTypeDefinition()).Any())
+                {
+                    continue;
+                }
+
                 throw new InvalidOperationException($"The declared derived type '{derivedType}' is not a valid subtype of '{unionType}'.");
             }
 
