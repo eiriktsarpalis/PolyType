@@ -847,10 +847,10 @@ public static class DiagnosticTests
             [DerivedTypeShape(typeof(Derived<,>))]
             class Base<T>
             {
-                public class Inner;
+                public class Inner { }
             }
 
-            class Derived<T1, T2> : Base<T1>;
+            class Derived<T1, T2> : Base<T1> { }
 
             [GenerateShapeFor(typeof(Base<int>))]
             partial class Witness { }
@@ -898,7 +898,7 @@ public static class DiagnosticTests
             [DerivedTypeShape(typeof(Derived<>))]
             class Base<T> { }
 
-            class Derived<T> : Base<T> where T : struct;
+            class Derived<T> : Base<T> where T : struct { }
 
             [GenerateShapeFor(typeof(Base<string>))]
             partial class Witness { }
@@ -922,7 +922,7 @@ public static class DiagnosticTests
             [DerivedTypeShape(typeof(Derived<>))]
             class Base<T> { }
 
-            class Derived<T> : Base<T>;
+            class Derived<T> : Base<T> { }
 
             [GenerateShapeFor(typeof(Base<int>))]
             partial class Witness { }
@@ -941,7 +941,7 @@ public static class DiagnosticTests
             [DerivedTypeShape(typeof(Reordered<,>))]
             class Base<T1, T2> { }
 
-            class Reordered<U, V> : Base<V, U>;
+            class Reordered<U, V> : Base<V, U> { }
 
             [GenerateShapeFor(typeof(Base<int, string>))]
             partial class Witness { }
@@ -960,7 +960,7 @@ public static class DiagnosticTests
             [DerivedTypeShape(typeof(Partial<>))]
             class Base<T1, T2> { }
 
-            class Partial<T> : Base<T, int>;
+            class Partial<T> : Base<T, int> { }
 
             [GenerateShapeFor(typeof(Base<bool, int>))]
             partial class Witness { }
@@ -980,7 +980,7 @@ public static class DiagnosticTests
             [DerivedTypeShape(typeof(Wrapped<>))]
             class Base<T> { }
 
-            class Wrapped<T> : Base<List<T>>;
+            class Wrapped<T> : Base<List<T>> { }
 
             [GenerateShapeFor(typeof(Base<List<int>>))]
             partial class Witness { }
