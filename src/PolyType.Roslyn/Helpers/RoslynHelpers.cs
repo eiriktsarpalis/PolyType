@@ -474,9 +474,9 @@ internal static class RoslynHelpers
     /// </summary>
     /// <remarks>
     /// This implementation mirrors the corresponding reflection helper
-    /// <c>PolyType.Utilities.ReflectionUtilities.GetMatchingGenericBaseTypes</c>. Any change
-    /// to the enumeration order or matching rules MUST be applied on both sides to keep
-    /// reflection and source-gen behaviour in sync.
+    /// <c>PolyType.ReflectionProvider.OpenGenericDerivedTypeResolver.GetMatchingGenericBaseTypes</c>.
+    /// Any change to the enumeration order or matching rules MUST be applied on both sides to
+    /// keep reflection and source-gen behaviour in sync.
     /// </remarks>
     public static IEnumerable<INamedTypeSymbol> GetCompatibleGenericBaseTypes(this ITypeSymbol type, INamedTypeSymbol baseTypeDefinition)
     {
