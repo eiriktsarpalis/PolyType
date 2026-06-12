@@ -95,9 +95,22 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
     }
 
     [Fact]
-    public void KnownTypeAttribute_OnNonDataContract_DoesNotReportUnionShape()
+    public void KnownTypeAttribute_OnNonDataContract_ReportsUnionShape()
     {
-        Assert.IsType<IObjectTypeShape>(providerUnderTest.Provider.GetTypeShape(typeof(AnimalNoDataContract)), exactMatch: false);
+        var shape = Assert.IsType<IUnionTypeShape>(providerUnderTest.Provider.GetTypeShape(typeof(AnimalNoDataContract)), exactMatch: false);
+
+        var unionCase = Assert.Single(shape.UnionCases);
+        Assert.Equal(typeof(DogNoDataContract), unionCase.UnionCaseType.Type);
+    }
+
+    [Fact]
+    public void DerivedTypeShapeAttribute_TakesPrecedenceOverKnownType()
+    {
+        var shape = Assert.IsType<IUnionTypeShape>(providerUnderTest.Provider.GetTypeShape(typeof(AnimalWithBothAnnotations)), exactMatch: false);
+
+        // DerivedTypeShapeAttribute annotations take precedence; KnownTypeAttribute annotations are ignored.
+        var unionCase = Assert.Single(shape.UnionCases);
+        Assert.Equal(typeof(DogWithBothAnnotations), unionCase.UnionCaseType.Type);
     }
 
     [Fact]
@@ -207,6 +220,24 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
     public class DogNoDataContract : AnimalNoDataContract
     {
         public bool Barks { get; set; }
+    }
+
+    [GenerateShape]
+    [DerivedTypeShape(typeof(DogWithBothAnnotations))]
+    [KnownType(typeof(CatWithBothAnnotations))]
+    public partial class AnimalWithBothAnnotations
+    {
+        public string? Name { get; set; }
+    }
+
+    public class DogWithBothAnnotations : AnimalWithBothAnnotations
+    {
+        public bool Barks { get; set; }
+    }
+
+    public class CatWithBothAnnotations : AnimalWithBothAnnotations
+    {
+        public int Lives { get; set; }
     }
 
     [DataContract]

@@ -95,6 +95,36 @@ public static partial class CompilationTests
     }
 
     [Fact]
+    public static void KnownTypeHierarchy_WithoutDataContract_NoErrors()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System.Runtime.Serialization;
+            using PolyType;
+
+            [KnownType(typeof(Dog))]
+            [KnownType(typeof(Cat))]
+            [GenerateShape]
+            public abstract partial class Animal
+            {
+                public string? Name { get; set; }
+            }
+
+            public sealed class Dog : Animal
+            {
+                public bool Barks { get; set; }
+            }
+
+            public sealed class Cat : Animal
+            {
+                public int Lives { get; set; }
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
     public static void DataContract_Enum_WithEnumMember_NoErrors()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""

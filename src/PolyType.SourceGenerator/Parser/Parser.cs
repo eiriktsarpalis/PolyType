@@ -593,6 +593,9 @@ public sealed partial class Parser : TypeDataModelGenerator
         HashSet<ITypeSymbol> types = new(SymbolEqualityComparer.Default);
         HashSet<int> tags = new();
         HashSet<string> names = new(StringComparer.Ordinal);
+
+        // DerivedTypeShapeAttribute takes precedence over KnownTypeAttribute when both are present.
+        bool hasDerivedTypeShapeAttribute = type.HasAttribute(_knownSymbols.DerivedTypeShapeAttribute);
         foreach (AttributeData attribute in type.GetAttributes())
         {
             ITypeSymbol? derivedType = null;
@@ -603,8 +606,8 @@ public sealed partial class Parser : TypeDataModelGenerator
             {
                 ParseDerivedTypeShapeAttribute(attribute, out derivedType, out name, out tag);
             }
-            else if (SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, _knownSymbols.KnownTypeAttribute) &&
-                     type.HasAttribute(_knownSymbols.DataContractAttribute))
+            else if (!hasDerivedTypeShapeAttribute &&
+                     SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, _knownSymbols.KnownTypeAttribute))
             {
                 if (attribute.ConstructorArguments is not [{ Value: ITypeSymbol dt }])
                 {
