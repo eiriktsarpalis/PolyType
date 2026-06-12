@@ -105,8 +105,8 @@ public sealed partial class Parser
 
     private static DiagnosticDescriptor DerivedTypeUnsupportedGenerics { get; } = new DiagnosticDescriptor(
         id: "PT0013",
-        title: "Derived type uses unsupported generics.",
-        messageFormat: "The declared derived type '{0}' introduces unsupported type parameters over '{1}'.",
+        title: "Open generic derived type could not be resolved.",
+        messageFormat: "The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.",
         category: "PolyType.SourceGenerator",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
