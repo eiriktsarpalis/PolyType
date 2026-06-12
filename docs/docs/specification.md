@@ -48,7 +48,7 @@ attributes and doing so overrides the built-in shape kind inferred for the type.
 A type is mapped to <xref:PolyType.Abstractions.IUnionTypeShape> when:
 
 1. It is a class with <xref:PolyType.DerivedTypeShapeAttribute> annotations or
-2. It has [`DataContractAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.datacontractattribute) with [`KnownTypeAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.knowntypeattribute) annotations or
+2. It is a class with [`KnownTypeAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.knowntypeattribute) annotations or
 3. It is an F# union type.
 
 ### Dictionary Types

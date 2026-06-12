@@ -295,7 +295,10 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         }
 
         List<DerivedTypeShapeAttribute> derivedTypeAttributes = unionType.GetCustomAttributes<DerivedTypeShapeAttribute>().ToList();
-        if (unionType.GetCustomAttribute<DataContractAttribute>() is { })
+
+        // Honor KnownTypeAttribute annotations only when no DerivedTypeShapeAttribute is present,
+        // which takes precedence over KnownTypeAttribute.
+        if (derivedTypeAttributes.Count == 0)
         {
             var mappedKnownTypeAttributes = unionType.GetCustomAttributes<KnownTypeAttribute>()
                 .Select(attr =>
@@ -515,8 +518,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
                 return TypeShapeKind.Union;
             }
 
-            if (customAttributeData.Any(attrData => attrData.AttributeType == typeof(DataContractAttribute) &&
-                customAttributeData.Any(attrData => attrData.AttributeType == typeof(KnownTypeAttribute))))
+            if (customAttributeData.Any(attrData => attrData.AttributeType == typeof(KnownTypeAttribute)))
             {
                 return TypeShapeKind.Union;
             }
