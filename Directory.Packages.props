@@ -39,7 +39,7 @@
     <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="2.2.3" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="1.1.4" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
-    <PackageVersion Include="JsonSchema.Net" Version="9.2.1" />
+    <PackageVersion Include="JsonSchema.Net" Version="9.2.2" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsAnalyzerProject)'=='true'">
     <!-- Keep these versions in sync with what Unity documents as supported at 
