@@ -53,6 +53,28 @@ public static class TypeShapeExtensions
 #endif
         public static ITypeShapeProvider ResolveProvider<T, TProvider>()
             => TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>().Provider;
+
+        /// <inheritdoc cref="TypeShapeResolver.ResolveDynamicOrThrow{T}()"/>
+#if NET8_0
+        [RequiresDynamicCode(TypeShapeResolver.ResolveDynamicMessage)]
+#endif
+#if NET
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("Use the TypeShapeResolver.Resolve<T>() method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
+#endif
+        public static ITypeShape<T> Resolve<T>()
+            => TypeShapeResolver.ResolveDynamicOrThrow<T>();
+
+        /// <inheritdoc cref="TypeShapeResolver.ResolveDynamicOrThrow{T, TProvider}()"/>
+#if NET8_0
+        [RequiresDynamicCode(TypeShapeResolver.ResolveDynamicMessage)]
+#endif
+#if NET
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("Use the TypeShapeResolver.Resolve<T, TProvider>() method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
+#endif
+        public static ITypeShape<T> Resolve<T, TProvider>()
+            => TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>();
     }
 
     private sealed class DefaultConstructorVisitor : TypeShapeVisitor
