@@ -11,7 +11,7 @@ namespace PolyType.Abstractions;
 public static class TypeShapeResolver
 {
     // C.f. https://github.com/dotnet/runtime/issues/119440#issuecomment-3269894751
-    private const string ResolveDynamicMessage =
+    internal const string ResolveDynamicMessage =
         "Dynamic resolution of IShapeable<T> interface may require dynamic code generation in .NET 8 Native AOT. " +
         "It is recommended to switch to statically resolved IShapeable<T> APIs or upgrade your app to .NET 9 or later.";
 
@@ -145,6 +145,25 @@ public static class TypeShapeResolver
 
         return result;
     }
+
+#if NET
+    /// <summary>
+    /// Resolves the <see cref="ITypeShapeProvider"/> from the <see cref="IShapeable{T}"/> implementation of another type.
+    /// </summary>
+    /// <typeparam name="T">The type for which to extract the shape provider.</typeparam>
+    /// <returns>An <see cref="ITypeShapeProvider"/> instance that can produce the shape that describes <typeparamref name="T"/>.</returns>
+    public static ITypeShapeProvider ResolveProvider<T>()
+        where T : IShapeable<T> => T.GetTypeShape().Provider;
+
+    /// <summary>
+    /// Resolves the <see cref="ITypeShapeProvider"/> from the <see cref="IShapeable{T}"/> implementation of another type.
+    /// </summary>
+    /// <typeparam name="T">The type for which a shape provider is required.</typeparam>
+    /// <typeparam name="TProvider">The type on which the shape provider is implemented.</typeparam>
+    /// <returns>An <see cref="ITypeShapeProvider"/> instance that can produce the shape that describes <typeparamref name="T"/>.</returns>
+    public static ITypeShapeProvider ResolveProvider<T, TProvider>()
+        where TProvider : IShapeable<T> => TProvider.GetTypeShape().Provider;
+#endif
 
 #if NET8_0
     [RequiresDynamicCode(ResolveDynamicMessage)]

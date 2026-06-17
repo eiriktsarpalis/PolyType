@@ -1,4 +1,7 @@
-﻿namespace PolyType.Abstractions;
+﻿using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
+
+namespace PolyType.Abstractions;
 
 /// <summary>
 /// Extension methods for the various type shape interfaces.
@@ -17,6 +20,40 @@ public static class TypeShapeExtensions
     /// <inheritdoc cref="GetDefaultConstructor{T}(IObjectTypeShape{T})"/>
     public static Func<object>? GetDefaultConstructor(this IObjectTypeShape shape) =>
         (Func<object>?)shape.Constructor?.Accept(DefaultConstructorVisitor.Instance);
+
+    extension(TypeShapeResolver)
+    {
+        /// <summary>
+        /// Resolves the <see cref="ITypeShapeProvider"/> from the <see cref="IShapeable{T}"/> implementation of another type.
+        /// </summary>
+        /// <typeparam name="T">The type for which to extract the shape provider.</typeparam>
+        /// <returns>An <see cref="ITypeShapeProvider"/> instance that can produce the shape that describes <typeparamref name="T"/>.</returns>
+#if NET8_0
+        [RequiresDynamicCode(TypeShapeResolver.ResolveDynamicMessage)]
+#endif
+#if NET
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("Use the TypeShapeResolver.ResolveProvider<T>() method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
+#endif
+        public static ITypeShapeProvider ResolveProvider<T>()
+            => TypeShapeResolver.ResolveDynamicOrThrow<T>().Provider;
+
+        /// <summary>
+        /// Resolves the <see cref="ITypeShapeProvider"/> from the <see cref="IShapeable{T}"/> implementation of another type.
+        /// </summary>
+        /// <typeparam name="T">The type for which a shape provider is required.</typeparam>
+        /// <typeparam name="TProvider">The type on which the shape provider is implemented.</typeparam>
+        /// <returns>An <see cref="ITypeShapeProvider"/> instance that can produce the shape that describes <typeparamref name="T"/>.</returns>
+#if NET8_0
+        [RequiresDynamicCode(TypeShapeResolver.ResolveDynamicMessage)]
+#endif
+#if NET
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("Use the TypeShapeResolver.ResolveProvider<T, TProvider>() method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
+#endif
+        public static ITypeShapeProvider ResolveProvider<T, TProvider>()
+            => TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>().Provider;
+    }
 
     private sealed class DefaultConstructorVisitor : TypeShapeVisitor
     {
