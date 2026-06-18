@@ -38,9 +38,11 @@ namespace MyFancyParserUser
 #region IdealMultitargetingAPI
 internal class ShapeProcessor
 {
+#if NET8_0
     internal const string ResolveDynamicMessage =
         "Dynamic resolution of IShapeable<T> interface may require dynamic code generation in .NET 8 Native AOT. " +
         "It is recommended to switch to statically resolved IShapeable<T> APIs or upgrade your app to .NET 9 or later.";
+#endif
 
     /// <summary>
     /// Processes a shape of type T.
