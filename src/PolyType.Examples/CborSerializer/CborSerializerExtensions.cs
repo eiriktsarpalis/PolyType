@@ -25,9 +25,9 @@ public static class CborSerializerExtensions
 #endif
 #if NET
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("Use the CborSerializer.CreateConverter<T>() method instead. If using the extension method syntax, check that T actually has a [GenerateShape] attribute or otherwise implements or is constrained to IShapeable<T> to avoid a runtime failure.", error: true)]
+        [Obsolete($"Check that T actually has a [GenerateShape] attribute or otherwise implements or is constrained to IShapeable<T>. If T is declared in an assembly that does not target .NET, use {nameof(CborSerializer)}.{nameof(CborSerializer.CreateConverter)}({nameof(TypeShapeResolver)}.{nameof(TypeShapeResolver.ResolveDynamic)}<T>()) instead.", error: true)]
 #endif
-        public static CborConverter<T> CreateConverterUsingSourceGen<T>()
+        public static CborConverter<T> CreateConverter<T>()
              => CborSerializer.CreateConverter(TypeShapeResolver.Resolve<T>());
     }
 }

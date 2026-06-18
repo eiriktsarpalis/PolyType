@@ -71,7 +71,7 @@ internal static class ShapeProcessorExtensions
 #endif
 #if NET
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("Use the ShapeProcessor.ConsumeShape<T>() method instead. If using the extension method syntax, check that T actually has a [GenerateShape] attribute or otherwise implements or is constrained to IShapeable<T> to avoid a runtime failure.", error: true)]
+        [Obsolete($"Check that T actually has a [GenerateShape] attribute or otherwise implements or is constrained to IShapeable<T>. If T is declared in an assembly that does not target .NET, use {nameof(ShapeProcessor)}.{nameof(ShapeProcessor.ConsumeShape)}({nameof(TypeShapeResolver)}.{nameof(TypeShapeResolver.ResolveDynamic)}<T>()) instead.", error: true)]
 #endif
         public static void ConsumeShape<T>() => ShapeProcessor.ConsumeShape(TypeShapeResolver.Resolve<T>());
 
@@ -82,7 +82,7 @@ internal static class ShapeProcessorExtensions
 #endif
 #if NET
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("Use the ShapeProcessor.ConsumeShape<T, TProvider>() method instead. If using the extension method syntax, check that T actually has a [GenerateShape] attribute or otherwise implements or is constrained to IShapeable<T> to avoid a runtime failure.", error: true)]
+        [Obsolete($"Check that T actually has a [GenerateShape] attribute or otherwise implements or is constrained to IShapeable<T>. If T is declared in an assembly that does not target .NET, use {nameof(ShapeProcessor)}.{nameof(ShapeProcessor.ConsumeShape)}({nameof(TypeShapeResolver)}.{nameof(TypeShapeResolver.ResolveDynamic)}<T, TProvider>()) instead.", error: true)]
 #endif
         public static void ConsumeShape<T, TProvider>() => ShapeProcessor.ConsumeShape(TypeShapeResolver.Resolve<T, TProvider>());
     }
