@@ -23,6 +23,7 @@ public static class TypeShapeExtensions
 
     extension(TypeShapeResolver)
     {
+#pragma warning disable CS0618 // Type or member is obsolete
         /// <inheritdoc cref="TypeShapeResolver.ResolveDynamicOrThrow{T}()"/>
 #if NET8_0
         [RequiresDynamicCode(TypeShapeResolver.ResolveDynamicMessage)]
@@ -44,6 +45,7 @@ public static class TypeShapeExtensions
 #endif
         public static ITypeShape<T> Resolve<T, TProvider>()
             => TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>();
+#pragma warning restore CS0618 // Type or member is obsolete
     }
 
     private sealed class DefaultConstructorVisitor : TypeShapeVisitor
