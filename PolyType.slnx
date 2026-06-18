@@ -14,14 +14,22 @@
     <Project Path="applications/SerializationApp.Reflection/SerializationApp.Reflection.csproj" />
     <Project Path="applications/ValidationApp.AOT/ValidationApp.AOT.csproj" />
   </Folder>
+  <Folder Name="/docs/docs/">
+    <File Path="docs/docs/core-abstractions.md" />
+    <File Path="docs/docs/getting-started.md" />
+    <File Path="docs/docs/performance.md" />
+    <File Path="docs/docs/rpc-support.md" />
+    <File Path="docs/docs/shape-providers.md" />
+    <File Path="docs/docs/source-generator.md" />
+    <File Path="docs/docs/specification.md" />
+    <File Path="docs/docs/toc.yml" />
+  </Folder>
   <Folder Name="/eng/">
     <Project Path="eng/AotSizeCheck/AotSizeCheck.csproj" />
   </Folder>
   <Folder Name="/docs/">
-    <File Path="docs/core-abstractions.md" />
     <File Path="docs/docfx.json" />
     <File Path="docs/index.md" />
-    <File Path="docs/shape-providers.md" />
     <File Path="docs/toc.yml" />
     <Project Path="docs/CSharpSamples/CSharpSamples.csproj" />
   </Folder>

@@ -30,7 +30,7 @@ public static class TypeShapeExtensions
 #endif
 #if NET
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("Use the TypeShapeResolver.Resolve<T>() method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
+        [Obsolete("Use the TypeShapeResolver.Resolve<T>() method instead. If using the extension method syntax, check that T actually has a [GenerateShape] attribute or otherwise implements or is constrained to IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
         public static ITypeShape<T> Resolve<T>()
             => TypeShapeResolver.ResolveDynamicOrThrow<T>();
@@ -41,7 +41,7 @@ public static class TypeShapeExtensions
 #endif
 #if NET
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("Use the TypeShapeResolver.Resolve<T, TProvider>() method instead. If using the extension method syntax, check that your type argument actually has a [GenerateShape] attribute or otherwise implements IShapeable<T> to avoid a runtime failure.", error: true)]
+        [Obsolete("Use the TypeShapeResolver.Resolve<T, TProvider>() method instead. If using the extension method syntax, check that TProvider actually has a [GenerateShape] attribute or otherwise implements or is constrained to IShapeable<T> to avoid a runtime failure.", error: true)]
 #endif
         public static ITypeShape<T> Resolve<T, TProvider>()
             => TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>();

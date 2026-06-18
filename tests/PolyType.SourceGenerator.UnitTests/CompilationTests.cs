@@ -675,16 +675,21 @@ public static partial class CompilationTests
     [InlineData("partial record struct")]
     public static void SupportedWitnessTypeKinds_NoErrors(string kind)
     {
+#if NETFRAMEWORK
+        // Calling TypeShapeResolver.Resolve<T, TProvider>() on .NET Framework requires C# 14 extension member support.
+        CSharpParseOptions? parseOptions = CompilationHelpers.CreateParseOptions(LanguageVersion.CSharp14);
+#else
         CSharpParseOptions? parseOptions = kind.Contains("record struct") ? CompilationHelpers.CreateParseOptions(LanguageVersion.CSharp12) : null;
+#endif
         Compilation compilation = CompilationHelpers.CreateCompilation($$"""
             using PolyType;
             using PolyType.Abstractions;
 
             ITypeShape<MyPoco> shape;
-            #if NET
             shape = TypeShapeResolver.Resolve<MyPoco, Witness>();
-            #endif
+            #pragma warning disable CS0618 // Obsolete
             shape = TypeShapeResolver.ResolveDynamicOrThrow<MyPoco, Witness>();
+            #pragma warning restore CS0618 // Obsolete
             shape = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<MyPoco>();
 
             record MyPoco(string[] Values);

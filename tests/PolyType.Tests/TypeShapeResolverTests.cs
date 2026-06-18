@@ -20,7 +20,7 @@ public static partial class TypeShapeResolverTests
         Assert.Same(s1, s2);
     }
 
-    [Fact]
+    [Fact, Obsolete]
     public static void ResolveDynamicOrThrow_ReturnsSameInstance()
     {
         ITypeShape<ResolverShapeable> s1 = TypeShapeResolver.ResolveDynamicOrThrow<ResolverShapeable>();
@@ -28,7 +28,7 @@ public static partial class TypeShapeResolverTests
         Assert.Same(s1, s2);
     }
 
-    [Fact]
+    [Fact, Obsolete]
     public static void ResolveDynamicOrThrow_WithProvider_ReturnsSameInstance()
     {
         ITypeShape<ResolverShapeable> s1 = TypeShapeResolver.ResolveDynamicOrThrow<ResolverShapeable, ResolverShapeProvider>();
@@ -36,7 +36,7 @@ public static partial class TypeShapeResolverTests
         Assert.Same(s1, s2);
     }
 
-    [Fact]
+    [Fact, Obsolete]
     public static void ResolveDynamic_ReturnsNullForNonShapeable()
     {
         Assert.Null(TypeShapeResolver.ResolveDynamic<Unannotated>());

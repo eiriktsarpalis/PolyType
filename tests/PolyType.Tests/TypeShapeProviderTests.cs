@@ -1785,7 +1785,7 @@ public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProvid
 #endif
     }
 
-    [Fact]
+    [Fact, Obsolete]
     public void ResolveDynamic_ReturnsNullForNonShapeable()
     {
         Assert.Null(TypeShapeResolver.ResolveDynamic<object>());
