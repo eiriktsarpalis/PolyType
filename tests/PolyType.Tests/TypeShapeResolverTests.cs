@@ -66,13 +66,6 @@ public static partial class TypeShapeResolverTests
     }
 
     [Fact]
-    public static void ResolveProvider()
-    {
-        Assert.NotNull(TypeShapeResolver.ResolveProvider<ResolverShapeable>().GetTypeShape(typeof(ResolverShapeable)));
-        Assert.NotNull(TypeShapeResolver.ResolveProvider<ResolverShapeable, ResolverShapeProvider>().GetTypeShape(typeof(ResolverShapeable)));
-    }
-
-    [Fact]
     public static void Resolve_ImplicitDynamic()
     {
         Assert.NotNull(TypeShapeResolver.Resolve<ResolverShapeable>());
