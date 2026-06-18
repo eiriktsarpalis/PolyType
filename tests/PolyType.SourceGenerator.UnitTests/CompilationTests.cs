@@ -687,9 +687,7 @@ public static partial class CompilationTests
 
             ITypeShape<MyPoco> shape;
             shape = TypeShapeResolver.Resolve<MyPoco, Witness>();
-            #pragma warning disable CS0618 // Obsolete
             shape = TypeShapeResolver.ResolveDynamicOrThrow<MyPoco, Witness>();
-            #pragma warning restore CS0618 // Obsolete
             shape = Witness.GeneratedTypeShapeProvider.GetTypeShapeOrThrow<MyPoco>();
 
             record MyPoco(string[] Values);

@@ -26,7 +26,7 @@ public static class JsonSerializerTSExtensions
 #endif
 #if NET
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete($"Check that T actually has a [GenerateShape] attribute or otherwise implements or is constrained to IShapeable<T>. If T is declared in an assembly that does not target .NET, use {nameof(JsonSerializerTS)}.{nameof(JsonSerializerTS.CreateConverter)}({nameof(TypeShapeResolver)}.{nameof(TypeShapeResolver.ResolveDynamic)}<T>()) instead.", error: true)]
+        [Obsolete($"Check that T actually has a [GenerateShape] attribute or otherwise implements or is constrained to IShapeable<T>. If T is declared in an assembly that does not target .NET, use {nameof(JsonSerializerTS)}.{nameof(JsonSerializerTS.CreateConverter)}({nameof(TypeShapeResolver)}.{nameof(TypeShapeResolver.ResolveDynamicOrThrow)}<T>()) instead.", error: true)]
 #endif
         public static JsonConverter<T> CreateConverter<T>() =>
             JsonSerializerTS.CreateConverter(TypeShapeResolver.Resolve<T>());

@@ -26,7 +26,7 @@ public static class ConfigurationBinderTSExtensions
 #endif
 #if NET
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete($"Check that T actually has a [GenerateShape] attribute or otherwise implements or is constrained to IShapeable<T>. If T is declared in an assembly that does not target .NET, use {nameof(ConfigurationBinderTS)}.{nameof(ConfigurationBinderTS.Create)}({nameof(TypeShapeResolver)}.{nameof(TypeShapeResolver.ResolveDynamic)}<T>()) instead.", error: true)]
+        [Obsolete($"Check that T actually has a [GenerateShape] attribute or otherwise implements or is constrained to IShapeable<T>. If T is declared in an assembly that does not target .NET, use {nameof(ConfigurationBinderTS)}.{nameof(ConfigurationBinderTS.Create)}({nameof(TypeShapeResolver)}.{nameof(TypeShapeResolver.ResolveDynamicOrThrow)}<T>()) instead.", error: true)]
 #endif
         public static Func<IConfiguration, T?> Create<T>() => ConfigurationBinderTS.Create(TypeShapeResolver.Resolve<T>());
     }

@@ -93,11 +93,14 @@ public static class TypeShapeResolver
     /// Intended for compatibility with older frameworks where the <see cref="IShapeable{T}"/>
     /// interface (which uses static abstract interface methods) is not available.
     /// </para>
+    /// <para>
+    /// Callers should prefer using the <see cref="Resolve{T}"/> method when possible,
+    /// as it is more performant and catches more potential issues at compile time.
+    /// </para>
     /// </remarks>
 #if NET8_0
     [RequiresDynamicCode(ResolveDynamicMessage)]
 #endif
-    [Obsolete("Use Resolve<T>() for better performance and compile-time safety.")]
     public static ITypeShape<T> ResolveDynamicOrThrow<T>()
     {
         ITypeShape<T>? result = ResolveDynamicFactoryCache<T, T>.GetFactory()?.Invoke();
@@ -129,11 +132,14 @@ public static class TypeShapeResolver
     /// Intended for compatibility with older frameworks where the <see cref="IShapeable{T}"/>
     /// interface (which uses static abstract interface methods) is not available.
     /// </para>
+    /// <para>
+    /// Callers should prefer using the <see cref="Resolve{T, TProvider}"/> method when possible,
+    /// as it is more performant and catches more potential issues at compile time.
+    /// </para>
     /// </remarks>
 #if NET8_0
     [RequiresDynamicCode(ResolveDynamicMessage)]
 #endif
-    [Obsolete("Use Resolve<T, TProvider>() for better performance and compile-time safety.")]
     public static ITypeShape<T> ResolveDynamicOrThrow<T, TProvider>()
     {
         ITypeShape<T>? result = ResolveDynamicFactoryCache<T, TProvider>.GetFactory()?.Invoke();
