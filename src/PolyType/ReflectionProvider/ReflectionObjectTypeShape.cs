@@ -163,6 +163,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                 .FirstOrDefault();
         }
 
+        bool setsRequiredMembers = constructorInfo.SetsRequiredMembers();
         var parameterShapeInfos = new MethodParameterShapeInfo[parameters.Length];
         int i = 0;
 
@@ -189,12 +190,14 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                 logicalName = matchingMember.LogicalName ?? matchingMember.BaseMemberInfo.Name;
             }
 
-            bool? isRequired = parameterShapeAttribute?.IsRequiredSpecified is true ? parameterShapeAttribute.IsRequired : null;
+            bool? isRequired = parameterShapeAttribute?.IsRequiredSpecified is true
+                ? parameterShapeAttribute.IsRequired
+                : matchingMember?.IsRequiredByAttribute ??
+                    (!parameter.HasDefaultValue && !setsRequiredMembers && matchingMember?.BaseMemberInfo.IsRequired() is true ? true : null);
 
             parameterShapeInfos[i++] = new(parameter, isNonNullable, matchingMember?.BaseMemberInfo, logicalName, isRequired);
         }
 
-        bool setsRequiredMembers = constructorInfo.SetsRequiredMembers();
         settableMembers = GetSettableMembers(allMembers, setsRequiredMembers);
         List<MemberInitializerShapeInfo>? memberInitializers = null;
 
@@ -205,7 +208,8 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
             // members in the shape signature.
             foreach (MemberInitializerShapeInfo memberInitializer in settableMembers)
             {
-                if (!memberInitializer.IsRequired && parameterShapeInfos.Any(p => p.MatchingMember == memberInitializer.MemberInfo))
+                MethodParameterShapeInfo? matchingParameter = parameterShapeInfos.FirstOrDefault(p => p.MatchingMember == memberInitializer.MemberInfo);
+                if (matchingParameter is not null)
                 {
                     // Deduplicate any properties whose signature matches a constructor parameter.
                     continue;

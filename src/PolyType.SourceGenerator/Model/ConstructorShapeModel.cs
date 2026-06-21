@@ -19,7 +19,7 @@ public sealed record ConstructorShapeModel
     public required bool IsFSharpUnitConstructor { get; init; }
     public required ImmutableEquatableArray<AttributeDataModel> Attributes { get; init; }
 
-    public int TotalArity => Parameters.Count(p => p.RefKind is not RefKind.Out) + RequiredMembers.Length + OptionalMembers.Length;
+    public int TotalArity => Parameters.Count(p => p.RefKind is not RefKind.Out) + RequiredMembers.Count(p => !p.IsObjectInitializerOnly) + OptionalMembers.Count(p => !p.IsObjectInitializerOnly);
     public bool IsStaticFactory => StaticFactoryName != null;
     public bool HasOutParameters => Parameters.Any(p => p.RefKind is RefKind.Out);
 
@@ -34,11 +34,17 @@ public sealed record ConstructorShapeModel
         }
         foreach (var member in RequiredMembers)
         {
-            yield return member;
+            if (!member.IsObjectInitializerOnly)
+            {
+                yield return member;
+            }
         }
         foreach (var member in OptionalMembers)
         {
-            yield return member;
+            if (!member.IsObjectInitializerOnly)
+            {
+                yield return member;
+            }
         }
     }
 }

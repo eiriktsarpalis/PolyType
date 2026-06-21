@@ -12,6 +12,7 @@ public sealed record ParameterShapeModel
     public required ParameterKind Kind { get; init; }
     public required RefKind RefKind { get; init; }
     public required int Position { get; init; }
+    public required bool IsObjectInitializerOnly { get; init; }
     public required bool IsRequired { get; init; }
     public required bool IsInitOnlyProperty { get; init; }
     public required bool IsNonNullable { get; init; }

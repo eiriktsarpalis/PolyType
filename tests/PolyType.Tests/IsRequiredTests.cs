@@ -161,10 +161,10 @@ public abstract partial class IsRequiredTests(ProviderUnderTest providerUnderTes
         var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetTypeShape(typeof(HasNonDefaultConstructorWithDefaultAndRequiredProperty));
         Assert.NotNull(shape);
         Assert.NotNull(shape.Constructor);
-        var parameter = shape.Constructor.Parameters.Single(p => p.Name == nameof(HasNonDefaultConstructorWithDefaultAndRequiredProperty.MyProperty) && p.Kind == ParameterKind.MethodParameter);
-        var member = shape.Constructor.Parameters.Single(p => p.Name == nameof(HasNonDefaultConstructorWithDefaultAndRequiredProperty.MyProperty) && p.Kind == ParameterKind.MemberInitializer);
+        IParameterShape parameter = Assert.Single(shape.Constructor.Parameters, p => p.Name == nameof(HasNonDefaultConstructorWithDefaultAndRequiredProperty.MyProperty));
+        Assert.Equal(ParameterKind.MethodParameter, parameter.Kind);
         Assert.False(parameter.IsRequired);
-        Assert.True(member.IsRequired);
+        Assert.True(parameter.HasDefaultValue);
     }
 
     [GenerateShape]
@@ -176,6 +176,139 @@ public abstract partial class IsRequiredTests(ProviderUnderTest providerUnderTes
         }
 
         public required int MyProperty { get; set; }
+    }
+
+    [Fact]
+    public void RequiredPropertyAndRequiredConstructorParameter()
+    {
+        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetTypeShape(typeof(HasRequiredPropertyAndRequiredConstructorParameter));
+        Assert.NotNull(shape);
+        Assert.NotNull(shape.Constructor);
+
+        Assert.Equal(1, shape.Constructor.Parameters.Count(p => p.Name == nameof(HasRequiredPropertyAndRequiredConstructorParameter.RequiredString)));
+        Assert.Contains(shape.Constructor.Parameters, p =>
+            p.Name == nameof(HasRequiredPropertyAndRequiredConstructorParameter.RequiredString) &&
+            p.Kind == ParameterKind.MethodParameter &&
+            p.IsRequired);
+    }
+
+    [GenerateShape]
+    public partial class HasRequiredPropertyAndRequiredConstructorParameter
+    {
+        public HasRequiredPropertyAndRequiredConstructorParameter(string requiredString)
+        {
+            RequiredString = requiredString;
+        }
+
+        public required string RequiredString { get; set; }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetConstructorParameterRequirednessCases))]
+    public void ConstructorParameterRequirednessMatrix(Type type, string parameterName, bool isRequired, bool hasDefaultValue)
+    {
+        IObjectTypeShape shape = Assert.IsAssignableFrom<IObjectTypeShape>(providerUnderTest.Provider.GetTypeShape(type));
+        Assert.NotNull(shape.Constructor);
+
+        IParameterShape parameter = Assert.Single(shape.Constructor.Parameters, p => p.Name == parameterName);
+        Assert.Equal(ParameterKind.MethodParameter, parameter.Kind);
+
+        if (isRequired)
+        {
+            Assert.True(parameter.IsRequired);
+        }
+        else
+        {
+            Assert.False(parameter.IsRequired);
+        }
+
+        if (hasDefaultValue)
+        {
+            Assert.True(parameter.HasDefaultValue);
+        }
+        else
+        {
+            Assert.False(parameter.HasDefaultValue);
+        }
+    }
+
+    public static TheoryData<Type, string, bool, bool> GetConstructorParameterRequirednessCases()
+        => new()
+        {
+            { typeof(OptionalPropertyWithRequiredParameter), nameof(OptionalPropertyWithRequiredParameter.Value), true, false },
+            { typeof(OptionalPropertyWithDefaultParameter), nameof(OptionalPropertyWithDefaultParameter.Value), false, true },
+            { typeof(RequiredPropertyWithRequiredParameter), nameof(RequiredPropertyWithRequiredParameter.Value), true, false },
+            { typeof(RequiredPropertyWithDefaultParameter), nameof(RequiredPropertyWithDefaultParameter.Value), false, true },
+            { typeof(PropertyShapeRequiredWithDefaultParameter), nameof(PropertyShapeRequiredWithDefaultParameter.Value), true, true },
+            { typeof(RequiredPropertyShapeFalseWithRequiredParameter), nameof(RequiredPropertyShapeFalseWithRequiredParameter.Value), false, false },
+        };
+
+    [GenerateShape]
+    public partial class OptionalPropertyWithRequiredParameter
+    {
+        public OptionalPropertyWithRequiredParameter(string value)
+        {
+            Value = value;
+        }
+
+        public string Value { get; set; }
+    }
+
+    [GenerateShape]
+    public partial class OptionalPropertyWithDefaultParameter
+    {
+        public OptionalPropertyWithDefaultParameter(string? value = null)
+        {
+            Value = value;
+        }
+
+        public string? Value { get; set; }
+    }
+
+    [GenerateShape]
+    public partial class RequiredPropertyWithRequiredParameter
+    {
+        public RequiredPropertyWithRequiredParameter(string value)
+        {
+            Value = value;
+        }
+
+        public required string Value { get; set; }
+    }
+
+    [GenerateShape]
+    public partial class RequiredPropertyWithDefaultParameter
+    {
+        public RequiredPropertyWithDefaultParameter(string? value = null)
+        {
+            Value = value;
+        }
+
+        public required string? Value { get; set; }
+    }
+
+    [GenerateShape]
+    public partial class PropertyShapeRequiredWithDefaultParameter
+    {
+        public PropertyShapeRequiredWithDefaultParameter(string? value = null)
+        {
+            Value = value;
+        }
+
+        [PropertyShape(IsRequired = true)]
+        public string? Value { get; set; }
+    }
+
+    [GenerateShape]
+    public partial class RequiredPropertyShapeFalseWithRequiredParameter
+    {
+        public RequiredPropertyShapeFalseWithRequiredParameter(string value)
+        {
+            Value = value;
+        }
+
+        [PropertyShape(IsRequired = false)]
+        public required string Value { get; set; }
     }
 
     [Fact]

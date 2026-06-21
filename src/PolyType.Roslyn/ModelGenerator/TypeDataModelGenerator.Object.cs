@@ -359,26 +359,27 @@ public partial class TypeDataModelGenerator
                 property = property with { IsRequiredBySyntax = false };
             }
 
-            if (!property.IsRequiredBySyntax && MatchesConstructorParameter(property))
+            if (GetMatchingConstructorParameter(property) is not null && !property.IsRequiredBySyntax)
             {
-                // Deduplicate any optional properties whose signature matches a constructor parameter.
+                // Deduplicate properties whose signature matches a constructor parameter unless
+                // an object initializer slot is required to satisfy C# required members.
                 continue;
             }
 
             (memberInitializers ??= []).Add(property);
 
-            bool MatchesConstructorParameter(PropertyDataModel settableProperty)
+            IParameterSymbol? GetMatchingConstructorParameter(PropertyDataModel settableProperty)
             {
                 foreach (IParameterSymbol p in constructor.Parameters)
                 {
                     if (SymbolEqualityComparer.Default.Equals(p.Type, settableProperty.PropertyType) &&
                         CommonHelpers.CamelCaseInvariantComparer.Instance.Equals(p.Name, settableProperty.Name))
                     {
-                        return true;
+                        return p;
                     }
                 }
 
-                return false;
+                return null;
             }
         }
 

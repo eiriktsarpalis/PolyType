@@ -454,7 +454,12 @@ public sealed partial class Parser
 
     private ConstructorShapeModel MapConstructor(ObjectDataModel objectModel, TypeId declaringTypeId, ConstructorDataModel constructor, bool isFSharpUnionCase)
     {
-        int position = constructor.Parameters.Length;
+        var mappedParameters = MapParametersWithOutDiscards(
+            constructor.Constructor.Parameters,
+            constructor.Parameters,
+            p => MapParameter(objectModel, declaringTypeId, p, isFSharpUnionCase, constructor.Constructor.HasSetsRequiredMembersAttribute()));
+
+        int position = mappedParameters.Count(p => p.RefKind is not RefKind.Out);
         List<ParameterShapeModel>? requiredMembers = null;
         List<ParameterShapeModel>? optionalMembers = null;
 
@@ -468,6 +473,7 @@ public sealed partial class Parser
 
         foreach (PropertyDataModel propertyModel in memberInitializers)
         {
+            int? objectInitializerParameterPosition = GetMatchingConstructorParameterPosition(propertyModel);
             var memberInitializer = new ParameterShapeModel
             {
                 ParameterType = CreateTypeId(propertyModel.PropertyType),
@@ -477,7 +483,8 @@ public sealed partial class Parser
 
                 Name = propertyModel.LogicalName ?? propertyModel.Name,
                 UnderlyingMemberName = propertyModel.Name,
-                Position = position++,
+                Position = objectInitializerParameterPosition ?? position++,
+                IsObjectInitializerOnly = objectInitializerParameterPosition.HasValue,
                 IsRequired = propertyModel.IsRequiredByPolicy ?? propertyModel.IsRequiredBySyntax,
                 IsAccessible = propertyModel.IsSetterAccessible,
                 CanUseUnsafeAccessors = _knownSymbols.TargetFramework switch
@@ -509,12 +516,34 @@ public sealed partial class Parser
                 // Member can be set optionally post construction
                 (optionalMembers ??= []).Add(memberInitializer);
             }
-        }
 
-        var mappedParameters = MapParametersWithOutDiscards(
-            constructor.Constructor.Parameters,
-            constructor.Parameters,
-            p => MapParameter(objectModel, declaringTypeId, p, isFSharpUnionCase));
+            int? GetMatchingConstructorParameterPosition(PropertyDataModel property)
+            {
+                if (!property.IsRequiredBySyntax)
+                {
+                    return null;
+                }
+
+                int parameterPosition = 0;
+                foreach (IParameterSymbol parameter in constructor.Constructor.Parameters)
+                {
+                    if (parameter.RefKind is RefKind.Out)
+                    {
+                        continue;
+                    }
+
+                    if (SymbolEqualityComparer.Default.Equals(parameter.Type, property.PropertyType) &&
+                        CommonHelpers.CamelCaseInvariantComparer.Instance.Equals(parameter.Name, property.Name))
+                    {
+                        return parameterPosition;
+                    }
+
+                    parameterPosition++;
+                }
+
+                return null;
+            }
+        }
 
         return new ConstructorShapeModel
         {
@@ -525,7 +554,7 @@ public sealed partial class Parser
             Parameters = mappedParameters,
             RequiredMembers = requiredMembers?.ToImmutableEquatableArray() ?? [],
             OptionalMembers = optionalMembers?.ToImmutableEquatableArray() ?? [],
-            ArgumentStateType = (constructor.Parameters.Length + (requiredMembers?.Count ?? 0) + (optionalMembers?.Count ?? 0)) switch
+            ArgumentStateType = (mappedParameters.Count(p => p.RefKind is not RefKind.Out) + (requiredMembers?.Count(p => !p.IsObjectInitializerOnly) ?? 0) + (optionalMembers?.Count(p => !p.IsObjectInitializerOnly) ?? 0)) switch
             {
                 0 => ArgumentStateType.EmptyArgumentState,
                 <= 64 => ArgumentStateType.SmallArgumentState,
@@ -638,6 +667,7 @@ public sealed partial class Parser
                     DeclaringType = CreateTypeId(symbol.ContainingType),
                     Kind = ParameterKind.MethodParameter,
                     RefKind = RefKind.Out,
+                    IsObjectInitializerOnly = false,
                     IsRequired = false,
                     IsAccessible = true,
                     CanUseUnsafeAccessors = false,
@@ -688,15 +718,42 @@ public sealed partial class Parser
             .ToImmutableEquatableArray();
     }
 
-    private ParameterShapeModel MapParameter(ObjectDataModel? declaringObjectForConstructor, TypeId declaringTypeId, ParameterDataModel parameter, bool isFSharpUnionCase)
+    private ParameterShapeModel MapParameter(
+        ObjectDataModel? declaringObjectForConstructor,
+        TypeId declaringTypeId,
+        ParameterDataModel parameter,
+        bool isFSharpUnionCase,
+        bool constructorSetsRequiredMembers = false)
     {
         string name = parameter.Parameter.Name;
         bool isRequired = !parameter.HasDefaultValue;
+        PropertyDataModel? matchingProperty = null;
+
+        if (declaringObjectForConstructor is not null)
+        {
+            foreach (PropertyDataModel property in declaringObjectForConstructor.Properties)
+            {
+                if (SymbolEqualityComparer.Default.Equals(property.PropertyType, parameter.Parameter.Type) &&
+                    CommonHelpers.CamelCaseInvariantComparer.Instance.Equals(parameter.Parameter.Name, property.Name))
+                {
+                    matchingProperty = property;
+                    break;
+                }
+            }
+        }
 
         AttributeData? parameterAttr = parameter.Parameter.GetAttribute(_knownSymbols.ParameterShapeAttribute);
         if (parameterAttr?.TryGetNamedArgument("IsRequired", out bool? isRequiredValue) is true && isRequiredValue is not null)
         {
             isRequired = isRequiredValue.Value;
+        }
+        else if (matchingProperty?.IsRequiredByPolicy is bool isRequiredByPolicy)
+        {
+            isRequired = isRequiredByPolicy;
+        }
+        else if (!parameter.HasDefaultValue && !constructorSetsRequiredMembers && matchingProperty?.IsRequiredBySyntax is true)
+        {
+            isRequired = true;
         }
 
         if (parameterAttr != null &&
@@ -713,16 +770,10 @@ public sealed partial class Parser
         }
         else if (declaringObjectForConstructor is not null)
         {
-            foreach (PropertyDataModel property in declaringObjectForConstructor.Properties)
+            if (matchingProperty is { } property)
             {
-                // Match property names to parameters up to Pascal/camel case conversion.
-                if (SymbolEqualityComparer.Default.Equals(property.PropertyType, parameter.Parameter.Type) &&
-                    CommonHelpers.CamelCaseInvariantComparer.Instance.Equals(parameter.Parameter.Name, property.Name))
-                {
-                    // We have a matching property, use its name in the parameter.
-                    name = property.LogicalName ?? property.Name;
-                    break;
-                }
+                // We have a matching property, use its name in the parameter.
+                name = property.LogicalName ?? property.Name;
             }
         }
 
@@ -736,6 +787,7 @@ public sealed partial class Parser
             Kind = ParameterKind.MethodParameter,
             RefKind = parameter.Parameter.RefKind,
             IsRequired = isRequired,
+            IsObjectInitializerOnly = false,
             IsAccessible = true,
             CanUseUnsafeAccessors = false,
             IsInitOnlyProperty = false,
@@ -772,6 +824,7 @@ public sealed partial class Parser
                     ParameterType = CreateTypeId(argType),
                     Kind = ParameterKind.MethodParameter,
                     RefKind = RefKind.None,
+                    IsObjectInitializerOnly = false,
                     IsRequired = true,
                     IsAccessible = true,
                     CanUseUnsafeAccessors = false,
@@ -834,6 +887,7 @@ public sealed partial class Parser
                 Kind = ParameterKind.MethodParameter,
                 RefKind = RefKind.None,
                 IsRequired = true,
+                IsObjectInitializerOnly = false,
                 IsAccessible = true,
                 CanUseUnsafeAccessors = false,
                 IsInitOnlyProperty = false,

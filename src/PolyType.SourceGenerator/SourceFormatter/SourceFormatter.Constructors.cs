@@ -171,7 +171,7 @@ internal sealed partial class SourceFormatter
                     _ when !constructor.HasOutParameters && shapedParamCount == 0 && constructor.StaticFactoryIsProperty => castPrefix + constructorName,
                     _ when !constructor.HasOutParameters && shapedParamCount == 0 && memberInitializerBlock is null => $"{castPrefix}{constructorName}()",
                     _ when !constructor.HasOutParameters && shapedParamCount == 0 => $"{castPrefix}{constructorName}{memberInitializerBlock}",
-                    _ when !constructor.HasOutParameters && shapedParamCount == 1 && constructor.TotalArity == 1 => $"{castPrefix}{constructorName}({FormatCtorParameterExpr(constructor.ShapedParameters.First(), isSingleParameter: true)})",
+                    _ when !constructor.HasOutParameters && shapedParamCount == 1 && constructor.TotalArity == 1 && memberInitializerBlock is null => $"{castPrefix}{constructorName}({FormatCtorParameterExpr(constructor.ShapedParameters.First(), isSingleParameter: true)})",
                     _ => $"{castPrefix}{constructorName}({FormatCtorArgumentsBody()}){memberInitializerBlock}",
                 };
 
@@ -304,7 +304,9 @@ internal sealed partial class SourceFormatter
         writer.WriteLine('{');
         writer.Indentation++;
 
-        var allParams = constructor.ShapedParameters.Concat(constructor.RequiredMembers).Concat(constructor.OptionalMembers);
+        var allParams = constructor.ShapedParameters
+            .Concat(constructor.RequiredMembers.Where(p => !p.IsObjectInitializerOnly))
+            .Concat(constructor.OptionalMembers.Where(p => !p.IsObjectInitializerOnly));
 
         int i = 0;
         foreach (ParameterShapeModel parameter in allParams)
