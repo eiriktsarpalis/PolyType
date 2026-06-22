@@ -691,21 +691,26 @@ public sealed partial class Parser
     private ParameterShapeModel MapParameter(ObjectDataModel? declaringObjectForConstructor, TypeId declaringTypeId, ParameterDataModel parameter, bool isFSharpUnionCase)
     {
         string name = parameter.Parameter.Name;
-        bool isRequired = !parameter.HasDefaultValue;
 
         PropertyDataModel? matchingProperty = FindMatchingProperty(declaringObjectForConstructor, parameter);
+
+        // Resolve requiredness using a "strictest wins" policy. Start from the intrinsic requiredness
+        // (a parameter without a default value is required), apply an explicit
+        // [ParameterShape(IsRequired)] override, then let a matching property marked required tighten
+        // the result. A required assertion always wins: a matching property marked required via
+        // [PropertyShape(IsRequired = true)] / [DataMember(IsRequired = true)] forces the parameter to
+        // be required, even over a default value or an opposing [ParameterShape(IsRequired = false)].
+        // A property marked not-required never relaxes the parameter.
+        bool isRequired = !parameter.HasDefaultValue;
 
         AttributeData? parameterAttr = parameter.Parameter.GetAttribute(_knownSymbols.ParameterShapeAttribute);
         if (parameterAttr?.TryGetNamedArgument("IsRequired", out bool? isRequiredValue) is true && isRequiredValue is not null)
         {
-            // An explicit [ParameterShape(IsRequired)] override takes precedence.
             isRequired = isRequiredValue.Value;
         }
-        else if (matchingProperty?.IsRequiredByPolicy is true)
+
+        if (matchingProperty?.IsRequiredByPolicy is true)
         {
-            // "Strictest wins": a matching property marked required via [PropertyShape(IsRequired = true)]
-            // or [DataMember(IsRequired = true)] forces the parameter to be required, even if it declares
-            // a default value. A property marked not-required never relaxes an otherwise-required parameter.
             isRequired = true;
         }
 

@@ -48,8 +48,11 @@ public interface IParameterShape
     /// A parameter is reported as required if it is either a
     /// parameter without a default value or related to a property declared with the <see langword="required" /> modifier
     /// where the constructor is not annotated with <see cref="SetsRequiredMembersAttribute"/>.
-    /// This value will switch to the value set by <see cref="PropertyShapeAttribute.IsRequired"/>
-    /// or <see cref="ParameterShapeAttribute.IsRequired"/> (successively) if they are set.
+    /// When <see cref="PropertyShapeAttribute.IsRequired"/> or <see cref="ParameterShapeAttribute.IsRequired"/> are set,
+    /// the strictest setting wins: the parameter is reported as required if either attribute marks it as required,
+    /// even if it declares a default value. An explicit <see cref="ParameterShapeAttribute.IsRequired"/> of
+    /// <see langword="false"/> relaxes a parameter that would otherwise be required only for lacking a default value,
+    /// but a matching <see cref="PropertyShapeAttribute.IsRequired"/> of <see langword="true"/> still takes precedence.
     /// </remarks>
     bool IsRequired { get; }
 

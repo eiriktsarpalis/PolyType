@@ -189,14 +189,18 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                 logicalName = matchingMember.LogicalName ?? matchingMember.BaseMemberInfo.Name;
             }
 
-            // Resolve the parameter's required flag using a "strictest wins" policy: an explicit
-            // [ParameterShape(IsRequired)] override takes precedence; otherwise the parameter is
-            // required if it has no default value OR the matching property is marked required via
-            // [PropertyShape(IsRequired = true)] / [DataMember(IsRequired = true)]. A property marked
-            // not-required never relaxes an otherwise-required parameter.
+            // Resolve the parameter's required flag using a "strictest wins" policy across every
+            // applicable source. A required assertion always wins: the parameter is required if it
+            // is marked required via [ParameterShape(IsRequired = true)] or if the matching property
+            // is marked required via [PropertyShape(IsRequired = true)] / [DataMember(IsRequired = true)],
+            // even when the parameter declares a default value and even over an opposing
+            // [ParameterShape(IsRequired = false)]. Absent any required assertion, an explicit
+            // [ParameterShape(IsRequired = false)] relaxes a parameter that would otherwise be
+            // required only for lacking a default value, while a property marked not-required never
+            // relaxes the parameter (its requiredness is intrinsic to the construction contract).
             bool? isRequired =
-                parameterShapeAttribute?.IsRequiredSpecified is true ? parameterShapeAttribute.IsRequired :
-                matchingMember?.IsRequiredByAttribute is true ? true :
+                matchingMember?.IsRequiredByAttribute is true || parameterShapeAttribute is { IsRequiredSpecified: true, IsRequired: true } ? true :
+                parameterShapeAttribute?.IsRequiredSpecified is true ? false :
                 null;
 
             parameterShapeInfos[i++] = new(parameter, isNonNullable, matchingMember?.BaseMemberInfo, logicalName, isRequired);

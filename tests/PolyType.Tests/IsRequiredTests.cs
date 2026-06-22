@@ -322,6 +322,100 @@ public abstract partial class IsRequiredTests(ProviderUnderTest providerUnderTes
         public string Value { get; set; }
     }
 
+    [Theory]
+    [InlineData(typeof(ParamNotRequiredPropRequiredOptionalParam), true)]
+    [InlineData(typeof(ParamNotRequiredPropRequiredRequiredParam), true)]
+    [InlineData(typeof(ParamRequiredPropNotRequiredOptionalParam), true)]
+    [InlineData(typeof(ParamRequiredPropNotRequiredRequiredParam), true)]
+    [InlineData(typeof(ParamNotRequiredPropNotRequiredRequiredParam), false)]
+    [InlineData(typeof(ParamRequiredPropRequiredOptionalParam), true)]
+    public void ParameterShapeAndPropertyShapeIsRequired_StrictestWins(Type type, bool expectedIsRequired)
+    {
+        // [ParameterShape(IsRequired)] and a matching [PropertyShape(IsRequired)] combine following a
+        // "most strict policy wins" principle: a required assertion from either attribute forces the
+        // parameter to be required (winning over a default value or an opposing not-required setting),
+        // and the parameter is only optional when neither attribute, nor an intrinsic lack of default
+        // value, marks it as required.
+        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetTypeShape(type);
+        Assert.NotNull(shape);
+        Assert.NotNull(shape.Constructor);
+        var parameter = shape.Constructor.Parameters.Single(p => p.Name == "Value");
+        Assert.Equal(ParameterKind.MethodParameter, parameter.Kind);
+        Assert.Equal(expectedIsRequired, parameter.IsRequired);
+    }
+
+    [GenerateShape]
+    public partial class ParamNotRequiredPropRequiredOptionalParam
+    {
+        public ParamNotRequiredPropRequiredOptionalParam([ParameterShape(IsRequired = false)] string value = "")
+        {
+            Value = value;
+        }
+
+        [PropertyShape(IsRequired = true)]
+        public string Value { get; set; }
+    }
+
+    [GenerateShape]
+    public partial class ParamNotRequiredPropRequiredRequiredParam
+    {
+        public ParamNotRequiredPropRequiredRequiredParam([ParameterShape(IsRequired = false)] string value)
+        {
+            Value = value;
+        }
+
+        [PropertyShape(IsRequired = true)]
+        public string Value { get; set; }
+    }
+
+    [GenerateShape]
+    public partial class ParamRequiredPropNotRequiredOptionalParam
+    {
+        public ParamRequiredPropNotRequiredOptionalParam([ParameterShape(IsRequired = true)] string value = "")
+        {
+            Value = value;
+        }
+
+        [PropertyShape(IsRequired = false)]
+        public string Value { get; set; }
+    }
+
+    [GenerateShape]
+    public partial class ParamRequiredPropNotRequiredRequiredParam
+    {
+        public ParamRequiredPropNotRequiredRequiredParam([ParameterShape(IsRequired = true)] string value)
+        {
+            Value = value;
+        }
+
+        [PropertyShape(IsRequired = false)]
+        public string Value { get; set; }
+    }
+
+    [GenerateShape]
+    public partial class ParamNotRequiredPropNotRequiredRequiredParam
+    {
+        public ParamNotRequiredPropNotRequiredRequiredParam([ParameterShape(IsRequired = false)] string value)
+        {
+            Value = value;
+        }
+
+        [PropertyShape(IsRequired = false)]
+        public string Value { get; set; }
+    }
+
+    [GenerateShape]
+    public partial class ParamRequiredPropRequiredOptionalParam
+    {
+        public ParamRequiredPropRequiredOptionalParam([ParameterShape(IsRequired = true)] string value = "")
+        {
+            Value = value;
+        }
+
+        [PropertyShape(IsRequired = true)]
+        public string Value { get; set; }
+    }
+
     [GenerateShapeFor<HasRequiredProperty>]
     internal partial class Witness;
 
