@@ -38,9 +38,7 @@ These types live under `Abstractions/` and are meant to be consumed by *librarie
 
 ### `ReflectionProvider/`
 
-The **runtime reflection-based provider**. `ReflectionTypeShapeProvider` (configured via `ReflectionTypeShapeProviderOptions`) builds shapes on the fly from `System.Reflection` metadata, with one `Reflection*TypeShape` implementation per shape kind and dedicated F# support (`FSharpUnionTypeShape`, `FSharpOptionTypeShape`, `FSharpFunctionTypeShape`, etc.).
-
-- **`MemberAccessors/`** abstracts member get/set/construct behind `IReflectionMemberAccessor`, with two strategies: `ReflectionEmitMemberAccessor` (uses `Reflection.Emit` for speed where available) and `ReflectionMemberAccessor` (a pure-reflection fallback usable under AOT/no-emit).
+The **runtime reflection-based provider**: `ReflectionTypeShapeProvider` uses `System.Reflection` to build shapes on the fly, with no build-time step. Where available it uses `Reflection.Emit`-based member accessors (under `MemberAccessors/`) for performance, falling back to plain reflection otherwise. These implementations are **not trimming- or AOT-safe** — they depend on unreferenced/dynamic code — so the source-generated provider is the path for those scenarios.
 
 ### `SourceGenModel/`
 
