@@ -39,6 +39,8 @@ Two rules follow from this:
 - **The incremental model must not encapsulate any symbols or compilation objects.** Beyond the equatable-model requirements above, holding onto symbols defeats incremental caching and pins large Roslyn object graphs in memory — a real performance problem. Extract everything the formatter needs into plain, equatable data while parsing.
 - **Nontrivial computation in the formatter is a design smell.** If the formatter finds itself computing something non-obvious (resolving a name, choosing a strategy, deriving a flag), that is a signal the computation belongs in the parser. Move it there and update the model to carry the result.
 
+Balance this against a competing goal: **keep the incremental model as normalized as possible.** Pushing work into the parser must not become an excuse to stuff the model with redundant or trivially derivable data — every field participates in the structural equality check that gates incremental caching, so redundant state makes those comparisons more expensive and weakens cache hit rates. Prefer carrying the minimal, canonical data the formatter needs; only precompute and store a value when the parser-side computation is genuinely nontrivial or depends on symbols/compilation state the formatter must not see.
+
 ## Project Layout & Pipeline
 
 - **`PolyTypeGenerator.cs`** — the `[Generator]` entry point that wires up the incremental pipeline.
