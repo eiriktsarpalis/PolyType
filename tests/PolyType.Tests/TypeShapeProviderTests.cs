@@ -1376,6 +1376,32 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
     }
 
     [Fact]
+    public void ClassWithDefaultNonPublicAccessors_ExcludesNonPublicAccessors()
+    {
+        // Non-public accessors must be excluded by default, regardless of provider.
+        // This guarantees parity between the reflection and source-gen providers.
+        ITypeShape<ClassWithDefaultNonPublicAccessors>? typeShape = Provider.GetTypeShape<ClassWithDefaultNonPublicAccessors>();
+        Assert.NotNull(typeShape);
+        var objectShape = Assert.IsAssignableFrom<IObjectTypeShape<ClassWithDefaultNonPublicAccessors>>(typeShape);
+
+        IPropertyShape publicGetSet = objectShape.Properties.First(p => p.Name == nameof(ClassWithDefaultNonPublicAccessors.PublicGetSet));
+        Assert.True(publicGetSet.HasGetter);
+        Assert.True(publicGetSet.HasSetter);
+
+        IPropertyShape publicGetInternalSet = objectShape.Properties.First(p => p.Name == nameof(ClassWithDefaultNonPublicAccessors.PublicGetInternalSet));
+        Assert.True(publicGetInternalSet.HasGetter);
+        Assert.False(publicGetInternalSet.HasSetter);
+
+        IPropertyShape internalGetPublicSet = objectShape.Properties.First(p => p.Name == nameof(ClassWithDefaultNonPublicAccessors.InternalGetPublicSet));
+        Assert.False(internalGetPublicSet.HasGetter);
+        Assert.True(internalGetPublicSet.HasSetter);
+
+        IPropertyShape publicGetProtectedInternalSet = objectShape.Properties.First(p => p.Name == nameof(ClassWithDefaultNonPublicAccessors.PublicGetProtectedInternalSet));
+        Assert.True(publicGetProtectedInternalSet.HasGetter);
+        Assert.False(publicGetProtectedInternalSet.HasSetter);
+    }
+
+    [Fact]
     public void ServiceMoniker_SelectsConstructorWithMoreParameters()
     {
         // ServiceMoniker has two constructors:
