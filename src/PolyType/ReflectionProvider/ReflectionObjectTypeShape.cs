@@ -189,7 +189,19 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                 logicalName = matchingMember.LogicalName ?? matchingMember.BaseMemberInfo.Name;
             }
 
-            bool? isRequired = parameterShapeAttribute?.IsRequiredSpecified is true ? parameterShapeAttribute.IsRequired : null;
+            // Resolve the parameter's required flag using a "strictest wins" policy across every
+            // applicable source. A required assertion always wins: the parameter is required if it
+            // is marked required via [ParameterShape(IsRequired = true)] or if the matching property
+            // is marked required via [PropertyShape(IsRequired = true)] / [DataMember(IsRequired = true)],
+            // even when the parameter declares a default value and even over an opposing
+            // [ParameterShape(IsRequired = false)]. Absent any required assertion, an explicit
+            // [ParameterShape(IsRequired = false)] relaxes a parameter that would otherwise be
+            // required only for lacking a default value, while a property marked not-required never
+            // relaxes the parameter (its requiredness is intrinsic to the construction contract).
+            bool? isRequired =
+                matchingMember?.IsRequiredByAttribute is true || parameterShapeAttribute is { IsRequiredSpecified: true, IsRequired: true } ? true :
+                parameterShapeAttribute?.IsRequiredSpecified is true ? false :
+                null;
 
             parameterShapeInfos[i++] = new(parameter, isNonNullable, matchingMember?.BaseMemberInfo, logicalName, isRequired);
         }
@@ -205,9 +217,11 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
             // members in the shape signature.
             foreach (MemberInitializerShapeInfo memberInitializer in settableMembers)
             {
-                if (!memberInitializer.IsRequired && parameterShapeInfos.Any(p => p.MatchingMember == memberInitializer.MemberInfo))
+                if (!memberInitializer.IsRequiredBySyntax && parameterShapeInfos.Any(p => p.MatchingMember == memberInitializer.MemberInfo))
                 {
                     // Deduplicate any properties whose signature matches a constructor parameter.
+                    // Members declared with the 'required' keyword are exempt since they must be set
+                    // using an object initializer; their required-ness can't be satisfied by the parameter alone.
                     continue;
                 }
 

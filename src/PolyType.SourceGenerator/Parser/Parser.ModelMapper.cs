@@ -691,12 +691,27 @@ public sealed partial class Parser
     private ParameterShapeModel MapParameter(ObjectDataModel? declaringObjectForConstructor, TypeId declaringTypeId, ParameterDataModel parameter, bool isFSharpUnionCase)
     {
         string name = parameter.Parameter.Name;
+
+        PropertyDataModel? matchingProperty = FindMatchingProperty(declaringObjectForConstructor, parameter);
+
+        // Resolve requiredness using a "strictest wins" policy. Start from the intrinsic requiredness
+        // (a parameter without a default value is required), apply an explicit
+        // [ParameterShape(IsRequired)] override, then let a matching property marked required tighten
+        // the result. A required assertion always wins: a matching property marked required via
+        // [PropertyShape(IsRequired = true)] / [DataMember(IsRequired = true)] forces the parameter to
+        // be required, even over a default value or an opposing [ParameterShape(IsRequired = false)].
+        // A property marked not-required never relaxes the parameter.
         bool isRequired = !parameter.HasDefaultValue;
 
         AttributeData? parameterAttr = parameter.Parameter.GetAttribute(_knownSymbols.ParameterShapeAttribute);
         if (parameterAttr?.TryGetNamedArgument("IsRequired", out bool? isRequiredValue) is true && isRequiredValue is not null)
         {
             isRequired = isRequiredValue.Value;
+        }
+
+        if (matchingProperty?.IsRequiredByPolicy is true)
+        {
+            isRequired = true;
         }
 
         if (parameterAttr != null &&
@@ -711,19 +726,10 @@ public sealed partial class Parser
         {
             name = name[1..];
         }
-        else if (declaringObjectForConstructor is not null)
+        else if (matchingProperty is { } namedProperty)
         {
-            foreach (PropertyDataModel property in declaringObjectForConstructor.Properties)
-            {
-                // Match property names to parameters up to Pascal/camel case conversion.
-                if (SymbolEqualityComparer.Default.Equals(property.PropertyType, parameter.Parameter.Type) &&
-                    CommonHelpers.CamelCaseInvariantComparer.Instance.Equals(parameter.Parameter.Name, property.Name))
-                {
-                    // We have a matching property, use its name in the parameter.
-                    name = property.LogicalName ?? property.Name;
-                    break;
-                }
-            }
+            // We have a matching property, use its name in the parameter.
+            name = namedProperty.LogicalName ?? namedProperty.Name;
         }
 
         return new ParameterShapeModel
@@ -748,6 +754,26 @@ public sealed partial class Parser
             DefaultValueExpr = parameter.DefaultValueExpr,
             Attributes = CollectAttributes(parameter.Parameter),
         };
+    }
+
+    private static PropertyDataModel? FindMatchingProperty(ObjectDataModel? declaringObjectForConstructor, ParameterDataModel parameter)
+    {
+        if (declaringObjectForConstructor is null)
+        {
+            return null;
+        }
+
+        foreach (PropertyDataModel property in declaringObjectForConstructor.Properties)
+        {
+            // Match property names to parameters up to Pascal/camel case conversion.
+            if (SymbolEqualityComparer.Default.Equals(property.PropertyType, parameter.Parameter.Type) &&
+                CommonHelpers.CamelCaseInvariantComparer.Instance.Equals(parameter.Parameter.Name, property.Name))
+            {
+                return property;
+            }
+        }
+
+        return null;
     }
 
     private ImmutableEquatableArray<ParameterShapeModel> MapFSharpFunctionParameters(FSharpFunctionDataModel fsharpFunc, TypeId declaringTypeId, out int effectiveParameterCount)
