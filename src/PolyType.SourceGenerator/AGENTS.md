@@ -6,12 +6,11 @@ Scoped guidance for working inside the built-in incremental source generator. Th
 
 `PolyType.SourceGenerator` is the built-in C# incremental source generator that emits `ITypeShape` implementations for types annotated with `[GenerateShape]` (and related attributes). It targets **netstandard2.0** because it ships as a Roslyn analyzer — do not use APIs unavailable on netstandard2.0 here.
 
-## Architecture: Two Components
+## Dependency: PolyType.Roslyn
 
-Model extraction and code emission are split across two projects:
+This project depends on **`PolyType.Roslyn`**, a general-purpose (but opinionated) component that builds a `TypeDataModel` from Roslyn symbol type graphs. It is deliberately decoupled from PolyType itself: any source generator that needs to reason about .NET types can consume it, and doing so does **not** require taking a runtime dependency on `PolyType.dll`. It ships as its own package for exactly this reason.
 
-- **`PolyType.Roslyn`** extracts general-purpose `TypeDataModel` objects from Roslyn `ITypeSymbol`s. These models are **not** incremental-safe — they may hold non-equatable or non-serializable data (including Roslyn symbols).
-- **`PolyType.SourceGenerator`** (this project) consumes those models and maps them into its own incremental-safe model types under `Model/`, then emits source. It reads the attribute annotations defined in the core PolyType project.
+Because it is general-purpose, the `TypeDataModel`s it produces are **not** incremental-safe — they may hold non-equatable or non-serializable data, including live Roslyn symbols. This project's job is to consume that model and project it into its own incremental-safe `Model/` types (described under Project Layout & Pipeline below).
 
 > **PolyType.Roslyn models ≠ PolyType.SourceGenerator models.** They are distinct hierarchies with different design goals. Never feed a raw PolyType.Roslyn model (or a Roslyn symbol) into the incremental pipeline.
 
