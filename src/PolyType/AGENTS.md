@@ -15,20 +15,26 @@ A few cross-cutting facts:
 
 ## Project Structure
 
-### Public root surface (`src/PolyType/*.cs`)
+### The public type model — two namespaces, two audiences
 
-The top-level files form the primary public entry points:
+The public abstractions are split across two namespaces, distinguished by **who consumes them**, not by which folder they live in. Both are "abstractions" conceptually; the difference is the intended caller.
 
-- **Attributes** that the source generator and reflection provider both honour: `GenerateShapeAttribute`, `GenerateShapeForAttribute`, `TypeShapeAttribute`, `PropertyShapeAttribute`, `ConstructorShapeAttribute`, `ParameterShapeAttribute`, `MethodShapeAttribute`, `EventShapeAttribute`, `DerivedTypeShapeAttribute`, `EnumMemberShapeAttribute`, `AssociatedTypeShapeAttribute`, `TypeShapeExtensionAttribute`.
-- **Core entry-point types**: `ITypeShape`, `ITypeShapeProvider`, `IShapeable<T>` (`IShapeableOfT.cs`), `IMarshaler`, `TypeShapeKind`, `MethodShapeFlags`, and `TypeShapeProviderExtensions`.
+#### `PolyType` namespace — end-user facing
 
-### `Abstractions/`
+These types live in the **root namespace** because they are consumed directly by *end users*: the developers who use a library built on PolyType and annotate their own types so that library can understand them. They are mostly defined in the top-level `*.cs` files:
 
-The heart of the type model — the shape interfaces a consumer traverses, plus the visitor:
+- **Attributes** end users apply to their own types, honoured by both providers: `GenerateShapeAttribute`, `GenerateShapeForAttribute`, `TypeShapeAttribute`, `PropertyShapeAttribute`, `ConstructorShapeAttribute`, `ParameterShapeAttribute`, `MethodShapeAttribute`, `EventShapeAttribute`, `DerivedTypeShapeAttribute`, `EnumMemberShapeAttribute`, `AssociatedTypeShapeAttribute`, `TypeShapeExtensionAttribute`.
+- **Entry-point types**: `ITypeShape`, `ITypeShapeProvider`, `IShapeable<T>` (`IShapeableOfT.cs`), `IMarshaler`, `TypeShapeKind`, `MethodShapeFlags`, and `TypeShapeProviderExtensions`. (`TypeShapeRequirements` also belongs to this root namespace even though its file sits under `Abstractions/` — folder and namespace are not 1:1 here.)
 
-- **Shape interfaces**: `IObjectTypeShape`, `IEnumerableTypeShape`, `IDictionaryTypeShape`, `IEnumTypeShape`, `IOptionalTypeShape`, `ISurrogateTypeShape`, `IUnionTypeShape` / `IUnionCaseShape`, `IFunctionTypeShape`, and the member-level shapes `IConstructorShape`, `IParameterShape`, `IPropertyShape`, `IMethodShape`, `IEventShape`.
-- **`TypeShapeVisitor`** — the visitor consumers subclass to build functionality generically over arbitrary types.
-- **Supporting model types**: `TypeShapeResolver`, `TypeShapeExtensions`, `TypeShapeRequirements`, collection-construction descriptors (`CollectionConstructionStrategy`, `CollectionConstructionOptions`, `CollectionComparerOptions`, `DictionaryInsertionMode`), and primitives like `IArgumentState`, `ITypeShapeFunc`, `ParameterKind`, and `Unit`.
+#### `PolyType.Abstractions` namespace — library-author facing
+
+These types live under `Abstractions/` and are meant to be consumed by *libraries that depend on PolyType* to build functionality generically over user-defined types — not by end users directly. This is the heart of the type model:
+
+- **Shape interfaces** that describe a type's structure: `IObjectTypeShape`, `IEnumerableTypeShape`, `IDictionaryTypeShape`, `IEnumTypeShape`, `IOptionalTypeShape`, `ISurrogateTypeShape`, `IUnionTypeShape` / `IUnionCaseShape`, `IFunctionTypeShape`, and the member-level shapes `IConstructorShape`, `IParameterShape`, `IPropertyShape`, `IMethodShape`, `IEventShape`.
+- **`TypeShapeVisitor`** — the visitor a consuming library subclasses to build functionality generically over arbitrary types.
+- **Supporting model types**: `TypeShapeResolver`, `TypeShapeExtensions`, collection-construction descriptors (`CollectionConstructionStrategy`, `CollectionConstructionOptions`, `CollectionComparerOptions`, `DictionaryInsertionMode`), and primitives like `IArgumentState`, `ITypeShapeFunc`, `ParameterKind`, and `Unit`.
+
+> **The split is by audience, not folder.** End users interact with the `PolyType` namespace (mostly the attributes); libraries built on PolyType program against `PolyType.Abstractions`. Keep new APIs in the namespace that matches their intended consumer.
 
 ### `ReflectionProvider/`
 
