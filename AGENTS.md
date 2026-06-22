@@ -2,8 +2,6 @@
 
 PolyType is a practical generic programming library for .NET. It provides a type model that describes the structure of .NET types, enabling the rapid development of high-performance libraries such as serializers, validators, parsers, and mappers. The type model can be populated either by a runtime **reflection provider** or by a **source generator** (for Native AOT and trimming support).
 
-This file is the entry point for AI coding agents working in this repository. It is standard Markdown — keep it accurate as the project evolves.
-
 ## Core Requirements
 
 - **Any code you commit MUST compile, and new and existing tests related to the change MUST pass.**
@@ -11,26 +9,14 @@ This file is the entry point for AI coding agents working in this repository. It
 - Do not finish a code change without building and running the relevant tests after your last edits. Do not simply assume that your changes fix test failures you see — actually build and run those tests again to confirm.
 - Follow all code-formatting and naming conventions defined in [`.editorconfig`](.editorconfig).
 
----
-
 ## Building & Testing
-
-### Quick Start
 
 ```bash
 dotnet build
-dotnet test
+dotnet test                        # add --framework net10.0 for fast single-TFM iteration
 ```
 
-For fast iteration during development, target a single framework:
-
-```bash
-dotnet test --framework net10.0
-```
-
-### Full E2E Validation (Makefile)
-
-The [`Makefile`](Makefile) at the repo root defines all steps that must pass in CI/CD. Use it for full end-to-end validation:
+`dotnet test` is fine for quick feedback, but a full `make test` must pass before finalizing a change. The [`Makefile`](Makefile) defines every step CI enforces:
 
 | Target | Description |
 |--------|-------------|
@@ -40,13 +26,13 @@ The [`Makefile`](Makefile) at the repo root defines all steps that must pass in 
 | `make test` | Run both CLR and AOT tests (default target) |
 | `make test-aot-size` | Publish the canonical AOT app and check its binary size against the committed per-RID baselines |
 | `make pack` | Create NuGet packages |
-| `make generate-docs` | Build documentation with DocFX |
-| `make serve-docs` | Generate and serve docs locally on port 8080 |
+| `make generate-docs` / `make serve-docs` | Build / serve the DocFX site (port 8080) |
 | `make release VERSION=x.y` | Bump version, tag, push, and create a GitHub release |
 
-You can use `dotnet test` for quick feedback, but a full `make test` run should be completed before finalizing changes to ensure nothing is missed.
+Test conventions:
 
----
+- Add new type scenarios to **`PolyType.TestCases`** so they get coverage across every test configuration.
+- The **`ProviderUnderTest`** abstraction runs the same test logic against both the reflection and source-generated providers.
 
 ## Coding Conventions
 
@@ -61,103 +47,33 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 - Ensure that the final return statement of a method is on its own line.
 - When adding new unit tests, prefer `[Theory]` with multiple data sources (like `[InlineData]` or `[MemberData]`) over multiple duplicative `[Fact]` methods.
 - Do not emit "Arrange", "Act", or "Assert" comments in tests.
+- Include XML documentation comments on new public APIs.
 - For markdown (`.md`) files, ensure there is no trailing whitespace at the end of any line.
-- When adding new public APIs, include XML documentation comments.
-
----
 
 ## Architecture
 
-PolyType's type model is built from a small set of core abstractions, populated by either the reflection or source-generator provider.
+PolyType's type model is a small set of core abstractions populated by either provider. Key vocabulary:
 
-### Key Concepts
+- **Type shapes** — abstractions (`ITypeShape`, `IObjectTypeShape`, `IEnumerableTypeShape`, etc.) that describe a type's structure: properties, constructors, collection semantics, enum values, and more.
+- **Visitor pattern** — `TypeShapeVisitor` traverses the model to build functionality generically over arbitrary types.
+- **`IShapeable<T>`** — types advertise their own shape through this interface (typically via source generation).
+- **Attributes** — `[GenerateShape]`, `[PropertyShape]`, `[ConstructorShape]`, etc. drive the source generator.
 
-- **Type shapes** — Core abstractions (`ITypeShape`, `IObjectTypeShape`, `IEnumerableTypeShape`, `IDictionaryTypeShape`, etc.) that describe the structure of types: their properties, constructors, collection semantics, enum values, and more.
-- **Two providers** — The type model can be populated via a **reflection provider** (for runtime use) or a **source generator** (for Native AOT and trimming support).
-- **Visitor pattern** — `TypeShapeVisitor` allows consumers to traverse the type model and build functionality generically over arbitrary types.
-- **`IShapeable<T>`** — Types implement this interface (typically via source generation) to advertise that they can provide their own type shape.
-- **Attributes** — `[GenerateShape]`, `[PropertyShape]`, `[ConstructorShape]`, etc. control how the source generator produces type shapes.
-
----
+For deeper, scoped detail see the nested files: [`src/PolyType/AGENTS.md`](src/PolyType/AGENTS.md) (core library components) and [`src/PolyType.SourceGenerator/AGENTS.md`](src/PolyType.SourceGenerator/AGENTS.md) (source generator architecture and incremental-safety rules).
 
 ## Project Layout
 
-### Source Projects (`src/`)
-
-- **`PolyType/`** — Core library. Contains the type shape abstractions, visitor pattern, `IShapeable<T>`, attributes for source generation, the reflection-based type shape provider, and model classes used by the source generator. Targets net10.0/net9.0/net8.0/net472/netstandard2.0. Packable. See [`src/PolyType/AGENTS.md`](src/PolyType/AGENTS.md) for a component breakdown.
-- **`PolyType.Roslyn/`** — Roslyn library for extracting general-purpose type data models from `ITypeSymbol`s. Provides the foundation used by the source generator. Models in this project are **not** designed for direct use by incremental source generators (they may contain non-equatable data). Also provides `ImmutableEquatableArray<T>`, `ImmutableEquatableDictionary<TKey, TValue>`, and `ImmutableEquatableSet<T>` for use in incremental pipelines. Targets netstandard2.0. Packable (for use by third-party source generators).
-- **`PolyType.SourceGenerator/`** — Built-in incremental source generator. Consumes PolyType.Roslyn for model extraction, maps to its own incremental-safe model types, and emits C# source. Targets netstandard2.0 (analyzer project).
-- **`PolyType.Examples/`** — Reference implementations built on PolyType: JSON/XML/CBOR/YAML serializers, configuration binder, DI container, pretty-printer, random generator, JSON schema generator, cloner, structural equality comparer, validator, and object mapper. Packable.
-- **`PolyType.Examples.FSharp/`** — F# example implementations (pretty-printer). Not packable.
-- **`PolyType.TestCases/`** + **`PolyType.TestCases.FSharp/`** — Shared test type definitions used across test projects. Provides exhaustive type coverage for testing PolyType consumers. Packable.
-- **`Shared/`** — Shared helper code and polyfills: reflection utilities, debug helpers, and compatibility shims for older target frameworks.
-
-### Test Projects (`tests/`)
-
-- **`PolyType.Tests/`** — Main test suite. Comprehensive xUnit tests covering serialization, type shapes, caching, validation, collections, DI, and more. Targets net10.0/net9.0/net8.0/net472.
-- **`PolyType.Tests.NativeAOT/`** — Native AOT smoke tests. Published as an AOT binary and run directly to establish that basic functionality works under AOT constraints. Not intended to be comprehensive — the main test suite in `PolyType.Tests/` provides full coverage. Targets net10.0 only. Uses TUnit.
-- **`PolyType.SourceGenerator.UnitTests/`** — Source generator unit tests. Tests compilation, diagnostics, incremental compilation behavior, and code generation output. Targets net9.0/net8.0 (+ net472 on Windows). xUnit.
-- **`PolyType.Roslyn.Tests/`** — Tests for Roslyn utility types (equatable collections, source writer). Targets net10.0/net9.0/net8.0/net472. xUnit.
-- **`PolyType.Benchmarks/`** — BenchmarkDotNet performance benchmarks. Not a test project — used for profiling and optimization. Targets net10.0.
-- **`SizeTrackingApp.AOT/`** — Canonical Native AOT app whose published binary size is tracked per-RID in `aot-size-baselines.json` and checked by `make test-aot-size`. Not a unit-test project. Targets net10.0 with `PublishAot=true`.
-
-### Sample Applications (`applications/`)
-
-Five Native AOT console apps and one reflection-based app demonstrating serialization, configuration binding, object mapping, random generation, and validation. All AOT apps target net10.0 with `PublishAot=true`.
-
-### Build Tooling (`eng/`)
-
-- **`AotSizeCheck/`** — Internal CLI used by `make test-aot-size` to compare the published `SizeTrackingApp.AOT` binary against the committed size baselines. A build helper only: not packaged and not strong-named. Targets net10.0.
-
----
-
-## Source Generator Guidance
-
-PolyType ships a built-in incremental source generator (`PolyType.SourceGenerator`) that consumes models extracted by `PolyType.Roslyn` and emits `ITypeShape` implementations. Working on it carries strict incremental-safety rules: equatable `record` models, no stored Roslyn symbols, equatable collections only, and netstandard2.0-only APIs.
-
-**When editing the generator, follow [`src/PolyType.SourceGenerator/AGENTS.md`](src/PolyType.SourceGenerator/AGENTS.md)** — it covers the two-component architecture, the full incremental generator requirements, the parse → map → format pipeline, and how to refresh the snapshot tests.
-
----
-
-## Testing Patterns
-
-- The main test suite in `PolyType.Tests/` targets four frameworks: net10.0, net9.0, net8.0, and net472.
-- Shared test type definitions live in `PolyType.TestCases` — add new type scenarios there to get coverage across all test configurations.
-- The `ProviderUnderTest` abstraction allows testing both reflection and source-generated providers with the same test logic.
-- NativeAOT smoke tests in `PolyType.Tests.NativeAOT/` are published and run as an AOT binary. They verify basic functionality under AOT constraints but are not comprehensive.
-- For quick iteration: `dotnet test --framework net10.0`
-- For full validation: `make test` (runs both CLR and AOT tests)
-
----
-
-## Documentation
-
-- [DocFX](https://dotnet.github.io/docfx/) generates the project website from the `docs/` directory.
-- API documentation is auto-generated from XML doc comments in source code.
-- Conceptual documentation lives in `docs/docs/`.
-- Build docs: `make generate-docs`
-- Serve locally: `make serve-docs` (port 8080)
-- When adding new public APIs, always include XML documentation comments.
-
----
+- **`src/`** — `PolyType` (core library: both providers, abstractions, attributes), `PolyType.Roslyn` (general-purpose `ITypeSymbol` → model extraction, reusable by third-party generators), `PolyType.SourceGenerator` (built-in incremental generator), `PolyType.Examples` (reference serializers/binders/mappers built on PolyType), `PolyType.TestCases` (+ `.FSharp`, shared test types), and `Shared` (polyfills/helpers).
+- **`tests/`** — `PolyType.Tests` (main xUnit suite), `PolyType.Tests.NativeAOT` (AOT smoke tests, TUnit), `PolyType.SourceGenerator.UnitTests` (generator + snapshot tests), `PolyType.Roslyn.Tests`, `PolyType.Benchmarks` (BenchmarkDotNet; not a test project), and `SizeTrackingApp.AOT` (canonical app whose published size is tracked per-RID in `aot-size-baselines.json` via `make test-aot-size`).
+- **`applications/`** — five Native AOT sample apps plus one reflection-based app.
+- **`eng/AotSizeCheck/`** — internal CLI that backs `make test-aot-size`.
 
 ## Things to Avoid / Common Gotchas
 
-- **Multi-targeting** — The core library targets net10.0, net9.0, net8.0, net472, and netstandard2.0. Be aware of API availability differences across target frameworks.
-- **Strong naming** — Shippable assemblies under `src/` are signed with `OpenKey.snk`; test and build-tooling projects are not.
-- **Versioning** — Nerdbank.GitVersioning (nbgv) manages versions from `version.json`. Don't manually edit assembly versions.
-- **Package validation** — Enabled with a baseline of v1.0.0. Breaking public API changes will fail the build.
-
----
-
-## Submitting Changes
-
-Before opening a pull request (these mirror what CI enforces on every PR via the [`Makefile`](Makefile)):
-
-- Run `make test` (CLR + AOT) and make sure everything passes. `dotnet test --framework net10.0` is fine for quick iteration, but a full `make test` should pass before finalizing.
-- Make sure the solution builds cleanly and respects `.editorconfig` formatting.
-- Avoid breaking public API changes — package validation runs against the v1.0.0 baseline and will fail the build.
-- Include XML documentation comments for any new public APIs.
+- **Multi-targeting** — the core library targets net10.0/net9.0/net8.0/net472/netstandard2.0; watch for API availability differences across TFMs.
+- **Strong naming** — assemblies under `src/` are signed with `OpenKey.snk`; test and build-tooling projects are not.
+- **Versioning** — Nerdbank.GitVersioning (nbgv) manages versions from `version.json`; don't manually edit assembly versions.
+- **Package validation** — runs against the **v1.0.0** baseline, so breaking public API changes will fail the build.
 
 ## Keeping This Document Current
 
@@ -168,4 +84,4 @@ This repository uses nested `AGENTS.md` files for subproject-specific guidance:
 - [`src/PolyType/AGENTS.md`](src/PolyType/AGENTS.md) — core library structure and components.
 - [`src/PolyType.SourceGenerator/AGENTS.md`](src/PolyType.SourceGenerator/AGENTS.md) — source generator architecture and incremental-safety rules.
 
-Agents read the file closest to the code being edited, so keep scoped guidance in the nearest `AGENTS.md` and reserve this root file for repository-wide concerns. When the change is repo-wide — new project, framework bump, pipeline change — update this root file; when it is local to a subproject already covered by a nested file, update that nested file too.
+Agents read the file closest to the code being edited, so keep scoped guidance in the nearest `AGENTS.md` and reserve this root file for repository-wide concerns.
