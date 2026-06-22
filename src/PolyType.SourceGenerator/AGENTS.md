@@ -45,12 +45,12 @@ Balance this against a competing goal: **keep the incremental model as normalize
 
 - **`PolyTypeGenerator.cs`** — the `[Generator]` entry point that wires up the incremental pipeline.
 - **`PolyTypeKnownSymbols.cs`** — cached well-known symbol lookups.
-- **`Parser/`** — extracts and validates models from Roslyn symbols. `Parser.ModelMapper.cs` maps them for generic factory derivation; `Parser.Diagnostics.cs` defines the reported diagnostics.
+- **`Parser/`** — drives model extraction. `Parser.cs` traverses the type graph (via PolyType.Roslyn) to resolve `TypeDataModel`s from the annotated symbols; `Parser.ModelMapper.cs` maps those resolved PolyType.Roslyn models into the source generator's own incremental-safe model types (`Model/`); `Parser.Diagnostics.cs` defines the reported diagnostics.
 - **`Model/`** — the incremental-safe (record-based) model types.
 - **`SourceFormatter/`** — emits the C# source, split by shape kind (`SourceFormatter.Object.cs`, `SourceFormatter.Enumerable.cs`, `SourceFormatter.Dictionary.cs`, etc.).
 - **`Analyzers/`** — companion analyzers shipped alongside the generator.
 
-Flow: `PolyTypeGenerator.cs` → `Parser` (Roslyn symbols → models) → `Parser.ModelMapper` (maps models for generic factory derivation) → `SourceFormatter` (models → C# source).
+Flow: `PolyTypeGenerator.cs` → `Parser` (Roslyn symbols → PolyType.Roslyn `TypeDataModel`s) → `Parser.ModelMapper` (PolyType.Roslyn models → incremental-safe `Model/` types) → `SourceFormatter` (incremental model → C# source).
 
 ## Testing Changes
 
