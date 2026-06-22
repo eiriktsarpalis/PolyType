@@ -6,6 +6,7 @@ using PolyType.SourceGenerator.Helpers;
 using PolyType.SourceGenerator.Model;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Globalization;
 using System.Reflection;
 
 namespace PolyType.SourceGenerator;
@@ -814,13 +815,19 @@ public sealed partial class Parser
             .ToImmutableEquatableArray();
     }
 
+    // Enum underlying values are always integral primitives (byte/sbyte/short/ushort/int/uint/long/ulong),
+    // all of which implement IFormattable. Format with the invariant culture for deterministic source generation.
     private static string EnumValueToString(object underlyingValue)
-        => underlyingValue switch
+    {
+        switch (underlyingValue)
         {
-            float f => f.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
-            double d => d.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
-            _ => underlyingValue.ToString(),
-        };
+            case IFormattable f:
+                return f.ToString(null, CultureInfo.InvariantCulture);
+            default:
+                Debug.Fail($"Unexpected enum underlying value type '{underlyingValue.GetType()}'.");
+                return underlyingValue.ToString();
+        }
+    }
 
     private ConstructorShapeModel MapTupleConstructor(TypeId typeId, TupleDataModel tupleModel)
     {
