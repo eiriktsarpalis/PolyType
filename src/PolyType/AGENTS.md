@@ -42,9 +42,9 @@ The **runtime reflection-based provider**: `ReflectionTypeShapeProvider` uses `S
 
 ### `SourceGenModel/`
 
-The **runtime counterparts the generated code instantiates**. The source generator (`src/PolyType.SourceGenerator/`) emits code that wires up `SourceGenTypeShapeProvider` and the `SourceGen*TypeShape` types defined here. `Helpers/` holds the supporting machinery the emitted code relies on (argument-state implementations such as `SmallArgumentState` / `LargeArgumentState`, `CollectionHelpers`, marshalling, etc.).
+The runtime model types targeted by the source generator (`src/PolyType.SourceGenerator/`): the emitted code instantiates these to build shapes at compile time, making this the trimming- and AOT-safe provider.
 
-> When changing the shape of generated code in the source generator, the corresponding `SourceGenModel/` types here usually need matching updates — the two evolve together.
+> When changing the shape of generated code in the source generator, the `SourceGenModel/` types here usually need matching updates — the two evolve together.
 
 ### `Utilities/`
 
