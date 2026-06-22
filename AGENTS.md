@@ -161,6 +161,11 @@ Before opening a pull request (these mirror what CI enforces on every PR via the
 
 ## Keeping This Document Current
 
-Any changes that substantially update the project structure — adding, removing, or renaming projects; changing target frameworks; or altering the build pipeline — should also trigger updates to this `AGENTS.md` file to keep it accurate.
+**Any change that invalidates something stated in an `AGENTS.md` file — root or nested — must update the affected file(s) as part of the same change.** Treat these files as living documentation: if you add, remove, or rename a project, component, or folder; change target frameworks; alter the build/test pipeline; or otherwise make a description here inaccurate, fix the corresponding `AGENTS.md` in the same commit/PR so it never drifts from the code.
 
-Subprojects may define their own nested `AGENTS.md` (for example [`src/PolyType.SourceGenerator/AGENTS.md`](src/PolyType.SourceGenerator/AGENTS.md)); agents read the file closest to the code being edited, so keep scoped guidance in the nearest `AGENTS.md` and reserve this root file for repository-wide concerns.
+This repository uses nested `AGENTS.md` files for subproject-specific guidance:
+
+- [`src/PolyType/AGENTS.md`](src/PolyType/AGENTS.md) — core library structure and components.
+- [`src/PolyType.SourceGenerator/AGENTS.md`](src/PolyType.SourceGenerator/AGENTS.md) — source generator architecture and incremental-safety rules.
+
+Agents read the file closest to the code being edited, so keep scoped guidance in the nearest `AGENTS.md` and reserve this root file for repository-wide concerns. When the change is repo-wide — new project, framework bump, pipeline change — update this root file; when it is local to a subproject already covered by a nested file, update that nested file too.
