@@ -217,6 +217,76 @@ public abstract partial class IsRequiredTests(ProviderUnderTest providerUnderTes
         public required bool RequiredProperty { get; set; }
     }
 
+    [Fact]
+    public void RequiredByAttributeProperty_MatchingCtorParameter_NotDuplicated()
+    {
+        // Regression test for https://github.com/eiriktsarpalis/PolyType/issues/450
+        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetTypeShape(typeof(HasRequiredByAttributePropertyAndMatchingCtorParameter));
+        Assert.NotNull(shape);
+        Assert.NotNull(shape.Constructor);
+        var parameter = shape.Constructor.Parameters.Single(p => p.Name == nameof(HasRequiredByAttributePropertyAndMatchingCtorParameter.Value));
+        Assert.Equal(ParameterKind.MethodParameter, parameter.Kind);
+        Assert.True(parameter.IsRequired);
+    }
+
+    [GenerateShape]
+    public partial class HasRequiredByAttributePropertyAndMatchingCtorParameter
+    {
+        public HasRequiredByAttributePropertyAndMatchingCtorParameter(string value)
+        {
+            Value = value;
+        }
+
+        [PropertyShape(IsRequired = true)]
+        public string Value { get; set; }
+    }
+
+    [Fact]
+    public void NotRequiredByAttributeProperty_MatchingCtorParameter_NotDuplicated()
+    {
+        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetTypeShape(typeof(HasNotRequiredByAttributePropertyAndMatchingCtorParameter));
+        Assert.NotNull(shape);
+        Assert.NotNull(shape.Constructor);
+        var parameter = shape.Constructor.Parameters.Single(p => p.Name == nameof(HasNotRequiredByAttributePropertyAndMatchingCtorParameter.Value));
+        Assert.Equal(ParameterKind.MethodParameter, parameter.Kind);
+        Assert.False(parameter.IsRequired);
+    }
+
+    [GenerateShape]
+    public partial class HasNotRequiredByAttributePropertyAndMatchingCtorParameter
+    {
+        public HasNotRequiredByAttributePropertyAndMatchingCtorParameter(string value)
+        {
+            Value = value;
+        }
+
+        [PropertyShape(IsRequired = false)]
+        public string Value { get; set; }
+    }
+
+    [Fact]
+    public void RequiredByAttributeProperty_MatchingOptionalCtorParameter_PreservesRequired()
+    {
+        var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetTypeShape(typeof(HasRequiredByAttributePropertyAndMatchingOptionalCtorParameter));
+        Assert.NotNull(shape);
+        Assert.NotNull(shape.Constructor);
+        var parameter = shape.Constructor.Parameters.Single(p => p.Name == nameof(HasRequiredByAttributePropertyAndMatchingOptionalCtorParameter.Value));
+        Assert.Equal(ParameterKind.MethodParameter, parameter.Kind);
+        Assert.True(parameter.IsRequired);
+    }
+
+    [GenerateShape]
+    public partial class HasRequiredByAttributePropertyAndMatchingOptionalCtorParameter
+    {
+        public HasRequiredByAttributePropertyAndMatchingOptionalCtorParameter(string value = "")
+        {
+            Value = value;
+        }
+
+        [PropertyShape(IsRequired = true)]
+        public string Value { get; set; }
+    }
+
     [GenerateShapeFor<HasRequiredProperty>]
     internal partial class Witness;
 

@@ -189,7 +189,12 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                 logicalName = matchingMember.LogicalName ?? matchingMember.BaseMemberInfo.Name;
             }
 
-            bool? isRequired = parameterShapeAttribute?.IsRequiredSpecified is true ? parameterShapeAttribute.IsRequired : null;
+            // Resolve the required flag: an explicit [ParameterShape] override takes precedence,
+            // otherwise inherit the IsRequired value of the matching property (e.g. set via
+            // [PropertyShape] or [DataMember]); fall back to the presence of a default value.
+            bool? isRequired = parameterShapeAttribute?.IsRequiredSpecified is true
+                ? parameterShapeAttribute.IsRequired
+                : matchingMember?.IsRequiredByAttribute;
 
             parameterShapeInfos[i++] = new(parameter, isNonNullable, matchingMember?.BaseMemberInfo, logicalName, isRequired);
         }
@@ -205,9 +210,11 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
             // members in the shape signature.
             foreach (MemberInitializerShapeInfo memberInitializer in settableMembers)
             {
-                if (!memberInitializer.IsRequired && parameterShapeInfos.Any(p => p.MatchingMember == memberInitializer.MemberInfo))
+                if (!memberInitializer.IsRequiredBySyntax && parameterShapeInfos.Any(p => p.MatchingMember == memberInitializer.MemberInfo))
                 {
                     // Deduplicate any properties whose signature matches a constructor parameter.
+                    // Members declared with the 'required' keyword are exempt since they must be set
+                    // using an object initializer; their required-ness can't be satisfied by the parameter alone.
                     continue;
                 }
 

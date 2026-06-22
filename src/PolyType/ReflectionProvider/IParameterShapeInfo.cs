@@ -64,7 +64,8 @@ internal sealed class MemberInitializerShapeInfo : IParameterShapeInfo
         Type = memberInfo.MemberType();
         Name = logicalName ?? memberInfo.Name;
         MemberInfo = memberInfo;
-        IsRequired = isRequiredByAttribute ?? (!ctorSetsRequiredMembers && memberInfo.IsRequired());
+        IsRequiredBySyntax = !ctorSetsRequiredMembers && memberInfo.IsRequired();
+        IsRequired = isRequiredByAttribute ?? IsRequiredBySyntax;
         IsInitOnly = memberInfo.IsInitOnly();
         IsPublic = memberInfo is FieldInfo { IsPublic: true } or PropertyInfo { GetMethod.IsPublic: true };
         IsNonNullable = isSetterNonNullable;
@@ -74,6 +75,13 @@ internal sealed class MemberInitializerShapeInfo : IParameterShapeInfo
     public MemberInfo MemberInfo { get; }
     public bool IsByRef => false;
     public bool IsRequired { get; }
+
+    /// <summary>
+    /// Whether the underlying member is declared with the <see langword="required" /> keyword
+    /// (and the constructor is not annotated with <see cref="System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute" />),
+    /// independent of any <see cref="PropertyShapeAttribute.IsRequired" /> override.
+    /// </summary>
+    public bool IsRequiredBySyntax { get; }
     public bool IsInitOnly { get; }
     public bool IsNonNullable { get; }
     public bool IsPublic { get; }
