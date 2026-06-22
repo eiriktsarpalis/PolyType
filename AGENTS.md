@@ -1,10 +1,14 @@
+# AGENTS.md
+
+Guidance for AI coding agents working in the PolyType repository.
+
 **Any code you commit MUST compile, and new and existing tests related to the change MUST pass.**
 
 You MUST make your best effort to ensure any code changes satisfy those criteria before committing. If for any reason you were unable to build or test code changes, you MUST report that. You MUST NOT claim success unless all builds and tests pass as described above.
 
 If you make code changes, do not complete without checking the relevant code builds and relevant tests still pass after the last edits you make. Do not simply assume that your changes fix test failures you see — actually build and run those tests again to confirm.
 
-You MUST follow all code-formatting and naming conventions defined in [`.editorconfig`](../.editorconfig).
+You MUST follow all code-formatting and naming conventions defined in [`.editorconfig`](.editorconfig).
 
 ---
 
@@ -25,7 +29,7 @@ dotnet test --framework net10.0
 
 ### Full E2E Validation (Makefile)
 
-The [`Makefile`](../Makefile) at the repo root defines all steps that must pass in CI/CD. Use it for full end-to-end validation:
+The [`Makefile`](Makefile) at the repo root defines all steps that must pass in CI/CD. Use it for full end-to-end validation:
 
 | Target | Description |
 |--------|-------------|
@@ -162,4 +166,4 @@ Unit tests in `PolyType.SourceGenerator.UnitTests/` validate the generated outpu
 
 ## Keeping This Document Current
 
-Any changes that substantially update the project structure — adding, removing, or renaming projects; changing target frameworks; or altering the build pipeline — should also trigger updates to this `copilot-instructions.md` file to keep it accurate.
+Any changes that substantially update the project structure — adding, removing, or renaming projects; changing target frameworks; or altering the build pipeline — should also trigger updates to this `AGENTS.md` file to keep it accurate.
