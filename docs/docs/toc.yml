@@ -13,3 +13,5 @@ items:
   href: rpc-support.md
 - name: Specification
   href: specification.md
+- name: Threat Model
+  href: threat-model.md
