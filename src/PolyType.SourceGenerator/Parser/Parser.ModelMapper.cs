@@ -792,17 +792,15 @@ public sealed partial class Parser
     // Enum underlying values are always integral primitives (byte/sbyte/short/ushort/int/uint/long/ulong),
     // all of which implement IFormattable. Format with the invariant culture for deterministic source generation.
     private static string EnumValueToString(object underlyingValue)
-        => underlyingValue switch
-        {
-            byte or sbyte or short or ushort or int or uint or long or ulong =>
-                ((IFormattable)underlyingValue).ToString(null, CultureInfo.InvariantCulture),
-            _ => UnreachableDefault(underlyingValue),
-        };
-
-    private static string UnreachableDefault(object underlyingValue)
     {
-        Debug.Fail($"Unexpected enum underlying value type '{underlyingValue.GetType()}'.");
-        return underlyingValue.ToString();
+        switch (underlyingValue)
+        {
+            case IFormattable f:
+                return f.ToString(null, CultureInfo.InvariantCulture);
+            default:
+                Debug.Fail($"Unexpected enum underlying value type '{underlyingValue.GetType()}'.");
+                return underlyingValue.ToString();
+        }
     }
 
     private ConstructorShapeModel MapTupleConstructor(TypeId typeId, TupleDataModel tupleModel)
