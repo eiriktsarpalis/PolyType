@@ -38,6 +38,7 @@ The [`Makefile`](Makefile) at the repo root defines all steps that must pass in 
 | `make test-clr` | Run CLR tests with coverage, crash dumps, and hang dumps |
 | `make test-aot` | Publish and run Native AOT smoke tests |
 | `make test` | Run both CLR and AOT tests (default target) |
+| `make test-aot-size` | Publish the canonical AOT app and check its binary size against the committed per-RID baselines |
 | `make pack` | Create NuGet packages |
 | `make generate-docs` | Build documentation with DocFX |
 | `make serve-docs` | Generate and serve docs locally on port 8080 |
@@ -98,10 +99,15 @@ PolyType's type model is built from a small set of core abstractions, populated 
 - **`PolyType.SourceGenerator.UnitTests/`** — Source generator unit tests. Tests compilation, diagnostics, incremental compilation behavior, and code generation output. Targets net9.0/net8.0 (+ net472 on Windows). xUnit.
 - **`PolyType.Roslyn.Tests/`** — Tests for Roslyn utility types (equatable collections, source writer). Targets net10.0/net9.0/net8.0/net472. xUnit.
 - **`PolyType.Benchmarks/`** — BenchmarkDotNet performance benchmarks. Not a test project — used for profiling and optimization. Targets net10.0.
+- **`SizeTrackingApp.AOT/`** — Canonical Native AOT app whose published binary size is tracked per-RID in `aot-size-baselines.json` and checked by `make test-aot-size`. Not a unit-test project. Targets net10.0 with `PublishAot=true`.
 
 ### Sample Applications (`applications/`)
 
-Six Native AOT console apps and one reflection-based app demonstrating serialization, configuration binding, object mapping, random generation, and validation. All AOT apps target net10.0 with `PublishAot=true`.
+Five Native AOT console apps and one reflection-based app demonstrating serialization, configuration binding, object mapping, random generation, and validation. All AOT apps target net10.0 with `PublishAot=true`.
+
+### Build Tooling (`eng/`)
+
+- **`AotSizeCheck/`** — Internal CLI used by `make test-aot-size` to compare the published `SizeTrackingApp.AOT` binary against the committed size baselines. A build helper only: not packaged and not strong-named. Targets net10.0.
 
 ---
 
@@ -159,7 +165,7 @@ Unit tests in `PolyType.SourceGenerator.UnitTests/` validate the generated outpu
 - **Multi-targeting** — The core library targets net10.0, net9.0, net8.0, net472, and netstandard2.0. Be aware of API availability differences across target frameworks.
 - **Source generator targets netstandard2.0** — This is a Roslyn analyzer requirement. Do not use APIs unavailable in netstandard2.0 within the source generator.
 - **PolyType.Roslyn models ≠ PolyType.SourceGenerator models** — These are distinct model hierarchies with different design goals. Don't confuse them.
-- **Strong naming** — All assemblies are signed with `OpenKey.snk`.
+- **Strong naming** — Shippable assemblies under `src/` are signed with `OpenKey.snk`; test and build-tooling projects are not.
 - **Versioning** — Nerdbank.GitVersioning (nbgv) manages versions from `version.json`. Don't manually edit assembly versions.
 - **Package validation** — Enabled with a baseline of v1.0.0. Breaking public API changes will fail the build.
 
