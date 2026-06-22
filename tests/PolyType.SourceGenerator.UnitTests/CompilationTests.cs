@@ -1,11 +1,48 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using PolyType.SourceGenerator.Model;
+using System.Globalization;
 using Xunit;
 
 namespace PolyType.SourceGenerator.UnitTests;
 
 public static partial class CompilationTests
 {
+    [Theory]
+    [InlineData("")]
+    [InlineData("ar-SA")]
+    public static void EnumWithNegativeUnderlyingValue_FormatsInvariant(string cultureName)
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            public enum MyEnum : int
+            {
+                Negative = -1,
+                Zero = 0,
+                Large = 2147483647,
+            }
+
+            [GenerateShapeFor(typeof(MyEnum))]
+            internal partial class Witness { }
+            """);
+
+        CultureInfo originalCulture = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(cultureName);
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            EnumShapeModel enumModel = Assert.Single(result.AllGeneratedTypes.OfType<EnumShapeModel>());
+            Assert.Equal("-1", enumModel.Members["Negative"]);
+            Assert.Equal("0", enumModel.Members["Zero"]);
+            Assert.Equal("2147483647", enumModel.Members["Large"]);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = originalCulture;
+        }
+    }
+
     [Fact]
     public static void CompileSimplePoco_NoErrors()
     {

@@ -793,6 +793,7 @@ public sealed partial class Parser
         {
             float f => f.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
             double d => d.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+            IFormattable formattable => formattable.ToString(null, System.Globalization.CultureInfo.InvariantCulture),
             _ => underlyingValue.ToString(),
         };
 
