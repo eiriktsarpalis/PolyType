@@ -249,7 +249,12 @@ public abstract partial class IsRequiredTests(ProviderUnderTest providerUnderTes
         Assert.NotNull(shape.Constructor);
         var parameter = shape.Constructor.Parameters.Single(p => p.Name == nameof(HasNotRequiredByAttributePropertyAndMatchingCtorParameter.Value));
         Assert.Equal(ParameterKind.MethodParameter, parameter.Kind);
-        Assert.False(parameter.IsRequired);
+
+        // The matching property is [PropertyShape(IsRequired = false)], but it is deduplicated
+        // against the constructor parameter. The parameter has no default value, so it remains
+        // required: a constructor parameter's requiredness is intrinsic to the constructor contract
+        // and a property annotation cannot relax it.
+        Assert.True(parameter.IsRequired);
     }
 
     [GenerateShape]
@@ -265,14 +270,18 @@ public abstract partial class IsRequiredTests(ProviderUnderTest providerUnderTes
     }
 
     [Fact]
-    public void RequiredByAttributeProperty_MatchingOptionalCtorParameter_PreservesRequired()
+    public void RequiredByAttributeProperty_MatchingOptionalCtorParameter_ParameterStaysOptional()
     {
         var shape = (IObjectTypeShape?)providerUnderTest.Provider.GetTypeShape(typeof(HasRequiredByAttributePropertyAndMatchingOptionalCtorParameter));
         Assert.NotNull(shape);
         Assert.NotNull(shape.Constructor);
         var parameter = shape.Constructor.Parameters.Single(p => p.Name == nameof(HasRequiredByAttributePropertyAndMatchingOptionalCtorParameter.Value));
         Assert.Equal(ParameterKind.MethodParameter, parameter.Kind);
-        Assert.True(parameter.IsRequired);
+
+        // The matching property is [PropertyShape(IsRequired = true)], but it is deduplicated
+        // against the constructor parameter, which has a default value. The property annotation does
+        // not propagate to the parameter, so the parameter remains optional per the constructor.
+        Assert.False(parameter.IsRequired);
     }
 
     [GenerateShape]
