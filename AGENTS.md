@@ -1,14 +1,15 @@
 # AGENTS.md
 
-Guidance for AI coding agents working in the PolyType repository.
+PolyType is a practical generic programming library for .NET. It provides a type model that describes the structure of .NET types, enabling the rapid development of high-performance libraries such as serializers, validators, parsers, and mappers. The type model can be populated either by a runtime **reflection provider** or by a **source generator** (for Native AOT and trimming support).
 
-**Any code you commit MUST compile, and new and existing tests related to the change MUST pass.**
+This file is the entry point for AI coding agents working in this repository. It is standard Markdown — keep it accurate as the project evolves.
 
-You MUST make your best effort to ensure any code changes satisfy those criteria before committing. If for any reason you were unable to build or test code changes, you MUST report that. You MUST NOT claim success unless all builds and tests pass as described above.
+## Core Requirements
 
-If you make code changes, do not complete without checking the relevant code builds and relevant tests still pass after the last edits you make. Do not simply assume that your changes fix test failures you see — actually build and run those tests again to confirm.
-
-You MUST follow all code-formatting and naming conventions defined in [`.editorconfig`](.editorconfig).
+- **Any code you commit MUST compile, and new and existing tests related to the change MUST pass.**
+- Make your best effort to verify changes build and pass tests before committing. If for any reason you were unable to build or test code changes, you MUST report that. You MUST NOT claim success unless all builds and tests pass.
+- Do not finish a code change without building and running the relevant tests after your last edits. Do not simply assume that your changes fix test failures you see — actually build and run those tests again to confirm.
+- Follow all code-formatting and naming conventions defined in [`.editorconfig`](.editorconfig).
 
 ---
 
@@ -64,9 +65,9 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 
 ---
 
-## Architecture Overview
+## Architecture
 
-PolyType is a practical generic programming library for .NET. It provides a type model that describes the structure of .NET types, enabling the rapid development of high-performance libraries such as serializers, validators, parsers, and mappers.
+PolyType's type model is built from a small set of core abstractions, populated by either the reflection or source-generator provider.
 
 ### Key Concepts
 
@@ -163,6 +164,15 @@ Unit tests in `PolyType.SourceGenerator.UnitTests/` validate the generated outpu
 - **Package validation** — Enabled with a baseline of v1.0.0. Breaking public API changes will fail the build.
 
 ---
+
+## Submitting Changes
+
+Before opening a pull request (these mirror what CI enforces on every PR via the [`Makefile`](Makefile)):
+
+- Run `make test` (CLR + AOT) and make sure everything passes. `dotnet test --framework net10.0` is fine for quick iteration, but a full `make test` should pass before finalizing.
+- Make sure the solution builds cleanly and respects `.editorconfig` formatting.
+- Avoid breaking public API changes — package validation runs against the v1.0.0 baseline and will fail the build.
+- Include XML documentation comments for any new public APIs.
 
 ## Keeping This Document Current
 
