@@ -31,7 +31,7 @@ dotnet test                        # add --framework net10.0 for fast single-TFM
 
 Test conventions:
 
-- Add new type scenarios to **`PolyType.TestCases`** so they get coverage across every test configuration.
+- Add new type scenarios to **`PolyType.TestCases`** so they get coverage across every test configuration. Concretely, `yield return` a `TestCase.Create(value, ...)` with representative values for each new type from `TestTypes.GetTestCasesCore()`, which feeds the `MemberData` theories throughout the test suite.
 - The **`ProviderUnderTest`** abstraction runs the same test logic against both the reflection and source-generated providers.
 
 ## Coding Conventions
