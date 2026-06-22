@@ -113,28 +113,9 @@ Five Native AOT console apps and one reflection-based app demonstrating serializ
 
 ## Source Generator Guidance
 
-The source generator is split into two separate components:
+PolyType ships a built-in incremental source generator (`PolyType.SourceGenerator`) that consumes models extracted by `PolyType.Roslyn` and emits `ITypeShape` implementations. Working on it carries strict incremental-safety rules: equatable `record` models, no stored Roslyn symbols, equatable collections only, and netstandard2.0-only APIs.
 
-- **`PolyType.Roslyn`** extracts general-purpose `TypeDataModel` objects from Roslyn `ITypeSymbol`s. These models are not meant for use by incremental source generators — they may contain non-equatable or non-serializable data.
-- **`PolyType.SourceGenerator`** consumes PolyType.Roslyn's models and maps them to its own model types (in `PolyType.SourceGenerator/Model/`) that are designed for incremental generator pipelines. It uses the attribute annotations specified in the core PolyType project.
-
-### Incremental Generator Requirements
-
-Source generator models in `PolyType.SourceGenerator` **MUST** abide by the principles detailed in the [Roslyn Incremental Generators Cookbook](https://github.com/dotnet/roslyn/blob/main/docs/features/incremental-generators.cookbook.md):
-
-- **Use `record` types** for pipeline models to get structural equality for free. Never use classes with reference equality.
-- **Never store Roslyn symbols** (`ISymbol`, `ITypeSymbol`, etc.) in pipeline models. Extract the information you need into equatable representations (strings, records, etc.).
-- **Do not use standard collection types** (arrays, `List<T>`, `Dictionary<TKey, TValue>`) which have reference equality. Use the provided equatable collections from `PolyType.Roslyn/IncrementalTypes/`:
-  - `ImmutableEquatableArray<T>`
-  - `ImmutableEquatableDictionary<TKey, TValue>`
-  - `ImmutableEquatableSet<T>`
-- Pipeline steps should short-circuit when models haven't changed, allowing the generator driver to reuse cached output.
-
-### Pipeline Overview
-
-`PolyTypeGenerator.cs` → `Parser` (extracts models from Roslyn symbols) → `Parser.ModelMapper` (maps models for generic factory derivation) → `SourceFormatter` (emits C# source code)
-
-Unit tests in `PolyType.SourceGenerator.UnitTests/` validate the generated output.
+**When editing the generator, follow [`src/PolyType.SourceGenerator/AGENTS.md`](src/PolyType.SourceGenerator/AGENTS.md)** — it covers the two-component architecture, the full incremental generator requirements, the parse → map → format pipeline, and how to refresh the snapshot tests.
 
 ---
 
@@ -163,8 +144,6 @@ Unit tests in `PolyType.SourceGenerator.UnitTests/` validate the generated outpu
 ## Things to Avoid / Common Gotchas
 
 - **Multi-targeting** — The core library targets net10.0, net9.0, net8.0, net472, and netstandard2.0. Be aware of API availability differences across target frameworks.
-- **Source generator targets netstandard2.0** — This is a Roslyn analyzer requirement. Do not use APIs unavailable in netstandard2.0 within the source generator.
-- **PolyType.Roslyn models ≠ PolyType.SourceGenerator models** — These are distinct model hierarchies with different design goals. Don't confuse them.
 - **Strong naming** — Shippable assemblies under `src/` are signed with `OpenKey.snk`; test and build-tooling projects are not.
 - **Versioning** — Nerdbank.GitVersioning (nbgv) manages versions from `version.json`. Don't manually edit assembly versions.
 - **Package validation** — Enabled with a baseline of v1.0.0. Breaking public API changes will fail the build.
@@ -183,3 +162,5 @@ Before opening a pull request (these mirror what CI enforces on every PR via the
 ## Keeping This Document Current
 
 Any changes that substantially update the project structure — adding, removing, or renaming projects; changing target frameworks; or altering the build pipeline — should also trigger updates to this `AGENTS.md` file to keep it accurate.
+
+Subprojects may define their own nested `AGENTS.md` (for example [`src/PolyType.SourceGenerator/AGENTS.md`](src/PolyType.SourceGenerator/AGENTS.md)); agents read the file closest to the code being edited, so keep scoped guidance in the nearest `AGENTS.md` and reserve this root file for repository-wide concerns.
