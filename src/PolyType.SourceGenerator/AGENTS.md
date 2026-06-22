@@ -27,6 +27,18 @@ Everything that flows through the incremental pipeline (the `Model/` types) **MU
   - `ImmutableEquatableSet<T>`
 - Pipeline steps should short-circuit when models are unchanged, so the generator driver can reuse cached output.
 
+## Separation of Concerns: Parser vs Formatter
+
+The pipeline has a strict division of labour, and keeping it strict is what makes the generator both correct and fast:
+
+- **The parser maps symbols to the incremental model.** All inspection of Roslyn symbols and the compilation happens here. This is the only place that should reason about type semantics, resolve members, evaluate attributes, or decide what to emit.
+- **The source formatter maps the incremental model to source code.** It is a straightforward pretty printer over the model and should not perform any nontrivial computation of its own.
+
+Two rules follow from this:
+
+- **The incremental model must not encapsulate any symbols or compilation objects.** Beyond the equatable-model requirements above, holding onto symbols defeats incremental caching and pins large Roslyn object graphs in memory — a real performance problem. Extract everything the formatter needs into plain, equatable data while parsing.
+- **Nontrivial computation in the formatter is a design smell.** If the formatter finds itself computing something non-obvious (resolving a name, choosing a strategy, deriving a flag), that is a signal the computation belongs in the parser. Move it there and update the model to carry the result.
+
 ## Project Layout & Pipeline
 
 - **`PolyTypeGenerator.cs`** — the `[Generator]` entry point that wires up the incremental pipeline.
