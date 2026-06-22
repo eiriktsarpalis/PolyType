@@ -788,14 +788,10 @@ public sealed partial class Parser
             .ToImmutableEquatableArray();
     }
 
+    // Enum underlying values are always integral primitives (byte/sbyte/short/ushort/int/uint/long/ulong),
+    // all of which implement IFormattable. Format with the invariant culture for deterministic source generation.
     private static string EnumValueToString(object underlyingValue)
-        => underlyingValue switch
-        {
-            float f => f.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
-            double d => d.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
-            IFormattable formattable => formattable.ToString(null, System.Globalization.CultureInfo.InvariantCulture),
-            _ => underlyingValue.ToString(),
-        };
+        => ((IFormattable)underlyingValue).ToString(null, System.Globalization.CultureInfo.InvariantCulture);
 
     private ConstructorShapeModel MapTupleConstructor(TypeId typeId, TupleDataModel tupleModel)
     {
