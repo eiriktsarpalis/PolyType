@@ -1662,6 +1662,15 @@ public partial class ClassWithInternalMembers
 }
 
 [GenerateShape]
+public partial class ClassWithDefaultNonPublicAccessors
+{
+    public int PublicGetSet { get; set; }
+    public int PublicGetInternalSet { get; internal set; }
+    public int InternalGetPublicSet { internal get; set; }
+    public int PublicGetProtectedInternalSet { get; protected internal set; }
+}
+
+[GenerateShape]
 public partial class ClassWithPropertyAnnotations
 {
     [PropertyShape(Name = "AltName", Order = 5)]

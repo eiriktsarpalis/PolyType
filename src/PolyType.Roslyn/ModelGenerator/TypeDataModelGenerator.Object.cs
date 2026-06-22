@@ -126,8 +126,8 @@ public partial class TypeDataModelGenerator
 
         // Use the signature of the base property to determine shape and accessibility.
         property = property.GetBaseProperty();
-        includeGetter = property.GetMethod is { } getter && IsAccessibleSymbol(getter);
-        includeSetter = property.SetMethod is { } setter && IsAccessibleSymbol(setter);
+        includeGetter = property.GetMethod is { DeclaredAccessibility: Accessibility.Public };
+        includeSetter = property.SetMethod is { DeclaredAccessibility: Accessibility.Public };
         return true;
     }
 
