@@ -1403,7 +1403,8 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
 
     [Fact]
     public void ServiceMoniker_SelectsConstructorWithMoreParameters()
-    {        // ServiceMoniker has two constructors:
+    {
+        // ServiceMoniker has two constructors:
         // 1. ServiceMoniker(string name) - 1 parameter
         // 2. ServiceMoniker(string name, Version? version) - 2 parameters
         // The Version property is read-only, so constructor #2 should be selected
