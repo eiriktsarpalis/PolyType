@@ -4,7 +4,7 @@ Scoped guidance for working inside the core PolyType library. This complements t
 
 ## What This Project Is
 
-`PolyType` is the core, packable runtime library and the single assembly that consumers reference. It defines the type-model abstractions, the attributes that drive source generation, and **both** providers that populate the model — the runtime reflection provider and the runtime support types for the source generator. It targets **net10.0;net9.0;net8.0;net472;netstandard2.0** and is AOT-compatible on net8.0 and newer.
+`PolyType` is the core, packable runtime library and the single assembly that consumers reference. It defines the type-model abstractions, the attributes that drive source generation, the runtime reflection provider, and the runtime model types that the source generator targets. It targets **net10.0;net9.0;net8.0;net472;netstandard2.0** and is AOT-compatible on net8.0 and newer.
 
 A few cross-cutting facts:
 
@@ -42,7 +42,7 @@ The **runtime reflection-based provider**: `ReflectionTypeShapeProvider` uses `S
 
 ### `SourceGenModel/`
 
-The runtime model types targeted by the source generator (`src/PolyType.SourceGenerator/`): the emitted code instantiates these to build shapes at compile time, making this the trimming- and AOT-safe provider.
+The runtime model types that source-generated code targets — not a provider itself, but the model a source-generated provider instantiates. The source generator (`src/PolyType.SourceGenerator/`) emits code that creates these types at compile time, underpinning the trimming- and AOT-safe path.
 
 > When changing the shape of generated code in the source generator, the `SourceGenModel/` types here usually need matching updates — the two evolve together.
 
@@ -56,12 +56,3 @@ Cross-cutting runtime helpers:
 ### `Debugging/`
 
 `DebuggerProxies.cs` — debugger display proxies that make the type model easier to inspect in the debugger.
-
-## The Two Providers
-
-A consumer obtains an `ITypeShape` from one of two providers, both living in this assembly:
-
-- The **reflection provider** (`ReflectionProvider/`) resolves shapes at runtime — convenient, no build-time step, but not trimming/AOT-friendly when it depends on `Reflection.Emit`.
-- The **source-generated provider** (`SourceGenModel/` here + the generator project) resolves shapes from code emitted at compile time — the trimming- and Native-AOT-safe path.
-
-Both populate the same `Abstractions/` model, so consumers written against the abstractions work identically regardless of which provider supplied the shape. Keep that substitutability intact: behavioural changes should be made to the abstractions/model so both providers stay in agreement.
