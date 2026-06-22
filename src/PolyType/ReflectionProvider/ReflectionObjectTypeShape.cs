@@ -189,13 +189,15 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
                 logicalName = matchingMember.LogicalName ?? matchingMember.BaseMemberInfo.Name;
             }
 
-            // An explicit [ParameterShape] override takes precedence, otherwise fall back to the
-            // presence of a default value. A matching property's [PropertyShape(IsRequired)] is
-            // intentionally not propagated here: a constructor parameter's requiredness is intrinsic
-            // to the constructor contract and cannot be relaxed by a property annotation.
-            bool? isRequired = parameterShapeAttribute?.IsRequiredSpecified is true
-                ? parameterShapeAttribute.IsRequired
-                : null;
+            // Resolve the parameter's required flag using a "strictest wins" policy: an explicit
+            // [ParameterShape(IsRequired)] override takes precedence; otherwise the parameter is
+            // required if it has no default value OR the matching property is marked required via
+            // [PropertyShape(IsRequired = true)] / [DataMember(IsRequired = true)]. A property marked
+            // not-required never relaxes an otherwise-required parameter.
+            bool? isRequired =
+                parameterShapeAttribute?.IsRequiredSpecified is true ? parameterShapeAttribute.IsRequired :
+                matchingMember?.IsRequiredByAttribute is true ? true :
+                null;
 
             parameterShapeInfos[i++] = new(parameter, isNonNullable, matchingMember?.BaseMemberInfo, logicalName, isRequired);
         }
