@@ -17,7 +17,7 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="$(RoslynVersion)" />
     <!-- Build Infra & Packaging -->
     <PackageVersion Include="PolySharp" Version="1.16.0" />
-    <PackageVersion Include="Nerdbank.GitVersioning" Version="3.10.8-alpha" />
+    <PackageVersion Include="Nerdbank.GitVersioning" Version="3.10.85" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
     <!-- Used by PolyType.Examples and PolyType.TestCases -->
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.5" />
