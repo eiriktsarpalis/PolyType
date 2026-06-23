@@ -41,6 +41,7 @@ public static partial class ConfigurationBinderTS
     [RequiresDynamicCode("PolyType reflection provider requires dynamic code")]
     public static Func<IConfiguration, T?> CreateUsingReflection<T>() => Create<T>(ReflectionProvider.ReflectionTypeShapeProvider.Default);
 
+#if NET
     /// <summary>
     /// Builds a configuration binder delegate instance from the specified shape provider.
     /// </summary>
@@ -50,9 +51,8 @@ public static partial class ConfigurationBinderTS
 #if NET8_0
     [RequiresDynamicCode("Dynamic resolution of IShapeable<T> interface may require dynamic code generation in .NET 8 Native AOT. It is recommended to switch to statically resolved IShapeable<T> APIs or upgrade your app to .NET 9 or later.")]
 #endif
-    public static Func<IConfiguration, T?> CreateUsingSourceGen<T>() => Create(TypeShapeResolver.ResolveDynamicOrThrow<T>());
+    public static Func<IConfiguration, T?> Create<T>() where T: IShapeable<T> => Create(TypeShapeResolver.Resolve<T>());
 
-#if NET
     /// <summary>
     /// Binds an <see cref="IConfiguration"/> to the specified type using its <see cref="IShapeable{T}"/> implementation.
     /// </summary>

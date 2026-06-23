@@ -48,6 +48,7 @@ public static partial class CborSerializer
     public static CborConverter<T> CreateConverterUsingReflection<T>() =>
         CreateConverter<T>(ReflectionProvider.ReflectionTypeShapeProvider.Default);
 
+#if NET
     /// <summary>
     /// Builds an <see cref="CborConverter{T}"/> instance from the specified shape.
     /// </summary>
@@ -57,9 +58,10 @@ public static partial class CborSerializer
 #if NET8_0
     [RequiresDynamicCode("Dynamic resolution of IShapeable<T> interface may require dynamic code generation in .NET 8 Native AOT. It is recommended to switch to statically resolved IShapeable<T> APIs or upgrade your app to .NET 9 or later.")]
 #endif
-    public static CborConverter<T> CreateConverterUsingSourceGen<T>() =>
-
-        CreateConverter(TypeShapeResolver.ResolveDynamicOrThrow<T>());
+    public static CborConverter<T> CreateConverter<T>()
+        where T : IShapeable<T>
+         => CreateConverter(TypeShapeResolver.Resolve<T>());
+#endif
 
     /// <summary>
     /// Serializes a value to a CBOR encoding using the provided converter.

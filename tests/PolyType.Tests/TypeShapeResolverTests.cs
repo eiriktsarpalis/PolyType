@@ -65,6 +65,13 @@ public static partial class TypeShapeResolverTests
         Assert.IsAssignableFrom<PolyType.Abstractions.IDictionaryTypeShape>(shape);
     }
 
+    [Fact]
+    public static void Resolve_ImplicitDynamic()
+    {
+        Assert.NotNull(TypeShapeResolver.Resolve<ResolverShapeable>());
+        Assert.NotNull(TypeShapeResolver.Resolve<ResolverShapeable, ResolverShapeProvider>());
+    }
+
     // Shapeable type under test.
     [GenerateShape]
     public partial record ResolverShapeable(int X, string Y);

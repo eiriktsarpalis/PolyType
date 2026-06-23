@@ -9,12 +9,11 @@ namespace PolyType.Tests;
 /// <typeparam name="T">The type of the value being tested.</typeparam>
 /// <typeparam name="TProvider">The type of the shape provider.</typeparam>
 /// <param name="Value">The value being tested.</param>
-public sealed record TestCase<T, TProvider>(T? Value) : TestCase<T>
+public sealed record TestCase<T, TProvider>(T? Value) : TestCase<T>(Value, TypeShapeResolver.Resolve<T, TProvider>())
 #if NET
-    (Value, TProvider.GetTypeShape()) where TProvider : IShapeable<T>;
-#else
-    (Value, TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>());
+    where TProvider : IShapeable<T>
 #endif
+    ;
 
 /// <summary>
 /// Represents a test case instance.
