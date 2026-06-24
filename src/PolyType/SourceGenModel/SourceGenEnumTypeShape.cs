@@ -36,6 +36,9 @@ public sealed class SourceGenEnumTypeShape<TEnum, TUnderlying> : SourceGenTypeSh
     public bool IsFlags { get; init; }
 
     /// <inheritdoc/>
+    public bool IsClosed { get; init; }
+
+    /// <inheritdoc/>
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitEnum(this, state);
 
 #pragma warning disable CS0618 // Type or member is obsolete

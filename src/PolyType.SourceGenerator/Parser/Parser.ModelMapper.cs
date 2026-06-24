@@ -37,6 +37,7 @@ public sealed partial class Parser
                 Members = enumModel.Members.ToImmutableEquatableDictionary(m => m.Key, m => EnumValueToString(m.Value)),
                 Attributes = CollectAttributes(model.Type),
                 IsFlags = enumModel.IsFlags,
+                IsClosed = enumModel.IsClosed,
             },
 
             OptionalDataModel optionalModel => new OptionalShapeModel
@@ -398,6 +399,7 @@ public sealed partial class Parser
             Attributes = CollectAttributes(model.Type),
             Methods = MapMethods(model, underlyingIncrementalModel.Type),
             Events = MapEvents(model, underlyingIncrementalModel.Type),
+            UnionKindName = nameof(UnionKind.ClassHierarchy),
             UnionCases = model.DerivedTypes
                 .Select(derived => new UnionCaseModel
                 {
@@ -1026,12 +1028,14 @@ public sealed partial class Parser
         out TypeShapeKind? kind,
         out ITypeSymbol? marshaler,
         out MethodShapeFlags? includeMethodFlags,
-        out Location? location)
+        out Location? location,
+        out bool inferDerivedTypes)
     {
         kind = null;
         marshaler = null;
         location = null;
         includeMethodFlags = null;
+        inferDerivedTypes = false;
 
         if (typeSymbol.GetAttribute(_knownSymbols.TypeShapeAttribute) is AttributeData propertyAttr)
         {
@@ -1048,6 +1052,9 @@ public sealed partial class Parser
                         break;
                     case "IncludeMethods":
                         includeMethodFlags = (MethodShapeFlags)namedArgument.Value.Value!;
+                        break;
+                    case "InferDerivedTypes":
+                        inferDerivedTypes = namedArgument.Value.Value is true;
                         break;
                 }
             }

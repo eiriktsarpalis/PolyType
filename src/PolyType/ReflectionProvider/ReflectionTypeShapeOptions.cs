@@ -14,4 +14,9 @@ internal sealed class ReflectionTypeShapeOptions
 
     /// <inheritdoc cref="TypeShapeExtensionAttribute.IncludeMethods" />
     public required MethodShapeFlags IncludeMethods { get; init; }
+
+    /// <summary>
+    /// Indicates whether derived types should be inferred from the type hierarchy.
+    /// </summary>
+    public bool InferDerivedTypes { get; init; }
 }

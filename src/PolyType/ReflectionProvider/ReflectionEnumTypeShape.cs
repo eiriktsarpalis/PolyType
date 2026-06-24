@@ -26,6 +26,10 @@ internal sealed class ReflectionEnumTypeShape<TEnum, TUnderlying>
     public IReadOnlyDictionary<string, TUnderlying> Members => _members ?? InitializeMembers();
     public bool IsFlags => _isFlags ??= typeof(TEnum).IsDefined(typeof(FlagsAttribute), inherit: false);
 
+    public bool IsClosed => _isClosed ??= typeof(TEnum).GetCustomAttributesData()
+        .Any(a => a.AttributeType.FullName == "System.Runtime.CompilerServices.ClosedAttribute");
+    private bool? _isClosed;
+
     private Dictionary<string, TUnderlying> InitializeMembers()
     {
         FieldInfo[] fields = typeof(TEnum).GetFields(BindingFlags.Public | BindingFlags.Static);

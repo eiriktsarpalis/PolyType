@@ -224,7 +224,11 @@ public static partial class JsonSerializerTS
                 .Select(unionCase => (JsonUnionCaseConverter<TUnion>)unionCase.Accept(this, null)!)
                 .ToArray();
 
-            return new JsonUnionConverter<TUnion>(getUnionCaseIndex, baseTypeConverter, unionCases);
+            return unionShape.UnionKind switch
+            {
+                UnionKind.CSharpUnion => new JsonCSharpUnionConverter<TUnion>(getUnionCaseIndex, unionCases),
+                _ => new JsonUnionConverter<TUnion>(getUnionCaseIndex, baseTypeConverter, unionCases),
+            };
         }
 
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state)

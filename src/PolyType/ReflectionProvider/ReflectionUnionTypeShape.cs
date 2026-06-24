@@ -13,6 +13,7 @@ internal sealed class ReflectionUnionTypeShape<TUnion>(DerivedTypeInfo[] derived
 {
     public override TypeShapeKind Kind => TypeShapeKind.Union;
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnion(this, state);
+    public UnionKind UnionKind => UnionKind.ClassHierarchy;
 
     public ITypeShape<TUnion> BaseType => _baseType ?? CommonHelpers.ExchangeIfNull(ref _baseType, (ITypeShape<TUnion>)Provider.CreateTypeShapeCore(typeof(TUnion), allowUnionShapes: false));
     private ITypeShape<TUnion>? _baseType;

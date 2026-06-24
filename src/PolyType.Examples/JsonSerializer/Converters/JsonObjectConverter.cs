@@ -10,6 +10,11 @@ namespace PolyType.Examples.JsonSerializer.Converters;
 internal class JsonObjectConverter<T>(JsonPropertyConverter<T>[] properties) : JsonConverter<T>, IJsonObjectConverter<T>
 {
     private readonly JsonPropertyConverter<T>[] _propertiesToWrite = properties.Where(prop => prop.HasGetter).ToArray();
+    private readonly JsonPropertyDictionary<JsonPropertyConverter<T>>? _propertyLookup = properties.Length > 0
+        ? properties.ToJsonPropertyDictionary(p => p.Name)
+        : null;
+
+    public bool HasProperty(ref Utf8JsonReader reader) => _propertyLookup?.LookupProperty(ref reader) is not null;
 
     public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
