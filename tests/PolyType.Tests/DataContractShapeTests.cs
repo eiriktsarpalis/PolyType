@@ -89,9 +89,19 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
     {
         var shape = Assert.IsType<IUnionTypeShape>(providerUnderTest.Provider.GetTypeShape(typeof(Animal)), exactMatch: false);
 
-        Assert.Equal(2, shape.UnionCases.Count);
+        Assert.Equal(3, shape.UnionCases.Count);
         Assert.Contains(shape.UnionCases, c => c.UnionCaseType.Type == typeof(Dog));
         Assert.Contains(shape.UnionCases, c => c.UnionCaseType.Type == typeof(Cat));
+        Assert.Contains(shape.UnionCases, c => c.UnionCaseType.Type == typeof(PersianCat));
+    }
+
+    [Fact]
+    public void KnownTypeAttribute_DerivedTypesReportsUnionShape()
+    {
+        var shape = Assert.IsType<IUnionTypeShape>(providerUnderTest.Provider.GetTypeShape(typeof(Cat)), exactMatch: false);
+
+        Assert.Single(shape.UnionCases);
+        Assert.Contains(shape.UnionCases, c => c.UnionCaseType.Type == typeof(PersianCat));
     }
 
     [Fact]
@@ -193,6 +203,7 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
     [DataContract]
     [KnownType(typeof(Dog))]
     [KnownType(typeof(Cat))]
+    [KnownType(typeof(PersianCat))]
     public partial class Animal
     {
         [DataMember(Order = 0)] public string? Name { get; set; }
@@ -204,10 +215,19 @@ public abstract partial class DataContractShapeTests(ProviderUnderTest providerU
         [DataMember(Order = 1)] public bool Barks { get; set; }
     }
 
+    [GenerateShape]
     [DataContract]
-    public class Cat : Animal
+    [KnownType(typeof(PersianCat))]
+    public partial class Cat : Animal
     {
         [DataMember(Order = 1)] public int Lives { get; set; }
+    }
+
+    [DataContract]
+    public class PersianCat : Cat
+    {
+        [DataMember(Order = 2)] public string? FurColor { get; set; }
+        [DataMember(Order = 3)] public bool RequiresGrooming { get; set; }
     }
 
     [GenerateShape]
