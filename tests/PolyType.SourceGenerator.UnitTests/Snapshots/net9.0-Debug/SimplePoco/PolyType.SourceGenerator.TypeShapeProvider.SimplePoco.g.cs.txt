@@ -72,7 +72,7 @@ namespace PolyType.SourceGenerator
                 ParametersFactory = __CreateConstructorParameters_SimplePoco,
                 ArgumentStateConstructor = static () => new((default, "default", default), count: 3, requiredArgumentsMask: __RequiredMembersMask_SimplePoco),
                 ParameterizedConstructor = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool?)> state) => { var obj = new global::TestNamespace.SimplePoco(state.Arguments.Item1, state.Arguments.Item2); if (state.IsArgumentSet(2)) obj.IsActive = state.Arguments.Item3!; return obj; },
-                MethodBaseFactory = static () => typeof(global::TestNamespace.SimplePoco).GetConstructor(__BindingFlags_Instance_All, null, new global::System.Type[] { typeof(int), typeof(string) }, null),
+                MethodBaseFactory = __ConstructorInfo_SimplePoco,
                 IsPublic = true,
             };
         }
@@ -90,7 +90,7 @@ namespace PolyType.SourceGenerator
                 IsPublic = true,
                 Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool?)> state) => state.Arguments.Item1,
                 Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool?)> state, int value) => { state.Arguments.Item1 = value; state.MarkArgumentSet(0); },
-                ReflectionInfoFactory = static () => typeof(global::TestNamespace.SimplePoco).GetConstructor(__BindingFlags_Instance_All, null, new global::System.Type[] { typeof(int), typeof(string) }, null)?.GetParameters()[0],
+                ReflectionInfoFactory = static () => __ConstructorInfo_SimplePoco()?.GetParameters()[0],
             },
 
             new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool?)>, string>
@@ -105,7 +105,7 @@ namespace PolyType.SourceGenerator
                 DefaultValue = "default",
                 Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool?)> state) => state.Arguments.Item2,
                 Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool?)> state, string value) => { state.Arguments.Item2 = value; state.MarkArgumentSet(1); },
-                ReflectionInfoFactory = static () => typeof(global::TestNamespace.SimplePoco).GetConstructor(__BindingFlags_Instance_All, null, new global::System.Type[] { typeof(int), typeof(string) }, null)?.GetParameters()[1],
+                ReflectionInfoFactory = static () => __ConstructorInfo_SimplePoco()?.GetParameters()[1],
             },
 
             new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool?)>, bool?>
@@ -120,6 +120,8 @@ namespace PolyType.SourceGenerator
                 ReflectionInfoFactory = static () => typeof(global::TestNamespace.SimplePoco).GetProperty("IsActive", __BindingFlags_Instance_All, null, typeof(bool?), global::System.Type.EmptyTypes, null),
             },
         };
+
+        private static global::System.Reflection.MethodBase? __ConstructorInfo_SimplePoco() => typeof(global::TestNamespace.SimplePoco).GetConstructor(__BindingFlags_Instance_All, null, new global::System.Type[] { typeof(int), typeof(string) }, null);
 
         private const ulong __RequiredMembersMask_SimplePoco = 0x1UL;
     }

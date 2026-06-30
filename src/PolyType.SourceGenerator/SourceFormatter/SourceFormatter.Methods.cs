@@ -57,6 +57,7 @@ internal sealed partial class SourceFormatter
         string methodArgumentStateFQN = FormatMethodArgumentStateFQN(method);
         string? methodParameterFactoryName = method.ShapedParameterCount > 0 ? $"__CreateMethodParameters_{declaringType.SourceIdentifier}_{method.Position}" : null;
         string? methodAttributeFactory = method.Attributes.Length > 0 ? $"__CreateAttributes_{declaringType.SourceIdentifier}_{method.Position}" : null;
+        string? methodInfoResolverName = GetMethodInfoResolverName(declaringType, method);
 
         writer.WriteLine($"private global::PolyType.Abstractions.IMethodShape {methodName}()");
         writer.WriteLine('{');
@@ -73,7 +74,7 @@ internal sealed partial class SourceFormatter
                 DeclaringType = {{declaringType.SourceIdentifier}},
                 ReturnType = {{GetShapeModel(method.ReturnType).SourceIdentifier}},
                 ParametersFactory = {{FormatNull(methodParameterFactoryName)}},
-                MethodBaseFactory = {{FormatAttributeProviderFunc(declaringType, method)}},
+                MethodBaseFactory = {{FormatMethodBaseFactory(method, methodInfoResolverName)}},
                 AttributeFactory = {{FormatNull(methodAttributeFactory)}},
                 ArgumentStateConstructor = {{FormatArgumentStateConstructor(declaringType, method, methodArgumentStateFQN)}},
                 MethodInvoker = {{FormatMethodInvoker(declaringType, method, methodArgumentStateFQN)}},
@@ -86,7 +87,13 @@ internal sealed partial class SourceFormatter
         if (methodParameterFactoryName != null)
         {
             writer.WriteLine();
-            FormatMethodParameterFactory(writer, declaringType, methodParameterFactoryName, method, methodArgumentStateFQN);
+            FormatMethodParameterFactory(writer, declaringType, methodParameterFactoryName, method, methodArgumentStateFQN, methodInfoResolverName);
+        }
+
+        if (methodInfoResolverName is not null)
+        {
+            writer.WriteLine();
+            writer.WriteLine($"private static global::System.Reflection.MethodBase? {methodInfoResolverName}() => {FormatMethodInfoExpr(method)};");
         }
 
         if (FormatRequiredParametersMaskFieldName(declaringType, method) is { } requiredParametersMaskFieldName)
@@ -120,10 +127,19 @@ internal sealed partial class SourceFormatter
                 or MethodReturnTypeKind.ValueTaskOfT;
         }
 
-        static string FormatAttributeProviderFunc(TypeShapeModel declaringType, MethodShapeModel method)
+        static string FormatMethodBaseFactory(MethodShapeModel method, string? methodInfoResolverName)
         {
-            string parameterTypes = FormatAllMethodParameterTypes(method);
-            return $"static () => typeof({method.DeclaringType.FullyQualifiedName}).GetMethod({FormatStringLiteral(method.UnderlyingMethodName)}, {AllBindingFlagsConstMember}, null, {parameterTypes}, null)";
+            // Reference the shared resolver method group when one is emitted; otherwise inline the lookup.
+            return methodInfoResolverName ?? $"static () => {FormatMethodInfoExpr(method)}";
+        }
+
+        static string? GetMethodInfoResolverName(TypeShapeModel declaringType, MethodShapeModel method)
+        {
+            // The MethodBaseFactory and each method-parameter ReflectionInfoFactory resolve the same MethodInfo.
+            // Lift it into a shared helper only when at least two call sites would reference it, so the indirection
+            // actually removes duplicated code (and IL).
+            int callSites = 1 + method.ShapedParameterCount;
+            return callSites >= 2 ? $"__MethodInfo_{declaringType.SourceIdentifier}_{method.Position}" : null;
         }
 
         static string FormatArgumentStateConstructor(TypeShapeModel declaringType, MethodShapeModel method, string methodArgumentStateFQN)
@@ -225,7 +241,7 @@ internal sealed partial class SourceFormatter
         }
     }
 
-    private void FormatMethodParameterFactory(SourceWriter writer, TypeShapeModel declaringType, string methodName, MethodShapeModel method, string methodArgumentStateFQN)
+    private void FormatMethodParameterFactory(SourceWriter writer, TypeShapeModel declaringType, string methodName, MethodShapeModel method, string methodArgumentStateFQN, string? methodInfoResolverName)
     {
         writer.WriteLine($"private global::PolyType.Abstractions.IParameterShape[] {methodName}() => new global::PolyType.Abstractions.IParameterShape[]");
         writer.WriteLine('{');
@@ -255,15 +271,18 @@ internal sealed partial class SourceFormatter
                     Getter = static (ref {{methodArgumentStateFQN}} state) => {{FormatGetterBody(method, parameter)}},
                     Setter = static (ref {{methodArgumentStateFQN}} state, {{parameter.ParameterType.FullyQualifiedName}} value) => {{FormatSetterBody(method, parameter)}},
                     AttributeFactory = {{FormatNull(attributeFactoryName)}},
-                    ReflectionInfoFactory = {{FormatAttributeProviderFunc(declaringType, method, parameter)}},
+                    ReflectionInfoFactory = {{FormatAttributeProviderFunc(method, parameter, methodInfoResolverName)}},
                 },
                 """, trimDefaultAssignmentLines: true);
 
-            static string FormatAttributeProviderFunc(TypeShapeModel declaringType, MethodShapeModel method, ParameterShapeModel parameter)
+            static string FormatAttributeProviderFunc(MethodShapeModel method, ParameterShapeModel parameter, string? methodInfoResolverName)
             {
-                string parameterTypes = FormatAllMethodParameterTypes(method);
+                // Resolve the owning MethodInfo via the shared resolver when available; otherwise inline it.
+                string methodInfo = methodInfoResolverName is not null
+                    ? $"{methodInfoResolverName}()"
+                    : FormatMethodInfoExpr(method);
 
-                return $"static () => typeof({method.DeclaringType.FullyQualifiedName}).GetMethod({FormatStringLiteral(method.UnderlyingMethodName)}, {AllBindingFlagsConstMember}, null, {parameterTypes}, null)?.GetParameters()[{parameter.Position}]";
+                return $"static () => {methodInfo}?.GetParameters()[{parameter.Position}]";
             }
 
             static string FormatGetterBody(MethodShapeModel method, ParameterShapeModel parameter)
@@ -435,4 +454,7 @@ internal sealed partial class SourceFormatter
 
         return $$"""new global::System.Type[] { {{string.Join(", ", method.Parameters.Select(FormatType))}} }""";
     }
+
+    private static string FormatMethodInfoExpr(MethodShapeModel method)
+        => $"typeof({method.DeclaringType.FullyQualifiedName}).GetMethod({FormatStringLiteral(method.UnderlyingMethodName)}, {AllBindingFlagsConstMember}, null, {FormatAllMethodParameterTypes(method)}, null)";
 }

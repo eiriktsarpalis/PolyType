@@ -72,7 +72,7 @@ namespace PolyType.SourceGenerator
                 ParametersFactory = __CreateConstructorParameters_SimpleRecord,
                 ArgumentStateConstructor = static () => new(default!, count: 3, requiredArgumentsMask: __RequiredMembersMask_SimpleRecord),
                 ParameterizedConstructor = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool)> state) => new global::TestNamespace.SimpleRecord(state.Arguments.Item1, state.Arguments.Item2, state.Arguments.Item3),
-                MethodBaseFactory = static () => typeof(global::TestNamespace.SimpleRecord).GetConstructor(__BindingFlags_Instance_All, null, new global::System.Type[] { typeof(int), typeof(string), typeof(bool) }, null),
+                MethodBaseFactory = __ConstructorInfo_SimpleRecord,
                 IsPublic = true,
             };
         }
@@ -90,7 +90,7 @@ namespace PolyType.SourceGenerator
                 IsPublic = true,
                 Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool)> state) => state.Arguments.Item1,
                 Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool)> state, int value) => { state.Arguments.Item1 = value; state.MarkArgumentSet(0); },
-                ReflectionInfoFactory = static () => typeof(global::TestNamespace.SimpleRecord).GetConstructor(__BindingFlags_Instance_All, null, new global::System.Type[] { typeof(int), typeof(string), typeof(bool) }, null)?.GetParameters()[0],
+                ReflectionInfoFactory = static () => __ConstructorInfo_SimpleRecord()?.GetParameters()[0],
             },
 
             new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool)>, string>
@@ -105,7 +105,7 @@ namespace PolyType.SourceGenerator
                 DefaultValue = default!,
                 Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool)> state) => state.Arguments.Item2,
                 Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool)> state, string value) => { state.Arguments.Item2 = value; state.MarkArgumentSet(1); },
-                ReflectionInfoFactory = static () => typeof(global::TestNamespace.SimpleRecord).GetConstructor(__BindingFlags_Instance_All, null, new global::System.Type[] { typeof(int), typeof(string), typeof(bool) }, null)?.GetParameters()[1],
+                ReflectionInfoFactory = static () => __ConstructorInfo_SimpleRecord()?.GetParameters()[1],
             },
 
             new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool)>, bool>
@@ -119,9 +119,11 @@ namespace PolyType.SourceGenerator
                 IsPublic = true,
                 Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool)> state) => state.Arguments.Item3,
                 Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool)> state, bool value) => { state.Arguments.Item3 = value; state.MarkArgumentSet(2); },
-                ReflectionInfoFactory = static () => typeof(global::TestNamespace.SimpleRecord).GetConstructor(__BindingFlags_Instance_All, null, new global::System.Type[] { typeof(int), typeof(string), typeof(bool) }, null)?.GetParameters()[2],
+                ReflectionInfoFactory = static () => __ConstructorInfo_SimpleRecord()?.GetParameters()[2],
             },
         };
+
+        private static global::System.Reflection.MethodBase? __ConstructorInfo_SimpleRecord() => typeof(global::TestNamespace.SimpleRecord).GetConstructor(__BindingFlags_Instance_All, null, new global::System.Type[] { typeof(int), typeof(string), typeof(bool) }, null);
 
         private const ulong __RequiredMembersMask_SimpleRecord = 0x7UL;
     }

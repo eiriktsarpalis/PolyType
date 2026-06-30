@@ -17,6 +17,7 @@ internal sealed partial class SourceFormatter
         string constructorArgumentStateFQN = FormatConstructorArgumentStateFQN(type, constructor);
         string? constructorParameterFactoryName = constructor.TotalArity > 0 ? $"__CreateConstructorParameters_{type.SourceIdentifier}" : null;
         string? attributeFactoryName = constructor.Attributes.Length > 0 ? $"__CreateConstructorAttributes_{type.SourceIdentifier}" : null;
+        string? constructorInfoResolverName = GetConstructorInfoResolverName(type, constructor);
 
         writer.WriteLine($"private global::PolyType.Abstractions.IConstructorShape {methodName}()");
         writer.WriteLine('{');
@@ -30,7 +31,7 @@ internal sealed partial class SourceFormatter
                 DefaultConstructor = {{FormatDefaultCtor(type, constructor)}},
                 ArgumentStateConstructor = {{FormatArgumentStateCtor(type, constructor, constructorArgumentStateFQN)}},
                 ParameterizedConstructor = {{FormatParameterizedCtor(type, constructor, constructorArgumentStateFQN)}},
-                MethodBaseFactory = {{FormatConstructorInfoResolver(type, constructor)}},
+                MethodBaseFactory = {{FormatMethodBaseFactory(type, constructor, constructorInfoResolverName)}},
                 AttributeFactory = {{FormatNull(attributeFactoryName)}},
                 IsPublic = {{FormatBool(constructor.IsPublic)}},
             };
@@ -42,7 +43,13 @@ internal sealed partial class SourceFormatter
         if (constructorParameterFactoryName != null)
         {
             writer.WriteLine();
-            FormatParameterFactory(writer, type, constructorParameterFactoryName, constructor, constructorArgumentStateFQN);
+            FormatParameterFactory(writer, type, constructorParameterFactoryName, constructor, constructorArgumentStateFQN, constructorInfoResolverName);
+        }
+
+        if (constructorInfoResolverName is not null)
+        {
+            writer.WriteLine();
+            writer.WriteLine($"private static global::System.Reflection.MethodBase? {constructorInfoResolverName}() => {FormatConstructorInfoExpr(constructor)};");
         }
 
         if (attributeFactoryName is not null)
@@ -63,28 +70,29 @@ internal sealed partial class SourceFormatter
                 constructor.GetAllParameters());
         }
         
-        static string FormatConstructorInfoResolver(ObjectShapeModel type, ConstructorShapeModel constructor)
+        static string FormatMethodBaseFactory(ObjectShapeModel type, ConstructorShapeModel constructor, string? constructorInfoResolverName)
         {
             if (type.IsTupleType || constructor.IsStaticFactory || constructor.IsFSharpUnitConstructor)
             {
                 return "null";
             }
 
-            string parameterTypes;
-            if (constructor.Parameters.Length == 0)
-            {
-                parameterTypes = "global::System.Type.EmptyTypes";
-            }
-            else
-            {
-                string FormatType(ParameterShapeModel p) => p.RefKind is RefKind.Out
-                    ? $"typeof({p.ParameterType.FullyQualifiedName}).MakeByRefType()"
-                    : FormatParameterTypeExpr(p);
+            // Reference the shared resolver method group when one is emitted; otherwise inline the lookup.
+            return constructorInfoResolverName ?? $"static () => {FormatConstructorInfoExpr(constructor)}";
+        }
 
-                parameterTypes = $$"""new global::System.Type[] { {{string.Join(", ", constructor.Parameters.Select(FormatType))}} }""";
-            }
+        static string? GetConstructorInfoResolverName(ObjectShapeModel type, ConstructorShapeModel constructor)
+        {
+            // The ConstructorInfo lookup is otherwise emitted inline once for the MethodBaseFactory and once per
+            // method-parameter ReflectionInfoFactory. Lift it into a shared helper only when at least two call sites
+            // would reference it, so the indirection actually removes duplicated code (and IL).
+            bool methodBaseUsesResolver = !(type.IsTupleType || constructor.IsStaticFactory || constructor.IsFSharpUnitConstructor);
+            int parameterRefs = type.IsTupleType || constructor.IsStaticFactory
+                ? 0
+                : constructor.ShapedParameters.Count(p => p.Kind is ParameterKind.MethodParameter);
 
-            return $"static () => typeof({constructor.DeclaringType.FullyQualifiedName}).GetConstructor({InstanceBindingFlagsConstMember}, null, {parameterTypes}, null)";
+            int callSites = (methodBaseUsesResolver ? 1 : 0) + parameterRefs;
+            return callSites >= 2 ? $"__ConstructorInfo_{type.SourceIdentifier}" : null;
         }
 
         static string FormatArgumentStateCtor(ObjectShapeModel type, ConstructorShapeModel constructor, string constructorArgumentStateFQN)
@@ -298,7 +306,7 @@ internal sealed partial class SourceFormatter
         }
     }
 
-    private void FormatParameterFactory(SourceWriter writer, ObjectShapeModel type, string methodName, ConstructorShapeModel constructor, string constructorArgumentStateFQN)
+    private void FormatParameterFactory(SourceWriter writer, ObjectShapeModel type, string methodName, ConstructorShapeModel constructor, string constructorArgumentStateFQN, string? constructorInfoResolverName)
     {
         writer.WriteLine($"private global::PolyType.Abstractions.IParameterShape[] {methodName}() => new global::PolyType.Abstractions.IParameterShape[]");
         writer.WriteLine('{');
@@ -331,13 +339,13 @@ internal sealed partial class SourceFormatter
                     Getter = static (ref {{constructorArgumentStateFQN}} state) => {{FormatGetterBody(constructor, parameter)}},
                     Setter = static (ref {{constructorArgumentStateFQN}} state, {{parameter.ParameterType.FullyQualifiedName}} value) => {{FormatSetterBody(constructor, parameter)}},
                     AttributeFactory = {{FormatNull(attributeFactoryName)}},
-                    ReflectionInfoFactory = {{FormatAttributeProviderFunc(type, constructor, parameter)}},
+                    ReflectionInfoFactory = {{FormatAttributeProviderFunc(type, constructor, parameter, constructorInfoResolverName)}},
                 },
                 """, trimDefaultAssignmentLines: true);
 
             i++;
 
-            static string FormatAttributeProviderFunc(ObjectShapeModel type, ConstructorShapeModel constructor, ParameterShapeModel parameter)
+            static string FormatAttributeProviderFunc(ObjectShapeModel type, ConstructorShapeModel constructor, ParameterShapeModel parameter, string? constructorInfoResolverName)
             {
                 if (type.IsTupleType || constructor.IsStaticFactory)
                 {
@@ -351,11 +359,12 @@ internal sealed partial class SourceFormatter
                         : $$"""static () => typeof({{parameter.DeclaringType.FullyQualifiedName}}).GetProperty({{FormatStringLiteral(parameter.UnderlyingMemberName)}}, {{InstanceBindingFlagsConstMember}}, null, typeof({{parameter.ParameterType}}), global::System.Type.EmptyTypes, null)""";
                 }
 
-                string parameterTypes = constructor.Parameters.Length == 0
-                    ? "global::System.Type.EmptyTypes"
-                    : $$"""new global::System.Type[] { {{string.Join(", ", constructor.Parameters.Select(FormatParameterTypeExpr))}} }""";
+                // Resolve the owning ConstructorInfo via the shared resolver when available; otherwise inline it.
+                string constructorInfo = constructorInfoResolverName is not null
+                    ? $"{constructorInfoResolverName}()"
+                    : FormatConstructorInfoExpr(constructor);
 
-                return $"static () => typeof({constructor.DeclaringType.FullyQualifiedName}).GetConstructor({InstanceBindingFlagsConstMember}, null, {parameterTypes}, null)?.GetParameters()[{parameter.Position}]";
+                return $"static () => {constructorInfo}?.GetParameters()[{parameter.Position}]";
             }
 
             static string FormatGetterBody(ConstructorShapeModel constructor, ParameterShapeModel parameter)
@@ -584,6 +593,15 @@ internal sealed partial class SourceFormatter
         return parameter.RefKind is RefKind.None
             ? $"typeof({parameter.ParameterType.FullyQualifiedName})"
             : $"typeof({parameter.ParameterType.FullyQualifiedName}).MakeByRefType()";
+    }
+
+    private static string FormatConstructorInfoExpr(ConstructorShapeModel constructor)
+    {
+        string parameterTypes = constructor.Parameters.Length == 0
+            ? "global::System.Type.EmptyTypes"
+            : $$"""new global::System.Type[] { {{string.Join(", ", constructor.Parameters.Select(FormatParameterTypeExpr))}} }""";
+
+        return $"typeof({constructor.DeclaringType.FullyQualifiedName}).GetConstructor({InstanceBindingFlagsConstMember}, null, {parameterTypes}, null)";
     }
 
 }

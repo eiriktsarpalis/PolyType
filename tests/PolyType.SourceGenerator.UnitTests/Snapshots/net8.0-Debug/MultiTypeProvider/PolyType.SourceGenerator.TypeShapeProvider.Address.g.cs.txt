@@ -60,7 +60,7 @@ namespace PolyType.SourceGenerator
                 ParametersFactory = __CreateConstructorParameters_Address,
                 ArgumentStateConstructor = static () => new(default!, count: 2, requiredArgumentsMask: __RequiredMembersMask_Address),
                 ParameterizedConstructor = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(string, string)> state) => new global::TestNamespace.Address(state.Arguments.Item1, state.Arguments.Item2),
-                MethodBaseFactory = static () => typeof(global::TestNamespace.Address).GetConstructor(__BindingFlags_Instance_All, null, new global::System.Type[] { typeof(string), typeof(string) }, null),
+                MethodBaseFactory = __ConstructorInfo_Address,
                 IsPublic = true,
             };
         }
@@ -79,7 +79,7 @@ namespace PolyType.SourceGenerator
                 DefaultValue = default!,
                 Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(string, string)> state) => state.Arguments.Item1,
                 Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(string, string)> state, string value) => { state.Arguments.Item1 = value; state.MarkArgumentSet(0); },
-                ReflectionInfoFactory = static () => typeof(global::TestNamespace.Address).GetConstructor(__BindingFlags_Instance_All, null, new global::System.Type[] { typeof(string), typeof(string) }, null)?.GetParameters()[0],
+                ReflectionInfoFactory = static () => __ConstructorInfo_Address()?.GetParameters()[0],
             },
 
             new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallArgumentState<(string, string)>, string>
@@ -94,9 +94,11 @@ namespace PolyType.SourceGenerator
                 DefaultValue = default!,
                 Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(string, string)> state) => state.Arguments.Item2,
                 Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(string, string)> state, string value) => { state.Arguments.Item2 = value; state.MarkArgumentSet(1); },
-                ReflectionInfoFactory = static () => typeof(global::TestNamespace.Address).GetConstructor(__BindingFlags_Instance_All, null, new global::System.Type[] { typeof(string), typeof(string) }, null)?.GetParameters()[1],
+                ReflectionInfoFactory = static () => __ConstructorInfo_Address()?.GetParameters()[1],
             },
         };
+
+        private static global::System.Reflection.MethodBase? __ConstructorInfo_Address() => typeof(global::TestNamespace.Address).GetConstructor(__BindingFlags_Instance_All, null, new global::System.Type[] { typeof(string), typeof(string) }, null);
 
         private const ulong __RequiredMembersMask_Address = 0x3UL;
     }
