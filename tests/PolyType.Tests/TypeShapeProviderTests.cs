@@ -1681,6 +1681,8 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
     [Theory]
     [InlineData(typeof(PolymorphicClassWithGenericDerivedType), "Derived")]
     [InlineData(typeof(GenericPolymorphicClassWithMismatchingGenericDerivedType<int>), "Derived")]
+    [InlineData(typeof(OpenGenericPolymorphicClassUnboundParameter<int>), "Derived")]
+    [InlineData(typeof(OpenGenericPolymorphicClassAmbiguousMatch<List<int>>), "Impl")]
     public void PolymorphicClassWithGenericDerivedType_ThrowsInvalidOperationException(Type type, string derivedTypeName)
     {
         var ex = Assert.Throws<InvalidOperationException>(() => Provider.GetTypeShape(type));
@@ -1697,6 +1699,142 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
     private class GenericPolymorphicClassWithMismatchingGenericDerivedType<T>
     {
         public class Derived<S> : GenericPolymorphicClassWithMismatchingGenericDerivedType<List<S>>;
+    }
+
+    [DerivedTypeShape(typeof(OpenGenericPolymorphicClassUnboundParameterDerived<,>))]
+    private class OpenGenericPolymorphicClassUnboundParameter<T>;
+
+    private class OpenGenericPolymorphicClassUnboundParameterDerived<T1, T2> : OpenGenericPolymorphicClassUnboundParameter<T1>;
+
+    [DerivedTypeShape(typeof(OpenGenericPolymorphicClassAmbiguousMatchImpl<>))]
+    private interface OpenGenericPolymorphicClassAmbiguousMatch<T>;
+
+    private class OpenGenericPolymorphicClassAmbiguousMatchImpl<T> :
+        OpenGenericPolymorphicClassAmbiguousMatch<T>,
+        OpenGenericPolymorphicClassAmbiguousMatch<List<T>>;
+
+    [DerivedTypeShape(typeof(OpenGenericPolymorphicClassConstraintViolationDerived<>))]
+    private class OpenGenericPolymorphicClassConstraintViolation<T>;
+
+    private class OpenGenericPolymorphicClassConstraintViolationDerived<T> : OpenGenericPolymorphicClassConstraintViolation<T>
+        where T : struct;
+
+    [Fact]
+    public void OpenGenericDerivedType_ConstraintViolation_SilentlyFiltered()
+    {
+        // T = string violates `where T : struct` -- the registration cannot apply to
+        // OpenGenericPolymorphicClassConstraintViolation<string> so it is silently filtered.
+        ITypeShape shape = Provider.GetTypeShape(typeof(OpenGenericPolymorphicClassConstraintViolation<string>))!;
+        var union = Assert.IsAssignableFrom<IUnionTypeShape>(shape);
+        Assert.Empty(union.UnionCases);
+    }
+
+    [Fact]
+    public void OpenGenericDerivedType_ConstraintSatisfied_Resolved()
+    {
+        // T = int satisfies `where T : struct` so the registration applies.
+        ITypeShape shape = Provider.GetTypeShape(typeof(OpenGenericPolymorphicClassConstraintViolation<int>))!;
+        var union = Assert.IsAssignableFrom<IUnionTypeShape>(shape);
+        Assert.Contains(union.UnionCases, c => c.UnionCaseType.Type == typeof(OpenGenericPolymorphicClassConstraintViolationDerived<int>));
+    }
+
+    [DerivedTypeShape(typeof(GenericFilter_Cat))]
+    [DerivedTypeShape(typeof(GenericFilter_Dog))]
+    private class GenericFilter_Animal<T>;
+    private class GenericFilter_Cat : GenericFilter_Animal<int>;
+    private class GenericFilter_Dog : GenericFilter_Animal<string>;
+
+    [Fact]
+    public void ClosedDerived_FilterByInstantiation_OnlyAssignableSurvives()
+    {
+        // Animal<int>: Cat applies, Dog (declared against Animal<string>) is silently filtered.
+        ITypeShape catShape = Provider.GetTypeShape(typeof(GenericFilter_Animal<int>))!;
+        var catUnion = Assert.IsAssignableFrom<IUnionTypeShape>(catShape);
+        IUnionCaseShape onlyCase = Assert.Single(catUnion.UnionCases);
+        Assert.Equal(typeof(GenericFilter_Cat), onlyCase.UnionCaseType.Type);
+
+        // Animal<string>: Dog applies, Cat is silently filtered.
+        ITypeShape dogShape = Provider.GetTypeShape(typeof(GenericFilter_Animal<string>))!;
+        var dogUnion = Assert.IsAssignableFrom<IUnionTypeShape>(dogShape);
+        IUnionCaseShape onlyDog = Assert.Single(dogUnion.UnionCases);
+        Assert.Equal(typeof(GenericFilter_Dog), onlyDog.UnionCaseType.Type);
+
+        // Animal<bool>: neither applies. Empty union.
+        ITypeShape boolShape = Provider.GetTypeShape(typeof(GenericFilter_Animal<bool>))!;
+        var boolUnion = Assert.IsAssignableFrom<IUnionTypeShape>(boolShape);
+        Assert.Empty(boolUnion.UnionCases);
+    }
+
+    [DerivedTypeShape(typeof(OpenGenericFilter_Derived<>))]
+    private class OpenGenericFilter_Base<T>;
+    private class OpenGenericFilter_Derived<T> : OpenGenericFilter_Base<T>
+        where T : System.Collections.Generic.IEnumerable<int>;
+
+    [Fact]
+    public void OpenGenericDerived_ConstraintFilter_AppliesPerInstantiation()
+    {
+        // Base<List<int>>: List<int> : IEnumerable<int>. Constraint satisfied → resolved.
+        ITypeShape okShape = Provider.GetTypeShape(typeof(OpenGenericFilter_Base<List<int>>))!;
+        var okUnion = Assert.IsAssignableFrom<IUnionTypeShape>(okShape);
+        Assert.Contains(okUnion.UnionCases, c => c.UnionCaseType.Type == typeof(OpenGenericFilter_Derived<List<int>>));
+
+        // Base<string>: string does not implement IEnumerable<int>. Silently filtered.
+        ITypeShape badShape = Provider.GetTypeShape(typeof(OpenGenericFilter_Base<string>))!;
+        var badUnion = Assert.IsAssignableFrom<IUnionTypeShape>(badShape);
+        Assert.Empty(badUnion.UnionCases);
+    }
+
+    [DerivedTypeShape(typeof(MultiClosedDerived_A))]
+    [DerivedTypeShape(typeof(MultiClosedDerived_B<>))]
+    private class MultiClosedFilter_Base<T>;
+    private class MultiClosedDerived_A : MultiClosedFilter_Base<int>;
+    private class MultiClosedDerived_B<T> : MultiClosedFilter_Base<T> where T : class;
+
+    [Fact]
+    public void MixedClosedAndOpenDerived_FilterRespectsInstantiation()
+    {
+        // Base<int>: A applies (closed-instance match). B<int> would violate `class` constraint → filtered.
+        ITypeShape intShape = Provider.GetTypeShape(typeof(MultiClosedFilter_Base<int>))!;
+        var intUnion = Assert.IsAssignableFrom<IUnionTypeShape>(intShape);
+        IUnionCaseShape intOnly = Assert.Single(intUnion.UnionCases);
+        Assert.Equal(typeof(MultiClosedDerived_A), intOnly.UnionCaseType.Type);
+
+        // Base<string>: A targets Base<int> → filtered. B<string> satisfies `class` → resolved.
+        ITypeShape strShape = Provider.GetTypeShape(typeof(MultiClosedFilter_Base<string>))!;
+        var strUnion = Assert.IsAssignableFrom<IUnionTypeShape>(strShape);
+        IUnionCaseShape strOnly = Assert.Single(strUnion.UnionCases);
+        Assert.Equal(typeof(MultiClosedDerived_B<string>), strOnly.UnionCaseType.Type);
+    }
+
+    [DerivedTypeShape(typeof(UnrelatedDerivedType))]
+    private class TotallyUnrelatedBase;
+    private class UnrelatedDerivedType;  // doesn't inherit from anything related
+
+    [Fact]
+    public void ClosedDerivedNotAssignable_NonGenericBase_StillThrows()
+    {
+        // Hard error preserved: derived has no inheritance relation to the base at all.
+        var ex = Assert.Throws<InvalidOperationException>(() => Provider.GetTypeShape(typeof(TotallyUnrelatedBase)));
+        Assert.Contains("UnrelatedDerivedType", ex.Message);
+    }
+
+    [Theory]
+    [MemberData(nameof(GetOpenGenericResolutionSuccessCases))]
+    public void OpenGenericDerivedType_SupportedPatterns_ResolvesToExpectedClosedType(Type baseType, Type expectedClosedDerived)
+    {
+        ITypeShape shape = Provider.GetTypeShape(baseType)!;
+        var union = Assert.IsAssignableFrom<IUnionTypeShape>(shape);
+        Assert.Contains(union.UnionCases, c => c.UnionCaseType.Type == expectedClosedDerived);
+    }
+
+    public static IEnumerable<object[]> GetOpenGenericResolutionSuccessCases()
+    {
+        yield return new object[] { typeof(OpenGenericReorderedBase<int, string>), typeof(OpenGenericReorderedDerived<string, int>) };
+        yield return new object[] { typeof(OpenGenericPartialBase<string, int>), typeof(OpenGenericPartialDerived<string>) };
+        yield return new object[] { typeof(OpenGenericWrappedBase<List<string>>), typeof(OpenGenericWrappedDerived<string>) };
+        yield return new object[] { typeof(OpenGenericArrayBase<int[]>), typeof(OpenGenericArrayDerived<int>) };
+        yield return new object[] { typeof(IOpenGenericInterfaceBase<int>), typeof(OpenGenericInterfaceImpl<int>) };
+        yield return new object[] { typeof(OpenGenericMultiLevelBase<List<int>>), typeof(OpenGenericMultiLevelLeaf<int>) };
     }
 
     [Fact]
