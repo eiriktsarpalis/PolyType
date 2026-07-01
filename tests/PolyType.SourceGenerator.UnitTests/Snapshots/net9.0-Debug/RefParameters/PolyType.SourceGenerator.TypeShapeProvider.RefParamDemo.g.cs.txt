@@ -61,7 +61,7 @@ namespace PolyType.SourceGenerator
                 ParametersFactory = __CreateConstructorParameters_RefParamDemo,
                 ArgumentStateConstructor = static () => new(default!, count: 2, requiredArgumentsMask: __RequiredMembersMask_RefParamDemo),
                 ParameterizedConstructor = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string)> state) => new global::TestNamespace.RefParamDemo(ref state.Arguments.Item1, in state.Arguments.Item2, out _),
-                MethodBaseFactory = static () => typeof(global::TestNamespace.RefParamDemo).GetConstructor(__BindingFlags_Instance_All, null, new global::System.Type[] { typeof(int).MakeByRefType(), typeof(string).MakeByRefType(), typeof(bool).MakeByRefType() }, null),
+                MethodBaseFactory = __ConstructorInfo_RefParamDemo,
                 IsPublic = true,
             };
         }
@@ -79,7 +79,7 @@ namespace PolyType.SourceGenerator
                 IsPublic = true,
                 Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string)> state) => state.Arguments.Item1,
                 Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string)> state, int value) => { state.Arguments.Item1 = value; state.MarkArgumentSet(0); },
-                ReflectionInfoFactory = static () => typeof(global::TestNamespace.RefParamDemo).GetConstructor(__BindingFlags_Instance_All, null, new global::System.Type[] { typeof(int).MakeByRefType(), typeof(string).MakeByRefType(), typeof(bool).MakeByRefType() }, null)?.GetParameters()[0],
+                ReflectionInfoFactory = static () => __ConstructorInfo_RefParamDemo()?.GetParameters()[0],
             },
 
             new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallArgumentState<(int, string)>, string>
@@ -94,9 +94,11 @@ namespace PolyType.SourceGenerator
                 DefaultValue = default!,
                 Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string)> state) => state.Arguments.Item2,
                 Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string)> state, string value) => { state.Arguments.Item2 = value; state.MarkArgumentSet(1); },
-                ReflectionInfoFactory = static () => typeof(global::TestNamespace.RefParamDemo).GetConstructor(__BindingFlags_Instance_All, null, new global::System.Type[] { typeof(int).MakeByRefType(), typeof(string).MakeByRefType(), typeof(bool).MakeByRefType() }, null)?.GetParameters()[1],
+                ReflectionInfoFactory = static () => __ConstructorInfo_RefParamDemo()?.GetParameters()[1],
             },
         };
+
+        private static global::System.Reflection.MethodBase? __ConstructorInfo_RefParamDemo() => typeof(global::TestNamespace.RefParamDemo).GetConstructor(__BindingFlags_Instance_All, null, new global::System.Type[] { typeof(int).MakeByRefType(), typeof(string).MakeByRefType(), typeof(bool).MakeByRefType() }, null);
 
         private const ulong __RequiredMembersMask_RefParamDemo = 0x3UL;
 
@@ -116,7 +118,7 @@ namespace PolyType.SourceGenerator
                 DeclaringType = RefParamDemo,
                 ReturnType = Unit,
                 ParametersFactory = __CreateMethodParameters_RefParamDemo_0,
-                MethodBaseFactory = static () => typeof(global::TestNamespace.RefParamDemo).GetMethod("Update", __BindingFlags_All, null, new global::System.Type[] { typeof(int).MakeByRefType(), typeof(string).MakeByRefType() }, null),
+                MethodBaseFactory = __MethodInfo_RefParamDemo_0,
                 ArgumentStateConstructor = static () => new global::PolyType.SourceGenModel.SmallArgumentState<(int, string)>((default, default!), count: 2, requiredArgumentsMask: __RequiredMembersMask_RefParamDemo_0_Update),
                 MethodInvoker = static (ref global::TestNamespace.RefParamDemo? target, ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string)> state) => { target!.Update(ref state.Arguments.Item1, in state.Arguments.Item2); return new(global::PolyType.Abstractions.Unit.Value); },
             };
@@ -135,7 +137,7 @@ namespace PolyType.SourceGenerator
                 IsPublic = true,
                 Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string)> state) => state.Arguments.Item1,
                 Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string)> state, int value) => { state.Arguments.Item1 = value; state.MarkArgumentSet(0); },
-                ReflectionInfoFactory = static () => typeof(global::TestNamespace.RefParamDemo).GetMethod("Update", __BindingFlags_All, null, new global::System.Type[] { typeof(int).MakeByRefType(), typeof(string).MakeByRefType() }, null)?.GetParameters()[0],
+                ReflectionInfoFactory = static () => __MethodInfo_RefParamDemo_0()?.GetParameters()[0],
             },
 
             new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallArgumentState<(int, string)>, string>
@@ -150,9 +152,11 @@ namespace PolyType.SourceGenerator
                 DefaultValue = default!,
                 Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string)> state) => state.Arguments.Item2,
                 Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string)> state, string value) => { state.Arguments.Item2 = value; state.MarkArgumentSet(1); },
-                ReflectionInfoFactory = static () => typeof(global::TestNamespace.RefParamDemo).GetMethod("Update", __BindingFlags_All, null, new global::System.Type[] { typeof(int).MakeByRefType(), typeof(string).MakeByRefType() }, null)?.GetParameters()[1],
+                ReflectionInfoFactory = static () => __MethodInfo_RefParamDemo_0()?.GetParameters()[1],
             },
         };
+
+        private static global::System.Reflection.MethodBase? __MethodInfo_RefParamDemo_0() => typeof(global::TestNamespace.RefParamDemo).GetMethod("Update", __BindingFlags_All, null, new global::System.Type[] { typeof(int).MakeByRefType(), typeof(string).MakeByRefType() }, null);
 
         private const ulong __RequiredMembersMask_RefParamDemo_0_Update = 0x3UL;
 
@@ -165,7 +169,7 @@ namespace PolyType.SourceGenerator
                 DeclaringType = RefParamDemo,
                 ReturnType = Boolean,
                 ParametersFactory = __CreateMethodParameters_RefParamDemo_1,
-                MethodBaseFactory = static () => typeof(global::TestNamespace.RefParamDemo).GetMethod("TryGet", __BindingFlags_All, null, new global::System.Type[] { typeof(string), typeof(int).MakeByRefType() }, null),
+                MethodBaseFactory = __MethodInfo_RefParamDemo_1,
                 ArgumentStateConstructor = static () => new global::PolyType.SourceGenModel.SmallArgumentState<string>(default!, count: 1, requiredArgumentsMask: __RequiredMembersMask_RefParamDemo_1_TryGet),
                 MethodInvoker = static (ref global::TestNamespace.RefParamDemo? target, ref global::PolyType.SourceGenModel.SmallArgumentState<string> state) => { var result = target!.TryGet(state.Arguments, out _); return new(result); },
             };
@@ -185,9 +189,11 @@ namespace PolyType.SourceGenerator
                 DefaultValue = default!,
                 Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<string> state) => state.Arguments,
                 Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<string> state, string value) => { state.Arguments = value; state.MarkArgumentSet(0); },
-                ReflectionInfoFactory = static () => typeof(global::TestNamespace.RefParamDemo).GetMethod("TryGet", __BindingFlags_All, null, new global::System.Type[] { typeof(string), typeof(int).MakeByRefType() }, null)?.GetParameters()[0],
+                ReflectionInfoFactory = static () => __MethodInfo_RefParamDemo_1()?.GetParameters()[0],
             },
         };
+
+        private static global::System.Reflection.MethodBase? __MethodInfo_RefParamDemo_1() => typeof(global::TestNamespace.RefParamDemo).GetMethod("TryGet", __BindingFlags_All, null, new global::System.Type[] { typeof(string), typeof(int).MakeByRefType() }, null);
 
         private const ulong __RequiredMembersMask_RefParamDemo_1_TryGet = 0x1UL;
 

@@ -60,7 +60,7 @@ namespace PolyType.SourceGenerator
                 ParametersFactory = __CreateConstructorParameters_Person,
                 ArgumentStateConstructor = static () => new(default!, count: 2, requiredArgumentsMask: __RequiredMembersMask_Person),
                 ParameterizedConstructor = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(string, int)> state) => new global::TestNamespace.Person(state.Arguments.Item1, state.Arguments.Item2),
-                MethodBaseFactory = static () => typeof(global::TestNamespace.Person).GetConstructor(__BindingFlags_Instance_All, null, new global::System.Type[] { typeof(string), typeof(int) }, null),
+                MethodBaseFactory = __ConstructorInfo_Person,
                 IsPublic = true,
             };
         }
@@ -79,7 +79,7 @@ namespace PolyType.SourceGenerator
                 DefaultValue = default!,
                 Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(string, int)> state) => state.Arguments.Item1,
                 Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(string, int)> state, string value) => { state.Arguments.Item1 = value; state.MarkArgumentSet(0); },
-                ReflectionInfoFactory = static () => typeof(global::TestNamespace.Person).GetConstructor(__BindingFlags_Instance_All, null, new global::System.Type[] { typeof(string), typeof(int) }, null)?.GetParameters()[0],
+                ReflectionInfoFactory = static () => __ConstructorInfo_Person()?.GetParameters()[0],
             },
 
             new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallArgumentState<(string, int)>, int>
@@ -93,9 +93,11 @@ namespace PolyType.SourceGenerator
                 IsPublic = true,
                 Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(string, int)> state) => state.Arguments.Item2,
                 Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(string, int)> state, int value) => { state.Arguments.Item2 = value; state.MarkArgumentSet(1); },
-                ReflectionInfoFactory = static () => typeof(global::TestNamespace.Person).GetConstructor(__BindingFlags_Instance_All, null, new global::System.Type[] { typeof(string), typeof(int) }, null)?.GetParameters()[1],
+                ReflectionInfoFactory = static () => __ConstructorInfo_Person()?.GetParameters()[1],
             },
         };
+
+        private static global::System.Reflection.MethodBase? __ConstructorInfo_Person() => typeof(global::TestNamespace.Person).GetConstructor(__BindingFlags_Instance_All, null, new global::System.Type[] { typeof(string), typeof(int) }, null);
 
         private const ulong __RequiredMembersMask_Person = 0x3UL;
     }
