@@ -11,7 +11,7 @@ namespace PolyType.Abstractions;
 public static class TypeShapeResolver
 {
     // C.f. https://github.com/dotnet/runtime/issues/119440#issuecomment-3269894751
-    private const string ResolveDynamicMessage =
+    internal const string ResolveDynamicMessage =
         "Dynamic resolution of IShapeable<T> interface may require dynamic code generation in .NET 8 Native AOT. " +
         "It is recommended to switch to statically resolved IShapeable<T> APIs or upgrade your app to .NET 9 or later.";
 
@@ -93,6 +93,10 @@ public static class TypeShapeResolver
     /// Intended for compatibility with older frameworks where the <see cref="IShapeable{T}"/>
     /// interface (which uses static abstract interface methods) is not available.
     /// </para>
+    /// <para>
+    /// Callers should prefer using the <see cref="Resolve{T}"/> method when possible,
+    /// as it is more performant and catches more potential issues at compile time.
+    /// </para>
     /// </remarks>
 #if NET8_0
     [RequiresDynamicCode(ResolveDynamicMessage)]
@@ -127,6 +131,10 @@ public static class TypeShapeResolver
     /// <para>
     /// Intended for compatibility with older frameworks where the <see cref="IShapeable{T}"/>
     /// interface (which uses static abstract interface methods) is not available.
+    /// </para>
+    /// <para>
+    /// Callers should prefer using the <see cref="Resolve{T, TProvider}"/> method when possible,
+    /// as it is more performant and catches more potential issues at compile time.
     /// </para>
     /// </remarks>
 #if NET8_0

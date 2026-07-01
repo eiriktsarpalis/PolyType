@@ -1,4 +1,7 @@
-﻿namespace PolyType.Abstractions;
+﻿using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
+
+namespace PolyType.Abstractions;
 
 /// <summary>
 /// Extension methods for the various type shape interfaces.
@@ -17,6 +20,33 @@ public static class TypeShapeExtensions
     /// <inheritdoc cref="GetDefaultConstructor{T}(IObjectTypeShape{T})"/>
     public static Func<object>? GetDefaultConstructor(this IObjectTypeShape shape) =>
         (Func<object>?)shape.Constructor?.Accept(DefaultConstructorVisitor.Instance);
+
+    extension(TypeShapeResolver)
+    {
+#pragma warning disable CS0618 // Type or member is obsolete
+        /// <inheritdoc cref="TypeShapeResolver.ResolveDynamicOrThrow{T}()"/>
+#if NET8_0
+        [RequiresDynamicCode(TypeShapeResolver.ResolveDynamicMessage)]
+#endif
+#if NET
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete($"Check that T actually has a [GenerateShape] attribute or otherwise implements or is constrained to IShapeable<T>. If T is declared in an assembly that does not target .NET, use {nameof(TypeShapeResolver)}.{nameof(TypeShapeResolver.ResolveDynamicOrThrow)}<T>() instead.", error: true)]
+#endif
+        public static ITypeShape<T> Resolve<T>()
+            => TypeShapeResolver.ResolveDynamicOrThrow<T>();
+
+        /// <inheritdoc cref="TypeShapeResolver.ResolveDynamicOrThrow{T, TProvider}()"/>
+#if NET8_0
+        [RequiresDynamicCode(TypeShapeResolver.ResolveDynamicMessage)]
+#endif
+#if NET
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete($"Check that TProvider actually has a [GenerateShape] attribute or otherwise implements or is constrained to IShapeable<T>. If TProvider is declared in an assembly that does not target .NET, use {nameof(TypeShapeResolver)}.{nameof(TypeShapeResolver.ResolveDynamicOrThrow)}<T, TProvider>() instead.", error: true)]
+#endif
+        public static ITypeShape<T> Resolve<T, TProvider>()
+            => TypeShapeResolver.ResolveDynamicOrThrow<T, TProvider>();
+#pragma warning restore CS0618 // Type or member is obsolete
+    }
 
     private sealed class DefaultConstructorVisitor : TypeShapeVisitor
     {

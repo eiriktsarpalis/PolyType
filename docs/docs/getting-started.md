@@ -42,22 +42,27 @@ Since the application uses a source generator to produce the shape for `Person`,
 
 As a library author, PolyType makes it easy to write high-performance, feature-complete components by targeting its [core abstractions](core-abstractions.md). For example, a parser API using PolyType might look as follows:
 
-```csharp
-public static class MyFancyParser
-{
-    public static T? Parse<T>(string myFancyFormat) where T : IShapeable<T>;
-}
-```
+[!code-csharp[](../CSharpSamples/Middleware.cs#MyFancyParser)]
 
 The <xref:PolyType.IShapeable`1> constraint indicates that the parser only works with types augmented with PolyType metadata. This metadata can be provided using the PolyType source generator:
 
-```csharp
-string myFancyFormat = "..."; // Some format string
-Person? person = MyFancyParser.Parse<Person>(myFancyFormat); // Compiles
+[!code-csharp[](../CSharpSamples/Middleware.cs#MyFancyParserUser)]
+[!code-csharp[](../CSharpSamples/Middleware.cs#Person)]
 
-[GenerateShape] // Generate an IShapeable<Person> implementation
-partial record Person(string name, int age, List<Person> children);
-```
+### Multi-targeting libraries
+
+If your library targets both .NET and .NET Standard/Framework, the following syntax is encouraged as it produces a single API surface for all target frameworks, encourages compile-time optimizations and moves some runtime exceptions to compile-time errors for your consumers:
+
+[!code-csharp[](../CSharpSamples/Middleware.cs#IdealMultitargetingAPI)]
+
+> [!NOTE]
+> The above syntax is callable by all .NET projects, as well as .NET Framework and .NET Standard projects that utilize C# 14+.
+> C# 14 can be forced for .NET Framework and .NET Standard projects by adding the following to the project file:
+> ```xml
+> <PropertyGroup>
+>   <LangVersion>14</LangVersion>
+> </PropertyGroup>
+> ```
 
 For more information, see:
 
