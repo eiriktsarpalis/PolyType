@@ -615,6 +615,12 @@ public sealed partial class Parser : TypeDataModelGenerator
                 }
 
                 derivedType = dt;
+
+                // Only consider derived types, KnownTypeAttribute can be used for AssociatedTypes purposes
+                if (!type.IsAssignableFrom(derivedType))
+                {
+                    continue;
+                }
             }
             else
             {
