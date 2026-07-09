@@ -310,8 +310,6 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
                     return attr.Type;
                 })
-                // Only consider derived types, KnownTypeAttribute can be used for AssociatedTypes purposes
-                .Where(type => unionType.IsAssignableFrom(type))
                 .Select(t => new DerivedTypeShapeAttribute(t));
 
             derivedTypeAttributes.AddRange(mappedKnownTypeAttributes);
