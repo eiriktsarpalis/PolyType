@@ -16,9 +16,13 @@ public sealed record ReflectionTypeShapeProviderOptions
     /// Gets a value indicating whether System.Reflection.Emit should be used when generating member accessors.
     /// </summary>
     /// <remarks>
-    /// Defaults to <c>true</c> if the runtime supports dynamic code generation.
+    /// Defaults to <c>true</c> if the runtime supports and JIT-compiles dynamic code.
+    /// On runtimes where dynamic code is supported but only interpreted (such as the Mono interpreter,
+    /// WebAssembly and iOS), the emitted IL would itself be interpreted, offering no throughput benefit
+    /// over plain reflection while still pulling in the System.Reflection.Emit stack; the default is
+    /// therefore <c>false</c> in those environments.
     /// </remarks>
-    public bool UseReflectionEmit { get; init; } = ReflectionHelpers.IsDynamicCodeSupported;
+    public bool UseReflectionEmit { get; init; } = ReflectionHelpers.IsDynamicCodeCompiled;
 
     /// <summary>
     /// Gets the list of assemblies to scan for <see cref="TypeShapeExtensionAttribute"/> attributes.
