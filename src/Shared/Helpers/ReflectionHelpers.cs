@@ -366,7 +366,8 @@ internal static class ReflectionHelpers
         }
         catch (TargetInvocationException ex) when (ex.InnerException is not null)
         {
-            throw RethrowInnerException(ex);
+            ExceptionDispatchInfo.Capture(ex.InnerException!).Throw();
+            throw; // unreachable
         }
 #endif
     }
@@ -390,26 +391,11 @@ internal static class ReflectionHelpers
         }
         catch (TargetInvocationException ex) when (ex.InnerException is not null)
         {
-            throw RethrowInnerException(ex);
+            ExceptionDispatchInfo.Capture(ex.InnerException!).Throw();
+            throw; // unreachable
         }
 #endif
     }
-
-#if !NET
-    /// <summary>
-    /// Re-throws the inner exception of a reflection <see cref="TargetInvocationException"/> while
-    /// preserving its original stack trace, so user-code exceptions surface exactly as the
-    /// Reflection.Emit accessor would raise them. On .NET this is handled natively via
-    /// <see cref="BindingFlags.DoNotWrapExceptions"/>, so this helper is only compiled downlevel.
-    /// </summary>
-    /// <param name="ex">The wrapper exception whose <see cref="Exception.InnerException"/> should be re-thrown.</param>
-    /// <returns>Never returns; declared to return an exception so callers can write <c>throw RethrowInnerException(ex);</c>.</returns>
-    private static TargetInvocationException RethrowInnerException(TargetInvocationException ex)
-    {
-        ExceptionDispatchInfo.Capture(ex.InnerException!).Throw();
-        return ex; // unreachable
-    }
-#endif
 
     public static bool IsMemoryType(this Type type, [NotNullWhen(true)] out Type? elementType, out bool isReadOnlyMemory)
     {
