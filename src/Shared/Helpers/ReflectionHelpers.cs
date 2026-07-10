@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -26,6 +27,23 @@ internal static class ReflectionHelpers
 
         // Check for the presence of the property in .NET 6+.
         PropertyInfo? prop = Type.GetType("System.Runtime.CompilerServices.RuntimeFeature")?.GetProperty("IsDynamicCodeSupported", BindingFlags.Public | BindingFlags.Static);
+        return prop is not null && (bool)prop.GetValue(null);
+#endif
+    }
+
+    public static bool IsDynamicCodeCompiled { get; } = IsDynamicCodeCompiledCore();
+    private static bool IsDynamicCodeCompiledCore()
+    {
+#if NET
+        return RuntimeFeature.IsDynamicCodeCompiled;
+#else
+        if (RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.Ordinal))
+        {
+            return true; // .NET Framework JIT-compiles dynamic code.
+        }
+
+        // Check for the presence of the property in .NET 6+.
+        PropertyInfo? prop = Type.GetType("System.Runtime.CompilerServices.RuntimeFeature")?.GetProperty("IsDynamicCodeCompiled", BindingFlags.Public | BindingFlags.Static);
         return prop is not null && (bool)prop.GetValue(null);
 #endif
     }
@@ -316,6 +334,73 @@ internal static class ReflectionHelpers
     {
         DebugExt.Assert(methodBase is ConstructorInfo or MethodBase { IsStatic: true });
         return methodBase is ConstructorInfo ctor ? ctor.Invoke(args) : methodBase.Invoke(null, args);
+    }
+
+    /// <summary>
+    /// Invokes the specified constructor or static factory method without wrapping any exception
+    /// thrown by the invoked member in a <see cref="TargetInvocationException"/>. This matches the
+    /// behavior of the Reflection.Emit-based accessor, which emits direct calls into user code.
+    /// </summary>
+    /// <param name="methodBase">The constructor or static method to invoke.</param>
+    /// <param name="args">The arguments to pass to the invocation.</param>
+    /// <returns>The result of the invocation.</returns>
+    public static object? InvokeNoWrapExceptions(this MethodBase methodBase, params object?[]? args)
+    {
+        DebugExt.Assert(methodBase is ConstructorInfo or MethodBase { IsStatic: true });
+        return methodBase is ConstructorInfo ctor
+            ? ctor.InvokeNoWrapExceptions(args)
+            : methodBase.InvokeNoWrapExceptions(null, args);
+    }
+
+    /// <summary>
+    /// Invokes <paramref name="methodBase"/> against <paramref name="obj"/> without wrapping any
+    /// exception thrown by the target method in a <see cref="TargetInvocationException"/>. This
+    /// matches the behavior of the Reflection.Emit-based accessor, which emits direct calls.
+    /// </summary>
+    /// <param name="methodBase">The method to invoke.</param>
+    /// <param name="obj">The target instance, or <see langword="null"/> for static methods.</param>
+    /// <param name="parameters">The arguments to pass to the invocation.</param>
+    /// <returns>The result of the invocation.</returns>
+    public static object? InvokeNoWrapExceptions(this MethodBase methodBase, object? obj, object?[]? parameters)
+    {
+#if NET
+        return methodBase.Invoke(obj, BindingFlags.DoNotWrapExceptions, binder: null, parameters, culture: null);
+#else
+        try
+        {
+            return methodBase.Invoke(obj, parameters);
+        }
+        catch (TargetInvocationException ex) when (ex.InnerException is not null)
+        {
+            ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+            throw; // unreachable
+        }
+#endif
+    }
+
+    /// <summary>
+    /// Invokes <paramref name="constructorInfo"/> without wrapping any exception thrown by the
+    /// constructor in a <see cref="TargetInvocationException"/>. This matches the behavior of the
+    /// Reflection.Emit-based accessor, which emits direct calls into user code.
+    /// </summary>
+    /// <param name="constructorInfo">The constructor to invoke.</param>
+    /// <param name="parameters">The arguments to pass to the constructor.</param>
+    /// <returns>The newly constructed instance.</returns>
+    public static object InvokeNoWrapExceptions(this ConstructorInfo constructorInfo, object?[]? parameters)
+    {
+#if NET
+        return constructorInfo.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, parameters, culture: null);
+#else
+        try
+        {
+            return constructorInfo.Invoke(parameters);
+        }
+        catch (TargetInvocationException ex) when (ex.InnerException is not null)
+        {
+            ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+            throw; // unreachable
+        }
+#endif
     }
 
     public static bool IsMemoryType(this Type type, [NotNullWhen(true)] out Type? elementType, out bool isReadOnlyMemory)

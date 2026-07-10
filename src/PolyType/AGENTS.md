@@ -38,7 +38,7 @@ These types live under `Abstractions/` and are meant to be consumed by *librarie
 
 ### `ReflectionProvider/`
 
-The **runtime reflection-based provider**: `ReflectionTypeShapeProvider` uses `System.Reflection` to build shapes on the fly, with no build-time step. Where available it uses `Reflection.Emit`-based member accessors (under `MemberAccessors/`) for performance, falling back to plain reflection otherwise. These implementations are **not trimming- or AOT-safe** — they depend on unreferenced/dynamic code — so the source-generated provider is the path for those scenarios.
+The **runtime reflection-based provider**: `ReflectionTypeShapeProvider` uses `System.Reflection` to build shapes on the fly, with no build-time step. By default it uses `Reflection.Emit`-based member accessors (under `MemberAccessors/`) for performance on runtimes that JIT-compile dynamic code (`RuntimeFeature.IsDynamicCodeCompiled`), and falls back to plain reflection accessors otherwise — including on runtimes where dynamic code is supported but only interpreted (Mono interpreter, WebAssembly, iOS), where emitted IL would offer no throughput benefit. Both accessor implementations propagate user-code exceptions unwrapped (never as `TargetInvocationException`). These implementations are **not trimming- or AOT-safe** — they depend on unreferenced/dynamic code — so the source-generated provider is the path for those scenarios.
 
 ### `SourceGenModel/`
 

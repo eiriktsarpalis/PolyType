@@ -142,11 +142,11 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
     public Setter<TDeclaringType?, TEventHandler> CreateEventAccessor<TDeclaringType, TEventHandler>(MethodInfo accessor)
     {
         return !typeof(TDeclaringType).IsValueType
-            ? (ref TDeclaringType? target, TEventHandler handler) => accessor.Invoke(target, [handler])
+            ? (ref TDeclaringType? target, TEventHandler handler) => accessor.InvokeNoWrapExceptions(target, [handler])
             : (ref TDeclaringType? target, TEventHandler handler) =>
             {
                 object? boxedTarget = target;
-                accessor.Invoke(boxedTarget, [handler]);
+                accessor.InvokeNoWrapExceptions(boxedTarget, [handler]);
                 target = (TDeclaringType?)boxedTarget;
             };
     }
@@ -154,11 +154,11 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
     public EnumerableAppender<TEnumerable, TElement> CreateEnumerableAppender<TEnumerable, TElement>(MethodInfo addMethod)
     {
         return !typeof(TEnumerable).IsValueType
-        ? (ref TEnumerable enumerable, TElement element) => addMethod.Invoke(enumerable, [element]) is not bool success || success
+        ? (ref TEnumerable enumerable, TElement element) => addMethod.InvokeNoWrapExceptions(enumerable, [element]) is not bool success || success
         : (ref TEnumerable enumerable, TElement element) =>
         {
             object boxed = enumerable!;
-            bool success = addMethod.Invoke(boxed, [element]) is not bool s || s;
+            bool success = addMethod.InvokeNoWrapExceptions(boxed, [element]) is not bool s || s;
             enumerable = (TEnumerable)boxed;
             return success;
         };
@@ -245,7 +245,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         Debug.Assert(ctorInfo.Parameters is []);
         Debug.Assert(ctorInfo is MethodShapeInfo);
         return ((MethodShapeInfo)ctorInfo).Method is { } cI
-            ? () => (TDeclaringType)cI.Invoke(null)!
+            ? () => (TDeclaringType)cI.InvokeNoWrapExceptions(null)!
             : static () => default(TDeclaringType)!;
     }
 
@@ -419,7 +419,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                         localParams[arity] = result;
                     }
 
-                    result = ctorInfo.Invoke(localParams);
+                    result = ctorInfo.InvokeNoWrapExceptions(localParams);
                     i -= arity;
                 }
 
@@ -437,7 +437,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                 return (Constructor<TArgumentState, TDeclaringType>)(object)new Constructor<LargeArgumentState<(object?[], object?[])>, TDeclaringType>(
                     (ref LargeArgumentState<(object?[] ctorArgs, object?[] memberArgs)> state) =>
                     {
-                        object obj = ctor.Invoke(state.Arguments.ctorArgs)!;
+                        object obj = ctor.InvokeNoWrapExceptions(state.Arguments.ctorArgs)!;
                         PopulateMemberInitializers(ref state, obj, ctorArity, memberInitializers, state.Arguments.memberArgs);
                         return (TDeclaringType)obj!;
                     });
@@ -467,7 +467,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
 
                     if (member is PropertyInfo prop)
                     {
-                        prop.SetValue(obj, memberArgs[i]);
+                        prop.GetSetMethod(nonPublic: true)!.InvokeNoWrapExceptions(obj, [memberArgs[i]]);
                     }
                     else
                     {
@@ -481,7 +481,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<object?[]>));
         var cI = ((MethodShapeInfo)ctorInfo).Method!;
         return (Constructor<TArgumentState, TDeclaringType>)(object)new Constructor<LargeArgumentState<object?[]>, TDeclaringType>(
-            (ref LargeArgumentState<object?[]> state) => (TDeclaringType)cI.Invoke(state.Arguments)!);
+            (ref LargeArgumentState<object?[]> state) => (TDeclaringType)cI.InvokeNoWrapExceptions(state.Arguments)!);
     }
 
     public MethodInvoker<TDeclaringType?, TArgumentState, TResult> CreateMethodInvoker<TDeclaringType, TArgumentState, TResult>(MethodShapeInfo ctorInfo) where TArgumentState : IArgumentState
@@ -496,7 +496,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
             return (ref TDeclaringType? target, ref TArgumentState _) =>
             {
                 object? boxedTarget = target;
-                object? result = methodInfo.Invoke(boxedTarget, []);
+                object? result = methodInfo.InvokeNoWrapExceptions(boxedTarget, []);
                 target = (TDeclaringType?)boxedTarget;
                 return returnMarshaler(result);
             };
@@ -507,7 +507,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
             (ref TDeclaringType? target, ref LargeArgumentState<object?[]> state) =>
             {
                 object? boxedTarget = target;
-                object? result = methodInfo.Invoke(boxedTarget, state.Arguments);
+                object? result = methodInfo.InvokeNoWrapExceptions(boxedTarget, state.Arguments);
                 target = (TDeclaringType?)boxedTarget;
                 return returnMarshaler(result);
             });
@@ -526,7 +526,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
             return (MethodInvoker<TFunction, TArgumentState, TResult>)(object)new MethodInvoker<TFunction, EmptyArgumentState, TResult>(
                 (ref TFunction target, ref EmptyArgumentState state) =>
                 {
-                    object? result = invokeMethod.Invoke(target, args);
+                    object? result = invokeMethod.InvokeNoWrapExceptions(target, args);
                     return resultMarshaler(result);
                 });
         }
@@ -541,7 +541,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                 foreach (MethodInfo method in funcInfo.CurriedInvocationChain)
                 {
                     args[0] = state.Arguments[i++];
-                    current = method.Invoke(current, args);
+                    current = method.InvokeNoWrapExceptions(current, args);
                 }
 
                 return resultMarshaler(current);
@@ -708,7 +708,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                 argumentSetters[i]([], opts, args);
             }
 
-            return (TDeclaringType)ctorInfo.Invoke(args)!;
+            return (TDeclaringType)ctorInfo.InvokeNoWrapExceptions(args)!;
         };
     }
 
@@ -739,7 +739,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                 argumentSetters[i](span, opts, args);
             }
 
-            return (TCollection)factory.Invoke(args)!;
+            return (TCollection)factory.InvokeNoWrapExceptions(args)!;
         };
     }
 
