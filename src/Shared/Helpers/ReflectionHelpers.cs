@@ -330,12 +330,6 @@ internal static class ReflectionHelpers
 #endif
     }
 
-    public static object? Invoke(this MethodBase methodBase, params object?[]? args)
-    {
-        DebugExt.Assert(methodBase is ConstructorInfo or MethodBase { IsStatic: true });
-        return methodBase is ConstructorInfo ctor ? ctor.Invoke(args) : methodBase.Invoke(null, args);
-    }
-
     /// <summary>
     /// Invokes the specified constructor or static factory method without wrapping any exception
     /// thrown by the invoked member in a <see cref="TargetInvocationException"/>. This matches the
