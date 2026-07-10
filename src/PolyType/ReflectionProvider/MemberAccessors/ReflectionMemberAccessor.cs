@@ -467,7 +467,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
 
                     if (member is PropertyInfo prop)
                     {
-                        prop.GetSetMethod(nonPublic: true)!.InvokeNoWrapExceptions(obj, [memberArgs[i]]);
+                        prop.SetMethod!.InvokeNoWrapExceptions(obj, [memberArgs[i]]);
                     }
                     else
                     {
