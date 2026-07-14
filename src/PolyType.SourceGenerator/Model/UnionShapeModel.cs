@@ -7,6 +7,11 @@ public sealed record UnionShapeModel : TypeShapeModel
     public required TypeShapeModel UnderlyingModel { get; init; }
 
     /// <summary>
+    /// Gets the name of the <c>UnionKind</c> enum member for this shape (e.g., "ClassHierarchy", "FSharpUnion", "CSharpUnion").
+    /// </summary>
+    public required string UnionKindName { get; init; }
+
+    /// <summary>
     /// The list of known derived types for the given type in topological order from most to least derived.
     /// </summary>
     public required ImmutableEquatableArray<UnionCaseModel> UnionCases { get; init; }

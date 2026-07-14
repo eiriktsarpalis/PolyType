@@ -27,4 +27,7 @@ public sealed class GenerateShapeAttribute : Attribute
 
     /// <inheritdoc cref="TypeShapeAttribute.IncludeMethods" />
     public MethodShapeFlags IncludeMethods { get; init; }
+
+    /// <inheritdoc cref="TypeShapeAttribute.InferDerivedTypes" />
+    public bool InferDerivedTypes { get; init; }
 }

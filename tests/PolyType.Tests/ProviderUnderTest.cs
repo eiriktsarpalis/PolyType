@@ -1,4 +1,5 @@
 using Microsoft.FSharp.Reflection;
+using PolyType.Abstractions;
 using PolyType.ReflectionProvider;
 using PolyType.SourceGenModel;
 using System.Collections;
@@ -21,7 +22,12 @@ public abstract class ProviderUnderTest
     {
         if (testCase.IsUnion)
         {
-            return !testCase.IsAbstract || FSharpType.IsUnion(testCase.Type, null);
+            if (!testCase.IsAbstract)
+            {
+                return true;
+            }
+
+            return FSharpType.IsUnion(testCase.Type, null) || HasConstructibleSubtype(testCase.Type);
         }
 
         return !(testCase.IsAbstract && !typeof(IEnumerable).IsAssignableFrom(testCase.Type)) &&
@@ -30,6 +36,31 @@ public abstract class ProviderUnderTest
             !testCase.IsFunctionType &&
             testCase.CustomKind is not TypeShapeKind.None &&
             (!testCase.UsesSpanConstructor || Kind is not ProviderKind.ReflectionNoEmit);
+    }
+
+    private static bool HasConstructibleSubtype(Type type)
+    {
+        foreach (DerivedTypeShapeAttribute attr in type.GetCustomAttributes<DerivedTypeShapeAttribute>(false))
+        {
+            if (!attr.Type.IsAbstract && !attr.Type.IsInterface)
+            {
+                return true;
+            }
+        }
+
+        foreach (Attribute attr in type.GetCustomAttributes(false).OfType<Attribute>())
+        {
+            if (attr.GetType().FullName is "System.Runtime.CompilerServices.ClosedSubtypeAttribute")
+            {
+                Type? subtypeType = (Type?)attr.GetType().GetProperty("SubtypeType")?.GetValue(attr);
+                if (subtypeType is { IsAbstract: false, IsInterface: false })
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
 

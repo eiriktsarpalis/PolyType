@@ -21,6 +21,7 @@ internal sealed partial class SourceFormatter
                     Members = {{memberDictionaryFactoryName}}(),
                     AttributeFactory = {{FormatNull(attributeFactoryName)}},
                     IsFlags = {{FormatBool(enumTypeShape.IsFlags)}},
+                    IsClosed = {{FormatBool(enumTypeShape.IsClosed)}},
                     Provider = this,
                 };
             }
