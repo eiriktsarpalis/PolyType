@@ -29,7 +29,7 @@ internal sealed class FSharpUnionTypeShape<TUnion>(FSharpUnionInfo unionInfo, Re
         {
             case MethodInfo tagReaderMethod:
                 var func = tagReaderMethod.CreateDelegate<Func<TUnion, int>>();
-                return (ref TUnion value) => func(value);
+                return (ref value) => func(value);
 
             case PropertyInfo tagReaderProperty:
                 return Provider.MemberAccessor.CreateGetter<TUnion, int>(tagReaderProperty, null);

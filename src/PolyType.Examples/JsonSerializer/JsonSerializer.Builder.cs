@@ -79,7 +79,7 @@ public static partial class JsonSerializerTS
                 if (parameter.ParameterType.Type == typeof(CancellationToken))
                 {
                     var tokenSetter = (Setter<TArgumentState, CancellationToken>)(object)parameter.GetSetter();
-                    return new MethodParameterSetter<TArgumentState>((ref TArgumentState state, IReadOnlyDictionary<string, JsonElement> _, CancellationToken token) =>
+                    return new MethodParameterSetter<TArgumentState>((ref state, _, token) =>
                     {
                         tokenSetter(ref state, token);
                     });
@@ -87,7 +87,7 @@ public static partial class JsonSerializerTS
 
                 JsonConverter<TParameter> paramConverter = GetOrAddConverter(parameter.ParameterType);
                 var setter = parameter.GetSetter();
-                return new MethodParameterSetter<TArgumentState>((ref TArgumentState state, IReadOnlyDictionary<string, JsonElement> parameters, CancellationToken cancellationToken) =>
+                return new MethodParameterSetter<TArgumentState>((ref state, parameters, cancellationToken) =>
                 {
                     if (parameters.TryGetValue(parameter.Name, out JsonElement value))
                     {
@@ -103,10 +103,10 @@ public static partial class JsonSerializerTS
                 {
                     var senderGetter = (Getter<TArgumentState, object?>)(object)parameter.GetGetter();
                     return new FunctionParameterGetter<TArgumentState>((
-                        ref TArgumentState state,
-                        Dictionary<string, JsonElement> _,
-                        ref object? sender,
-                        ref CancellationToken _) =>
+                        ref state,
+                        _,
+                        ref sender,
+                        ref _) =>
                     {
                         sender = senderGetter(ref state);
                     });
@@ -116,10 +116,10 @@ public static partial class JsonSerializerTS
                 {
                     var senderGetter = (Getter<TArgumentState, CancellationToken>)(object)parameter.GetGetter();
                     return new FunctionParameterGetter<TArgumentState>((
-                        ref TArgumentState state,
-                        Dictionary<string, JsonElement> _,
-                        ref object? _, 
-                        ref CancellationToken cancellationToken) =>
+                        ref state,
+                        _,
+                        ref _,
+                        ref cancellationToken) =>
                     {
                         cancellationToken = senderGetter(ref state);
                     });
@@ -128,10 +128,10 @@ public static partial class JsonSerializerTS
                 JsonConverter<TParameter> paramConverter = GetOrAddConverter(parameter.ParameterType);
                 var getter = parameter.GetGetter();
                 return new FunctionParameterGetter<TArgumentState>((
-                    ref TArgumentState state,
-                    Dictionary<string, JsonElement> parameters,
-                    ref object? _,
-                    ref CancellationToken _) =>
+                    ref state,
+                    parameters,
+                    ref _,
+                    ref _) =>
                 {
                     TParameter value = getter(ref state);
                     parameters[parameter.Name] = paramConverter.SerializeToElement(value);
@@ -331,7 +331,7 @@ public static partial class JsonSerializerTS
                 if (functionShape.IsAsync)
                 {
                     return new Func<AsyncJsonEventHandler, TFunction>(jsonHandler =>
-                        functionShape.FromAsyncDelegate((ref TArgumentState argState) =>
+                        functionShape.FromAsyncDelegate((ref argState) =>
                         {
                             object? sender = null;
                             CancellationToken cancellationToken = default;
@@ -353,7 +353,7 @@ public static partial class JsonSerializerTS
                 else
                 {
                     return new Func<JsonEventHandler, TFunction>(jsonHandler =>
-                        functionShape.FromDelegate((ref TArgumentState argState) =>
+                        functionShape.FromDelegate((ref argState) =>
                         {
                             object? sender = null;
                             CancellationToken cancellationToken = default;

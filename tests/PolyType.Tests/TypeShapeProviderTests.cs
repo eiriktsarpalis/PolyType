@@ -748,13 +748,13 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             Assert.Equal(functionShape.IsVoidLike, result is Unit);
 
             // FromDelegate/FromAsyncDelegate round-trip test
-            RefFunc<TArgumentState, TResult> wrappedInvoker = (ref TArgumentState arg) =>
+            RefFunc<TArgumentState, TResult> wrappedInvoker = (ref arg) =>
             {
                 Assert.True(arg.AreRequiredArgumentsSet);
                 return functionInvoker(ref func, ref arg).GetAwaiter().GetResult();
             };
 
-            RefFunc<TArgumentState, ValueTask<TResult>> wrappedInvokerAsync = (ref TArgumentState arg) =>
+            RefFunc<TArgumentState, ValueTask<TResult>> wrappedInvokerAsync = (ref arg) =>
             {
                 Assert.True(arg.AreRequiredArgumentsSet);
                 return functionInvoker(ref func, ref arg);

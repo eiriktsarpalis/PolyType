@@ -112,7 +112,7 @@ public static partial class Cloner
             var getter = propertyShape.GetGetter();
             var setter = propertyShape.GetSetter();
             return new PropertyCloner<TDeclaringType, TDeclaringType>(
-                (ref TDeclaringType source, ref TDeclaringType target) =>
+                (ref source, ref target) =>
                 {
                     setter(ref target, propertyTypeCloner(getter(ref source))!);
                 });
@@ -127,7 +127,7 @@ public static partial class Cloner
                 var getter = propertyShape.GetGetter();
                 var setter = parameterShape.GetSetter();
                 return new PropertyCloner<TDeclaringType, TArgumentState>(
-                    (ref TDeclaringType source, ref TArgumentState target) =>
+                    (ref source, ref target) =>
                     {
                         TPropertyType value = getter(ref source);
                         setter(ref target, elementCloner(value)!);

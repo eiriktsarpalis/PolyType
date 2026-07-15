@@ -653,10 +653,10 @@ public static class TestTypes
         yield return TestCase.Create(new Func<int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, ValueTask<int>>(
             (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16) => new(x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11 + x12 + x13 + x14 + x15 + x16)), p);
 
-        yield return TestCase.Create(new Getter<int, int>((ref int x) => x), p);
-        yield return TestCase.Create(new Setter<int, int>((ref int x, int value) => { x += value; }), p);
+        yield return TestCase.Create(new Getter<int, int>((ref x) => x), p);
+        yield return TestCase.Create(new Setter<int, int>((ref x, value) => { x += value; }), p);
         yield return TestCase.Create(new EventHandler((sender, args) => { }), p);
-        yield return TestCase.Create(new CustomDelegate((ref string? x, int y) => x?.Length ?? 0 + y), p);
+        yield return TestCase.Create(new CustomDelegate((ref x, y) => x?.Length ?? 0 + y), p);
         yield return TestCase.Create(new LargeDelegate(
             (p01, p02, p03, p04, p05, p06, p07, p08, p09, p10,
              p11, p12, p13, p14, p15, p16, p17, p18, p19, p20,

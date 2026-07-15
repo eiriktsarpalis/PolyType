@@ -191,7 +191,7 @@ public static partial class Mapper
 
                 Getter<TSource, TSourceProperty> sourceGetter = sourceProperty.GetGetter();
                 Setter<TTarget, TTargetProperty> targetSetter = targetProperty.GetSetter();
-                return new PropertyMapper<TSource, TTarget>((ref TSource source, ref TTarget target) =>
+                return new PropertyMapper<TSource, TTarget>((ref source, ref target) =>
                 {
                     TSourceProperty sourcePropertyValue = sourceGetter(ref source);
                     TTargetProperty targetPropertyValue = propertyTypeMapper(sourcePropertyValue)!;
@@ -206,7 +206,7 @@ public static partial class Mapper
                 Getter<TSource, TSourceProperty> sourceGetter = sourceProperty.GetGetter();
                 Setter<TArgumentState, TTargetParameter> parameterSetter = targetParameter.GetSetter();
 
-                return new PropertyMapper<TSource, TArgumentState>((ref TSource source, ref TArgumentState target) =>
+                return new PropertyMapper<TSource, TArgumentState>((ref source, ref target) =>
                 {
                     TSourceProperty sourcePropertyValue = sourceGetter(ref source);
                     TTargetParameter targetParameterValue = propertyTypeMapper(sourcePropertyValue)!;

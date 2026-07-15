@@ -27,7 +27,7 @@ public static partial class Validator
                 return null; // Nothing to validate for this object.
             }
 
-            return new Validator<T>((T? value, List<string> path, ref List<string>? errors) =>
+            return new Validator<T>((value, path, ref errors) =>
             {
                 if (value is null)
                 {
@@ -59,7 +59,7 @@ public static partial class Validator
             }
 
             Getter<TDeclaringType, TPropertyType> getter = property.GetGetter();
-            return new Validator<TDeclaringType>((TDeclaringType? obj, List<string> path, ref List<string>? errors) =>
+            return new Validator<TDeclaringType>((obj, path, ref errors) =>
             {
                 DebugExt.Assert(obj != null);
 
@@ -93,7 +93,7 @@ public static partial class Validator
             }
 
             Func<TDictionary, IReadOnlyDictionary<TKey, TValue>> getDictionary = dictionaryShape.GetGetDictionary();
-            return new Validator<TDictionary>((TDictionary? dict, List<string> path, ref List<string>? errors) =>
+            return new Validator<TDictionary>((dict, path, ref errors) =>
             {
                 if (dict is null)
                 {
@@ -118,7 +118,7 @@ public static partial class Validator
             }
 
             Func<TEnumerable, IEnumerable<TElement>> getEnumerable = enumerableShape.GetGetPotentiallyBlockingEnumerable();
-            return new Validator<TEnumerable>((TEnumerable? enumerable, List<string> path, ref List<string>? errors) =>
+            return new Validator<TEnumerable>((enumerable, path, ref errors) =>
             {
                 if (enumerable is null)
                 {
@@ -145,7 +145,7 @@ public static partial class Validator
             }
 
             var deconstructor = optionalShape.GetDeconstructor();
-            return new Validator<TOptional>((TOptional? optional, List<string> path, ref List<string>? errors) =>
+            return new Validator<TOptional>((optional, path, ref errors) =>
             {
                 if (deconstructor(optional, out TElement? element))
                 {
@@ -165,7 +165,7 @@ public static partial class Validator
             var marshaler = surrogateShape.Marshaler;
 
             return surrogateValidator is null ? null : 
-                new Validator<T>((T? value, List<string> path, ref List<string>? errors) => 
+                new Validator<T>((value, path, ref errors) =>
                     surrogateValidator(marshaler.Marshal(value), path, ref errors));
         }
 
@@ -182,7 +182,7 @@ public static partial class Validator
                 return null;
             }
 
-            return new Validator<TUnion>((TUnion? value, List<string> path, ref List<string>? errors) =>
+            return new Validator<TUnion>((value, path, ref errors) =>
             {
                 if (value is null)
                 {
@@ -209,7 +209,7 @@ public static partial class Validator
             }
 
             var marshaler = unionCaseShape.Marshaler;
-            return new Validator<TUnion>((TUnion? value, List<string> path, ref List<string>? errors) => underlying(marshaler.Unmarshal(value), path, ref errors));
+            return new Validator<TUnion>((value, path, ref errors) => underlying(marshaler.Unmarshal(value), path, ref errors));
         }
 
         public override object? VisitFunction<TFunction, TArgumentState, TResult>(IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state = null)
@@ -220,12 +220,12 @@ public static partial class Validator
         /// <summary>
         /// Creates a trivial validator that always succeeds.
         /// </summary>
-        public static Validator<T> CreateNullValidator<T>() => new((T? value, List<string> path, ref List<string>? errors) => { });
+        public static Validator<T> CreateNullValidator<T>() => new((value, path, ref errors) => { });
     }
 
     private sealed class DelayedValidatorFactory : IDelayedValueFactory
     {
         public DelayedValue Create<T>(ITypeShape<T> typeShape) =>
-            new DelayedValue<Validator<T>>(self => (T? value, List<string> path, ref List<string>? errors) => self.Result(value, path, ref errors));
+            new DelayedValue<Validator<T>>(self => (value, path, ref errors) => self.Result(value, path, ref errors));
     }
 }

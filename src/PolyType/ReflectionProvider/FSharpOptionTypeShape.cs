@@ -28,7 +28,7 @@ internal sealed class FSharpOptionTypeShape<TOptional, TElement>(FSharpUnionInfo
     {
         PropertyInfo valueGetterProp = unionInfo.UnionCases[1].Properties[0];
         var valueGetter = Provider.MemberAccessor.CreateGetter<TOptional, TElement>(valueGetterProp, null);
-        return (TOptional? optional, [MaybeNullWhen(false)] out TElement value) =>
+        return (optional, [MaybeNullWhen(false)] out value) =>
         {
             // 'None' in both FSharpOption<T> and FSharpValueOption<T> equals default
             if (typeof(TOptional).IsValueType ? optional!.Equals(default!) : optional is null)

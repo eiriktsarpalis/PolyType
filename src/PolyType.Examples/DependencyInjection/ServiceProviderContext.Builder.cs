@@ -85,7 +85,7 @@ public sealed partial class ServiceProviderContext
 
             var factory = parameterTypeFactory.Factory;
             var setter = parameterShape.GetSetter();
-            var mapper = new ParameterMapper<TArgumentState>((ServiceProvider provider, ref TArgumentState state) => setter(ref state, factory(provider)));
+            var mapper = new ParameterMapper<TArgumentState>((provider, ref state) => setter(ref state, factory(provider)));
             return (mapper, parameterTypeFactory.Lifetime);
         }
 

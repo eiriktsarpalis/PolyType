@@ -46,7 +46,7 @@ public partial class RandomGenerator
         {
             Setter<TDeclaringType, TPropertyType> setter = property.GetSetter();
             RandomGenerator<TPropertyType> propertyGenerator = GetOrAddGenerator(property.PropertyType);
-            return new RandomPropertySetter<TDeclaringType>((ref TDeclaringType obj, Random random, int size) => setter(ref obj, propertyGenerator(random, size)));
+            return new RandomPropertySetter<TDeclaringType>((ref obj, random, size) => setter(ref obj, propertyGenerator(random, size)));
         }
 
         public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructor, object? state)
@@ -109,7 +109,7 @@ public partial class RandomGenerator
         {
             Setter<TArgumentState, TParameter> setter = parameter.GetSetter();
             RandomGenerator<TParameter> parameterGenerator = GetOrAddGenerator(parameter.ParameterType);
-            return new RandomPropertySetter<TArgumentState>((ref TArgumentState obj, Random random, int size) => setter(ref obj, parameterGenerator(random, size)));
+            return new RandomPropertySetter<TArgumentState>((ref obj, random, size) => setter(ref obj, parameterGenerator(random, size)));
         }
 
         public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state)
