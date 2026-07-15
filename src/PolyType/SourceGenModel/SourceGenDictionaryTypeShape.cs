@@ -131,19 +131,14 @@ public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : So
             static void Throw() => throw new InvalidOperationException("Dictionary shape does not specify a default constructor.");
         }
 
-        switch (insertionMode)
+        return insertionMode switch
         {
-            case DictionaryInsertionMode.None:
-                return OverwritingInserter ?? DiscardingInserter ?? ThrowingInserter ?? Fail();
-            case DictionaryInsertionMode.Overwrite when OverwritingInserter is { } inserter:
-                return inserter;
-            case DictionaryInsertionMode.Discard when DiscardingInserter is { } inserter:
-                return inserter;
-            case DictionaryInsertionMode.Throw when ThrowingInserter is { } inserter:
-                return inserter;
-            default:
-                return Fail();
-        }
+            DictionaryInsertionMode.None => OverwritingInserter ?? DiscardingInserter ?? ThrowingInserter ?? Fail(),
+            DictionaryInsertionMode.Overwrite when OverwritingInserter is { } inserter => inserter,
+            DictionaryInsertionMode.Discard when DiscardingInserter is { } inserter => inserter,
+            DictionaryInsertionMode.Throw when ThrowingInserter is { } inserter => inserter,
+            _ => Fail(),
+        };
 
         static DictionaryInserter<TDictionary, TKey, TValue> Fail() =>
             throw new ArgumentOutOfRangeException(nameof(insertionMode), "Unsupported dictionary insertion mode.");

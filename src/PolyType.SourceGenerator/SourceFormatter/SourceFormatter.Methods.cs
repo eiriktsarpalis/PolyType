@@ -448,7 +448,7 @@ internal sealed partial class SourceFormatter
             return "global::System.Type.EmptyTypes";
         }
 
-        string FormatType(ParameterShapeModel p) => p.RefKind is RefKind.Out
+        static string FormatType(ParameterShapeModel p) => p.RefKind is RefKind.Out
             ? $"typeof({p.ParameterType.FullyQualifiedName}).MakeByRefType()"
             : FormatParameterTypeExpr(p);
 

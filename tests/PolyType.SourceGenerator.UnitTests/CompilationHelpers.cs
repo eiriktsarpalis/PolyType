@@ -20,7 +20,7 @@ public record PolyTypeSourceGeneratorResult
 
 public static class CompilationHelpers
 {
-    private static readonly string FileSeparator = new string('=', 140);
+    private static readonly string FileSeparator = new('=', 140);
 
     private static readonly CSharpParseOptions s_defaultParseOptions = CreateParseOptions();
 #if NET

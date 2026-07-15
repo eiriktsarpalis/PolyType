@@ -10,7 +10,7 @@ public partial class CounterBenchmark
     private static readonly ReflectionTypeShapeProvider EmitProvider = ReflectionTypeShapeProvider.Create(new() { UseReflectionEmit = true });
     private static readonly ReflectionTypeShapeProvider NoEmitProvider = ReflectionTypeShapeProvider.Create(new() { UseReflectionEmit = false });
 
-    private readonly MyPoco _value = new MyPoco(@string: "myString")
+    private readonly MyPoco _value = new(@string: "myString")
     {
         List = [1, 2, 3],
         Dict = new() { ["key1"] = 42, ["key2"] = -1 },

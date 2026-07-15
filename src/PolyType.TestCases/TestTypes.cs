@@ -1393,29 +1393,29 @@ public partial class ClassWithNullabilityAttributes
     [MaybeNull]
     public string MaybeNull
     {
-        get => field;
-        set => field = value;
+        get;
+        set;
     } = "str";
 
     [AllowNull]
     public string AllowNull
     {
         get => field ?? "str";
-        set => field = value;
+        set;
     } = "str";
 
     [NotNull]
     public string? NotNull
     {
         get => field ?? "str";
-        set => field = value;
+        set;
     } = "str";
 
     [DisallowNull]
     public string? DisallowNull
     {
-        get => field;
-        set => field = value;
+        get;
+        set;
     } = "str";
 
     [MaybeNull]
@@ -1462,29 +1462,29 @@ public partial struct StructWithNullabilityAttributes
     [MaybeNull]
     public int? MaybeNull
     {
-        get => field;
-        set => field = value;
+        get;
+        set;
     } = 0;
 
     [AllowNull]
     public int? AllowNull
     {
         get => field ?? 0;
-        set => field = value;
+        set;
     } = 0;
 
     [NotNull]
     public int? NotNullProperty
     {
         get => field ?? 0;
-        set => field = value;
+        set;
     } = 0;
 
     [DisallowNull]
     public int? DisallowNull
     {
-        get => field;
-        set => field = value;
+        get;
+        set;
     } = 0;
 
     [MaybeNull]

@@ -696,7 +696,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                     uncurriedParams.Add(parameterInfos[0]);
                 }
                 
-                if (uncurriedParams.Count == 1 && uncurriedParams[0].ParameterType is { Name: "Unit", Namespace: "Microsoft.FSharp.Core" })
+                if (uncurriedParams is [{ ParameterType: { Name: "Unit", Namespace: "Microsoft.FSharp.Core" } }])
                 {
                     uncurriedParams.Clear();
                 }

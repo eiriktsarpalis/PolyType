@@ -25,7 +25,7 @@ internal class CodeFixVerifier<TAnalyzer, TCodeFix>
         => CSharpCodeFixVerifier<TAnalyzer, TCodeFix, DefaultVerifier>.Diagnostic(diagnosticId);
 
     public static DiagnosticResult Diagnostic(DiagnosticDescriptor descriptor)
-        => new DiagnosticResult(descriptor);
+        => new(descriptor);
 
     public static Task VerifyAnalyzerAsync([StringSyntax("c#-test")] string source, params DiagnosticResult[] expected)
     {
@@ -90,7 +90,7 @@ internal class CodeFixVerifier<TAnalyzer, TCodeFix>
                 return from resourceName in Assembly.GetExecutingAssembly().GetManifestResourceNames()
                        where resourceName.StartsWith(additionalFilePrefix, StringComparison.Ordinal)
                        let content = ReadManifestResource(Assembly.GetExecutingAssembly(), resourceName)
-                       select (filename: resourceName.Substring(additionalFilePrefix.Length), SourceText.From(content));
+                       select (filename: resourceName[additionalFilePrefix.Length..], SourceText.From(content));
             });
         }
 
@@ -128,10 +128,8 @@ internal class CodeFixVerifier<TAnalyzer, TCodeFix>
 
         private static string ReadManifestResource(Assembly assembly, string resourceName)
         {
-            using (var reader = new StreamReader(assembly.GetManifestResourceStream(resourceName) ?? throw new ArgumentException("No such resource stream", nameof(resourceName))))
-            {
-                return reader.ReadToEnd();
-            }
+            using var reader = new StreamReader(assembly.GetManifestResourceStream(resourceName) ?? throw new ArgumentException("No such resource stream", nameof(resourceName)));
+            return reader.ReadToEnd();
         }
     }
 }

@@ -323,12 +323,14 @@ internal sealed class Baselines
             throw new InvalidDataException($"Baselines file '{path}' is not a JSON object.");
         }
 
-        Baselines b = new() { _raw = obj };
-
-        b.ToleranceBytes = obj["tolerance_bytes"]?.GetValue<long>()
-            ?? throw new InvalidDataException("Baselines file is missing required field 'tolerance_bytes'.");
-        b.TolerancePercent = obj["tolerance_percent"]?.GetValue<double>()
-            ?? throw new InvalidDataException("Baselines file is missing required field 'tolerance_percent'.");
+        Baselines b = new()
+        {
+            _raw = obj,
+            ToleranceBytes = obj["tolerance_bytes"]?.GetValue<long>()
+                ?? throw new InvalidDataException("Baselines file is missing required field 'tolerance_bytes'."),
+            TolerancePercent = obj["tolerance_percent"]?.GetValue<double>()
+                ?? throw new InvalidDataException("Baselines file is missing required field 'tolerance_percent'."),
+        };
 
         if (obj["platforms"] is JsonObject platforms)
         {

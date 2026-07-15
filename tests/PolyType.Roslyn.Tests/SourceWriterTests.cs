@@ -97,7 +97,7 @@ public static class SourceWriterTests
         
         int intValue = 42;
         double doubleValue = 3.14159;
-        DateTime dateValue = new DateTime(2024, 1, 15, 14, 30, 0);
+        DateTime dateValue = new(2024, 1, 15, 14, 30, 0);
         decimal decimalValue = 1234.5678m;
         
         writer.WriteLine($"Integer: {intValue:X8}");
@@ -144,8 +144,10 @@ public static class SourceWriterTests
     [Fact]
     public static void Dispose_PropertiesRemainAccessible()
     {
-        SourceWriter writer = new('\t', 2);
-        writer.Indentation = 5;
+        SourceWriter writer = new('\t', 2)
+        {
+            Indentation = 5,
+        };
         writer.WriteLine("test");
         writer.Dispose();
         
