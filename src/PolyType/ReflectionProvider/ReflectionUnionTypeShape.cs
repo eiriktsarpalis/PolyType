@@ -14,11 +14,9 @@ internal sealed class ReflectionUnionTypeShape<TUnion>(DerivedTypeInfo[] derived
     public override TypeShapeKind Kind => TypeShapeKind.Union;
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnion(this, state);
 
-    public ITypeShape<TUnion> BaseType => _baseType ?? CommonHelpers.ExchangeIfNull(ref _baseType, (ITypeShape<TUnion>)Provider.CreateTypeShapeCore(typeof(TUnion), allowUnionShapes: false));
-    private ITypeShape<TUnion>? _baseType;
+    public ITypeShape<TUnion> BaseType => field ?? CommonHelpers.ExchangeIfNull(ref field, (ITypeShape<TUnion>)Provider.CreateTypeShapeCore(typeof(TUnion), allowUnionShapes: false));
 
-    public IReadOnlyList<IUnionCaseShape> UnionCases => _unionCases ?? CommonHelpers.ExchangeIfNull(ref _unionCases, CreateUnionCaseShapes().AsReadOnlyList());
-    private IReadOnlyList<IUnionCaseShape>? _unionCases;
+    public IReadOnlyList<IUnionCaseShape> UnionCases => field ?? CommonHelpers.ExchangeIfNull(ref field, CreateUnionCaseShapes().AsReadOnlyList());
 
     public Getter<TUnion, int> GetGetUnionCaseIndex() => _unionCaseIndexReader ??= CommonHelpers.ExchangeIfNull(ref _unionCaseIndexReader, Provider.MemberAccessor.CreateGetUnionCaseIndex<TUnion>(derivedTypeInfos));
     private Getter<TUnion, int>? _unionCaseIndexReader;

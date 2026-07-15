@@ -17,14 +17,13 @@ namespace PolyType.ReflectionProvider;
 internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
     : ReflectionTypeShape<TEnumerable>(provider, options), IEnumerableTypeShape<TEnumerable, TElement>
 {
-    private CollectionConstructorInfo? _constructorInfo;
     private EnumerableAppender<TEnumerable, TElement>? _addDelegate;
     private MutableCollectionConstructor<TElement, TEnumerable>? _mutableCtorDelegate;
     private ParameterizedCollectionConstructor<TElement, TElement, TEnumerable>? _spanCtorDelegate;
 
     private CollectionConstructorInfo ConstructorInfo
     {
-        get => _constructorInfo ?? CommonHelpers.ExchangeIfNull(ref _constructorInfo, DetermineConstructorInfo());
+        get => field ?? CommonHelpers.ExchangeIfNull(ref field, DetermineConstructorInfo());
     }
 
     public virtual CollectionConstructionStrategy ConstructionStrategy => ConstructorInfo.Strategy;

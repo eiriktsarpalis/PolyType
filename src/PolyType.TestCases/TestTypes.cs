@@ -1005,7 +1005,6 @@ public abstract partial class BaseClassWithVirtualProperties
 public partial class DerivedClassWithVirtualProperties : BaseClassWithVirtualProperties
 {
     private int? _x;
-    private string? _y;
 
     public override int X
     {
@@ -1023,15 +1022,15 @@ public partial class DerivedClassWithVirtualProperties : BaseClassWithVirtualPro
 
     public override string Y
     {
-        get => _y ?? "str";
+        get => field ?? "str";
         set
         {
-            if (_y != null)
+            if (field != null)
             {
                 throw new InvalidOperationException("Value has already been set once");
             }
 
-            _y = value;
+            field = value;
         }
     }
 
@@ -1383,46 +1382,41 @@ public class GenericContainer<T>
 [GenerateShape]
 public partial class ClassWithNullabilityAttributes
 {
-    private string? _maybeNull = "str";
-    private string? _allowNull = "str";
-    private string? _notNull = "str";
-    private string? _disallowNull = "str";
-
     public ClassWithNullabilityAttributes() { }
 
     public ClassWithNullabilityAttributes([AllowNull] string allowNull, [DisallowNull] string? disallowNull)
     {
-        _allowNull = allowNull;
-        _disallowNull = disallowNull;
+        AllowNull = allowNull;
+        DisallowNull = disallowNull;
     }
 
     [MaybeNull]
     public string MaybeNull
     {
-        get => _maybeNull;
-        set => _maybeNull = value;
-    }
+        get => field;
+        set => field = value;
+    } = "str";
 
     [AllowNull]
     public string AllowNull
     {
-        get => _allowNull ?? "str";
-        set => _allowNull = value;
-    }
+        get => field ?? "str";
+        set => field = value;
+    } = "str";
 
     [NotNull]
     public string? NotNull
     {
-        get => _notNull ?? "str";
-        set => _notNull = value;
-    }
+        get => field ?? "str";
+        set => field = value;
+    } = "str";
 
     [DisallowNull]
     public string? DisallowNull
     {
-        get => _disallowNull;
-        set => _disallowNull = value;
-    }
+        get => field;
+        set => field = value;
+    } = "str";
 
     [MaybeNull]
     public string MaybeNullField = "str";
@@ -1457,46 +1451,41 @@ public class ClassWithNotNullProperty<T> where T : notnull
 [GenerateShape]
 public partial struct StructWithNullabilityAttributes
 {
-    private int? _maybeNull = 0;
-    private int? _allowNull = 0;
-    private int? _notNull = 0;
-    private int? _disallowNull = 0;
-
     public StructWithNullabilityAttributes() { }
 
     public StructWithNullabilityAttributes([AllowNull] int? allowNull, [DisallowNull] int? disallowNull)
     {
-        _allowNull = allowNull;
-        _disallowNull = disallowNull;
+        AllowNull = allowNull;
+        DisallowNull = disallowNull;
     }
 
     [MaybeNull]
     public int? MaybeNull
     {
-        get => _maybeNull;
-        set => _maybeNull = value;
-    }
+        get => field;
+        set => field = value;
+    } = 0;
 
     [AllowNull]
     public int? AllowNull
     {
-        get => _allowNull ?? 0;
-        set => _allowNull = value;
-    }
+        get => field ?? 0;
+        set => field = value;
+    } = 0;
 
     [NotNull]
     public int? NotNullProperty
     {
-        get => _notNull ?? 0;
-        set => _notNull = value;
-    }
+        get => field ?? 0;
+        set => field = value;
+    } = 0;
 
     [DisallowNull]
     public int? DisallowNull
     {
-        get => _disallowNull;
-        set => _disallowNull = value;
-    }
+        get => field;
+        set => field = value;
+    } = 0;
 
     [MaybeNull]
     public int MaybeNullField = 0;

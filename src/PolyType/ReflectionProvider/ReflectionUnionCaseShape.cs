@@ -9,8 +9,7 @@ namespace PolyType.ReflectionProvider;
 internal sealed class ReflectionUnionCaseShape<TUnionCase, TUnion>(IUnionTypeShape unionType, DerivedTypeInfo derivedTypeInfo, ReflectionTypeShapeProvider provider) : IUnionCaseShape<TUnionCase, TUnion>
     where TUnionCase : TUnion
 {
-    public ITypeShape<TUnionCase> UnionCaseType => _type ?? CommonHelpers.ExchangeIfNull(ref _type, typeof(TUnionCase) == typeof(TUnion) ? (ITypeShape<TUnionCase>)unionType.BaseType : provider.GetTypeShape<TUnionCase>());
-    private ITypeShape<TUnionCase>? _type;
+    public ITypeShape<TUnionCase> UnionCaseType => field ?? CommonHelpers.ExchangeIfNull(ref field, typeof(TUnionCase) == typeof(TUnion) ? (ITypeShape<TUnionCase>)unionType.BaseType : provider.GetTypeShape<TUnionCase>());
 
     public IMarshaler<TUnionCase, TUnion> Marshaler => SubtypeMarshaler<TUnionCase, TUnion>.Instance;
 

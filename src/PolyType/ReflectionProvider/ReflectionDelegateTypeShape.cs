@@ -12,7 +12,6 @@ internal sealed class ReflectionDelegateTypeShape<TDelegate, TArgumentState, TRe
     where TDelegate : Delegate
     where TArgumentState : IArgumentState
 {
-    private IReadOnlyList<IParameterShape>? _parameters;
     private Func<TArgumentState>? _argumentStateConstructor;
     private MethodInvoker<TDelegate, TArgumentState, TResult>? _functionInvoker;
     private Func<RefFunc<TArgumentState, TResult>, TDelegate>? _fromDelegate;
@@ -20,7 +19,7 @@ internal sealed class ReflectionDelegateTypeShape<TDelegate, TArgumentState, TRe
 
     public bool IsVoidLike => methodShapeInfo.IsVoidLike;
     public bool IsAsync => methodShapeInfo.IsAsync;
-    public IReadOnlyList<IParameterShape> Parameters => _parameters ?? CommonHelpers.ExchangeIfNull(ref _parameters, GetParameters().AsReadOnlyList());
+    public IReadOnlyList<IParameterShape> Parameters => field ?? CommonHelpers.ExchangeIfNull(ref field, GetParameters().AsReadOnlyList());
     public override TypeShapeKind Kind => TypeShapeKind.Function;
     public ITypeShape<TResult> ReturnType => Provider.GetTypeShape<TResult>();
     ITypeShape IFunctionTypeShape.ReturnType => ReturnType;

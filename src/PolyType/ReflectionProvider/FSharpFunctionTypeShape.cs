@@ -16,14 +16,13 @@ internal sealed class FSharpFunctionTypeShape<TFunction, TArgumentState, TResult
     IFunctionTypeShape<TFunction, TArgumentState, TResult>
     where TArgumentState : IArgumentState
 {
-    private IReadOnlyList<IParameterShape>? _parameters;
     private Func<TArgumentState>? _argumentStateConstructor;
     private MethodInvoker<TFunction, TArgumentState, TResult>? _functionInvoker;
 
     public ITypeShape<TResult> ReturnType => Provider.GetTypeShape<TResult>();
     public bool IsVoidLike => fSharpFuncInfo.IsVoidLike;
     public bool IsAsync => fSharpFuncInfo.IsAsync;
-    public IReadOnlyList<IParameterShape> Parameters => _parameters ?? CommonHelpers.ExchangeIfNull(ref _parameters, GetParameters().AsReadOnlyList());
+    public IReadOnlyList<IParameterShape> Parameters => field ?? CommonHelpers.ExchangeIfNull(ref field, GetParameters().AsReadOnlyList());
     public override TypeShapeKind Kind => TypeShapeKind.Function;
     ITypeShape IFunctionTypeShape.ReturnType => ReturnType;
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitFunction(this, state);

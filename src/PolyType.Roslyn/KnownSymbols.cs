@@ -16,14 +16,12 @@ public class KnownSymbols(Compilation compilation)
     /// <summary>
     /// The assembly symbol for the core library.
     /// </summary>
-    public IAssemblySymbol CoreLibAssembly => _CoreLibAssembly ??= Compilation.GetSpecialType(SpecialType.System_Int32).ContainingAssembly;
-    private IAssemblySymbol? _CoreLibAssembly;
+    public IAssemblySymbol CoreLibAssembly => field ??= Compilation.GetSpecialType(SpecialType.System_Int32).ContainingAssembly;
 
     /// <summary>
     /// The type symbol for <see cref="System.ValueType"/>.
     /// </summary>
-    public INamedTypeSymbol SystemValueType => _ValueTypeType ??= Compilation.GetSpecialType(SpecialType.System_ValueType);
-    private INamedTypeSymbol? _ValueTypeType;
+    public INamedTypeSymbol SystemValueType => field ??= Compilation.GetSpecialType(SpecialType.System_ValueType);
 
     /// <summary>
     /// The type symbol for <see cref="System.Reflection.MemberInfo"/>.
@@ -100,14 +98,12 @@ public class KnownSymbols(Compilation compilation)
     /// <summary>
     /// The type symbol for <see cref="IEnumerable{T}"/>.
     /// </summary>
-    public INamedTypeSymbol IEnumerableOfT => _IEnumerableOfT ??= Compilation.GetSpecialType(SpecialType.System_Collections_Generic_IEnumerable_T);
-    private INamedTypeSymbol? _IEnumerableOfT;
+    public INamedTypeSymbol IEnumerableOfT => field ??= Compilation.GetSpecialType(SpecialType.System_Collections_Generic_IEnumerable_T);
 
     /// <summary>
     /// The type symbol for <see cref="System.Collections.IEnumerable"/>.
     /// </summary>
-    public INamedTypeSymbol IEnumerable => _IEnumerable ??= Compilation.GetSpecialType(SpecialType.System_Collections_IEnumerable);
-    private INamedTypeSymbol? _IEnumerable;
+    public INamedTypeSymbol IEnumerable => field ??= Compilation.GetSpecialType(SpecialType.System_Collections_IEnumerable);
     
     /// <summary>
     /// The type symbol for IAsyncEnumerable{T}.

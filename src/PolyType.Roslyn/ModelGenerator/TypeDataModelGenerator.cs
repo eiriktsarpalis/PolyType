@@ -12,7 +12,6 @@ namespace PolyType.Roslyn;
 public partial class TypeDataModelGenerator
 {
     private ImmutableDictionary<ITypeSymbol, TypeDataModel> _generatedModels;
-    private List<Diagnostic>? _diagnostics;
     private ImmutableDictionary<ITypeSymbol, ImmutableArray<AssociatedTypeModel>> _associatedTypes;
 
     /// <summary>
@@ -91,7 +90,7 @@ public partial class TypeDataModelGenerator
     /// <summary>
     /// Gets the list of diagnostics that have been recorded by this model generator.
     /// </summary>
-    public List<Diagnostic> Diagnostics => _diagnostics ??= [];
+    public List<Diagnostic> Diagnostics => field ??= [];
 
     /// <summary>
     /// Adds a new diagnostic to the <see cref="Diagnostics"/> property.
