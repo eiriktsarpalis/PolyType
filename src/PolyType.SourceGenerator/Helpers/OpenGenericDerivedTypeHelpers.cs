@@ -5,8 +5,8 @@
 // behaviour in sync.
 //
 // The algorithm is a port of the resolver added in dotnet/runtime#127318 (System.Text.Json
-// support for open generic [JsonDerivedType]). See the PR description for the full set of
-// supported and rejected patterns.
+// support for open generic [JsonDerivedType]), with failure semantics aligned to the refinements
+// in dotnet/runtime#130808. See those PRs for the supported and rejected patterns.
 
 using Microsoft.CodeAnalysis;
 using PolyType.Roslyn.Helpers;
@@ -405,16 +405,4 @@ internal enum OpenGenericResolutionFailure
     ConstraintViolation,
     /// <summary>The derived type matches the base type through multiple distinct ancestors.</summary>
     AmbiguousMatch,
-}
-
-internal static class OpenGenericResolutionFailureExtensions
-{
-    // Returns true when the failure is caused by the registration not matching THIS particular
-    // closed base, but where the same registration could plausibly apply to a different
-    // instantiation of the base. Such failures are silently skipped rather than reported as
-    // diagnostics, allowing a single attribute on an open base to span multiple closed
-    // instantiations naturally.
-    public static bool IsPerInstantiationFailure(this OpenGenericResolutionFailure failure) =>
-        failure is OpenGenericResolutionFailure.UnificationFailed
-            or OpenGenericResolutionFailure.ConstraintViolation;
 }

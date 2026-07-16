@@ -5,8 +5,8 @@
 // behaviour in sync.
 //
 // The algorithm is a port of the resolver added in dotnet/runtime#127318 (System.Text.Json
-// support for open generic [JsonDerivedType]). See the PR description for the full set of
-// supported and rejected patterns.
+// support for open generic [JsonDerivedType]), with failure semantics aligned to the refinements
+// in dotnet/runtime#130808. See those PRs for the supported and rejected patterns.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -176,16 +176,13 @@ internal static class OpenGenericDerivedTypeResolver
         Type openDerivedType,
         Type baseType,
         [NotNullWhen(true)] out Type? closedDerivedType,
-        [NotNullWhen(false)] out string? failureReason,
-        out OpenGenericResolutionFailureKind failureKind)
+        [NotNullWhen(false)] out string? failureReason)
     {
         closedDerivedType = null;
         failureReason = null;
-        failureKind = default;
 
         if (!baseType.IsGenericType)
         {
-            failureKind = OpenGenericResolutionFailureKind.NotAssignable;
             failureReason = "the derived type is not assignable to the base type";
             return false;
         }
@@ -205,7 +202,6 @@ internal static class OpenGenericDerivedTypeResolver
 
         if (matchingBases.Count == 0)
         {
-            failureKind = OpenGenericResolutionFailureKind.NotAssignable;
             failureReason = "the derived type is not assignable to the base type";
             return false;
         }
@@ -231,7 +227,6 @@ internal static class OpenGenericDerivedTypeResolver
         {
             if (!referencedParams.Contains(required))
             {
-                failureKind = OpenGenericResolutionFailureKind.UnboundParameter;
                 failureReason = $"the type parameter '{required.Name}' of the derived type is not bound by the base type's arguments";
                 return false;
             }
@@ -292,7 +287,6 @@ internal static class OpenGenericDerivedTypeResolver
             }
             else
             {
-                failureKind = OpenGenericResolutionFailureKind.AmbiguousMatch;
                 failureReason = "the derived type matches the base type through multiple ancestors";
                 return false;
             }
@@ -300,7 +294,6 @@ internal static class OpenGenericDerivedTypeResolver
 
         if (successCount == 0 || successfulArgs is null)
         {
-            failureKind = OpenGenericResolutionFailureKind.UnificationFailed;
             failureReason = "the base type's arguments do not match the derived type's base specification";
             return false;
         }
@@ -312,41 +305,8 @@ internal static class OpenGenericDerivedTypeResolver
         }
         catch (Exception ex) when (ex is ArgumentException or TypeLoadException)
         {
-            failureKind = OpenGenericResolutionFailureKind.ConstraintViolation;
             failureReason = "the closed derived type would violate one of its declared generic constraints";
             return false;
         }
     }
-}
-
-// Identifies why an open generic derived type could not be resolved against a constructed base.
-// Mirrors PolyType.SourceGenerator.Helpers.OpenGenericResolutionFailure on the source-gen side.
-internal enum OpenGenericResolutionFailureKind
-{
-    /// <summary>The derived type cannot be assigned to the base type (no matching ancestor at all).</summary>
-    NotAssignable,
-
-    /// <summary>A matching ancestor exists but its type arguments do not unify with this particular closed base.</summary>
-    UnificationFailed,
-
-    /// <summary>One of the derived type's parameters is not referenced by any matching ancestor's base specification.</summary>
-    UnboundParameter,
-
-    /// <summary>The resolved substitution does not satisfy the derived type's declared generic constraints.</summary>
-    ConstraintViolation,
-
-    /// <summary>The derived type unifies with the closed base through more than one ancestor.</summary>
-    AmbiguousMatch,
-}
-
-// Helpers for classifying open generic resolution failures.
-internal static class OpenGenericResolutionFailureKindExtensions
-{
-    // Returns true when the failure is caused by the registration not matching THIS particular
-    // closed base, but where the same registration could plausibly apply to a different
-    // instantiation of the base. Callers that close attributes against a specific base may
-    // silently skip such registrations rather than surfacing them as errors.
-    public static bool IsPerInstantiationFailure(this OpenGenericResolutionFailureKind kind) =>
-        kind is OpenGenericResolutionFailureKind.UnificationFailed
-            or OpenGenericResolutionFailureKind.ConstraintViolation;
 }

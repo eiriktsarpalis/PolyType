@@ -348,42 +348,17 @@ record Mid<T> : Base<List<T>>;
 record Leaf<T>(List<T> Items) : Mid<T>;
 ```
 
-Open generic derived types are rejected at compile-time (for the source generator) or shape-construction time (for the reflection provider) when the registration is *fundamentally* invalid -- that is, no instantiation of the base type could ever satisfy it:
+Open generic derived types are rejected at compile time (for the source generator) or shape-construction time (for the reflection provider) when the registration cannot be resolved for the requested base type:
 
 * The derived type does not derive from or implement *any* instantiation of the base type.
+* The derived type targets a different construction of the generic base — e.g. `Derived<T> : Base<T, int>` registered for `Base<string, string>`.
 * The derived type has type parameters that cannot be inferred from any base specification — e.g. `Derived<T, U> : Base<T>` leaves `U` unbound.
+* The inferred type arguments do not satisfy a generic constraint declared by the derived type.
 * The derived type matches more than one ancestor instantiation of the base — only relevant for interface bases.
 
 The source generator emits diagnostic `PT0013` for these failures with a short message describing the reason; the reflection provider throws `InvalidOperationException` with an equivalent message.
 
-#### Per-instantiation filtering
-
-A registration that is well-formed in isolation but does not apply to the *particular* closed base being resolved is silently filtered rather than reported as an error. This allows a single declaration to span multiple closed instantiations naturally:
-
-```csharp
-// Cat targets Animal<int>; Dog targets Animal<string>. The two attributes coexist:
-// when resolving Animal<int>, Cat is included and Dog is filtered; the converse holds for Animal<string>.
-[DerivedTypeShape(typeof(Cat))]
-[DerivedTypeShape(typeof(Dog))]
-partial class Animal<T>;
-class Cat : Animal<int>;
-class Dog : Animal<string>;
-```
-
-```csharp
-// A constraint on the derived type filters per closed base. For Base<List<int>> the derivation
-// applies; for Base<string> (where string does not implement IEnumerable<int>) it is filtered.
-[DerivedTypeShape(typeof(Derived<>))]
-partial class Base<T>;
-class Derived<T> : Base<T> where T : IEnumerable<int>;
-```
-
-The two failure modes that are silently filtered (rather than diagnosed) are:
-
-* **Unification mismatch** — a closed derived registered for `Base<int>` simply does not apply when resolving `Base<string>`; the same is true for an open derived whose base specification cannot be unified with the requested closed base (e.g. `Wrapped<T> : Base<List<T>>` against `Base<int>`).
-* **Constraint violation** — the resolved substitution does not satisfy a `where T : …` constraint on the derived type for this particular closed base.
-
-In both cases the registration is dropped silently; if all registrations are filtered out, the resulting union shape simply has no derived cases.
+Every declared registration participates in the union configuration. PolyType does not filter registrations that only apply to another closed construction of the base. For example, registering both `Cat : Animal<int>` and `Dog : Animal<string>` on `Animal<T>` makes the configuration invalid for either closed base because one registration is not assignable. Define separate closed base declarations when different constructions require different derived-type sets.
 
 ### PropertyShapeAttribute
 
