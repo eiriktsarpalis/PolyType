@@ -15,12 +15,10 @@ internal sealed class FSharpUnitTypeShape<TUnit>(ReflectionTypeShapeProvider pro
     IObjectTypeShape<TUnit>
     where TUnit : class?
 {
-    private UnitConstructorShape? _constructor;
-
     public bool IsRecordType => false;
     public bool IsTupleType => false;
     public IReadOnlyList<IPropertyShape> Properties => [];
-    public IConstructorShape? Constructor => _constructor ?? CommonHelpers.ExchangeIfNull(ref _constructor, new(this));
+    public IConstructorShape? Constructor => field ?? CommonHelpers.ExchangeIfNull(ref field, new UnitConstructorShape(this));
     public override TypeShapeKind Kind => TypeShapeKind.Object;
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitObject(this, state);
 

@@ -128,7 +128,7 @@ public static class CollectionHelpers
     public static EnumerableAppender<TEnumerable, TElement> CreateEnumerableAppender<TEnumerable, TElement>()
         where TEnumerable : ICollection<TElement>
     {
-        return (ref TEnumerable enumerable, TElement element) =>
+        return (ref enumerable, element) =>
         {
             enumerable.Add(element);
             return true;
@@ -143,7 +143,7 @@ public static class CollectionHelpers
     public static EnumerableAppender<TEnumerable, object?> CreateEnumerableAppender<TEnumerable>()
         where TEnumerable : IList
     {
-        return (ref TEnumerable enumerable, object? element) =>
+        return (ref enumerable, element) =>
         {
             enumerable.Add(element);
             return true;
@@ -164,13 +164,13 @@ public static class CollectionHelpers
     {
         return insertionMode switch
         {
-            DictionaryInsertionMode.Overwrite => static (ref TDictionary dictionary, TKey key, TValue value) =>
+            DictionaryInsertionMode.Overwrite => static (ref dictionary, key, value) =>
             {
                 dictionary[key] = value;
                 return true;
             },
 
-            DictionaryInsertionMode.Discard => static (ref TDictionary dictionary, TKey key, TValue value) =>
+            DictionaryInsertionMode.Discard => static (ref dictionary, key, value) =>
             {
                 if (dictionary.ContainsKey(key))
                 {
@@ -181,7 +181,7 @@ public static class CollectionHelpers
                 return true;
             },
 
-            DictionaryInsertionMode.Throw => static (ref TDictionary dictionary, TKey key, TValue value) =>
+            DictionaryInsertionMode.Throw => static (ref dictionary, key, value) =>
             {
                 dictionary.Add(key, value);
                 return true;
@@ -203,13 +203,13 @@ public static class CollectionHelpers
     {
         return insertionMode switch
         {
-            DictionaryInsertionMode.Overwrite => static (ref TDictionary dictionary, object key, object? value) =>
+            DictionaryInsertionMode.Overwrite => static (ref dictionary, key, value) =>
             {
                 dictionary[key] = value;
                 return true;
             },
 
-            DictionaryInsertionMode.Discard => static (ref TDictionary dictionary, object key, object? value) =>
+            DictionaryInsertionMode.Discard => static (ref dictionary, key, value) =>
             {
                 if (dictionary.Contains(key))
                 {
@@ -220,7 +220,7 @@ public static class CollectionHelpers
                 return true;
             },
 
-            DictionaryInsertionMode.Throw => static (ref TDictionary dictionary, object key, object? value) =>
+            DictionaryInsertionMode.Throw => static (ref dictionary, key, value) =>
             {
                 dictionary.Add(key, value);
                 return true;

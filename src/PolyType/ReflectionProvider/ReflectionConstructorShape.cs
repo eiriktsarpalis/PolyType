@@ -14,7 +14,6 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
     : IConstructorShape<TDeclaringType, TArgumentState>
     where TArgumentState : IArgumentState
 {
-    private IReadOnlyList<IParameterShape>? _parameters;
     private Func<TArgumentState>? _argumentStateConstructor;
     private Constructor<TArgumentState, TDeclaringType>? _parameterizedConstructor;
     private Func<TDeclaringType>? _defaultConstructor;
@@ -22,14 +21,13 @@ internal sealed class ReflectionConstructorShape<TDeclaringType, TArgumentState>
     public IObjectTypeShape<TDeclaringType> DeclaringType { get; } = declaringType;
     public MethodBase? MethodBase => ctorInfo.Method;
 
-    public IGenericCustomAttributeProvider AttributeProvider => _attributeProvider ?? CommonHelpers.ExchangeIfNull(ref _attributeProvider, ReflectionCustomAttributeProvider.Create(ctorInfo.Method));
-    private IGenericCustomAttributeProvider? _attributeProvider;
+    public IGenericCustomAttributeProvider AttributeProvider => field ?? CommonHelpers.ExchangeIfNull(ref field, ReflectionCustomAttributeProvider.Create(ctorInfo.Method));
 
     public bool IsPublic => ctorInfo.IsPublic;
     IObjectTypeShape IConstructorShape.DeclaringType => DeclaringType;
     object? IConstructorShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitConstructor(this, state);
 
-    public IReadOnlyList<IParameterShape> Parameters => _parameters ?? CommonHelpers.ExchangeIfNull(ref _parameters, GetParameters().AsReadOnlyList());
+    public IReadOnlyList<IParameterShape> Parameters => field ?? CommonHelpers.ExchangeIfNull(ref field, GetParameters().AsReadOnlyList());
 
     public Func<TArgumentState> GetArgumentStateConstructor()
     {

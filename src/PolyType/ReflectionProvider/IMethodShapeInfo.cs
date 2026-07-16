@@ -58,8 +58,6 @@ internal sealed class TupleConstructorShapeInfo(
     MethodParameterShapeInfo[] constructorParameters,
     TupleConstructorShapeInfo? nestedTupleCtor) : IMethodShapeInfo
 {
-    private IParameterShapeInfo[]? _allParameters;
-
     public Type ReturnType { get; } = constructedType;
     public ConstructorInfo ConstructorInfo { get; } = constructorInfo;
     public MethodParameterShapeInfo[] ConstructorParameters { get; } = constructorParameters;
@@ -67,7 +65,7 @@ internal sealed class TupleConstructorShapeInfo(
     public bool IsValueTuple => ReturnType.IsValueType;
 
     public MethodBase? Method => ConstructorInfo;
-    public IParameterShapeInfo[] Parameters => _allParameters ??= GetAllParameters().ToArray();
+    public IParameterShapeInfo[] Parameters => field ??= GetAllParameters().ToArray();
     public bool IsPublic => true;
 
     private IEnumerable<IParameterShapeInfo> GetAllParameters()

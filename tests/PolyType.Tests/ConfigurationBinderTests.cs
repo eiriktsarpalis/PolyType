@@ -62,7 +62,7 @@ public abstract class ConfigurationBinderTests(ProviderUnderTest providerUnderTe
         
         string rootJson = $$"""{ "Root" : {{json}} }""";
         var builder = new ConfigurationBuilder();
-        using MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(rootJson));
+        using MemoryStream stream = new(Encoding.UTF8.GetBytes(rootJson));
         builder.AddJsonStream(stream);
         return (builder.Build().GetSection("Root"), json);
     }

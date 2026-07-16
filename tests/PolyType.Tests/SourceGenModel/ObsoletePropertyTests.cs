@@ -25,8 +25,8 @@ public static class ObsoletePropertyTests
             GetEnumerable = list => list,
             SupportedComparer = CollectionComparerOptions.None,
             ConstructionStrategy = CollectionConstructionStrategy.Mutable,
-            DefaultConstructor = (in CollectionConstructionOptions<int> _) => [],
-            Appender = (ref List<int> list, int value) => { list.Add(value); return true; },
+            DefaultConstructor = (in _) => [],
+            Appender = (ref list, value) => { list.Add(value); return true; },
         };
 #pragma warning restore CS0618
 
@@ -60,8 +60,8 @@ public static class ObsoletePropertyTests
             GetDictionary = dict => dict,
             SupportedComparer = CollectionComparerOptions.None,
             ConstructionStrategy = CollectionConstructionStrategy.Mutable,
-            DefaultConstructor = (in CollectionConstructionOptions<string> _) => [],
-            OverwritingInserter = (ref Dictionary<string, int> dict, string key, int value) => { dict[key] = value; return true; },
+            DefaultConstructor = (in _) => [],
+            OverwritingInserter = (ref dict, key, value) => { dict[key] = value; return true; },
         };
 #pragma warning restore CS0618
 
@@ -95,8 +95,8 @@ public static class ObsoletePropertyTests
             GetDictionary = dict => dict,
             SupportedComparer = CollectionComparerOptions.None,
             ConstructionStrategy = CollectionConstructionStrategy.Mutable,
-            DefaultConstructor = (in CollectionConstructionOptions<string> _) => [],
-            OverwritingInserter = (ref Dictionary<string, int> dict, string key, int value) => { dict[key] = value; return true; },
+            DefaultConstructor = (in _) => [],
+            OverwritingInserter = (ref dict, key, value) => { dict[key] = value; return true; },
         };
 #pragma warning restore CS0618
 
@@ -124,7 +124,7 @@ public static class ObsoletePropertyTests
             ElementType = expectedElementType,
             NoneConstructor = () => null,
             SomeConstructor = value => value,
-            Deconstructor = (int? optional, out int value) =>
+            Deconstructor = (optional, out value) =>
             {
                 if (optional.HasValue)
                 {
@@ -187,7 +187,7 @@ public static class ObsoletePropertyTests
             BaseTypeFactory = () => throw new InvalidOperationException("BaseTypeFactory should not be called"),
             BaseType = expectedBaseType,
             UnionCasesFactory = () => [],
-            GetUnionCaseIndex = (ref object _) => 0,
+            GetUnionCaseIndex = (ref _) => 0,
         };
 #pragma warning restore CS0618
 
@@ -268,7 +268,7 @@ public static class ObsoletePropertyTests
             ReturnTypeFactory = () => throw new InvalidOperationException("ReturnTypeFactory should not be called"),
             ReturnType = expectedReturnType,
             ArgumentStateConstructor = () => EmptyArgumentState.Instance,
-            FunctionInvoker = (ref Func<int> func, ref EmptyArgumentState state) => new ValueTask<int>(func()),
+            FunctionInvoker = (ref func, ref state) => new ValueTask<int>(func()),
         };
 #pragma warning restore CS0618
 

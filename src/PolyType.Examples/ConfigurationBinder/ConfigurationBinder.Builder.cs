@@ -104,14 +104,14 @@ public static partial class ConfigurationBinderTS
         {
             Func<IConfiguration, TPropertyType?> propertyTypeBinder = GetOrAddBinder(propertyShape.PropertyType);
             Setter<TDeclaringType, TPropertyType> setter = propertyShape.GetSetter();
-            return new PropertyBinder<TDeclaringType>((ref TDeclaringType obj, IConfigurationSection section) => setter(ref obj, propertyTypeBinder(section)!));
+            return new PropertyBinder<TDeclaringType>((ref obj, section) => setter(ref obj, propertyTypeBinder(section)!));
         }
 
         public override object? VisitParameter<TArgumentState, TParameterType>(IParameterShape<TArgumentState, TParameterType> parameterShape, object? state = null)
         {
             Func<IConfiguration, TParameterType?> parameterTypeBinder = GetOrAddBinder(parameterShape.ParameterType);
             Setter<TArgumentState, TParameterType> setter = parameterShape.GetSetter();
-            return new PropertyBinder<TArgumentState>((ref TArgumentState argState, IConfigurationSection section) => setter(ref argState, parameterTypeBinder(section)!));
+            return new PropertyBinder<TArgumentState>((ref argState, section) => setter(ref argState, parameterTypeBinder(section)!));
         }
 
         public override object? VisitEnumerable<TEnumerable, TElement>(IEnumerableTypeShape<TEnumerable, TElement> enumerableShape, object? state = null)

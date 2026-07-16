@@ -16,14 +16,12 @@ public class KnownSymbols(Compilation compilation)
     /// <summary>
     /// The assembly symbol for the core library.
     /// </summary>
-    public IAssemblySymbol CoreLibAssembly => _CoreLibAssembly ??= Compilation.GetSpecialType(SpecialType.System_Int32).ContainingAssembly;
-    private IAssemblySymbol? _CoreLibAssembly;
+    public IAssemblySymbol CoreLibAssembly => field ??= Compilation.GetSpecialType(SpecialType.System_Int32).ContainingAssembly;
 
     /// <summary>
     /// The type symbol for <see cref="System.ValueType"/>.
     /// </summary>
-    public INamedTypeSymbol SystemValueType => _ValueTypeType ??= Compilation.GetSpecialType(SpecialType.System_ValueType);
-    private INamedTypeSymbol? _ValueTypeType;
+    public INamedTypeSymbol SystemValueType => field ??= Compilation.GetSpecialType(SpecialType.System_ValueType);
 
     /// <summary>
     /// The type symbol for <see cref="System.Reflection.MemberInfo"/>.
@@ -100,14 +98,12 @@ public class KnownSymbols(Compilation compilation)
     /// <summary>
     /// The type symbol for <see cref="IEnumerable{T}"/>.
     /// </summary>
-    public INamedTypeSymbol IEnumerableOfT => _IEnumerableOfT ??= Compilation.GetSpecialType(SpecialType.System_Collections_Generic_IEnumerable_T);
-    private INamedTypeSymbol? _IEnumerableOfT;
+    public INamedTypeSymbol IEnumerableOfT => field ??= Compilation.GetSpecialType(SpecialType.System_Collections_Generic_IEnumerable_T);
 
     /// <summary>
     /// The type symbol for <see cref="System.Collections.IEnumerable"/>.
     /// </summary>
-    public INamedTypeSymbol IEnumerable => _IEnumerable ??= Compilation.GetSpecialType(SpecialType.System_Collections_IEnumerable);
-    private INamedTypeSymbol? _IEnumerable;
+    public INamedTypeSymbol IEnumerable => field ??= Compilation.GetSpecialType(SpecialType.System_Collections_IEnumerable);
     
     /// <summary>
     /// The type symbol for IAsyncEnumerable{T}.
@@ -320,29 +316,28 @@ public class KnownSymbols(Compilation compilation)
     /// </summary>
     public bool IsSimpleType(ITypeSymbol type)
     {
-        switch (type.SpecialType)
+        return type.SpecialType switch
         {
             // Primitive types
-            case SpecialType.System_Boolean:
-            case SpecialType.System_Char:
-            case SpecialType.System_SByte:
-            case SpecialType.System_Byte:
-            case SpecialType.System_Int16:
-            case SpecialType.System_UInt16:
-            case SpecialType.System_Int32:
-            case SpecialType.System_UInt32:
-            case SpecialType.System_Int64:
-            case SpecialType.System_UInt64:
-            case SpecialType.System_Single:
-            case SpecialType.System_Double:
-            // CoreLib non-primitives that represent a single value.
-            case SpecialType.System_String:
-            case SpecialType.System_Decimal:
-            case SpecialType.System_DateTime:
-                return true;
-        }
+            SpecialType.System_Boolean or
+            SpecialType.System_Char or
+            SpecialType.System_SByte or
+            SpecialType.System_Byte or
+            SpecialType.System_Int16 or
+            SpecialType.System_UInt16 or
+            SpecialType.System_Int32 or
+            SpecialType.System_UInt32 or
+            SpecialType.System_Int64 or
+            SpecialType.System_UInt64 or
+            SpecialType.System_Single or
+            SpecialType.System_Double => true,
 
-        return (_simpleTypes ??= CreateSimpleTypes(Compilation)).Contains(type);
+            // CoreLib non-primitives that represent a single value.
+            SpecialType.System_String or
+            SpecialType.System_Decimal or
+            SpecialType.System_DateTime => true,
+            _ => (_simpleTypes ??= CreateSimpleTypes(Compilation)).Contains(type),
+        };
 
         static HashSet<ITypeSymbol> CreateSimpleTypes(Compilation compilation)
         {

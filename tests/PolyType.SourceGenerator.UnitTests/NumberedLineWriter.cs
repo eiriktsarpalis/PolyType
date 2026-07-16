@@ -7,7 +7,7 @@ using Xunit;
 internal class NumberedLineWriter : TextWriter
 {
     private readonly ITestOutputHelper logger;
-    private readonly StringBuilder lineBuilder = new StringBuilder();
+    private readonly StringBuilder lineBuilder = new();
     private int lineNumber;
 
     internal NumberedLineWriter(ITestOutputHelper logger)
@@ -32,11 +32,11 @@ internal class NumberedLineWriter : TextWriter
 
         if (value.EndsWith("\r\n", StringComparison.Ordinal))
         {
-            this.WriteLine(value.Substring(0, value.Length - 2));
+            this.WriteLine(value[..^2]);
         }
         else if (value.EndsWith("\n", StringComparison.Ordinal))
         {
-            this.WriteLine(value.Substring(0, value.Length - 1));
+            this.WriteLine(value[..^1]);
         }
         else
         {

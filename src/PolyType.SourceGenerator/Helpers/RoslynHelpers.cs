@@ -32,7 +32,7 @@ internal static partial class RoslynHelpers
     /// </summary>
     public static string GetReflectionToStringName(this ITypeSymbol type)
     {
-        StringBuilder builder = new StringBuilder();
+        StringBuilder builder = new();
         FormatType(type, builder);
         return builder.ToString();
 
@@ -266,7 +266,7 @@ internal static partial class RoslynHelpers
     /// </remarks>
     public static string GetDerivedTypeShapeName(this ITypeSymbol type)
     {
-        StringBuilder builder = new StringBuilder();
+        StringBuilder builder = new();
         ITypeSymbol? skipContainingType = (type as INamedTypeSymbol)?.ContainingType;
         FormatTypeWithUnderscores(type, builder, skipContainingType);
         return builder.ToString();

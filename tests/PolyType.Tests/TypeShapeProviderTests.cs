@@ -696,7 +696,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                     uncurriedParams.Add(parameterInfos[0]);
                 }
                 
-                if (uncurriedParams.Count == 1 && uncurriedParams[0].ParameterType is { Name: "Unit", Namespace: "Microsoft.FSharp.Core" })
+                if (uncurriedParams is [{ ParameterType: { Name: "Unit", Namespace: "Microsoft.FSharp.Core" } }])
                 {
                     uncurriedParams.Clear();
                 }
@@ -748,13 +748,13 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             Assert.Equal(functionShape.IsVoidLike, result is Unit);
 
             // FromDelegate/FromAsyncDelegate round-trip test
-            RefFunc<TArgumentState, TResult> wrappedInvoker = (ref TArgumentState arg) =>
+            RefFunc<TArgumentState, TResult> wrappedInvoker = (ref arg) =>
             {
                 Assert.True(arg.AreRequiredArgumentsSet);
                 return functionInvoker(ref func, ref arg).GetAwaiter().GetResult();
             };
 
-            RefFunc<TArgumentState, ValueTask<TResult>> wrappedInvokerAsync = (ref TArgumentState arg) =>
+            RefFunc<TArgumentState, ValueTask<TResult>> wrappedInvokerAsync = (ref arg) =>
             {
                 Assert.True(arg.AreRequiredArgumentsSet);
                 return functionInvoker(ref func, ref arg);

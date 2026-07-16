@@ -230,14 +230,11 @@ public static class ImmutableEquatableDictionary
         where TKey : IEquatable<TKey>
         where TValue : IEquatable<TValue>
     {
-        switch (values)
+        return values switch
         {
-            case ICollection<KeyValuePair<TKey, TValue>> { Count: 0 }:
-                return ImmutableEquatableDictionary<TKey, TValue>.Empty;
-            case IDictionary<TKey, TValue> idict:
-                return ImmutableEquatableDictionary<TKey, TValue>.UnsafeCreateFromDictionary(new(idict));
-            default:
-                return ImmutableEquatableDictionary<TKey, TValue>.UnsafeCreateFromDictionary(values.ToDictionary(kvp => kvp.Key, kvp => kvp.Value));
-        }
+            ICollection<KeyValuePair<TKey, TValue>> { Count: 0 } => ImmutableEquatableDictionary<TKey, TValue>.Empty,
+            IDictionary<TKey, TValue> idict => ImmutableEquatableDictionary<TKey, TValue>.UnsafeCreateFromDictionary(new(idict)),
+            _ => ImmutableEquatableDictionary<TKey, TValue>.UnsafeCreateFromDictionary(values.ToDictionary(kvp => kvp.Key, kvp => kvp.Value)),
+        };
     }
 }

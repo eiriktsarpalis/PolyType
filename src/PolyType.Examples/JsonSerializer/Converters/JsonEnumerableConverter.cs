@@ -151,7 +151,7 @@ internal sealed class JsonMDArrayConverter<TArray, TElement>(JsonConverter<TElem
         try
         {
             ReadSubArray(ref reader, ref buffer, dimensions, options);
-            dimensions.AsSpan().Replace(-1, 0);
+            dimensions.Replace(-1, 0);
             Array result = Array.CreateInstance(typeof(TElement), dimensions);
             using Helpers.UnsafeArraySpan<TElement> unsafeArraySpan = new(result);
             buffer.AsSpan().CopyTo(unsafeArraySpan.Span);

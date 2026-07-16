@@ -17,14 +17,13 @@ namespace PolyType.ReflectionProvider;
 internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
     : ReflectionTypeShape<TEnumerable>(provider, options), IEnumerableTypeShape<TEnumerable, TElement>
 {
-    private CollectionConstructorInfo? _constructorInfo;
     private EnumerableAppender<TEnumerable, TElement>? _addDelegate;
     private MutableCollectionConstructor<TElement, TEnumerable>? _mutableCtorDelegate;
     private ParameterizedCollectionConstructor<TElement, TElement, TEnumerable>? _spanCtorDelegate;
 
     private CollectionConstructorInfo ConstructorInfo
     {
-        get => _constructorInfo ?? CommonHelpers.ExchangeIfNull(ref _constructorInfo, DetermineConstructorInfo());
+        get => field ?? CommonHelpers.ExchangeIfNull(ref field, DetermineConstructorInfo());
     }
 
     public virtual CollectionConstructionStrategy ConstructionStrategy => ConstructorInfo.Strategy;
@@ -240,7 +239,7 @@ internal abstract class ReflectionEnumerableTypeShape<TEnumerable, TElement>(Ref
                 // If no Add method was found, check for potential explicit interface implementations.
                 if (addMethod is null && typeof(ICollection<TElement>).IsAssignableFrom(enumerableType))
                 {
-                    addMethod = typeof(ICollection<TElement>).GetMethod(nameof(ICollection<TElement>.Add));
+                    addMethod = typeof(ICollection<TElement>).GetMethod(nameof(ICollection<>.Add));
                 }
 
                 if (addMethod is null && typeof(IList).IsAssignableFrom(enumerableType) && typeof(TElement) == typeof(object))
@@ -292,7 +291,7 @@ internal sealed class ReflectionArrayTypeShape<TElement>(ReflectionTypeShapeProv
     public override CollectionComparerOptions SupportedComparer => CollectionComparerOptions.None;
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Parameterized;
     public override Func<TElement[], IEnumerable<TElement>> GetGetEnumerable() => static array => array;
-    public override ParameterizedCollectionConstructor<TElement, TElement, TElement[]> GetParameterizedConstructor() => static (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => span.ToArray();
+    public override ParameterizedCollectionConstructor<TElement, TElement, TElement[]> GetParameterizedConstructor() => static (span, in options) => span.ToArray();
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
@@ -316,7 +315,7 @@ internal sealed class ReadOnlyMemoryTypeShape<TElement>(ReflectionTypeShapeProvi
     public override CollectionComparerOptions SupportedComparer => CollectionComparerOptions.None;
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Parameterized;
     public override Func<ReadOnlyMemory<TElement>, IEnumerable<TElement>> GetGetEnumerable() => static memory => MemoryMarshal.ToEnumerable(memory);
-    public override ParameterizedCollectionConstructor<TElement, TElement, ReadOnlyMemory<TElement>> GetParameterizedConstructor() => static (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => span.ToArray();
+    public override ParameterizedCollectionConstructor<TElement, TElement, ReadOnlyMemory<TElement>> GetParameterizedConstructor() => static (span, in options) => span.ToArray();
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
@@ -327,7 +326,7 @@ internal sealed class MemoryTypeShape<TElement>(ReflectionTypeShapeProvider prov
     public override CollectionComparerOptions SupportedComparer => CollectionComparerOptions.None;
     public override CollectionConstructionStrategy ConstructionStrategy => CollectionConstructionStrategy.Parameterized;
     public override Func<Memory<TElement>, IEnumerable<TElement>> GetGetEnumerable() => static memory => MemoryMarshal.ToEnumerable((ReadOnlyMemory<TElement>)memory);
-    public override ParameterizedCollectionConstructor<TElement, TElement, Memory<TElement>> GetParameterizedConstructor() => static (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) => span.ToArray();
+    public override ParameterizedCollectionConstructor<TElement, TElement, Memory<TElement>> GetParameterizedConstructor() => static (span, in options) => span.ToArray();
 }
 
 [RequiresUnreferencedCode(ReflectionTypeShapeProvider.RequiresUnreferencedCodeMessage)]
@@ -357,7 +356,7 @@ internal sealed class ReflectionInlineArrayTypeShape<TArray, TElement>(int lengt
 
     public override ParameterizedCollectionConstructor<TElement, TElement, TArray> GetParameterizedConstructor()
     {
-        return (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TElement> options) =>
+        return (span, in options) =>
         {
             if (span.Length != length)
             {

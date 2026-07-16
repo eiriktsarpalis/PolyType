@@ -29,14 +29,14 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
 
                 // Reference types can't be wrapped directly, so we create an intermediate func delegate.
                 Func<TDeclaringType, TPropertyType> getterDelegate = p.GetMethod!.CreateDelegate<Func<TDeclaringType, TPropertyType>>();
-                return (ref TDeclaringType obj) => getterDelegate(obj);
+                return (ref obj) => getterDelegate(obj);
             }
 
             // https://github.com/mono/mono/issues/10372
             var f = (FieldInfo)memberInfo;
             return ReflectionHelpers.IsMonoRuntime
-                ? (ref TDeclaringType obj) => (TPropertyType)f.GetValue(obj)!
-                : (ref TDeclaringType obj) => (TPropertyType)f.GetValueDirect(__makeref(obj))!;
+                ? (ref obj) => (TPropertyType)f.GetValue(obj)!
+                : (ref obj) => (TPropertyType)f.GetValueDirect(__makeref(obj))!;
         }
 
         Debug.Assert(typeof(TDeclaringType).IsNestedTupleRepresentation());
@@ -48,7 +48,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
 
             var fieldInfo = (FieldInfo)memberInfo;
             var parentFields = (FieldInfo[])parentMembers;
-            return (ref TDeclaringType obj) =>
+            return (ref obj) =>
             {
                 object boxedObj = obj!;
                 for (int i = 0; i < parentFields.Length; i++)
@@ -66,7 +66,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
 
             var propertyInfo = (PropertyInfo)memberInfo;
             var parentProperties = (PropertyInfo[])parentMembers;
-            return (ref TDeclaringType obj) =>
+            return (ref obj) =>
             {
                 object boxedObj = obj!;
                 for (int i = 0; i < parentProperties.Length; i++)
@@ -96,19 +96,19 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
 
                 // Reference types can't be wrapped directly, so we create an intermediate action delegate.
                 Action<TDeclaringType, TPropertyType> setterDelegate = setter.CreateDelegate<Action<TDeclaringType, TPropertyType>>();
-                return (ref TDeclaringType obj, TPropertyType value) => setterDelegate(obj, value);
+                return (ref obj, value) => setterDelegate(obj, value);
             }
 
             // https://github.com/mono/mono/issues/10372
             var f = (FieldInfo)memberInfo;
             return ReflectionHelpers.IsMonoRuntime
-                ? (ref TDeclaringType obj, TPropertyType value) =>
+                ? (ref obj, value) =>
                 {
                     object boxedObj = obj!;
                     f.SetValue(boxedObj, value);
                     obj = (TDeclaringType)boxedObj;
                 }
-            : (ref TDeclaringType obj, TPropertyType value) => f.SetValueDirect(__makeref(obj), value!);
+            : (ref obj, value) => f.SetValueDirect(__makeref(obj), value!);
         }
 
         Debug.Assert(typeof(TDeclaringType).IsNestedTupleRepresentation());
@@ -118,7 +118,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
 
         var fieldInfo = (FieldInfo)memberInfo;
         var parentFields = (FieldInfo[])parentMembers;
-        return (ref TDeclaringType obj, TPropertyType value) =>
+        return (ref obj, value) =>
         {
             object?[] boxedValues = new object[parentFields.Length + 1];
             boxedValues[0] = obj;
@@ -142,8 +142,8 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
     public Setter<TDeclaringType?, TEventHandler> CreateEventAccessor<TDeclaringType, TEventHandler>(MethodInfo accessor)
     {
         return !typeof(TDeclaringType).IsValueType
-            ? (ref TDeclaringType? target, TEventHandler handler) => accessor.InvokeNoWrapExceptions(target, [handler])
-            : (ref TDeclaringType? target, TEventHandler handler) =>
+            ? (ref target, handler) => accessor.InvokeNoWrapExceptions(target, [handler])
+            : (ref target, handler) =>
             {
                 object? boxedTarget = target;
                 accessor.InvokeNoWrapExceptions(boxedTarget, [handler]);
@@ -154,8 +154,8 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
     public EnumerableAppender<TEnumerable, TElement> CreateEnumerableAppender<TEnumerable, TElement>(MethodInfo addMethod)
     {
         return !typeof(TEnumerable).IsValueType
-        ? (ref TEnumerable enumerable, TElement element) => addMethod.InvokeNoWrapExceptions(enumerable, [element]) is not bool success || success
-        : (ref TEnumerable enumerable, TElement element) =>
+        ? (ref enumerable, element) => addMethod.InvokeNoWrapExceptions(enumerable, [element]) is not bool success || success
+        : (ref enumerable, element) =>
         {
             object boxed = enumerable!;
             bool success = addMethod.InvokeNoWrapExceptions(boxed, [element]) is not bool s || s;
@@ -174,7 +174,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                 if (typeof(TDictionary).IsValueType)
                 {
                     var setDelegate = insertMethod.CreateDelegate<RefAction<TDictionary, TKey, TValue>>();
-                    return (ref TDictionary dict, TKey key, TValue value) =>
+                    return (ref dict, key, value) =>
                     {
                         setDelegate(ref dict, key, value);
                         return true;
@@ -183,7 +183,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                 else
                 {
                     var setDelegate = insertMethod.CreateDelegate<Action<TDictionary, TKey, TValue>>();
-                    return (ref TDictionary dict, TKey key, TValue value) =>
+                    return (ref dict, key, value) =>
                     {
                         setDelegate(dict, key, value);
                         return true; // Always returns true since it overwrites existing keys.
@@ -198,7 +198,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                 else
                 {
                     var tryAddDelegate = ctorInfo.TryAddMethod.CreateDelegate<Func<TDictionary, TKey, TValue, bool>>();
-                    return (ref TDictionary dict, TKey key, TValue value) => tryAddDelegate(dict, key, value);
+                    return (ref dict, key, value) => tryAddDelegate(dict, key, value);
                 }
 
             case DictionaryInsertionMode.Discard:
@@ -208,7 +208,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                 {
                     var containsKeyDelegate = ctorInfo.ContainsKeyMethod.CreateDelegate<RefFunc<TDictionary, TKey, bool>>();
                     var addMethodDelegate = addMethod!.CreateDelegate<RefAction<TDictionary, TKey, TValue>>();
-                    return (ref TDictionary dict, TKey key, TValue value) =>
+                    return (ref dict, key, value) =>
                     {
                         if (containsKeyDelegate(ref dict, key))
                         {
@@ -223,7 +223,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                 {
                     var containsKeyDelegate = ctorInfo.ContainsKeyMethod.CreateDelegate<Func<TDictionary, TKey, bool>>();
                     var addMethodDelegate = addMethod!.CreateDelegate<Action<TDictionary, TKey, TValue>>();
-                    return (ref TDictionary dict, TKey key, TValue value) =>
+                    return (ref dict, key, value) =>
                     {
                         if (containsKeyDelegate(dict, key))
                         {
@@ -337,7 +337,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         {
             Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<object?[]>));
             return (Getter<TArgumentState, TParameter>)(object)new Getter<LargeArgumentState<object?[]>, TParameter>(
-                (ref LargeArgumentState<object?[]> state) => Cast(state.Arguments[parameterIndex]));
+                (ref state) => Cast(state.Arguments[parameterIndex]));
         }
 
         static TParameter Cast(object? value) => typeof(TParameter).IsValueType && value is null ? default! : (TParameter)value!;
@@ -370,7 +370,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         {
             Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<object?[]>));
             return (Setter<TArgumentState, TParameter>)(object)new Setter<LargeArgumentState<object?[]>, TParameter>(
-                (ref LargeArgumentState<object?[]> state, TParameter value) =>
+                (ref state, value) =>
                 {
                     state.Arguments[parameterIndex] = value;
                     state.MarkArgumentSet(parameterIndex);
@@ -394,7 +394,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
             ctorStack.Reverse();
 
             return (Constructor<TArgumentState, TDeclaringType>)(object)new Constructor<LargeArgumentState<object?[]>, TDeclaringType>(
-                (ref LargeArgumentState<object?[]> state) =>
+                (ref state) =>
             {
                 object?[] arguments = state.Arguments;
                 object? result = null;
@@ -481,7 +481,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<object?[]>));
         var cI = ((MethodShapeInfo)ctorInfo).Method!;
         return (Constructor<TArgumentState, TDeclaringType>)(object)new Constructor<LargeArgumentState<object?[]>, TDeclaringType>(
-            (ref LargeArgumentState<object?[]> state) => (TDeclaringType)cI.InvokeNoWrapExceptions(state.Arguments)!);
+            (ref state) => (TDeclaringType)cI.InvokeNoWrapExceptions(state.Arguments)!);
     }
 
     public MethodInvoker<TDeclaringType?, TArgumentState, TResult> CreateMethodInvoker<TDeclaringType, TArgumentState, TResult>(MethodShapeInfo ctorInfo) where TArgumentState : IArgumentState
@@ -493,7 +493,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         if (ctorInfo.Parameters is [])
         {
             Debug.Assert(typeof(TArgumentState) == typeof(EmptyArgumentState));
-            return (ref TDeclaringType? target, ref TArgumentState _) =>
+            return (ref target, ref _) =>
             {
                 object? boxedTarget = target;
                 object? result = methodInfo.InvokeNoWrapExceptions(boxedTarget, []);
@@ -504,7 +504,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
 
         Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<object?[]>));
         return (MethodInvoker<TDeclaringType?, TArgumentState, TResult>)(object)new MethodInvoker<TDeclaringType?, LargeArgumentState<object?[]>, TResult>(
-            (ref TDeclaringType? target, ref LargeArgumentState<object?[]> state) =>
+            (ref target, ref state) =>
             {
                 object? boxedTarget = target;
                 object? result = methodInfo.InvokeNoWrapExceptions(boxedTarget, state.Arguments);
@@ -524,7 +524,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
             MethodInfo invokeMethod = funcInfo.CurriedInvocationChain[0];
             object?[] args = [null]; // single argument is F# unit type represented using null.
             return (MethodInvoker<TFunction, TArgumentState, TResult>)(object)new MethodInvoker<TFunction, EmptyArgumentState, TResult>(
-                (ref TFunction target, ref EmptyArgumentState state) =>
+                (ref target, ref state) =>
                 {
                     object? result = invokeMethod.InvokeNoWrapExceptions(target, args);
                     return resultMarshaler(result);
@@ -533,7 +533,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
 
         DebugExt.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<object?[]>));
         return (MethodInvoker<TFunction, TArgumentState, TResult>)(object)new MethodInvoker<TFunction, LargeArgumentState<object?[]>, TResult>(
-            (ref TFunction target, ref LargeArgumentState<object?[]> state) =>
+            (ref target, ref state) =>
             {
                 object? current = target;
                 int i = 0;
@@ -619,7 +619,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         // Add the base type as a sentinel value if it hasn't been added by the attributes yet.
         cache.TryAdd(typeof(TUnion), defaultIndex);
 
-        return (ref TUnion union) =>
+        return (ref union) =>
         {
             if (union is null)
             {
@@ -700,7 +700,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
             .ToArray();
 
         var ctorInfo = collectionCtorInfo.Factory;
-        return (in CollectionConstructionOptions<TKey> opts) =>
+        return (in opts) =>
         {
             var args = new object?[argumentSetters.Length];
             for (int i = 0; i < argumentSetters.Length; i++)
@@ -717,13 +717,13 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         if (constructorInfo is { Factory: MethodInfo methodInfo, Signature: [CollectionConstructorParameter.Span] })
         {
             SpanFunc<TElement, TCollection> spanFunc = methodInfo.CreateDelegate<SpanFunc<TElement, TCollection>>();
-            return (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TKey> _) => spanFunc(span);
+            return (span, in _) => spanFunc(span);
         }
 
         if (constructorInfo is { Factory: MethodInfo methodInfo2, Signature: [CollectionConstructorParameter.Span, CollectionConstructorParameter.EqualityComparerOptional] })
         {
             SpanFunc<TElement, IEqualityComparer<TKey>?, TCollection> spanFunc = methodInfo2.CreateDelegate<SpanFunc<TElement, IEqualityComparer<TKey>?, TCollection>>();
-            return (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TKey> options) => spanFunc(span, options.EqualityComparer);
+            return (span, in options) => spanFunc(span, options.EqualityComparer);
         }
 
         SpanAction<TElement, CollectionConstructionOptions<TKey>, object?[]>[] argumentSetters = constructorInfo.Signature
@@ -731,7 +731,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
             .ToArray();
 
         MethodBase factory = constructorInfo.Factory;
-        return (ReadOnlySpan<TElement> span, in CollectionConstructionOptions<TKey> opts) =>
+        return (span, in opts) =>
         {
             var args = new object?[argumentSetters.Length];
             for (int i = 0; i < argumentSetters.Length; i++)

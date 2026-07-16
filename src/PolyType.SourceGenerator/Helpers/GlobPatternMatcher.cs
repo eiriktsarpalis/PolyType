@@ -40,7 +40,7 @@ internal sealed class GlobPatternMatcher
             {
                 // Pattern has wildcards, compile as regex
                 string regexPattern = ConvertGlobToRegex(pattern);
-                Regex regex = new Regex(regexPattern, RegexOptions.None);
+                Regex regex = new(regexPattern, RegexOptions.None);
                 patternList.Add((pattern, regex, attributeData, false));
             }
             else

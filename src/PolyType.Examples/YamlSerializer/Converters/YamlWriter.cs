@@ -141,7 +141,7 @@ public sealed class YamlWriter : IDisposable
         // Strip leading document start marker ("---") if present
         if (result.StartsWith("--- ", StringComparison.Ordinal))
         {
-            result = result.Substring(4);
+            result = result[4..];
         }
         else if (result is "---")
         {

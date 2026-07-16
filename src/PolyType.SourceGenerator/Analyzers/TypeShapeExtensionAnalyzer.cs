@@ -36,7 +36,7 @@ public class TypeShapeExtensionAnalyzer : DiagnosticAnalyzer
                     context =>
                     {
                         AttributeSyntax att = (AttributeSyntax)context.Node;
-                        if (att.Parent is not AttributeListSyntax { Target: { Identifier: { RawKind: (int)SyntaxKind.AssemblyKeyword } } })
+                        if (att.Parent is not AttributeListSyntax { Target.Identifier.RawKind: (int)SyntaxKind.AssemblyKeyword })
                         {
                             return;
                         }

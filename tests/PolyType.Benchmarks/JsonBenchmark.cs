@@ -9,7 +9,7 @@ using PolyType.ReflectionProvider;
 
 public static class JsonData
 {
-    public static readonly MyPoco Value = new MyPoco(@string: "myString")
+    public static readonly MyPoco Value = new(@string: "myString")
     {
         List = [1, 2, 3],
         Dict = new() { ["key1"] = 42, ["key2"] = -1 },

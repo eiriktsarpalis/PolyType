@@ -1130,9 +1130,10 @@ public sealed partial class Parser : TypeDataModelGenerator
             }
             else if (
                 SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.GenerateShapeForAttribute) &&
-                attributeData.ConstructorArguments.Length == 1 &&
-                attributeData.ConstructorArguments[0].Kind == TypedConstantKind.Primitive &&
-                attributeData.ConstructorArguments[0].Value is string pattern)
+                attributeData.ConstructorArguments is
+                [
+                    { Kind: TypedConstantKind.Primitive, Value: string pattern },
+                ])
             {
                 // [GenerateShapeFor("pattern")] - collect patterns to process together
                 isWitnessTypeDeclaration = true;

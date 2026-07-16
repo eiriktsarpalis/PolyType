@@ -653,10 +653,10 @@ public static class TestTypes
         yield return TestCase.Create(new Func<int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, ValueTask<int>>(
             (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16) => new(x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11 + x12 + x13 + x14 + x15 + x16)), p);
 
-        yield return TestCase.Create(new Getter<int, int>((ref int x) => x), p);
-        yield return TestCase.Create(new Setter<int, int>((ref int x, int value) => { x += value; }), p);
+        yield return TestCase.Create(new Getter<int, int>((ref x) => x), p);
+        yield return TestCase.Create(new Setter<int, int>((ref x, value) => { x += value; }), p);
         yield return TestCase.Create(new EventHandler((sender, args) => { }), p);
-        yield return TestCase.Create(new CustomDelegate((ref string? x, int y) => x?.Length ?? 0 + y), p);
+        yield return TestCase.Create(new CustomDelegate((ref x, y) => x?.Length ?? 0 + y), p);
         yield return TestCase.Create(new LargeDelegate(
             (p01, p02, p03, p04, p05, p06, p07, p08, p09, p10,
              p11, p12, p13, p14, p15, p16, p17, p18, p19, p20,
@@ -1005,7 +1005,6 @@ public abstract partial class BaseClassWithVirtualProperties
 public partial class DerivedClassWithVirtualProperties : BaseClassWithVirtualProperties
 {
     private int? _x;
-    private string? _y;
 
     public override int X
     {
@@ -1023,15 +1022,15 @@ public partial class DerivedClassWithVirtualProperties : BaseClassWithVirtualPro
 
     public override string Y
     {
-        get => _y ?? "str";
+        get => field ?? "str";
         set
         {
-            if (_y != null)
+            if (field != null)
             {
                 throw new InvalidOperationException("Value has already been set once");
             }
 
-            _y = value;
+            field = value;
         }
     }
 
@@ -1383,46 +1382,41 @@ public class GenericContainer<T>
 [GenerateShape]
 public partial class ClassWithNullabilityAttributes
 {
-    private string? _maybeNull = "str";
-    private string? _allowNull = "str";
-    private string? _notNull = "str";
-    private string? _disallowNull = "str";
-
     public ClassWithNullabilityAttributes() { }
 
     public ClassWithNullabilityAttributes([AllowNull] string allowNull, [DisallowNull] string? disallowNull)
     {
-        _allowNull = allowNull;
-        _disallowNull = disallowNull;
+        AllowNull = allowNull;
+        DisallowNull = disallowNull;
     }
 
     [MaybeNull]
     public string MaybeNull
     {
-        get => _maybeNull;
-        set => _maybeNull = value;
-    }
+        get;
+        set;
+    } = "str";
 
     [AllowNull]
     public string AllowNull
     {
-        get => _allowNull ?? "str";
-        set => _allowNull = value;
-    }
+        get => field ?? "str";
+        set;
+    } = "str";
 
     [NotNull]
     public string? NotNull
     {
-        get => _notNull ?? "str";
-        set => _notNull = value;
-    }
+        get => field ?? "str";
+        set;
+    } = "str";
 
     [DisallowNull]
     public string? DisallowNull
     {
-        get => _disallowNull;
-        set => _disallowNull = value;
-    }
+        get;
+        set;
+    } = "str";
 
     [MaybeNull]
     public string MaybeNullField = "str";
@@ -1457,46 +1451,41 @@ public class ClassWithNotNullProperty<T> where T : notnull
 [GenerateShape]
 public partial struct StructWithNullabilityAttributes
 {
-    private int? _maybeNull = 0;
-    private int? _allowNull = 0;
-    private int? _notNull = 0;
-    private int? _disallowNull = 0;
-
     public StructWithNullabilityAttributes() { }
 
     public StructWithNullabilityAttributes([AllowNull] int? allowNull, [DisallowNull] int? disallowNull)
     {
-        _allowNull = allowNull;
-        _disallowNull = disallowNull;
+        AllowNull = allowNull;
+        DisallowNull = disallowNull;
     }
 
     [MaybeNull]
     public int? MaybeNull
     {
-        get => _maybeNull;
-        set => _maybeNull = value;
-    }
+        get;
+        set;
+    } = 0;
 
     [AllowNull]
     public int? AllowNull
     {
-        get => _allowNull ?? 0;
-        set => _allowNull = value;
-    }
+        get => field ?? 0;
+        set;
+    } = 0;
 
     [NotNull]
     public int? NotNullProperty
     {
-        get => _notNull ?? 0;
-        set => _notNull = value;
-    }
+        get => field ?? 0;
+        set;
+    } = 0;
 
     [DisallowNull]
     public int? DisallowNull
     {
-        get => _disallowNull;
-        set => _disallowNull = value;
-    }
+        get;
+        set;
+    } = 0;
 
     [MaybeNull]
     public int MaybeNullField = 0;

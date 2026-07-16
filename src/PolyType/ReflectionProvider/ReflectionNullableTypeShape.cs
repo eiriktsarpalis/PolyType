@@ -17,7 +17,7 @@ internal sealed class ReflectionNullableTypeShape<T>(ReflectionTypeShapeProvider
     public Func<T?> GetNoneConstructor() => static () => null;
     public Func<T, T?> GetSomeConstructor() => static t => t;
     public OptionDeconstructor<T?, T> GetDeconstructor() =>
-        static (T? optional, out T value) =>
+        static (optional, out value) =>
         {
             if (optional is null)
             {

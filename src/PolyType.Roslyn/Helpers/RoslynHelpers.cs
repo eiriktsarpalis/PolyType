@@ -330,9 +330,11 @@ internal static class RoslynHelpers
                 }
             }
             else if (
-                attributeData.ConstructorArguments.Length == 2 &&
-                attributeData.ConstructorArguments[0].Value is INamedTypeSymbol typeParam &&
-                attributeData.ConstructorArguments[1].Value is string methodName)
+                attributeData.ConstructorArguments is
+                [
+                    { Value: INamedTypeSymbol typeParam },
+                    { Value: string methodName },
+                ])
             {
                 builderType = typeParam;
                 builderMethod = methodName;

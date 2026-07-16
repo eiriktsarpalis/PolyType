@@ -76,7 +76,7 @@ public static class JsonSchemaGenerator
                 }
             }
 
-            JsonObject functionSchema = new JsonObject
+            JsonObject functionSchema = new()
             {
                 ["name"] = methodShape.Name,
                 ["type"] = "object",

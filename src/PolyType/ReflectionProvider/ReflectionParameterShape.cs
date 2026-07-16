@@ -44,8 +44,7 @@ internal sealed class ReflectionParameterShape<TArgumentState, TParameter> : IPa
     public ParameterInfo? ParameterInfo => _parameterInfo.AttributeProvider as ParameterInfo;
     public MemberInfo? MemberInfo => _parameterInfo.AttributeProvider as MemberInfo;
 
-    public IGenericCustomAttributeProvider AttributeProvider => _attributeProvider ?? CommonHelpers.ExchangeIfNull(ref _attributeProvider, ReflectionCustomAttributeProvider.Create(_parameterInfo.AttributeProvider));
-    private IGenericCustomAttributeProvider? _attributeProvider;
+    public IGenericCustomAttributeProvider AttributeProvider => field ?? CommonHelpers.ExchangeIfNull(ref field, ReflectionCustomAttributeProvider.Create(_parameterInfo.AttributeProvider));
 
     ITypeShape IParameterShape.ParameterType => ParameterType;
     object? IParameterShape.Accept(TypeShapeVisitor visitor, object? state) => visitor.VisitParameter(this, state);

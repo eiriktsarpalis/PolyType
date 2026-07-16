@@ -109,7 +109,7 @@ public static class ReflectionUtilities
             int backtickIndex = name.IndexOf('`');
             if (backtickIndex >= 0)
             {
-                name = name.Substring(0, backtickIndex);
+                name = name[..backtickIndex];
             }
 
             builder.Append(name);

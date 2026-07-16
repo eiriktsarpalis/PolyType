@@ -956,7 +956,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                 LdArgsAsTuple(generator, shapeInfo, argumentType); // Load the arguments as a tuple
                 LdLiteral(generator, typeof(int), shapeInfo.Parameters.Length); // Load the count
                 generator.Emit(OpCodes.Ldarg_0); // Load the argument mask from the environment
-                generator.Emit(OpCodes.Ldfld, typeof(DelegateWrapperEnvironment<TArgumentState, TResult>).GetField(nameof(DelegateWrapperEnvironment<TArgumentState, TResult>.LargeRequiredParametersMask))!);
+                generator.Emit(OpCodes.Ldfld, typeof(DelegateWrapperEnvironment<TArgumentState, TResult>).GetField(nameof(DelegateWrapperEnvironment<,>.LargeRequiredParametersMask))!);
                 LdLiteral(generator, typeof(bool), true); // Load the markAllArgumentsSet (true)
 
                 ConstructorInfo cI = typeof(TArgumentState).GetConstructor([argumentType, typeof(int), typeof(ValueBitArray), typeof(bool)])!;
@@ -982,7 +982,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
 
         // 2. Invoke the inner delegate
         generator.Emit(OpCodes.Ldarg_0); // Load the inner delegate from the environment argument
-        generator.Emit(OpCodes.Ldfld, typeof(DelegateWrapperEnvironment<TArgumentState, TResult>).GetField(nameof(DelegateWrapperEnvironment<TArgumentState, TResult>.InnerFunc))!);
+        generator.Emit(OpCodes.Ldfld, typeof(DelegateWrapperEnvironment<TArgumentState, TResult>).GetField(nameof(DelegateWrapperEnvironment<,>.InnerFunc))!);
         generator.Emit(OpCodes.Ldloca_S, argStateLocal); // Load the argument state
         generator.Emit(OpCodes.Callvirt, innerDelegateInvoker); // Call the inner delegate
 
@@ -1498,7 +1498,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                     Debug.Assert(parameterTypes.Length == 2 && parameterTypes[0].GetGenericTypeDefinition() == typeof(ReadOnlySpan<>));
                     MethodInfo createHashSetMethod = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateHashSet), BindingFlags.Public | BindingFlags.Static)!;
                     il.Emit(OpCodes.Ldarg_0);
-                    LdOptionsProperty(nameof(CollectionConstructionOptions<int>.EqualityComparer));
+                    LdOptionsProperty(nameof(CollectionConstructionOptions<>.EqualityComparer));
                     il.Emit(OpCodes.Call, createHashSetMethod.MakeGenericMethod(keyType));
                     break;
 
@@ -1509,7 +1509,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                     MethodInfo createDictionaryMethod = typeof(CollectionHelpers).GetMethod(nameof(CollectionHelpers.CreateDictionary), BindingFlags.Public | BindingFlags.Static)!;
 
                     il.Emit(OpCodes.Ldarg_0);
-                    LdOptionsProperty(nameof(CollectionConstructionOptions<int>.EqualityComparer));
+                    LdOptionsProperty(nameof(CollectionConstructionOptions<>.EqualityComparer));
                     il.Emit(OpCodes.Call, createDictionaryMethod.MakeGenericMethod(elementType.GetGenericArguments()));
                     break;
 
@@ -1526,7 +1526,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                 case CollectionConstructorParameter.Capacity:
                 case CollectionConstructorParameter.CapacityOptional:
                 {
-                    LdOptionsProperty(nameof(CollectionConstructionOptions<int>.Capacity));
+                    LdOptionsProperty(nameof(CollectionConstructionOptions<>.Capacity));
 
                     LocalBuilder nullable = il.DeclareLocal(typeof(int?));
                     il.Emit(OpCodes.Stloc, nullable);
@@ -1540,7 +1540,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                 case CollectionConstructorParameter.EqualityComparer:
                 case CollectionConstructorParameter.EqualityComparerOptional:
                 {
-                    LdOptionsProperty(nameof(CollectionConstructionOptions<int>.EqualityComparer));
+                    LdOptionsProperty(nameof(CollectionConstructionOptions<>.EqualityComparer));
 
                     if (parameterType is CollectionConstructorParameter.EqualityComparer)
                     {
@@ -1570,7 +1570,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                 case CollectionConstructorParameter.Comparer:
                 case CollectionConstructorParameter.ComparerOptional:
                 {
-                    LdOptionsProperty(nameof(CollectionConstructionOptions<int>.Comparer));
+                    LdOptionsProperty(nameof(CollectionConstructionOptions<>.Comparer));
 
                     if (parameterType is CollectionConstructorParameter.Comparer)
                     {

@@ -72,7 +72,7 @@ public struct DuplicatePropertyValidator
         return isUnset;
     }
 
-    private void ThrowDuplicateProperty(int propertyIndex)
+    private readonly void ThrowDuplicateProperty(int propertyIndex)
     {
         IPropertyShape property = _properties[propertyIndex];
         throw _throwOnDuplicateProperty(property);

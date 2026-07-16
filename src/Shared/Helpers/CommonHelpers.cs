@@ -97,7 +97,7 @@ internal static class CommonHelpers
                 {
                     childMap[nextIndex] = false;
 
-                    if (childMap.AsSpan().IndexOf(true) == -1)
+                    if (childMap.IndexOf(true) == -1)
                     {
                         // nextIndex was the last child removed from i, add to queue.
                         childlessQueue.Enqueue(i);

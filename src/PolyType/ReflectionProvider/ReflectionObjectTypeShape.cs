@@ -30,17 +30,16 @@ internal abstract class ReflectionObjectTypeShape<T>(ReflectionTypeShapeProvider
                 IConstructorShape? constructor = GetConstructor();
                 if (constructor is not null)
                 {
-                    constructor = CommonHelpers.ExchangeIfNull(ref _constructor, constructor);
+                    constructor = CommonHelpers.ExchangeIfNull(ref field, constructor);
                 }
 
                 Volatile.Write(ref _isConstructorResolved, true);
             }
 
-            return _constructor;
+            return field;
         }
     }
 
-    private IConstructorShape? _constructor;
     private bool _isConstructorResolved;
 
     protected abstract IEnumerable<IPropertyShape> GetProperties();
