@@ -111,6 +111,82 @@ public static class ReflectionTypeShapeProviderTests
         Assert.Equal(options1.GetHashCode(), options2.GetHashCode());
     }
 
+    [DerivedTypeShape(typeof(DuplicateClosedAndOpenDerived<int>), Name = "closed", Tag = 1)]
+    [DerivedTypeShape(typeof(DuplicateClosedAndOpenDerived<>), Name = "open", Tag = 2)]
+    private class DuplicateClosedAndOpenBase<T>;
+
+    private class DuplicateClosedAndOpenDerived<T> : DuplicateClosedAndOpenBase<T>;
+
+    [Fact]
+    public static void ClosedAndOpenDerivedTypesResolvingToSameType_ThrowsForResolvedType()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => ReflectionTypeShapeProvider.Default.GetTypeShape(typeof(DuplicateClosedAndOpenBase<int>)));
+
+        Assert.Contains("duplicate assignments for the derived type", ex.Message);
+        Assert.Contains(typeof(DuplicateClosedAndOpenDerived<int>).ToString(), ex.Message);
+    }
+
+    private class EnclosingMismatchOuter<T>
+    {
+        public class Box<U>;
+    }
+
+    [DerivedTypeShape(typeof(EnclosingMismatchDerived<>))]
+    private class EnclosingMismatchBase<T>;
+
+    private class EnclosingMismatchDerived<T> : EnclosingMismatchBase<EnclosingMismatchOuter<int>.Box<T>>;
+
+    [Fact]
+    public static void OpenGenericDerivedType_EnclosingMismatch_ThrowsInvalidOperationException()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => ReflectionTypeShapeProvider.Default.GetTypeShape(
+                typeof(EnclosingMismatchBase<EnclosingMismatchOuter<string>.Box<int>>)));
+
+        Assert.Contains("arguments do not match", ex.Message);
+    }
+
+    [DerivedTypeShape(typeof(MultipleBaseImpl<>))]
+    private interface IMultipleBase1<T>;
+
+    [DerivedTypeShape(typeof(MultipleBaseImpl<>))]
+    private interface IMultipleBase2<T>;
+
+    private class MultipleBaseImpl<T> : IMultipleBase1<T>, IMultipleBase2<T>;
+
+    [Theory]
+    [InlineData(typeof(IMultipleBase1<int>))]
+    [InlineData(typeof(IMultipleBase2<string>))]
+    public static void OpenGenericDerivedType_MultipleGenericInterfaceBases_ResolveIndependently(Type baseType)
+    {
+        var union = Assert.IsAssignableFrom<IUnionTypeShape>(ReflectionTypeShapeProvider.Default.GetTypeShape(baseType));
+        Type expectedDerivedType = typeof(MultipleBaseImpl<>).MakeGenericType(baseType.GetGenericArguments());
+        Assert.Contains(union.UnionCases, unionCase => unionCase.UnionCaseType.Type == expectedDerivedType);
+    }
+
+    [DerivedTypeShape(typeof(CovariantImpl<>))]
+    private interface ICovariant<out T>;
+    private class CovariantImpl<T> : ICovariant<T>;
+
+    [DerivedTypeShape(typeof(ContravariantImpl<>))]
+    private interface IContravariant<in T>;
+    private class ContravariantImpl<T> : IContravariant<T>;
+
+    [DerivedTypeShape(typeof(BivariantImpl<,>))]
+    private interface IBivariant<in TIn, out TOut>;
+    private class BivariantImpl<TIn, TOut> : IBivariant<TIn, TOut>;
+
+    [Theory]
+    [InlineData(typeof(ICovariant<object>), typeof(CovariantImpl<object>))]
+    [InlineData(typeof(IContravariant<string>), typeof(ContravariantImpl<string>))]
+    [InlineData(typeof(IBivariant<string, object>), typeof(BivariantImpl<string, object>))]
+    public static void OpenGenericDerivedType_VariantInterface_Resolves(Type baseType, Type expectedDerivedType)
+    {
+        var union = Assert.IsAssignableFrom<IUnionTypeShape>(ReflectionTypeShapeProvider.Default.GetTypeShape(baseType));
+        Assert.Contains(union.UnionCases, unionCase => unionCase.UnionCaseType.Type == expectedDerivedType);
+    }
+
 #if NET
     [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]

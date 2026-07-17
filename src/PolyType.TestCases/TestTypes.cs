@@ -592,6 +592,73 @@ public static class TestTypes
         yield return TestCase.Create((GenericTree<string>)new GenericTree<string>.Node("str", new GenericTree<string>.Leaf(), new GenericTree<string>.Leaf()), additionalValues: [new GenericTree<string>.Leaf()], isUnion: true, provider: p);
         yield return TestCase.Create((GenericTree<int>)new GenericTree<int>.Node(42, new GenericTree<int>.Leaf(), new GenericTree<int>.Leaf()), additionalValues: [new GenericTree<int>.Leaf()], isUnion: true, provider: p);
         yield return TestCase.Create<ClassWithGenericDerivedType>(new ClassWithGenericDerivedType.Derived<int>(42), additionalValues: [new ClassWithGenericDerivedType.Derived<ClassWithGenericDerivedType.Arg1>(new())], isUnion: true);
+        yield return TestCase.Create(
+            (OpenGenericReorderedBase<int, string>)new OpenGenericReorderedDerived<string, int>("left", 42),
+            isUnion: true,
+            provider: p);
+        yield return TestCase.Create(
+            (OpenGenericPartialBase<string, int>)new OpenGenericPartialDerived<string>("hello"),
+            isUnion: true,
+            provider: p);
+        yield return TestCase.Create(
+            (OpenGenericWrappedBase<List<string>>)new OpenGenericWrappedDerived<string>(["a", "b"]),
+            isUnion: true,
+            provider: p);
+        yield return TestCase.Create(
+            (OpenGenericArrayBase<int[]>)new OpenGenericArrayDerived<int>([1, 2, 3]),
+            isUnion: true,
+            provider: p);
+        yield return TestCase.Create(
+            (IOpenGenericInterfaceBase<int>)new OpenGenericInterfaceImpl<int>(42),
+            p,
+            isUnion: true);
+        yield return TestCase.Create(
+            (OpenGenericNestedBase<(string, int)>)new OpenGenericOuter<string>.Middle.Leaf<int>("outer", 42),
+            p,
+            isUnion: true);
+        yield return TestCase.Create(
+            (IOpenGenericHierarchyBase<int>)new OpenGenericHierarchyImpl<int>(42),
+            p,
+            isUnion: true);
+        yield return TestCase.Create(
+            (IOpenGenericMultipleInterfaceBase<int>)new OpenGenericMultipleInterfaceImpl<int>(42),
+            p,
+            isUnion: true);
+        yield return TestCase.Create(
+            (OpenGenericMultiLevelBase<List<int>>)new OpenGenericMultiLevelLeaf<int>([10, 20]),
+            isUnion: true,
+            provider: p);
+        yield return TestCase.Create(
+            (OpenGenericRepeatedBase<int, int>)new OpenGenericRepeatedDerived<int>(1, 2, "valid"),
+            isUnion: true,
+            provider: p);
+        yield return TestCase.Create(
+            (OpenGenericInterfaceConstraintBase<List<int>>)new OpenGenericInterfaceConstraintDerived<List<int>>([1, 2], "valid"),
+            isUnion: true,
+            provider: p);
+        yield return TestCase.Create(
+            (OpenGenericCovariantConstraintBase<List<string>>)new OpenGenericCovariantConstraintDerived<List<string>>(["a", "b"], "valid"),
+            isUnion: true,
+            provider: p);
+        yield return TestCase.Create(
+            (OpenGenericNewConstraintBase<OpenGenericNewConstraintArgument>)new OpenGenericNewConstraintDerived<OpenGenericNewConstraintArgument>(new() { Value = 42 }, "valid"),
+            isUnion: true,
+            provider: p);
+        yield return TestCase.Create(
+            (OpenGenericDeepJaggedBase<List<int[][][]>>)new OpenGenericDeepJaggedDerived<int>(
+            [
+                [
+                    [
+                        [1, 2],
+                    ],
+                ],
+            ]),
+            isUnion: true,
+            provider: p);
+        yield return TestCase.Create(
+            (OpenGenericDefaultNameBase<int>)new OpenGenericDefaultNameDerived<int>(42),
+            isUnion: true,
+            provider: p);
 
         yield return TestCase.Create(new RecordWithoutNamespace(42));
         yield return TestCase.Create(new GenericRecordWithoutNamespace<int>(42), p);
@@ -2714,6 +2781,103 @@ public partial record ClassWithGenericDerivedType
     public class Arg2;
 }
 
+[DerivedTypeShape(typeof(OpenGenericReorderedDerived<,>), Name = "reordered")]
+public partial record OpenGenericReorderedBase<T1, T2>
+{
+    public T1? Value1 { get; set; }
+    public T2? Value2 { get; set; }
+}
+
+public partial record OpenGenericReorderedDerived<U, V>(U Left, V Right) : OpenGenericReorderedBase<V, U>;
+
+[DerivedTypeShape(typeof(OpenGenericPartialDerived<>), Name = "partial")]
+public partial record OpenGenericPartialBase<T1, T2>;
+
+public partial record OpenGenericPartialDerived<T>(T? Value) : OpenGenericPartialBase<T, int>;
+
+[DerivedTypeShape(typeof(OpenGenericWrappedDerived<>), Name = "wrapped")]
+public partial record OpenGenericWrappedBase<T>;
+
+public partial record OpenGenericWrappedDerived<T>(List<T> Data) : OpenGenericWrappedBase<List<T>>;
+
+[DerivedTypeShape(typeof(OpenGenericArrayDerived<>), Name = "array")]
+public partial record OpenGenericArrayBase<T>;
+
+public partial record OpenGenericArrayDerived<T>(T[] Values) : OpenGenericArrayBase<T[]>;
+
+[DerivedTypeShape(typeof(OpenGenericInterfaceImpl<>), Name = "impl")]
+public partial interface IOpenGenericInterfaceBase<T>
+{
+    T? Value { get; }
+}
+
+public partial record OpenGenericInterfaceImpl<T>(T? Value) : IOpenGenericInterfaceBase<T>;
+
+[DerivedTypeShape(typeof(OpenGenericOuter<>.Middle.Leaf<>), Name = "nested")]
+public partial record OpenGenericNestedBase<T>;
+
+public partial class OpenGenericOuter<TOuter>
+{
+    public partial class Middle
+    {
+        public partial record Leaf<TLeaf>(TOuter OuterValue, TLeaf LeafValue) : OpenGenericNestedBase<(TOuter, TLeaf)>;
+    }
+}
+
+[DerivedTypeShape(typeof(OpenGenericHierarchyImpl<>), Name = "hierarchy")]
+public partial interface IOpenGenericHierarchyBase<T>;
+
+public partial interface IOpenGenericHierarchyLeft<T> : IOpenGenericHierarchyBase<T>;
+public partial interface IOpenGenericHierarchyRight<T> : IOpenGenericHierarchyBase<T>;
+public partial interface IOpenGenericHierarchyDiamond<T> : IOpenGenericHierarchyLeft<T>, IOpenGenericHierarchyRight<T>;
+public partial record OpenGenericHierarchyImpl<T>(T Value) : IOpenGenericHierarchyDiamond<T>;
+
+[DerivedTypeShape(typeof(OpenGenericMultipleInterfaceImpl<>), Name = "multiple")]
+public partial interface IOpenGenericMultipleInterfaceBase<T>;
+
+public partial record OpenGenericMultipleInterfaceImpl<T>(T Value) :
+    IOpenGenericMultipleInterfaceBase<T>,
+    IOpenGenericMultipleInterfaceBase<List<T>>;
+
+[DerivedTypeShape(typeof(OpenGenericMultiLevelLeaf<>), Name = "leaf")]
+public partial record OpenGenericMultiLevelBase<T>;
+public partial record OpenGenericMultiLevelMid<T> : OpenGenericMultiLevelBase<List<T>>;
+public partial record OpenGenericMultiLevelLeaf<T>(List<T> Items) : OpenGenericMultiLevelMid<T>;
+
+[DerivedTypeShape(typeof(OpenGenericRepeatedDerived<>), Name = "repeated")]
+public partial record OpenGenericRepeatedBase<T1, T2>;
+public partial record OpenGenericRepeatedDerived<T>(T First, T Second, string Marker) : OpenGenericRepeatedBase<T, T>;
+
+[DerivedTypeShape(typeof(OpenGenericInterfaceConstraintDerived<>), Name = "interfaceConstraint")]
+public partial record OpenGenericInterfaceConstraintBase<T>;
+public partial record OpenGenericInterfaceConstraintDerived<T>(T Value, string Marker) : OpenGenericInterfaceConstraintBase<T>
+    where T : IEnumerable<int>;
+
+[DerivedTypeShape(typeof(OpenGenericCovariantConstraintDerived<>), Name = "covariantConstraint")]
+public partial record OpenGenericCovariantConstraintBase<T>;
+public partial record OpenGenericCovariantConstraintDerived<T>(T Value, string Marker) : OpenGenericCovariantConstraintBase<T>
+    where T : IEnumerable<object>;
+
+[DerivedTypeShape(typeof(OpenGenericNewConstraintDerived<>), Name = "newConstraint")]
+public partial record OpenGenericNewConstraintBase<T>;
+public partial record OpenGenericNewConstraintDerived<T>(T Value, string Marker) : OpenGenericNewConstraintBase<T>
+    where T : class, new();
+
+public partial class OpenGenericNewConstraintArgument
+{
+    public int Value { get; set; }
+}
+
+[DerivedTypeShape(typeof(OpenGenericDeepJaggedDerived<>), Name = "deepJagged")]
+public partial record OpenGenericDeepJaggedBase<T>;
+
+public partial record OpenGenericDeepJaggedDerived<T>(List<T[][][]> Value) : OpenGenericDeepJaggedBase<List<T[][][]>>;
+
+[DerivedTypeShape(typeof(OpenGenericDefaultNameDerived<>))]
+public partial record OpenGenericDefaultNameBase<T>;
+
+public partial record OpenGenericDefaultNameDerived<T>(T Value) : OpenGenericDefaultNameBase<T>;
+
 [GenerateShape]
 public partial record PropertyRequiredByAttribute
 {
@@ -3536,6 +3700,21 @@ public delegate Task<int> LargeAsyncDelegate(
 [GenerateShapeFor<GenericDictionaryWithMarshaler<string, int>>]
 [GenerateShapeFor<GenericTree<string>>]
 [GenerateShapeFor<GenericTree<int>>]
+[GenerateShapeFor<OpenGenericReorderedBase<int, string>>]
+[GenerateShapeFor<OpenGenericPartialBase<string, int>>]
+[GenerateShapeFor<OpenGenericWrappedBase<List<string>>>]
+[GenerateShapeFor<OpenGenericArrayBase<int[]>>]
+[GenerateShapeFor<IOpenGenericInterfaceBase<int>>]
+[GenerateShapeFor<OpenGenericNestedBase<(string, int)>>]
+[GenerateShapeFor<IOpenGenericHierarchyBase<int>>]
+[GenerateShapeFor<IOpenGenericMultipleInterfaceBase<int>>]
+[GenerateShapeFor<OpenGenericMultiLevelBase<List<int>>>]
+[GenerateShapeFor<OpenGenericRepeatedBase<int, int>>]
+[GenerateShapeFor<OpenGenericInterfaceConstraintBase<List<int>>>]
+[GenerateShapeFor<OpenGenericCovariantConstraintBase<List<string>>>]
+[GenerateShapeFor<OpenGenericNewConstraintBase<OpenGenericNewConstraintArgument>>]
+[GenerateShapeFor<OpenGenericDeepJaggedBase<List<int[][][]>>>]
+[GenerateShapeFor<OpenGenericDefaultNameBase<int>>]
 [GenerateShapeFor<GenericRecordWithoutNamespace<int>>]
 [GenerateShapeFor<GenericContainerWithoutNamespace<int>.Record<string>>]
 [GenerateShapeFor<IAsyncEnumerable<int>>]

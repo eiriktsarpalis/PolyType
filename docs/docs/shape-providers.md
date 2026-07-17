@@ -297,6 +297,69 @@ class Impl : IDerived1, IDerived2;
 
 Instances of type `Impl` could resolve as either `IDerived1` or `IDerived2`, depending on the particular runtime and shape provider implementation. This ambiguity can be resolved by explicitly adding a `DerivedTypeShape` declaration for `Impl` or any intermediate interface type implementing both `IDerived1` and `IDerived2`.
 
+#### Generic polymorphism
+
+`DerivedTypeShape` accepts both closed and open generic types. When the derived type is a constructed generic, it is registered as-is:
+
+```csharp
+[DerivedTypeShape(typeof(Derived<int>), Name = "DerivedInt")]
+[DerivedTypeShape(typeof(Derived<string>), Name = "DerivedString")]
+partial record Base
+{
+    public record Derived<T>(T Value) : Base;
+}
+```
+
+When the derived type is an open generic, PolyType attempts to unify its base specification with the requested closed base type at shape resolution time. A single attribute can therefore cover multiple closed instantiations when each specialization satisfies the derived type's base specification and generic constraints. The following patterns are supported:
+
+```csharp
+// 1. Identity binding — derived's parameters flow through directly.
+[DerivedTypeShape(typeof(Derived<>), Name = "Derived")]
+partial record Base<T>;
+record Derived<T>(T Value) : Base<T>;
+
+// 2. Reordered or remapped parameters.
+[DerivedTypeShape(typeof(Reordered<,>))]
+partial record Base<T1, T2>;
+record Reordered<U, V>(U Left, V Right) : Base<V, U>;
+
+// 3. Partial concretization — derived pins down some base parameters.
+[DerivedTypeShape(typeof(Partial<>))]
+partial record Base<T1, T2>;
+record Partial<T>(T Value) : Base<T, int>;
+
+// 4. Wrapped or nested type arguments.
+[DerivedTypeShape(typeof(Wrapped<>))]
+partial record Base<T>;
+record Wrapped<T>(List<T> Data) : Base<List<T>>;
+
+// 5. Interface bases — at most one matching instantiation per closed base.
+[DerivedTypeShape(typeof(Impl<>))]
+partial interface IBase<T>
+{
+    T? Value { get; }
+}
+record Impl<T>(T? Value) : IBase<T>;
+
+// 6. Multi-level hierarchies — substitution flows through intermediate generic ancestors.
+[DerivedTypeShape(typeof(Leaf<>))]
+partial record Base<T>;
+record Mid<T> : Base<List<T>>;
+record Leaf<T>(List<T> Items) : Mid<T>;
+```
+
+Open generic derived types are rejected at compile time (for the source generator) or shape-construction time (for the reflection provider) when the registration cannot be resolved for the requested base type:
+
+* The derived type does not derive from or implement *any* instantiation of the base type.
+* The derived type targets a different construction of the generic base — e.g. `Derived<T> : Base<T, int>` registered for `Base<string, string>`.
+* The derived type has type parameters that cannot be inferred from any base specification — e.g. `Derived<T, U> : Base<T>` leaves `U` unbound.
+* The inferred type arguments do not satisfy a generic constraint declared by the derived type.
+* The derived type matches more than one ancestor instantiation of the base — only relevant for interface bases.
+
+The source generator emits diagnostic `PT0013` for these failures with a short message describing the reason; the reflection provider throws `InvalidOperationException` with an equivalent message. Invalid subtype registrations and duplicate metadata produce `PT0011` and `PT0012`, respectively. These diagnostics are non-configurable errors: suppressing one would otherwise let source generation silently omit an invalid registration and produce a hierarchy that differs from reflection.
+
+Every declared registration participates in the union configuration. PolyType does not filter registrations that only apply to another closed construction of the base. For example, registering both `Cat : Animal<int>` and `Dog : Animal<string>` on `Animal<T>` makes the configuration invalid for either closed base because one registration is not assignable. Define separate closed base declarations when different constructions require different derived-type sets.
+
 ### PropertyShapeAttribute
 
 Configures aspects of a generated property shape, for example:

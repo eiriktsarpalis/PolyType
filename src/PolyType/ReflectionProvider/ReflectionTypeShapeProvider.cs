@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
@@ -320,32 +321,8 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         List<DerivedTypeInfo> derivedTypeInfos = [];
         foreach (DerivedTypeShapeAttribute derivedTypeAttribute in derivedTypeAttributes)
         {
-            Type derivedType = derivedTypeAttribute.Type;
-
-            if (derivedType.IsGenericTypeDefinition)
-            {
-                try
-                {
-                    // Accept generic derived types provided we can apply the type parameters for the base type.
-                    Type derivedWithBaseTypeParams = derivedType.MakeGenericType(unionType.GetGenericArguments());
-                    if (!unionType.IsAssignableFrom(derivedWithBaseTypeParams))
-                    {
-                        throw new InvalidOperationException();
-                    }
-
-                    derivedType = derivedWithBaseTypeParams;
-                }
-                catch
-                {
-                    throw new InvalidOperationException($"The declared derived type '{derivedType}' introduces unsupported type parameters over '{unionType}'.");
-                }
-            }
-            else if (!unionType.IsAssignableFrom(derivedType))
-            {
-                throw new InvalidOperationException($"The declared derived type '{derivedType}' is not a valid subtype of '{unionType}'.");
-            }
-
             string name = derivedTypeAttribute.Name;
+            Type derivedType = ResolveAndValidateDerivedType(unionType, derivedTypeAttribute.Type);
             int index = derivedTypeInfos.Count;
             int tag = derivedTypeAttribute.Tag;
             bool isTagSpecified = true;
@@ -357,7 +334,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
             if (!types.Add(derivedType))
             {
-                throw new InvalidOperationException($"Polymorphic type '{unionType}' uses duplicate assignments for the derived type '{derivedTypeAttribute.Type}'.");
+                throw new InvalidOperationException($"Polymorphic type '{unionType}' uses duplicate assignments for the derived type '{derivedType}'.");
             }
 
             if (!tags.Add(tag))
@@ -375,6 +352,32 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
         Type unionTypeTy = typeof(ReflectionUnionTypeShape<>).MakeGenericType(unionType);
         return (IUnionTypeShape)Activator.CreateInstance(unionTypeTy, derivedTypeInfos.ToArray(), this, options)!;
+    }
+
+    private static Type ResolveAndValidateDerivedType(Type unionType, Type declaredDerivedType)
+    {
+        Type resolvedDerivedType = declaredDerivedType;
+        if (declaredDerivedType.IsGenericTypeDefinition)
+        {
+            if (!OpenGenericDerivedTypeResolver.TryResolveOpenGenericDerivedType(
+                    declaredDerivedType,
+                    unionType,
+                    out Type? closedDerivedType,
+                    out string? failureReason))
+            {
+                throw new InvalidOperationException(
+                    $"The declared open generic derived type '{declaredDerivedType}' could not be resolved against the polymorphic base type '{unionType}': {failureReason}.");
+            }
+
+            resolvedDerivedType = closedDerivedType;
+        }
+
+        if (!unionType.IsAssignableFrom(resolvedDerivedType))
+        {
+            throw new InvalidOperationException($"The declared derived type '{resolvedDerivedType}' is not a valid subtype of '{unionType}'.");
+        }
+
+        return resolvedDerivedType;
     }
 
     private IFunctionTypeShape CreateFunctionTypeShape(Type functionType, FSharpFuncInfo? fSharpFuncInfo, ReflectionTypeShapeOptions options)
