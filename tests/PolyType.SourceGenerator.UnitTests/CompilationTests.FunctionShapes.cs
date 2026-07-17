@@ -44,6 +44,23 @@ public static partial class CompilationTests
     }
 
     [Fact]
+    public static void DelegateShapes_NullableBoolParameter_NoErrors()
+    {
+        // Regression test for nullable bool delegate parameters being emitted as bool??.
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            public delegate void BrokenCommand(bool? skipDuplicate = null);
+
+            [GenerateShapeFor(typeof(BrokenCommand))]
+            public partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
     public static void EventShapes_PublicInstanceAndStatic_NoErrors()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
