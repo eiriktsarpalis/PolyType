@@ -589,7 +589,8 @@ public sealed partial class Parser : TypeDataModelGenerator
             yield break;
         }
 
-        int i = 0;
+        int registrationIndex = 0;
+        int derivedTypeIndex = 0;
         HashSet<ITypeSymbol> types = new(SymbolEqualityComparer.Default);
         HashSet<int> tags = new();
         HashSet<string> names = new(StringComparer.Ordinal);
@@ -621,56 +622,114 @@ public sealed partial class Parser : TypeDataModelGenerator
                 continue;
             }
 
-            if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true } namedDerivedType)
+            int currentRegistrationIndex = registrationIndex++;
+            if (TryCreateDerivedTypeModel(
+                    type,
+                    attribute,
+                    derivedType,
+                    name,
+                    tag,
+                    currentRegistrationIndex,
+                    derivedTypeIndex,
+                    types,
+                    tags,
+                    names,
+                    out DerivedTypeModel? model))
             {
-                if (!TryResolveOpenGenericDerivedType(namedDerivedType, type, out INamedTypeSymbol? specializedDerivedType, out OpenGenericResolutionFailure? failure, out string? failedDetail))
-                {
-                    ReportDiagnostic(DerivedTypeUnsupportedGenerics, attribute.GetLocation(), derivedType.ToDisplayString(), type.ToDisplayString(), FormatOpenGenericFailureReason(failure!.Value, failedDetail));
-                    continue;
-                }
-
-                derivedType = specializedDerivedType;
+                derivedTypeIndex++;
+                yield return model;
             }
-            else if (!type.IsAssignableFrom(derivedType))
-            {
-                ReportDiagnostic(DerivedTypeNotAssignableToBase, attribute.GetLocation(), derivedType.ToDisplayString(), type.ToDisplayString());
-                continue;
-            }
-
-            bool isTagSpecified = tag >= 0;
-            tag = isTagSpecified ? tag : i;
-            name ??= derivedType.GetDerivedTypeShapeName();
-
-            if (!types.Add(derivedType))
-            {
-                ReportDiagnostic(DerivedTypeDuplicateMetadata, attribute.GetLocation(), type.ToDisplayString(), "type", derivedType.ToDisplayString());
-                continue;
-            }
-
-            if (!tags.Add(tag))
-            {
-                ReportDiagnostic(DerivedTypeDuplicateMetadata, attribute.GetLocation(), type.ToDisplayString(), "tag", tag);
-                continue;
-            }
-
-            if (!names.Add(name))
-            {
-                ReportDiagnostic(DerivedTypeDuplicateMetadata, attribute.GetLocation(), type.ToDisplayString(), "name", name);
-                continue;
-            }
-
-            yield return new DerivedTypeModel
-            {
-                Type = derivedType,
-                Name = name,
-                Tag = tag,
-                IsTagSpecified = isTagSpecified,
-                Index = i,
-                IsBaseType = SymbolEqualityComparer.Default.Equals(derivedType, type),
-            };
-
-            i++;
         }
+    }
+
+    private bool TryCreateDerivedTypeModel(
+        ITypeSymbol baseType,
+        AttributeData attribute,
+        ITypeSymbol declaredDerivedType,
+        string? name,
+        int tag,
+        int registrationIndex,
+        int derivedTypeIndex,
+        HashSet<ITypeSymbol> types,
+        HashSet<int> tags,
+        HashSet<string> names,
+        [NotNullWhen(true)] out DerivedTypeModel? model)
+    {
+        Location? location = attribute.GetLocation();
+        ITypeSymbol? resolvedDerivedType = declaredDerivedType;
+        bool isValid = true;
+
+        // Match reflection's attribute semantics by deriving the default name from the declared
+        // type rather than from a closed specialization produced below.
+        name ??= declaredDerivedType.GetDerivedTypeShapeName();
+
+        if (declaredDerivedType is INamedTypeSymbol { IsUnboundGenericType: true } namedDerivedType)
+        {
+            if (!TryResolveOpenGenericDerivedType(namedDerivedType, baseType, out INamedTypeSymbol? specializedDerivedType, out OpenGenericResolutionFailure? failure, out string? failedDetail))
+            {
+                ReportDiagnostic(
+                    DerivedTypeUnsupportedGenerics,
+                    location,
+                    declaredDerivedType.ToDisplayString(),
+                    baseType.ToDisplayString(),
+                    FormatOpenGenericFailureReason(failure!.Value, failedDetail));
+
+                resolvedDerivedType = null;
+                isValid = false;
+            }
+            else
+            {
+                resolvedDerivedType = specializedDerivedType;
+            }
+        }
+
+        if (resolvedDerivedType is not null && !baseType.IsAssignableFrom(resolvedDerivedType))
+        {
+            ReportDiagnostic(DerivedTypeNotAssignableToBase, location, resolvedDerivedType.ToDisplayString(), baseType.ToDisplayString());
+            isValid = false;
+        }
+
+        bool isTagSpecified = tag >= 0;
+        tag = isTagSpecified ? tag : registrationIndex;
+
+        // Run every metadata check even if type resolution or assignability failed. This keeps
+        // diagnostics independent of whether the registration required generic specialization.
+        ITypeSymbol metadataType = resolvedDerivedType ?? declaredDerivedType;
+        if (!types.Add(metadataType))
+        {
+            ReportDiagnostic(DerivedTypeDuplicateMetadata, location, baseType.ToDisplayString(), "type", metadataType.ToDisplayString());
+            isValid = false;
+        }
+
+        if (!tags.Add(tag))
+        {
+            ReportDiagnostic(DerivedTypeDuplicateMetadata, location, baseType.ToDisplayString(), "tag", tag);
+            isValid = false;
+        }
+
+        if (!names.Add(name))
+        {
+            ReportDiagnostic(DerivedTypeDuplicateMetadata, location, baseType.ToDisplayString(), "name", name);
+            isValid = false;
+        }
+
+        if (!isValid)
+        {
+            model = null;
+            return false;
+        }
+
+        model = new DerivedTypeModel
+        {
+            Type = resolvedDerivedType!,
+            Name = name,
+            Tag = tag,
+            IsTagSpecified = isTagSpecified,
+            Index = derivedTypeIndex,
+            IsBaseType = SymbolEqualityComparer.Default.Equals(resolvedDerivedType, baseType),
+        };
+
+        return true;
     }
 
     /// <summary>

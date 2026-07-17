@@ -731,6 +731,153 @@ public static class DiagnosticTests
     }
 
     [Fact]
+    public static void ClosedAndOpenDerivedTypesResolvingToSameType_ErrorDiagnostic()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            [DerivedTypeShape(typeof(Derived<int>), Name = "closed", Tag = 1)]
+            [DerivedTypeShape(typeof(Derived<>), Name = "open", Tag = 2)]
+            class Base<T> { }
+
+            class Derived<T> : Base<T> { }
+
+            [GenerateShapeFor(typeof(Base<int>))]
+            partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("PT0012", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("type 'Derived<int>'", diagnostic.GetMessage());
+    }
+
+    [Theory]
+    [MemberData(nameof(GetInvalidDerivedTypeMetadataCollisionCases))]
+    public static void InvalidDerivedType_StillReportsMetadataCollisions(string source, string primaryDiagnosticId)
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation(source);
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Assert.Single(result.Diagnostics, diagnostic => diagnostic.Id == primaryDiagnosticId);
+        Diagnostic[] duplicateDiagnostics = result.Diagnostics.Where(diagnostic => diagnostic.Id == "PT0012").ToArray();
+        Assert.Equal(2, duplicateDiagnostics.Length);
+        Assert.Contains(duplicateDiagnostics, diagnostic => diagnostic.GetMessage().Contains("tag '42'"));
+        Assert.Contains(duplicateDiagnostics, diagnostic => diagnostic.GetMessage().Contains("name 'collision'"));
+    }
+
+    public static IEnumerable<object[]> GetInvalidDerivedTypeMetadataCollisionCases()
+    {
+        yield return
+        [
+            """
+            using PolyType;
+
+            [DerivedTypeShape(typeof(Unrelated), Name = "collision", Tag = 42)]
+            [DerivedTypeShape(typeof(Derived), Name = "collision", Tag = 42)]
+            class Base { }
+
+            class Unrelated { }
+            class Derived : Base { }
+
+            [GenerateShapeFor(typeof(Base))]
+            partial class Witness { }
+            """,
+            "PT0011",
+        ];
+
+        yield return
+        [
+            """
+            using PolyType;
+
+            [DerivedTypeShape(typeof(Unbound<,>), Name = "collision", Tag = 42)]
+            [DerivedTypeShape(typeof(Derived<>), Name = "collision", Tag = 42)]
+            class Base<T> { }
+
+            class Unbound<T, U> : Base<T> { }
+            class Derived<T> : Base<T> { }
+
+            [GenerateShapeFor(typeof(Base<int>))]
+            partial class Witness { }
+            """,
+            "PT0013",
+        ];
+    }
+
+    [Theory]
+    [MemberData(nameof(GetUnsuppressibleDerivedTypeDiagnosticCases))]
+    public static void InvalidDerivedTypeDiagnostics_CannotBeSuppressed(string source, string diagnosticId)
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation(source);
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics, diagnostic => diagnostic.Id == diagnosticId);
+        Assert.False(diagnostic.IsSuppressed);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+    }
+
+    public static IEnumerable<object[]> GetUnsuppressibleDerivedTypeDiagnosticCases()
+    {
+        yield return
+        [
+            """
+            using PolyType;
+
+            #pragma warning disable PT0011
+            [DerivedTypeShape(typeof(Unrelated))]
+            class Base { }
+            #pragma warning restore PT0011
+
+            class Unrelated { }
+
+            [GenerateShapeFor(typeof(Base))]
+            partial class Witness { }
+            """,
+            "PT0011",
+        ];
+
+        yield return
+        [
+            """
+            using PolyType;
+
+            #pragma warning disable PT0012
+            [DerivedTypeShape(typeof(Derived), Name = "first")]
+            [DerivedTypeShape(typeof(Derived), Name = "second")]
+            class Base { }
+            #pragma warning restore PT0012
+
+            class Derived : Base { }
+
+            [GenerateShapeFor(typeof(Base))]
+            partial class Witness { }
+            """,
+            "PT0012",
+        ];
+
+        yield return
+        [
+            """
+            using PolyType;
+
+            #pragma warning disable PT0013
+            [DerivedTypeShape(typeof(Derived<,>))]
+            class Base<T> { }
+            #pragma warning restore PT0013
+
+            class Derived<T, U> : Base<T> { }
+
+            [GenerateShapeFor(typeof(Base<int>))]
+            partial class Witness { }
+            """,
+            "PT0013",
+        ];
+    }
+
+    [Fact]
     public static void PolymorphicClassWithConflictingDerivedTypeNames_ErrorDiagnostic()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation("""
@@ -1008,6 +1155,188 @@ public static class DiagnosticTests
         Assert.Empty(result.Diagnostics);
     }
 
+    [Theory]
+    [MemberData(nameof(GetAdvancedValidOpenGenericDerivedTypeCases))]
+    public static void OpenGenericDerivedType_AdvancedValidPattern_NoDiagnostic(string source)
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation(source);
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    public static IEnumerable<object[]> GetAdvancedValidOpenGenericDerivedTypeCases()
+    {
+        yield return
+        [
+            """
+            using PolyType;
+
+            [DerivedTypeShape(typeof(Outer<>.Middle.Leaf<>))]
+            class Base<T> { }
+
+            class Outer<T>
+            {
+                public class Middle
+                {
+                    public class Leaf<U> : Base<(T, U)> { }
+                }
+            }
+
+            [GenerateShapeFor(typeof(Base<(int, string)>))]
+            partial class Witness { }
+            """,
+        ];
+
+        yield return
+        [
+            """
+            using PolyType;
+
+            [DerivedTypeShape(typeof(Derived<>))]
+            class Base<T> { }
+
+            class Outer<T>
+            {
+                public class Box<U> { }
+            }
+
+            class Derived<T> : Base<Outer<T>.Box<int>> { }
+
+            [GenerateShapeFor(typeof(Base<Outer<string>.Box<int>>))]
+            partial class Witness { }
+            """,
+        ];
+
+        yield return
+        [
+            """
+            using PolyType;
+
+            [DerivedTypeShape(typeof(Impl<>))]
+            interface IBase<T> { }
+
+            interface ILeft<T> : IBase<T> { }
+            interface IRight<T> : IBase<T> { }
+            interface IDiamond<T> : ILeft<T>, IRight<T> { }
+            class Impl<T> : IDiamond<T> { }
+
+            [GenerateShapeFor(typeof(IBase<int>))]
+            partial class Witness { }
+            """,
+        ];
+
+        yield return
+        [
+            """
+            using PolyType;
+
+            [DerivedTypeShape(typeof(Impl<>))]
+            interface IBase1<T> { }
+
+            [DerivedTypeShape(typeof(Impl<>))]
+            interface IBase2<T> { }
+
+            class Impl<T> : IBase1<T>, IBase2<T> { }
+
+            [GenerateShapeFor(typeof(IBase1<int>))]
+            [GenerateShapeFor(typeof(IBase2<string>))]
+            partial class Witness { }
+            """,
+        ];
+
+        yield return
+        [
+            """
+            using PolyType;
+            using System.Collections.Generic;
+
+            [DerivedTypeShape(typeof(Impl<>))]
+            interface IBase<T> { }
+
+            class Impl<T> : IBase<T>, IBase<List<T>> { }
+
+            [GenerateShapeFor(typeof(IBase<int>))]
+            partial class Witness { }
+            """,
+        ];
+
+        yield return
+        [
+            """
+            using PolyType;
+
+            [DerivedTypeShape(typeof(CovariantImpl<>))]
+            interface ICovariant<out T> { }
+            class CovariantImpl<T> : ICovariant<T> { }
+
+            [DerivedTypeShape(typeof(ContravariantImpl<>))]
+            interface IContravariant<in T> { }
+            class ContravariantImpl<T> : IContravariant<T> { }
+
+            [DerivedTypeShape(typeof(BivariantImpl<,>))]
+            interface IBivariant<in TIn, out TOut> { }
+            class BivariantImpl<TIn, TOut> : IBivariant<TIn, TOut> { }
+
+            [GenerateShapeFor(typeof(ICovariant<object>))]
+            [GenerateShapeFor(typeof(IContravariant<string>))]
+            [GenerateShapeFor(typeof(IBivariant<string, object>))]
+            partial class Witness { }
+            """,
+        ];
+
+        yield return
+        [
+            """
+            using PolyType;
+            using System.Collections.Generic;
+
+            [DerivedTypeShape(typeof(Derived<>))]
+            class Base<T> { }
+
+            class Derived<T> : Base<T> where T : IEnumerable<object> { }
+
+            [GenerateShapeFor(typeof(Base<List<string>>))]
+            partial class Witness { }
+            """,
+        ];
+
+        yield return
+        [
+            """
+            using PolyType;
+            using System.Collections.Generic;
+
+            [DerivedTypeShape(typeof(Derived<,>))]
+            class Base<T, U> { }
+
+            class Derived<T, U> : Base<T, U> where T : IEnumerable<U[]> { }
+
+            [GenerateShapeFor(typeof(Base<List<int[]>, int>))]
+            partial class Witness { }
+            """,
+        ];
+
+        yield return
+        [
+            """
+            using PolyType;
+            using System.Collections.Generic;
+
+            [DerivedTypeShape(typeof(KeyValueDerived<>))]
+            class KeyValueBase<T> { }
+            class KeyValueDerived<T> : KeyValueBase<KeyValuePair<string, T>> { }
+
+            [DerivedTypeShape(typeof(TupleDerived<,>))]
+            class TupleBase<T> { }
+            class TupleDerived<T1, T2> : TupleBase<(T1, T2)> { }
+
+            [GenerateShapeFor(typeof(KeyValueBase<KeyValuePair<string, int>>))]
+            [GenerateShapeFor(typeof(TupleBase<(string, int)>))]
+            partial class Witness { }
+            """,
+        ];
+    }
+
     [Fact]
     public static void ClosedDerived_TargetingDifferentBaseInstantiation_ErrorDiagnostics()
     {
@@ -1249,6 +1578,29 @@ public static class DiagnosticTests
             """,
             "Silly<>",
             "Animal<System.Collections.Generic.List<int[][]>>",
+            "arguments do not match",
+        ];
+
+        yield return
+        [
+            """
+            using PolyType;
+
+            [DerivedTypeShape(typeof(Derived<>))]
+            class Base<T> { }
+
+            class Outer<T>
+            {
+                public class Box<U> { }
+            }
+
+            class Derived<T> : Base<Outer<int>.Box<T>> { }
+
+            [GenerateShapeFor(typeof(Base<Outer<string>.Box<int>>))]
+            partial class Witness { }
+            """,
+            "Derived<>",
+            "Base<Outer<string>.Box<int>>",
             "arguments do not match",
         ];
     }

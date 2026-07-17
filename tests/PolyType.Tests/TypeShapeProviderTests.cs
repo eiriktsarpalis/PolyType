@@ -1737,54 +1737,54 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
         Assert.Contains(union.UnionCases, c => c.UnionCaseType.Type == typeof(OpenGenericPolymorphicClassConstraintViolationDerived<int>));
     }
 
-    [DerivedTypeShape(typeof(GenericFilter_Cat))]
-    [DerivedTypeShape(typeof(GenericFilter_Dog))]
-    private class GenericFilter_Animal<T>;
-    private class GenericFilter_Cat : GenericFilter_Animal<int>;
-    private class GenericFilter_Dog : GenericFilter_Animal<string>;
+    [DerivedTypeShape(typeof(GenericSpecialization_Cat))]
+    [DerivedTypeShape(typeof(GenericSpecialization_Dog))]
+    private class GenericSpecialization_Animal<T>;
+    private class GenericSpecialization_Cat : GenericSpecialization_Animal<int>;
+    private class GenericSpecialization_Dog : GenericSpecialization_Animal<string>;
 
     [Theory]
-    [InlineData(typeof(GenericFilter_Animal<int>))]
-    [InlineData(typeof(GenericFilter_Animal<string>))]
-    [InlineData(typeof(GenericFilter_Animal<bool>))]
+    [InlineData(typeof(GenericSpecialization_Animal<int>))]
+    [InlineData(typeof(GenericSpecialization_Animal<string>))]
+    [InlineData(typeof(GenericSpecialization_Animal<bool>))]
     public void ClosedDerived_TargetingDifferentBaseInstantiation_ThrowsInvalidOperationException(Type baseType)
     {
         var ex = Assert.Throws<InvalidOperationException>(() => Provider.GetTypeShape(baseType));
         Assert.Contains("not a valid subtype", ex.Message);
     }
 
-    [DerivedTypeShape(typeof(OpenGenericFilter_Derived<>))]
-    private class OpenGenericFilter_Base<T>;
-    private class OpenGenericFilter_Derived<T> : OpenGenericFilter_Base<T>
+    [DerivedTypeShape(typeof(OpenGenericConstraint_Derived<>))]
+    private class OpenGenericConstraint_Base<T>;
+    private class OpenGenericConstraint_Derived<T> : OpenGenericConstraint_Base<T>
         where T : System.Collections.Generic.IEnumerable<int>;
 
     [Fact]
     public void OpenGenericDerived_InterfaceConstraintCompatibleSpecialization_Resolves()
     {
-        ITypeShape shape = Provider.GetTypeShape(typeof(OpenGenericFilter_Base<List<int>>))!;
+        ITypeShape shape = Provider.GetTypeShape(typeof(OpenGenericConstraint_Base<List<int>>))!;
         var union = Assert.IsAssignableFrom<IUnionTypeShape>(shape);
-        Assert.Contains(union.UnionCases, c => c.UnionCaseType.Type == typeof(OpenGenericFilter_Derived<List<int>>));
+        Assert.Contains(union.UnionCases, c => c.UnionCaseType.Type == typeof(OpenGenericConstraint_Derived<List<int>>));
     }
 
     [Fact]
     public void OpenGenericDerived_InterfaceConstraintIncompatibleSpecialization_ThrowsInvalidOperationException()
     {
         var ex = Assert.Throws<InvalidOperationException>(
-            () => Provider.GetTypeShape(typeof(OpenGenericFilter_Base<string>)));
+            () => Provider.GetTypeShape(typeof(OpenGenericConstraint_Base<string>)));
 
         Assert.Contains("generic constraints", ex.Message);
     }
 
     [DerivedTypeShape(typeof(MultiClosedDerived_A))]
     [DerivedTypeShape(typeof(MultiClosedDerived_B<>))]
-    private class MultiClosedFilter_Base<T>;
-    private class MultiClosedDerived_A : MultiClosedFilter_Base<int>;
-    private class MultiClosedDerived_B<T> : MultiClosedFilter_Base<T> where T : class;
+    private class MixedSpecialization_Base<T>;
+    private class MultiClosedDerived_A : MixedSpecialization_Base<int>;
+    private class MultiClosedDerived_B<T> : MixedSpecialization_Base<T> where T : class;
 
     [Theory]
-    [InlineData(typeof(MultiClosedFilter_Base<int>))]
-    [InlineData(typeof(MultiClosedFilter_Base<string>))]
-    [InlineData(typeof(MultiClosedFilter_Base<bool>))]
+    [InlineData(typeof(MixedSpecialization_Base<int>))]
+    [InlineData(typeof(MixedSpecialization_Base<string>))]
+    [InlineData(typeof(MixedSpecialization_Base<bool>))]
     public void MixedClosedAndOpenDerived_InvalidRegistrationInvalidatesConfiguration(Type baseType)
     {
         Assert.Throws<InvalidOperationException>(() => Provider.GetTypeShape(baseType));
@@ -1840,6 +1840,15 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
         Assert.Contains("duplicate assignments for the name 'derived'", ex.Message);
     }
 
+    [Fact]
+    public void OpenGenericDerivedType_DefaultNameUsesDeclaredType()
+    {
+        ITypeShape shape = Provider.GetTypeShape(typeof(OpenGenericDefaultNameBase<int>))!;
+        var union = Assert.IsAssignableFrom<IUnionTypeShape>(shape);
+        IUnionCaseShape unionCase = Assert.Single(union.UnionCases);
+        Assert.Equal("OpenGenericDefaultNameDerived_T", unionCase.Name);
+    }
+
     [Theory]
     [MemberData(nameof(GetOpenGenericResolutionSuccessCases))]
     public void OpenGenericDerivedType_SupportedPatterns_ResolvesToExpectedClosedType(Type baseType, Type expectedClosedDerived)
@@ -1856,9 +1865,13 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
         yield return new object[] { typeof(OpenGenericWrappedBase<List<string>>), typeof(OpenGenericWrappedDerived<string>) };
         yield return new object[] { typeof(OpenGenericArrayBase<int[]>), typeof(OpenGenericArrayDerived<int>) };
         yield return new object[] { typeof(IOpenGenericInterfaceBase<int>), typeof(OpenGenericInterfaceImpl<int>) };
+        yield return new object[] { typeof(OpenGenericNestedBase<(string, int)>), typeof(OpenGenericOuter<string>.Middle.Leaf<int>) };
+        yield return new object[] { typeof(IOpenGenericHierarchyBase<int>), typeof(OpenGenericHierarchyImpl<int>) };
+        yield return new object[] { typeof(IOpenGenericMultipleInterfaceBase<int>), typeof(OpenGenericMultipleInterfaceImpl<int>) };
         yield return new object[] { typeof(OpenGenericMultiLevelBase<List<int>>), typeof(OpenGenericMultiLevelLeaf<int>) };
         yield return new object[] { typeof(OpenGenericRepeatedBase<int, int>), typeof(OpenGenericRepeatedDerived<int>) };
         yield return new object[] { typeof(OpenGenericInterfaceConstraintBase<List<int>>), typeof(OpenGenericInterfaceConstraintDerived<List<int>>) };
+        yield return new object[] { typeof(OpenGenericCovariantConstraintBase<List<string>>), typeof(OpenGenericCovariantConstraintDerived<List<string>>) };
         yield return new object[] { typeof(OpenGenericNewConstraintBase<OpenGenericNewConstraintArgument>), typeof(OpenGenericNewConstraintDerived<OpenGenericNewConstraintArgument>) };
         yield return new object[] { typeof(OpenGenericDeepJaggedBase<List<int[][][]>>), typeof(OpenGenericDeepJaggedDerived<int>) };
     }

@@ -310,7 +310,7 @@ partial record Base
 }
 ```
 
-When the derived type is an open generic, PolyType attempts to unify its base specification with the closed base type at shape resolution time. This makes a single attribute applicable across every closed instantiation of the base. The following patterns are supported:
+When the derived type is an open generic, PolyType attempts to unify its base specification with the requested closed base type at shape resolution time. A single attribute can therefore cover multiple closed instantiations when each specialization satisfies the derived type's base specification and generic constraints. The following patterns are supported:
 
 ```csharp
 // 1. Identity binding — derived's parameters flow through directly.
@@ -356,7 +356,7 @@ Open generic derived types are rejected at compile time (for the source generato
 * The inferred type arguments do not satisfy a generic constraint declared by the derived type.
 * The derived type matches more than one ancestor instantiation of the base — only relevant for interface bases.
 
-The source generator emits diagnostic `PT0013` for these failures with a short message describing the reason; the reflection provider throws `InvalidOperationException` with an equivalent message.
+The source generator emits diagnostic `PT0013` for these failures with a short message describing the reason; the reflection provider throws `InvalidOperationException` with an equivalent message. Invalid subtype registrations and duplicate metadata produce `PT0011` and `PT0012`, respectively. These diagnostics are non-configurable errors: suppressing one would otherwise let source generation silently omit an invalid registration and produce a hierarchy that differs from reflection.
 
 Every declared registration participates in the union configuration. PolyType does not filter registrations that only apply to another closed construction of the base. For example, registering both `Cat : Animal<int>` and `Dog : Animal<string>` on `Animal<T>` makes the configuration invalid for either closed base because one registration is not assignable. Define separate closed base declarations when different constructions require different derived-type sets.
 

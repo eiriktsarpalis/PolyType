@@ -93,7 +93,8 @@ public sealed partial class Parser
         messageFormat: "The declared derived type '{0}' is not a valid subtype of '{1}'.",
         category: "PolyType.SourceGenerator",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: WellKnownDiagnosticTags.NotConfigurable);
 
     private static DiagnosticDescriptor DerivedTypeDuplicateMetadata { get; } = new DiagnosticDescriptor(
         id: "PT0012",
@@ -101,7 +102,8 @@ public sealed partial class Parser
         messageFormat: "Polymorphic type '{0}' uses duplicate assignments for {1} '{2}'.",
         category: "PolyType.SourceGenerator",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: WellKnownDiagnosticTags.NotConfigurable);
 
     private static DiagnosticDescriptor DerivedTypeUnsupportedGenerics { get; } = new DiagnosticDescriptor(
         id: "PT0013",
@@ -109,7 +111,8 @@ public sealed partial class Parser
         messageFormat: "The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.",
         category: "PolyType.SourceGenerator",
         defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: WellKnownDiagnosticTags.NotConfigurable);
 
     private static DiagnosticDescriptor AssociatedTypeArityMismatch { get; } = new DiagnosticDescriptor(
         id: "PT0016",

@@ -21,7 +21,12 @@ public abstract class ProviderUnderTest
     {
         if (testCase.IsUnion)
         {
-            return !testCase.IsAbstract || FSharpType.IsUnion(testCase.Type, null);
+            IUnionTypeShape unionShape = (IUnionTypeShape)ResolveShape(testCase);
+            return !testCase.IsAbstract ||
+                FSharpType.IsUnion(testCase.Type, null) ||
+                unionShape.UnionCases.Any(
+                    unionCase => !unionCase.UnionCaseType.Type.IsAbstract &&
+                        (testCase.Value is null || unionCase.UnionCaseType.Type.IsInstanceOfType(testCase.Value)));
         }
 
         return !(testCase.IsAbstract && !typeof(IEnumerable).IsAssignableFrom(testCase.Type)) &&
