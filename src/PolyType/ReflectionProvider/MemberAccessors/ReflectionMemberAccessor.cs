@@ -520,6 +520,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                     object?[] localParams;
                     if (i == arguments.Length)
                     {
+                        // Array range slicing requires RuntimeHelpers.GetSubArray, which is unavailable on legacy targets.
                         // https://github.com/Sergio0694/PolySharp/issues/104
                         localParams = new object?[arity];
                         arguments.AsSpan(arguments.Length - arity).CopyTo(localParams);
