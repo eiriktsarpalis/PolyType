@@ -27,7 +27,7 @@
     <PackageVersion Include="System.Text.Json" Version="10.0.5" />
     <PackageVersion Include="YamlDotNet" Version="18.0.0" />
     <PackageVersion Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
-    <PackageVersion Include="FSharp.Core" Version="10.1.301" />
+    <PackageVersion Include="FSharp.Core" Version="10.1.302" />
     <!-- Test infrastructure -->
     <PackageVersion Include="xunit.v3.mtp-v2" Version="3.2.2" />
     <PackageVersion Include="TUnit" Version="1.61.15" />
