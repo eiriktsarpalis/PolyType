@@ -163,30 +163,60 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
 
     public Setter<TDeclaringType?, TEventHandler> CreateEventAccessor<TDeclaringType, TEventHandler>(MethodInfo accessor)
     {
-#if NET
-        ReflectionMethodInvoker invoker = ReflectionMethodInvoker.Create(accessor);
-        return !typeof(TDeclaringType).IsValueType
-            ? (ref target, handler) => invoker.Invoke(target, handler)
-            : (ref target, handler) =>
-            {
-                object? boxedTarget = target;
-                invoker.Invoke(boxedTarget, handler);
-                target = (TDeclaringType?)boxedTarget;
-            };
-#else
-        return !typeof(TDeclaringType).IsValueType
-            ? (ref target, handler) => accessor.InvokeNoWrapExceptions(target, [handler])
-            : (ref target, handler) =>
-            {
-                object? boxedTarget = target;
-                accessor.InvokeNoWrapExceptions(boxedTarget, [handler]);
-                target = (TDeclaringType?)boxedTarget;
-            };
-#endif
+        if (accessor.IsStatic)
+        {
+            Action<TEventHandler> accessorDelegate = accessor.CreateDelegate<Action<TEventHandler>>();
+            return (ref _, handler) => accessorDelegate(handler);
+        }
+
+        if (typeof(TDeclaringType).IsValueType)
+        {
+            return accessor.CreateDelegate<Setter<TDeclaringType?, TEventHandler>>();
+        }
+        else
+        {
+            Action<TDeclaringType, TEventHandler> accessorDelegate = accessor.CreateDelegate<Action<TDeclaringType, TEventHandler>>();
+            return (ref target, handler) => accessorDelegate(target!, handler);
+        }
     }
 
     public EnumerableAppender<TEnumerable, TElement> CreateEnumerableAppender<TEnumerable, TElement>(MethodInfo addMethod)
     {
+        if (addMethod.ReturnType == typeof(bool))
+        {
+            if (typeof(TEnumerable).IsValueType)
+            {
+                return addMethod.CreateDelegate<EnumerableAppender<TEnumerable, TElement>>();
+            }
+            else
+            {
+                Func<TEnumerable, TElement, bool> addDelegate = addMethod.CreateDelegate<Func<TEnumerable, TElement, bool>>();
+                return (ref enumerable, element) => addDelegate(enumerable, element);
+            }
+        }
+
+        if (addMethod.ReturnType == typeof(void))
+        {
+            if (typeof(TEnumerable).IsValueType)
+            {
+                Setter<TEnumerable, TElement> addDelegate = addMethod.CreateDelegate<Setter<TEnumerable, TElement>>();
+                return (ref enumerable, element) =>
+                {
+                    addDelegate(ref enumerable, element);
+                    return true;
+                };
+            }
+            else
+            {
+                Action<TEnumerable, TElement> addDelegate = addMethod.CreateDelegate<Action<TEnumerable, TElement>>();
+                return (ref enumerable, element) =>
+                {
+                    addDelegate(enumerable, element);
+                    return true;
+                };
+            }
+        }
+
 #if NET
         ReflectionMethodInvoker invoker = ReflectionMethodInvoker.Create(addMethod);
         return !typeof(TEnumerable).IsValueType
@@ -296,17 +326,14 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
             return static () => default(TDeclaringType)!;
         }
 
+        if (factory is MethodInfo methodInfo)
+        {
+            return methodInfo.CreateDelegate<Func<TDeclaringType>>();
+        }
+
 #if NET
-        if (factory is ConstructorInfo constructorInfo)
-        {
-            ReflectionConstructorInvoker invoker = ReflectionConstructorInvoker.Create(constructorInfo);
-            return () => (TDeclaringType)invoker.Invoke();
-        }
-        else
-        {
-            ReflectionMethodInvoker invoker = ReflectionMethodInvoker.Create(factory);
-            return () => (TDeclaringType)invoker.Invoke(null)!;
-        }
+        ReflectionConstructorInvoker invoker = ReflectionConstructorInvoker.Create((ConstructorInfo)factory);
+        return () => (TDeclaringType)invoker.Invoke();
 #else
         return () => (TDeclaringType)factory.InvokeNoWrapExceptions(null)!;
 #endif
