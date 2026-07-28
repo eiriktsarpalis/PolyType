@@ -31,23 +31,6 @@ internal static class ReflectionHelpers
 #endif
     }
 
-    public static bool IsDynamicCodeCompiled { get; } = IsDynamicCodeCompiledCore();
-    private static bool IsDynamicCodeCompiledCore()
-    {
-#if NET
-        return RuntimeFeature.IsDynamicCodeCompiled;
-#else
-        if (RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.Ordinal))
-        {
-            return true; // .NET Framework JIT-compiles dynamic code.
-        }
-
-        // Check for the presence of the property in .NET 6+.
-        PropertyInfo? prop = Type.GetType("System.Runtime.CompilerServices.RuntimeFeature")?.GetProperty("IsDynamicCodeCompiled", BindingFlags.Public | BindingFlags.Static);
-        return prop is not null && (bool)prop.GetValue(null);
-#endif
-    }
-
     public static bool IsMonoRuntime { get; } = Type.GetType("Mono.Runtime") is not null;
     public static bool IsNetFramework { get; } = RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.Ordinal);
 
