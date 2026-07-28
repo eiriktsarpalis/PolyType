@@ -308,9 +308,8 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
                         throw new NotSupportedException("KnownTypeAttribute annotations using methods are not supported.");
                     }
 
-                    return attr.Type;
-                })
-                .Select(t => new DerivedTypeShapeAttribute(t));
+                    return new DerivedTypeShapeAttribute(attr.Type);
+                });
 
             derivedTypeAttributes.AddRange(mappedKnownTypeAttributes);
         }
