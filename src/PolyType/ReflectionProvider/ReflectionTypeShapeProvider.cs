@@ -295,13 +295,13 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             return (IUnionTypeShape)Activator.CreateInstance(fsharpUnionTypeTy, fSharpUnionInfo, this, options)!;
         }
 
-        List<DerivedTypeShapeAttribute> derivedTypeAttributes = unionType.GetCustomAttributes<DerivedTypeShapeAttribute>().ToList();
+        List<DerivedTypeShapeAttribute> derivedTypeAttributes = unionType.GetCustomAttributes<DerivedTypeShapeAttribute>(inherit: false).ToList();
 
         // Honor KnownTypeAttribute annotations only when no DerivedTypeShapeAttribute is present,
         // which takes precedence over KnownTypeAttribute.
         if (derivedTypeAttributes.Count == 0)
         {
-            var mappedKnownTypeAttributes = unionType.GetCustomAttributes<KnownTypeAttribute>()
+            var mappedKnownTypeAttributes = unionType.GetCustomAttributes<KnownTypeAttribute>(inherit: false)
                 .Select(attr =>
                 {
                     if (attr.Type is null)
