@@ -83,7 +83,7 @@ A non-dictionary type is mapped to <xref:PolyType.Abstractions.IEnumerableTypeSh
 3. It implements [`IAsyncEnumerable<T>`](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1) or
 4. It is an array type (including multi-dimensional arrays) or
 5. It is <xref:System.Memory`1> or <xref:System.ReadOnlyMemory`1> or
-6. It is an [inline array](https://learn.microsoft.com/dotnet/csharp/language-reference/proposals/csharp-12.0/inline-arrays) or
+6. It is an inline array or
 7. It is a struct containing a [fixed size buffer](https://learn.microsoft.com/dotnet/csharp/language-reference/unsafe-code#fixed-size-buffers) as its only field.
 
 #### Construction Strategy
