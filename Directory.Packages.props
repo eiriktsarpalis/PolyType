@@ -30,9 +30,9 @@
     <PackageVersion Include="FSharp.Core" Version="10.1.400" />
     <!-- Test infrastructure -->
     <PackageVersion Include="xunit.v3.mtp-v2" Version="4.0.0" />
-    <PackageVersion Include="TUnit" Version="1.65.0" />
-    <PackageVersion Include="TUnit.Assertions" Version="1.65.0" />
-    <PackageVersion Include="TUnit.Engine" Version="1.65.0" />
+    <PackageVersion Include="TUnit" Version="1.65.51" />
+    <PackageVersion Include="TUnit.Assertions" Version="1.65.51" />
+    <PackageVersion Include="TUnit.Engine" Version="1.65.51" />
     <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.3.3" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.10.0" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CrashDump" Version="2.3.3" />
