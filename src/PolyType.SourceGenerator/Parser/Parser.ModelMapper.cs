@@ -1224,14 +1224,46 @@ public sealed partial class Parser
                 continue; // filter duplicate attributes when multiple usage is not allowed
             }
 
+            if (GetUnsuppressibleObsoleteMember(attr) is { } obsoleteMember)
+            {
+                ReportDiagnostic(
+                    AttributeNotSupported,
+                    attr.GetLocation() ?? symbol.Locations.FirstOrDefault(),
+                    attr.AttributeClass.ToDisplayString(),
+                    symbol.ToDisplayString(),
+                    obsoleteMember.ToDisplayString());
+
+                continue;
+            }
+
+            OnMemberAccessed(attr.AttributeClass);
+            if (attr.AttributeConstructor is { } attributeConstructor)
+            {
+                OnMemberAccessed(attributeConstructor);
+            }
+
             // Format constructor arguments
             var ctorArgs = attr.ConstructorArguments
-                .Select(arg => Helpers.RoslynHelpers.FormatAttributeConstant(_knownSymbols.Compilation, GenerationScope, arg))
+                .Select(arg =>
+                {
+                    OnAttributeConstantAccessed(arg);
+                    return Helpers.RoslynHelpers.FormatAttributeConstant(_knownSymbols.Compilation, GenerationScope, arg);
+                })
                 .ToImmutableEquatableArray();
 
             // Format named arguments
             var namedArgs = attr.NamedArguments
-                .Select(kvp => (kvp.Key, Helpers.RoslynHelpers.FormatAttributeConstant(_knownSymbols.Compilation, GenerationScope, kvp.Value)))
+                .Select(kvp =>
+                {
+                    ISymbol? namedMember = ResolveAttributeNamedArgument(attr.AttributeClass, kvp.Key);
+                    if (namedMember is not null)
+                    {
+                        OnMemberAccessed(namedMember);
+                    }
+
+                    OnAttributeConstantAccessed(kvp.Value);
+                    return (kvp.Key, Helpers.RoslynHelpers.FormatAttributeConstant(_knownSymbols.Compilation, GenerationScope, kvp.Value));
+                })
                 .ToImmutableEquatableArray();
 
             attributes.Add(new AttributeDataModel
@@ -1244,6 +1276,34 @@ public sealed partial class Parser
         }
 
         return attributes.ToImmutableEquatableArray();
+
+        void OnAttributeConstantAccessed(TypedConstant constant)
+        {
+            if (constant.Type is { } constantType)
+            {
+                OnMemberAccessed(constantType);
+            }
+
+            if (constant.Kind is TypedConstantKind.Enum && constant.Type is INamedTypeSymbol enumType)
+            {
+                foreach (IFieldSymbol field in enumType.GetMembers().OfType<IFieldSymbol>())
+                {
+                    OnMemberAccessed(field);
+                }
+            }
+
+            if (constant.Kind is TypedConstantKind.Type && constant.Value is ITypeSymbol type)
+            {
+                OnMemberAccessed(type);
+            }
+            else if (constant.Kind is TypedConstantKind.Array && !constant.IsNull)
+            {
+                foreach (TypedConstant element in constant.Values)
+                {
+                    OnAttributeConstantAccessed(element);
+                }
+            }
+        }
 
         (bool ShouldSkip, bool AllowMultiple, bool IsInherited) GetAttributeMetadata(INamedTypeSymbol attributeClass)
         {
@@ -1283,6 +1343,7 @@ public sealed partial class Parser
                             }
                         }
                     }
+
                 }
             }
 
@@ -1344,4 +1405,5 @@ public sealed partial class Parser
             }
         }
     }
+
 }

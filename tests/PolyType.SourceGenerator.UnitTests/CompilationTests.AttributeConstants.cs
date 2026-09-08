@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using PolyType.SourceGenerator.Model;
 using Xunit;
 
 namespace PolyType.SourceGenerator.UnitTests;
@@ -7,6 +8,123 @@ public static partial class CompilationTests
 {
     public static class AttributeConstants
     {
+        [Theory]
+        [InlineData("""[Obsolete("Do not use this property.", true)] public byte AttributeId { get; set; }""")]
+        [InlineData("""public byte AttributeId { get; [Obsolete("Do not write.", true)] set; }""")]
+        public static void AttributeWithErrorObsoleteNamedArgument_IsSkipped(string propertyDeclaration)
+        {
+            // A compilation reference models attributes added or rewritten by a post-processor such as PostSharp.
+            Compilation referencedProject = CompilationHelpers.CreateCompilation($$"""
+                using System;
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public sealed class TestAttribute : Attribute
+                {
+                    public TestAttribute(byte value) => ConstructorValue = value;
+
+                    {{propertyDeclaration}}
+
+                    public byte ConstructorValue { get; }
+                }
+
+                [Test(7, AttributeId = 42)]
+                public sealed class MyClass
+                {
+                    [PolyType.MethodShape]
+                    public void Method() { }
+                }
+                """,
+                assemblyName: "ReferencedProject");
+
+            Compilation compilation = CompilationHelpers.CreateCompilation("""
+                using PolyType;
+
+                [GenerateShapeFor(typeof(MyClass))]
+                public partial class Witness { }
+                """,
+                [referencedProject.ToMetadataReference()]);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+            var shape = Assert.Single(
+                result.AllGeneratedTypes.OfType<ObjectShapeModel>(),
+                model => model.Type.FullyQualifiedName is "global::MyClass");
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+
+            Assert.Equal("PT0023", diagnostic.Id);
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+            Assert.Contains("TestAttribute.AttributeId", diagnostic.GetMessage());
+            Assert.Empty(shape.Attributes);
+        }
+
+        [Theory]
+        [InlineData("TestAttribute")]
+        [InlineData("DerivedTestAttribute")]
+        public static void AttributeWithErrorObsoleteGetter_IsIncluded(string attributeType)
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation($$"""
+                using System;
+                using PolyType;
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public class TestAttribute : Attribute
+                {
+                    public int Value
+                    {
+                        [Obsolete("Do not read.", true)]
+                        get;
+                        set;
+                    }
+                }
+
+                public sealed class DerivedTestAttribute : TestAttribute { }
+
+                [GenerateShape, {{attributeType}}(Value = 42)]
+                public partial class MyClass { }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            TypeShapeModel shape = Assert.Single(
+                result.AllGeneratedTypes,
+                model => model.Type.FullyQualifiedName is "global::MyClass");
+            AttributeDataModel attribute = Assert.Single(shape.Attributes);
+
+            Assert.Empty(result.Diagnostics);
+            Assert.Equal($"global::{attributeType}", attribute.AttributeType.FullyQualifiedName);
+            Assert.Equal(("Value", "42"), Assert.Single(attribute.NamedArguments));
+        }
+
+        [Theory]
+        [InlineData("null", "new[] { 1 }")]
+        [InlineData("new[] { 1 }", "null")]
+        [InlineData("null", "null")]
+        [InlineData("new int[0]", "new int[0]")]
+        [InlineData("new[] { 1, 2 }", "new[] { 3, 4 }")]
+        public static void AttributeWithArrayArguments_NoErrors(string constructorArgument, string namedArgument)
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation($$"""
+                using System;
+                using PolyType;
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public sealed class TestAttribute : Attribute
+                {
+                    public TestAttribute(int[]? values) { }
+                    public int[]? Values { get; set; }
+                }
+
+                [GenerateShape, Test({{constructorArgument}}, Values = {{namedArgument}})]
+                public partial class MyClass { }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            TypeShapeModel shape = Assert.Single(
+                result.AllGeneratedTypes,
+                model => model.Type.FullyQualifiedName is "global::MyClass");
+
+            Assert.Empty(result.Diagnostics);
+            Assert.Single(shape.Attributes);
+        }
+
         [Fact]
         public static void AttributeWithBooleanConstants_NoErrors()
         {

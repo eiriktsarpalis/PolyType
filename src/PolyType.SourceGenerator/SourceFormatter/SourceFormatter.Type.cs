@@ -14,7 +14,7 @@ internal sealed partial class SourceFormatter
         string generatedFieldName = "__" + type.SourceIdentifier;
 
         using SourceWriter writer = new();
-        StartFormatSourceFile(writer, provider.ProviderDeclaration);
+        StartFormatSourceFile(writer, provider.ProviderDeclaration, provider.SuppressedDiagnosticIds);
 
         writer.WriteLine(provider.ProviderDeclaration.TypeDeclarationHeader);
         writer.WriteLine('{');

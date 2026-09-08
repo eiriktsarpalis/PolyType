@@ -1506,6 +1506,221 @@ public static partial class CompilationTests
         Assert.Empty(result.Diagnostics);
     }
 
+    [Theory]
+#if NET
+    [InlineData("""[System.Obsolete("Do not use.", DiagnosticId = "TESTOBSOLETE001")]""", "TESTOBSOLETE001")]
+#endif
+    [InlineData("""[System.Diagnostics.CodeAnalysis.Experimental("TESTEXPERIMENTAL001")]""", "TESTEXPERIMENTAL001")]
+    public static void GeneratedMemberAccessDiagnosticsAreSuppressed(string diagnosticAttribute, string diagnosticId)
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation($$"""
+            using PolyType;
+
+            #if !NET
+            namespace System.Diagnostics.CodeAnalysis
+            {
+                [System.AttributeUsage(System.AttributeTargets.All, Inherited = false)]
+                internal sealed class ExperimentalAttribute : System.Attribute
+                {
+                    public ExperimentalAttribute(string diagnosticId) { }
+                }
+            }
+            #endif
+
+            [GenerateShape]
+            public partial class MyObject
+            {
+                {{diagnosticAttribute}}
+                public int Value { get; set; }
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        TypeShapeProviderModel provider = Assert.Single(result.GeneratedModels);
+
+        Assert.Empty(result.Diagnostics);
+        Assert.Contains(diagnosticId, provider.SuppressedDiagnosticIds);
+        Assert.Contains(
+            result.NewCompilation.SyntaxTrees,
+            syntaxTree => syntaxTree.ToString().Contains($"#pragma warning disable {diagnosticId}", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("private")]
+    [InlineData("public")]
+    public static void MethodSignatureTypeDiagnosticsAreSuppressed(string accessibility)
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation($$"""
+            using System;
+            using System.Threading.Tasks;
+            using PolyType;
+
+            #if !NET
+            namespace System.Diagnostics.CodeAnalysis
+            {
+                [AttributeUsage(AttributeTargets.All, Inherited = false)]
+                internal sealed class ExperimentalAttribute : Attribute
+                {
+                    public ExperimentalAttribute(string diagnosticId) { }
+                }
+            }
+            #endif
+
+            [System.Diagnostics.CodeAnalysis.Experimental("TASK001")]
+            public sealed class ExperimentalTask : Task
+            {
+                public ExperimentalTask() : base(() => { }) { }
+            }
+
+            [System.Diagnostics.CodeAnalysis.Experimental("OUT001")]
+            public sealed class ExperimentalValue { }
+
+            #pragma warning disable TASK001, OUT001
+            [GenerateShape]
+            public partial class MyObject
+            {
+                public MyObject(out ExperimentalValue value) => value = null!;
+
+                [MethodShape]
+                {{accessibility}} ExperimentalTask GetResult() => throw new NotImplementedException();
+
+                [MethodShape]
+                public void GetValue(out ExperimentalValue value) => value = null!;
+            }
+            #pragma warning restore TASK001, OUT001
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        TypeShapeProviderModel provider = Assert.Single(result.GeneratedModels);
+
+        Assert.Empty(result.Diagnostics);
+        Assert.Contains("TASK001", provider.SuppressedDiagnosticIds);
+        Assert.Contains("OUT001", provider.SuppressedDiagnosticIds);
+        Assert.DoesNotContain(
+            result.AllGeneratedTypes,
+            model => model.Type.FullyQualifiedName is "global::ExperimentalTask" or "global::ExperimentalValue");
+    }
+
+    [Fact]
+    public static void DiagnosticsOnOverriddenMembersAreSuppressed()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            #if !NET
+            namespace System.Diagnostics.CodeAnalysis
+            {
+                [System.AttributeUsage(System.AttributeTargets.All, Inherited = false)]
+                internal sealed class ExperimentalAttribute : System.Attribute
+                {
+                    public ExperimentalAttribute(string diagnosticId) { }
+                }
+            }
+            #endif
+
+            public class BaseType
+            {
+                [System.Diagnostics.CodeAnalysis.Experimental("BASEEXPERIMENTAL001")]
+                public virtual int ExperimentalValue { get; set; }
+            }
+
+            #pragma warning disable BASEEXPERIMENTAL001
+            [GenerateShape]
+            public partial class DerivedType : BaseType
+            {
+                public override int ExperimentalValue { get; set; }
+            }
+            #pragma warning restore BASEEXPERIMENTAL001
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        TypeShapeProviderModel provider = Assert.Single(result.GeneratedModels);
+
+        Assert.Empty(result.Diagnostics);
+        Assert.Contains("BASEEXPERIMENTAL001", provider.SuppressedDiagnosticIds);
+    }
+
+    [Fact]
+    public static void AssemblyExperimentalDiagnosticsAreSuppressed()
+    {
+        Compilation referencedProject = CompilationHelpers.CreateCompilation("""
+            [assembly: System.Diagnostics.CodeAnalysis.Experimental("ASSEMBLYEXPERIMENTAL001")]
+
+            #if !NET
+            namespace System.Diagnostics.CodeAnalysis
+            {
+                [System.AttributeUsage(System.AttributeTargets.Assembly, Inherited = false)]
+                public sealed class ExperimentalAttribute : System.Attribute
+                {
+                    public ExperimentalAttribute(string diagnosticId) { }
+                }
+            }
+            #endif
+
+            public sealed class ExternalType
+            {
+                public int Value { get; set; }
+            }
+            """,
+            assemblyName: "ExperimentalAssembly");
+
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using PolyType;
+
+            #pragma warning disable ASSEMBLYEXPERIMENTAL001
+            [GenerateShapeFor(typeof(ExternalType))]
+            public partial class Witness { }
+            #pragma warning restore ASSEMBLYEXPERIMENTAL001
+            """,
+            [referencedProject.ToMetadataReference()]);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        TypeShapeProviderModel provider = Assert.Single(result.GeneratedModels);
+
+        Assert.Empty(result.Diagnostics);
+        Assert.Contains("ASSEMBLYEXPERIMENTAL001", provider.SuppressedDiagnosticIds);
+    }
+
+    [Fact]
+    public static void RenamedIndexerExperimentalDiagnosticIsSuppressed()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System.Collections.Generic;
+            using PolyType;
+
+            #if !NET
+            namespace System.Diagnostics.CodeAnalysis
+            {
+                [System.AttributeUsage(System.AttributeTargets.All, Inherited = false)]
+                internal sealed class ExperimentalAttribute : System.Attribute
+                {
+                    public ExperimentalAttribute(string diagnosticId) { }
+                }
+            }
+            #endif
+
+            public sealed class MyDictionary : Dictionary<int, int>
+            {
+                [System.Runtime.CompilerServices.IndexerName("CustomItem")]
+                [System.Diagnostics.CodeAnalysis.Experimental("INDEXEREXPERIMENTAL001")]
+                public new int this[int key]
+                {
+                    get => base[key];
+                    set => base[key] = value;
+                }
+            }
+
+            [GenerateShapeFor(typeof(MyDictionary))]
+            public partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        TypeShapeProviderModel provider = Assert.Single(result.GeneratedModels);
+
+        Assert.Empty(result.Diagnostics);
+        Assert.Contains("INDEXEREXPERIMENTAL001", provider.SuppressedDiagnosticIds);
+    }
+
     [Fact]
     public static void ImportedTypes()
     {
