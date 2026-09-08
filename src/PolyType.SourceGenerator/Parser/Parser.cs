@@ -25,6 +25,8 @@ public sealed partial class Parser : TypeDataModelGenerator
 
     private readonly PolyTypeKnownSymbols _knownSymbols;
     private readonly IReadOnlyDictionary<ITypeSymbol, TypeExtensionModel> _typeShapeExtensions;
+    private readonly HashSet<ISymbol> _observedDiagnosticSymbols = new(SymbolEqualityComparer.Default);
+    private HashSet<string>? _suppressedDiagnosticIds;
 
     private Parser(ISymbol generationScope, IReadOnlyDictionary<ITypeSymbol, TypeExtensionModel> typeShapeExtensions, PolyTypeKnownSymbols knownSymbols, CancellationToken cancellationToken)
         : base(generationScope, knownSymbols, cancellationToken)
@@ -32,6 +34,250 @@ public sealed partial class Parser : TypeDataModelGenerator
         _knownSymbols = knownSymbols;
         _typeShapeExtensions = typeShapeExtensions;
     }
+
+    protected override void OnMemberAccessed(ISymbol symbol) => CollectDiagnosticIdsToSuppress(symbol);
+
+    private void CollectDiagnosticIdsToSuppress(ISymbol symbol)
+    {
+        if (symbol is ITypeSymbol type)
+        {
+            CollectTypeDiagnosticIds(type);
+            return;
+        }
+
+        foreach (ISymbol accessedSymbol in EnumerateAccessedSymbols(symbol))
+        {
+            if (!_observedDiagnosticSymbols.Add(accessedSymbol))
+            {
+                continue;
+            }
+
+            CollectDiagnosticIdsFromAttributesCore(accessedSymbol);
+            CollectTypeDiagnosticIds(accessedSymbol.ContainingType);
+
+            if (accessedSymbol is IMethodSymbol method)
+            {
+                CollectTypeDiagnosticIds(method.ReturnType);
+                foreach (IParameterSymbol parameter in method.Parameters)
+                {
+                    CollectTypeDiagnosticIds(parameter.Type);
+                }
+
+                foreach (ITypeSymbol typeArgument in method.TypeArguments)
+                {
+                    CollectTypeDiagnosticIds(typeArgument);
+                }
+            }
+        }
+
+        void CollectTypeDiagnosticIds(ITypeSymbol? referencedType)
+        {
+            if (referencedType is null || !_observedDiagnosticSymbols.Add(referencedType))
+            {
+                return;
+            }
+
+            CollectDiagnosticIdsFromAttributesCore(referencedType);
+            CollectDiagnosticIdsFromAttributes(referencedType.ContainingModule);
+            CollectDiagnosticIdsFromAttributes(referencedType.ContainingAssembly);
+
+            switch (referencedType)
+            {
+                case IArrayTypeSymbol arrayType:
+                    CollectTypeDiagnosticIds(arrayType.ElementType);
+                    break;
+
+                case IPointerTypeSymbol pointerType:
+                    CollectTypeDiagnosticIds(pointerType.PointedAtType);
+                    break;
+
+                case INamedTypeSymbol namedType:
+                    foreach (ITypeSymbol typeArgument in namedType.TypeArguments)
+                    {
+                        CollectTypeDiagnosticIds(typeArgument);
+                    }
+
+                    CollectTypeDiagnosticIds(namedType.ContainingType);
+                    break;
+            }
+        }
+
+        void CollectDiagnosticIdsFromAttributes(ISymbol? attributedSymbol)
+        {
+            if (attributedSymbol is null || !_observedDiagnosticSymbols.Add(attributedSymbol))
+            {
+                return;
+            }
+
+            CollectDiagnosticIdsFromAttributesCore(attributedSymbol);
+        }
+
+        void CollectDiagnosticIdsFromAttributesCore(ISymbol attributedSymbol)
+        {
+            foreach (AttributeData attribute in attributedSymbol.GetAttributes())
+            {
+                string? diagnosticId = null;
+                if (IsExperimentalAttribute(attribute.AttributeClass))
+                {
+                    diagnosticId = attribute.ConstructorArguments is [{ Value: string id }, ..] ? id : null;
+                }
+                else if (IsObsoleteAttribute(attribute.AttributeClass) &&
+                    attribute.ConstructorArguments is not [_, { Value: true }, ..])
+                {
+                    diagnosticId = attribute.NamedArguments
+                        .FirstOrDefault(argument => argument.Key is "DiagnosticId")
+                        .Value.Value as string;
+                }
+
+                if (diagnosticId is not null && SyntaxFacts.IsValidIdentifier(diagnosticId))
+                {
+                    (_suppressedDiagnosticIds ??= new(StringComparer.Ordinal)).Add(diagnosticId);
+                }
+            }
+        }
+    }
+
+    private static ISymbol? GetUnsuppressibleObsoleteMember(ISymbol? symbol)
+    {
+        foreach (ISymbol accessedSymbol in EnumerateAccessedSymbols(symbol))
+        {
+            if (HasUnsuppressibleObsoleteAttribute(accessedSymbol))
+            {
+                return accessedSymbol;
+            }
+        }
+
+        return null;
+
+        static bool HasUnsuppressibleObsoleteAttribute(ISymbol? symbol)
+        {
+            foreach (AttributeData attribute in symbol?.GetAttributes() ?? ImmutableArray<AttributeData>.Empty)
+            {
+                if (IsObsoleteAttribute(attribute.AttributeClass) &&
+                    attribute.ConstructorArguments is [_, { Value: true }, ..])
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    private static ISymbol? GetUnsuppressibleObsoleteMember(AttributeData attribute)
+    {
+        if (GetUnsuppressibleObsoleteMember(attribute.AttributeConstructor) is { } obsoleteConstructor)
+        {
+            return obsoleteConstructor;
+        }
+
+        foreach (KeyValuePair<string, TypedConstant> argument in attribute.NamedArguments)
+        {
+            ISymbol? member = ResolveAttributeNamedArgument(attribute.AttributeClass!, argument.Key);
+            if (member is IPropertySymbol property)
+            {
+                // Reconstruction writes the property; its getter is not accessed.
+                member = property.SetMethod;
+            }
+
+            if (GetUnsuppressibleObsoleteMember(member) is { } obsoleteMember)
+            {
+                return obsoleteMember;
+            }
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<ISymbol> EnumerateAccessedSymbols(ISymbol? symbol)
+    {
+        for (ISymbol? current = symbol; current is not null; current = GetOverriddenSymbol(current))
+        {
+            yield return current;
+
+            switch (current)
+            {
+                case IPropertySymbol property:
+                    if (property.GetMethod is not null)
+                    {
+                        yield return property.GetMethod;
+                    }
+
+                    if (property.SetMethod is not null)
+                    {
+                        yield return property.SetMethod;
+                    }
+
+                    break;
+
+                case IEventSymbol @event:
+                    if (@event.AddMethod is not null)
+                    {
+                        yield return @event.AddMethod;
+                    }
+
+                    if (@event.RemoveMethod is not null)
+                    {
+                        yield return @event.RemoveMethod;
+                    }
+
+                    if (@event.RaiseMethod is not null)
+                    {
+                        yield return @event.RaiseMethod;
+                    }
+
+                    break;
+
+                case IMethodSymbol { AssociatedSymbol: { } associatedSymbol }:
+                    yield return associatedSymbol;
+                    break;
+            }
+        }
+    }
+
+    private static ISymbol? GetOverriddenSymbol(ISymbol current) =>
+        current switch
+        {
+            IPropertySymbol property => property.OverriddenProperty,
+            IMethodSymbol method => method.OverriddenMethod,
+            IEventSymbol @event => @event.OverriddenEvent,
+            _ => null,
+        };
+
+    private static ISymbol? ResolveAttributeNamedArgument(INamedTypeSymbol attributeType, string memberName)
+    {
+        for (INamedTypeSymbol? current = attributeType; current is not null; current = current.BaseType)
+        {
+            if (current.GetMembers(memberName).FirstOrDefault(member => member is IPropertySymbol or IFieldSymbol) is { } member)
+            {
+                return member;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsObsoleteAttribute(INamedTypeSymbol? attributeType) =>
+        attributeType is
+        {
+            Name: "ObsoleteAttribute",
+            ContainingNamespace: { Name: "System", ContainingNamespace.IsGlobalNamespace: true },
+        };
+
+    private static bool IsExperimentalAttribute(INamedTypeSymbol? attributeType) =>
+        attributeType is
+        {
+            Name: "ExperimentalAttribute",
+            ContainingNamespace:
+            {
+                Name: "CodeAnalysis",
+                ContainingNamespace:
+                {
+                    Name: "Diagnostics",
+                    ContainingNamespace: { Name: "System", ContainingNamespace.IsGlobalNamespace: true },
+                },
+            },
+        };
 
     public static (TypeShapeProviderModel Model, ImmutableArray<Diagnostic> Diagnostics)? ParseFromGenerateShapeAttributes(
         ImmutableArray<TypeWithAttributeDeclarationContext> generateShapeDeclarations,
@@ -1016,6 +1262,8 @@ public sealed partial class Parser : TypeDataModelGenerator
             return ReportInvalidMarshalerAndExit();
         }
 
+        OnMemberAccessed(defaultCtor);
+
         // Check that the surrogate marshaler implements exactly one IMarshaler<,> for the source type.
         ITypeSymbol? surrogateType = null;
         foreach (INamedTypeSymbol interfaceType in namedMarshaler.AllInterfaces)
@@ -1122,6 +1370,7 @@ public sealed partial class Parser : TypeDataModelGenerator
             TagReader = unionInfo.TagReader,
         };
 
+        OnMemberAccessed(unionInfo.TagReader);
         return TypeDataModelGenerationStatus.Success;
     }
 
@@ -1140,6 +1389,7 @@ public sealed partial class Parser : TypeDataModelGenerator
                 return status;
             }
 
+            OnMemberAccessed(property);
             PolyType.Roslyn.Helpers.RoslynHelpers.ResolveNullableAnnotation(property, out bool isGetterNonNullable, out bool _);
             properties.Add(new PropertyDataModel(property)
             {
@@ -1168,6 +1418,7 @@ public sealed partial class Parser : TypeDataModelGenerator
             MemberInitializers = ImmutableArray<PropertyDataModel>.Empty,
         };
 
+        OnMemberAccessed(unionCaseInfo.Constructor);
         model = new ObjectDataModel
         {
             Type = unionCaseInfo.DeclaringType,
@@ -1201,6 +1452,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         {
             ITypeSymbol argType = currentFunc.TypeArguments[0];
             returnType = currentFunc.TypeArguments[1];
+            OnMemberAccessed(currentFunc.GetMethods("Invoke", isStatic: false).First());
             TypeDataModelGenerationStatus status = IncludeNestedType(argType, ref ctx);
             if (status is not TypeDataModelGenerationStatus.Success)
             {
@@ -1258,15 +1510,19 @@ public sealed partial class Parser : TypeDataModelGenerator
 
     private TypeShapeProviderModel ExportTypeShapeProviderModel(TypeDeclarationModel providerDeclaration, ImmutableEquatableArray<TypeDeclarationModel> generateShapeTypes)
     {
+        ImmutableEquatableDictionary<TypeId, TypeShapeModel> providedTypes = GetGeneratedTypesAndIdentifiers()
+            .ToImmutableEquatableDictionary(
+                keySelector: kvp => kvp.Key,
+                valueSelector: kvp => MapModel(kvp.Value.Model, kvp.Value.TypeId, kvp.Value.SourceIdentifier));
+
         return new TypeShapeProviderModel
         {
             ProviderDeclaration = providerDeclaration,
-            ProvidedTypes = GetGeneratedTypesAndIdentifiers()
-                .ToImmutableEquatableDictionary(
-                    keySelector: kvp => kvp.Key,
-                    valueSelector: kvp => MapModel(kvp.Value.Model, kvp.Value.TypeId, kvp.Value.SourceIdentifier)),
-
+            ProvidedTypes = providedTypes,
             AnnotatedTypes = generateShapeTypes,
+            SuppressedDiagnosticIds = _suppressedDiagnosticIds is { Count: > 0 } diagnosticIds
+                ? diagnosticIds.OrderBy(id => id, StringComparer.Ordinal).ToImmutableEquatableArray()
+                : [],
             TargetSupportsIShapeableOfT = _knownSymbols.TargetFramework >= TargetFramework.Net80,
         };
     }

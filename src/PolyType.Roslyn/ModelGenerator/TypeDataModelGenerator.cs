@@ -113,6 +113,12 @@ public partial class TypeDataModelGenerator
     protected virtual ITypeSymbol NormalizeType(ITypeSymbol type) => type;
 
     /// <summary>
+    /// When overridden, observes symbols that are nodes in a type's data contract.
+    /// </summary>
+    /// <param name="symbol">The symbol being accessed.</param>
+    protected virtual void OnMemberAccessed(ISymbol symbol) { }
+
+    /// <summary>
     /// When overridden, returns the derived types of the given type.
     /// </summary>
     /// <param name="type">The base type to resolve derived types from.</param>
@@ -147,6 +153,7 @@ public partial class TypeDataModelGenerator
     {
         CancellationToken.ThrowIfCancellationRequested();
         type = NormalizeType(type);
+        OnMemberAccessed(type);
 
         if (ctx.GeneratedModels.TryGetValue(type, out TypeDataModel? model))
         {
@@ -473,6 +480,7 @@ public partial class TypeDataModelGenerator
             return status;
         }
 
+        OnMemberAccessed(resolvedMethod.MethodSymbol);
         result = new MethodDataModel
         {
             Name = resolvedMethod.CustomName ?? resolvedMethod.MethodSymbol.Name,
@@ -571,6 +579,7 @@ public partial class TypeDataModelGenerator
             return status;
         }
 
+        OnMemberAccessed(resolvedEvent.Event);
         result = new EventDataModel
         {
             Name = resolvedEvent.CustomName ?? resolvedEvent.Event.Name,

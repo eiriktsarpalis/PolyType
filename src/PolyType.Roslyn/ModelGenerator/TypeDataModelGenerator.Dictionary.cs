@@ -30,6 +30,10 @@ public partial class TypeDataModelGenerator
         ITypeSymbol? keyType = null;
         ITypeSymbol? valueType = null;
         DictionaryInsertionMode availableInsertionModes = DictionaryInsertionMode.None;
+        IMethodSymbol? addMethod = null;
+        IMethodSymbol? tryAddMethod = null;
+        IMethodSymbol? setMethod = null;
+        IMethodSymbol? containsKeyMethod = null;
 
         if (namedType.GetCompatibleGenericBaseType(KnownSymbols.IReadOnlyDictionaryOfTKeyTValue) is { } genericReadOnlyIDictInstance)
         {
@@ -62,7 +66,7 @@ public partial class TypeDataModelGenerator
         else if (ResolveBestCollectionCtor(
             namedType,
             DetermineImplementationType(namedType).GetConstructors(),
-            hasInserter: ContainsInserter(type, keyType, valueType, out availableInsertionModes),
+            hasInserter: ContainsInserter(type, keyType, valueType),
             elementType,
             keyType,
             valueType) is { } bestCtor)
@@ -87,6 +91,34 @@ public partial class TypeDataModelGenerator
             return true;
         }
 
+        if (factoryMethod is not null)
+        {
+            OnMemberAccessed(factoryMethod);
+        }
+
+        if (!isParameterizedFactory)
+        {
+            if (addMethod is not null)
+            {
+                OnMemberAccessed(addMethod);
+            }
+
+            if (tryAddMethod is not null)
+            {
+                OnMemberAccessed(tryAddMethod);
+            }
+
+            if (setMethod is not null)
+            {
+                OnMemberAccessed(setMethod);
+            }
+
+            if (containsKeyMethod is not null)
+            {
+                OnMemberAccessed(containsKeyMethod);
+            }
+        }
+
         model = new DictionaryDataModel
         {
             Type = type,
@@ -104,10 +136,8 @@ public partial class TypeDataModelGenerator
 
         return true;
 
-        bool ContainsInserter(ITypeSymbol type, ITypeSymbol keyType, ITypeSymbol valueType, out DictionaryInsertionMode availableInsertionModes)
+        bool ContainsInserter(ITypeSymbol type, ITypeSymbol keyType, ITypeSymbol valueType)
         {
-            availableInsertionModes = DictionaryInsertionMode.None;
-            bool foundContainsKey = false;
             var instanceMethods = type.ResolveVisibleMembers<IMethodSymbol>()
                 .Where(method => method.Symbol.IsStatic is false && IsAccessibleSymbol(method.Symbol));
 
@@ -120,14 +150,17 @@ public partial class TypeDataModelGenerator
                     if (method.Name is "Add")
                     {
                         availableInsertionModes |= DictionaryInsertionMode.Add;
+                        addMethod ??= method;
                     }
                     else if (method is { Name: "TryAdd", ReturnType.SpecialType: SpecialType.System_Boolean })
                     {
                         availableInsertionModes |= DictionaryInsertionMode.TryAdd;
+                        tryAddMethod ??= method;
                     }
-                    else if (method is { Name: "set_Item", MethodKind: MethodKind.PropertySet })
+                    else if (method is { MethodKind: MethodKind.PropertySet, AssociatedSymbol: IPropertySymbol { IsIndexer: true } })
                     {
                         availableInsertionModes |= DictionaryInsertionMode.SetItem;
+                        setMethod ??= method;
                     }
 
                     continue;
@@ -136,11 +169,11 @@ public partial class TypeDataModelGenerator
                 if (method is { Name: "ContainsKey", Parameters: [var param], ReturnType.SpecialType: SpecialType.System_Boolean } &&
                     SymbolEqualityComparer.Default.Equals(param.Type, keyType))
                 {
-                    foundContainsKey = true;
+                    containsKeyMethod ??= method;
                 }
             }
 
-            if (foundContainsKey && (availableInsertionModes & DictionaryInsertionMode.Add) != 0)
+            if (containsKeyMethod is not null && addMethod is not null)
             {
                 availableInsertionModes |= DictionaryInsertionMode.ContainsKeyAdd;
             }

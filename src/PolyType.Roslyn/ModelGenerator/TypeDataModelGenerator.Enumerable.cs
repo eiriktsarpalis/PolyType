@@ -146,6 +146,16 @@ public partial class TypeDataModelGenerator
             return true;
         }
 
+        if (factoryMethod is not null)
+        {
+            OnMemberAccessed(factoryMethod);
+        }
+
+        if (!isParameterizedFactory && appendMethod is not null)
+        {
+            OnMemberAccessed(appendMethod);
+        }
+
         model = new EnumerableDataModel
         {
             Type = type,

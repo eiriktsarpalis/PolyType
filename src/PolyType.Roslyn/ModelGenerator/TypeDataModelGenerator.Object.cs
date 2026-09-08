@@ -261,6 +261,7 @@ public partial class TypeDataModelGenerator
         // symbol for attribute and nullability metadata resolution.
         IPropertySymbol baseProperty = property.GetBaseProperty();
         property.ResolveNullableAnnotation(out bool isGetterNonNullable, out bool isSetterNonNullable);
+        OnMemberAccessed(property);
 
         return new PropertyDataModel(property)
         {
@@ -283,6 +284,7 @@ public partial class TypeDataModelGenerator
         Debug.Assert(!field.IsStatic);
         field.ResolveNullableAnnotation(out bool isGetterNonNullable, out bool isSetterNonNullable);
         bool isAccessible = IsAccessibleSymbol(field);
+        OnMemberAccessed(field);
         return new PropertyDataModel(field)
         {
             LogicalName = customName,
@@ -382,6 +384,7 @@ public partial class TypeDataModelGenerator
             }
         }
 
+        OnMemberAccessed(constructor);
         return new ConstructorDataModel
         {
             Constructor = constructor,

@@ -166,6 +166,16 @@ public sealed partial class Parser
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    private static DiagnosticDescriptor AttributeNotSupported { get; } = new DiagnosticDescriptor(
+        id: "PT0023",
+        title: "Attribute cannot be included in generated shape.",
+        messageFormat:
+            "The attribute '{0}' on '{1}' cannot be included in the generated shape because '{2}' is marked obsolete as an error.",
+
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     private static DiagnosticDescriptor PatternMatchesNoTypes { get; } = new DiagnosticDescriptor(
         id: "PT0014",
         title: "Pattern matches no types.",

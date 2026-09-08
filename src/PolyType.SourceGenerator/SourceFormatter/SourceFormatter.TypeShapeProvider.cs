@@ -10,7 +10,7 @@ internal sealed partial class SourceFormatter
     private static SourceText FormatTypeShapeProviderMainFile(TypeShapeProviderModel provider)
     {
         using SourceWriter writer = new();
-        StartFormatSourceFile(writer, provider.ProviderDeclaration);
+        StartFormatSourceFile(writer, provider.ProviderDeclaration, provider.SuppressedDiagnosticIds);
 
         writer.WriteLine("""/// <summary>The source generated <see cref="global::PolyType.SourceGenModel.SourceGenTypeShapeProvider"/> implementation for the current assembly.</summary>""");
         writer.WriteLine($"""[global::System.CodeDom.Compiler.GeneratedCodeAttribute({FormatStringLiteral(PolyTypeGenerator.SourceGeneratorName)}, {FormatStringLiteral(PolyTypeGenerator.SourceGeneratorVersion)})]""");
@@ -99,7 +99,7 @@ internal sealed partial class SourceFormatter
         const string LocalTypeShapeProviderName = "__LocalTypeShapeProvider__";
 
         using SourceWriter writer = new();
-        StartFormatSourceFile(writer, typeDeclaration);
+        StartFormatSourceFile(writer, typeDeclaration, provider.SuppressedDiagnosticIds);
 
         if (!provider.TargetSupportsIShapeableOfT)
         {
