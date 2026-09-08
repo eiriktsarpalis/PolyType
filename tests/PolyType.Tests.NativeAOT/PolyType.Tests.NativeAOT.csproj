@@ -22,6 +22,8 @@
 
   <ItemGroup Condition="'$(SkipTUnitTestRuns)' != 'true'">
     <!-- TUnit doesn't like it when run together with other xunit projects & codecov enabled -->
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
     <PackageReference Include="TUnit" />
     <PackageReference Include="TUnit.Engine" />
   </ItemGroup>
