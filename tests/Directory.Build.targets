@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and '$(OS)' != 'Windows_NT'">
+    <RunCommand Condition="'$(RunCommand)' == ''">mono</RunCommand>
+    <RunArguments Condition="'$(RunArguments)' == ''">&quot;$(TargetPath)&quot; $(StartArguments)</RunArguments>
+  </PropertyGroup>
+</Project>

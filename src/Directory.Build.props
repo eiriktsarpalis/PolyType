@@ -3,6 +3,7 @@
 
   <PropertyGroup>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <AnalysisModeStyle>Default</AnalysisModeStyle>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <WarningsAsErrors>Nullable</WarningsAsErrors>
