@@ -37,7 +37,6 @@
     <File Path="OpenKey.snk" />
     <File Path="LICENSE" />
     <File Path="Makefile" />
-    <File Path="nuget.config" />
     <File Path="README.md" />
     <File Path="version.json" />
   </Folder>
