@@ -1,5 +1,4 @@
 using PolyType.ReflectionProvider;
-using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -12,7 +11,7 @@ namespace PolyType.Tests;
 public static class ReflectionTypeShapeProviderTests
 {
 #if NET
-    private static readonly TimeSpan UnloadWaitTimeout = TimeSpan.FromSeconds(2);
+    private const int MaxUnloadCollectionAttempts = 100;
     private const int UnloadRetryDelayMilliseconds = 10;
 #endif
 
@@ -205,12 +204,11 @@ public static class ReflectionTypeShapeProviderTests
         // when the AssemblyLoadContext is unloaded.
         WeakReference weakRef = CreateTypeShapeAndGetWeakReference();
 
-        // Force GC to collect the unloaded assembly. Keep retries time-bounded because unload can
+        // Force GC to collect the unloaded assembly. Keep bounded retries because unload can
         // take longer under instrumented runs due to profiler overhead.
-        Stopwatch stopwatch = Stopwatch.StartNew();
-        while (weakRef.IsAlive && stopwatch.Elapsed < UnloadWaitTimeout)
+        for (int i = 0; i < MaxUnloadCollectionAttempts && weakRef.IsAlive; i++)
         {
-            GC.Collect();
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
             GC.WaitForPendingFinalizers();
             if (weakRef.IsAlive)
             {
