@@ -192,15 +192,18 @@ public static class ReflectionTypeShapeProviderTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void TypeUnloading_TypeShapeCache_ShouldAllowUnloading()
     {
+        Assert.SkipWhen(!OperatingSystem.IsWindows() && IsProfilingEnabled(), "Profiling keeps collectible AssemblyLoadContext roots alive on non-Windows runtimes.");
+
         // This test verifies that the ConditionalWeakTable allows type unloading
         // when the AssemblyLoadContext is unloaded.
         WeakReference weakRef = CreateTypeShapeAndGetWeakReference();
 
         // Force GC to collect the unloaded assembly
-        for (int i = 0; i < 10 && weakRef.IsAlive; i++)
+        for (int i = 0; i < 100 && weakRef.IsAlive; i++)
         {
             GC.Collect();
             GC.WaitForPendingFinalizers();
+            System.Threading.Thread.Sleep(100);
         }
 
         // The type should have been collected after the AssemblyLoadContext was unloaded
@@ -239,6 +242,12 @@ public static class ReflectionTypeShapeProviderTests
         alc.Unload();
 
         return weakRef;
+    }
+
+    private static bool IsProfilingEnabled()
+    {
+        return Environment.GetEnvironmentVariable("CORECLR_ENABLE_PROFILING") is "1"
+            || Environment.GetEnvironmentVariable("COR_ENABLE_PROFILING") is "1";
     }
 #endif
 }
