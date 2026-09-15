@@ -70,6 +70,7 @@ internal sealed partial class SourceFormatter
                 throw new InvalidOperationException();
         }
 
+        FormatGenericAccessorClasses(writer);
         writer.Indentation--;
         writer.WriteLine('}');
         EndFormatSourceFile(writer);

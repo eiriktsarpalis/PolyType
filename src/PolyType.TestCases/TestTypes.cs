@@ -553,6 +553,35 @@ public static class TestTypes
         yield return TestCase.Create(new StructWithIncludedPrivateMembers());
         yield return TestCase.Create(GenericStructWithPrivateIncludedMembers<int>.Create(1, 2), p);
         yield return TestCase.Create(GenericStructWithPrivateIncludedMembers<string>.Create("1", "2"), p);
+        yield return TestCase.Create(GenericPrivateDefaultConstructor<int>.Create(42), p);
+        yield return TestCase.Create(GenericPrivateDefaultConstructor<string>.Create("value"), p);
+        yield return TestCase.Create(GenericPrivateFixedConstructor<int>.Create(3, 42), p);
+        yield return TestCase.Create(GenericPrivateFixedConstructor<string>.Create(3, "value"), p);
+        yield return TestCase.Create(GenericPrivateConstructorWithInitializers<int>.Create(42, 3, "name"), p);
+        yield return TestCase.Create(GenericPrivateConstructorWithInitializers<string>.Create("value", 3, "name"), p);
+        yield return TestCase.Create(GenericPrivateInitializer<int>.Create(42), p);
+        yield return TestCase.Create(GenericPrivateInitializer<string>.Create("value"), p);
+        yield return TestCase.Create(GenericPrivateCompositeMembers<int>.Create([[1, 2]], [[3, 4]]), p);
+        yield return TestCase.Create(GenericPrivateCompositeMembers<string>.Create([["a", "b"]], [["c", "d"]]), p);
+        yield return TestCase.Create(GenericPrivateConstructorStruct<int>.Create(42, 17), p);
+        yield return TestCase.Create(GenericPrivateConstructorStruct<string>.Create("value", "extra"), p);
+        yield return TestCase.Create(new GenericReadOnlyMembers<int>(42), p);
+        yield return TestCase.Create(new GenericReadOnlyMembers<string>("value"), p);
+        yield return TestCase.Create(GenericAccessorIntermediate<int>.Create(42, "grand"), p);
+        yield return TestCase.Create(GenericAccessorLeaf.CreateLeaf(42, "grand"), p);
+        yield return TestCase.Create(GenericAccessorDifferentArity<int, string>.Create(42, "grand"), p);
+        yield return TestCase.Create(ConstrainedGenericAccessor<int, List<int>>.Create(42, [1, 2]), p);
+        yield return TestCase.Create(new GenericAccessorColor<float> { A = 1, R = 0.25f, G = 0.5f, B = 0.75f }, p);
+        yield return TestCase.Create(GenericAccessorOuter<int>.Nested.Create(42, 17), p);
+        yield return TestCase.Create(GenericAccessorOuter<int>.Nested<string>.Create(42, "item", 17), p);
+        yield return TestCase.Create(new PartialAccessorOverrides<int>(42, 17), p);
+        yield return TestCase.Create(new PartialAccessorOverrides<string>("getter", "setter"), p);
+        yield return TestCase.Create(new NonGenericPartialAccessorOverrides(42, 17), p);
+        yield return TestCase.Create(new GenericAccessorService<int> { Value = 42 }, p);
+        yield return TestCase.Create(new GenericAccessorService<string> { Value = "value" }, p);
+        yield return TestCase.Create(new InheritedGenericAccessorService { Value = 42 }, p);
+        yield return TestCase.Create(new GenericAccessorServiceStruct<int> { Value = 42 }, p);
+        yield return TestCase.Create(new GenericAccessorServiceStruct<string> { Value = "value" }, p);
         yield return TestCase.Create(new Vector3D(1, 2, 3));
         yield return TestCase.Create(new ClassWithAmbiguousCtors1(1, 2, 3));
         yield return TestCase.Create(new ClassWithAmbiguousCtors2(1, 2, 3));
@@ -3472,11 +3501,6 @@ public partial interface DerivedInterfaceWithEvent : InterfaceWithEvent
     }
 }
 
-public interface ITriggerable
-{
-    void Trigger(int x);
-}
-
 public delegate int CustomDelegate([ParameterShape(Name = "First", IsRequired = false)]ref string? x, [ParameterShape(Name = "Second")]int y = 42);
 
 public delegate int LargeDelegate(
@@ -3694,6 +3718,35 @@ public delegate Task<int> LargeAsyncDelegate(
 [GenerateShapeFor<GenericClassWithMultipleRefConstructorParametersPrivate<string>>]
 [GenerateShapeFor<GenericStructWithPrivateIncludedMembers<int>>]
 [GenerateShapeFor<GenericStructWithPrivateIncludedMembers<string>>]
+[GenerateShapeFor<GenericPrivateDefaultConstructor<int>>]
+[GenerateShapeFor<GenericPrivateDefaultConstructor<string>>]
+[GenerateShapeFor<GenericPrivateFixedConstructor<int>>]
+[GenerateShapeFor<GenericPrivateFixedConstructor<string>>]
+[GenerateShapeFor<GenericPrivateConstructorWithInitializers<int>>]
+[GenerateShapeFor<GenericPrivateConstructorWithInitializers<string>>]
+[GenerateShapeFor<GenericPrivateInitializer<int>>]
+[GenerateShapeFor<GenericPrivateInitializer<string>>]
+[GenerateShapeFor<GenericPrivateCompositeMembers<int>>]
+[GenerateShapeFor<GenericPrivateCompositeMembers<string>>]
+[GenerateShapeFor<GenericPrivateConstructorStruct<int>>]
+[GenerateShapeFor<GenericPrivateConstructorStruct<string>>]
+[GenerateShapeFor<GenericReadOnlyMembers<int>>]
+[GenerateShapeFor<GenericReadOnlyMembers<string>>]
+[GenerateShapeFor<GenericAccessorIntermediate<int>>]
+[GenerateShapeFor<GenericAccessorLeaf>]
+[GenerateShapeFor<GenericAccessorDifferentArity<int, string>>]
+[GenerateShapeFor<ConstrainedGenericAccessor<int, List<int>>>]
+[GenerateShapeFor<GenericAccessorColor<float>>]
+[GenerateShapeFor<GenericAccessorOuter<int>.Nested>]
+[GenerateShapeFor<GenericAccessorOuter<int>.Nested<string>>]
+[GenerateShapeFor<PartialAccessorOverrides<int>>]
+[GenerateShapeFor<PartialAccessorOverrides<string>>]
+[GenerateShapeFor<NonGenericPartialAccessorOverrides>]
+[GenerateShapeFor<GenericAccessorService<int>>]
+[GenerateShapeFor<GenericAccessorService<string>>]
+[GenerateShapeFor<InheritedGenericAccessorService>]
+[GenerateShapeFor<GenericAccessorServiceStruct<int>>]
+[GenerateShapeFor<GenericAccessorServiceStruct<string>>]
 [GenerateShapeFor<EnumWithRecordSurrogate>]
 [GenerateShapeFor<TypeWithGenericMarshaler<int>>]
 [GenerateShapeFor<TypeWithGenericMarshaler<string>>]

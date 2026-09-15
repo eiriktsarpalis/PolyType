@@ -11,6 +11,9 @@ internal sealed partial class SourceFormatter
         string? eventFactoryMethodName = CreateEventsFactoryName(enumerableShapeModel);
         string? associatedTypesFactoryMethodName = GetAssociatedTypesFactoryName(enumerableShapeModel);
         string? attributeFactoryMethodName = GetAttributesFactoryName(enumerableShapeModel);
+        string? inlineArrayConstructorName = enumerableShapeModel is { Kind: EnumerableKind.InlineArrayOfT, ConstructionStrategy: CollectionConstructionStrategy.Parameterized }
+            ? $"__ConstructInlineArray_{enumerableShapeModel.SourceIdentifier}"
+            : null;
 
         writer.WriteLine($$"""
             private global::PolyType.ITypeShape<{{enumerableShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
@@ -35,6 +38,12 @@ internal sealed partial class SourceFormatter
                };
             }
             """, trimDefaultAssignmentLines: true);
+
+        if (inlineArrayConstructorName is not null)
+        {
+            writer.WriteLine();
+            FormatInlineArrayConstructor(writer, inlineArrayConstructorName, enumerableShapeModel);
+        }
 
         if (methodFactoryMethodName is not null)
         {
@@ -105,39 +114,19 @@ internal sealed partial class SourceFormatter
             };
         }
 
-        static string FormatParameterizedConstructorFunc(EnumerableShapeModel enumerableType)
+        string FormatParameterizedConstructorFunc(EnumerableShapeModel enumerableType)
         {
             if (enumerableType.ConstructionStrategy is not CollectionConstructionStrategy.Parameterized)
             {
                 return "null";
             }
 
-            string elementType = enumerableType.ElementType.FullyQualifiedName;
-            if (enumerableType.Kind is EnumerableKind.InlineArrayOfT)
+            if (inlineArrayConstructorName is not null)
             {
-                return $$"""
-                    static (global::System.ReadOnlySpan<{{elementType}}> span, in {{FormatCollectionConstructionOptionsTypeName(enumerableType.ElementType)}} options) =>
-                    {
-                        if (span.Length != {{enumerableType.Length}})
-                        {
-                            throw new global::System.ArgumentException($"Expected {{enumerableType.Length}} elements, but got {span.Length}.");
-                        }
-
-                        {{enumerableType.Type.FullyQualifiedName}} array = default;
-                        ref {{elementType}} destination = ref global::System.Runtime.CompilerServices.Unsafe.As<{{enumerableType.Type.FullyQualifiedName}}, {{elementType}}>(ref array);
-                        #if NETSTANDARD2_0 || NETFRAMEWORK
-                        for (int i = 0; i < {{enumerableType.Length}}; i++)
-                        {
-                            global::System.Runtime.CompilerServices.Unsafe.Add(ref destination, i) = span[i];
-                        }
-                        #else
-                        span.CopyTo(global::System.Runtime.InteropServices.MemoryMarshal.CreateSpan(ref destination, {{enumerableType.Length}}));
-                        #endif
-                        return array;
-                    }
-                    """;
+                return inlineArrayConstructorName;
             }
 
+            string elementType = enumerableType.ElementType.FullyQualifiedName;
             if (enumerableType.Kind is EnumerableKind.ArrayOfT or EnumerableKind.ReadOnlyMemoryOfT or EnumerableKind.MemoryOfT)
             {
                 string suppressSuffix = enumerableType.ElementTypeContainsNullableAnnotations ? "!" : "";
@@ -147,6 +136,53 @@ internal sealed partial class SourceFormatter
 
             return FormatCollectionInitializer(enumerableType, enumerableType.ElementType.FullyQualifiedName);
         }
+    }
+
+    private void FormatInlineArrayConstructor(SourceWriter writer, string methodName, EnumerableShapeModel enumerableType)
+    {
+        string elementType = enumerableType.ElementType.FullyQualifiedName;
+        writer.WriteLine($$"""
+            private static {{enumerableType.Type.FullyQualifiedName}} {{methodName}}(global::System.ReadOnlySpan<{{elementType}}> span, in {{FormatCollectionConstructionOptionsTypeName(enumerableType.ElementType)}} options)
+            {
+            """);
+        writer.Indentation++;
+        writer.WriteLine($$"""
+            if (span.Length != {{enumerableType.Length}})
+            {
+                throw new global::System.ArgumentException($"Expected {{enumerableType.Length}} elements, but got {span.Length}.");
+            }
+
+            {{enumerableType.Type.FullyQualifiedName}} array = default;
+            """);
+
+        if (provider.UsesUpdatedMemorySafetyRules)
+        {
+            writer.WriteLine("unsafe");
+        }
+
+        writer.WriteLine('{');
+        writer.Indentation++;
+        writer.WriteLine($"ref {elementType} destination = ref global::System.Runtime.CompilerServices.Unsafe.As<{enumerableType.Type.FullyQualifiedName}, {elementType}>(ref array);");
+
+        if (provider.SupportsMemoryMarshalCreateSpan)
+        {
+            writer.WriteLine($"span.CopyTo(global::System.Runtime.InteropServices.MemoryMarshal.CreateSpan(ref destination, {enumerableType.Length}));");
+        }
+        else
+        {
+            writer.WriteLine($$"""
+                for (int i = 0; i < {{enumerableType.Length}}; i++)
+                {
+                    global::System.Runtime.CompilerServices.Unsafe.Add(ref destination, i) = span[i];
+                }
+                """);
+        }
+
+        writer.Indentation--;
+        writer.WriteLine('}');
+        writer.WriteLine("return array;");
+        writer.Indentation--;
+        writer.WriteLine('}');
     }
 
     private static string FormatCollectionInitializer(EnumerableShapeModel enumerableType, string valuesType)

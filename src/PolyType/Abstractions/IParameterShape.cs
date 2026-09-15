@@ -71,6 +71,7 @@ public interface IParameterShape
     /// <summary>
     /// Gets a value indicating whether the parameter is a public property or field initializer.
     /// </summary>
+    /// <remarks>For property initializers, this reflects the accessibility of the setter.</remarks>
     bool IsPublic { get; }
 
     /// <summary>

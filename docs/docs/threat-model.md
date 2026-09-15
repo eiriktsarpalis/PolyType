@@ -96,6 +96,8 @@ These are the guarantees PolyType commits to. They are the library's positive se
 
 Beyond data-shape description, the core model can also expose `IMethodShape`, `IEventShape`, and `IFunctionTypeShape`, which enable invoking methods and subscribing to events. These are **opt-in**: method and event inclusion default to off, and including non-public members additionally requires a per-member attribute. Consumers that enable these capabilities take on the corresponding responsibility for what they invoke.
 
+The source generator rejects caller-unsafe user-defined members with error `PT0024` only when the consuming compilation uses the updated memory safety model. The reflection provider detects these members from the defining module's memory safety metadata and throws `NotSupportedException`.
+
 ## Guidance for consumers
 
 Because PolyType hands you a faithful — and potentially broad — projection of a developer's type, a library that drives **untrusted data** through that projection must add the data-plane defenses PolyType deliberately omits:

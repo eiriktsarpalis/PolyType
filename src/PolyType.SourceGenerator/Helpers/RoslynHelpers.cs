@@ -328,21 +328,6 @@ internal static partial class RoslynHelpers
     public static IEnumerable<TMember> GetMembers<TMember>(this ITypeSymbol type, string name) where TMember : ISymbol
         => type.GetMembers(name).OfType<TMember>();
 
-    public static bool MatchesNamespace(this INamespaceSymbol? symbol, ImmutableArray<string> namespaceTokens)
-    {
-        for (int i = namespaceTokens.Length - 1; i >= 0; i--)
-        {
-            if (symbol?.Name != namespaceTokens[i])
-            {
-                return false;
-            }
-
-            symbol = symbol.ContainingNamespace;
-        }
-
-        return symbol is null or INamespaceSymbol { IsGlobalNamespace: true };
-    }
-
     /// <summary>
     /// Returns a string representation of the type suitable for use as an identifier in source code or file names.
     /// </summary>

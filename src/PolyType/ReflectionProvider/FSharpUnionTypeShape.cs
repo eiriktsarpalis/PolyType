@@ -45,7 +45,7 @@ internal sealed class FSharpUnionTypeShape<TUnion>(FSharpUnionInfo unionInfo, Re
         foreach (FSharpUnionCaseInfo unionCaseInfo in unionInfo.UnionCases)
         {
             Type fsharpUnionCaseTy = typeof(FSharpUnionCaseShape<,>).MakeGenericType(unionCaseInfo.DeclaringType, typeof(TUnion));
-            yield return (IUnionCaseShape)Activator.CreateInstance(fsharpUnionCaseTy, unionCaseInfo, Provider, Options)!;
+            yield return (IUnionCaseShape)ReflectionHelpers.CreateInstanceNoWrapExceptions(fsharpUnionCaseTy, unionCaseInfo, Provider, Options)!;
         }
     }
 }

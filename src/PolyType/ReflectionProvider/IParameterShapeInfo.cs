@@ -67,7 +67,7 @@ internal sealed class MemberInitializerShapeInfo : IParameterShapeInfo
         IsRequiredBySyntax = !ctorSetsRequiredMembers && memberInfo.IsRequired();
         IsRequired = isRequiredByAttribute ?? IsRequiredBySyntax;
         IsInitOnly = memberInfo.IsInitOnly();
-        IsPublic = memberInfo is FieldInfo { IsPublic: true } or PropertyInfo { GetMethod.IsPublic: true };
+        IsPublic = memberInfo is FieldInfo { IsPublic: true } or PropertyInfo { SetMethod.IsPublic: true };
         IsNonNullable = isSetterNonNullable;
     }
 

@@ -18,6 +18,16 @@ public sealed record ParameterShapeModel
     public required NullableAnnotation NullableAnnotation { get; init; }
     public required bool IsAccessible { get; init; }
     public required bool CanUseUnsafeAccessors { get; init; }
+
+    /// <summary>Gets the position of a member initializer's declaring type in the shaped type's hierarchy.</summary>
+    public int DeclaringTypeIndex { get; init; }
+
+    /// <summary>Gets the open declaring type for a member initializer's generic unsafe accessor.</summary>
+    public GenericTypeModel? GenericDeclaringType { get; init; }
+
+    /// <summary>Gets the parameter type in the generic type definition, when needed.</summary>
+    public string? OpenParameterTypeName { get; init; }
+
     public required bool ParameterTypeContainsNullabilityAnnotations { get; init; }
     public required bool IsPublic { get; init; }
     public required bool IsField { get; init; }

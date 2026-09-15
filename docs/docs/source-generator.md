@@ -65,6 +65,8 @@ new SourceGenPropertyShape<Person, string>
 
 For inaccessible members (private fields/properties), the generator emits [`[UnsafeAccessor]`](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.unsafeaccessorattribute) declarations on frameworks that support them, or reflection-based fallbacks otherwise.
 
+When the consuming compilation uses the updated memory safety model, user-defined caller-unsafe members cause error `PT0024` for the containing type, even when private or ignored. Compilations using the original memory safety model are not subject to this restriction. Unsafe blocks inside safe members and intrinsic inline/fixed-array handling are supported.
+
 ### Enumerable shapes
 
 Collection types such as `List<T>`, arrays, and `IEnumerable<T>` implementations are emitted as <xref:PolyType.SourceGenModel.SourceGenEnumerableTypeShape`2>. For example, `List<int>` generates:

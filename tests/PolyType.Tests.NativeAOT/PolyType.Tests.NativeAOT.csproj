@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <PackageReference Include="TUnit.Assertions" />
+    <Compile Include="..\..\src\PolyType.TestCases\TestTypes.Accessors.cs" Link="TestTypes.Accessors.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(SkipTUnitTestRuns)' != 'true'">

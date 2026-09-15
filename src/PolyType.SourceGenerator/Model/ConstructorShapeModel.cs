@@ -9,6 +9,10 @@ public sealed record ConstructorShapeModel
     public required bool IsPublic { get; init; }
     public required bool IsAccessible { get; init; }
     public required bool CanUseUnsafeAccessors { get; init; }
+
+    /// <summary>Gets the open declaring type when a generic unsafe accessor is needed.</summary>
+    public GenericTypeModel? GenericDeclaringType { get; init; }
+
     public required ImmutableEquatableArray<ParameterShapeModel> Parameters { get; init; }
     public required ImmutableEquatableArray<ParameterShapeModel> RequiredMembers { get; init; }
     public required ImmutableEquatableArray<ParameterShapeModel> OptionalMembers { get; init; }

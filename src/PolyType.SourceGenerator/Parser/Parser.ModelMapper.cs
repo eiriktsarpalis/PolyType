@@ -417,6 +417,10 @@ public sealed partial class Parser
     {
         bool emitGetter = property.IncludeGetter;
         bool emitSetter = property.IncludeSetter && !property.IsInitOnly;
+        bool needsAccessor = (emitGetter && !property.IsGetterAccessible) ||
+            (property.IncludeSetter && !property.IsSetterAccessible) || property.IsInitOnly;
+        bool canUseUnsafeAccessors = CanUseUnsafeAccessors(property);
+        GenericTypeModel? genericDeclaringType = needsAccessor && canUseUnsafeAccessors ? GetGenericAccessorType(property.DeclaringType) : null;
 
         return new PropertyShapeModel
         {
@@ -426,12 +430,12 @@ public sealed partial class Parser
                 : property.Name,
 
             DeclaringType = SymbolEqualityComparer.Default.Equals(parentType, property.DeclaringType) ? parentTypeId : CreateTypeId(property.DeclaringType),
-            CanUseUnsafeAccessors = _knownSymbols.TargetFramework switch
-            {
-                // .NET 8 or later supports unsafe accessors for properties of non-generic types.
-                var target when target >= TargetFramework.Net80 => !property.DeclaringType.IsGenericType,
-                _ => false
-            },
+            CanUseUnsafeAccessors = canUseUnsafeAccessors,
+            DeclaringTypeIndex = needsAccessor ? GetDeclaringTypeIndex(parentType, property.DeclaringType) : 0,
+            GenericDeclaringType = genericDeclaringType,
+            OpenPropertyTypeName = genericDeclaringType is not null
+                ? GetOpenTypeName(property.PropertyType, property.PropertySymbol.OriginalDefinition.GetMemberType())
+                : null,
 
             PropertyType = CreateTypeId(property.PropertyType),
             IsGetterNonNullable = emitGetter && property.IsGetterNonNullable,
@@ -469,6 +473,8 @@ public sealed partial class Parser
 
         foreach (PropertyDataModel propertyModel in memberInitializers)
         {
+            bool needsAccessor = !propertyModel.IsSetterAccessible || propertyModel.IsInitOnly;
+            bool canUseUnsafeAccessors = CanUseUnsafeAccessors(propertyModel);
             var memberInitializer = new ParameterShapeModel
             {
                 ParameterType = CreateTypeId(propertyModel.PropertyType),
@@ -481,19 +487,17 @@ public sealed partial class Parser
                 Position = position++,
                 IsRequired = propertyModel.IsRequiredByPolicy ?? propertyModel.IsRequiredBySyntax,
                 IsAccessible = propertyModel.IsSetterAccessible,
-                CanUseUnsafeAccessors = _knownSymbols.TargetFramework switch
-                {
-                    // .NET 8 or later supports unsafe accessors for properties of non-generic types.
-                    var target when target >= TargetFramework.Net80 => !propertyModel.DeclaringType.IsGenericType,
-                    _ => false
-                },
+                CanUseUnsafeAccessors = canUseUnsafeAccessors,
+                DeclaringTypeIndex = needsAccessor ? GetDeclaringTypeIndex(objectModel.Type, propertyModel.DeclaringType) : 0,
+                GenericDeclaringType = needsAccessor && canUseUnsafeAccessors ? GetGenericAccessorType(propertyModel.DeclaringType) : null,
                 IsInitOnlyProperty = propertyModel.IsInitOnly,
                 Kind = propertyModel.IsRequiredBySyntax || propertyModel.IsRequiredByPolicy is true ? ParameterKind.RequiredMember : ParameterKind.OptionalMember,
                 RefKind = RefKind.None,
                 IsNonNullable = propertyModel.IsSetterNonNullable,
                 NullableAnnotation = propertyModel.PropertyType.NullableAnnotation,
                 ParameterTypeContainsNullabilityAnnotations = propertyModel.PropertyType.ContainsNullabilityAnnotations(),
-                IsPublic = propertyModel.PropertySymbol.DeclaredAccessibility is Accessibility.Public,
+                IsPublic = propertyModel.PropertySymbol is IFieldSymbol { DeclaredAccessibility: Accessibility.Public } or
+                    IPropertySymbol { SetMethod.DeclaredAccessibility: Accessibility.Public },
                 IsField = propertyModel.IsField,
                 HasDefaultValue = false,
                 DefaultValueExpr = null,
@@ -512,10 +516,16 @@ public sealed partial class Parser
             }
         }
 
+        GenericTypeModel? genericConstructorType = !isAccessibleConstructor ? GetGenericAccessorType(constructor.DeclaringType, isConstructor: true) : null;
         var mappedParameters = MapParametersWithOutDiscards(
             constructor.Constructor.Parameters,
             constructor.Parameters,
             p => MapParameter(objectModel, declaringTypeId, p, isFSharpUnionCase));
+
+        if (genericConstructorType is not null)
+        {
+            mappedParameters = MapOpenParameterTypes(mappedParameters, constructor.Constructor);
+        }
 
         return new ConstructorShapeModel
         {
@@ -542,12 +552,8 @@ public sealed partial class Parser
             StaticFactoryIsProperty = constructor.Constructor.MethodKind is MethodKind.PropertyGet,
             ResultRequiresCast = !objectModel.Type.IsAssignableFrom(constructor.Constructor.GetReturnType()),
             IsPublic = constructor.Constructor.DeclaredAccessibility is Accessibility.Public,
-            CanUseUnsafeAccessors = _knownSymbols.TargetFramework switch
-            {
-                // .NET 8 or later supports unsafe accessors for properties of non-generic types.
-                var tfm when tfm >= TargetFramework.Net80 => !constructor.DeclaringType.IsGenericType,
-                _ => false,
-            },
+            CanUseUnsafeAccessors = CanUseUnsafeAccessors(constructor.DeclaringType, isConstructor: true),
+            GenericDeclaringType = genericConstructorType,
             IsAccessible = isAccessibleConstructor,
             IsFSharpUnitConstructor = false,
             Attributes = CollectAttributes(constructor.Constructor),
@@ -567,10 +573,17 @@ public sealed partial class Parser
             ? CreateTypeId(m.Method.ContainingType)
             : typeId;
 
+        bool isAccessible = IsAccessibleSymbol(m.Method);
+        GenericTypeModel? genericDeclaringType = !isAccessible && !m.Method.IsStatic ? GetGenericAccessorType(m.Method.ContainingType) : null;
         var mappedParameters = MapParametersWithOutDiscards(
             m.Method.Parameters,
             m.Parameters,
             p => MapParameter(declaringObjectForConstructor: null, declaringTypeId, p, false));
+
+        if (genericDeclaringType is not null)
+        {
+            mappedParameters = MapOpenParameterTypes(mappedParameters, m.Method);
+        }
 
         return new MethodShapeModel
         {
@@ -595,14 +608,11 @@ public sealed partial class Parser
                 _ => ArgumentStateType.LargeArgumentState,
             },
 
-            IsAccessible = IsAccessibleSymbol(m.Method),
-            CanUseUnsafeAccessors = _knownSymbols.TargetFramework switch
-            {
-                // .NET 8 or later supports unsafe accessors for methods of non-generic types.
-                // .NET 10 or later supports unsafe accessors for static methods cf. https://github.com/eiriktsarpalis/PolyType/issues/220
-                var target when target >= TargetFramework.Net80 => !m.Method.ContainingType.IsGenericType && !m.Method.IsStatic,
-                _ => false
-            },
+            IsAccessible = isAccessible,
+            CanUseUnsafeAccessors = !m.Method.IsStatic && CanUseUnsafeAccessors(m.Method.ContainingType),
+            DeclaringTypeIndex = !isAccessible ? GetDeclaringTypeIndex(typeModel.Type, m.Method.ContainingType) : 0,
+            GenericDeclaringType = genericDeclaringType,
+            OpenReturnTypeName = genericDeclaringType is not null ? GetOpenTypeName(m.Method.ReturnType, m.Method.OriginalDefinition.ReturnType) : null,
 
             Attributes = CollectAttributes(m.Method),
         };
@@ -666,28 +676,112 @@ public sealed partial class Parser
     private ImmutableEquatableArray<EventShapeModel> MapEvents(TypeDataModel typeModel, TypeId typeId)
     {
         return typeModel.Events
-            .Select((e, i) => new EventShapeModel
+            .Select(e =>
             {
-                Name = e.Name,
-                UnderlyingMemberName = e.Event.Name,
-                IsPublic = e.Event.DeclaredAccessibility is Accessibility.Public,
-                IsStatic = e.Event.IsStatic,
-                DeclaringType = !SymbolEqualityComparer.Default.Equals(e.Event.ContainingType, typeModel.Type)
-                    ? CreateTypeId(e.Event.ContainingType)
-                    : typeId,
-                HandlerType = CreateTypeId(e.Event.Type),
-                IsAccessible = IsAccessibleSymbol(e.Event),
-                RequiresDisambiguation = e.IsAmbiguous,
-                CanUseUnsafeAccessors = _knownSymbols.TargetFramework switch
+                bool isAccessible = IsAccessibleSymbol(e.Event);
+                GenericTypeModel? genericDeclaringType = !isAccessible && !e.Event.IsStatic ? GetGenericAccessorType(e.Event.ContainingType) : null;
+                return new EventShapeModel
                 {
-                    // .NET 8 or later supports unsafe accessors for events of non-generic types.
-                    var target when target >= TargetFramework.Net80 => !e.Event.ContainingType.IsGenericType && !e.Event.IsStatic,
-                    _ => false
-                },
-                Attributes = CollectAttributes(e.Event),
+                    Name = e.Name,
+                    UnderlyingMemberName = e.Event.Name,
+                    IsPublic = e.Event.DeclaredAccessibility is Accessibility.Public,
+                    IsStatic = e.Event.IsStatic,
+                    DeclaringType = !SymbolEqualityComparer.Default.Equals(e.Event.ContainingType, typeModel.Type)
+                        ? CreateTypeId(e.Event.ContainingType)
+                        : typeId,
+                    HandlerType = CreateTypeId(e.Event.Type),
+                    IsAccessible = isAccessible,
+                    RequiresDisambiguation = e.IsAmbiguous,
+                    CanUseUnsafeAccessors = !e.Event.IsStatic && CanUseUnsafeAccessors(e.Event.ContainingType),
+                    DeclaringTypeIndex = !isAccessible ? GetDeclaringTypeIndex(typeModel.Type, e.Event.ContainingType) : 0,
+                    GenericDeclaringType = genericDeclaringType,
+                    OpenHandlerTypeName = genericDeclaringType is not null ? GetOpenTypeName(e.Event.Type, e.Event.OriginalDefinition.Type) : null,
+                    Attributes = CollectAttributes(e.Event),
+                };
             })
             .ToImmutableEquatableArray();
     }
+
+    private bool CanUseUnsafeAccessors(PropertyDataModel property)
+    {
+
+        // Unsafe accessor lookup does not walk base types for inherited accessors on partial overrides.
+        return CanUseUnsafeAccessors(property.DeclaringType) &&
+            (!property.IncludeGetter || property.PropertySymbol is not IPropertySymbol { GetMethod: null }) &&
+            (!(property.IncludeSetter || property.IsInitOnly) || property.PropertySymbol is not IPropertySymbol { SetMethod: null });
+    }
+
+    private bool CanUseUnsafeAccessors(INamedTypeSymbol declaringType, bool isConstructor = false)
+    {
+        if (!declaringType.IsGenericType)
+        {
+            return _knownSymbols.TargetFramework >= TargetFramework.Net80;
+        }
+
+        // Byref generic-struct receivers can crash older runtimes; constructors have no receiver.
+        // https://github.com/dotnet/runtime/issues/122678
+        return _knownSymbols.TargetFramework >= TargetFramework.Net90 &&
+            declaringType.ContainingType is not { IsGenericType: true } &&
+            (isConstructor || !declaringType.IsValueType || _knownSymbols.CoreLibAssembly.Identity.Version.Major >= 11);
+    }
+
+    private readonly Dictionary<INamedTypeSymbol, GenericTypeModel> _genericAccessorTypes = new(SymbolEqualityComparer.Default);
+
+    private GenericTypeModel? GetGenericAccessorType(INamedTypeSymbol declaringType, bool isConstructor = false)
+    {
+        if (!declaringType.IsGenericType || !CanUseUnsafeAccessors(declaringType, isConstructor))
+        {
+            return null;
+        }
+
+        if (!_genericAccessorTypes.TryGetValue(declaringType, out GenericTypeModel? model))
+        {
+            INamedTypeSymbol definition = declaringType.OriginalDefinition;
+            SymbolDisplayFormat format = SymbolDisplayFormat.FullyQualifiedFormat
+                .WithGenericsOptions(SymbolDisplayGenericsOptions.IncludeTypeParameters | SymbolDisplayGenericsOptions.IncludeTypeConstraints)
+                .WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers |
+                    SymbolDisplayMiscellaneousOptions.UseSpecialTypes | SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
+            string declaration = definition.ToDisplayString(format);
+            int constraintsStart = declaration.IndexOf(" where ", StringComparison.Ordinal);
+            model = new GenericTypeModel
+            {
+                FullyQualifiedName = CreateTypeId(definition).FullyQualifiedName,
+                TypeParameters = definition.TypeParameters.Select(p => Helpers.RoslynHelpers.EscapeKeywordIdentifier(p.Name)).ToImmutableEquatableArray(),
+                TypeArguments = declaringType.TypeArguments.Select(t => CreateTypeId(t).FullyQualifiedName).ToImmutableEquatableArray(),
+                ConstraintClauses = constraintsStart < 0 ? "" : declaration.Substring(constraintsStart + 1),
+            };
+            _genericAccessorTypes.Add(declaringType, model);
+        }
+
+        return model;
+    }
+
+    private static int GetDeclaringTypeIndex(ITypeSymbol shapedType, INamedTypeSymbol declaringType)
+    {
+        int index = 0;
+        foreach (ITypeSymbol type in shapedType.GetSortedTypeHierarchy())
+        {
+            if (SymbolEqualityComparer.Default.Equals(type, declaringType))
+            {
+                return index;
+            }
+
+            index++;
+        }
+
+        throw new InvalidOperationException($"Type '{declaringType}' is not in the hierarchy of '{shapedType}'.");
+    }
+
+    private ImmutableEquatableArray<ParameterShapeModel> MapOpenParameterTypes(ImmutableEquatableArray<ParameterShapeModel> parameters, IMethodSymbol method)
+    {
+        return parameters.Select((parameter, i) => parameter with
+        {
+            OpenParameterTypeName = GetOpenTypeName(method.Parameters[i].Type, method.OriginalDefinition.Parameters[i].Type),
+        }).ToImmutableEquatableArray();
+    }
+
+    private string? GetOpenTypeName(ITypeSymbol closedType, ITypeSymbol openType)
+        => SymbolEqualityComparer.Default.Equals(closedType, openType) ? null : CreateTypeId(openType).FullyQualifiedName;
 
     private ParameterShapeModel MapParameter(ObjectDataModel? declaringObjectForConstructor, TypeId declaringTypeId, ParameterDataModel parameter, bool isFSharpUnionCase)
     {

@@ -313,6 +313,65 @@ internal static class ReflectionHelpers
 #endif
     }
 
+    /// <summary>Creates an instance using its public parameterless constructor without wrapping constructor exceptions.</summary>
+    /// <param name="type">The type to instantiate.</param>
+    /// <returns>The constructed instance, or <see langword="null"/> for a nullable value type.</returns>
+#if NET
+    [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "Public binding with no arguments only requires the public parameterless constructor. The analyzer does not recognize DoNotWrapExceptions, which does not change binding.")]
+#endif
+    public static object? CreateInstanceNoWrapExceptions(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
+    {
+#if NET
+        return Activator.CreateInstance(
+            type,
+            BindingFlags.Public | BindingFlags.Instance | BindingFlags.CreateInstance | BindingFlags.DoNotWrapExceptions,
+            binder: null,
+            args: null,
+            culture: null);
+#else
+        try
+        {
+            return Activator.CreateInstance(type);
+        }
+        catch (TargetInvocationException ex) when (ex.InnerException is { } innerException)
+        {
+            ExceptionDispatchInfo.Capture(innerException).Throw();
+            throw;
+        }
+#endif
+    }
+
+    /// <summary>Creates an instance using a matching public constructor without wrapping constructor exceptions.</summary>
+    /// <param name="type">The type to instantiate.</param>
+    /// <param name="args">The arguments passed to the constructor.</param>
+    /// <returns>The constructed instance, or <see langword="null"/> for a nullable value type.</returns>
+#if NET
+    [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "Public binding only requires public constructors. The analyzer does not recognize DoNotWrapExceptions, which does not change binding.")]
+#endif
+    public static object? CreateInstanceNoWrapExceptions(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type, params object?[]? args)
+    {
+#if NET
+        return Activator.CreateInstance(
+            type,
+            BindingFlags.Public | BindingFlags.Instance | BindingFlags.CreateInstance | BindingFlags.DoNotWrapExceptions,
+            binder: null,
+            args,
+            culture: null);
+#else
+        try
+        {
+            return Activator.CreateInstance(type, args);
+        }
+        catch (TargetInvocationException ex) when (ex.InnerException is { } innerException)
+        {
+            ExceptionDispatchInfo.Capture(innerException).Throw();
+            throw;
+        }
+#endif
+    }
+
     /// <summary>
     /// Invokes the specified constructor or static factory method without wrapping any exception
     /// thrown by the invoked member in a <see cref="TargetInvocationException"/>. This matches the

@@ -92,10 +92,10 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                 object boxedObj = obj!;
                 for (int i = 0; i < parentProperties.Length; i++)
                 {
-                    boxedObj = parentProperties[i].GetValue(boxedObj)!;
+                    boxedObj = parentProperties[i].GetMethod!.InvokeNoWrapExceptions(boxedObj, parameters: null)!;
                 }
 
-                return (TPropertyType)propertyInfo.GetValue(boxedObj)!;
+                return (TPropertyType)propertyInfo.GetMethod!.InvokeNoWrapExceptions(boxedObj, parameters: null)!;
             };
 #endif
         }

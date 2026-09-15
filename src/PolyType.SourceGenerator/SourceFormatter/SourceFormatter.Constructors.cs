@@ -224,7 +224,7 @@ internal sealed partial class SourceFormatter
                         string refPrefix = parameter.DeclaringType.IsValueType ? "ref " : "";
                         if (parameter.IsField)
                         {
-                            string accessorName = GetFieldAccessorName(type, parameter.UnderlyingMemberName);
+                            string accessorName = GetFieldAccessorName(type, parameter.UnderlyingMemberName, parameter.DeclaringTypeIndex, parameter.GenericDeclaringType);
                             string ctorParameterExpr = FormatCtorParameterExpr(parameter, isSingleParameter);
                             return parameter.CanUseUnsafeAccessors
                                 ? $"{accessorName}({refPrefix}obj) = {ctorParameterExpr};"
@@ -232,7 +232,7 @@ internal sealed partial class SourceFormatter
                         }
                         else
                         {
-                            string accessorName = GetPropertySetterAccessorName(type, parameter.UnderlyingMemberName);
+                            string accessorName = GetPropertySetterAccessorName(type, parameter.UnderlyingMemberName, parameter.DeclaringTypeIndex, parameter.GenericDeclaringType);
                             return $"{accessorName}({refPrefix}obj, {FormatCtorParameterExpr(parameter, isSingleParameter)});";
                         }
                     }
@@ -275,14 +275,16 @@ internal sealed partial class SourceFormatter
                 ? string.Join(", ", constructor.Parameters.Where(p => p.RefKind is RefKind.Out).Select(_ => "out _"))
                 : "";
 
-            return (constructor.TotalArity, constructor.HasOutParameters) switch
+            string? body = (constructor.TotalArity, constructor.HasOutParameters) switch
             {
-                (0, false) when declaringType.IsValueTupleType => $"static () => default({declaringType.Type.FullyQualifiedName})",
-                (0, false) when constructor.StaticFactoryIsProperty => $"static () => {castPrefix}{FormatConstructorName(declaringType, constructor)}",
-                (0, false) => $"static () => {castPrefix}{FormatConstructorName(declaringType, constructor)}()",
-                (0, true) => $"static () => {castPrefix}{FormatConstructorName(declaringType, constructor)}({outDiscards})",
-                _ => "null",
+                (0, false) when declaringType.IsValueTupleType => $"default({declaringType.Type.FullyQualifiedName})",
+                (0, false) when constructor.StaticFactoryIsProperty => $"{castPrefix}{FormatConstructorName(declaringType, constructor)}",
+                (0, false) => $"{castPrefix}{FormatConstructorName(declaringType, constructor)}()",
+                (0, true) => $"{castPrefix}{FormatConstructorName(declaringType, constructor)}({outDiscards})",
+                _ => null,
             };
+
+            return body is null ? "null" : $"static () => {body}";
         }
 
         static string FormatConstructorName(ObjectShapeModel declaringType, ConstructorShapeModel constructor)
@@ -290,7 +292,7 @@ internal sealed partial class SourceFormatter
             return constructor switch
             {
                 { StaticFactoryName: string factoryName } => factoryName,
-                { IsAccessible: false } => GetConstructorAccessorName(declaringType),
+                { IsAccessible: false } => QualifyAccessorName(declaringType, GetConstructorAccessorName(declaringType), 0, constructor.GenericDeclaringType),
                 _ => $"new {constructor.DeclaringType.FullyQualifiedName}",
             };
         }
@@ -479,29 +481,11 @@ internal sealed partial class SourceFormatter
         return $"__CtorAccessor_{declaringType.SourceIdentifier}";
     }
 
-    private static void FormatConstructorAccessor(SourceWriter writer, ObjectShapeModel declaringType, ConstructorShapeModel constructorModel)
+    private void FormatConstructorAccessor(SourceWriter writer, ObjectShapeModel declaringType, ConstructorShapeModel constructorModel)
     {
         Debug.Assert(!constructorModel.IsAccessible);
 
-        StringBuilder parameterSignature = new();
-        foreach (ParameterShapeModel parameter in constructorModel.Parameters)
-        {
-            string refPrefix = parameter.RefKind switch
-            {
-                RefKind.Ref or RefReadOnlyParameter => "ref ",
-                RefKind.In => "in ",
-                RefKind.Out => "out ",
-                _ => ""
-            };
-
-            parameterSignature.Append($"{refPrefix}{parameter.ParameterType.FullyQualifiedName} {parameter.Name}, ");
-        }
-
-        if (parameterSignature.Length > 0)
-        {
-            parameterSignature.Length -= 2;
-        }
-
+        string parameterSignature = FormatAccessorParameters(constructorModel.Parameters, useOpenTypes: constructorModel.GenericDeclaringType is not null);
         string accessorName = GetConstructorAccessorName(declaringType);
 
         if (!constructorModel.CanUseUnsafeAccessors)
@@ -509,24 +493,52 @@ internal sealed partial class SourceFormatter
             // Emit a reflection-based workaround.
             string parameterTypes = constructorModel.Parameters.Length == 0
                 ? "global::System.Type.EmptyTypes"
-                : $$"""new global::System.Type[] { {{string.Join(", ", constructorModel.Parameters.Select(FormatParameterTypeExpr))}} }""";
+                : $$"""new global::System.Type[] { {{string.Join(", ", constructorModel.Parameters.Select(p => p.RefKind is RefKind.Out ? $"typeof({p.ParameterType.FullyQualifiedName}).MakeByRefType()" : FormatParameterTypeExpr(p)))}} }""";
+            _needsConstructorInvoker = true;
+            string constructorInfoName = GetAccessorLocalName(constructorModel.Parameters, "ctorInfo");
+            string argumentsName = GetAccessorLocalName(constructorModel.Parameters, "paramArray");
+            string resultName = GetAccessorLocalName(constructorModel.Parameters, "result");
+            string cachedConstructorName = FormatAccessorMemberName(constructorModel.Parameters, $"__s_{accessorName}_CtorInfo");
+            string bindingFlagsName = FormatAccessorMemberName(constructorModel.Parameters, InstanceBindingFlagsConstMember);
+            string invokeConstructorName = FormatAccessorMemberName(constructorModel.Parameters, "__InvokeConstructor");
 
+            writer.WriteLine();
             writer.WriteLine($$"""
                 private static global::System.Reflection.ConstructorInfo? __s_{{accessorName}}_CtorInfo;
                 private static {{constructorModel.DeclaringType.FullyQualifiedName}} {{accessorName}}({{parameterSignature}})
                 {
-                    global::System.Reflection.ConstructorInfo ctorInfo = __s_{{accessorName}}_CtorInfo ??= typeof({{constructorModel.DeclaringType.FullyQualifiedName}}).GetConstructor({{InstanceBindingFlagsConstMember}}, null, {{parameterTypes}}, null)!;
-                    object?[] paramArray = new object?[] { {{string.Join(", ", constructorModel.Parameters.Select(p => p.Name))}} };
-                    return ({{constructorModel.DeclaringType.FullyQualifiedName}})ctorInfo.Invoke(paramArray);
-                }
+                    global::System.Reflection.ConstructorInfo {{constructorInfoName}} = {{cachedConstructorName}} ??= typeof({{constructorModel.DeclaringType.FullyQualifiedName}}).GetConstructor({{bindingFlagsName}}, null, {{parameterTypes}}, null)!;
+                    object?[] {{argumentsName}} = new object?[] { {{string.Join(", ", constructorModel.Parameters.Select(p => p.RefKind is RefKind.Out ? "null" : FormatAccessorParameterName(p)))}} };
                 """);
 
+            writer.Indentation++;
+            bool needsWriteBack = constructorModel.Parameters.Any(p => p.RefKind is RefKind.Ref or RefKind.Out);
+            string resultPrefix = needsWriteBack ? $"var {resultName} = " : "return ";
+            writer.WriteLine($"{resultPrefix}({constructorModel.DeclaringType.FullyQualifiedName}){invokeConstructorName}({constructorInfoName}, {argumentsName});");
+            if (needsWriteBack)
+            {
+                for (int i = 0; i < constructorModel.Parameters.Length; i++)
+                {
+                    ParameterShapeModel parameter = constructorModel.Parameters[i];
+                    if (parameter.RefKind is RefKind.Ref or RefKind.Out)
+                    {
+                        writer.WriteLine($"{FormatAccessorParameterName(parameter)} = ({parameter.ParameterType.FullyQualifiedName}){argumentsName}[{i}]!;");
+                    }
+                }
+
+                writer.WriteLine($"return {resultName};");
+            }
+
+            writer.Indentation--;
+            writer.WriteLine('}');
             return;
         }
 
-        writer.WriteLine($"""
+        string modifiers = GetUnsafeAccessorModifiers(constructorModel.GenericDeclaringType);
+        string returnType = constructorModel.GenericDeclaringType?.FullyQualifiedName ?? constructorModel.DeclaringType.FullyQualifiedName;
+        FormatUnsafeAccessor(writer, declaringType, 0, constructorModel.GenericDeclaringType, $"""
             [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Constructor)]
-            private static extern {constructorModel.DeclaringType.FullyQualifiedName} {accessorName}({parameterSignature});
+            {modifiers} {returnType} {accessorName}({parameterSignature});
             """);
     }
 

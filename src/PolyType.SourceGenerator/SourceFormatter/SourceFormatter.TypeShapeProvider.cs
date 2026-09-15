@@ -7,7 +7,7 @@ namespace PolyType.SourceGenerator;
 
 internal sealed partial class SourceFormatter
 {
-    private static SourceText FormatTypeShapeProviderMainFile(TypeShapeProviderModel provider)
+    private SourceText FormatTypeShapeProviderMainFile(TypeShapeProviderModel provider)
     {
         using SourceWriter writer = new();
         StartFormatSourceFile(writer, provider.ProviderDeclaration, provider.SuppressedDiagnosticIds);
@@ -41,6 +41,7 @@ internal sealed partial class SourceFormatter
             """);
 
         FormatGetShapeProviderMethod(provider, writer);
+        FormatConstructorInvoker(writer);
 
         writer.Indentation--;
         writer.WriteLine('}');

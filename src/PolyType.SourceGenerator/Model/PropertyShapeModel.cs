@@ -38,6 +38,15 @@ public sealed record PropertyShapeModel
     /// </summary>
     public required bool CanUseUnsafeAccessors { get; init; }
 
+    /// <summary>Gets the position of the declaring type in the shaped type's hierarchy.</summary>
+    public int DeclaringTypeIndex { get; init; }
+
+    /// <summary>Gets the open declaring type when a generic unsafe accessor is needed.</summary>
+    public GenericTypeModel? GenericDeclaringType { get; init; }
+
+    /// <summary>Gets the property type in the generic type definition, when needed.</summary>
+    public string? OpenPropertyTypeName { get; init; }
+
     public required int Order { get; init; }
 
     public required bool RequiresDisambiguation { get; init; }
