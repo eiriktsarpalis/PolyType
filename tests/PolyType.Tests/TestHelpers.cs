@@ -1,3 +1,4 @@
+#if NET
 using System.Globalization;
 
 namespace PolyType.Tests;
@@ -34,3 +35,4 @@ internal static class TestHelpers
             && numericValue != 0;
     }
 }
+#endif
