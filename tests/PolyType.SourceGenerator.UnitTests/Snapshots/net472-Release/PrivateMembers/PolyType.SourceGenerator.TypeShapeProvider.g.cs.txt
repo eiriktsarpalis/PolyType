@@ -69,5 +69,18 @@ namespace PolyType.SourceGenerator
                     return null;
             }
         }
+
+        private static object __InvokeConstructor(global::System.Reflection.ConstructorInfo constructor, object?[] parameters)
+        {
+            try
+            {
+                return constructor.Invoke(parameters);
+            }
+            catch (global::System.Reflection.TargetInvocationException exception) when (exception.InnerException is { } innerException)
+            {
+                global::System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(innerException).Throw();
+                throw;
+            }
+        }
     }
 }

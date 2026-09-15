@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using PolyType.Roslyn.Helpers;
 using System.Collections.Immutable;
 using System.Diagnostics;
 
@@ -73,7 +74,7 @@ internal static partial class RoslynHelpers
                     {
                         if (attributeType.Name == attributeName &&
                             attributeType.Arity == attributeArity &&
-                            attributeType.ContainingNamespace.MatchesNamespace(attributeNamespace))
+                            attributeType.ContainingNamespace.MatchesNamespace(attributeNamespace.AsSpan()))
                         {
                             return (typeSymbol, typeDecl, ctx.SemanticModel);
                         }

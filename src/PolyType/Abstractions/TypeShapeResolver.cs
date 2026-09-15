@@ -1,4 +1,5 @@
 ﻿using PolyType.Abstractions;
+using PolyType.ReflectionProvider;
 using PolyType.Utilities;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -8,6 +9,7 @@ namespace PolyType.Abstractions;
 /// <summary>
 /// Defines helpers methods used for resolving <see cref="ITypeShape"/> instances from source generated types.
 /// </summary>
+/// <remarks>Exceptions thrown by user-defined provider constructors are propagated without wrapping.</remarks>
 public static class TypeShapeResolver
 {
     // C.f. https://github.com/dotnet/runtime/issues/119440#issuecomment-3269894751
@@ -172,7 +174,7 @@ public static class TypeShapeResolver
                 Type typeShapeProviderType = attr.TypeShapeProvider;
                 return () =>
                 {
-                    var typeShapeProvider = (ITypeShapeProvider)Activator.CreateInstance(typeShapeProviderType)!;
+                    var typeShapeProvider = (ITypeShapeProvider)ReflectionHelpers.CreateInstanceNoWrapExceptions(typeShapeProviderType)!;
                     return typeShapeProvider.GetTypeShape(typeof(T)) as ITypeShape<T>;
                 };
             }

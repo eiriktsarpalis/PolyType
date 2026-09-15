@@ -26,7 +26,7 @@ internal static class ReflectionHelpers
         return nativeMachine == 0xaa64;
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool IsWow64Process2(IntPtr process, out ushort processMachine, out ushort nativeMachine);
+        static safe extern bool IsWow64Process2(IntPtr process, out ushort processMachine, out ushort nativeMachine);
     }
 
     public static bool IsMemoryType(this Type type, [NotNullWhen(true)] out Type? elementType, out bool isReadOnlyMemory)

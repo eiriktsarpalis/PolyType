@@ -7,8 +7,20 @@ namespace PolyType.Tests;
 
 public abstract partial class InlineArrayTests(ProviderUnderTest providerUnderTest)
 {
+    [Theory]
+    [InlineData(0)]
+    [InlineData(2)]
+    [InlineData(4)]
+    public void FixedArrays_ConstructorRejectsIncorrectLength(int length)
+    {
+        var shape = Assert.IsAssignableFrom<IEnumerableTypeShape<StructWithFixedArrayInt, int>>(
+            providerUnderTest.Provider.GetTypeShapeOrThrow<StructWithFixedArrayInt>());
+        var constructor = shape.GetParameterizedConstructor();
+        Assert.Throws<ArgumentException>(() => constructor(new int[length]));
+    }
+
     [Fact]
-    public unsafe void FixedArrays_Byte()
+    public void FixedArrays_Byte()
     {
         var shape = Assert.IsAssignableFrom<IEnumerableTypeShape<StructWithFixedArrayByte, byte>>(
             providerUnderTest.Provider.GetTypeShapeOrThrow<StructWithFixedArrayByte>());
@@ -16,24 +28,30 @@ public abstract partial class InlineArrayTests(ProviderUnderTest providerUnderTe
 
         var ctor = shape.GetParameterizedConstructor();
         var value = ctor([1, 2, 3]);
-        Assert.Equal(1, value.Element0[0]);
-        Assert.Equal(2, value.Element0[1]);
-        Assert.Equal(3, value.Element0[2]);
+        unsafe
+        {
+            Assert.Equal(1, value.Element0[0]);
+            Assert.Equal(2, value.Element0[1]);
+            Assert.Equal(3, value.Element0[2]);
+        }
 
         var enumerable = shape.GetGetEnumerable()(value);
         Assert.Equal([1, 2, 3], enumerable.ToArray());
     }
 
     [Fact]
-    public unsafe void FixedArrays_Count()
+    public void FixedArrays_Count()
     {
         var shape = Assert.IsAssignableFrom<IEnumerableTypeShape<StructWithFixedArrayInt, int>>(
             providerUnderTest.Provider.GetTypeShapeOrThrow<StructWithFixedArrayInt>());
 
         StructWithFixedArrayInt value = new();
-        value.Element0[0] = 1;
-        value.Element0[1] = 2;
-        value.Element0[2] = 3;
+        unsafe
+        {
+            value.Element0[0] = 1;
+            value.Element0[1] = 2;
+            value.Element0[2] = 3;
+        }
 
         var enumerable = shape.GetGetEnumerable()(value);
 
@@ -42,7 +60,7 @@ public abstract partial class InlineArrayTests(ProviderUnderTest providerUnderTe
     }
 
     [Fact]
-    public unsafe void FixedArrays_Int()
+    public void FixedArrays_Int()
     {
         var shape = Assert.IsAssignableFrom<IEnumerableTypeShape<StructWithFixedArrayInt, int>>(
             providerUnderTest.Provider.GetTypeShapeOrThrow<StructWithFixedArrayInt>());
@@ -50,24 +68,30 @@ public abstract partial class InlineArrayTests(ProviderUnderTest providerUnderTe
 
         var ctor = shape.GetParameterizedConstructor();
         var value = ctor([1, 2, 3]);
-        Assert.Equal(1, value.Element0[0]);
-        Assert.Equal(2, value.Element0[1]);
-        Assert.Equal(3, value.Element0[2]);
+        unsafe
+        {
+            Assert.Equal(1, value.Element0[0]);
+            Assert.Equal(2, value.Element0[1]);
+            Assert.Equal(3, value.Element0[2]);
+        }
 
         var enumerable = shape.GetGetEnumerable()(value);
         Assert.Equal([1, 2, 3], enumerable.ToArray());
     }
 
     [Fact]
-    public unsafe void FixedArrays_EnumeratorsHaveOwnState()
+    public void FixedArrays_EnumeratorsHaveOwnState()
     {
         var shape = Assert.IsAssignableFrom<IEnumerableTypeShape<StructWithFixedArrayInt, int>>(
             providerUnderTest.Provider.GetTypeShapeOrThrow<StructWithFixedArrayInt>());
 
         StructWithFixedArrayInt value = new();
-        value.Element0[0] = 1;
-        value.Element0[1] = 2;
-        value.Element0[2] = 3;
+        unsafe
+        {
+            value.Element0[0] = 1;
+            value.Element0[1] = 2;
+            value.Element0[2] = 3;
+        }
 
         var enumerable = shape.GetGetEnumerable()(value);
         var enumerator1 = enumerable.GetEnumerator();
@@ -102,7 +126,7 @@ public abstract partial class InlineArrayTests(ProviderUnderTest providerUnderTe
 
 #if NET
     [Fact]
-    public unsafe void InlineArrays_Count()
+    public void InlineArrays_Count()
     {
         var shape = Assert.IsAssignableFrom<IEnumerableTypeShape<StructWithInlineArrayPrimitive, byte>>(
             providerUnderTest.Provider.GetTypeShapeOrThrow<StructWithInlineArrayPrimitive>());
@@ -136,7 +160,7 @@ public abstract partial class InlineArrayTests(ProviderUnderTest providerUnderTe
     }
 
     [Fact]
-    public unsafe void InlineArrays_EnumeratorsHaveOwnState()
+    public void InlineArrays_EnumeratorsHaveOwnState()
     {
         var shape = Assert.IsAssignableFrom<IEnumerableTypeShape<StructWithInlineArrayPrimitive, byte>>(
             providerUnderTest.Provider.GetTypeShapeOrThrow<StructWithInlineArrayPrimitive>());

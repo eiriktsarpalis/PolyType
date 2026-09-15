@@ -140,6 +140,14 @@ public partial class TypeDataModelGenerator
             }
         }
 
+        if (factoryMethod is not null &&
+            !SymbolComparer.Equals(factoryMethod.ContainingType, type) &&
+            !OnTypeTraversalStarting(factoryMethod.ContainingType))
+        {
+            status = TypeDataModelGenerationStatus.UnsupportedType;
+            return true;
+        }
+
         if ((status = IncludeNestedType(elementType, ref ctx)) != TypeDataModelGenerationStatus.Success)
         {
             // Return true to indicate that the type is an unsupported enumerable type
@@ -575,7 +583,8 @@ public partial class TypeDataModelGenerator
 
         foreach (AttributeData attr in type.GetAttributes())
         {
-            if (attr.AttributeClass is { Name: "InlineArrayAttribute" } && attr.AttributeClass.ToDisplayString() == "System.Runtime.CompilerServices.InlineArrayAttribute")
+            if (attr.AttributeClass is { Name: "InlineArrayAttribute", Arity: 0, ContainingType: null } attributeType &&
+                attributeType.ContainingNamespace.MatchesNamespace(["System", "Runtime", "CompilerServices"]))
             {
                 if (attr.ConstructorArguments is [{ Value: int len }])
                 {
@@ -609,7 +618,8 @@ public partial class TypeDataModelGenerator
 
             foreach (AttributeData attr in singleField.GetAttributes())
             {
-                if (attr.AttributeClass is { Name: "FixedBufferAttribute" } && attr.AttributeClass.ToDisplayString() == "System.Runtime.CompilerServices.FixedBufferAttribute")
+                if (attr.AttributeClass is { Name: "FixedBufferAttribute", Arity: 0, ContainingType: null } attributeType &&
+                    attributeType.ContainingNamespace.MatchesNamespace(["System", "Runtime", "CompilerServices"]))
                 {
                     if (attr.ConstructorArguments is [{ Value: ITypeSymbol elemType }, { Value: int len }])
                     {

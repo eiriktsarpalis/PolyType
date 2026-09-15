@@ -84,6 +84,14 @@ public partial class TypeDataModelGenerator
             (factoryMethod, factorySignature, isParameterizedFactory) = builderCtor;
         }
 
+        if (factoryMethod is not null &&
+            !SymbolComparer.Equals(factoryMethod.ContainingType, type) &&
+            !OnTypeTraversalStarting(factoryMethod.ContainingType))
+        {
+            status = TypeDataModelGenerationStatus.UnsupportedType;
+            return true;
+        }
+
         if ((status = IncludeNestedType(keyType, ref ctx)) != TypeDataModelGenerationStatus.Success ||
             (status = IncludeNestedType(valueType, ref ctx)) != TypeDataModelGenerationStatus.Success)
         {

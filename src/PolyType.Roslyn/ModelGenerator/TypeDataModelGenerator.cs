@@ -188,6 +188,11 @@ public partial class TypeDataModelGenerator
             return TypeDataModelGenerationStatus.Success;
         }
 
+        if (!OnTypeTraversalStarting(type))
+        {
+            return TypeDataModelGenerationStatus.UnsupportedType;
+        }
+
         // Create a new snapshot with the current type pushed onto the stack.
         // Only commit the generated model if the type is successfully mapped.
         TypeDataModelGenerationContext scopedCtx = ctx.Push(type);
@@ -356,12 +361,25 @@ public partial class TypeDataModelGenerator
     /// </summary>
     /// <remarks>
     /// By default, unsupported types are void, pointers, and generic type definitions.
+    /// This predicate is also used to probe candidates that might not be selected, so it should not report diagnostics.
     /// </remarks>
     protected virtual bool IsSupportedType(ITypeSymbol type)
     {
         return type.TypeKind is not (TypeKind.Pointer or TypeKind.Error) &&
           type.SpecialType is not SpecialType.System_Void && !type.ContainsGenericParameters();
     }
+
+    /// <summary>
+    /// Invoked as traversal enters a selected type, before mapping its shape or using it as a construction helper.
+    /// </summary>
+    /// <param name="type">The type being entered.</param>
+    /// <returns><see langword="true"/> to continue traversal; <see langword="false"/> to reject this use of the type.</returns>
+    /// <remarks>
+    /// For shape nodes, this hook runs after eligibility, accessibility, and recursion checks.
+    /// It also runs for selected construction helper types before traversing their input types, even when the helper's own shape is not generated.
+    /// Unlike <see cref="IsSupportedType"/>, it is not called while probing constructor candidates.
+    /// </remarks>
+    protected virtual bool OnTypeTraversalStarting(ITypeSymbol type) => true;
 
     /// <summary>
     /// Gets the associated types for a given type, as specified by 3rd party custom attributes.

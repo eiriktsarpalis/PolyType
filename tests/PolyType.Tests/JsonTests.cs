@@ -510,6 +510,24 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         }
     }
 
+    [Theory]
+    [MemberData(nameof(GetPartialAccessorCases))]
+    public void Roundtrip_PartialPropertyOverrides<T>(TestCase<T> testCase)
+    {
+        JsonConverter<T> converter = GetConverterUnderTest(testCase);
+        string expected = testCase.Value is PartialAccessorOverrideBase<string>
+            ? """{"GetterOverride":"getter","SetterOverride":"setter"}"""
+            : """{"GetterOverride":42,"SetterOverride":17}""";
+
+        Assert.Equal(expected, converter.Serialize(testCase.Value));
+        Assert.Equal(expected, converter.Serialize(converter.Deserialize(expected)));
+    }
+
+    public static IEnumerable<object[]> GetPartialAccessorCases() =>
+        TestTypes.GetTestCasesCore()
+            .Where(c => c.Value is PartialAccessorOverrideBase<int> or PartialAccessorOverrideBase<string>)
+            .Select(c => new object[] { c });
+
     public class PocoWithGenericProperty<T>
     { 
         public T? Value { get; set; }
@@ -547,7 +565,7 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         value.UsesMarshaler ||
         value.IsUnion && (!typeof(T).GetCustomAttributes<JsonDerivedTypeAttribute>().Any() || value.IsAbstract) ||
         (ReflectionHelpers.IsMonoRuntime && value.Value is IDiamondInterface) ||
-        value.Value is DerivedClassWithVirtualProperties; // https://github.com/dotnet/runtime/issues/96996
+        value.Value is DerivedClassWithVirtualProperties or PartialAccessorOverrideBase<int> or PartialAccessorOverrideBase<string>; // https://github.com/dotnet/runtime/issues/96996
 }
 
 public sealed class JsonTests_Reflection() : JsonTests(ReflectionProviderUnderTest.NoEmit);

@@ -2,7 +2,6 @@ using Microsoft.CodeAnalysis;
 using PolyType.Roslyn;
 using PolyType.SourceGenerator.Model;
 using System.Diagnostics;
-using System.Text;
 
 namespace PolyType.SourceGenerator;
 
@@ -46,7 +45,6 @@ internal sealed partial class SourceFormatter
         {
             if (!method.IsAccessible)
             {
-                writer.WriteLine();
                 FormatMethodAccessor(writer, declaringType, method);
             }
         }
@@ -375,69 +373,64 @@ internal sealed partial class SourceFormatter
         }
     }
 
-    private static string GetMethodAccessorName(TypeShapeModel declaringType, MethodShapeModel method)
+    private static string GetMethodAccessorName(TypeShapeModel declaringType, MethodShapeModel method, bool qualified = true)
     {
-        return $"__MethodAccessor_{declaringType.SourceIdentifier}_{method.Position}_{method.UnderlyingMethodName}";
+        string name = $"__MethodAccessor_{declaringType.SourceIdentifier}_{method.Position}_{method.UnderlyingMethodName}";
+        return qualified ? QualifyAccessorName(declaringType, name, method.DeclaringTypeIndex, method.GenericDeclaringType) : name;
     }
 
-    private static void FormatMethodAccessor(SourceWriter writer, TypeShapeModel declaringType, MethodShapeModel method)
+    private void FormatMethodAccessor(SourceWriter writer, TypeShapeModel declaringType, MethodShapeModel method)
     {
         Debug.Assert(!method.IsAccessible);
 
-        StringBuilder parameterSignature = new();
+        string parameterSignature = FormatAccessorParameters(method.Parameters, useOpenTypes: method.GenericDeclaringType is not null);
+        string arguments = FormatAccessorArguments(method.Parameters);
         if (!method.IsStatic)
         {
             string refPrefix = method.DeclaringType.IsValueType ? "ref " : "";
-            parameterSignature.Append($"{refPrefix}{method.DeclaringType.FullyQualifiedName} target, ");
+            string receiverType = method.GenericDeclaringType?.FullyQualifiedName ?? method.DeclaringType.FullyQualifiedName;
+            string separator = method.Parameters.Length == 0 ? "" : ", ";
+            string receiverName = GetAccessorLocalName(method.Parameters, "target", method.GenericDeclaringType);
+            parameterSignature = $"{refPrefix}{receiverType} {receiverName}{separator}{parameterSignature}";
+            arguments = $"{refPrefix}{receiverName}{separator}{arguments}";
         }
 
-        foreach (ParameterShapeModel parameter in method.Parameters)
-        {
-            string refPrefix = parameter.RefKind switch
-            {
-                RefKind.Ref or RefReadOnlyParameter => "ref ",
-                RefKind.In => "in ",
-                RefKind.Out => "out ",
-                _ => ""
-            };
-
-            parameterSignature.Append($"{refPrefix}{parameter.ParameterType.FullyQualifiedName} {parameter.Name}, ");
-        }
-
-        if (parameterSignature.Length > 0)
-        {
-            parameterSignature.Length -= 2; // Trim the last comma.
-        }
-
-        string allParameters = parameterSignature.ToString();
-        string accessorName = GetMethodAccessorName(declaringType, method);
+        string accessorName = GetMethodAccessorName(declaringType, method, qualified: false);
+        string methodRefPrefix = method.ReturnsByRef ? "ref " : "";
 
         if (!method.CanUseUnsafeAccessors)
         {
-            // Emit a reflection-based workaround.
             string parameterTypes = FormatAllMethodParameterTypes(method);
+            string returnPrefix = method.ReturnTypeKind is MethodReturnTypeKind.Void ? "" : $"return {methodRefPrefix}";
+            string createDelegateName = GetAccessorLocalName(method.Parameters, "CreateDelegate");
+            string methodInfoName = GetAccessorLocalName(method.Parameters, "methodInfo");
+            string cachedDelegateName = FormatAccessorMemberName(method.Parameters, $"{accessorName}_Delegate");
+            string bindingFlagsName = FormatAccessorMemberName(method.Parameters, AllBindingFlagsConstMember);
 
+            writer.WriteLine();
             writer.WriteLine($$"""
-                private static global::System.Reflection.MethodInfo? __s_{{accessorName}}_MethodInfo;
-                private static {{method.UnderlyingReturnType.FullyQualifiedName}} {{accessorName}}({{allParameters}})
+                private delegate {{methodRefPrefix}}{{method.UnderlyingReturnType.FullyQualifiedName}} {{accessorName}}_DelegateType({{parameterSignature}});
+                private static {{accessorName}}_DelegateType? {{accessorName}}_Delegate;
+                private static {{methodRefPrefix}}{{method.UnderlyingReturnType.FullyQualifiedName}} {{accessorName}}({{parameterSignature}})
                 {
-                    global::System.Reflection.MethodInfo methodInfo = __s_{{accessorName}}_MethodInfo ??= typeof({{method.DeclaringType}}).GetMethod({{FormatStringLiteral(method.UnderlyingMethodName)}}, {{AllBindingFlagsConstMember}}, null, {{parameterTypes}}, null)!;
-                    object?[] paramArray = new object?[] { {{string.Join(", ", method.Parameters.Select(p => p.Name))}} };
-                    {{(method.ReturnTypeKind is MethodReturnTypeKind.Void
-                        ? CreateInvokeMethodExpr()
-                        : $"return ({method.UnderlyingReturnType.FullyQualifiedName}){CreateInvokeMethodExpr()}!;")}};
+                    {{returnPrefix}}({{cachedDelegateName}} ??= {{createDelegateName}}()).Invoke({{arguments}});
+                    static {{accessorName}}_DelegateType {{createDelegateName}}()
+                    {
+                        global::System.Reflection.MethodInfo {{methodInfoName}} = typeof({{method.DeclaringType}}).GetMethod({{FormatStringLiteral(method.UnderlyingMethodName)}}, {{bindingFlagsName}}, null, {{parameterTypes}}, null)!;
+                        return ({{accessorName}}_DelegateType)global::System.Delegate.CreateDelegate(typeof({{accessorName}}_DelegateType), {{methodInfoName}});
+                    }
                 }
                 """);
 
-            string CreateInvokeMethodExpr() => $"methodInfo.Invoke({(method.IsStatic ? "null" : "target")}, paramArray)";
             return;
         }
 
         Debug.Assert(!method.IsStatic, "Remove once https://github.com/eiriktsarpalis/PolyType/issues/220 is implemented");
-        string methodRefPrefix = method.ReturnsByRef ? "ref " : "";
-        writer.WriteLine($"""
+        string modifiers = GetUnsafeAccessorModifiers(method.GenericDeclaringType);
+        string returnType = method.OpenReturnTypeName ?? method.UnderlyingReturnType.FullyQualifiedName;
+        FormatUnsafeAccessor(writer, declaringType, method.DeclaringTypeIndex, method.GenericDeclaringType, $"""
             [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = {FormatStringLiteral(method.UnderlyingMethodName)})]
-            private static extern {methodRefPrefix}{method.UnderlyingReturnType.FullyQualifiedName} {accessorName}({allParameters});
+            {modifiers} {methodRefPrefix}{returnType} {accessorName}({parameterSignature});
             """);
     }
 

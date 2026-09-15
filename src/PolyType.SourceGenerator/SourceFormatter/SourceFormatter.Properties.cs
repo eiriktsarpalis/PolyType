@@ -78,12 +78,12 @@ internal sealed partial class SourceFormatter
                     string refPrefix = property.DeclaringType.IsValueType ? "ref " : "";
                     if (property.IsField)
                     {
-                        string fieldAccessorName = GetFieldAccessorName(declaringType, property.UnderlyingMemberName);
+                        string fieldAccessorName = GetFieldAccessorName(declaringType, property.UnderlyingMemberName, property.DeclaringTypeIndex, property.GenericDeclaringType);
                         return $"{fieldAccessorName}({refPrefix}{objParam})";
                     }
                     else
                     {
-                        string propertyGetterAccessorName = GetPropertyGetterAccessorName(declaringType, property.UnderlyingMemberName);
+                        string propertyGetterAccessorName = GetPropertyGetterAccessorName(declaringType, property.UnderlyingMemberName, property.DeclaringTypeIndex, property.GenericDeclaringType);
                         return $"{propertyGetterAccessorName}({refPrefix}{objParam})";
                     }
                 }
@@ -103,14 +103,14 @@ internal sealed partial class SourceFormatter
                     string refPrefix = property.DeclaringType.IsValueType ? "ref " : "";
                     if (property.IsField)
                     {
-                        string fieldAccessorName = GetFieldAccessorName(declaringType, property.UnderlyingMemberName);
+                        string fieldAccessorName = GetFieldAccessorName(declaringType, property.UnderlyingMemberName, property.DeclaringTypeIndex, property.GenericDeclaringType);
                         return property.CanUseUnsafeAccessors
                             ? $"{fieldAccessorName}({refPrefix}{objParam}) = {valueParam}"
                             : $"{fieldAccessorName}_set({refPrefix}{objParam}, {valueParam})";
                     }
                     else
                     {
-                        string propertySetterAccessorName = GetPropertySetterAccessorName(declaringType, property.UnderlyingMemberName);
+                        string propertySetterAccessorName = GetPropertySetterAccessorName(declaringType, property.UnderlyingMemberName, property.DeclaringTypeIndex, property.GenericDeclaringType);
                         return $"{propertySetterAccessorName}({refPrefix}{objParam}, {valueParam})";
                     }
                 }
@@ -142,30 +142,34 @@ internal sealed partial class SourceFormatter
             : null;
     }
 
-    private static string GetFieldAccessorName(TypeShapeModel declaringType, string underlyingMemberName)
+    private static string GetFieldAccessorName(TypeShapeModel declaringType, string underlyingMemberName, int declaringTypeIndex = 0, GenericTypeModel? genericType = null)
     {
-        return $"__FieldAccessor_{declaringType.SourceIdentifier}_{underlyingMemberName}";
+        string suffix = declaringTypeIndex == 0 ? "" : $"_{declaringTypeIndex}";
+        return QualifyAccessorName(declaringType, $"__FieldAccessor_{declaringType.SourceIdentifier}{suffix}_{underlyingMemberName}", declaringTypeIndex, genericType);
     }
 
-    private static string GetPropertyGetterAccessorName(TypeShapeModel declaringType, string underlyingMemberName)
+    private static string GetPropertyGetterAccessorName(TypeShapeModel declaringType, string underlyingMemberName, int declaringTypeIndex = 0, GenericTypeModel? genericType = null)
     {
-        return $"__GetAccessor_{declaringType.SourceIdentifier}_{underlyingMemberName}";
+        string suffix = declaringTypeIndex == 0 ? "" : $"_{declaringTypeIndex}";
+        return QualifyAccessorName(declaringType, $"__GetAccessor_{declaringType.SourceIdentifier}{suffix}_{underlyingMemberName}", declaringTypeIndex, genericType);
     }
 
-    private static string GetPropertySetterAccessorName(TypeShapeModel declaringType, string underlyingMemberName)
+    private static string GetPropertySetterAccessorName(TypeShapeModel declaringType, string underlyingMemberName, int declaringTypeIndex = 0, GenericTypeModel? genericType = null)
     {
-        return $"__SetAccessor_{declaringType.SourceIdentifier}_{underlyingMemberName}";
+        string suffix = declaringTypeIndex == 0 ? "" : $"_{declaringTypeIndex}";
+        return QualifyAccessorName(declaringType, $"__SetAccessor_{declaringType.SourceIdentifier}{suffix}_{underlyingMemberName}", declaringTypeIndex, genericType);
     }
 
-    private static void FormatFieldAccessor(SourceWriter writer, ObjectShapeModel declaringType, PropertyShapeModel property)
+    private void FormatFieldAccessor(SourceWriter writer, ObjectShapeModel declaringType, PropertyShapeModel property)
     {
         Debug.Assert(property.IsField);
-        string accessorName = GetFieldAccessorName(declaringType, property.UnderlyingMemberName);
+        string accessorName = GetFieldAccessorName(declaringType, property.UnderlyingMemberName, property.DeclaringTypeIndex);
         string refPrefix = property.DeclaringType.IsValueType ? "ref " : "";
 
         if (!property.CanUseUnsafeAccessors)
         {
             // Emit a reflection-based workaround.
+            writer.WriteLine();
             writer.WriteLine($$"""
                 private static global::System.Reflection.FieldInfo {{accessorName}}_FieldInfo => __s_{{accessorName}}_FieldInfo ??= typeof({{property.DeclaringType.FullyQualifiedName}}).GetField({{FormatStringLiteral(property.UnderlyingMemberName)}}, {{InstanceBindingFlagsConstMember}})!;
                 private static global::System.Reflection.FieldInfo? __s_{{accessorName}}_FieldInfo;
@@ -174,28 +178,37 @@ internal sealed partial class SourceFormatter
                 {
                     return ({{property.PropertyType.FullyQualifiedName}}){{accessorName}}_FieldInfo.GetValue(obj)!;
                 }
-
-                private static void {{accessorName}}_set({{refPrefix}}{{property.DeclaringType.FullyQualifiedName}} obj, {{property.PropertyType.FullyQualifiedName}} value)
-                {
-                    object boxedObj = obj;
-                    {{accessorName}}_FieldInfo.SetValue(boxedObj, value);
-                    obj = ({{property.DeclaringType.FullyQualifiedName}})boxedObj;
-                }
                 """);
+
+            if (property.EmitSetter)
+            {
+                writer.WriteLine();
+                writer.WriteLine($$"""
+                    private static void {{accessorName}}_set({{refPrefix}}{{property.DeclaringType.FullyQualifiedName}} obj, {{property.PropertyType.FullyQualifiedName}} value)
+                    {
+                        object boxedObj = obj;
+                        {{accessorName}}_FieldInfo.SetValue(boxedObj, value);
+                        obj = ({{property.DeclaringType.FullyQualifiedName}})boxedObj;
+                    }
+                    """);
+            }
 
             return;
         }
 
-        writer.WriteLine($"""
+        string modifiers = GetUnsafeAccessorModifiers(property.GenericDeclaringType);
+        string receiverType = property.GenericDeclaringType?.FullyQualifiedName ?? property.DeclaringType.FullyQualifiedName;
+        string fieldType = property.OpenPropertyTypeName ?? property.PropertyType.FullyQualifiedName;
+        FormatUnsafeAccessor(writer, declaringType, property.DeclaringTypeIndex, property.GenericDeclaringType, $"""
             [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Field, Name = {FormatStringLiteral(property.UnderlyingMemberName)})]
-            private static extern ref {property.PropertyType.FullyQualifiedName} {accessorName}({refPrefix}{property.DeclaringType.FullyQualifiedName} obj);
+            {modifiers} ref {fieldType} {accessorName}({refPrefix}{receiverType} obj);
             """);
     }
 
-    private static void FormatPropertyGetterAccessor(SourceWriter writer, ObjectShapeModel declaringType, PropertyShapeModel property)
+    private void FormatPropertyGetterAccessor(SourceWriter writer, ObjectShapeModel declaringType, PropertyShapeModel property)
     {
         Debug.Assert(!property.IsField);
-        string accessorName = GetPropertyGetterAccessorName(declaringType, property.UnderlyingMemberName);
+        string accessorName = GetPropertyGetterAccessorName(declaringType, property.UnderlyingMemberName, property.DeclaringTypeIndex);
         string refPrefix = property.DeclaringType.IsValueType ? "ref " : "";
         string propertyGetter = "get_" + property.UnderlyingMemberName;
 
@@ -206,6 +219,7 @@ internal sealed partial class SourceFormatter
                 ? $"global::PolyType.Abstractions.Getter<{property.DeclaringType.FullyQualifiedName}, {property.PropertyType.FullyQualifiedName}>"
                 : $"global::System.Func<{property.DeclaringType.FullyQualifiedName}, {property.PropertyType.FullyQualifiedName}>";
 
+            writer.WriteLine();
             writer.WriteLine($$"""
                 private static {{delegateType}}? {{accessorName}}_Delegate;
                 private static {{property.PropertyType.FullyQualifiedName}} {{accessorName}}({{refPrefix}}{{property.DeclaringType.FullyQualifiedName}} obj)
@@ -222,16 +236,19 @@ internal sealed partial class SourceFormatter
             return;
         }
 
-        writer.WriteLine($"""
+        string modifiers = GetUnsafeAccessorModifiers(property.GenericDeclaringType);
+        string receiverType = property.GenericDeclaringType?.FullyQualifiedName ?? property.DeclaringType.FullyQualifiedName;
+        string propertyType = property.OpenPropertyTypeName ?? property.PropertyType.FullyQualifiedName;
+        FormatUnsafeAccessor(writer, declaringType, property.DeclaringTypeIndex, property.GenericDeclaringType, $"""
             [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = {FormatStringLiteral(propertyGetter)})]
-            private static extern {property.PropertyType.FullyQualifiedName} {accessorName}({refPrefix}{property.DeclaringType.FullyQualifiedName} obj);
+            {modifiers} {propertyType} {accessorName}({refPrefix}{receiverType} obj);
             """);
     }
 
-    private static void FormatPropertySetterAccessor(SourceWriter writer, ObjectShapeModel declaringType, PropertyShapeModel property)
+    private void FormatPropertySetterAccessor(SourceWriter writer, ObjectShapeModel declaringType, PropertyShapeModel property)
     {
         Debug.Assert(!property.IsField);
-        string accessorName = GetPropertySetterAccessorName(declaringType, property.UnderlyingMemberName);
+        string accessorName = GetPropertySetterAccessorName(declaringType, property.UnderlyingMemberName, property.DeclaringTypeIndex);
         string refPrefix = property.DeclaringType.IsValueType ? "ref " : "";
         string propertySetter = "set_" + property.UnderlyingMemberName;
 
@@ -242,6 +259,7 @@ internal sealed partial class SourceFormatter
                 ? $"global::PolyType.Abstractions.Setter<{property.DeclaringType.FullyQualifiedName}, {property.PropertyType.FullyQualifiedName}>" 
                 : $"global::System.Action<{property.DeclaringType.FullyQualifiedName}, {property.PropertyType.FullyQualifiedName}>";
 
+            writer.WriteLine();
             writer.WriteLine($$"""
                 private static {{delegateType}}? {{accessorName}}_Delegate;
                 private static void {{accessorName}}({{refPrefix}}{{property.DeclaringType.FullyQualifiedName}} obj, {{property.PropertyType.FullyQualifiedName}} value)
@@ -258,9 +276,12 @@ internal sealed partial class SourceFormatter
             return;
         }
 
-        writer.WriteLine($"""
+        string modifiers = GetUnsafeAccessorModifiers(property.GenericDeclaringType);
+        string receiverType = property.GenericDeclaringType?.FullyQualifiedName ?? property.DeclaringType.FullyQualifiedName;
+        string propertyType = property.OpenPropertyTypeName ?? property.PropertyType.FullyQualifiedName;
+        FormatUnsafeAccessor(writer, declaringType, property.DeclaringTypeIndex, property.GenericDeclaringType, $"""
             [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = {FormatStringLiteral(propertySetter)})]
-            private static extern void {accessorName}({refPrefix}{property.DeclaringType.FullyQualifiedName} obj, {property.PropertyType.FullyQualifiedName} value);
+            {modifiers} void {accessorName}({refPrefix}{receiverType} obj, {propertyType} value);
             """);
     }
 }

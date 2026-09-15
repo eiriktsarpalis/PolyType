@@ -1,7 +1,24 @@
+using System.Reflection;
+using System.Runtime.CompilerServices;
+
 namespace PolyType.Tests;
 
 public static partial class TypeShapeResolverTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void ResolveDynamic_PropagatesProviderConstructorException(bool useWitness)
+    {
+        var exception = Assert.Throws<TargetInvocationException>(() => useWitness
+            ? TypeShapeResolver.ResolveDynamic<ThrowingProviderType, ThrowingProviderWitness>()
+            : TypeShapeResolver.ResolveDynamic<ThrowingProviderType>());
+
+        Assert.Equal("User-thrown provider exception.", exception.Message);
+        Assert.IsType<InvalidOperationException>(exception.InnerException);
+        Assert.Contains(nameof(ThrowingProvider), exception.StackTrace);
+    }
+
     [Fact]
     public static void ResolveDynamic_ShapeableType_ReturnsExpectedSingleton()
     {
@@ -74,4 +91,18 @@ public static partial class TypeShapeResolverTests
     public partial class ResolverShapeProvider;
 
     private sealed class Unannotated;
+
+    [TypeShapeProvider(typeof(ThrowingProvider))]
+    public sealed class ThrowingProviderType;
+
+    [TypeShapeProvider(typeof(ThrowingProvider))]
+    public sealed class ThrowingProviderWitness;
+
+    public sealed class ThrowingProvider : ITypeShapeProvider
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public ThrowingProvider() => throw new TargetInvocationException("User-thrown provider exception.", new InvalidOperationException());
+
+        public ITypeShape? GetTypeShape(Type type) => null;
+    }
 }

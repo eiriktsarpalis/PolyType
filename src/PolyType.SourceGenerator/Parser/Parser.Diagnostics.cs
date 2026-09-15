@@ -114,6 +114,22 @@ public sealed partial class Parser
         isEnabledByDefault: true,
         customTags: WellKnownDiagnosticTags.NotConfigurable);
 
+    private static DiagnosticDescriptor PatternMatchesNoTypes { get; } = new DiagnosticDescriptor(
+        id: "PT0014",
+        title: "Pattern matches no types.",
+        messageFormat: "The pattern '{0}' did not match any types in the compilation.",
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    private static DiagnosticDescriptor InvalidOrOverlyBroadPattern { get; } = new DiagnosticDescriptor(
+        id: "PT0015",
+        title: "Pattern is invalid or overly broad.",
+        messageFormat: "The pattern '{0}' is invalid or too broad. Patterns must contain at least one non-wildcard character (besides periods) to prevent matching thousands of types.",
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     private static DiagnosticDescriptor AssociatedTypeArityMismatch { get; } = new DiagnosticDescriptor(
         id: "PT0016",
         title: "Associated type arity mismatch.",
@@ -176,19 +192,11 @@ public sealed partial class Parser
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
-    private static DiagnosticDescriptor PatternMatchesNoTypes { get; } = new DiagnosticDescriptor(
-        id: "PT0014",
-        title: "Pattern matches no types.",
-        messageFormat: "The pattern '{0}' did not match any types in the compilation.",
+    private static DiagnosticDescriptor UnsafeMembersNotSupported { get; } = new DiagnosticDescriptor(
+        id: "PT0024",
+        title: "Caller-unsafe members not supported.",
+        messageFormat: "Type '{0}' contains caller-unsafe members and does not support shape generation.",
         category: "PolyType.SourceGenerator",
-        defaultSeverity: DiagnosticSeverity.Warning,
-        isEnabledByDefault: true);
-
-    private static DiagnosticDescriptor InvalidOrOverlyBroadPattern { get; } = new DiagnosticDescriptor(
-        id: "PT0015",
-        title: "Pattern is invalid or overly broad.",
-        messageFormat: "The pattern '{0}' is invalid or too broad. Patterns must contain at least one non-wildcard character (besides periods) to prevent matching thousands of types.",
-        category: "PolyType.SourceGenerator",
-        defaultSeverity: DiagnosticSeverity.Warning,
+        defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 }

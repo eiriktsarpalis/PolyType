@@ -81,7 +81,7 @@ internal static class JsonHelpers
     [DoesNotReturn]
     public static void ThrowJsonException(string message) => throw new JsonException(message);
 
-    public static unsafe Span<byte> DecodeToUtf8UsingRentedBuffer(ReadOnlySpan<char> json, out byte[] rentedBuffer)
+    public static Span<byte> DecodeToUtf8UsingRentedBuffer(ReadOnlySpan<char> json, out byte[] rentedBuffer)
     {
         int maxCount = Encoding.UTF8.GetMaxByteCount(json.Length);
         rentedBuffer = ArrayPool<byte>.Shared.Rent(maxCount);
@@ -89,23 +89,29 @@ internal static class JsonHelpers
 #if NET
         length = Encoding.UTF8.GetBytes(json, rentedBuffer);
 #else
-        fixed (char* pJson = json)
-        fixed (byte* pBuffer = rentedBuffer)
+        unsafe
         {
-            length = Encoding.UTF8.GetBytes(pJson, json.Length, pBuffer, maxCount);
+            fixed (char* pJson = json)
+            fixed (byte* pBuffer = rentedBuffer)
+            {
+                length = Encoding.UTF8.GetBytes(pJson, json.Length, pBuffer, maxCount);
+            }
         }
 #endif
         return rentedBuffer.AsSpan(0, length);
     }
 
-    public static unsafe string DecodeFromUtf8(ReadOnlySpan<byte> utf8Json)
+    public static string DecodeFromUtf8(ReadOnlySpan<byte> utf8Json)
     {
 #if NET
         return Encoding.UTF8.GetString(utf8Json);
 #else
-        fixed (byte* pUtf8Json = utf8Json)
+        unsafe
         {
-            return Encoding.UTF8.GetString(pUtf8Json, utf8Json.Length);
+            fixed (byte* pUtf8Json = utf8Json)
+            {
+                return Encoding.UTF8.GetString(pUtf8Json, utf8Json.Length);
+            }
         }
 #endif
     }
@@ -152,13 +158,13 @@ internal static class JsonHelpers
 
 #if NET
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Reset")]
-    public static extern void Reset(this Utf8JsonWriter writer, IBufferWriter<byte> bufferWriter, JsonWriterOptions options);
+    public static safe extern void Reset(this Utf8JsonWriter writer, IBufferWriter<byte> bufferWriter, JsonWriterOptions options);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "WriteAsObject")]
-    public static extern void WriteAsObject(this JsonConverter converter, Utf8JsonWriter writer, object? value, JsonSerializerOptions options);
+    public static safe extern void WriteAsObject(this JsonConverter converter, Utf8JsonWriter writer, object? value, JsonSerializerOptions options);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "GetRawValue")]
-    public static extern ReadOnlyMemory<byte> GetRawValue(ref this JsonElement element);
+    public static safe extern ReadOnlyMemory<byte> GetRawValue(ref this JsonElement element);
 #else
     public static void Reset(this Utf8JsonWriter writer, IBufferWriter<byte> bufferWriter, JsonWriterOptions options)
     {

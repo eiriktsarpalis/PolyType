@@ -82,7 +82,7 @@ internal sealed partial class SourceFormatter
         return FormatNull(stringExpr);
     }
 
-    private static void FormatMemberAccessors(SourceWriter writer, ObjectShapeModel objectShapeModel)
+    private void FormatMemberAccessors(SourceWriter writer, ObjectShapeModel objectShapeModel)
     {
         foreach (PropertyShapeModel property in objectShapeModel.Properties)
         {
@@ -90,7 +90,6 @@ internal sealed partial class SourceFormatter
             {
                 if (!property.IsGetterAccessible)
                 {
-                    writer.WriteLine();
                     FormatFieldAccessor(writer, objectShapeModel, property);
                 }
             }
@@ -98,14 +97,12 @@ internal sealed partial class SourceFormatter
             {
                 if (property is { EmitGetter: true, IsGetterAccessible: false })
                 {
-                    writer.WriteLine();
                     FormatPropertyGetterAccessor(writer, objectShapeModel, property);
                 }
 
                 if ((!property.IsSetterAccessible || property.IsInitOnly) &&
                     (property.EmitSetter || IsUsedByConstructor(property)))
                 {
-                    writer.WriteLine();
                     FormatPropertySetterAccessor(writer, objectShapeModel, property);
                 }
 
@@ -131,7 +128,6 @@ internal sealed partial class SourceFormatter
 
         if (objectShapeModel.Constructor is { IsAccessible: false } ctor)
         {
-            writer.WriteLine();
             FormatConstructorAccessor(writer, objectShapeModel, ctor);
         }
     }

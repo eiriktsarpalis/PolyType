@@ -59,10 +59,7 @@ internal sealed partial class SourceFormatter
         {
             if (!eventModel.IsAccessible)
             {
-                writer.WriteLine();
                 FormatEventAccessor(writer, declaringType, eventModel, isAdd: true);
-
-                writer.WriteLine();
                 FormatEventAccessor(writer, declaringType, eventModel, isAdd: false);
             }
         }
@@ -92,81 +89,57 @@ internal sealed partial class SourceFormatter
             : null;
     }
 
-    private static string GetEventAccessorName(TypeShapeModel declaringType, EventShapeModel eventShapeModel, bool isAdd)
+    private static string GetEventAccessorName(TypeShapeModel declaringType, EventShapeModel eventShapeModel, bool isAdd, bool qualified = true)
     {
         string methodPrefix = isAdd ? "add" : "remove";
-        return $"__EventAccessor_{declaringType.SourceIdentifier}_{methodPrefix}_{eventShapeModel.UnderlyingMemberName}";
+        string suffix = eventShapeModel.DeclaringTypeIndex == 0 ? "" : $"_{eventShapeModel.DeclaringTypeIndex}";
+        string name = $"__EventAccessor_{declaringType.SourceIdentifier}{suffix}_{methodPrefix}_{eventShapeModel.UnderlyingMemberName}";
+        return qualified ? QualifyAccessorName(declaringType, name, eventShapeModel.DeclaringTypeIndex, eventShapeModel.GenericDeclaringType) : name;
     }
 
-    private static void FormatEventAccessor(SourceWriter writer, TypeShapeModel declaringType, EventShapeModel eventModel, bool isAdd)
+    private void FormatEventAccessor(SourceWriter writer, TypeShapeModel declaringType, EventShapeModel eventModel, bool isAdd)
     {
         Debug.Assert(!eventModel.IsAccessible);
 
-        string accessorName = GetEventAccessorName(declaringType, eventModel, isAdd);
+        string accessorName = GetEventAccessorName(declaringType, eventModel, isAdd, qualified: false);
+        string refPrefix = eventModel.DeclaringType.IsValueType ? "ref " : "";
+        string nullableSuffix = eventModel.DeclaringType.IsValueType ? "" : "?";
         if (!eventModel.CanUseUnsafeAccessors)
         {
-            // Emit a reflection-based workaround.
             string eventInfoMethodProp = isAdd ? "AddMethod" : "RemoveMethod";
-            if (eventModel.IsStatic)
-            {
-                writer.WriteLine($$"""
-                    private static global::System.Reflection.MethodInfo? __s_{{accessorName}}_MethodInfo;
-                    private static void {{accessorName}}({{eventModel.HandlerType.FullyQualifiedName}} handler)
+            string delegateType = eventModel.IsStatic
+                ? $"global::System.Action<{eventModel.HandlerType.FullyQualifiedName}>"
+                : eventModel.DeclaringType.IsValueType
+                    ? $"global::PolyType.Abstractions.Setter<{eventModel.DeclaringType.FullyQualifiedName}, {eventModel.HandlerType.FullyQualifiedName}>"
+                    : $"global::System.Action<{eventModel.DeclaringType.FullyQualifiedName}, {eventModel.HandlerType.FullyQualifiedName}>";
+            string receiverParameter = eventModel.IsStatic ? "" : $"{refPrefix}{eventModel.DeclaringType.FullyQualifiedName}{nullableSuffix} obj, ";
+            string receiverArgument = eventModel.IsStatic ? "" : $"{refPrefix}obj!, ";
+            writer.WriteLine();
+            writer.WriteLine($$"""
+                private static {{delegateType}}? {{accessorName}}_Delegate;
+                private static void {{accessorName}}({{receiverParameter}}{{eventModel.HandlerType.FullyQualifiedName}} handler)
+                {
+                    ({{accessorName}}_Delegate ??= CreateDelegate()).Invoke({{receiverArgument}}handler);
+                    static {{delegateType}} CreateDelegate()
                     {
-                        global::System.Reflection.MethodInfo methodInfo = __s_{{accessorName}}_MethodInfo ??= typeof({{eventModel.DeclaringType.FullyQualifiedName}}).GetEvent({{FormatStringLiteral(eventModel.UnderlyingMemberName)}}, {{AllBindingFlagsConstMember}})!.{{eventInfoMethodProp}}!;
-                        methodInfo.Invoke(null, new object?[] { handler });
+                        global::System.Reflection.MethodInfo methodInfo = typeof({{eventModel.DeclaringType.FullyQualifiedName}}).GetEvent({{FormatStringLiteral(eventModel.UnderlyingMemberName)}}, {{AllBindingFlagsConstMember}})!.{{eventInfoMethodProp}}!;
+                        return ({{delegateType}})global::System.Delegate.CreateDelegate(typeof({{delegateType}}), methodInfo);
                     }
-                    """);
-            }
-            else
-            {
-                string refPrefix = declaringType.Type.IsValueType ? "ref " : "";
-                string nullableSuffix = declaringType.Type.IsValueType ? "" : "?";
-                writer.WriteLine($$"""
-                    private static global::System.Reflection.MethodInfo? __s_{{accessorName}}_MethodInfo;
-                    private static void {{accessorName}}({{refPrefix}}{{declaringType.Type.FullyQualifiedName}}{{nullableSuffix}} obj, {{eventModel.HandlerType.FullyQualifiedName}} handler)
-                    {
-                        global::System.Reflection.MethodInfo methodInfo = __s_{{accessorName}}_MethodInfo ??= typeof({{eventModel.DeclaringType.FullyQualifiedName}}).GetEvent({{FormatStringLiteral(eventModel.UnderlyingMemberName)}}, {{AllBindingFlagsConstMember}})!.{{eventInfoMethodProp}}!;
-                    """);
-
-                if (declaringType.Type.IsValueType)
-                {
-                    writer.WriteLine("""
-                            object boxedObj = obj!;
-                            methodInfo.Invoke(boxedObj, new object?[] { handler });
-                            obj = ({{declaringType.Type.FullyQualifiedName}})boxedObj!;
-                        }
-                        """);
                 }
-                else
-                {
-                    writer.WriteLine("""
-                            methodInfo.Invoke(obj!, new object?[] { handler });
-                        }
-                        """);
-                }
-            }
+                """);
 
             return;
         }
 
+        Debug.Assert(!eventModel.IsStatic);
         string methodPrefix = isAdd ? "add" : "remove";
         string methodName = $"{methodPrefix}_{eventModel.UnderlyingMemberName}";
-        if (eventModel.IsStatic)
-        {
-            writer.WriteLine($"""
-                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = {FormatStringLiteral(methodName)})]
-                private static extern void {accessorName}({eventModel.HandlerType.FullyQualifiedName} handler);
-                """);
-        }
-        else
-        {
-            string refPrefix = declaringType.Type.IsValueType ? "ref " : "";
-            string nullableSuffix = declaringType.Type.IsValueType ? "" : "?";
-            writer.WriteLine($"""
-                [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = {FormatStringLiteral(methodName)})]
-                private static extern void {accessorName}({refPrefix}{declaringType.Type.FullyQualifiedName}{nullableSuffix} obj, {eventModel.HandlerType.FullyQualifiedName} handler);
-                """);
-        }
+        string modifiers = GetUnsafeAccessorModifiers(eventModel.GenericDeclaringType);
+        string receiverType = eventModel.GenericDeclaringType?.FullyQualifiedName ?? eventModel.DeclaringType.FullyQualifiedName;
+        string handlerType = eventModel.OpenHandlerTypeName ?? eventModel.HandlerType.FullyQualifiedName;
+        FormatUnsafeAccessor(writer, declaringType, eventModel.DeclaringTypeIndex, eventModel.GenericDeclaringType, $"""
+            [global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = {FormatStringLiteral(methodName)})]
+            {modifiers} void {accessorName}({refPrefix}{receiverType}{nullableSuffix} obj, {handlerType} handler);
+            """);
     }
 }

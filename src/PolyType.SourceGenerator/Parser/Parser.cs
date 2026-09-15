@@ -25,6 +25,7 @@ public sealed partial class Parser : TypeDataModelGenerator
 
     private readonly PolyTypeKnownSymbols _knownSymbols;
     private readonly IReadOnlyDictionary<ITypeSymbol, TypeExtensionModel> _typeShapeExtensions;
+    private readonly bool _usesUpdatedMemorySafetyRules;
     private readonly HashSet<ISymbol> _observedDiagnosticSymbols = new(SymbolEqualityComparer.Default);
     private HashSet<string>? _suppressedDiagnosticIds;
 
@@ -33,6 +34,7 @@ public sealed partial class Parser : TypeDataModelGenerator
     {
         _knownSymbols = knownSymbols;
         _typeShapeExtensions = typeShapeExtensions;
+        _usesUpdatedMemorySafetyRules = knownSymbols.Compilation.UsesUpdatedMemorySafetyRules();
     }
 
     protected override void OnMemberAccessed(ISymbol symbol) => CollectDiagnosticIdsToSuppress(symbol);
@@ -450,6 +452,17 @@ public sealed partial class Parser : TypeDataModelGenerator
     // Full types used as generic parameters so we must exclude ref structs.
     protected override bool IsSupportedType(ITypeSymbol type) =>
         base.IsSupportedType(type) && !type.IsRefLikeType && !type.IsStatic;
+
+    protected override bool OnTypeTraversalStarting(ITypeSymbol type)
+    {
+        if (_usesUpdatedMemorySafetyRules && type.HasUnsafeMembers(_knownSymbols.Compilation))
+        {
+            ReportDiagnostic(UnsafeMembersNotSupported, type.Locations.FirstOrDefault(), type.ToDisplayString());
+            return false;
+        }
+
+        return true;
+    }
 
     // Erase nullable annotations and tuple labels from generated types.
     protected override ITypeSymbol NormalizeType(ITypeSymbol type) =>
@@ -1253,6 +1266,11 @@ public sealed partial class Parser : TypeDataModelGenerator
             namedMarshaler = specializedMarshaler;
         }
 
+        if (!OnTypeTraversalStarting(namedMarshaler))
+        {
+            return TypeDataModelGenerationStatus.UnsupportedType;
+        }
+
         IMethodSymbol? defaultCtor = namedMarshaler.GetMembers()
             .OfType<IMethodSymbol>()
             .FirstOrDefault(method => method is { MethodKind: MethodKind.Constructor, IsStatic: false, Parameters: [] });
@@ -1524,6 +1542,9 @@ public sealed partial class Parser : TypeDataModelGenerator
                 ? diagnosticIds.OrderBy(id => id, StringComparer.Ordinal).ToImmutableEquatableArray()
                 : [],
             TargetSupportsIShapeableOfT = _knownSymbols.TargetFramework >= TargetFramework.Net80,
+            UsesUpdatedMemorySafetyRules = _usesUpdatedMemorySafetyRules,
+            SupportsDoNotWrapExceptions = _knownSymbols.Compilation.GetTypeByMetadataName("System.Reflection.BindingFlags")?.GetMembers("DoNotWrapExceptions").Length > 0,
+            SupportsMemoryMarshalCreateSpan = _knownSymbols.Compilation.GetTypeByMetadataName("System.Runtime.InteropServices.MemoryMarshal")?.GetMembers("CreateSpan").Length > 0,
         };
     }
 

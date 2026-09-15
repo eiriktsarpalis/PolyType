@@ -60,20 +60,26 @@ internal static class Helpers
     }
 
 #if !NET
-    public static unsafe int GetChars(this Encoding encoding, ReadOnlySpan<byte> bytes, Span<char> chars)
+    public static int GetChars(this Encoding encoding, ReadOnlySpan<byte> bytes, Span<char> chars)
     {
-        fixed (byte* pBytes = bytes)
-        fixed (char* pChars = chars)
+        unsafe
         {
-            return encoding.GetChars(pBytes, bytes.Length, pChars, chars.Length);
+            fixed (byte* pBytes = bytes)
+            fixed (char* pChars = chars)
+            {
+                return encoding.GetChars(pBytes, bytes.Length, pChars, chars.Length);
+            }
         }
     }
 
-    public static unsafe string GetString(this Encoding encoding, ReadOnlySpan<byte> bytes)
+    public static string GetString(this Encoding encoding, ReadOnlySpan<byte> bytes)
     {
-        fixed (byte* pBytes = bytes)
+        unsafe
         {
-            return encoding.GetString(pBytes, bytes.Length);
+            fixed (byte* pBytes = bytes)
+            {
+                return encoding.GetString(pBytes, bytes.Length);
+            }
         }
     }
 #endif
@@ -95,11 +101,24 @@ internal static class Helpers
     }
 #endif
 
-    public readonly struct UnsafeArraySpan<TElement>(Array array) : IDisposable
+    internal readonly struct UnsafeArraySpan<TElement>(Array array) : IDisposable
     {
-        private readonly GCHandle _handle = GCHandle.Alloc(array, GCHandleType.Pinned);
-        public readonly unsafe Span<TElement> Span => new(_handle.AddrOfPinnedObject().ToPointer(), array.Length);
+        private readonly GCHandle _handle = PinArray(array);
+
+        /// <summary>Gets a span over the pinned array's contiguous storage.</summary>
+        /// <safety>
+        /// The array must have element type <typeparamref name="TElement"/> and contain no managed references.
+        /// This instance must not have been disposed. The span and references derived from it
+        /// must not be used after this instance or a copy of it is disposed.
+        /// </safety>
+        public readonly unsafe Span<TElement> Span => unsafe(new Span<TElement>(_handle.AddrOfPinnedObject().ToPointer(), array.Length));
         public void Dispose() => _handle.Free();
+
+        private static GCHandle PinArray(Array array)
+        {
+            Debug.Assert(array.GetType().GetElementType() == typeof(TElement) && !IsReferenceOrContainsReferences<TElement>());
+            return GCHandle.Alloc(array, GCHandleType.Pinned);
+        }
     }
 
 #if !NET

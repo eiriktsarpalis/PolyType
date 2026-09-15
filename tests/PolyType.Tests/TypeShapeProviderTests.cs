@@ -1087,7 +1087,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             Assert.Same(methodShape.GetMethodInvoker(), methodShape.GetMethodInvoker());
 
 #if !NET
-            if (methodShape.MethodBase is MethodInfo { ReturnType.IsByRef: true } method && IsReflectionInvokedMethod(method, providerUnderTest))
+            if (methodShape.MethodBase is MethodInfo { ReturnType.IsByRef: true } && providerUnderTest.Kind is ProviderKind.ReflectionNoEmit)
             {
                 var ex = Assert.Throws<NotSupportedException>(() => parameterizedCtor.Invoke(ref instance, ref argumentState).Result);
                 Assert.Contains("ByRef", ex.Message);
@@ -1137,7 +1137,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         {
             var invoker = (Func<int, int, ValueTask<int>>)methodShape.Accept(invokerBuilder, instance)!;
 #if !NET
-            if (methodShape.MethodBase is MethodInfo { ReturnType.IsByRef: true } method && IsReflectionInvokedMethod(method, providerUnderTest))
+            if (methodShape.MethodBase is MethodInfo { ReturnType.IsByRef: true } && providerUnderTest.Kind is ProviderKind.ReflectionNoEmit)
             {
                 var ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await invoker(7, 5));
                 Assert.Contains("ByRef", ex.Message);
@@ -1147,10 +1147,6 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             Assert.Equal(12, await invoker(7, 5));
         }
     }
-
-    private static bool IsReflectionInvokedMethod(MethodInfo method, ProviderUnderTest providerUnderTest) =>
-        providerUnderTest.Kind is ProviderKind.ReflectionNoEmit ||
-        (providerUnderTest.Kind is ProviderKind.SourceGen && !method.IsPublic);
 
     private sealed class MethodShapeInvokerBuilder : TypeShapeVisitor
     {

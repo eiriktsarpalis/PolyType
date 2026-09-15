@@ -206,6 +206,34 @@ public static class SnapshotTests
         """);
 
     [Fact]
+    public static void GenericPrivateMembers() => VerifySourceGeneratorOutput("""
+        using PolyType;
+
+        namespace TestNamespace
+        {
+            public class GenericSecrets<T> where T : class
+            {
+                [ConstructorShape]
+                private GenericSecrets(T token, T backupToken)
+                {
+                    Token = token;
+                    BackupToken = backupToken;
+                }
+
+                [PropertyShape]
+                private T Token { get; set; }
+
+                [PropertyShape]
+                private T BackupToken;
+            }
+
+            [GenerateShapeFor(typeof(GenericSecrets<string>))]
+            public partial class Witness { }
+        }
+        """, parseOptions: CompilationHelpers.CreateParseOptions(LanguageVersion.Preview)
+            .WithFeatures([new("updated-memory-safety-rules", "true")]));
+
+    [Fact]
     public static void RefParameters() => VerifySourceGeneratorOutput("""
         using PolyType;
 
@@ -230,9 +258,12 @@ public static class SnapshotTests
         }
         """);
 
-    private static void VerifySourceGeneratorOutput([StringSyntax("c#-test")] string source, [CallerMemberName] string testCaseName = "")
+    private static void VerifySourceGeneratorOutput(
+        [StringSyntax("c#-test")] string source,
+        CSharpParseOptions? parseOptions = null,
+        [CallerMemberName] string testCaseName = "")
     {
-        Compilation compilation = CompilationHelpers.CreateCompilation(source);
+        Compilation compilation = CompilationHelpers.CreateCompilation(source, parseOptions: parseOptions);
         CSharpGeneratorDriver driver = CompilationHelpers.CreatePolyTypeSourceGeneratorDriver(compilation);
         driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation outCompilation, out var diagnostics, TestContext.Current.CancellationToken);
 

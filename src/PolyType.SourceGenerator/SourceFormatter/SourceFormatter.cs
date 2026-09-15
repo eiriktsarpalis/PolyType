@@ -32,8 +32,6 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
         }
 
         context.CancellationToken.ThrowIfCancellationRequested();
-        context.AddSource($"{provider.ProviderDeclaration.SourceFilenamePrefix}.g.cs", FormatTypeShapeProviderMainFile(provider));
-
         foreach (TypeShapeModel type in provider.ProvidedTypes.Values.OrderBy(t => t.SourceIdentifier, StringComparer.Ordinal))
         {
             context.CancellationToken.ThrowIfCancellationRequested();
@@ -64,6 +62,8 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
                     break;
             }
         }
+
+        context.AddSource($"{provider.ProviderDeclaration.SourceFilenamePrefix}.g.cs", FormatTypeShapeProviderMainFile(provider));
 
         foreach (TypeDeclarationModel typeDeclaration in provider.AnnotatedTypes)
         {

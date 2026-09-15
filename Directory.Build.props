@@ -1,7 +1,9 @@
 <Project>
   <PropertyGroup>
     <IsPackable>false</IsPackable>
-    <LangVersion>15.0</LangVersion>
+    <LangVersion>preview</LangVersion>
+    <Features>$(Features);updated-memory-safety-rules</Features>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>

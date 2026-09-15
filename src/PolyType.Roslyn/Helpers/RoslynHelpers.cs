@@ -38,6 +38,21 @@ internal static class RoslynHelpers
     public static bool ContainsLocation(this Compilation compilation, Location location) =>
         location.SourceTree != null && compilation.ContainsSyntaxTree(location.SourceTree);
 
+    public static bool MatchesNamespace(this INamespaceSymbol? symbol, ReadOnlySpan<string> namespaceTokens)
+    {
+        for (int i = namespaceTokens.Length - 1; i >= 0; i--)
+        {
+            if (symbol?.Name != namespaceTokens[i])
+            {
+                return false;
+            }
+
+            symbol = symbol.ContainingNamespace;
+        }
+
+        return symbol is null or { IsGlobalNamespace: true };
+    }
+
     public static void ResolveNullableAnnotation(this ISymbol member, out bool isGetterNonNullable, out bool isSetterNonNullable)
     {
         Debug.Assert(member is IFieldSymbol or IPropertySymbol);
