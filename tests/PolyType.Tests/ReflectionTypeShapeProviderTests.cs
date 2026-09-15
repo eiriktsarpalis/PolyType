@@ -1,6 +1,9 @@
 using PolyType.ReflectionProvider;
+using System.Diagnostics;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
 #if NET
 using System.Runtime.Loader;
 #endif
@@ -9,6 +12,11 @@ namespace PolyType.Tests;
 
 public static class ReflectionTypeShapeProviderTests
 {
+#if NET
+    private static readonly TimeSpan UnloadWaitTimeout = TimeSpan.FromSeconds(2);
+    private const int UnloadRetryDelayMilliseconds = 10;
+#endif
+
     [Fact]
     public static void OptionsEquality_WithDifferentAssemblyOrder_ShouldBeEqual()
     {
@@ -192,18 +200,23 @@ public static class ReflectionTypeShapeProviderTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void TypeUnloading_TypeShapeCache_ShouldAllowUnloading()
     {
-        Assert.SkipWhen(!OperatingSystem.IsWindows() && IsProfilingEnabled(), "Profiling keeps collectible AssemblyLoadContext roots alive on non-Windows runtimes.");
+        Assert.SkipWhen(IsUnloadUnreliableUnderProfiler(), "Profiling keeps collectible AssemblyLoadContext roots alive on non-Windows runtimes.");
 
         // This test verifies that the ConditionalWeakTable allows type unloading
         // when the AssemblyLoadContext is unloaded.
         WeakReference weakRef = CreateTypeShapeAndGetWeakReference();
 
-        // Force GC to collect the unloaded assembly
-        for (int i = 0; i < 100 && weakRef.IsAlive; i++)
+        // Force GC to collect the unloaded assembly. Keep retries time-bounded because unload can
+        // take longer under instrumented runs due to profiler overhead.
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        while (weakRef.IsAlive && stopwatch.Elapsed < UnloadWaitTimeout)
         {
             GC.Collect();
             GC.WaitForPendingFinalizers();
-            System.Threading.Thread.Sleep(100);
+            if (weakRef.IsAlive)
+            {
+                Thread.Sleep(UnloadRetryDelayMilliseconds);
+            }
         }
 
         // The type should have been collected after the AssemblyLoadContext was unloaded
@@ -244,10 +257,34 @@ public static class ReflectionTypeShapeProviderTests
         return weakRef;
     }
 
-    private static bool IsProfilingEnabled()
+    // Profiler instrumentation in non-Windows runs can hold references that prevent collectible unload.
+    private static bool IsUnloadUnreliableUnderProfiler() => !OperatingSystem.IsWindows() && IsProfilingEnabled();
+
+    private static bool IsProfilingEnabled() =>
+        IsProfilerFlagSet(Environment.GetEnvironmentVariable("CORECLR_ENABLE_PROFILING"))
+        || IsProfilerFlagSet(Environment.GetEnvironmentVariable("COR_ENABLE_PROFILING"));
+
+    private static bool IsProfilerFlagSet(string? value)
     {
-        return Environment.GetEnvironmentVariable("CORECLR_ENABLE_PROFILING") is "1"
-            || Environment.GetEnvironmentVariable("COR_ENABLE_PROFILING") is "1";
+        string? trimmedValue = value?.Trim();
+        if (string.IsNullOrEmpty(trimmedValue))
+        {
+            return false;
+        }
+
+        if (string.Equals(trimmedValue, "true", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (trimmedValue.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+        {
+            return ulong.TryParse(trimmedValue[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ulong hexValue)
+                && hexValue != 0;
+        }
+
+        return ulong.TryParse(trimmedValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out ulong numericValue)
+            && numericValue != 0;
     }
 #endif
 }
