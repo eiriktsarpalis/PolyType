@@ -200,7 +200,7 @@ public static class ReflectionTypeShapeProviderTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void TypeUnloading_TypeShapeCache_ShouldAllowUnloading()
     {
-        Assert.SkipWhen(IsUnloadUnreliableUnderProfiler(), "Profiling keeps collectible AssemblyLoadContext roots alive on non-Windows runtimes.");
+        Assert.SkipWhen(IsUnloadUnreliableUnderProfiler(), "Collectible AssemblyLoadContext unload is unreliable on macOS and under non-Windows profiling.");
 
         // This test verifies that the ConditionalWeakTable allows type unloading
         // when the AssemblyLoadContext is unloaded.
@@ -257,8 +257,8 @@ public static class ReflectionTypeShapeProviderTests
         return weakRef;
     }
 
-    // Profiler instrumentation in non-Windows runs can hold references that prevent collectible unload.
-    private static bool IsUnloadUnreliableUnderProfiler() => !OperatingSystem.IsWindows() && IsProfilingEnabled();
+    // macOS and non-Windows profiler instrumentation can hold references that prevent collectible unload.
+    private static bool IsUnloadUnreliableUnderProfiler() => OperatingSystem.IsMacOS() || (!OperatingSystem.IsWindows() && IsProfilingEnabled());
 
     private static bool IsProfilingEnabled() =>
         IsProfilerFlagSet(Environment.GetEnvironmentVariable("CORECLR_ENABLE_PROFILING"))
