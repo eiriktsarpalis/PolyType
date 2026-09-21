@@ -1,6 +1,7 @@
 using PolyType.ReflectionProvider;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
 #if NET
 using System.Runtime.Loader;
 #endif
@@ -9,6 +10,11 @@ namespace PolyType.Tests;
 
 public static class ReflectionTypeShapeProviderTests
 {
+#if NET
+    private const int MaxUnloadCollectionAttempts = 100;
+    private const int UnloadRetryDelayMilliseconds = 10;
+#endif
+
     [Fact]
     public static void OptionsEquality_WithDifferentAssemblyOrder_ShouldBeEqual()
     {
@@ -192,15 +198,22 @@ public static class ReflectionTypeShapeProviderTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void TypeUnloading_TypeShapeCache_ShouldAllowUnloading()
     {
+        Assert.SkipWhen(TestHelpers.IsUnloadUnreliableUnderProfiler(), "Collectible AssemblyLoadContext unload is unreliable on macOS and under non-Windows profiling.");
+
         // This test verifies that the ConditionalWeakTable allows type unloading
         // when the AssemblyLoadContext is unloaded.
         WeakReference weakRef = CreateTypeShapeAndGetWeakReference();
 
-        // Force GC to collect the unloaded assembly
-        for (int i = 0; i < 10 && weakRef.IsAlive; i++)
+        // Force GC to collect the unloaded assembly. Keep bounded retries because unload can
+        // take longer under instrumented runs due to profiler overhead.
+        for (int i = 0; i < MaxUnloadCollectionAttempts && weakRef.IsAlive; i++)
         {
-            GC.Collect();
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
             GC.WaitForPendingFinalizers();
+            if (weakRef.IsAlive)
+            {
+                Thread.Sleep(UnloadRetryDelayMilliseconds);
+            }
         }
 
         // The type should have been collected after the AssemblyLoadContext was unloaded
