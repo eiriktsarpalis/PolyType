@@ -199,7 +199,7 @@ public static class ReflectionTypeShapeProviderTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void TypeUnloading_TypeShapeCache_ShouldAllowUnloading()
     {
-        Assert.SkipWhen(IsUnloadUnreliableEnvironment(), "Collectible AssemblyLoadContext unload is unreliable under non-Windows profiling.");
+        Assert.SkipWhen(IsUnloadUnreliableEnvironment(), "Collectible AssemblyLoadContext unload is unreliable on macOS and under non-Windows profiling.");
 
         // This test verifies that the ConditionalWeakTable allows type unloading
         // when the AssemblyLoadContext is unloaded.
@@ -256,8 +256,9 @@ public static class ReflectionTypeShapeProviderTests
     }
 
     // The CodeCoverage profiler can retain collectible ALC references on Unix runs; check both
-    // CoreCLR and CLR profiling flags because test hosts may set either spelling.
-    private static bool IsUnloadUnreliableEnvironment() => !OperatingSystem.IsWindows() && IsProfilingEnabled();
+    // CoreCLR and CLR profiling flags because test hosts may set either spelling. macOS CI also
+    // exhibits unreliable unloads without exposing profiler flags to the test process.
+    private static bool IsUnloadUnreliableEnvironment() => OperatingSystem.IsMacOS() || (!OperatingSystem.IsWindows() && IsProfilingEnabled());
 
     private static bool IsProfilingEnabled() =>
         IsProfilerFlagSet(Environment.GetEnvironmentVariable("CORECLR_ENABLE_PROFILING"))
