@@ -1,4 +1,5 @@
 using PolyType.ReflectionProvider;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -12,8 +13,9 @@ namespace PolyType.Tests;
 public static class ReflectionTypeShapeProviderTests
 {
 #if NET
-    private const int MaxUnloadCollectionAttempts = 100;
+    private const int MaxUnloadCollectionAttempts = 25;
     private const int UnloadRetryDelayMilliseconds = 10;
+    private static readonly TimeSpan MaxUnloadCollectionDuration = TimeSpan.FromSeconds(1);
 #endif
 
     [Fact]
@@ -199,7 +201,7 @@ public static class ReflectionTypeShapeProviderTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void TypeUnloading_TypeShapeCache_ShouldAllowUnloading()
     {
-        Assert.SkipWhen(IsUnloadUnreliableUnderProfiler(), "Collectible AssemblyLoadContext unload is unreliable on macOS and under non-Windows profiling.");
+        Assert.SkipWhen(IsUnloadUnreliableEnvironment(), "Collectible AssemblyLoadContext unload is unreliable on macOS and under non-Windows profiling.");
 
         // This test verifies that the ConditionalWeakTable allows type unloading
         // when the AssemblyLoadContext is unloaded.
@@ -207,7 +209,8 @@ public static class ReflectionTypeShapeProviderTests
 
         // Force GC to collect the unloaded assembly. Keep bounded retries because unload can
         // take longer under instrumented runs due to profiler overhead.
-        for (int i = 0; i < MaxUnloadCollectionAttempts && weakRef.IsAlive; i++)
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        for (int i = 0; i < MaxUnloadCollectionAttempts && weakRef.IsAlive && stopwatch.Elapsed < MaxUnloadCollectionDuration; i++)
         {
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
             GC.WaitForPendingFinalizers();
@@ -255,7 +258,7 @@ public static class ReflectionTypeShapeProviderTests
         return weakRef;
     }
 
-    private static bool IsUnloadUnreliableUnderProfiler() => OperatingSystem.IsMacOS() || (!OperatingSystem.IsWindows() && IsProfilingEnabled());
+    private static bool IsUnloadUnreliableEnvironment() => OperatingSystem.IsMacOS() || (!OperatingSystem.IsWindows() && IsProfilingEnabled());
 
     private static bool IsProfilingEnabled() =>
         IsProfilerFlagSet(Environment.GetEnvironmentVariable("CORECLR_ENABLE_PROFILING"))
