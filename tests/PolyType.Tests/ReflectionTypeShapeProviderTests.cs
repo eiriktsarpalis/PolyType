@@ -2,20 +2,13 @@ using PolyType.ReflectionProvider;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 #if NET
-using System.Globalization;
 using System.Runtime.Loader;
-using System.Threading;
 #endif
 
 namespace PolyType.Tests;
 
 public static class ReflectionTypeShapeProviderTests
 {
-#if NET
-    private const int MaxUnloadCollectionAttempts = 25;
-    private const int UnloadRetryDelayMilliseconds = 10;
-#endif
-
     [Fact]
     public static void OptionsEquality_WithDifferentAssemblyOrder_ShouldBeEqual()
     {
@@ -199,22 +192,22 @@ public static class ReflectionTypeShapeProviderTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void TypeUnloading_TypeShapeCache_ShouldAllowUnloading()
     {
-        Assert.SkipWhen(IsUnloadUnreliableEnvironment(), "Collectible AssemblyLoadContext unload is unreliable on macOS and under non-Windows profiling.");
+        // Coverage enables CORECLR_ENABLE_PROFILING, which can retain the collectible context on Unix.
+        // macOS runs have exhibited the same unloading instability.
+        Assert.SkipWhen(
+            OperatingSystem.IsMacOS() ||
+            (!OperatingSystem.IsWindows() && Environment.GetEnvironmentVariable("CORECLR_ENABLE_PROFILING") is "1"),
+            "AssemblyLoadContext unloading is not reliable under Unix profiling.");
 
         // This test verifies that the ConditionalWeakTable allows type unloading
         // when the AssemblyLoadContext is unloaded.
         WeakReference weakRef = CreateTypeShapeAndGetWeakReference();
 
-        // Force GC to collect the unloaded assembly. Keep bounded retries because unload can
-        // take longer under instrumented runs due to profiler overhead.
-        for (int i = 0; i < MaxUnloadCollectionAttempts && weakRef.IsAlive; i++)
+        // Force GC to collect the unloaded assembly
+        for (int i = 0; i < 10 && weakRef.IsAlive; i++)
         {
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+            GC.Collect();
             GC.WaitForPendingFinalizers();
-            if (weakRef.IsAlive)
-            {
-                Thread.Sleep(UnloadRetryDelayMilliseconds);
-            }
         }
 
         // The type should have been collected after the AssemblyLoadContext was unloaded
@@ -253,39 +246,6 @@ public static class ReflectionTypeShapeProviderTests
         alc.Unload();
 
         return weakRef;
-    }
-
-    // The CodeCoverage profiler can retain collectible ALC references on Unix runs; check both
-    // CoreCLR and CLR profiling flags because test hosts may set either spelling. macOS CI also
-    // exhibits unreliable unloads without exposing profiler flags to the test process.
-    private static bool IsUnloadUnreliableEnvironment() => OperatingSystem.IsMacOS() || (!OperatingSystem.IsWindows() && IsProfilingEnabled());
-
-    private static bool IsProfilingEnabled() =>
-        IsProfilerFlagSet(Environment.GetEnvironmentVariable("CORECLR_ENABLE_PROFILING"))
-        || IsProfilerFlagSet(Environment.GetEnvironmentVariable("COR_ENABLE_PROFILING"));
-
-    private static bool IsProfilerFlagSet(string? value)
-    {
-        string? trimmedValue = value?.Trim();
-        if (string.IsNullOrEmpty(trimmedValue))
-        {
-            return false;
-        }
-
-        if (string.Equals(trimmedValue, "true", StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        // Profiler flags are commonly encoded as decimal, or as 0x-prefixed hex, with any non-zero value enabled.
-        if (trimmedValue.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-        {
-            return ulong.TryParse(trimmedValue[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ulong hexValue)
-                && hexValue != 0;
-        }
-
-        return ulong.TryParse(trimmedValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out ulong numericValue)
-            && numericValue != 0;
     }
 #endif
 }
