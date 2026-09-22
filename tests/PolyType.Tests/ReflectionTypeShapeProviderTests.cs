@@ -192,6 +192,11 @@ public static class ReflectionTypeShapeProviderTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void TypeUnloading_TypeShapeCache_ShouldAllowUnloading()
     {
+        Assert.SkipWhen(
+            OperatingSystem.IsMacOS() ||
+            (!OperatingSystem.IsWindows() && Environment.GetEnvironmentVariable("CORECLR_ENABLE_PROFILING") is "1"),
+            "AssemblyLoadContext unloading is not reliable under Unix profiling.");
+
         // This test verifies that the ConditionalWeakTable allows type unloading
         // when the AssemblyLoadContext is unloaded.
         WeakReference weakRef = CreateTypeShapeAndGetWeakReference();
