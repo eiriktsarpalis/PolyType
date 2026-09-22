@@ -1,5 +1,4 @@
 using PolyType.ReflectionProvider;
-using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -15,7 +14,6 @@ public static class ReflectionTypeShapeProviderTests
 #if NET
     private const int MaxUnloadCollectionAttempts = 25;
     private const int UnloadRetryDelayMilliseconds = 10;
-    private static readonly TimeSpan MaxUnloadCollectionDuration = TimeSpan.FromSeconds(10);
 #endif
 
     [Fact]
@@ -209,8 +207,7 @@ public static class ReflectionTypeShapeProviderTests
 
         // Force GC to collect the unloaded assembly. Keep bounded retries because unload can
         // take longer under instrumented runs due to profiler overhead.
-        Stopwatch stopwatch = Stopwatch.StartNew();
-        for (int i = 0; i < MaxUnloadCollectionAttempts && weakRef.IsAlive && stopwatch.Elapsed < MaxUnloadCollectionDuration; i++)
+        for (int i = 0; i < MaxUnloadCollectionAttempts && weakRef.IsAlive; i++)
         {
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
             GC.WaitForPendingFinalizers();
