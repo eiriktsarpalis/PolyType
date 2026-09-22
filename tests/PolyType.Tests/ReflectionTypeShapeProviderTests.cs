@@ -1,10 +1,10 @@
 using PolyType.ReflectionProvider;
-using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading;
 #if NET
+using System.Globalization;
 using System.Runtime.Loader;
+using System.Threading;
 #endif
 
 namespace PolyType.Tests;
@@ -274,6 +274,7 @@ public static class ReflectionTypeShapeProviderTests
             return true;
         }
 
+        // Profiler flags are commonly encoded as decimal, or as 0x-prefixed hex, with any non-zero value enabled.
         if (trimmedValue.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
         {
             return ulong.TryParse(trimmedValue[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ulong hexValue)
