@@ -255,6 +255,8 @@ public static class ReflectionTypeShapeProviderTests
         return weakRef;
     }
 
+    // The CodeCoverage profiler can retain collectible ALC references on Unix runs; check both
+    // CoreCLR and CLR profiling flags because test hosts may set either spelling.
     private static bool IsUnloadUnreliableEnvironment() => !OperatingSystem.IsWindows() && IsProfilingEnabled();
 
     private static bool IsProfilingEnabled() =>
