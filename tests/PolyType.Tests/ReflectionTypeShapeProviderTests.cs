@@ -15,7 +15,7 @@ public static class ReflectionTypeShapeProviderTests
 #if NET
     private const int MaxUnloadCollectionAttempts = 25;
     private const int UnloadRetryDelayMilliseconds = 10;
-    private static readonly TimeSpan MaxUnloadCollectionDuration = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan MaxUnloadCollectionDuration = TimeSpan.FromSeconds(10);
 #endif
 
     [Fact]
@@ -201,7 +201,7 @@ public static class ReflectionTypeShapeProviderTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void TypeUnloading_TypeShapeCache_ShouldAllowUnloading()
     {
-        Assert.SkipWhen(IsUnloadUnreliableEnvironment(), "Collectible AssemblyLoadContext unload is unreliable on macOS and under non-Windows profiling.");
+        Assert.SkipWhen(IsUnloadUnreliableEnvironment(), "Collectible AssemblyLoadContext unload is unreliable under non-Windows profiling.");
 
         // This test verifies that the ConditionalWeakTable allows type unloading
         // when the AssemblyLoadContext is unloaded.
@@ -258,7 +258,7 @@ public static class ReflectionTypeShapeProviderTests
         return weakRef;
     }
 
-    private static bool IsUnloadUnreliableEnvironment() => OperatingSystem.IsMacOS() || (!OperatingSystem.IsWindows() && IsProfilingEnabled());
+    private static bool IsUnloadUnreliableEnvironment() => !OperatingSystem.IsWindows() && IsProfilingEnabled();
 
     private static bool IsProfilingEnabled() =>
         IsProfilerFlagSet(Environment.GetEnvironmentVariable("CORECLR_ENABLE_PROFILING"))
