@@ -192,6 +192,8 @@ public static class ReflectionTypeShapeProviderTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void TypeUnloading_TypeShapeCache_ShouldAllowUnloading()
     {
+        // Coverage enables CORECLR_ENABLE_PROFILING, which can retain the collectible context on Unix.
+        // macOS runs have exhibited the same unloading instability.
         Assert.SkipWhen(
             OperatingSystem.IsMacOS() ||
             (!OperatingSystem.IsWindows() && Environment.GetEnvironmentVariable("CORECLR_ENABLE_PROFILING") is "1"),
