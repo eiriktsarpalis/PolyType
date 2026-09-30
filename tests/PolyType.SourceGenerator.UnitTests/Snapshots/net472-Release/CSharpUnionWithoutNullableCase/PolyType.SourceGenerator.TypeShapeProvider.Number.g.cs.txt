@@ -58,10 +58,10 @@ namespace PolyType.SourceGenerator
                 {
                     case { Value: int caseValue }:
                         return caseValue;
-                    default:
-                        __ThrowInvalidUnionCase(nameof(value));
-                        return default;
                 }
+
+                __ThrowInvalidUnionCase(nameof(value));
+                return default;
             }
         }
     }

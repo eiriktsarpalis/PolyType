@@ -69,11 +69,11 @@ public static partial class CompilationTests
         Assert.Contains("switch (value)", generated);
         Assert.Contains("case { Value: int caseValue }:", generated);
         Assert.Contains("case { Value: string caseValue }:", generated);
-        Assert.Contains("case null:", generated);
-        Assert.DoesNotContain("if (value is", generated);
+        Assert.Contains("if (value is null)", generated);
         Assert.DoesNotContain("__UnionValue_", generated);
         Assert.DoesNotContain("object? payload", generated);
-        Assert.Contains("default:", generated);
+        Assert.DoesNotContain("default:", generated);
+        Assert.DoesNotContain("CS0162", generated);
         Assert.Contains("__ThrowInvalidUnionCase(nameof(value));", generated);
         Assert.Contains("return default;", generated);
         Assert.Contains("return caseValue;", generated);

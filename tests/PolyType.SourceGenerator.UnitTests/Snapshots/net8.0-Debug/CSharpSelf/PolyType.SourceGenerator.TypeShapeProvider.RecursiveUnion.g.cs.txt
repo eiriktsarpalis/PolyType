@@ -81,12 +81,10 @@ namespace PolyType.SourceGenerator
                 {
                     case { Value: int caseValue }:
                         return caseValue;
-                    #pragma warning disable CS0162 // The default case also rejects malformed union payloads.
-                    default:
-                        __ThrowInvalidUnionCase(nameof(value));
-                        return default;
-                    #pragma warning restore CS0162
                 }
+
+                __ThrowInvalidUnionCase(nameof(value));
+                return default;
             }
         }
 
@@ -100,12 +98,10 @@ namespace PolyType.SourceGenerator
                 {
                     case { Value: global::TestNamespace.RecursiveUnion caseValue }:
                         return caseValue;
-                    #pragma warning disable CS0162 // The default case also rejects malformed union payloads.
-                    default:
-                        __ThrowInvalidUnionCase(nameof(value));
-                        return default;
-                    #pragma warning restore CS0162
                 }
+
+                __ThrowInvalidUnionCase(nameof(value));
+                return default;
             }
         }
 
@@ -115,18 +111,19 @@ namespace PolyType.SourceGenerator
         
             public string? Unmarshal(global::TestNamespace.RecursiveUnion value)
             {
+                if (value is null)
+                {
+                    return default(string?);
+                }
+
                 switch (value)
                 {
-                    case null:
-                        return default(string?);
                     case { Value: string caseValue }:
                         return caseValue;
-                    #pragma warning disable CS0162 // The default case also rejects malformed union payloads.
-                    default:
-                        __ThrowInvalidUnionCase(nameof(value));
-                        return default;
-                    #pragma warning restore CS0162
                 }
+
+                __ThrowInvalidUnionCase(nameof(value));
+                return default;
             }
         }
     }

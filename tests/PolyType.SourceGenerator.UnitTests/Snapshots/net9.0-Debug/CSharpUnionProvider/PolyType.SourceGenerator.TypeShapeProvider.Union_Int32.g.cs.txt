@@ -70,12 +70,10 @@ namespace PolyType.SourceGenerator
                 {
                     case global::TestNamespace.Union<int>.IUnionMembers { Value: int caseValue }:
                         return caseValue;
-                    #pragma warning disable CS0162 // The default case also rejects malformed union payloads.
-                    default:
-                        __ThrowInvalidUnionCase(nameof(value));
-                        return default;
-                    #pragma warning restore CS0162
                 }
+
+                __ThrowInvalidUnionCase(nameof(value));
+                return default;
             }
         }
 
@@ -85,18 +83,19 @@ namespace PolyType.SourceGenerator
         
             public string? Unmarshal(global::TestNamespace.Union<int>? value)
             {
+                if (value is null)
+                {
+                    return default(string?);
+                }
+
                 switch (value)
                 {
-                    case null:
-                        return default(string?);
                     case global::TestNamespace.Union<int>.IUnionMembers { Value: string caseValue }:
                         return caseValue;
-                    #pragma warning disable CS0162 // The default case also rejects malformed union payloads.
-                    default:
-                        __ThrowInvalidUnionCase(nameof(value));
-                        return default;
-                    #pragma warning restore CS0162
                 }
+
+                __ThrowInvalidUnionCase(nameof(value));
+                return default;
             }
         }
     }

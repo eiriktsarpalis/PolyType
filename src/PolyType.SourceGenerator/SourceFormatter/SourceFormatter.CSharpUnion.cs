@@ -133,36 +133,33 @@ internal sealed partial class SourceFormatter
 
                 public {{caseType}} Unmarshal({{unionType}} value)
                 {
-                    switch (value)
-                    {
             """);
 
-        writer.Indentation += 3;
+        writer.Indentation += 2;
         if (unionCase.IsNullable)
         {
+            // Match null separately so the switch retains a reachable malformed-payload rejection path.
             writer.WriteLine($$"""
-                case null:
+                if (value is null)
+                {
                     return default({{caseType}});
+                }
                 """);
+            writer.WriteLine();
         }
 
         writer.WriteLine($$"""
-            case {{FormatCSharpUnionPattern(model, $"{unionCase.PatternType.FullyQualifiedName} caseValue")}}:
-                return caseValue;
+            switch (value)
+            {
+                case {{FormatCSharpUnionPattern(model, $"{unionCase.PatternType.FullyQualifiedName} caseValue")}}:
+                    return caseValue;
+            }
             """);
-#if DEBUG
-        writer.WriteLine("#pragma warning disable CS0162 // The default case also rejects malformed union payloads.", disableIndentation: true);
-#endif
+        writer.WriteLine();
         writer.WriteLine("""
-            default:
-                __ThrowInvalidUnionCase(nameof(value));
-                return default;
+            __ThrowInvalidUnionCase(nameof(value));
+            return default;
             """);
-#if DEBUG
-        writer.WriteLine("#pragma warning restore CS0162", disableIndentation: true);
-#endif
-        writer.Indentation--;
-        writer.WriteLine("}");
         writer.Indentation--;
         writer.WriteLine("}");
         if (unionCase.CreatorKind is UnionCaseCreatorKind.ConstrainedFactory)
