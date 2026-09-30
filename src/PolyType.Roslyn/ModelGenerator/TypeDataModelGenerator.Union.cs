@@ -34,6 +34,11 @@ public partial class TypeDataModelGenerator
         }
 
         INamedTypeSymbol? provider = GetUnionMemberProvider(unionType);
+        if (provider is null && unionType.IsAbstract)
+        {
+            return true;
+        }
+
         List<(INamedTypeSymbol Declared, INamedTypeSymbol Constructed)> hierarchy = provider is null
             ? GetUnionClassHierarchy(unionType)
             : GetUnionProviderHierarchy(provider);

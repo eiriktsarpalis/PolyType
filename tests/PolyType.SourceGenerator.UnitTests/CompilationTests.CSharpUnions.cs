@@ -66,15 +66,18 @@ public static partial class CompilationTests
         Assert.Contains("UnionKind = global::PolyType.Abstractions.UnionTypeShapeKind.CSharpUnion", generated);
         Assert.Contains("return value switch", generated);
         Assert.Contains("{ Value: int } => 0", generated);
-        Assert.Contains("if (value is { Value: int caseValue })", generated);
-        Assert.Contains("if (value is { Value: string caseValue })", generated);
-        Assert.Contains("if (value is null)", generated);
-        Assert.DoesNotContain("switch (value)", generated);
+        Assert.Contains("switch (value)", generated);
+        Assert.Contains("case { Value: int caseValue }:", generated);
+        Assert.Contains("case { Value: string caseValue }:", generated);
+        Assert.Contains("case null:", generated);
+        Assert.DoesNotContain("if (value is", generated);
         Assert.DoesNotContain("__UnionValue_", generated);
         Assert.DoesNotContain("object? payload", generated);
         Assert.DoesNotContain("default:", generated);
         Assert.Contains("__ThrowInvalidUnionCase(nameof(value));", generated);
-        Assert.Contains("return default;", generated);
+        Assert.Contains("bool matched = false;", generated);
+        Assert.Contains("if (!matched)", generated);
+        Assert.Contains("return result;", generated);
         Assert.DoesNotContain("throw ", generated);
         Assert.DoesNotContain("new global::System.ArgumentException", generated);
         Assert.DoesNotContain("_ =>", generated);
@@ -864,6 +867,44 @@ public static partial class CompilationTests
         Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Id == "PT0025");
         Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Id == "CS8785");
         Assert.Empty(result.AllGeneratedTypes.OfType<CSharpUnionShapeModel>());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void CSharpUnion_AbstractTypesRequireFactoryProviders(bool hasProvider)
+    {
+        string providerMembers = hasProvider ? """
+            public interface IUnionMembers
+            {
+                public static U Create(int value) => new Implementation(value);
+                object? Value { get; }
+            }
+            private sealed class Implementation(int value) : U(value);
+            """ : "";
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(CreateCSharpUnionCompilation($$"""
+            using PolyType;
+            [System.Runtime.CompilerServices.Union, GenerateShape]
+            public abstract partial class U {{(hasProvider ? ": U.IUnionMembers" : "")}}
+            {
+                public U(int value) => Value = value;
+                public object? Value { get; }
+                {{providerMembers}}
+            }
+            """), disableDiagnosticValidation: !hasProvider);
+
+        Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Id is "CS0144" or "CS8785");
+        if (hasProvider)
+        {
+            CSharpUnionShapeModel model = Assert.Single(result.AllGeneratedTypes.OfType<CSharpUnionShapeModel>());
+            Assert.Equal(UnionCaseCreatorKind.StaticFactory, Assert.Single(model.UnionCases).CreatorKind);
+        }
+        else
+        {
+            Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Id == "PT0025");
+            Assert.Empty(result.AllGeneratedTypes.OfType<CSharpUnionShapeModel>());
+        }
     }
 
     [Theory]

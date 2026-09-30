@@ -76,18 +76,25 @@ namespace PolyType.SourceGenerator
         
             public int? Unmarshal(global::TestNamespace.NumberOrText value)
             {
-                if (value is null)
+                int? result = default;
+                bool matched = false;
+                switch (value)
                 {
-                    return default(int?);
+                    case null:
+                        matched = true;
+                        break;
+                    case { Value: int caseValue }:
+                        result = caseValue;
+                        matched = true;
+                        break;
                 }
 
-                if (value is { Value: int caseValue })
+                if (!matched)
                 {
-                    return caseValue;
+                    __ThrowInvalidUnionCase(nameof(value));
                 }
-                
-                __ThrowInvalidUnionCase(nameof(value));
-                return default;
+
+                return result;
             }
         }
 
@@ -97,13 +104,22 @@ namespace PolyType.SourceGenerator
         
             public int Unmarshal(global::TestNamespace.NumberOrText value)
             {
-                if (value is { Value: int caseValue })
+                int result = default;
+                bool matched = false;
+                switch (value)
                 {
-                    return caseValue;
+                    case { Value: int caseValue }:
+                        result = caseValue;
+                        matched = true;
+                        break;
                 }
-                
-                __ThrowInvalidUnionCase(nameof(value));
-                return default;
+
+                if (!matched)
+                {
+                    __ThrowInvalidUnionCase(nameof(value));
+                }
+
+                return result;
             }
         }
 
@@ -113,18 +129,25 @@ namespace PolyType.SourceGenerator
         
             public string? Unmarshal(global::TestNamespace.NumberOrText value)
             {
-                if (value is null)
+                string? result = default;
+                bool matched = false;
+                switch (value)
                 {
-                    return default(string?);
+                    case null:
+                        matched = true;
+                        break;
+                    case { Value: string caseValue }:
+                        result = caseValue;
+                        matched = true;
+                        break;
                 }
 
-                if (value is { Value: string caseValue })
+                if (!matched)
                 {
-                    return caseValue;
+                    __ThrowInvalidUnionCase(nameof(value));
                 }
-                
-                __ThrowInvalidUnionCase(nameof(value));
-                return default;
+
+                return result;
             }
         }
     }

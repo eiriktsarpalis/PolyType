@@ -66,13 +66,22 @@ namespace PolyType.SourceGenerator
         
             public int Unmarshal(global::TestNamespace.Union<int>? value)
             {
-                if (value is global::TestNamespace.Union<int>.IUnionMembers { Value: int caseValue })
+                int result = default;
+                bool matched = false;
+                switch (value)
                 {
-                    return caseValue;
+                    case global::TestNamespace.Union<int>.IUnionMembers { Value: int caseValue }:
+                        result = caseValue;
+                        matched = true;
+                        break;
                 }
-                
-                __ThrowInvalidUnionCase(nameof(value));
-                return default;
+
+                if (!matched)
+                {
+                    __ThrowInvalidUnionCase(nameof(value));
+                }
+
+                return result;
             }
         }
 
@@ -82,18 +91,25 @@ namespace PolyType.SourceGenerator
         
             public string? Unmarshal(global::TestNamespace.Union<int>? value)
             {
-                if (value is null)
+                string? result = default;
+                bool matched = false;
+                switch (value)
                 {
-                    return default(string?);
+                    case null:
+                        matched = true;
+                        break;
+                    case global::TestNamespace.Union<int>.IUnionMembers { Value: string caseValue }:
+                        result = caseValue;
+                        matched = true;
+                        break;
                 }
 
-                if (value is global::TestNamespace.Union<int>.IUnionMembers { Value: string caseValue })
+                if (!matched)
                 {
-                    return caseValue;
+                    __ThrowInvalidUnionCase(nameof(value));
                 }
-                
-                __ThrowInvalidUnionCase(nameof(value));
-                return default;
+
+                return result;
             }
         }
     }

@@ -15,35 +15,6 @@ PolyType classifies .NET types into eight distinct type shape kinds, each repres
 - **Union** - <xref:PolyType.Abstractions.IUnionTypeShape> for polymorphic type hierarchies, C# unions, or F# discriminated unions.
 - **Function** - <xref:PolyType.Abstractions.IFunctionTypeShape> for delegate and F# function types.
 
-## Contextual representations
-
-<xref:PolyType.ITypeShape.IsContextual> identifies a contextual view of a CLR type, such as a union's structural base or an F# case body. A `false` value identifies the provider's ordinary representation of that type. The value is fixed for the lifetime of a shape; it does not require providers to intern instances or return reference-equal objects.
-
-Type shapes use reference equality regardless of this flag. Distinct shapes do not compare equal merely because their CLR types match; source-generated and reflection shapes remain distinct. The built-in providers reuse shape instances for recursive references, allowing graph traversals to identify repeated nodes by reference.
-
-Both providers use the following classification:
-
-| Representation | `IsContextual` |
-| --- | --- |
-| Ordinary type shapes, including the enclosing union shape | `false` |
-| A union's `BaseType`, including collection-shaped hierarchy bases | `true` |
-| An explicitly registered hierarchy base case using that view | `true` |
-| A proper-derived hierarchy case's ordinary type shape | `false` |
-| A C# case's payload shape, including a recursive reference to the union | `false` |
-| An F# case-specific object body, whether or not its CLR type equals the union type | `true` |
-
-For a fixed provider and builder configuration, a cache keyed by CLR `Type` must only reuse or store results for non-contextual shapes. A contextual request must bypass that type's existing entry, including delayed results and cached exceptions, and must not register or complete an entry for its own result. The request must still use the same recursive resolution context for its non-contextual children.
-
-<xref:PolyType.Utilities.TypeCache>, <xref:PolyType.Utilities.MultiProviderTypeCache>, and <xref:PolyType.Utilities.TypeGenerationContext> apply this rule. Their shape-based `GetOrAdd` methods evaluate contextual shapes without caching the returned result; non-contextual children can still be cached. `TypeGenerationContext.TryGetValue` requires a non-contextual shape and throws `InvalidOperationException` otherwise. Type-only lookups and manually inserted entries refer to ordinary representations.
-
-For example, resolving a hierarchy's base view while the union converter is being built must produce an ordinary base converter, not return the pending union converter. A recursive property on that base view resolves the ordinary union shape and can use the pending result. The same `GetOrAdd` call therefore works for contextual F# case bodies and ordinary C# payload types.
-
-`Accept` and `Invoke` remain direct dispatch operations; neither performs caching by itself. Recursive type resolution must go through the generation context or an equivalent resolver.
-
-Note that `IsContextual` describes the shape, not arbitrary operations on it. If converter options or construction state change the result, consumers must keep those results separate or evaluate the request without caching. Caches using keys that distinguish contextual representations are not prohibited from storing contextual results.
-
-Previously generated assemblies do not need to be rebuilt for this metadata. New generated providers populate <xref:PolyType.SourceGenModel.SourceGenTypeShapeProvider.SourceGeneratorVersion> directly; a null version identifies legacy output. For an unversioned `SourceGenTypeShapeProvider`, the runtime models infer omitted `IsContextual` values from its ordinary singleton lookup and cache the result. Versioned providers default to `false` without that lookup. Other `ITypeShapeProvider` implementations are not required to intern instances. An explicitly initialized value takes precedence.
-
 ## Derivation Algorithm
 
 PolyType maps types into individual shape kinds using the following rules:
@@ -210,3 +181,9 @@ Event shapes may be included in type shapes of any kind. By default, types do _n
 
 - Configuring the `IncludeMethods` property in either of the <xref:PolyType.TypeShapeAttribute>, <xref:PolyType.GenerateShapeAttribute>, or <xref:PolyType.TypeShapeExtensionAttribute> or
 - Explicitly annotating an event with the <xref:PolyType.EventShapeAttribute>.
+
+<a id="contextual-representations"></a>
+
+> [!NOTE]
+> <xref:PolyType.ITypeShape.IsContextual> identifies role-specific views, such as union bases and F# case bodies, which must not share ordinary type-keyed cache entries.
+> Use <xref:PolyType.Utilities.TypeGenerationContext> for recursive traversal: it evaluates contextual views separately while caching their ordinary child shapes.

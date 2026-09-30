@@ -54,13 +54,22 @@ namespace PolyType.SourceGenerator
         
             public int Unmarshal(global::TestNamespace.Number value)
             {
-                if (value is { Value: int caseValue })
+                int result = default;
+                bool matched = false;
+                switch (value)
                 {
-                    return caseValue;
+                    case { Value: int caseValue }:
+                        result = caseValue;
+                        matched = true;
+                        break;
                 }
-                
-                __ThrowInvalidUnionCase(nameof(value));
-                return default;
+
+                if (!matched)
+                {
+                    __ThrowInvalidUnionCase(nameof(value));
+                }
+
+                return result;
             }
         }
     }
