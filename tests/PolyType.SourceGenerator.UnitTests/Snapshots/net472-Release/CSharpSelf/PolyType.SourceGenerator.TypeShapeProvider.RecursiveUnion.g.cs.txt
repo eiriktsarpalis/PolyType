@@ -77,10 +77,9 @@ namespace PolyType.SourceGenerator
         
             public int Unmarshal(global::TestNamespace.RecursiveUnion value)
             {
-                switch (value)
+                if (value is { Value: int caseValue })
                 {
-                    case { Value: int caseValue }:
-                        return caseValue;
+                    return caseValue;
                 }
                 
                 __ThrowInvalidUnionCase(nameof(value));
@@ -94,10 +93,9 @@ namespace PolyType.SourceGenerator
         
             public global::TestNamespace.RecursiveUnion Unmarshal(global::TestNamespace.RecursiveUnion value)
             {
-                switch (value)
+                if (value is { Value: global::TestNamespace.RecursiveUnion caseValue })
                 {
-                    case { Value: global::TestNamespace.RecursiveUnion caseValue }:
-                        return caseValue;
+                    return caseValue;
                 }
                 
                 __ThrowInvalidUnionCase(nameof(value));
@@ -111,12 +109,14 @@ namespace PolyType.SourceGenerator
         
             public string? Unmarshal(global::TestNamespace.RecursiveUnion value)
             {
-                switch (value)
+                if (value is null)
                 {
-                    case null:
-                        return default(string?);
-                    case { Value: string caseValue }:
-                        return caseValue;
+                    return default(string?);
+                }
+
+                if (value is { Value: string caseValue })
+                {
+                    return caseValue;
                 }
                 
                 __ThrowInvalidUnionCase(nameof(value));

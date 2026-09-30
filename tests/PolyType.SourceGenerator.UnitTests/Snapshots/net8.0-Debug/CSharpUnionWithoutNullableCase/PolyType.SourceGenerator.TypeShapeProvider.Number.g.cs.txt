@@ -54,10 +54,9 @@ namespace PolyType.SourceGenerator
         
             public int Unmarshal(global::TestNamespace.Number value)
             {
-                switch (value)
+                if (value is { Value: int caseValue })
                 {
-                    case { Value: int caseValue }:
-                        return caseValue;
+                    return caseValue;
                 }
                 
                 __ThrowInvalidUnionCase(nameof(value));

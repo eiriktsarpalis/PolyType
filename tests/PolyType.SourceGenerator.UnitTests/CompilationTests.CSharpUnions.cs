@@ -66,11 +66,10 @@ public static partial class CompilationTests
         Assert.Contains("UnionKind = global::PolyType.Abstractions.UnionTypeShapeKind.CSharpUnion", generated);
         Assert.Contains("return value switch", generated);
         Assert.Contains("{ Value: int } => 0", generated);
-        Assert.Contains("switch (value)", generated);
-        Assert.Contains("case { Value: int caseValue }:", generated);
-        Assert.Contains("case { Value: string caseValue }:", generated);
-        Assert.Contains("case null:", generated);
-        Assert.DoesNotContain("if (value is", generated);
+        Assert.Contains("if (value is { Value: int caseValue })", generated);
+        Assert.Contains("if (value is { Value: string caseValue })", generated);
+        Assert.Contains("if (value is null)", generated);
+        Assert.DoesNotContain("switch (value)", generated);
         Assert.DoesNotContain("__UnionValue_", generated);
         Assert.DoesNotContain("object? payload", generated);
         Assert.DoesNotContain("default:", generated);
@@ -332,6 +331,48 @@ public static partial class CompilationTests
         {
             Assert.DoesNotContain("{ Value: null }", generated);
         }
+    }
+
+    [Theory]
+    [InlineData("class")]
+    [InlineData("struct")]
+    public static void CSharpUnion_TotalNullableCaseRejectsInvalidPayload(string kind)
+    {
+        string actual = ExecuteCSharpUnionSource($$"""
+            using System;
+            using PolyType;
+            using PolyType.Abstractions;
+            [System.Runtime.CompilerServices.Union]
+            public {{kind}} U
+            {
+                public U(int value) => Value = value;
+                public U(int? value) => Value = value;
+                public U(object value, bool invalid) => Value = value;
+                public object? Value { get; }
+            }
+            [GenerateShapeFor(typeof(U))]
+            public partial class Witness { }
+            public static class Test
+            {
+                public static string Run()
+                {
+                    var shape = (IUnionTypeShape<U>)Witness.GeneratedTypeShapeProvider.GetTypeShape(typeof(U))!;
+                    var nullable = ((IUnionCaseShape<int?, U>)shape.UnionCases[1]).Marshaler;
+                    int? number = nullable.Unmarshal(new U(42));
+                    bool nullExtracted = nullable.Unmarshal(new U((int?)null)) is null;
+                    bool rejectsInvalid = false;
+                    try { nullable.Unmarshal(new U("invalid", true)); }
+                    catch (ArgumentException exception)
+                    {
+                        rejectsInvalid = exception.ParamName == "value" &&
+                            exception.Message.Contains("The union value does not match this case.");
+                    }
+                    return $"{number},{nullExtracted},{rejectsInvalid}";
+                }
+            }
+            """);
+
+        Assert.Equal("42,True,True", actual);
     }
 
     [Theory]

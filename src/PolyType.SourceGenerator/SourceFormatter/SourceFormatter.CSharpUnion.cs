@@ -133,25 +133,25 @@ internal sealed partial class SourceFormatter
 
                 public {{caseType}} Unmarshal({{unionType}} value)
                 {
-                    switch (value)
-                    {
             """);
 
-        writer.Indentation += 3;
+        // Conditional patterns keep rejection reachable even when a case covers every declared payload.
+        writer.Indentation += 2;
         if (unionCase.IsNullable)
         {
             writer.WriteLine($$"""
-                case null:
+                if (value is null)
+                {
                     return default({{caseType}});
+                }
                 """);
+            writer.WriteLine();
         }
 
         writer.WriteLine($$"""
-            case {{FormatCSharpUnionPattern(model, $"{unionCase.PatternType.FullyQualifiedName} caseValue")}}:
+            if (value is {{FormatCSharpUnionPattern(model, $"{unionCase.PatternType.FullyQualifiedName} caseValue")}})
+            {
                 return caseValue;
-            """);
-        writer.Indentation--;
-        writer.WriteLine("""
             }
 
             __ThrowInvalidUnionCase(nameof(value));
