@@ -73,11 +73,11 @@ public static partial class CompilationTests
         Assert.DoesNotContain("if (value is", generated);
         Assert.DoesNotContain("__UnionValue_", generated);
         Assert.DoesNotContain("object? payload", generated);
-        Assert.DoesNotContain("default:", generated);
+        Assert.Contains("default:", generated);
         Assert.Contains("__ThrowInvalidUnionCase(nameof(value));", generated);
-        Assert.Contains("bool matched = false;", generated);
-        Assert.Contains("if (!matched)", generated);
-        Assert.Contains("return result;", generated);
+        Assert.Contains("return default;", generated);
+        Assert.Contains("return caseValue;", generated);
+        Assert.DoesNotContain("matched", generated);
         Assert.DoesNotContain("throw ", generated);
         Assert.DoesNotContain("new global::System.ArgumentException", generated);
         Assert.DoesNotContain("_ =>", generated);

@@ -66,22 +66,14 @@ namespace PolyType.SourceGenerator
         
             public int Unmarshal(global::TestNamespace.Union<int>? value)
             {
-                int result = default;
-                bool matched = false;
                 switch (value)
                 {
                     case global::TestNamespace.Union<int>.IUnionMembers { Value: int caseValue }:
-                        result = caseValue;
-                        matched = true;
-                        break;
+                        return caseValue;
+                    default:
+                        __ThrowInvalidUnionCase(nameof(value));
+                        return default;
                 }
-
-                if (!matched)
-                {
-                    __ThrowInvalidUnionCase(nameof(value));
-                }
-
-                return result;
             }
         }
 
@@ -91,25 +83,16 @@ namespace PolyType.SourceGenerator
         
             public string? Unmarshal(global::TestNamespace.Union<int>? value)
             {
-                string? result = default;
-                bool matched = false;
                 switch (value)
                 {
                     case null:
-                        matched = true;
-                        break;
+                        return default(string?);
                     case global::TestNamespace.Union<int>.IUnionMembers { Value: string caseValue }:
-                        result = caseValue;
-                        matched = true;
-                        break;
+                        return caseValue;
+                    default:
+                        __ThrowInvalidUnionCase(nameof(value));
+                        return default;
                 }
-
-                if (!matched)
-                {
-                    __ThrowInvalidUnionCase(nameof(value));
-                }
-
-                return result;
             }
         }
     }

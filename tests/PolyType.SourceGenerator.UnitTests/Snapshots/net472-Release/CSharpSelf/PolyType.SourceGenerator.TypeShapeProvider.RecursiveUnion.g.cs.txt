@@ -77,22 +77,14 @@ namespace PolyType.SourceGenerator
         
             public int Unmarshal(global::TestNamespace.RecursiveUnion value)
             {
-                int result = default;
-                bool matched = false;
                 switch (value)
                 {
                     case { Value: int caseValue }:
-                        result = caseValue;
-                        matched = true;
-                        break;
+                        return caseValue;
+                    default:
+                        __ThrowInvalidUnionCase(nameof(value));
+                        return default;
                 }
-
-                if (!matched)
-                {
-                    __ThrowInvalidUnionCase(nameof(value));
-                }
-
-                return result;
             }
         }
 
@@ -102,22 +94,14 @@ namespace PolyType.SourceGenerator
         
             public global::TestNamespace.RecursiveUnion Unmarshal(global::TestNamespace.RecursiveUnion value)
             {
-                global::TestNamespace.RecursiveUnion result = default;
-                bool matched = false;
                 switch (value)
                 {
                     case { Value: global::TestNamespace.RecursiveUnion caseValue }:
-                        result = caseValue;
-                        matched = true;
-                        break;
+                        return caseValue;
+                    default:
+                        __ThrowInvalidUnionCase(nameof(value));
+                        return default;
                 }
-
-                if (!matched)
-                {
-                    __ThrowInvalidUnionCase(nameof(value));
-                }
-
-                return result;
             }
         }
 
@@ -127,25 +111,16 @@ namespace PolyType.SourceGenerator
         
             public string? Unmarshal(global::TestNamespace.RecursiveUnion value)
             {
-                string? result = default;
-                bool matched = false;
                 switch (value)
                 {
                     case null:
-                        matched = true;
-                        break;
+                        return default(string?);
                     case { Value: string caseValue }:
-                        result = caseValue;
-                        matched = true;
-                        break;
+                        return caseValue;
+                    default:
+                        __ThrowInvalidUnionCase(nameof(value));
+                        return default;
                 }
-
-                if (!matched)
-                {
-                    __ThrowInvalidUnionCase(nameof(value));
-                }
-
-                return result;
             }
         }
     }
