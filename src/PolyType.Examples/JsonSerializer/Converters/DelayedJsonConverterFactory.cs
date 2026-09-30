@@ -10,8 +10,10 @@ internal sealed class DelayedJsonConverterFactory : IDelayedValueFactory
 {
     public DelayedValue Create<T>(ITypeShape<T> _) => new DelayedValue<JsonConverter<T>>(self => new DelayedJsonConverter<T>(self));
 
-    private sealed class DelayedJsonConverter<T>(DelayedValue<JsonConverter<T>> self) : JsonConverter<T>
+    private sealed class DelayedJsonConverter<T>(DelayedValue<JsonConverter<T>> self) : JsonConverter<T>, ISchematizedJsonConverter
     {
+        public JsonValueType ValueType => JsonSerializerTS.GetJsonValueType(self.Result);
+
         public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
             self.Result.Read(ref reader, typeToConvert, options);
 

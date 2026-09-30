@@ -16,6 +16,30 @@ public interface ITypeShape
     Type Type { get; }
 
     /// <summary>
+    /// Gets a value indicating whether this is a contextual view rather than the provider's ordinary representation of <see cref="Type"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Contextual shapes describe views specific to a structural role, such as a union's <see cref="IUnionTypeShape.BaseType"/>
+    /// or an F# union case's object representation. This value is fixed for the lifetime of the shape.
+    /// A <see langword="false"/> value identifies the ordinary representation of a type for a given <see cref="Provider"/>;
+    /// it does not imply that shape instances are interned or reference-equal.
+    /// </para>
+    /// <para>
+    /// For a fixed provider and builder configuration, a cache keyed by <see cref="Type"/> must only reuse
+    /// or store results for non-contextual shapes. Contextual shapes must bypass those entries, including
+    /// delayed results and cached exceptions, while their non-contextual child shapes can use the same cache.
+    /// <see cref="Utilities.TypeCache"/> and <see cref="Utilities.TypeGenerationContext"/> enforce this rule.
+    /// This does not prohibit caching contextual shapes with a key that distinguishes their representations.
+    /// </para>
+    /// <para>
+    /// The property describes the shape, not the result of an arbitrary operation on it.
+    /// Consumers must separately account for configuration or state that changes a generated result.
+    /// </para>
+    /// </remarks>
+    bool IsContextual { get; }
+
+    /// <summary>
     /// Gets determines the <see cref="TypeShapeKind"/> that the current shape supports.
     /// </summary>
     TypeShapeKind Kind { get; }

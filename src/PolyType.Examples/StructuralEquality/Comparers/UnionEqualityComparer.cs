@@ -33,8 +33,12 @@ internal sealed class UnionEqualityComparer<TUnion>(
     }
 }
 
-internal sealed class UnionCaseEqualityComparer<TUnionCase, TUnion>(EqualityComparer<TUnionCase> underlying, IMarshaler<TUnionCase, TUnion> marshaler) : EqualityComparer<TUnion>
+internal sealed class UnionCaseEqualityComparer<TUnionCase, TUnion>(IEqualityComparer<TUnionCase> underlying, IMarshaler<TUnionCase, TUnion> marshaler) : EqualityComparer<TUnion>
 {
     public override bool Equals(TUnion? x, TUnion? y) => underlying.Equals(marshaler.Unmarshal(x)!, marshaler.Unmarshal(y)!);
-    public override int GetHashCode(TUnion obj) => underlying.GetHashCode(marshaler.Unmarshal(obj)!);
+    public override int GetHashCode(TUnion obj)
+    {
+        TUnionCase? value = marshaler.Unmarshal(obj);
+        return value is null ? 0 : underlying.GetHashCode(value);
+    }
 }

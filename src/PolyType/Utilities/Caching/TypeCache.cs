@@ -204,7 +204,7 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     {
         Throw.IfNull(typeShape);
 
-        if (_cache.TryGetValue(typeShape.Type, out Entry? entry))
+        if (!typeShape.IsContextual && _cache.TryGetValue(typeShape.Type, out Entry? entry))
         {
             return entry.GetValueOrThrowException();
         }
@@ -226,7 +226,7 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
             {
                 value = typeShape.Invoke(context);
             }
-            catch (Exception ex) when (CacheExceptions)
+            catch (Exception ex) when (CacheExceptions && !typeShape.IsContextual)
             {
                 TryAdd(typeShape.Type, new Entry(ExceptionDispatchInfo.Capture(ex)));
                 throw;
@@ -237,7 +237,7 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
                 return value;
             }
 
-            if (_cache.TryGetValue(typeShape.Type, out Entry? entry))
+            if (!typeShape.IsContextual && _cache.TryGetValue(typeShape.Type, out Entry? entry))
             {
                 return entry.GetValueOrThrowException();
             }

@@ -5,6 +5,7 @@ namespace PolyType.SourceGenerator.Model;
 public sealed record UnionShapeModel : TypeShapeModel
 {
     public required TypeShapeModel UnderlyingModel { get; init; }
+    public bool UseObjectForDispatch { get; init; }
 
     /// <summary>
     /// The list of known derived types for the given type in topological order from most to least derived.

@@ -10,6 +10,11 @@ namespace PolyType.Utilities;
 /// <summary>
 /// Defines a thread-local context for generating values requiring type graph traversal.
 /// </summary>
+/// <remarks>
+/// Only results for non-contextual type shapes are stored under their <see cref="ITypeShape.Type"/>.
+/// Contextual shapes are evaluated without reusing or modifying those entries; their non-contextual
+/// children still participate in the same generation context, including delayed value creation.
+/// </remarks>
 public sealed class TypeGenerationContext : IReadOnlyDictionary<Type, object?>, ITypeShapeFunc
 {
     /// <summary>The local cache used to store results during the generation process.</summary>
@@ -70,12 +75,23 @@ public sealed class TypeGenerationContext : IReadOnlyDictionary<Type, object?>, 
     /// <param name="typeShape">The type shape representing the key type.</param>
     /// <param name="state">The state object to be passed to the visitor.</param>
     /// <returns>The final computed value.</returns>
+    /// <remarks>
+    /// When <see cref="ITypeShape.IsContextual"/> is <see langword="true"/>, evaluates
+    /// <see cref="ValueBuilder"/> on every call without caching the result.
+    /// Result-affecting state must not vary between requests for the same cached type.
+    /// </remarks>
     public object? GetOrAdd(ITypeShape typeShape, object? state = null)
     {
         Throw.IfNull(typeShape);
         if (ValueBuilder is null)
         {
             throw new InvalidOperationException($"Calling this method requires specifying a {ValueBuilder} property.");
+        }
+
+        if (typeShape.IsContextual)
+        {
+            ParentCache?.ValidateProvider(typeShape.Provider);
+            return typeShape.Invoke(ValueBuilder, state);
         }
 
         if (TryGetValue(typeShape, out object? value))
@@ -94,10 +110,18 @@ public sealed class TypeGenerationContext : IReadOnlyDictionary<Type, object?>, 
     /// <param name="typeShape">The type shape representing the key type.</param>
     /// <param name="value">The value returned by the lookup operation.</param>
     /// <returns>True if either a completed or delayed value have been returned.</returns>
+    /// <exception cref="InvalidOperationException"><paramref name="typeShape"/> is contextual.</exception>
     public bool TryGetValue(ITypeShape typeShape, [MaybeNullWhen(false)] out object? value)
     {
         Throw.IfNull(typeShape);
         ParentCache?.ValidateProvider(typeShape.Provider);
+
+        if (typeShape.IsContextual)
+        {
+            Throw();
+            [DoesNotReturn]
+            static void Throw() => throw new InvalidOperationException("Cache lookup does not support contextual type shapes.");
+        }
 
         // Consult the parent cache first to avoid creating duplicate values.
         if (ParentCache?.TryGetValue(typeShape.Type, out value) is true)

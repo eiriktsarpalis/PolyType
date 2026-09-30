@@ -25,6 +25,35 @@ public partial record SimpleTestData(
     double DoubleValue,
     DateTime DateValue);
 
+[GenerateShape]
+public partial union ScalarUnion(int, string?);
+
+[GenerateShape]
+public partial union RecursiveUnion(bool, RecursiveUnion[]);
+
+[System.Runtime.CompilerServices.Union, GenerateShape]
+public sealed partial class FactoryUnion : FactoryUnion.IUnionMembers
+{
+    private readonly int _value;
+
+    private FactoryUnion(int value) => _value = value;
+
+    public interface IUnionMembers
+    {
+        object Value { get; }
+        static abstract FactoryUnion Create(int value);
+    }
+
+    object IUnionMembers.Value => _value;
+    static FactoryUnion IUnionMembers.Create(int value) => new(value);
+
+    public bool TryGetValue(out int value)
+    {
+        value = _value;
+        return true;
+    }
+}
+
 /// <summary>
 /// Factory for creating test data instances.
 /// </summary>

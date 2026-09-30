@@ -24,6 +24,7 @@ internal sealed partial class SourceFormatter
             {
                 return new global::PolyType.SourceGenModel.SourceGenDictionaryTypeShape<{{dictionaryShapeModel.Type.FullyQualifiedName}}, {{dictionaryShapeModel.KeyType.FullyQualifiedName}}, {{dictionaryShapeModel.ValueType.FullyQualifiedName}}>
                 {
+                    IsContextual = {{FormatBool(dictionaryShapeModel.IsContextual)}},
                     KeyTypeFactory = () => {{GetShapeModel(dictionaryShapeModel.KeyType).SourceIdentifier}},
                     ValueTypeFactory = () => {{GetShapeModel(dictionaryShapeModel.ValueType).SourceIdentifier}},
                     GetDictionary = {{FormatGetDictionaryFunc(dictionaryShapeModel)}},

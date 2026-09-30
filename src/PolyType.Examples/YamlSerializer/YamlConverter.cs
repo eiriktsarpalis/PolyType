@@ -23,7 +23,14 @@ public abstract class YamlConverter<T> : IYamlConverter
     internal virtual void WriteMappingContent(YamlWriter writer, T value)
     {
         writer.WriteKey("_value");
-        Write(writer, value);
+        if (value is null)
+        {
+            writer.WriteNull();
+        }
+        else
+        {
+            Write(writer, value);
+        }
     }
 
     /// <summary>

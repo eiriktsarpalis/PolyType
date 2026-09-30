@@ -11,9 +11,11 @@ internal class JsonDictionaryConverter<TDictionary, TKey, TValue>(
     JsonConverter<TKey> keyConverter,
     JsonConverter<TValue> valueConverter,
     IDictionaryTypeShape<TDictionary, TKey, TValue> shape)
-    : JsonConverter<TDictionary>, IJsonObjectConverter<TDictionary>
+    : JsonConverter<TDictionary>, IJsonObjectConverter<TDictionary>, ISchematizedJsonConverter
     where TKey : notnull
 {
+    public JsonValueType ValueType => JsonValueType.Object;
+
     private static readonly bool s_isDictionary = typeof(Dictionary<TKey, TValue>).IsAssignableFrom(typeof(TDictionary));
     private protected readonly JsonConverter<TKey> _keyConverter = keyConverter;
     private protected readonly JsonConverter<TValue> _valueConverter = valueConverter;

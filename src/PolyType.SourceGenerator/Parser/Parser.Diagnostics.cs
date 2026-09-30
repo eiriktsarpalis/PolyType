@@ -199,4 +199,20 @@ public sealed partial class Parser
         category: "PolyType.SourceGenerator",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+
+    private static DiagnosticDescriptor InvalidCSharpUnion { get; } = new DiagnosticDescriptor(
+        id: "PT0025",
+        title: "C# union member pattern is not supported.",
+        messageFormat: "Type '{0}' does not have a supported C# union member pattern or contains an unsupported case type.",
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    private static DiagnosticDescriptor CSharpUnionDuplicateMetadata { get; } = new DiagnosticDescriptor(
+        id: "PT0026",
+        title: "C# union cases contain conflicting metadata.",
+        messageFormat: "C# union '{0}' contains duplicate case {1} '{2}'.",
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
 }

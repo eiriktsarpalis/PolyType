@@ -48,6 +48,12 @@ public class KnownSymbols(Compilation compilation)
     private Option<INamedTypeSymbol?> _CompilerGeneratedAttribute;
 
     /// <summary>
+    /// The type symbol for System.Runtime.CompilerServices.UnionAttribute, when available.
+    /// </summary>
+    public INamedTypeSymbol? UnionAttribute => GetOrResolveType("System.Runtime.CompilerServices.UnionAttribute", ref _UnionAttribute);
+    private Option<INamedTypeSymbol?> _UnionAttribute;
+
+    /// <summary>
     /// The type symbol for <see cref="System.FlagsAttribute"/>.
     /// </summary>
     public INamedTypeSymbol? FlagsAttribute => GetOrResolveType("System.FlagsAttribute", ref _FlagsAttribute);

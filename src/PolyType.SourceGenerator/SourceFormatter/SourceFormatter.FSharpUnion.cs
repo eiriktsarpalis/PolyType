@@ -18,6 +18,8 @@ internal sealed partial class SourceFormatter
             {
                 return new global::PolyType.SourceGenModel.SourceGenUnionTypeShape<{{unionShapeModel.Type.FullyQualifiedName}}>
                 {
+                    IsContextual = {{FormatBool(unionShapeModel.IsContextual)}},
+                    UnionKind = global::PolyType.Abstractions.UnionTypeShapeKind.FSharpUnion,
                     BaseTypeFactory = () => {{unionShapeModel.UnderlyingModel.SourceIdentifier}},
                     UnionCasesFactory = {{createUnionCasesMethodName}},
                     GetUnionCaseIndex = {{FormatFSharpUnionTagReader(unionShapeModel)}},

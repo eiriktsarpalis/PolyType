@@ -20,6 +20,7 @@ internal sealed partial class SourceFormatter
             {
                 return new global::PolyType.SourceGenModel.SourceGenFunctionTypeShape<{{functionShapeModel.Type.FullyQualifiedName}}, {{functionArgumentStateFQN}}, {{functionShapeModel.ReturnType.FullyQualifiedName}}>
                 {
+                    IsContextual = {{FormatBool(functionShapeModel.IsContextual)}},
                     IsVoidLike = {{FormatBool(IsVoidLike(functionShapeModel))}},
                     IsAsync = {{FormatBool(IsAsync(functionShapeModel))}},
                     ReturnTypeFactory = () => {{GetShapeModel(functionShapeModel.ReturnType).SourceIdentifier}},

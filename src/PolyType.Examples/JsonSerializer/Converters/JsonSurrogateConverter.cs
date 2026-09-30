@@ -3,8 +3,10 @@ using System.Text.Json.Serialization;
 
 namespace PolyType.Examples.JsonSerializer.Converters;
 
-internal sealed class JsonSurrogateConverter<T, TSurrogate>(IMarshaler<T, TSurrogate> marshaler, JsonConverter<TSurrogate> surrogateConverter) : JsonConverter<T>
+internal sealed class JsonSurrogateConverter<T, TSurrogate>(IMarshaler<T, TSurrogate> marshaler, JsonConverter<TSurrogate> surrogateConverter) : JsonConverter<T>, ISchematizedJsonConverter
 {
+    public JsonValueType ValueType => JsonSerializerTS.GetJsonValueType(surrogateConverter);
+
     public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
         marshaler.Unmarshal(surrogateConverter.Read(ref reader, typeof(T), options));
 

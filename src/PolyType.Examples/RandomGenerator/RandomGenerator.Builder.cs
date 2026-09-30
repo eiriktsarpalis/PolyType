@@ -302,15 +302,14 @@ public partial class RandomGenerator
                     continue;
                 }
 
-                // Can rely on covariance for this cast to succeed.
-                unionCaseGenerators.Add((RandomGenerator<TUnion>)unionCase.UnionCaseType.Accept(this)!);
+                unionCaseGenerators.Add((RandomGenerator<TUnion>)unionCase.Accept(this)!);
                 foundBaseType |= unionCase.UnionCaseType.Type == typeof(TUnion);
             }
 
             if (!foundBaseType && IsConstructible(unionShape.BaseType))
             {
                 // If the base type is not in the list of derived cases, add it to the list.
-                unionCaseGenerators.Add((RandomGenerator<TUnion>)unionShape.BaseType.Accept(this)!);
+                unionCaseGenerators.Add(GetOrAddGenerator(unionShape.BaseType));
             }
 
             if (unionCaseGenerators.Count == 0)
@@ -327,7 +326,7 @@ public partial class RandomGenerator
             });
 
             static bool IsConstructible(ITypeShape shape) =>
-                shape switch
+                s_defaultGenerators.ContainsKey(shape.Type) || shape switch
                 {
                     IObjectTypeShape objectShape => objectShape.Constructor is not null,
                     IEnumerableTypeShape enumerableShape => enumerableShape.ConstructionStrategy is not CollectionConstructionStrategy.None,
@@ -336,8 +335,12 @@ public partial class RandomGenerator
                 };
         }
 
-        public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state) =>
-            throw new NotImplementedException();
+        public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state)
+        {
+            var generator = GetOrAddGenerator(unionCaseShape.UnionCaseType);
+            var marshaler = unionCaseShape.Marshaler;
+            return new RandomGenerator<TUnion>((random, size) => marshaler.Marshal(generator(random, size))!);
+        }
 
         public override object? VisitFunction<TFunction, TArgumentState, TResult>(IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state = null)
         {

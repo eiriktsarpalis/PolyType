@@ -12,8 +12,37 @@ PolyType classifies .NET types into eight distinct type shape kinds, each repres
 - **Enum** - <xref:PolyType.Abstractions.IEnumTypeShape> for enum types.
 - **Optional** - <xref:PolyType.Abstractions.IOptionalTypeShape> for nullable value types and F# options.
 - **Surrogate** - <xref:PolyType.Abstractions.ISurrogateTypeShape> for types that define a marshaller to a surrogate type.
-- **Union** - <xref:PolyType.Abstractions.IUnionTypeShape> for polymorphic type hierarchies or discriminated union types.
+- **Union** - <xref:PolyType.Abstractions.IUnionTypeShape> for polymorphic type hierarchies, C# unions, or F# discriminated unions.
 - **Function** - <xref:PolyType.Abstractions.IFunctionTypeShape> for delegate and F# function types.
+
+## Contextual representations
+
+<xref:PolyType.ITypeShape.IsContextual> identifies a contextual view of a CLR type, such as a union's structural base or an F# case body. A `false` value identifies the provider's ordinary representation of that type. The value is fixed for the lifetime of a shape; it does not require providers to intern instances or return reference-equal objects.
+
+Type shapes use reference equality regardless of this flag. Distinct shapes do not compare equal merely because their CLR types match; source-generated and reflection shapes remain distinct. The built-in providers reuse shape instances for recursive references, allowing graph traversals to identify repeated nodes by reference.
+
+Both providers use the following classification:
+
+| Representation | `IsContextual` |
+| --- | --- |
+| Ordinary type shapes, including the enclosing union shape | `false` |
+| A union's `BaseType`, including collection-shaped hierarchy bases | `true` |
+| An explicitly registered hierarchy base case using that view | `true` |
+| A proper-derived hierarchy case's ordinary type shape | `false` |
+| A C# case's payload shape, including a recursive reference to the union | `false` |
+| An F# case-specific object body, whether or not its CLR type equals the union type | `true` |
+
+For a fixed provider and builder configuration, a cache keyed by CLR `Type` must only reuse or store results for non-contextual shapes. A contextual request must bypass that type's existing entry, including delayed results and cached exceptions, and must not register or complete an entry for its own result. The request must still use the same recursive resolution context for its non-contextual children.
+
+<xref:PolyType.Utilities.TypeCache>, <xref:PolyType.Utilities.MultiProviderTypeCache>, and <xref:PolyType.Utilities.TypeGenerationContext> apply this rule. Their shape-based `GetOrAdd` methods evaluate contextual shapes without caching the returned result; non-contextual children can still be cached. `TypeGenerationContext.TryGetValue` requires a non-contextual shape and throws `InvalidOperationException` otherwise. Type-only lookups and manually inserted entries refer to ordinary representations.
+
+For example, resolving a hierarchy's base view while the union converter is being built must produce an ordinary base converter, not return the pending union converter. A recursive property on that base view resolves the ordinary union shape and can use the pending result. The same `GetOrAdd` call therefore works for contextual F# case bodies and ordinary C# payload types.
+
+`Accept` and `Invoke` remain direct dispatch operations; neither performs caching by itself. Recursive type resolution must go through the generation context or an equivalent resolver.
+
+Note that `IsContextual` describes the shape, not arbitrary operations on it. If converter options or construction state change the result, consumers must keep those results separate or evaluate the request without caching. Caches using keys that distinguish contextual representations are not prohibited from storing contextual results.
+
+Previously generated assemblies do not need to be rebuilt for this metadata. New generated providers populate <xref:PolyType.SourceGenModel.SourceGenTypeShapeProvider.SourceGeneratorVersion> directly; a null version identifies legacy output. For an unversioned `SourceGenTypeShapeProvider`, the runtime models infer omitted `IsContextual` values from its ordinary singleton lookup and cache the result. Versioned providers default to `false` without that lookup. Other `ITypeShapeProvider` implementations are not required to intern instances. An explicitly initialized value takes precedence.
 
 ## Derivation Algorithm
 
@@ -47,9 +76,38 @@ attributes and doing so overrides the built-in shape kind inferred for the type.
 
 A type is mapped to <xref:PolyType.Abstractions.IUnionTypeShape> when:
 
-1. It is a class with <xref:PolyType.DerivedTypeShapeAttribute> annotations or
+1. It is a class or interface with <xref:PolyType.DerivedTypeShapeAttribute> annotations or
 2. It is a class with [`KnownTypeAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.knowntypeattribute) annotations or
-3. It is an F# union type.
+3. It is a [C# union type](https://github.com/dotnet/csharplang/blob/main/proposals/csharp-15.0/unions.md), or
+4. It is an F# union type, excluding representations handled by other shape kinds.
+
+`UnionKind` identifies the representation as `TypeHierarchy`, `CSharpUnion`, or `FSharpUnion`. Explicit hierarchy configuration takes precedence over automatic C# union recognition. Existing kind and surrogate overrides continue to apply.
+
+#### C# case mapping
+
+Case shapes describe payload types, not wrapper subtypes. A case marshaler binds to that case's creation member and must not redispatch construction using the argument's runtime type or a user-defined implicit conversion.
+
+Metadata indices and inferred tags follow creation-member enumeration order; inferred tags have `IsTagSpecified = false`. Names use the existing type-name formatter. Duplicate names and specializations in which distinct declared cases become identical closed types are rejected. `T` and `Nullable<T>` remain distinct case types.
+
+Enumeration order is an implementation detail; inferred identifiers have no cross-version stability guarantee. PolyType does not provide a C#-specific case-metadata attribute.
+
+Source-generated case selection and extraction use C# union patterns, allowing the compiler to use the non-boxing access pattern when available. The reflection provider tries public instance, nongeneric `bool TryGetValue(out TCase)` overloads whose parameter types exactly match declared cases, most-specific-first, before falling back to `Value`. Union accessors must satisfy the language's well-formedness requirements: `TryGetValue` and `HasValue` must agree with `Value`.
+
+The `Value` fallback uses a most-derived-first topological ordering. For example:
+
+```csharp
+class Animal;
+class Dog : Animal;
+union AnimalUnion(Animal, Dog);
+```
+
+A `Dog` payload selects the `Dog` case even when created with `new AnimalUnion((Animal)new Dog())`. Undeclared runtime subtypes select their most specific compatible declared ancestor. Selection between multiple compatible cases with no assignability relationship is unspecified.
+
+For a value type `T`, the overlap between `T` and `T?` is a special case of this rule: a non-null nullable value boxes as `T` and selects the `T` case when both are declared.
+
+Null union references and null payloads select the first nullable case in metadata order. If no case admits null, the index getter throws as for a non-exhaustive switch, including for an empty native default value. An unmatched non-null payload also throws rather than returning the fallback index. These failures are `InvalidOperationException` instances (`SwitchExpressionException` where supported by the target framework). The C# base shape is empty and uninhabited, as for F# unions; supported values select a declared case.
+
+`IsNullable` reflects the C# creation parameter's nullable contract. It is always `false` for F# and type-hierarchy cases, including F# cases with a null CLR representation and explicitly registered hierarchy base cases. These representations do not admit a nullable case payload.
 
 ### Dictionary Types
 

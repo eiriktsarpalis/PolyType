@@ -103,7 +103,7 @@ public static partial class StructuralEqualityComparer
         public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
         {
             var getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
-            var baseCaseComparer = (EqualityComparer<TUnion>)unionShape.BaseType.Accept(this)!;
+            var baseCaseComparer = (EqualityComparer<TUnion>)GetOrAddEqualityComparer(unionShape.BaseType);
             var unionCaseComparers = unionShape.UnionCases
                 .Select(unionCase => (EqualityComparer<TUnion>)unionCase.Accept(this)!)
                 .ToArray();
@@ -113,7 +113,7 @@ public static partial class StructuralEqualityComparer
 
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
         {
-            var underlyingComparer = (EqualityComparer<TUnionCase>)unionCaseShape.UnionCaseType.Accept(this)!;
+            var underlyingComparer = GetOrAddEqualityComparer(unionCaseShape.UnionCaseType);
             return new UnionCaseEqualityComparer<TUnionCase, TUnion>(underlyingComparer, unionCaseShape.Marshaler);
         }
 

@@ -51,7 +51,7 @@ public static class JsonSchemaGenerator
 
     private sealed class Generator
     {
-        private readonly Dictionary<(Type, bool AllowNull), string> _locations = new();
+        private readonly Dictionary<(Type Type, ITypeShape? Context), SchemaLocation> _locations = new();
         private readonly List<string> _path = new();
 
         public JsonObject GenerateMethodSchema(IMethodShape methodShape)
@@ -98,7 +98,7 @@ public static class JsonSchemaGenerator
             return CompleteDocument(functionSchema, allowNull: false, depth: 0);
         }
 
-        public JsonObject GenerateSchema(ITypeShape typeShape, bool allowNull = true, bool cacheLocation = true, int depth = 0)
+        public JsonObject GenerateSchema(ITypeShape typeShape, bool allowNull = true, bool cacheLocation = true, int depth = 0, int? inlineDepth = null)
         {
             allowNull = allowNull && IsNullableType(typeShape.Type);
 
@@ -107,41 +107,82 @@ public static class JsonSchemaGenerator
                 return CompleteDocument(simpleType.ToSchemaDocument(), allowNull, depth);
             }
 
-            if (cacheLocation)
+            bool isContextual = typeShape.IsContextual;
+            // Contextual views must not share recursion state with their ordinary type shape.
+            var key = (typeShape.Type, Context: isContextual ? typeShape : null);
+            if (!_locations.TryGetValue(key, out SchemaLocation? location))
             {
-                var key = (typeShape.Type, allowNull);
-                if (_locations.TryGetValue(key, out string? location))
+                _locations[key] = location = new();
+            }
+
+            if (inlineDepth is not null && location.ActiveDepth == inlineDepth)
+            {
+                // Prune recursion over the same JSON instance; a $ref here would form a cycle without structural progress.
+                return new JsonObject { ["not"] = new JsonObject() };
+            }
+
+            // Inline alternatives depend on the current path and must not publish or reuse type references.
+            if (cacheLocation && !isContextual && inlineDepth is null)
+            {
+                ref string? path = ref (allowNull ? ref location.NullablePath : ref location.NonNullablePath);
+                if (path is not null)
                 {
                     return new JsonObject
                     {
-                        ["$ref"] = (JsonNode)location!,
+                        ["$ref"] = (JsonNode)path,
                     };
                 }
-                else
-                {
-                    _locations[key] = _path.Count == 0 ? "#" : $"#/{string.Join("/", _path)}";
-                }
+
+                path = _path.Count == 0 ? "#" : $"#/{string.Join("/", _path)}";
             }
+
+            int? previousDepth = location.ActiveDepth;
+            // Inline edges share an expansion depth; structural edges start a new one.
+            location.ActiveDepth = inlineDepth ?? depth;
 
             JsonObject schema;
             switch (typeShape)
             {
                 case IEnumTypeShape enumShape:
-                    schema = new JsonObject { ["type"] = "string" };
+                    JsonObject enumNames = new() { ["type"] = "string" };
                     if (!enumShape.IsFlags)
                     {
-                        schema["enum"] = CreateArray(Enum.GetNames(enumShape.Type).Select(name => (JsonNode)name));
+                        enumNames["enum"] = CreateArray(Enum.GetNames(enumShape.Type).Select(name => (JsonNode)name));
                     }
 
+                    schema = new JsonObject
+                    {
+                        ["anyOf"] = new JsonArray(enumNames, new JsonObject { ["type"] = "integer" }),
+                    };
                     break;
 
                 case IOptionalTypeShape optionalShape:
-                    schema = GenerateSchema(optionalShape.ElementType, cacheLocation: false, depth: depth + 1);
-                    allowNull = true;
+                    bool inlineOptional = inlineDepth is not null;
+                    if (inlineOptional)
+                    {
+                        Push("anyOf");
+                        Push("0");
+                    }
+
+                    schema = GenerateSchema(optionalShape.ElementType, allowNull: !inlineOptional, cacheLocation: false, depth: depth + 1, inlineDepth: inlineDepth);
+                    if (inlineOptional)
+                    {
+                        Pop();
+                        Pop();
+                        JsonObject nullSchema = new() { ["type"] = "null" };
+                        schema = IsFalseSchema(schema)
+                            ? nullSchema
+                            : new JsonObject { ["anyOf"] = new JsonArray(schema, nullSchema) };
+                    }
+
+                    allowNull = !inlineOptional;
                     break;
                 
                 case ISurrogateTypeShape surrogateShape:
-                    return CompleteDocument(GenerateSchema(surrogateShape.SurrogateType, cacheLocation: false, depth: depth + 1), allowNull: false, depth);
+                    // A non-null source value can map to a null surrogate.
+                    schema = GenerateSchema(surrogateShape.SurrogateType, cacheLocation: false, depth: depth + 1, inlineDepth: inlineDepth);
+                    allowNull = false;
+                    break;
 
                 case IEnumerableTypeShape enumerableShape:
                     for (int i = 0; i < enumerableShape.Rank; i++)
@@ -221,6 +262,38 @@ public static class JsonSchemaGenerator
                         }
                     }
 
+                    break;
+
+                case IUnionTypeShape { UnionKind: UnionTypeShapeKind.CSharpUnion } csharpUnion:
+                    JsonArray payloadSchemas = new();
+                    inlineDepth ??= depth;
+                    Push("anyOf");
+                    foreach (IUnionCaseShape unionCase in csharpUnion.UnionCases)
+                    {
+                        Push($"{payloadSchemas.Count}");
+                        JsonObject payloadSchema = GenerateSchema(
+                            unionCase.UnionCaseType,
+                            allowNull: unionCase.IsNullable,
+                            depth: depth + 1,
+                            inlineDepth: inlineDepth);
+                        if (!IsFalseSchema(payloadSchema))
+                        {
+                            payloadSchemas.Add((JsonNode)payloadSchema);
+                        }
+
+                        Pop();
+                    }
+
+                    if (csharpUnion.UnionCases.Any(c => c.IsNullable))
+                    {
+                        payloadSchemas.Add((JsonNode)new JsonObject { ["type"] = "null" });
+                    }
+
+                    schema = payloadSchemas.Count is 0
+                        ? new JsonObject { ["not"] = new JsonObject() }
+                        : new JsonObject { ["anyOf"] = payloadSchemas };
+                    allowNull = false;
+                    Pop();
                     break;
 
                 case IUnionTypeShape unionShape:
@@ -304,7 +377,15 @@ public static class JsonSchemaGenerator
                     break;
             }
 
+            location.ActiveDepth = previousDepth;
             return CompleteDocument(schema, allowNull, depth);
+        }
+
+        private sealed class SchemaLocation
+        {
+            public string? NonNullablePath;
+            public string? NullablePath;
+            public int? ActiveDepth;
         }
 
         private void Push(string name)
@@ -316,6 +397,8 @@ public static class JsonSchemaGenerator
         {
             _path.RemoveAt(_path.Count - 1);
         }
+
+        private static bool IsFalseSchema(JsonObject schema) => schema["not"] is JsonObject { Count: 0 };
 
         private static JsonObject CompleteDocument(JsonObject schema, bool allowNull, int depth)
         {
@@ -329,6 +412,14 @@ public static class JsonSchemaGenerator
                 {
                     schema["type"] = new JsonArray { (JsonNode)(string)typeValue!, (JsonNode)"null" };
                 }
+            }
+            else if (allowNull && schema["anyOf"] is JsonArray alternatives)
+            {
+                alternatives.Add((JsonNode)new JsonObject { ["type"] = "null" });
+            }
+            else if (allowNull && IsFalseSchema(schema))
+            {
+                schema = new JsonObject { ["type"] = "null" };
             }
 
             if (depth == 0)
@@ -408,8 +499,6 @@ public static class JsonSchemaGenerator
             [typeof(char)] = new("string"),
             [typeof(string)] = new("string"),
             [typeof(byte[])] = new("string"),
-            [typeof(Memory<byte>)] = new("string"),
-            [typeof(ReadOnlyMemory<byte>)] = new("string"),
             [typeof(DateTime)] = new("string", format: "date-time"),
             [typeof(DateTimeOffset)] = new("string", format: "date-time"),
             [typeof(TimeSpan)] = new("string", pattern: @"^-?(\d+\.)?\d{2}:\d{2}:\d{2}(\.\d{1,7})?$"),

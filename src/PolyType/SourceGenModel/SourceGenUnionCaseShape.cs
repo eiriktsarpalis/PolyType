@@ -38,6 +38,9 @@ public sealed class SourceGenUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShap
     public bool IsTagSpecified { get; init; }
 
     /// <inheritdoc/>
+    public bool IsNullable { get; init; }
+
+    /// <inheritdoc/>
     public required int Index { get; init; }
 
 #pragma warning disable CS0618 // Type or member is obsolete

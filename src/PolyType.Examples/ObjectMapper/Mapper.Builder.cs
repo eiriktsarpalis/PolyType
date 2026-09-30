@@ -351,6 +351,7 @@ public static partial class Mapper
     // Defines a synthetic type shape representing pairs of types.
     private sealed class MapperShape<TSource, TTarget>(ITypeShape<TSource> source, ITypeShape<TTarget> target) : ITypeShape<Mapper<TSource, TTarget>>
     {
+        public bool IsContextual => source.IsContextual || target.IsContextual;
         public TypeShapeKind Kind => (TypeShapeKind)101;
         public ITypeShapeProvider Provider => source.Provider;
         public Type Type => typeof(Mapper<TSource, TTarget>);

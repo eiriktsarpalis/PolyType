@@ -29,6 +29,7 @@ public class OnlySanctionedShapesAnalyzerTests
             class Foo : {|PT0019:ITypeShape|}
             {
                 public Type Type => throw new NotImplementedException();
+                public bool IsContextual => throw new NotImplementedException();
                 public TypeShapeKind Kind => throw new NotImplementedException();
                 public ITypeShapeProvider Provider => throw new NotImplementedException();
                 public IGenericCustomAttributeProvider AttributeProvider => throw new NotImplementedException();

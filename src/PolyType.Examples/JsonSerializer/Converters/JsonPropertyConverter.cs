@@ -28,7 +28,9 @@ internal sealed class JsonPropertyConverter<TDeclaringType, TPropertyType> : Jso
         : base(property.Name)
     {
         _propertyTypeConverter = propertyTypeConverter;
-        _getterDisallowsNull = property.IsGetterNonNullable;
+        _getterDisallowsNull = property.IsGetterNonNullable &&
+            (property.PropertyType is not IUnionTypeShape { UnionKind: UnionTypeShapeKind.CSharpUnion } unionShape ||
+             !unionShape.UnionCases.Any(static unionCase => unionCase.IsNullable));
         _setterDisallowsNull = property.IsSetterNonNullable;
 
         if (property.HasGetter)

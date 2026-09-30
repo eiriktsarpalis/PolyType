@@ -26,6 +26,13 @@ internal class YamlObjectConverter<T>(YamlPropertyConverter<T>[] properties) : Y
 
     internal sealed override void WriteMappingContent(YamlWriter writer, T value)
     {
+        // Null-represented F# cases have empty bodies; nonempty mapping bodies need an instance for their getters.
+        if (value is null && _propertiesToWrite.Length > 0)
+        {
+            Throw();
+            static void Throw() => throw new NotSupportedException($"A null value of type '{typeof(T)}' cannot be written as mapping content.");
+        }
+
         foreach (YamlPropertyConverter<T> property in _propertiesToWrite)
         {
             property.Write(writer, ref value);

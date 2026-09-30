@@ -1,5 +1,6 @@
-﻿using PolyType.Examples.RandomGenerator;
+using PolyType.Examples.RandomGenerator;
 using PolyType.ReflectionProvider;
+using PolyType.SourceGenModel;
 using System.Collections;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -8,7 +9,7 @@ using System.Diagnostics;
 
 namespace PolyType.Tests;
 
-public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest)
+public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerUnderTest)
 {
     protected ITypeShapeProvider Provider => providerUnderTest.Provider;
 
@@ -19,6 +20,7 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         ITypeShape<T> shape = providerUnderTest.ResolveShape(testCase);
 
         Assert.Equal(typeof(T), shape.Type);
+        Assert.False(shape.IsContextual);
         Assert.NotNull(shape.AttributeProvider);
         Assert.Equal(typeof(T).IsRecordType() && testCase is { UsesMarshaler: false, IsUnion: false }, shape is IObjectTypeShape { IsRecordType: true });
         Assert.Equal(typeof(T).IsTupleType() && testCase is { UsesMarshaler: false, IsUnion: false }, shape is IObjectTypeShape { IsTupleType: true });
@@ -348,11 +350,27 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
             IUnionTypeShape<T> unionShape = Assert.IsAssignableFrom<IUnionTypeShape<T>>(shape);
             DerivedTypeShapeAttribute[] attributes = unionShape.Type.GetCustomAttributes<DerivedTypeShapeAttribute>(inherit: false).ToArray() ?? [];
             Assert.NotSame(shape, unionShape.BaseType);
+            Assert.True(unionShape.BaseType.IsContextual);
             Assert.NotEmpty(unionShape.UnionCases);
+            Assert.Equal(unionShape.UnionCases.Count, unionShape.UnionCases.Select(c => c.Name).Distinct(StringComparer.Ordinal).Count());
+            Assert.Equal(unionShape.UnionCases.Count, unionShape.UnionCases.Select(c => c.Tag).Distinct().Count());
             int i = 0;
             foreach (IUnionCaseShape unionCase in unionShape.UnionCases)
             {
-                Assert.True(typeof(T).IsAssignableFrom(unionCase.UnionCaseType.Type));
+                bool isContextual = unionShape.UnionKind switch
+                {
+                    UnionTypeShapeKind.CSharpUnion => false,
+                    UnionTypeShapeKind.FSharpUnion => true,
+                    _ => unionCase.UnionCaseType.Type == typeof(T),
+                };
+                Assert.Equal(isContextual, unionCase.UnionCaseType.IsContextual);
+
+                if (unionShape.UnionKind is not UnionTypeShapeKind.CSharpUnion)
+                {
+                    Assert.True(typeof(T).IsAssignableFrom(unionCase.UnionCaseType.Type));
+                    Assert.False(unionCase.IsNullable);
+                }
+
                 Assert.NotNull(unionCase.Name);
                 Assert.Equal(i++, unionCase.Index);
 
@@ -370,13 +388,52 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
                 if (index >= 0)
                 {
                     var matchingCase = unionShape.UnionCases[index];
-                    Assert.True(matchingCase.UnionCaseType.Type.IsAssignableFrom(value!.GetType()));
+                    if (unionShape.UnionKind is UnionTypeShapeKind.CSharpUnion)
+                    {
+                        matchingCase.Accept(new UnionCaseMarshalerTestVisitor(), value);
+                    }
+                    else
+                    {
+                        Assert.True(matchingCase.UnionCaseType.Type.IsAssignableFrom(value!.GetType()));
+                    }
                 }
             }
         }
         else
         {
             Assert.False(shape is IUnionTypeShape);
+        }
+    }
+
+    [Theory]
+    [InlineData(typeof(FSharp.NullaryUnion), UnionTypeShapeKind.FSharpUnion, "A")]
+    [InlineData(typeof(PolymorphicClass), UnionTypeShapeKind.TypeHierarchy, nameof(PolymorphicClass))]
+    public void NullRepresentationsDoNotMakeUnionCasesNullable(Type type, UnionTypeShapeKind kind, string nullCaseName)
+    {
+        IUnionTypeShape shape = Assert.IsAssignableFrom<IUnionTypeShape>(Provider.GetTypeShapeOrThrow(type));
+        Assert.Equal(kind, shape.UnionKind);
+        Assert.DoesNotContain(shape.UnionCases, unionCase => unionCase.IsNullable);
+        int index = (int)shape.Accept(new DefaultUnionIndexVisitor())!;
+        Assert.Equal(nullCaseName, shape.UnionCases[index].Name);
+    }
+
+    private sealed class DefaultUnionIndexVisitor : TypeShapeVisitor
+    {
+        public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> shape, object? state)
+        {
+            TUnion value = default!;
+            return shape.GetGetUnionCaseIndex()(ref value);
+        }
+    }
+
+    private sealed class UnionCaseMarshalerTestVisitor : TypeShapeVisitor
+    {
+        public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCase, object? state)
+        {
+            TUnionCase? caseValue = unionCase.Marshaler.Unmarshal((TUnion)state!);
+            TUnion? unionValue = unionCase.Marshaler.Marshal(caseValue);
+            Assert.Equal(caseValue, unionCase.Marshaler.Unmarshal(unionValue));
+            return null;
         }
     }
 
@@ -1416,6 +1473,488 @@ public abstract class TypeShapeProviderTests(ProviderUnderTest providerUnderTest
         Assert.Equal("name", parameters[0].Name, ignoreCase: true);
         Assert.Equal("version", parameters[1].Name, ignoreCase: true);
     }
+
+    [Theory]
+    [InlineData(typeof(CSharpScalarUnion), 3, 2)]
+    [InlineData(typeof(CSharpValueUnion), 2, -1)]
+    [InlineData(typeof(CSharpClassUnion), 2, 1)]
+    [InlineData(typeof(CSharpStructUnion), 2, 1)]
+    [InlineData(typeof(CSharpValueStorageUnion), 2, -1)]
+    [InlineData(typeof(CSharpInUnion), 2, 1)]
+    [InlineData(typeof(CSharpInheritedUnion), 2, 1)]
+    [InlineData(typeof(CSharpNullableValueUnion), 2, 1)]
+    [InlineData(typeof(CSharpRecursiveUnion), 2, -1)]
+#if NET
+    [InlineData(typeof(CSharpProviderUnion), 2, 1)]
+    [InlineData(typeof(CSharpDefaultProviderUnion), 2, 1)]
+    [InlineData(typeof(CSharpGenericProviderUnion<int>), 2, 1)]
+#endif
+    public void Metadata_DescribesPayloadCases(Type type, int caseCount, int nullableCaseIndex)
+    {
+        IUnionTypeShape shape = Assert.IsAssignableFrom<IUnionTypeShape>(providerUnderTest.Provider.GetTypeShapeOrThrow(type));
+        Assert.Equal(UnionTypeShapeKind.CSharpUnion, shape.UnionKind);
+        Assert.Equal(caseCount, shape.UnionCases.Count);
+        IObjectTypeShape baseShape = Assert.IsAssignableFrom<IObjectTypeShape>(shape.BaseType);
+        Assert.Empty(baseShape.Properties);
+        Assert.Null(baseShape.Constructor);
+        Assert.Equal(type, baseShape.Type);
+
+        for (int i = 0; i < caseCount; i++)
+        {
+            IUnionCaseShape unionCase = shape.UnionCases[i];
+            Assert.Equal(i, unionCase.Index);
+            Assert.Equal(i, unionCase.Tag);
+            Assert.False(unionCase.IsTagSpecified);
+            Assert.Equal(i == nullableCaseIndex, unionCase.IsNullable);
+        }
+    }
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(1, 1)]
+    [InlineData(2, 2)]
+    [InlineData(3, 2)]
+    public void ScalarCases_SelectDeclaredIndex(int valueKind, int expectedIndex)
+    {
+        CSharpScalarUnion value = valueKind switch
+        {
+            0 => new CSharpScalarUnion(42),
+            1 => new CSharpScalarUnion(true),
+            2 => new CSharpScalarUnion("text"),
+            _ => default,
+        };
+
+        var shape = GetUnion<CSharpScalarUnion>();
+        Assert.Equal(expectedIndex, shape.GetGetUnionCaseIndex()(ref value));
+        Assert.Equal(new[] { typeof(int), typeof(bool), typeof(string) }, shape.UnionCases.Select(c => c.UnionCaseType.Type));
+        Assert.Equal(new[] { "Int32", "Boolean", "String" }, shape.UnionCases.Select(c => c.Name));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void NullWrapperAndNullPayload_SelectSameCase(bool nullReference)
+    {
+        CSharpClassUnion value = nullReference ? null! : new CSharpClassUnion((string?)null);
+        Assert.Equal(1, GetUnion<CSharpClassUnion>().GetGetUnionCaseIndex()(ref value));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ValueUnion_RejectsEmptyDefault(bool useConstructor)
+    {
+        CSharpValueUnion value = useConstructor ? new CSharpValueUnion() : default;
+        var getter = GetUnion<CSharpValueUnion>().GetGetUnionCaseIndex();
+        if (useConstructor)
+        {
+            Assert.Equal(0, getter(ref value));
+            Assert.Equal(123, value.Value);
+        }
+        else
+        {
+            Assert.ThrowsAny<InvalidOperationException>(() => getter(ref value));
+        }
+    }
+
+    [Theory]
+    [InlineData(typeof(CSharpValueUnion))]
+    [InlineData(typeof(CSharpRecursiveUnion))]
+    [InlineData(typeof(CSharpInterfaceUnion))]
+    [InlineData(typeof(CSharpArrayUnion))]
+    [InlineData(typeof(CSharpMutableUnion))]
+    [InlineData(typeof(CSharpGenericUnion<int, bool>))]
+    public void NullPayloadWithoutNullableCase_DoesNotUseBaseFallback(Type type)
+    {
+        IUnionTypeShape shape = Assert.IsAssignableFrom<IUnionTypeShape>(providerUnderTest.Provider.GetTypeShapeOrThrow(type));
+        Assert.DoesNotContain(shape.UnionCases, c => c.IsNullable);
+        Assert.ThrowsAny<InvalidOperationException>(() => shape.Accept(new DefaultUnionIndexVisitor()));
+    }
+
+    [Theory]
+    [InlineData(typeof(CSharpStructUnion))]
+    [InlineData(typeof(CSharpValueStorageUnion))]
+    public void DefaultWithNonNullPayload_SelectsItsCase(Type type)
+    {
+        IUnionTypeShape shape = Assert.IsAssignableFrom<IUnionTypeShape>(providerUnderTest.Provider.GetTypeShapeOrThrow(type));
+        Assert.Equal(0, Assert.IsType<int>(shape.Accept(new DefaultUnionIndexVisitor())));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void ValueStorageUnion_NonBoxingAccessMatchesShape(int valueKind)
+    {
+        CSharpValueStorageUnion value = valueKind switch
+        {
+            0 => default,
+            1 => new(42),
+            2 => new(false),
+            _ => new(true),
+        };
+
+        Assert.True(value.HasValue);
+        Assert.Equal(valueKind < 2, value.TryGetValue(out int number));
+        Assert.Equal(valueKind >= 2, value.TryGetValue(out bool boolean));
+        Assert.Equal(valueKind == 1 ? 42 : 0, number);
+        Assert.Equal(valueKind == 3, boolean);
+
+        int caseIndex = value switch { int => 0, bool => 1 };
+        value = value with { OnValueAccess = () => throw new InvalidOperationException("TryGetValue should bypass Value.") };
+        var shape = GetUnion<CSharpValueStorageUnion>();
+        Assert.Equal(valueKind < 2 ? 0 : 1, caseIndex);
+        Assert.Equal(caseIndex, shape.GetGetUnionCaseIndex()(ref value));
+        if (caseIndex == 0)
+        {
+            var unionCase = Assert.IsAssignableFrom<IUnionCaseShape<int, CSharpValueStorageUnion>>(shape.UnionCases[0]);
+            Assert.Equal(number, unionCase.Marshaler.Unmarshal(value));
+        }
+        else
+        {
+            var unionCase = Assert.IsAssignableFrom<IUnionCaseShape<bool, CSharpValueStorageUnion>>(shape.UnionCases[1]);
+            Assert.Equal(boolean, unionCase.Marshaler.Unmarshal(value));
+        }
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    public void StructUnion_NonBoxingAccessMatchesShape(int valueKind)
+    {
+        CSharpStructUnion value = valueKind switch
+        {
+            0 => default,
+            1 => new(42),
+            2 => new("text"),
+            3 => new(""),
+            _ => new((string?)null),
+        };
+
+        Assert.Equal(valueKind != 4, value.HasValue);
+        Assert.Equal(valueKind < 2, value.TryGetValue(out int number));
+        Assert.Equal(valueKind is 2 or 3, value.TryGetValue(out string? text));
+        Assert.Equal(valueKind == 1 ? 42 : 0, number);
+        Assert.Equal(valueKind switch { 2 => "text", 3 => "", _ => null }, text);
+
+        int caseIndex = value switch { int => 0, string or null => 1 };
+        var shape = GetUnion<CSharpStructUnion>();
+        Assert.Equal(valueKind < 2 ? 0 : 1, caseIndex);
+        Assert.Equal(caseIndex, shape.GetGetUnionCaseIndex()(ref value));
+        if (caseIndex == 0)
+        {
+            var unionCase = Assert.IsAssignableFrom<IUnionCaseShape<int, CSharpStructUnion>>(shape.UnionCases[0]);
+            Assert.Equal(number, unionCase.Marshaler.Unmarshal(value));
+        }
+        else
+        {
+            var unionCase = Assert.IsAssignableFrom<IUnionCaseShape<string, CSharpStructUnion>>(shape.UnionCases[1]);
+            Assert.Equal(text, unionCase.Marshaler.Unmarshal(value));
+        }
+    }
+
+    [Theory]
+    [InlineData(42)]
+    [InlineData("text")]
+    public void UnionTryGetValue_InheritedGenericOverloadPrecedesValue<T>(T payload)
+    {
+        var shape = GetUnion<CSharpTryGetValueUnion<T>>();
+        CSharpTryGetValueUnion<T> value = new(payload);
+        int valueReads = 0;
+        int tryGetValueCalls = 0;
+        value.OnValueAccess = () => valueReads++;
+        value.OnTryGetValue = () => tryGetValueCalls++;
+        var unionCase = Assert.IsAssignableFrom<IUnionCaseShape<T, CSharpTryGetValueUnion<T>>>(shape.UnionCases[0]);
+
+        Assert.Equal(0, shape.GetGetUnionCaseIndex()(ref value));
+        Assert.Equal(payload, unionCase.Marshaler.Unmarshal(value));
+        Assert.Equal(2, tryGetValueCalls);
+        Assert.Equal(0, valueReads);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void UnionTryGetValue_PartialCoverageFallsBackToValue(bool payload)
+    {
+        var shape = GetUnion<CSharpTryGetValueUnion<int>>();
+        CSharpTryGetValueUnion<int> value = new(payload);
+        int valueReads = 0;
+        int tryGetValueCalls = 0;
+        value.OnValueAccess = () => valueReads++;
+        value.OnTryGetValue = () => tryGetValueCalls++;
+        var unionCase = Assert.IsAssignableFrom<IUnionCaseShape<bool, CSharpTryGetValueUnion<int>>>(shape.UnionCases[1]);
+
+        Assert.Equal(1, shape.GetGetUnionCaseIndex()(ref value));
+        Assert.Equal(payload, unionCase.Marshaler.Unmarshal(value));
+        Assert.Equal(1, tryGetValueCalls);
+        Assert.Equal(2, valueReads);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void UnionTryGetValue_NullWrapperAndPayloadUseNullableCase(bool nullWrapper)
+    {
+        var shape = GetUnion<CSharpTryGetValueUnion<string>>();
+        CSharpTryGetValueUnion<string> value = nullWrapper ? null! : new((string?)null);
+        var unionCase = Assert.IsAssignableFrom<IUnionCaseShape<string, CSharpTryGetValueUnion<string>>>(shape.UnionCases[0]);
+        Assert.Equal(0, shape.GetGetUnionCaseIndex()(ref value));
+        Assert.Null(unionCase.Marshaler.Unmarshal(value));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void UnionTryGetValue_SelectsMostSpecificOverload(bool isDog)
+    {
+        CSharpAnimal payload = isDog ? new CSharpDog("Rex", 10) : new CSharpCat("Milo");
+        CSharpConstructorUnion value = new(payload);
+        List<Type> calls = [];
+        value.OnTryGetValue = calls.Add;
+
+        Assert.Equal(isDog ? 1 : 0, GetUnion<CSharpConstructorUnion>().GetGetUnionCaseIndex()(ref value));
+        Assert.Equal(isDog ? [typeof(CSharpDog)] : new[] { typeof(CSharpDog), typeof(CSharpAnimal) }, calls);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void UnionTryGetValue_PropagatesExceptions(bool extraction)
+    {
+        var shape = GetUnion<CSharpTryGetValueUnion<int>>();
+        CSharpTryGetValueUnion<int> value = new(42);
+        InvalidOperationException expected = new("TryGetValue failed.");
+        value.OnTryGetValue = () => throw expected;
+        value.OnValueAccess = () => Assert.Fail("A throwing TryGetValue must not fall back to Value.");
+        var unionCase = Assert.IsAssignableFrom<IUnionCaseShape<int, CSharpTryGetValueUnion<int>>>(shape.UnionCases[0]);
+
+        InvalidOperationException actual = Assert.Throws<InvalidOperationException>(() =>
+        {
+            if (extraction)
+            {
+                unionCase.Marshaler.Unmarshal(value);
+            }
+            else
+            {
+                shape.GetGetUnionCaseIndex()(ref value);
+            }
+        });
+        Assert.Same(expected, actual);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void UnionTryGetValue_RejectsWrongCaseAfterValueFallback(bool nullWrapper)
+    {
+        var shape = GetUnion<CSharpTryGetValueUnion<int>>();
+        var unionCase = Assert.IsAssignableFrom<IUnionCaseShape<int, CSharpTryGetValueUnion<int>>>(shape.UnionCases[0]);
+        CSharpTryGetValueUnion<int>? value = nullWrapper ? null : new(true);
+        ArgumentException exception = Assert.Throws<ArgumentException>(() => unionCase.Marshaler.Unmarshal(value));
+        Assert.Equal("value", exception.ParamName);
+        Assert.Contains("The union value does not match this case.", exception.Message);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NullableValueCases_RetainMetadataAndNormalizeBoxing(bool isNull)
+    {
+        CSharpNullableValueUnion value = new((int?)(isNull ? null : 42));
+        var shape = GetUnion<CSharpNullableValueUnion>();
+        Assert.Equal(new[] { typeof(int), typeof(int?) }, shape.UnionCases.Select(c => c.UnionCaseType.Type));
+        Assert.Equal(isNull ? 1 : 0, shape.GetGetUnionCaseIndex()(ref value));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void HierarchyCases_SelectMostSpecificDeclaredType(bool isDog)
+    {
+        CSharpAnimal animal = isDog ? new CSharpDog("Rex", 10) : new CSharpCat("Milo");
+        CSharpHierarchyUnion value = new(animal);
+        Assert.Equal(isDog ? 1 : 0, GetUnion<CSharpHierarchyUnion>().GetGetUnionCaseIndex()(ref value));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(64)]
+    public void RuntimeSubtypeLookup_IsSafeForConcurrentUse(int iterations)
+    {
+        var getter = GetUnion<CSharpHierarchyUnion>().GetGetUnionCaseIndex();
+        Parallel.For(0, iterations, _ =>
+        {
+            CSharpHierarchyUnion value = new(new CSharpCat("Milo"));
+            Assert.Equal(0, getter(ref value));
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CaseMarshalers_InvokeTheirFixedCreationMember(bool useDogCase)
+    {
+        CSharpDog dog = new("Rex", 10);
+        var shape = GetUnion<CSharpConstructorUnion>();
+        CSharpConstructorUnion value;
+        if (useDogCase)
+        {
+            var unionCase = Assert.Single(shape.UnionCases.OfType<IUnionCaseShape<CSharpDog, CSharpConstructorUnion>>());
+            value = unionCase.Marshaler.Marshal(dog)!;
+            Assert.Same(dog, unionCase.Marshaler.Unmarshal(value));
+        }
+        else
+        {
+            var unionCase = Assert.Single(shape.UnionCases.OfType<IUnionCaseShape<CSharpAnimal, CSharpConstructorUnion>>());
+            value = unionCase.Marshaler.Marshal(dog)!;
+            Assert.Same(dog, unionCase.Marshaler.Unmarshal(value));
+        }
+
+        Assert.Equal(useDogCase ? nameof(CSharpDog) : nameof(CSharpAnimal), value.ConstructorUsed);
+        Assert.Equal(1, shape.GetGetUnionCaseIndex()(ref value));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RecursiveCaseMarshaler_RemovesOneWrapper(bool leaf)
+    {
+        CSharpRecursiveUnion inner = new(leaf);
+        CSharpRecursiveUnion outer = new(inner);
+        var shape = GetUnion<CSharpRecursiveUnion>();
+        var unionCase = Assert.Single(shape.UnionCases.OfType<IUnionCaseShape<CSharpRecursiveUnion, CSharpRecursiveUnion>>());
+
+        Assert.Same(shape, unionCase.UnionCaseType);
+        Assert.Equal(1, shape.GetGetUnionCaseIndex()(ref outer));
+        CSharpRecursiveUnion extracted = unionCase.Marshaler.Unmarshal(outer);
+        Assert.Equal(leaf, Assert.IsType<bool>(extracted.Value));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void InterfaceCase_DoesNotMatchTheWrapper(bool interfacePayload)
+    {
+        IUnion payload = new CSharpScalarUnion("nested");
+        CSharpInterfaceUnion value = interfacePayload ? new(payload) : new(42);
+        var shape = GetUnion<CSharpInterfaceUnion>();
+        Assert.Equal(interfacePayload ? 0 : 1, shape.GetGetUnionCaseIndex()(ref value));
+
+        if (interfacePayload)
+        {
+            var unionCase = Assert.Single(shape.UnionCases.OfType<IUnionCaseShape<IUnion, CSharpInterfaceUnion>>());
+            Assert.Same(payload, unionCase.Marshaler.Unmarshal(value));
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void NullableCaseMarshaler_ExtractsBothNullRepresentations(bool nullReference)
+    {
+        CSharpClassUnion value = nullReference ? null! : new CSharpClassUnion((string?)null);
+        var unionCase = Assert.Single(GetUnion<CSharpClassUnion>().UnionCases.OfType<IUnionCaseShape<string, CSharpClassUnion>>());
+        Assert.Null(unionCase.Marshaler.Unmarshal(value));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void NonNullableCaseMarshaler_RejectsNullAndWrongPayloads(int valueKind)
+    {
+        CSharpClassUnion value = valueKind switch
+        {
+            0 => null!,
+            1 => new CSharpClassUnion((string?)null),
+            _ => new CSharpClassUnion("wrong case"),
+        };
+        var unionCase = Assert.Single(GetUnion<CSharpClassUnion>().UnionCases.OfType<IUnionCaseShape<int, CSharpClassUnion>>());
+        ArgumentException exception = Assert.Throws<ArgumentException>(() => unionCase.Marshaler.Unmarshal(value));
+        Assert.Equal("value", exception.ParamName);
+        Assert.Contains("The union value does not match this case.", exception.Message);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void NonNullableReferenceCaseMarshaler_RejectsNullAndWrongPayloads(int valueKind)
+    {
+        CSharpConstructorUnion value = valueKind switch
+        {
+            0 => null!,
+            1 => new CSharpConstructorUnion((CSharpAnimal?)null),
+            _ => new CSharpConstructorUnion(new CSharpCat("Milo")),
+        };
+        var unionCase = Assert.Single(GetUnion<CSharpConstructorUnion>().UnionCases.OfType<IUnionCaseShape<CSharpDog, CSharpConstructorUnion>>());
+        ArgumentException exception = Assert.Throws<ArgumentException>(() => unionCase.Marshaler.Unmarshal(value));
+
+        Assert.Equal("value", exception.ParamName);
+        Assert.Contains("The union value does not match this case.", exception.Message);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("unexpected")]
+    [InlineData(3.14)]
+    public void UnmatchedPayload_Throws(object? payload)
+    {
+        CSharpMutableUnion value = new(42) { Value = payload };
+        var getter = GetUnion<CSharpMutableUnion>().GetGetUnionCaseIndex();
+        Assert.ThrowsAny<InvalidOperationException>(() => getter(ref value));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NativeUnionCaseMarshaler_RejectsNullAndWrongPayloads(bool nullPayload)
+    {
+        CSharpScalarUnion value = nullPayload ? default : new(true);
+        var unionCase = Assert.Single(GetUnion<CSharpScalarUnion>().UnionCases.OfType<IUnionCaseShape<int, CSharpScalarUnion>>());
+        ArgumentException exception = Assert.Throws<ArgumentException>(() => unionCase.Marshaler.Unmarshal(value));
+
+        Assert.Equal("value", exception.ParamName);
+        Assert.Contains("The union value does not match this case.", exception.Message);
+    }
+
+    [Fact]
+    public void NullableCaseMarshaler_RejectsWrongPayloadType()
+    {
+        CSharpScalarUnion value = new(42);
+        var unionCase = Assert.Single(GetUnion<CSharpScalarUnion>().UnionCases.OfType<IUnionCaseShape<string, CSharpScalarUnion>>());
+        ArgumentException exception = Assert.Throws<ArgumentException>(() => unionCase.Marshaler.Unmarshal(value));
+
+        Assert.Equal("value", exception.ParamName);
+        Assert.Contains("The union value does not match this case.", exception.Message);
+    }
+
+    [Theory]
+    [InlineData(typeof(CSharpInterfaceOnlyUnion), TypeShapeKind.Object)]
+    [InlineData(typeof(CSharpObjectModelUnion), TypeShapeKind.Object)]
+    public void Recognition_HonorsMarkerAndExplicitKind(Type type, TypeShapeKind kind)
+    {
+        Assert.Equal(kind, providerUnderTest.Provider.GetTypeShapeOrThrow(type).Kind);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ExplicitHierarchy_InspectsWrapperNotPayload(bool derived)
+    {
+        CSharpHierarchyWrapper value = derived ? new CSharpDerivedWrapper(42) : new CSharpHierarchyWrapper(42);
+        var shape = GetUnion<CSharpHierarchyWrapper>();
+        Assert.Equal(UnionTypeShapeKind.TypeHierarchy, shape.UnionKind);
+        Assert.Equal(derived ? 0 : -1, shape.GetGetUnionCaseIndex()(ref value));
+    }
+
+    private IUnionTypeShape<T> GetUnion<T>() =>
+        Assert.IsAssignableFrom<IUnionTypeShape<T>>(providerUnderTest.Provider.GetTypeShapeOrThrow<T>());
 }
 
 public static class ReflectionExtensions
@@ -1935,6 +2474,107 @@ public sealed class TypeShapeProviderTests_ReflectionEmit() : TypeShapeProviderT
 
 public sealed partial class TypeShapeProviderTests_SourceGen() : TypeShapeProviderTests(SourceGenProviderUnderTest.Default)
 {
+    [Theory]
+    [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
+    public void OrdinaryShapesUseReferenceEqualityAcrossProviders(ITestCase testCase)
+    {
+        ITypeShape[] shapes = GetShapes(testCase);
+        foreach (ITypeShape left in shapes)
+        {
+            Assert.False(left.IsContextual);
+            Assert.Equal(RuntimeHelpers.GetHashCode(left), left.GetHashCode());
+            Assert.False(left.Equals(null));
+            Assert.False(left.Equals(testCase.Type));
+            Assert.False(left.Equals(new object()));
+
+            foreach (ITypeShape right in shapes)
+            {
+                bool sameInstance = ReferenceEquals(left, right);
+                Assert.Equal(sameInstance, left.Equals(right));
+                Assert.Equal(sameInstance, object.Equals(left, right));
+                Assert.Equal(sameInstance, EqualityComparer<ITypeShape>.Default.Equals(left, right));
+            }
+        }
+
+        Assert.Equal(shapes.Length, new HashSet<ITypeShape>(shapes).Count);
+        var dictionary = new Dictionary<ITypeShape, int>();
+        for (int i = 0; i < shapes.Length; i++)
+        {
+            dictionary.Add(shapes[i], i);
+        }
+
+        for (int i = 0; i < shapes.Length; i++)
+        {
+            Assert.Equal(i, dictionary[shapes[i]]);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetUnionCases))]
+    public void ContextualUnionShapesCompareByIdentity(ITestCase testCase)
+    {
+        ITypeShape[] canonicalShapes = GetShapes(testCase);
+        ITypeShape[] bodies = canonicalShapes.Cast<IUnionTypeShape>()
+            .SelectMany(union => union.UnionCases.Select(c => c.UnionCaseType).Append(union.BaseType))
+            .Where(shape => shape.IsContextual)
+            .ToArray();
+
+        Assert.NotEmpty(bodies);
+        foreach (ITypeShape body in bodies)
+        {
+            Assert.True(body.Equals(body));
+            Assert.False(body.Equals(null));
+            Assert.Equal(RuntimeHelpers.GetHashCode(body), body.GetHashCode());
+            foreach (ITypeShape other in bodies)
+            {
+                Assert.Equal(ReferenceEquals(body, other), body.Equals(other));
+                Assert.Equal(ReferenceEquals(body, other), EqualityComparer<ITypeShape>.Default.Equals(body, other));
+            }
+
+            foreach (ITypeShape canonical in canonicalShapes)
+            {
+                Assert.False(body.Equals(canonical));
+                Assert.False(canonical.Equals(body));
+            }
+        }
+
+        int distinctInstances = bodies
+            .Where((body, index) => !bodies.Take(index).Any(previous => ReferenceEquals(body, previous)))
+            .Count();
+        Assert.Equal(distinctInstances, new HashSet<ITypeShape>(bodies).Count);
+    }
+
+    public static IEnumerable<object[]> GetUnionCases() =>
+        TestTypes.GetTestCases().Where(row => ((ITestCase)row[0]).IsUnion);
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DebuggerViewsFollowShapeEquality(bool isContextual)
+    {
+        ITypeShape shape = new SourceGenObjectTypeShape<int> { Provider = Provider, IsContextual = isContextual };
+        var attribute = shape.GetType().GetCustomAttribute<DebuggerTypeProxyAttribute>()!;
+        Type proxyType = Type.GetType(attribute.ProxyTypeName)!;
+        var first = Assert.IsAssignableFrom<ITypeShape>(Activator.CreateInstance(proxyType, shape));
+        var second = Assert.IsAssignableFrom<ITypeShape>(Activator.CreateInstance(proxyType, shape));
+
+        Assert.Equal(isContextual, first.IsContextual);
+        Assert.Equal(isContextual, second.IsContextual);
+        Assert.False(shape.Equals(first));
+        Assert.False(first.Equals(shape));
+        Assert.False(first.Equals(second));
+        Assert.True(first.Equals(first));
+        Assert.Equal(RuntimeHelpers.GetHashCode(first), first.GetHashCode());
+        Assert.Equal(3, new HashSet<ITypeShape> { shape, first, second }.Count);
+    }
+
+    private static ITypeShape[] GetShapes(ITestCase testCase) =>
+    [
+        testCase.DefaultShape,
+        ReflectionProviderUnderTest.Emit.ResolveShape(testCase),
+        ReflectionProviderUnderTest.NoEmit.ResolveShape(testCase),
+    ];
+
     [Fact]
     public void WitnessType_ShapeProvider_IsSingleton()
     {

@@ -60,6 +60,10 @@ public sealed class MultiProviderTypeCache
     /// </summary>
     /// <param name="typeShape">The type shape representing the key type.</param>
     /// <returns>The final computed value.</returns>
+    /// <remarks>
+    /// Contextual shapes are evaluated without reading or storing their type's ordinary result.
+    /// Non-contextual children can still be cached in the provider-scoped <see cref="TypeCache"/>.
+    /// </remarks>
     public object? GetOrAdd(ITypeShape typeShape)
     {
         Throw.IfNull(typeShape);

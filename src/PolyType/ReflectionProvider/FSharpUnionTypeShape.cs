@@ -13,6 +13,7 @@ internal sealed class FSharpUnionTypeShape<TUnion>(FSharpUnionInfo unionInfo, Re
     : ReflectionTypeShape<TUnion>(provider, options), IUnionTypeShape<TUnion>
 {
     public override TypeShapeKind Kind => TypeShapeKind.Union;
+    public UnionTypeShapeKind UnionKind => UnionTypeShapeKind.FSharpUnion;
     public override object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnion(this, state);
     public ITypeShape<TUnion> BaseType { get; } = new FSharpUnionCaseTypeShape<TUnion>(null, provider, options);
 
@@ -61,6 +62,7 @@ internal sealed class FSharpUnionCaseShape<TUnionCase, TUnion>(FSharpUnionCaseIn
     public string Name => unionCaseInfo.Name;
     public int Tag => unionCaseInfo.Tag;
     public bool IsTagSpecified => false; // F# tags are inferred from the union case ordering
+    public bool IsNullable => false;
     public int Index => unionCaseInfo.Tag;
     ITypeShape IUnionCaseShape.UnionCaseType => UnionCaseType;
     public object? Accept(TypeShapeVisitor visitor, object? state = null) => visitor.VisitUnionCase(this, state);
@@ -71,6 +73,8 @@ internal sealed class FSharpUnionCaseShape<TUnionCase, TUnion>(FSharpUnionCaseIn
 internal sealed class FSharpUnionCaseTypeShape<TUnionCase>(FSharpUnionCaseInfo? unionCaseInfo, ReflectionTypeShapeProvider provider, ReflectionTypeShapeOptions options)
     : ReflectionObjectTypeShape<TUnionCase>(provider, options)
 {
+    public override bool IsContextual => true;
+
     protected override IConstructorShape? GetConstructor()
     {
         if (unionCaseInfo is null)

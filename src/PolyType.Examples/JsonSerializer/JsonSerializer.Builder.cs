@@ -12,6 +12,8 @@ namespace PolyType.Examples.JsonSerializer;
 
 public static partial class JsonSerializerTS
 {
+    internal static JsonValueType GetJsonValueType(JsonConverter converter) => Builder.GetJsonValueType(converter);
+
     private sealed class Builder(TypeGenerationContext generationContext) : TypeShapeVisitor, ITypeShapeFunc
     {
         public JsonConverter<T> GetOrAddConverter<T>(ITypeShape<T> shape) =>
@@ -20,9 +22,9 @@ public static partial class JsonSerializerTS
         object? ITypeShapeFunc.Invoke<T>(ITypeShape<T> typeShape, object? state)
         {
             // Check if the type has a built-in converter.
-            if (s_defaultConverters.TryGetValue(typeShape.Type, out JsonConverter? defaultConverter))
+            if (s_defaultConverters.TryGetValue(typeShape.Type, out var builtIn))
             {
-                return defaultConverter;
+                return builtIn.Converter;
             }
 
             // Otherwise, build a converter using the visitor.
@@ -219,6 +221,17 @@ public static partial class JsonSerializerTS
         public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state)
         {
             var getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
+            if (unionShape.UnionKind is UnionTypeShapeKind.CSharpUnion)
+            {
+                // C# unions use System.Text.Json-style untagged payloads rather than
+                // the tagged schema used for type hierarchies and F# unions below.
+                var cases = unionShape.UnionCases
+                    .Select(unionCase => (JsonCSharpUnionCaseConverter<TUnion>)unionCase.Accept(this, unionShape)!)
+                    .ToArray();
+
+                return new JsonCSharpUnionConverter<TUnion>(getUnionCaseIndex, cases);
+            }
+
             var baseTypeConverter = (JsonConverter<TUnion>)unionShape.BaseType.Invoke(this)!;
             var unionCases = unionShape.UnionCases
                 .Select(unionCase => (JsonUnionCaseConverter<TUnion>)unionCase.Accept(this, null)!)
@@ -229,6 +242,13 @@ public static partial class JsonSerializerTS
 
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state)
         {
+            if (state is IUnionTypeShape { UnionKind: UnionTypeShapeKind.CSharpUnion })
+            {
+                JsonConverter<TUnionCase> csharpCaseConverter = GetOrAddConverter(unionCaseShape.UnionCaseType);
+                return new JsonCSharpUnionCaseConverter<TUnionCase, TUnion>(
+                    csharpCaseConverter, unionCaseShape.Marshaler, unionCaseShape.IsNullable);
+            }
+
             var caseConverter = (JsonConverter<TUnionCase>)unionCaseShape.UnionCaseType.Accept(this)!;
             return new JsonUnionCaseConverter<TUnionCase, TUnion>(unionCaseShape.Name, unionCaseShape.Marshaler, caseConverter);
         }
@@ -384,38 +404,57 @@ public static partial class JsonSerializerTS
             ref object? sender,
             ref CancellationToken cancellationToken);
 
-        private static readonly Dictionary<Type, JsonConverter> s_defaultConverters = new JsonConverter[]
+        internal static JsonValueType GetBuiltInValueTypes(Type type) =>
+            type.IsEnum ? JsonValueType.String | JsonValueType.Number :
+            s_defaultConverters.TryGetValue(type, out var builtIn) ? builtIn.ValueType : JsonValueType.None;
+
+        internal static JsonValueType GetJsonValueType(JsonConverter converter)
         {
-            JsonMetadataServices.BooleanConverter,
-            JsonMetadataServices.SByteConverter,
-            JsonMetadataServices.Int16Converter,
-            JsonMetadataServices.Int32Converter,
-            JsonMetadataServices.Int64Converter,
-            JsonMetadataServices.ByteConverter,
-            JsonMetadataServices.ByteArrayConverter,
-            JsonMetadataServices.UInt16Converter,
-            JsonMetadataServices.UInt32Converter,
-            JsonMetadataServices.UInt64Converter,
-            JsonMetadataServices.CharConverter,
-            JsonMetadataServices.StringConverter,
-            JsonMetadataServices.SingleConverter,
-            JsonMetadataServices.DoubleConverter,
-            JsonMetadataServices.DecimalConverter,
-            JsonMetadataServices.DateTimeConverter,
-            JsonMetadataServices.DateTimeOffsetConverter,
-            JsonMetadataServices.TimeSpanConverter,
+            if (converter is ISchematizedJsonConverter schematized)
+            {
+                return schematized.ValueType;
+            }
+
+            if (converter.Type is Type type && GetBuiltInValueTypes(type) is not JsonValueType.None and var valueType)
+            {
+                return valueType;
+            }
+
+            throw new NotSupportedException($"Converter '{converter.GetType()}' does not describe its JSON value type.");
+        }
+
+        private static readonly Dictionary<Type, (JsonConverter Converter, JsonValueType ValueType)> s_defaultConverters = new (JsonConverter Converter, JsonValueType ValueType)[]
+        {
+            (JsonMetadataServices.BooleanConverter, JsonValueType.Boolean),
+            (JsonMetadataServices.SByteConverter, JsonValueType.Number),
+            (JsonMetadataServices.Int16Converter, JsonValueType.Number),
+            (JsonMetadataServices.Int32Converter, JsonValueType.Number),
+            (JsonMetadataServices.Int64Converter, JsonValueType.Number),
+            (JsonMetadataServices.ByteConverter, JsonValueType.Number),
+            (JsonMetadataServices.ByteArrayConverter, JsonValueType.String),
+            (JsonMetadataServices.UInt16Converter, JsonValueType.Number),
+            (JsonMetadataServices.UInt32Converter, JsonValueType.Number),
+            (JsonMetadataServices.UInt64Converter, JsonValueType.Number),
+            (JsonMetadataServices.CharConverter, JsonValueType.String),
+            (JsonMetadataServices.StringConverter, JsonValueType.String),
+            (JsonMetadataServices.SingleConverter, JsonValueType.Number),
+            (JsonMetadataServices.DoubleConverter, JsonValueType.Number),
+            (JsonMetadataServices.DecimalConverter, JsonValueType.Number),
+            (JsonMetadataServices.DateTimeConverter, JsonValueType.String),
+            (JsonMetadataServices.DateTimeOffsetConverter, JsonValueType.String),
+            (JsonMetadataServices.TimeSpanConverter, JsonValueType.String),
 #if NET
-            JsonMetadataServices.Int128Converter,
-            JsonMetadataServices.UInt128Converter,
-            JsonMetadataServices.HalfConverter,
-            JsonMetadataServices.DateOnlyConverter,
-            JsonMetadataServices.TimeOnlyConverter,
-            new RuneConverter(),
+            (JsonMetadataServices.Int128Converter, JsonValueType.Number),
+            (JsonMetadataServices.UInt128Converter, JsonValueType.Number),
+            (JsonMetadataServices.HalfConverter, JsonValueType.Number),
+            (JsonMetadataServices.DateOnlyConverter, JsonValueType.String),
+            (JsonMetadataServices.TimeOnlyConverter, JsonValueType.String),
+            (new RuneConverter(), JsonValueType.String),
 #endif
-            JsonMetadataServices.GuidConverter,
-            JsonMetadataServices.UriConverter,
-            JsonMetadataServices.VersionConverter,
-            new BigIntegerConverter(),
-        }.ToDictionary(conv => conv.Type!);
+            (JsonMetadataServices.GuidConverter, JsonValueType.String),
+            (JsonMetadataServices.UriConverter, JsonValueType.String),
+            (JsonMetadataServices.VersionConverter, JsonValueType.String),
+            (new BigIntegerConverter(), JsonValueType.Number),
+        }.ToDictionary(entry => entry.Converter.Type!);
     }
 }

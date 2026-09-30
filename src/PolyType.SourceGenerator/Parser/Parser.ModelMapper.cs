@@ -25,6 +25,8 @@ public sealed partial class Parser
 
         return model switch
         {
+            CSharpUnionDataModel unionModel => MapCSharpUnionModel(unionModel, typeId, sourceIdentifier),
+
             EnumDataModel enumModel => new EnumShapeModel
             {
                 Type = typeId,
@@ -153,6 +155,7 @@ public sealed partial class Parser
             {
                 Requirements = objectModel.Requirements,
                 Type = typeId,
+                IsContextual = isFSharpUnionCase,
                 ReflectionName = model.Type.GetReflectionToStringName(),
                 SourceIdentifier = sourceIdentifier,
                 Constructor = objectModel.Constructors
@@ -212,6 +215,7 @@ public sealed partial class Parser
                     Requirements = TypeShapeRequirements.Full,
                     ReflectionName = model.Type.GetReflectionToStringName(),
                     Type = typeId,
+                    IsContextual = true,
                     Constructor = null,
                     Methods = MapMethods(model, typeId),
                     Events = MapEvents(model, typeId),
@@ -381,6 +385,122 @@ public sealed partial class Parser
         return associatedTypesBuilder.Keys.ToImmutableEquatableSet();
     }
 
+    private CSharpUnionShapeModel MapCSharpUnionModel(CSharpUnionDataModel model, TypeId typeId, string sourceIdentifier)
+    {
+        var cases = new List<CSharpUnionCaseShapeModel>(model.UnionCases.Length);
+        var patternTypes = new List<ITypeSymbol>(model.UnionCases.Length);
+        int nullableCaseIndex = -1;
+        foreach (UnionCaseDataModel unionCase in model.UnionCases)
+        {
+            IMethodSymbol creator = unionCase.CreationMember;
+            ITypeSymbol caseType = NormalizeType(unionCase.Type);
+            ITypeSymbol patternType = caseType is INamedTypeSymbol
+            {
+                OriginalDefinition.SpecialType: SpecialType.System_Nullable_T,
+                TypeArguments: [ITypeSymbol underlyingType],
+            } ? underlyingType : caseType;
+
+            int index = cases.Count;
+            if (nullableCaseIndex < 0 && unionCase.IsNullable)
+            {
+                nullableCaseIndex = index;
+            }
+
+            cases.Add(new CSharpUnionCaseShapeModel
+            {
+                Type = CreateTypeId(caseType),
+                PatternType = CreateTypeId(patternType),
+                Name = caseType.GetDerivedTypeShapeName(),
+                Index = index,
+                IsNullable = unionCase.IsNullable,
+                RequiresInArgument = creator.Parameters[0].RefKind is RefKind.In,
+                CreatorKind = creator.MethodKind is MethodKind.Constructor ? UnionCaseCreatorKind.Constructor
+                    : creator.IsAbstract || creator.IsVirtual ? UnionCaseCreatorKind.ConstrainedFactory
+                    : UnionCaseCreatorKind.StaticFactory,
+                FactoryDeclaringType = creator.MethodKind is MethodKind.Constructor ? null : CreateTypeId(creator.ContainingType),
+            });
+
+            patternTypes.Add(patternType);
+        }
+
+        // Nullable<T> and T have distinct metadata, but the same non-null boxed representation.
+        // Select T for that representation when both are declared.
+        HashSet<TypeId> declaredTypes = new(cases.Select(unionCase => unionCase.Type));
+        List<int> candidates = [];
+        for (int i = 0; i < cases.Count; i++)
+        {
+            if (cases[i].Type == cases[i].PatternType ||
+                !declaredTypes.Contains(cases[i].PatternType))
+            {
+                candidates.Add(i);
+            }
+        }
+
+        int[] dispatchOrder = CommonHelpers.TraverseGraphWithTopologicalSort(-1, GetSubtypes)
+            .Where(index => index >= 0)
+            .Reverse()
+            .ToArray();
+
+        // A typed property pattern is only needed to reach an explicit or hidden Value getter.
+        TypeId? valuePatternType = model.UnionMemberProvider is not null ? CreateTypeId(model.ValueProperty.ContainingType) : null;
+        for (INamedTypeSymbol? current = model.Type as INamedTypeSymbol;
+             current is not null && !SymbolEqualityComparer.Default.Equals(current, model.ValueProperty.ContainingType);
+             current = current.BaseType)
+        {
+            if (current.GetMembers("Value").Length > 0)
+            {
+                valuePatternType = CreateTypeId(model.ValueProperty.ContainingType);
+                break;
+            }
+        }
+
+        ImmutableEquatableSet<AssociatedTypeId> associatedTypes = CollectAssociatedTypes(model);
+        return new CSharpUnionShapeModel
+        {
+            Type = typeId,
+            ReflectionName = model.Type.GetReflectionToStringName(),
+            SourceIdentifier = sourceIdentifier,
+            UnionCases = cases.ToImmutableEquatableArray(),
+            CaseDispatchOrder = dispatchOrder.ToImmutableEquatableArray(),
+            NullableCaseIndex = nullableCaseIndex,
+            ValuePatternType = valuePatternType,
+            UnderlyingModel = new ObjectShapeModel
+            {
+                Type = typeId,
+                IsContextual = true,
+                ReflectionName = model.Type.GetReflectionToStringName(),
+                SourceIdentifier = sourceIdentifier + "__Underlying",
+                Requirements = TypeShapeRequirements.Full,
+                Constructor = null,
+                Properties = [],
+                Methods = MapMethods(model, typeId),
+                Events = MapEvents(model, typeId),
+                AssociatedTypes = associatedTypes,
+                Attributes = [],
+                IsValueTupleType = false,
+                IsTupleType = false,
+                IsRecordType = false,
+            },
+            Methods = MapMethods(model, typeId),
+            Events = MapEvents(model, typeId),
+            AssociatedTypes = associatedTypes,
+            Attributes = CollectAttributes(model.Type),
+        };
+
+        IReadOnlyCollection<int> GetSubtypes(int index) => index < 0
+            ? candidates
+            : candidates.Where(other => other != index && IsMoreSpecific(patternTypes[other], patternTypes[index])).ToArray();
+
+        bool IsMoreSpecific(ITypeSymbol derived, ITypeSymbol baseType)
+        {
+            // Only reference/boxing conversions impose an order; numeric and union conversions do not.
+            Conversion conversion = _knownSymbols.Compilation.ClassifyConversion(derived, baseType);
+            Conversion reverse = _knownSymbols.Compilation.ClassifyConversion(baseType, derived);
+            return conversion.IsImplicit && (conversion.IsReference || conversion.IsBoxing) &&
+                !(reverse.IsImplicit && (reverse.IsIdentity || reverse.IsReference || reverse.IsBoxing));
+        }
+    }
+
     private UnionShapeModel MapUnionModel(TypeDataModel model, TypeShapeModel underlyingIncrementalModel)
     {
         Debug.Assert(model.DerivedTypes.Length > 0);
@@ -393,9 +513,11 @@ public sealed partial class Parser
             UnderlyingModel = underlyingIncrementalModel with
             {
                 SourceIdentifier = underlyingIncrementalModel.SourceIdentifier + "__Underlying",
+                IsContextual = true,
             },
 
             Attributes = CollectAttributes(model.Type),
+            UseObjectForDispatch = model.Type.IsCSharpUnion(CancellationToken),
             Methods = MapMethods(model, underlyingIncrementalModel.Type),
             Events = MapEvents(model, underlyingIncrementalModel.Type),
             UnionCases = model.DerivedTypes

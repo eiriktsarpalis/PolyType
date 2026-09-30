@@ -177,6 +177,7 @@ public static class ObsoletePropertyTests
         var expectedBaseType = new SourceGenObjectTypeShape<object>
         {
             Provider = mockProvider,
+            IsContextual = true,
         };
 
         // Act - Use the obsolete property directly
@@ -184,6 +185,7 @@ public static class ObsoletePropertyTests
         var unionShape = new SourceGenUnionTypeShape<object>
         {
             Provider = mockProvider,
+            UnionKind = UnionTypeShapeKind.TypeHierarchy,
             BaseTypeFactory = () => throw new InvalidOperationException("BaseTypeFactory should not be called"),
             BaseType = expectedBaseType,
             UnionCasesFactory = () => [],

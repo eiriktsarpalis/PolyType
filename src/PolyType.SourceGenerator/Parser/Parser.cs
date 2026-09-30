@@ -1233,7 +1233,27 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
 
         requestedKind = MapTypeShapeKindToDataKind(attrDeclaredKind);
-        TypeDataModelGenerationStatus status = base.MapType(type, requestedKind, methodBindingFlags, associatedTypes, ref ctx, requirements, out model);
+        TypeDataKind? effectiveKind = requestedKind;
+        bool inferCSharpUnion = requestedKind is null && type.IsCSharpUnion(CancellationToken);
+        if (inferCSharpUnion &&
+            (type.HasAttribute(_knownSymbols.DerivedTypeShapeAttribute) || type.HasAttribute(_knownSymbols.KnownTypeAttribute)))
+        {
+            // Explicit hierarchy configuration describes the wrapper, not its union payload.
+            effectiveKind = GetCSharpUnionHierarchyKind(type);
+            inferCSharpUnion = false;
+        }
+
+        TypeDataModelGenerationStatus status = base.MapType(type, effectiveKind, methodBindingFlags, associatedTypes, ref ctx, requirements, out model);
+
+        if (inferCSharpUnion && model is null)
+        {
+            ReportDiagnostic(InvalidCSharpUnion, type.Locations.FirstOrDefault(), type.ToDisplayString());
+        }
+        else if (model is CSharpUnionDataModel union && !ValidateCSharpUnionModel(union))
+        {
+            model = null;
+            status = TypeDataModelGenerationStatus.UnsupportedType;
+        }
 
         if (requestedKind is not null && model is { Kind: TypeDataKind actualKind } && requestedKind != actualKind)
         {
@@ -1241,6 +1261,54 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
 
         return status;
+    }
+
+    private bool ValidateCSharpUnionModel(CSharpUnionDataModel union)
+    {
+        HashSet<ITypeSymbol> caseTypes = new(SymbolEqualityComparer.Default);
+        HashSet<string> names = new(StringComparer.Ordinal);
+        bool isValid = true;
+        foreach (UnionCaseDataModel unionCase in union.UnionCases)
+        {
+            ITypeSymbol caseType = NormalizeType(unionCase.Type);
+            if (!caseTypes.Add(caseType))
+            {
+                ReportDiagnostic(
+                    CSharpUnionDuplicateMetadata, unionCase.CreationMember.Locations.FirstOrDefault(),
+                    union.Type.ToDisplayString(), "type", unionCase.Type.ToDisplayString());
+                isValid = false;
+            }
+
+            string name = caseType.GetDerivedTypeShapeName();
+            if (!names.Add(name))
+            {
+                ReportDiagnostic(
+                    CSharpUnionDuplicateMetadata, unionCase.CreationMember.Locations.FirstOrDefault(),
+                    union.Type.ToDisplayString(), "name", name);
+                isValid = false;
+            }
+        }
+
+        return isValid;
+    }
+
+    private TypeDataKind GetCSharpUnionHierarchyKind(ITypeSymbol type)
+    {
+        if (type.GetCompatibleGenericBaseType(_knownSymbols.IReadOnlyDictionaryOfTKeyTValue) is not null ||
+            type.GetCompatibleGenericBaseType(_knownSymbols.IDictionaryOfTKeyTValue) is not null ||
+            _knownSymbols.IDictionary.IsAssignableFrom(type))
+        {
+            return TypeDataKind.Dictionary;
+        }
+
+        if (type.GetCompatibleGenericBaseType(_knownSymbols.IAsyncEnumerableOfT) is not null ||
+            _knownSymbols.IEnumerable.IsAssignableFrom(type) ||
+            type.HasAttribute(_knownSymbols.Compilation.GetTypeByMetadataName("System.Runtime.CompilerServices.InlineArrayAttribute")))
+        {
+            return TypeDataKind.Enumerable;
+        }
+
+        return TypeDataKind.Object;
     }
 
     private TypeDataModelGenerationStatus MapSurrogateType(ITypeSymbol type, ITypeSymbol? marshaler, ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements requirements, BindingFlags? methodFlags, out TypeDataModel? model)

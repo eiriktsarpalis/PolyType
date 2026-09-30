@@ -7,6 +7,11 @@ public abstract record TypeShapeModel
     public required TypeId Type { get; init; }
 
     /// <summary>
+    /// Whether the model describes a contextual view rather than the ordinary representation of its type.
+    /// </summary>
+    public bool IsContextual { get; init; }
+
+    /// <summary>
     /// A unique identifier deriving from the type name that can be used as a valid member identifier.
     /// </summary>
     public required string SourceIdentifier { get; init; }

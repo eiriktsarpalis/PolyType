@@ -53,14 +53,14 @@ public static partial class Counter
 
         public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
         {
-            var elementTypeCounter = (Func<TElement, long>)optionalShape.ElementType.Accept(this)!;
+            var elementTypeCounter = GetOrAddCounter(optionalShape.ElementType);
             var deconstructor = optionalShape.GetDeconstructor();
             return new Func<TOptional, long>(t => deconstructor(t, out TElement? value) ? elementTypeCounter(value) : 0);
         }
 
         public override object? VisitSurrogate<T, TSurrogate>(ISurrogateTypeShape<T, TSurrogate> surrogateShape, object? state = null)
         {
-            var surrogateCounter = (Func<TSurrogate?, long>)surrogateShape.SurrogateType.Accept(this)!;
+            var surrogateCounter = GetOrAddCounter(surrogateShape.SurrogateType);
             var marshaler = surrogateShape.Marshaler;
             return new Func<T?, long>(t => surrogateCounter(marshaler.Marshal(t)));
         }
@@ -112,7 +112,7 @@ public static partial class Counter
         public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
         {
             var getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
-            var baseCaseCounter = (Func<TUnion, long>)unionShape.BaseType.Accept(this)!;
+            Func<TUnion, long> baseCaseCounter = GetOrAddCounter(unionShape.BaseType);
             var unionCaseCounters = unionShape.UnionCases
                 .Select(unionCase => (Func<TUnion, long>)unionCase.Accept(this)!)
                 .ToArray();
@@ -132,7 +132,7 @@ public static partial class Counter
 
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCase, object? state = null)
         {
-            var underlyingCounter = (Func<TUnionCase, long>)unionCase.UnionCaseType.Accept(this)!;
+            var underlyingCounter = GetOrAddCounter(unionCase.UnionCaseType);
             var marshaler = unionCase.Marshaler;
             return new Func<TUnion, long>(union => underlyingCounter(marshaler.Unmarshal(union)!));
         }

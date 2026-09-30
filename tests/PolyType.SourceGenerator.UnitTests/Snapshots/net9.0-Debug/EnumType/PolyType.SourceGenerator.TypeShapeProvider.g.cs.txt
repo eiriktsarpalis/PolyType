@@ -23,7 +23,10 @@ namespace PolyType.SourceGenerator
         public static TypeShapeProvider_TestAssembly Default { get; } = new();
         
         /// <summary>Initializes a new instance of the <see cref="TypeShapeProvider_TestAssembly"/> class.</summary>
-        private TypeShapeProvider_TestAssembly() { }
+        private TypeShapeProvider_TestAssembly()
+        {
+            SourceGeneratorVersion = "0.0.0.0";
+        }
         
         /// <summary>Initializes the field ensuring the same instance is always returned.</summary>
         private T __Init_Singleton<T>(ref T? field, T value) where T : class =>

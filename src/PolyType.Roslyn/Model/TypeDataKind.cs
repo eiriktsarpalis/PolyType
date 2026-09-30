@@ -44,4 +44,9 @@ public enum TypeDataKind
     /// Type is a <see cref="DelegateDataModel"/>.
     /// </summary>
     Delegate,
+
+    /// <summary>
+    /// Type is a <see cref="CSharpUnionDataModel"/> following the C# union member pattern.
+    /// </summary>
+    CSharpUnion,
 }

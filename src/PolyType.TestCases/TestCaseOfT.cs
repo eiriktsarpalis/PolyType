@@ -150,7 +150,9 @@ public record TestCase<T> : ITestCase
     {
         yield return this with { AdditionalValues = [] };
 
-        if (default(T) is null && Value is not null)
+        if (default(T) is null && Value is not null &&
+            (DefaultShape is not IUnionTypeShape { UnionKind: UnionTypeShapeKind.CSharpUnion } unionShape ||
+             unionShape.UnionCases.Any(c => c.IsNullable)))
         {
             yield return this with { Value = default, AdditionalValues = [] };
         }

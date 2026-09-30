@@ -169,6 +169,8 @@ public class AggregatingTypeShapeProviderTests
     {
         public Type Type => throw new NotImplementedException();
 
+        public bool IsContextual => throw new NotImplementedException();
+
         public TypeShapeKind Kind => throw new NotImplementedException();
 
         public ITypeShapeProvider Provider => throw new NotImplementedException();

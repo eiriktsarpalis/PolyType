@@ -71,6 +71,8 @@ public static class MyRandomGenerator
 }
 ```
 
+The runtime recovers omitted `IsContextual` metadata from older generated providers without requiring those assemblies to be rebuilt. Omitted `UnionKind` values default to `UnionTypeShapeKind.Unknown`. See [contextual representations](specification.md#contextual-representations).
+
 ## Reflection Provider
 
 PolyType includes a reflection-based provider that resolves shape metadata at run time:
@@ -100,6 +102,25 @@ By default, the reflection provider uses dynamic methods (Reflection.Emit) to sp
 ```csharp
 ITypeShapeProvider provider = new ReflectionTypeShapeProvider(useReflectionEmit: false);
 ```
+
+## C# union types
+
+Both providers follow the C# compiler's rules for identifying [union types](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/union).
+
+```csharp
+[GenerateShape]
+public partial union Response(string?, ApiError);
+
+public record ApiError(int Code, string Message);
+```
+
+The generated shape has `UnionKind = UnionTypeShapeKind.CSharpUnion`, with separate string and `ApiError` case shapes.
+
+C# union shapes work on all supported target frameworks when the type is compiled with a union-capable compiler and the necessary runtime contracts are available.
+
+Explicit type-shape kind/surrogate overrides retain their precedence. If a marked class also registers derived wrapper types using `DerivedTypeShapeAttribute` or `KnownTypeAttribute`, that explicit hierarchy configuration takes precedence over automatic C# union inference.
+
+See the [union mapping specification](specification.md#union-types) for case metadata and validation rules.
 
 ## Shape attributes
 
