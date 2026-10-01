@@ -157,6 +157,8 @@ internal sealed partial class SourceFormatter
             }
             """);
         writer.WriteLine();
+        // TODO: Emit this rejection only for non-exhaustive case marshalers once
+        // https://github.com/dotnet/roslyn/issues/85868 is fixed.
         writer.WriteLine("""
             __ThrowInvalidUnionCase(nameof(value));
             return default;
