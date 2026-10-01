@@ -705,6 +705,41 @@ public static class DiagnosticTests
         Assert.Equal((3, 33), diagnostic.Location.GetEndPosition());
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public static void MethodBasedKnownType_ErrorDiagnostic(bool useDataContract, bool useNameof)
+    {
+        string attribute = useNameof ? "KnownType(nameof(GetKnownTypes))" : "KnownType(\"GetKnownTypes\")";
+        Compilation compilation = CompilationHelpers.CreateCompilation($$"""
+            using System;
+            using System.Collections.Generic;
+            using System.Runtime.Serialization;
+            using PolyType;
+
+            [GenerateShape]
+            {{(useDataContract ? "[DataContract]" : "")}}
+            [{{attribute}}]
+            public partial class Animal
+            {
+                private static IEnumerable<Type> GetKnownTypes() => new[] { typeof(Dog) };
+            }
+
+            public class Dog : Animal { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+        Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("PT0027", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("'Animal'", diagnostic.GetMessage());
+        Assert.Contains("Method-based KnownTypeAttribute", diagnostic.GetMessage());
+        Assert.Equal(attribute, diagnostic.Location.SourceTree!.GetText(TestContext.Current.CancellationToken).ToString(diagnostic.Location.SourceSpan));
+    }
+
     [Fact]
     public static void PolymorphicClassWithConflictingDerivedTypes_ErrorDiagnostic()
     {
@@ -821,6 +856,30 @@ public static class DiagnosticTests
 
     public static IEnumerable<object[]> GetUnsuppressibleDerivedTypeDiagnosticCases()
     {
+        yield return
+        [
+            """
+            using System;
+            using System.Collections.Generic;
+            using System.Runtime.Serialization;
+            using PolyType;
+
+            #pragma warning disable PT0027
+            [KnownType(nameof(GetKnownTypes))]
+            class Animal
+            {
+                private static IEnumerable<Type> GetKnownTypes() => new[] { typeof(Dog) };
+            }
+            #pragma warning restore PT0027
+
+            class Dog : Animal { }
+
+            [GenerateShapeFor(typeof(Animal))]
+            partial class Witness { }
+            """,
+            "PT0027",
+        ];
+
         yield return
         [
             """

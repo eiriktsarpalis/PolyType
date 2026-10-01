@@ -651,6 +651,11 @@ public static class TestTypes
                 new PolymorphicClass.DerivedEnumerable { 42 },
                 new PolymorphicClass.DerivedDictionary { ["key"] = 42 }],
             isUnion: true);
+        yield return TestCase.Create<PolymorphicClassWithUnregisteredDescendant>(
+            new PolymorphicClassWithUnregisteredDescendant.Derived { Id = 1, Name = "derived" },
+            additionalValues: [
+                new PolymorphicClassWithUnregisteredDescendant.Leaf { Id = 2, Name = "leaf" }],
+            isUnion: true);
         yield return TestCase.Create<IPolymorphicInterface>(
             new IPolymorphicInterface.Derived { X = 1 },
             additionalValues: [
@@ -2761,6 +2766,20 @@ public partial record PolymorphicClass(int Int)
     }
 }
 
+
+[GenerateShape]
+[DerivedTypeShape(typeof(Derived))]
+public abstract partial class PolymorphicClassWithUnregisteredDescendant
+{
+    public int Id { get; set; }
+
+    public class Derived : PolymorphicClassWithUnregisteredDescendant
+    {
+        public string? Name { get; set; }
+    }
+
+    public class Leaf : Derived;
+}
 
 [GenerateShape]
 [DerivedTypeShape(typeof(IDerived1), Name = "derived1")]

@@ -871,6 +871,11 @@ public sealed partial class Parser : TypeDataModelGenerator
             {
                 if (attribute.ConstructorArguments is not [{ Value: ITypeSymbol dt }])
                 {
+                    if (attribute.ConstructorArguments is [{ Type.SpecialType: SpecialType.System_String }])
+                    {
+                        ReportDiagnostic(MethodBasedKnownTypesNotSupported, attribute.GetLocation(), type.ToDisplayString());
+                    }
+
                     continue;
                 }
 

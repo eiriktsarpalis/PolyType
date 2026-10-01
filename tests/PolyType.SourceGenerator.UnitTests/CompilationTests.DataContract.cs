@@ -124,6 +124,39 @@ public static partial class CompilationTests
         Assert.Empty(result.Diagnostics);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void MethodBasedKnownType_WithDerivedTypeShape_NoErrors(bool knownTypeFirst)
+    {
+        string[] attributes = ["[KnownType(nameof(GetKnownTypes))]", "[DerivedTypeShape(typeof(Dog))]"];
+        if (!knownTypeFirst)
+        {
+            Array.Reverse(attributes);
+        }
+
+        Compilation compilation = CompilationHelpers.CreateCompilation($$"""
+            using System;
+            using System.Collections.Generic;
+            using System.Runtime.Serialization;
+            using PolyType;
+
+            [GenerateShape]
+            {{string.Join("\n", attributes)}}
+            public partial class Animal
+            {
+                private static IEnumerable<Type> GetKnownTypes() => throw new InvalidOperationException();
+            }
+
+            public class Dog : Animal { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+        var union = Assert.IsType<Model.UnionShapeModel>(result.AllGeneratedTypes.Single(type => type.Type.FullyQualifiedName == "global::Animal"));
+        Assert.Equal("global::Dog", Assert.Single(union.UnionCases).Type.FullyQualifiedName);
+    }
+
     [Fact]
     public static void DataContract_Enum_WithEnumMember_NoErrors()
     {
