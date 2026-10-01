@@ -12,11 +12,6 @@ namespace PolyType.Abstractions;
 /// <remarks>Exceptions thrown by user-defined provider constructors are propagated without wrapping.</remarks>
 public static class TypeShapeResolver
 {
-    // C.f. https://github.com/dotnet/runtime/issues/119440#issuecomment-3269894751
-    private const string ResolveDynamicMessage =
-        "Dynamic resolution of IShapeable<T> interface may require dynamic code generation in .NET 8 Native AOT. " +
-        "It is recommended to switch to statically resolved IShapeable<T> APIs or upgrade your app to .NET 9 or later.";
-
 #if NET
     /// <summary>
     /// Resolves the <see cref="ITypeShape{T}"/> from the <see cref="IShapeable{T}"/> implementation of the type.
@@ -50,9 +45,6 @@ public static class TypeShapeResolver
     /// interface (which uses static abstract interface methods) is not available.
     /// </para>
     /// </remarks>
-#if NET8_0
-    [RequiresDynamicCode(ResolveDynamicMessage)]
-#endif
     public static ITypeShape<T>? ResolveDynamic<T>() =>
         ResolveDynamicFactoryCache<T, T>.GetFactory()?.Invoke();
 
@@ -73,9 +65,6 @@ public static class TypeShapeResolver
     /// interface (which uses static abstract interface methods) is not available.
     /// </para>
     /// </remarks>
-#if NET8_0
-    [RequiresDynamicCode(ResolveDynamicMessage)]
-#endif
     public static ITypeShape<T>? ResolveDynamic<T, TProvider>() =>
         ResolveDynamicFactoryCache<T, TProvider>.GetFactory()?.Invoke();
 
@@ -96,9 +85,6 @@ public static class TypeShapeResolver
     /// interface (which uses static abstract interface methods) is not available.
     /// </para>
     /// </remarks>
-#if NET8_0
-    [RequiresDynamicCode(ResolveDynamicMessage)]
-#endif
     public static ITypeShape<T> ResolveDynamicOrThrow<T>()
     {
         ITypeShape<T>? result = ResolveDynamicFactoryCache<T, T>.GetFactory()?.Invoke();
@@ -131,9 +117,6 @@ public static class TypeShapeResolver
     /// interface (which uses static abstract interface methods) is not available.
     /// </para>
     /// </remarks>
-#if NET8_0
-    [RequiresDynamicCode(ResolveDynamicMessage)]
-#endif
     public static ITypeShape<T> ResolveDynamicOrThrow<T, TProvider>()
     {
         ITypeShape<T>? result = ResolveDynamicFactoryCache<T, TProvider>.GetFactory()?.Invoke();
@@ -148,9 +131,6 @@ public static class TypeShapeResolver
         return result;
     }
 
-#if NET8_0
-    [RequiresDynamicCode(ResolveDynamicMessage)]
-#endif
     private static class ResolveDynamicFactoryCache<T, TProvider>
     {
         private static Func<ITypeShape<T>?>? s_cachedFactory;

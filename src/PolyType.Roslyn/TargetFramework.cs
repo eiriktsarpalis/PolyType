@@ -11,7 +11,7 @@ public enum TargetFramework
     Legacy = 20,
 
     /// <summary>
-    /// The modern .NET baseline supported by PolyType.
+    /// The .NET 8 capability tier.
     /// </summary>
     Net80 = 80,
 

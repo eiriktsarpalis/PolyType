@@ -52,9 +52,6 @@ public static partial class JsonSerializerTS
     /// <typeparam name="T">The type for which to build the converter.</typeparam>
     /// <returns>An <see cref="JsonConverter{T}"/> instance.</returns>
     /// <exception cref="NotSupportedException">No source generated implementation for <typeparamref name="T"/> was found.</exception>
-#if NET8_0
-    [RequiresDynamicCode("Dynamic resolution of IShapeable<T> interface may require dynamic code generation in .NET 8 Native AOT. It is recommended to switch to statically resolved IShapeable<T> APIs or upgrade your app to .NET 9 or later.")]
-#endif
     public static JsonConverter<T> CreateConverterUsingSourceGen<T>() =>
         CreateConverter(TypeShapeResolver.ResolveDynamicOrThrow<T>());
 

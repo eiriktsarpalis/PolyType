@@ -239,7 +239,7 @@ public static class TestTypes
         yield return TestCase.Create(new MyKeyedCollection<string> { "1", "2", "1", "3" }, p);
         yield return TestCase.Create(new ReadOnlyCollection<int>([1, 2, 1, 3]), p);
         yield return TestCase.Create(new ReadOnlyDictionary<int, int>(new Dictionary<int, int> { [1] = 1, [2] = 2 }), p);
-#if NET9_0_OR_GREATER
+#if NET
         yield return TestCase.Create(new ReadOnlySet<int>(new HashSet<int> { 1, 2, 3 }), isSet: true, provider: p);
 #endif
 
@@ -3787,7 +3787,7 @@ public delegate Task<int> LargeAsyncDelegate(
 [GenerateShapeFor<Collection<int>>]
 [GenerateShapeFor<ReadOnlyCollection<int>>]
 [GenerateShapeFor<ReadOnlyDictionary<int, int>>]
-#if NET9_0_OR_GREATER
+#if NET
 [GenerateShapeFor<ReadOnlySet<int>>]
 #endif
 [GenerateShapeFor<ObservableCollection<int>>]

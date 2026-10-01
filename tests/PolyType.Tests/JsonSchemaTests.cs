@@ -135,7 +135,7 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
     public void SchemaMatchesJsonSerializer<T>(TestCase<T> testCase)
     {
-#if NET8_0_OR_GREATER
+#if NET
         if (typeof(T) == typeof(Int128) || typeof(T) == typeof(UInt128) ||
             typeof(T) == typeof(Int128?) || typeof(T) == typeof(UInt128?))
         {

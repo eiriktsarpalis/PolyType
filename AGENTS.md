@@ -72,7 +72,7 @@ For deeper, scoped detail see the nested files: [`src/PolyType/AGENTS.md`](src/P
 
 ## Things to Avoid / Common Gotchas
 
-- **Multi-targeting** — the core library targets net10.0/net9.0/net8.0/net472/netstandard2.0; watch for API availability differences across TFMs.
+- **Multi-targeting** — the core library targets net10.0/net472/netstandard2.0; watch for API availability differences across TFMs.
 - **Strong naming** — assemblies under `src/` are signed with `OpenKey.snk`; test and build-tooling projects are not.
 - **Versioning** — Nerdbank.GitVersioning (nbgv) manages versions from `version.json`; don't manually edit assembly versions.
 - **Package validation** — runs against the **v1.0.0** baseline, so breaking public API changes will fail the build.

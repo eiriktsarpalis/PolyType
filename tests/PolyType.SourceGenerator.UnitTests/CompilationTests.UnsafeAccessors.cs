@@ -209,7 +209,7 @@ public static partial class CompilationTests
         Assert.All(accessorClasses.GroupBy(declaration => declaration.Identifier.ValueText), group => Assert.Single(group));
         Assert.All(accessorClasses, declaration => Assert.DoesNotContain(declaration.Modifiers, modifier => modifier.IsKind(SyntaxKind.PartialKeyword)));
 
-#if NET9_0_OR_GREATER
+#if NET
         Assert.True(genericType.Constructor!.CanUseUnsafeAccessors);
         GenericTypeModel definition = Assert.IsType<GenericTypeModel>(genericType.Constructor.GenericDeclaringType);
         Assert.Equal(["@class", "TCollection"], definition.TypeParameters);

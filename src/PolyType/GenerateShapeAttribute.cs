@@ -7,7 +7,7 @@ namespace PolyType;
 /// in the <see cref="ITypeShapeProvider"/> that it generates.
 /// </summary>
 /// <remarks>
-/// For projects targeting .NET 8 or later, this additionally augments the type
+/// For projects targeting .NET 10 or later, this additionally augments the type
 /// with an implementation of IShapeable for the type.
 ///
 /// Projects targeting older versions of .NET need to access the generated

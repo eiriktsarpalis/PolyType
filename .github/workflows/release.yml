@@ -18,8 +18,6 @@ jobs:
         global-json-file: global.json
         dotnet-version: |
           10.0.x
-          9.0.x
-          8.0.x
 
     - name: Setup Mono
       run: sudo apt-get install -y mono-devel

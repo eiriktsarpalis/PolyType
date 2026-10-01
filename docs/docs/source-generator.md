@@ -121,9 +121,9 @@ private ITypeShape<DayOfWeek> __Create_DayOfWeek()
 
 At run time, shapes are discovered differently depending on the target framework and on whether the type was annotated directly or through a witness type. The generator adapts its output to each target framework accordingly.
 
-### Static resolution on .NET 8 or later
+### Static resolution on modern .NET
 
-On .NET 8 or later, the target supports [static abstract interface members](https://learn.microsoft.com/dotnet/csharp/advanced-topics/interface-implementation/static-virtual-interface-members), so the generator augments each annotated type with an `IShapeable<T>` implementation. Given:
+On modern .NET, the target supports [static abstract interface members](https://learn.microsoft.com/dotnet/csharp/advanced-topics/interface-implementation/static-virtual-interface-members), so the generator augments each annotated type with an `IShapeable<T>` implementation. Given:
 
 ```csharp
 [GenerateShape]
@@ -186,13 +186,10 @@ ITypeShape<Person[]>? shape = TypeShapeResolver.ResolveDynamic<Person[], Witness
 ITypeShape<Person> shape = TypeShapeResolver.ResolveDynamicOrThrow<Person>();
 ```
 
-`ResolveDynamic` uses reflection to look for a <xref:PolyType.Abstractions.TypeShapeProviderAttribute> on the provider type (the type itself for `[GenerateShape]`, or the witness type for `[GenerateShapeFor]`). When found, it instantiates the referenced `ITypeShapeProvider` and calls `GetTypeShape`. On .NET 8 or later, `ResolveDynamic` also checks for `IShapeable<T>` implementations as a forward-compatibility measure.
+`ResolveDynamic` uses reflection to look for a <xref:PolyType.Abstractions.TypeShapeProviderAttribute> on the provider type (the type itself for `[GenerateShape]`, or the witness type for `[GenerateShapeFor]`). When found, it instantiates the referenced `ITypeShapeProvider` and calls `GetTypeShape`. On modern .NET, `ResolveDynamic` also checks for `IShapeable<T>` implementations as a forward-compatibility measure.
 
 #### Trimmer safety
 
 Even though `ResolveDynamic` uses reflection internally, the pattern is fully trimmer-safe. This works because the source generator emits a `typeof(...)` expression in the `TypeShapeProviderAttribute` constructor argument, which the ILC trimmer can follow statically. The <xref:PolyType.Abstractions.TypeShapeProviderAttribute> class annotates its `Type` parameter with [`[DynamicallyAccessedMembers]`](https://learn.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.dynamicallyaccessedmembersattribute), requesting preservation of the provider type's public parameterless constructor and interface implementations. The trimmer honors these annotations, so `Activator.CreateInstance` and the subsequent `ITypeShapeProvider` cast both succeed at run time — no `RequiresUnreferencedCode` warning is necessary.
-
-> [!NOTE]
-> On .NET 8 specifically, the `ResolveDynamic` methods are annotated with `[RequiresDynamicCode]`. This is because the `IShapeable<T>` forward-compatibility path uses `MakeGenericMethod`, which may require runtime code generation in .NET 8 Native AOT. Starting with .NET 9, the AOT toolchain [recognizes `MakeGenericMethod` calls](https://github.com/dotnet/runtime/issues/119440#issuecomment-3269894751) where the type arguments come from `typeof(T)` on generic type parameters and pre-compiles the necessary instantiations, so the `[RequiresDynamicCode]` annotation is no longer required.
 
 For API reference details, see <xref:PolyType.Abstractions.TypeShapeResolver>.

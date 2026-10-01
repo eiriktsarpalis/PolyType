@@ -359,7 +359,7 @@ public static partial class CompilationTests
         AssertUnsafeTypeRejected(CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true), "Model");
     }
 
-#if NET8_0_OR_GREATER
+#if NET
     [Theory]
     [InlineData("List<int>", "int", true)]
     [InlineData("List<int>", "int", false)]
