@@ -340,6 +340,22 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void GetUnionCaseIndex_NestedHierarchy_SelectsRegisteredAncestor(bool useUnregisteredDescendant)
+    {
+        var shape = (IUnionTypeShape<PolymorphicClassWithUnregisteredDescendant>)Provider.GetTypeShapeOrThrow<PolymorphicClassWithUnregisteredDescendant>();
+        PolymorphicClassWithUnregisteredDescendant value = useUnregisteredDescendant
+            ? new PolymorphicClassWithUnregisteredDescendant.Leaf()
+            : new PolymorphicClassWithUnregisteredDescendant.Derived();
+
+        Assert.Equal(typeof(PolymorphicClassWithUnregisteredDescendant.Derived), Assert.Single(shape.UnionCases).UnionCaseType.Type);
+        Getter<PolymorphicClassWithUnregisteredDescendant, int> getIndex = shape.GetGetUnionCaseIndex();
+        Assert.Equal(0, getIndex(ref value));
+        Assert.Equal(0, getIndex(ref value));
+    }
+
+    [Theory]
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
     public void GetUnionType<T>(TestCase<T> testCase)
     {

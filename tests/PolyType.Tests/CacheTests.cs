@@ -386,6 +386,55 @@ public static class CacheTests
     }
 
     [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public static void Caches_UnionAndUnderlyingShapeRemainDistinct(bool useReflection, bool underlyingFirst)
+    {
+        ITypeShapeProvider provider = useReflection ? ReflectionTypeShapeProvider.Default : Witness.GeneratedTypeShapeProvider;
+        var unionShape = (IUnionTypeShape<PolymorphicClass>)provider.GetTypeShapeOrThrow<PolymorphicClass>();
+        ITypeShape first = underlyingFirst ? unionShape.BaseType : unionShape;
+        ITypeShape second = underlyingFirst ? unionShape : unionShape.BaseType;
+
+        TypeCache cache = new(provider) { ValueBuilderFactory = _ => new IdBuilderFactory() };
+        MultiProviderTypeCache multiProviderCache = new() { ValueBuilderFactory = _ => new IdBuilderFactory() };
+        TypeGenerationContext context = new() { ValueBuilder = new IdBuilderFactory() };
+
+        Assert.False(unionShape.IsContextual);
+        Assert.True(unionShape.BaseType.IsContextual);
+        Assert.Same(first, cache.GetOrAdd(first));
+        Assert.Same(second, cache.GetOrAdd(second));
+        Assert.Same(first, multiProviderCache.GetOrAdd(first));
+        Assert.Same(second, multiProviderCache.GetOrAdd(second));
+        Assert.Same(first, context.GetOrAdd(first, state: new object()));
+        Assert.Same(second, context.GetOrAdd(second, state: new object()));
+        Assert.Same(unionShape, cache[unionShape.Type]);
+        Assert.Same(unionShape, multiProviderCache.GetScopedCache(unionShape)[unionShape.Type]);
+        Assert.Same(unionShape, context[unionShape.Type]);
+        Assert.Single(cache);
+        Assert.Single(context);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void TypeGenerationContext_DirectUnderlyingTraversalPreservesCachedUnion(bool useReflection)
+    {
+        ITypeShapeProvider provider = useReflection ? ReflectionTypeShapeProvider.Default : Witness.GeneratedTypeShapeProvider;
+        var unionShape = (IUnionTypeShape<PolymorphicClass>)provider.GetTypeShapeOrThrow<PolymorphicClass>();
+        TypeCache cache = new(provider) { ValueBuilderFactory = _ => new IdBuilderFactory() };
+        TypeGenerationContext context = cache.CreateGenerationContext();
+
+        Assert.Same(unionShape, context.GetOrAdd(unionShape));
+        Assert.Same(unionShape.BaseType, unionShape.BaseType.Invoke(context.ValueBuilder!));
+        Assert.Same(unionShape, context.GetOrAdd(unionShape));
+        Assert.Single(context);
+        Assert.True(context.TryCommitResults());
+        Assert.Same(unionShape, cache.GetOrAdd(unionShape));
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public static void TypeCache_CacheExceptions(bool cacheExceptions)

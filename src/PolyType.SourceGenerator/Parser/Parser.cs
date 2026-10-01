@@ -843,6 +843,20 @@ public sealed partial class Parser : TypeDataModelGenerator
 
     protected override IEnumerable<DerivedTypeModel> ResolveDerivedTypes(ITypeSymbol type)
     {
+        // DerivedTypeShapeAttribute takes precedence over KnownTypeAttribute when both are present.
+        bool hasDerivedTypeShapeAttribute = type.HasAttribute(_knownSymbols.DerivedTypeShapeAttribute);
+        if (!hasDerivedTypeShapeAttribute)
+        {
+            foreach (AttributeData attribute in type.GetAttributes())
+            {
+                if (SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, _knownSymbols.KnownTypeAttribute) &&
+                    attribute.ConstructorArguments is [{ Type.SpecialType: SpecialType.System_String }])
+                {
+                    ReportDiagnostic(MethodBasedKnownTypesNotSupported, attribute.GetLocation(), type.ToDisplayString());
+                }
+            }
+        }
+
         if (type.TypeKind is not (TypeKind.Class or TypeKind.Interface))
         {
             yield break;
@@ -854,8 +868,6 @@ public sealed partial class Parser : TypeDataModelGenerator
         HashSet<int> tags = new();
         HashSet<string> names = new(StringComparer.Ordinal);
 
-        // DerivedTypeShapeAttribute takes precedence over KnownTypeAttribute when both are present.
-        bool hasDerivedTypeShapeAttribute = type.HasAttribute(_knownSymbols.DerivedTypeShapeAttribute);
         foreach (AttributeData attribute in type.GetAttributes())
         {
             ITypeSymbol? derivedType = null;

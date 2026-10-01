@@ -215,4 +215,16 @@ public sealed partial class Parser
         category: "PolyType.SourceGenerator",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+
+    private static DiagnosticDescriptor MethodBasedKnownTypesNotSupported { get; } = new DiagnosticDescriptor(
+        id: "PT0027",
+        title: "Method-based known types not supported.",
+        messageFormat:
+            "Method-based KnownTypeAttribute declarations are not supported for type '{0}'. " +
+            "Specify known types using KnownTypeAttribute(Type) or DerivedTypeShapeAttribute instead.",
+
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        customTags: WellKnownDiagnosticTags.NotConfigurable);
 }
