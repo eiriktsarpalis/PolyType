@@ -706,11 +706,15 @@ public static class DiagnosticTests
     }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public static void MethodBasedKnownType_ErrorDiagnostic(bool useDataContract, bool useNameof)
+    [InlineData("class", false, false)]
+    [InlineData("class", false, true)]
+    [InlineData("class", true, false)]
+    [InlineData("class", true, true)]
+    [InlineData("struct", false, false)]
+    [InlineData("struct", false, true)]
+    [InlineData("struct", true, false)]
+    [InlineData("struct", true, true)]
+    public static void MethodBasedKnownType_ErrorDiagnostic(string typeKind, bool useDataContract, bool useNameof)
     {
         string attribute = useNameof ? "KnownType(nameof(GetKnownTypes))" : "KnownType(\"GetKnownTypes\")";
         Compilation compilation = CompilationHelpers.CreateCompilation($$"""
@@ -722,12 +726,10 @@ public static class DiagnosticTests
             [GenerateShape]
             {{(useDataContract ? "[DataContract]" : "")}}
             [{{attribute}}]
-            public partial class Animal
+            public partial {{typeKind}} Animal
             {
-                private static IEnumerable<Type> GetKnownTypes() => new[] { typeof(Dog) };
+                private static IEnumerable<Type> GetKnownTypes() => new[] { typeof(Animal) };
             }
-
-            public class Dog : Animal { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
