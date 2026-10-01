@@ -8,8 +8,10 @@ internal sealed class JsonOptionalConverter<TOptional, TElement>(
     JsonConverter<TElement> elementConverter,
     OptionDeconstructor<TOptional, TElement> deconstructor,
     Func<TOptional> createNone,
-    Func<TElement, TOptional> createSome) : JsonConverter<TOptional>
+    Func<TElement, TOptional> createSome) : JsonConverter<TOptional>, ISchematizedJsonConverter
 {
+    public JsonValueType ValueType => JsonSerializerTS.GetJsonValueType(elementConverter);
+
     public override TOptional Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (reader.TokenType is JsonTokenType.Null)

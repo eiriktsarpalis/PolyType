@@ -14,6 +14,7 @@ internal abstract class ReflectionTypeShape<T>(ReflectionTypeShapeProvider provi
     : ITypeShape<T>
 {
     public abstract TypeShapeKind Kind { get; }
+    public virtual bool IsContextual => options.IsContextual;
     public abstract object? Accept(TypeShapeVisitor visitor, object? state = null);
     public ReflectionTypeShapeProvider Provider => provider;
     public ReflectionTypeShapeOptions Options => options;

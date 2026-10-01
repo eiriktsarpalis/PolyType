@@ -220,7 +220,7 @@ public static partial class PrettyPrinter
         public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
         {
             var getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
-            var baseCasePrinter = (PrettyPrinter<TUnion>)unionShape.BaseType.Accept(this)!;
+            var baseCasePrinter = GetOrAddPrettyPrinter(unionShape.BaseType);
             var unionCasePrinters = unionShape.UnionCases
                 .Select(unionCase => (PrettyPrinter<TUnion>)unionCase.Accept(this)!)
                 .ToArray();
@@ -241,7 +241,7 @@ public static partial class PrettyPrinter
 
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
         {
-            var underlying = (PrettyPrinter<TUnionCase>)unionCaseShape.UnionCaseType.Accept(this)!;
+            var underlying = GetOrAddPrettyPrinter(unionCaseShape.UnionCaseType);
             var marshaler = unionCaseShape.Marshaler;
             return new PrettyPrinter<TUnion>((sb, indentation, value) => underlying(sb, indentation, marshaler.Unmarshal(value)));
         }

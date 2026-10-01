@@ -33,6 +33,8 @@ Test conventions:
 
 - Add new type scenarios to **`PolyType.TestCases`** so they get coverage across every test configuration. Concretely, `yield return` a `TestCase.Create(value, ...)` with representative values for each new type from `TestTypes.GetTestCasesCore()`, which feeds the `MemberData` theories throughout the test suite.
 - The **`ProviderUnderTest`** abstraction runs the same test logic against both the reflection and source-generated providers.
+- Example-component suites provide sanity checks, not exhaustive specifications. Prefer shared `TestCases` theories and keep kind-specific corner-case tests to at most five per suite.
+- Shared C# union fixtures run on every managed test target; Native AOT smoke tests use a small independent fixture set. `PolyType.TestCases` supplies `UnionAttribute` and `IUnion` polyfills below .NET 11; newer targets use the framework contracts. Static interface factory tests retain runtime guards; System.Text.Json union comparisons use the .NET 11 shared framework.
 
 ## Coding Conventions
 

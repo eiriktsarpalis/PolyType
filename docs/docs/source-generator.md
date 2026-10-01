@@ -20,6 +20,8 @@ The generator produces a single <xref:PolyType.SourceGenModel.SourceGenTypeShape
 - Overrides `GetTypeShape(Type)` with a `switch` over the string representation of each generated type, delegating to per-type shape accessors.
 - Contains per-type shape fields and factory methods for constructors, properties, and collection shapes.
 
+Its constructor initializes <xref:PolyType.SourceGenModel.SourceGenTypeShapeProvider.SourceGeneratorVersion> with the generator's informational version. Older providers leave it null, allowing the runtime to select its legacy metadata compatibility path without resolving attributes.
+
 For each type declaration annotated with `[GenerateShapeFor]`, the generator also emits a `GeneratedTypeShapeProvider` static property on the witness type, giving library consumers direct access to the provider singleton.
 
 ## Generated type shapes

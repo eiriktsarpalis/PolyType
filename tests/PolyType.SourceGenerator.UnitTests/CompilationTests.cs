@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using PolyType.Abstractions;
 using PolyType.SourceGenerator.Model;
 using System.Globalization;
 using Xunit;
@@ -8,6 +9,47 @@ namespace PolyType.SourceGenerator.UnitTests;
 
 public static partial class CompilationTests
 {
+    [Theory]
+    [InlineData(null)]
+    [InlineData(UnionTypeShapeKind.Unknown)]
+    [InlineData(UnionTypeShapeKind.TypeHierarchy)]
+    [InlineData(UnionTypeShapeKind.FSharpUnion)]
+    [InlineData(UnionTypeShapeKind.CSharpUnion)]
+    public static void SourceGenUnionTypeShape_RequiresUnionKind(UnionTypeShapeKind? unionKind)
+    {
+        string assignment = unionKind is { } kind ? $"UnionKind = UnionTypeShapeKind.{kind}," : "";
+        Compilation compilation = CompilationHelpers.CreateCompilation($$"""
+            using PolyType.Abstractions;
+            using PolyType.SourceGenModel;
+
+            public static class Factory
+            {
+                public static SourceGenUnionTypeShape<int> Create() => new()
+                {
+                    {{assignment}}
+                    Provider = null!,
+                    BaseTypeFactory = null!,
+                    UnionCasesFactory = null!,
+                    GetUnionCaseIndex = null!,
+                };
+            }
+            """);
+
+        Diagnostic[] errors = compilation.GetDiagnostics(TestContext.Current.CancellationToken)
+            .Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error)
+            .ToArray();
+        if (unionKind is null)
+        {
+            Diagnostic error = Assert.Single(errors);
+            Assert.Equal("CS9035", error.Id);
+            Assert.Contains(nameof(IUnionTypeShape.UnionKind), error.GetMessage());
+        }
+        else
+        {
+            Assert.Empty(errors);
+        }
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("ar-SA")]
@@ -797,6 +839,9 @@ public static partial class CompilationTests
 
             [GenerateShape]
             partial class GetTypeShape { }
+
+            [GenerateShape]
+            partial class SourceGeneratorVersion { }
 
             [GenerateShape]
             partial class @class { }

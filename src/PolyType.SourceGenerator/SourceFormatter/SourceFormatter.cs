@@ -10,13 +10,14 @@ namespace PolyType.SourceGenerator;
 
 internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
 {
-    public static string[] ReservedIdentifiers { get; } = [ProviderSingletonProperty, GetShapeMethodName];
+    public static string[] ReservedIdentifiers { get; } = [ProviderSingletonProperty, GetShapeMethodName, SourceGeneratorVersionProperty];
 
     private const string InstanceBindingFlagsConstMember = "__BindingFlags_Instance_All";
     private const string AllBindingFlagsConstMember = "__BindingFlags_All";
     private const string InitializeMethodName = "__Init_Singleton";
     private const string ProviderSingletonProperty = "Default";
     private const string GetShapeMethodName = "GetTypeShape";
+    private const string SourceGeneratorVersionProperty = "SourceGeneratorVersion";
 
     public static void GenerateSourceFiles(SourceProductionContext context, TypeShapeProviderModel provider)
     {
@@ -59,6 +60,12 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
                             FormatProvidedType(provider, unionCaseModel.TypeModel));
                     }
 
+                    break;
+
+                case CSharpUnionShapeModel cSharpUnionShapeModel:
+                    context.AddSource(
+                        $"{provider.ProviderDeclaration.SourceFilenamePrefix}.{cSharpUnionShapeModel.UnderlyingModel.SourceIdentifier}.g.cs",
+                        FormatProvidedType(provider, cSharpUnionShapeModel.UnderlyingModel));
                     break;
             }
         }

@@ -32,7 +32,10 @@ internal sealed partial class SourceFormatter
             public static {{provider.ProviderDeclaration.Name}} {{ProviderSingletonProperty}} { get; } = new();
 
             /// <summary>Initializes a new instance of the <see cref="{{provider.ProviderDeclaration.Name}}"/> class.</summary>
-            private {{provider.ProviderDeclaration.Name}}() { }
+            private {{provider.ProviderDeclaration.Name}}()
+            {
+                {{SourceGeneratorVersionProperty}} = {{FormatStringLiteral(PolyTypeGenerator.SourceGeneratorVersion)}};
+            }
 
             /// <summary>Initializes the field ensuring the same instance is always returned.</summary>
             private T {{InitializeMethodName}}<T>(ref T? field, T value) where T : class =>
@@ -42,6 +45,16 @@ internal sealed partial class SourceFormatter
 
         FormatGetShapeProviderMethod(provider, writer);
         FormatConstructorInvoker(writer);
+
+        if (provider.ProvidedTypes.Values.Any(type => type is CSharpUnionShapeModel))
+        {
+            writer.WriteLine();
+            writer.WriteLine("""
+                [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+                private static void __ThrowInvalidUnionCase(string paramName) =>
+                    throw new global::System.ArgumentException("The union value does not match this case.", paramName);
+                """);
+        }
 
         writer.Indentation--;
         writer.WriteLine('}');

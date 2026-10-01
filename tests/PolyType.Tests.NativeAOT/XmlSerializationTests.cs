@@ -1,5 +1,7 @@
+using PolyType.Abstractions;
 using PolyType.Examples.StructuralEquality;
 using PolyType.Examples.XmlSerializer;
+using System.Xml;
 
 namespace PolyType.Tests.NativeAOT;
 
@@ -67,5 +69,17 @@ public class XmlSerializationTests
         // Assert expected XML structure
         await Assert.That(xml).IsEqualTo(ExpectedXml);
         await Assert.That(StructuralEqualityComparer.Equals(originalTodos, deserializedTodos)).IsTrue();
+    }
+
+    [Test]
+    public async Task CanSerializeAndDeserializeUnion()
+    {
+        ScalarUnion value = new("text");
+        var converter = XmlSerializer.CreateConverter(TypeShapeResolver.Resolve<ScalarUnion>());
+        XmlWriterSettings settings = new() { ConformanceLevel = ConformanceLevel.Fragment };
+        const string Xml = """<value type="String">text</value>""";
+
+        await Assert.That(converter.Serialize(value, settings)).IsEqualTo(Xml);
+        await Assert.That(StructuralEqualityComparer.Equals(value, converter.Deserialize(Xml))).IsTrue();
     }
 }

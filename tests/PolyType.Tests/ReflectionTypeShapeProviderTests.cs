@@ -9,6 +9,42 @@ namespace PolyType.Tests;
 
 public static class ReflectionTypeShapeProviderTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void CollapsedGenericUnionCases_AreRejected(bool useEmit)
+    {
+        var provider = ReflectionTypeShapeProvider.Create(new() { UseReflectionEmit = useEmit });
+        Assert.Throws<InvalidOperationException>(() => provider.GetTypeShape<CSharpGenericUnion<int, int>>());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void CollidingUnionCaseNames_AreRejected(bool useEmit)
+    {
+        var provider = ReflectionTypeShapeProvider.Create(new() { UseReflectionEmit = useEmit });
+        Assert.Throws<InvalidOperationException>(() => provider.GetTypeShape<NameCollisionUnion>());
+    }
+
+    [Union]
+    private sealed class NameCollisionUnion
+    {
+        public NameCollisionUnion(First.Item value) => Value = value;
+        public NameCollisionUnion(Second.Item value) => Value = value;
+        public object Value { get; }
+    }
+
+    private static class First
+    {
+        public sealed class Item;
+    }
+
+    private static class Second
+    {
+        public sealed class Item;
+    }
+
     [Fact]
     public static void OptionsEquality_WithDifferentAssemblyOrder_ShouldBeEqual()
     {

@@ -1,4 +1,4 @@
-using PolyType.Examples.JsonSchema;
+using PolyType.Abstractions;
 using PolyType.Examples.JsonSerializer;
 using PolyType.Examples.StructuralEquality;
 
@@ -42,12 +42,34 @@ public class JsonSerializationTests
     }
 
     [Test]
-    public async Task CanGenerateJsonSchema()
+    [Arguments(0, "42")]
+    [Arguments(1, "\"text\"")]
+    [Arguments(2, "null")]
+    public async Task CanSerializeAndDeserializeUnion(int valueKind, string expectedJson)
     {
-        // Act
-        var schema = JsonSchemaGenerator.Generate<TestTodos>();
+        ScalarUnion value = valueKind switch
+        {
+            0 => new(42),
+            1 => new("text"),
+            _ => default,
+        };
 
-        // Assert
-        await Assert.That(schema).IsNotNull();
+        var shape = (IUnionTypeShape<ScalarUnion>)TypeShapeResolver.Resolve<ScalarUnion>();
+        await Assert.That(shape.UnionKind).IsEqualTo(UnionTypeShapeKind.CSharpUnion);
+        await Assert.That(shape.UnionCases.Count).IsEqualTo(2);
+        await Assert.That(JsonSerializerTS.Serialize(value)).IsEqualTo(expectedJson);
+        ScalarUnion roundtrip = JsonSerializerTS.Deserialize<ScalarUnion>(expectedJson);
+        await Assert.That(StructuralEqualityComparer.Equals(value, roundtrip)).IsTrue();
+    }
+
+    [Test]
+    public async Task CanSerializeAndDeserializeRecursiveUnion()
+    {
+        RecursiveUnion value = new(new RecursiveUnion[] { new(true), new(new RecursiveUnion[] { new(false) }) });
+        string json = JsonSerializerTS.Serialize(value);
+        RecursiveUnion roundtrip = JsonSerializerTS.Deserialize<RecursiveUnion>(json);
+
+        await Assert.That(json).IsEqualTo("[true,[false]]");
+        await Assert.That(StructuralEqualityComparer.Equals(value, roundtrip)).IsTrue();
     }
 }

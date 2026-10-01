@@ -16,6 +16,21 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
     public abstract TypeShapeKind Kind { get; }
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// If unspecified, contextual status is inferred from an unversioned source-generated provider's
+    /// type lookup and cached. Otherwise, it defaults to <see langword="false"/>.
+    /// </remarks>
+    public bool IsContextual
+    {
+        get
+        {
+            int value = _isContextual;
+            return value < 0 ? ResolveIsContextual() : value != 0;
+        }
+        init => _isContextual = value ? 1 : 0;
+    }
+
+    /// <inheritdoc/>
     public required ITypeShapeProvider Provider { get; init; }
 
     /// <summary>
@@ -69,6 +84,18 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
         }
 
         return GetAssociatedTypeShape?.Invoke(associatedType);
+    }
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private int _isContextual = -1;
+
+    private bool ResolveIsContextual()
+    {
+        // Old generated factories publish contextual bodies separately from the provider's ordinary type lookup.
+        bool value = Provider is SourceGenTypeShapeProvider { SourceGeneratorVersion: null } &&
+            !ReferenceEquals(this, Provider.GetTypeShape(typeof(T)));
+        _isContextual = value ? 1 : 0;
+        return value;
     }
 
     private protected string DebuggerDisplay => $"{{Type = \"{typeof(T)}\", Kind = {Kind}}}";

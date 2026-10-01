@@ -172,7 +172,7 @@ public static partial class Validator
         public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
         {
             var getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
-            var baseCaseValidator = (Validator<TUnion>?)unionShape.BaseType.Accept(this);
+            var baseCaseValidator = GetOrAddValidator(unionShape.BaseType);
             var unionCaseValidators = unionShape.UnionCases
                 .Select(caseShape => (Validator<TUnion>?)caseShape.Accept(this))
                 .ToArray();
@@ -202,7 +202,7 @@ public static partial class Validator
 
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
         {
-            var underlying = (Validator<TUnionCase>?)unionCaseShape.UnionCaseType.Accept(this);
+            var underlying = GetOrAddValidator(unionCaseShape.UnionCaseType);
             if (underlying is null)
             {
                 return null;

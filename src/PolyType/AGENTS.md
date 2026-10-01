@@ -50,7 +50,7 @@ The runtime model types that source-generated code targets — not a provider it
 
 Cross-cutting runtime helpers for library authors building on PolyType:
 
-- **`Caching/`** — `TypeCache`, `MultiProviderTypeCache`, and `TypeGenerationContext` cache resolved shapes; `DelayedValue` / `IDelayedValueFactory` break cycles when resolving recursive type graphs.
+- **`Caching/`** — `TypeCache`, `MultiProviderTypeCache`, and `TypeGenerationContext` cache generated results for ordinary shapes by CLR type, while evaluating `IsContextual` views without caching their results; `DelayedValue` / `IDelayedValueFactory` break cycles when resolving recursive type graphs.
 - `AggregatingTypeShapeProvider` composes multiple providers; `ReflectionUtilities` holds shared reflection helpers.
 
 ### `Debugging/`

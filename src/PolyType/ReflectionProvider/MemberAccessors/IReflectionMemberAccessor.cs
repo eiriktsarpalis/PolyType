@@ -42,4 +42,8 @@ internal interface IReflectionMemberAccessor
     ParameterizedCollectionConstructor<TKey, TElement, TCollection> CreateParameterizedCollectionConstructor<TKey, TElement, TCollection>(ParameterizedCollectionConstructorInfo constructorInfo);
 
     Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeInfo[] derivedTypeInfos);
+    Getter<TUnion, object?> CreateCSharpUnionValueGetter<TUnion>(MethodInfo valueGetter);
+    Func<TUnionCase?, TUnion?> CreateCSharpUnionCaseConstructor<TUnionCase, TUnion>(MethodBase creationMember);
+    OptionDeconstructor<TUnion, TUnionCase> CreateCSharpUnionCaseGetter<TUnionCase, TUnion>(MethodInfo tryGetValue);
+    Func<TUnion, bool> CreateCSharpUnionCaseTester<TUnion>(MethodInfo tryGetValue);
 }

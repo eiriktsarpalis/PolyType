@@ -7,6 +7,107 @@ namespace PolyType.SourceGenerator.UnitTests;
 public static class IncrementalCompilationTests
 {
     [Theory]
+    [InlineData(CompilationTests.IsContextualHierarchySource, false)]
+    [InlineData(CompilationTests.IsContextualFSharpUnionSource, false)]
+    [InlineData(CompilationTests.IsContextualCSharpUnionSource, true)]
+    public static void IsContextual_ContextualModelsPreserveIncrementalEquality(string source, bool isCSharpUnion)
+    {
+        PolyTypeSourceGeneratorResult first = Compile();
+        PolyTypeSourceGeneratorResult second = Compile();
+        CompilationHelpers.AssertStructurallyEqual(first.GeneratedModels, second.GeneratedModels);
+        Assert.Equal(first.GeneratedModels, second.GeneratedModels);
+        Assert.All(first.AllGeneratedTypes, model =>
+        {
+            Assert.False(model.IsContextual);
+            Assert.NotEqual(model, model with { IsContextual = true });
+        });
+
+        PolyTypeSourceGeneratorResult Compile() =>
+            CompilationHelpers.RunPolyTypeSourceGenerator(isCSharpUnion
+                ? CompilationTests.CreateCSharpUnionCompilation(source)
+                : CompilationHelpers.CreateCompilation(source));
+    }
+
+    [Theory]
+    [InlineData("""
+        using PolyType;
+        [GenerateShape]
+        public partial union U(int, string?);
+        """)]
+    [InlineData("""
+        using PolyType;
+        public union U<T>(T, string?);
+        [GenerateShapeFor(typeof(U<int>))]
+        public partial class Witness { }
+        """)]
+    public static void CSharpUnion_EquivalentCompilationsProduceEqualModels(string source)
+    {
+        PolyTypeSourceGeneratorResult first = CompilationHelpers.RunPolyTypeSourceGenerator(CompilationTests.CreateCSharpUnionCompilation(source));
+        PolyTypeSourceGeneratorResult second = CompilationHelpers.RunPolyTypeSourceGenerator(CompilationTests.CreateCSharpUnionCompilation(source));
+        CompilationHelpers.AssertStructurallyEqual(first.GeneratedModels, second.GeneratedModels);
+        Assert.Equal(first.GeneratedModels, second.GeneratedModels);
+    }
+
+    [Theory]
+    [InlineData("int, string?", "string?, int")]
+    [InlineData("int, string?", "int, string")]
+    [InlineData("int, string?", "int?, string?")]
+    public static void CSharpUnion_ContractChangesInvalidateModels(string firstCases, string secondCases)
+    {
+        PolyTypeSourceGeneratorResult first = Compile(firstCases);
+        PolyTypeSourceGeneratorResult second = Compile(secondCases);
+        Assert.NotEqual(first.GeneratedModels, second.GeneratedModels);
+
+        static PolyTypeSourceGeneratorResult Compile(string cases) =>
+            CompilationHelpers.RunPolyTypeSourceGenerator(CompilationTests.CreateCSharpUnionCompilation($$"""
+                using PolyType;
+                [GenerateShape]
+                public partial union U({{cases}});
+                """));
+    }
+
+    [Fact]
+    public static void CSharpUnion_ChangingWrapperRepresentationInvalidatesModels()
+    {
+        PolyTypeSourceGeneratorResult reference = Compile("class");
+        PolyTypeSourceGeneratorResult value = Compile("struct");
+        Assert.NotEqual(reference.GeneratedModels, value.GeneratedModels);
+
+        static PolyTypeSourceGeneratorResult Compile(string kind) =>
+            CompilationHelpers.RunPolyTypeSourceGenerator(CompilationTests.CreateCSharpUnionCompilation($$"""
+                using PolyType;
+                [System.Runtime.CompilerServices.Union]
+                public {{kind}} U
+                {
+                    public U(int value) => Value = value;
+                    public object? Value { get; }
+                }
+                [GenerateShapeFor(typeof(U))]
+                public partial class Witness { }
+                """));
+    }
+
+    [Fact]
+    public static void CSharpUnion_ImplementationChangesPreserveModels()
+    {
+        PolyTypeSourceGeneratorResult first = Compile("Value = value;");
+        PolyTypeSourceGeneratorResult second = Compile("Value = value == 0 ? null : (object)value;");
+        CompilationHelpers.AssertStructurallyEqual(first.GeneratedModels, second.GeneratedModels);
+        Assert.Equal(first.GeneratedModels, second.GeneratedModels);
+
+        static PolyTypeSourceGeneratorResult Compile(string body) =>
+            CompilationHelpers.RunPolyTypeSourceGenerator(CompilationTests.CreateCSharpUnionCompilation($$"""
+                using PolyType;
+                [System.Runtime.CompilerServices.Union, GenerateShape]
+                public partial class U
+                {
+                    public U(int value) { {{body}} }
+                    public object? Value { get; }
+                }
+                """));
+    }
+
+    [Theory]
     [InlineData("""
         using PolyType;
 

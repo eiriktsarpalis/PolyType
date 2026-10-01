@@ -65,6 +65,10 @@ internal sealed partial class SourceFormatter
                 FormatFSharpUnionTypeShapeFactory(writer, generatedFactoryMethodName, fsharpUnionShapeModel);
                 break;
 
+            case CSharpUnionShapeModel csharpUnionShapeModel:
+                FormatCSharpUnionTypeShapeFactory(writer, generatedFactoryMethodName, csharpUnionShapeModel);
+                break;
+
             default:
                 Debug.Fail($"Should not be reached {type.GetType().Name}");
                 throw new InvalidOperationException();

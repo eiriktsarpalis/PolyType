@@ -93,8 +93,10 @@ public sealed class RuneConverter : JsonConverter<Rune>
 }
 #endif
 
-internal sealed class JsonPolymorphicObjectConverter(TypeCache typeCache) : JsonConverter<object?>
+internal sealed class JsonPolymorphicObjectConverter(TypeCache typeCache) : JsonConverter<object?>, ISchematizedJsonConverter
 {
+    public JsonValueType ValueType => JsonValueType.Any;
+
     public override object? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         return reader.TokenType is JsonTokenType.Null ? null : JsonDocument.ParseValue(ref reader).RootElement;

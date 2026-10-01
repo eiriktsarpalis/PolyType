@@ -258,6 +258,13 @@ public partial class TypeDataModelGenerator
                 }
                 goto None;
 
+            case TypeDataKind.CSharpUnion:
+                if (TryMapUnion(type, ref ctx, methodModels, eventModels, requirements, out model, out status))
+                {
+                    return status;
+                }
+                goto None;
+
             case TypeDataKind.Dictionary:
                 if (TryMapDictionary(type, ref ctx, methodModels, eventModels, out model, out status))
                 {
@@ -303,6 +310,11 @@ public partial class TypeDataModelGenerator
         }
 
         if (TryMapOptional(type, ref ctx, methodModels, eventModels, requirements, out model, out status))
+        {
+            return status;
+        }
+
+        if (TryMapUnion(type, ref ctx, methodModels, eventModels, requirements, out model, out status))
         {
             return status;
         }

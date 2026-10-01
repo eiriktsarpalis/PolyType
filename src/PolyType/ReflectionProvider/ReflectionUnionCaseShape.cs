@@ -16,6 +16,7 @@ internal sealed class ReflectionUnionCaseShape<TUnionCase, TUnion>(IUnionTypeSha
     public string Name => derivedTypeInfo.Name;
     public int Tag => derivedTypeInfo.Tag;
     public bool IsTagSpecified => derivedTypeInfo.IsTagSpecified;
+    public bool IsNullable => false;
     public int Index => derivedTypeInfo.Index;
 
     ITypeShape IUnionCaseShape.UnionCaseType => UnionCaseType;

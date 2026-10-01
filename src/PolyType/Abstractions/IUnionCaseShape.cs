@@ -1,7 +1,7 @@
 ﻿namespace PolyType.Abstractions;
 
 /// <summary>
-/// Provides a strongly typed shape model for a union case in a discriminated union type.
+/// Provides a shape model for a union case.
 /// </summary>
 [InternalImplementationsOnly]
 public interface IUnionCaseShape
@@ -30,6 +30,16 @@ public interface IUnionCaseShape
     bool IsTagSpecified { get; }
 
     /// <summary>
+    /// Gets a value indicating whether this case admits a null payload.
+    /// </summary>
+    /// <remarks>
+    /// For C# unions, this reflects the nullable contract of the case's creation parameter.
+    /// Always returns <see langword="false"/> for F# unions and type hierarchies.
+    /// A case's use of a null CLR representation does not make its payload nullable.
+    /// </remarks>
+    bool IsNullable { get; }
+
+    /// <summary>
     /// Gets the unique index corresponding to the current union case.
     /// </summary>
     /// <remarks>
@@ -41,6 +51,10 @@ public interface IUnionCaseShape
     /// <summary>
     /// Gets the underlying type shape of the union case.
     /// </summary>
+    /// <remarks>
+    /// F# case bodies and explicitly registered hierarchy base cases are contextual views.
+    /// C# payload shapes and proper-derived hierarchy case shapes are non-contextual.
+    /// </remarks>
     ITypeShape UnionCaseType { get; }
 
     /// <summary>
@@ -53,7 +67,7 @@ public interface IUnionCaseShape
 }
 
 /// <summary>
-/// Provides a strongly typed shape model for a union case in a discriminated union type.
+/// Provides a strongly typed shape model for a union case.
 /// </summary>
 /// <typeparam name="TUnionCase">The type of the union case.</typeparam>
 /// <typeparam name="TUnion">The type of the underlying union.</typeparam>
@@ -63,6 +77,10 @@ public interface IUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShape
     /// <summary>
     /// Gets the underlying type shape of the union case.
     /// </summary>
+    /// <remarks>
+    /// This can be a contextual view rather than the provider's ordinary shape for
+    /// <typeparamref name="TUnionCase"/>.
+    /// </remarks>
     new ITypeShape<TUnionCase> UnionCaseType { get; }
 
     /// <summary>

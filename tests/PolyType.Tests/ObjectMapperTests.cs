@@ -8,11 +8,46 @@ namespace PolyType.Tests;
 public abstract class ObjectMapperTests(ProviderUnderTest providerUnderTest)
 {
     [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    public void MapperPairKeys_KeepCanonicalCaching(int length)
+    {
+        ITypeShape<MyLinkedList<int>> shape = providerUnderTest.Provider.GetTypeShapeOrThrow<MyLinkedList<int>>();
+        MyLinkedList<int>? value = null;
+        for (int i = 0; i < length; i++)
+        {
+            value = new() { Value = i, Next = value };
+        }
+
+        var mapper = Mapper.Create(shape, shape);
+        Assert.Same(mapper, Mapper.Create(shape, shape));
+        Assert.Same(mapper, Mapper.Create<MyLinkedList<int>, MyLinkedList<int>>(shape.Provider));
+        MyLinkedList<int>? result = mapper(value);
+        Assert.NotSame(value, result);
+        Assert.Equal(value, result, StructuralEqualityComparer.Create(shape));
+    }
+
+    [Fact]
+    public void MapperPairKeys_ExcludeContextualViews()
+    {
+        var unionShape = (IUnionTypeShape<PolymorphicClass>)providerUnderTest.Provider.GetTypeShapeOrThrow<PolymorphicClass>();
+        var mapper = Mapper.Create(unionShape.BaseType, unionShape.BaseType);
+        Assert.Equal(new PolymorphicClass(42), mapper(new PolymorphicClass(42)));
+        Assert.Throws<NotImplementedException>(() => Mapper.Create(unionShape, unionShape));
+    }
+
+    [Theory]
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
     public void MapToTheSameType_ProducesEqualCopy<T>(TestCase<T> testCase)
     {
         if (!providerUnderTest.HasConstructor(testCase) || testCase.IsUnion)
         {
+            return;
+        }
+
+        if (providerUnderTest.ResolveShape(testCase) is IOptionalTypeShape { ElementType: IUnionTypeShape })
+        {
+            Assert.Throws<NotImplementedException>(() => GetMapperAndEqualityComparer<T>(testCase));
             return;
         }
 

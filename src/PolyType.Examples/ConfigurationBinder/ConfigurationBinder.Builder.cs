@@ -258,9 +258,9 @@ public static partial class ConfigurationBinderTS
 
         public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
         {
-            var baseTypeBinder = (Func<IConfiguration, TUnion>)unionShape.BaseType.Invoke(this)!;
+            var baseTypeBinder = GetOrAddBinder(unionShape.BaseType);
             var unionCaseBinders = unionShape.UnionCases
-                .Select(unionCase => (Func<IConfiguration, TUnion>)unionCase.Accept(this, null)!)
+                .Select(unionCase => (Func<IConfiguration, TUnion?>)unionCase.Accept(this, null)!)
                 .ToArray();
 
             var discriminatorLookup = unionShape.UnionCases.ToDictionary(c => c.Name, c => c.Index);
@@ -283,14 +283,17 @@ public static partial class ConfigurationBinderTS
 
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
         {
-            var caseBinder = (Func<IConfiguration, TUnion>)unionCaseShape.UnionCaseType.Accept(this)!;
-            if (unionCaseShape.UnionCaseType is IObjectTypeShape or IDictionaryTypeShape)
+            var caseBinder = GetOrAddBinder(unionCaseShape.UnionCaseType);
+            var marshaler = unionCaseShape.Marshaler;
+            if (!s_builtInParsers.ContainsKey(typeof(TUnionCase)) &&
+                unionCaseShape.UnionCaseType is IObjectTypeShape or IDictionaryTypeShape)
             {
-                return caseBinder;
+                // Object and dictionary payloads bind inline alongside $type, without a $values wrapper.
+                return new Func<IConfiguration, TUnion?>(cfg => marshaler.Marshal(caseBinder(cfg)));
             }
 
             // Non-object schemas nest the case value under the $values property.
-            return new Func<IConfiguration, TUnion>(cfg => cfg.GetSection(ValuesProperty) is { } section ? caseBinder(section) : default!);
+            return new Func<IConfiguration, TUnion?>(cfg => marshaler.Marshal(caseBinder(cfg.GetSection(ValuesProperty))));
         }
 
         public override object? VisitFunction<TFunction, TArgumentState, TResult>(IFunctionTypeShape<TFunction, TArgumentState, TResult> functionShape, object? state = null)

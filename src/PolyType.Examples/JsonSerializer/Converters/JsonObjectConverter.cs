@@ -7,8 +7,10 @@ using System.Text.Json.Serialization;
 
 namespace PolyType.Examples.JsonSerializer.Converters;
 
-internal class JsonObjectConverter<T>(JsonPropertyConverter<T>[] properties) : JsonConverter<T>, IJsonObjectConverter<T>
+internal class JsonObjectConverter<T>(JsonPropertyConverter<T>[] properties) : JsonConverter<T>, IJsonObjectConverter<T>, ISchematizedJsonConverter
 {
+    public JsonValueType ValueType => JsonValueType.Object;
+
     private readonly JsonPropertyConverter<T>[] _propertiesToWrite = properties.Where(prop => prop.HasGetter).ToArray();
 
     public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

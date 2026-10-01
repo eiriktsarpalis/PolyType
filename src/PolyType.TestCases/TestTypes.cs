@@ -95,6 +95,54 @@ public static class TestTypes
         yield return TestCase.Create(new Version("1.0.0.0"), p);
         yield return TestCase.Create(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, p);
 
+        yield return TestCase.Create(new CSharpScalarUnion(42), additionalValues: [new(true), new("text"), default], isUnion: true);
+        yield return TestCase.Create(new CSharpValueUnion(42), additionalValues: [new(new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero))], isUnion: true);
+        yield return TestCase.Create(new CSharpNumericUnion("text"), additionalValues: [default], isUnion: true);
+        yield return TestCase.Create(new CSharpAmbiguousNumericUnion(42), additionalValues: [new(false), new(43L), new(3.14)], isUnion: true);
+        yield return TestCase.Create(new CSharpNullableValueUnion((int?)null), isUnion: true);
+        yield return TestCase.Create(new CSharpRecursiveUnion(new CSharpRecursiveUnion(true)), additionalValues: [new(false)], isUnion: true);
+        yield return TestCase.Create(new CSharpTreeUnion(true), additionalValues: [new(Array.Empty<CSharpTreeUnion>()), new(new CSharpTreeUnion[] { new(false), new(new CSharpTreeUnion[] { new(true) }) })], isUnion: true);
+        yield return TestCase.Create(new CSharpRecursivePayloadUnion(true), additionalValues: [new(new CSharpRecursivePayload(null)), new((CSharpRecursivePayload?)null)], isUnion: true);
+        yield return TestCase.Create(new CSharpOptionalUnion(true), additionalValues: [new(FSharpValueOption<CSharpOptionalUnion>.None), new(FSharpValueOption<CSharpOptionalUnion>.Some(new(false))), new(FSharpValueOption<CSharpTreeUnion>.Some(new(new CSharpTreeUnion[] { new(true) })))], isUnion: true);
+        yield return TestCase.Create(new CSharpMutualUnionA(42), additionalValues: [new(new CSharpMutualUnionB("text")), new(new CSharpMutualUnionB(new CSharpMutualUnionA(43))), new(new CSharpMutualUnionB[] { new("text"), new(new CSharpMutualUnionA(42)) })], isUnion: true);
+        yield return TestCase.Create(new CSharpMutualUnionB("text"), additionalValues: [new(new CSharpMutualUnionA(42)), default], isUnion: true);
+        yield return TestCase.Create(new CSharpObjectUnion((object?)null), isUnion: true);
+        yield return TestCase.Create(default(CSharpObjectOnlyUnion), isUnion: true);
+        yield return TestCase.Create(new CSharpInterfaceUnion(42), isUnion: true);
+        yield return TestCase.Create(new CSharpArrayUnion(new byte[] { 1, 2, 3 }), additionalValues: [new(new int[] { 1, 2 }), new(new Dictionary<string, int> { ["value"] = 42 })], isUnion: true);
+        yield return TestCase.Create(new CSharpClassUnion(42), additionalValues: [new("text"), new((string?)null)], isUnion: true);
+        yield return TestCase.Create(new CSharpMutableUnion(42), additionalValues: [new(true)], isUnion: true);
+        yield return TestCase.Create(new CSharpInterfaceOnlyUnion(42));
+        yield return TestCase.Create(default(CSharpStructUnion), additionalValues: [new(42), new("text"), new(""), new((string?)null)], isUnion: true);
+        yield return TestCase.Create(default(CSharpValueStorageUnion), additionalValues: [new(42), new(false), new(true)], isUnion: true);
+        yield return TestCase.Create(new CSharpTryGetValueUnion<int>(42), p, additionalValues: [new(true)], isUnion: true);
+        yield return TestCase.Create(new CSharpTryGetValueUnion<string>("text"), p, additionalValues: [new(true), new((string?)null)], isUnion: true);
+        yield return TestCase.Create(new CSharpInUnion(42), additionalValues: [new("text"), default], hasRefConstructorParameters: true, isUnion: true);
+        yield return TestCase.Create(new CSharpInheritedUnion(42), additionalValues: [new("text"), new((string?)null)], isUnion: true);
+        yield return TestCase.Create(new CSharpHierarchyUnion(42), additionalValues: [default], isUnion: true);
+        yield return TestCase.Create(new CSharpConstructorUnion((CSharpAnimal?)null), isUnion: true);
+        yield return TestCase.Create<CSharpHierarchyWrapper>(new CSharpDerivedWrapper(42), isUnion: true);
+        yield return TestCase.Create(new CSharpRegisteredBaseHierarchy { Number = 42 }, additionalValues: [new CSharpRegisteredBaseDerived { Number = 43 }], isUnion: true);
+        yield return TestCase.Create(new CSharpObjectModelUnion(42));
+        yield return TestCase.Create(new CSharpGenericUnion<int, string>(42), p, additionalValues: [new("text"), default], isUnion: true);
+        yield return TestCase.Create(new CSharpGenericUnion<int, bool>(42), p, additionalValues: [new(true)], isUnion: true);
+        yield return TestCase.Create(new CSharpGenericUnion<DayOfWeek, bool>(DayOfWeek.Friday), p, additionalValues: [new((DayOfWeek)30), new(true)], isUnion: true);
+        yield return TestCase.Create(new CSharpGenericUnion<Memory<byte>, bool>(new byte[] { 1, 2, 3 }.AsMemory()), p, additionalValues: [new(Memory<byte>.Empty), new(false)], isUnion: true);
+        yield return TestCase.Create(new CSharpGenericUnion<ReadOnlyMemory<byte>, bool>(new ReadOnlyMemory<byte>([1, 2, 3])), p, additionalValues: [new(ReadOnlyMemory<byte>.Empty), new(false)], isUnion: true);
+        yield return TestCase.Create<CSharpRecursiveUnion?, Witness>(new CSharpRecursiveUnion(true), p, additionalValues: [new CSharpRecursiveUnion(false)]);
+        yield return TestCase.Create(
+            new CSharpGenericUnion<CanonicalUnionTree, bool>(
+                new CanonicalUnionTree.Branch(GenericFSharpUnion<CanonicalUnionTree>.NewA(
+                    new CanonicalUnionTree.Branch(GenericFSharpUnion<CanonicalUnionTree>.NewC(42))))),
+            p, additionalValues: [new(true)], isUnion: true);
+#if NET
+        // These fixtures specifically test static abstract/virtual factories and default interface members,
+        // which require runtime support unavailable on .NET Framework.
+        yield return TestCase.Create(CSharpProviderUnion.CreateNumber(42), additionalValues: [CSharpProviderUnion.CreateText("text"), CSharpProviderUnion.CreateText(null)], isUnion: true);
+        yield return TestCase.Create(CSharpDefaultProviderUnion.CreateNumber(42), additionalValues: [CSharpDefaultProviderUnion.CreateText("text"), CSharpDefaultProviderUnion.CreateText(null)], isUnion: true);
+        yield return TestCase.Create(CSharpGenericProviderUnion<int>.CreateValue(42), p, additionalValues: [CSharpGenericProviderUnion<int>.CreateText("text")], isUnion: true);
+#endif
+
         yield return TestCase.Create((bool?)false, p);
         yield return TestCase.Create((sbyte?)sbyte.MinValue, p);
         yield return TestCase.Create((short?)short.MinValue, p);
@@ -252,6 +300,7 @@ public static class TestTypes
         yield return TestCase.Create(new ClassWithInternalConstructor(42));
         yield return TestCase.Create(new NonNullStringRecord("str"));
         yield return TestCase.Create(new NullableStringRecord(null));
+        yield return TestCase.Create(new PocoWithGenericProperty<string> { Value = "str" }, p, additionalValues: [new()]);
         yield return TestCase.Create(new NotNullGenericRecord<string>("str"), p);
         yield return TestCase.Create(new NotNullClassGenericRecord<string>("str"), p);
         yield return TestCase.Create(new NullClassGenericRecord<string>("str"), p);
@@ -618,6 +667,17 @@ public static class TestTypes
             isUnion: true);
 
         yield return TestCase.Create<Tree>(new Tree.Node(42, new Tree.Leaf(), new Tree.Leaf()), additionalValues: [new Tree.Leaf()], isUnion: true);
+        yield return TestCase.Create<CanonicalUnionTree>(
+            new CanonicalUnionTree.Branch(GenericFSharpUnion<CanonicalUnionTree>.NewA(
+                new CanonicalUnionTree.Branch(GenericFSharpUnion<CanonicalUnionTree>.NewC(42)))),
+            additionalValues: [
+                new CanonicalUnionTree(),
+                new CanonicalUnionTree.Branch(GenericFSharpUnion<CanonicalUnionTree>.B)],
+            isUnion: true);
+        yield return TestCase.Create<ObjectSurrogateHierarchy>(
+            new ObjectSurrogateHierarchy.Text("42"),
+            additionalValues: [new ObjectSurrogateHierarchy.Text("text")],
+            isUnion: true);
         yield return TestCase.Create((GenericTree<string>)new GenericTree<string>.Node("str", new GenericTree<string>.Leaf(), new GenericTree<string>.Leaf()), additionalValues: [new GenericTree<string>.Leaf()], isUnion: true, provider: p);
         yield return TestCase.Create((GenericTree<int>)new GenericTree<int>.Node(42, new GenericTree<int>.Leaf(), new GenericTree<int>.Leaf()), additionalValues: [new GenericTree<int>.Leaf()], isUnion: true, provider: p);
         yield return TestCase.Create<ClassWithGenericDerivedType>(new ClassWithGenericDerivedType.Derived<int>(42), additionalValues: [new ClassWithGenericDerivedType.Derived<ClassWithGenericDerivedType.Arg1>(new())], isUnion: true);
@@ -1612,6 +1672,11 @@ public partial record SimpleRecord(int value);
 public partial record NonNullStringRecord(string value);
 [GenerateShape]
 public partial record NullableStringRecord(string? value);
+public class PocoWithGenericProperty<T>
+{
+    public T? Value { get; set; }
+}
+
 public record GenericRecord<T>(T value);
 public readonly record struct GenericRecordStruct<T>(T value);
 public record NotNullGenericRecord<T>(T value) where T : notnull;
@@ -3521,6 +3586,22 @@ public delegate Task<int> LargeAsyncDelegate(
     int p51, int p52, int p53, int p54, int p55, int p56, int p57, int p58, int p59, int p60,
     int p61, int p62, int p63, int p64, int p65, int p66, int p67, int p68, int p69, int p70);
 
+[GenerateShapeFor<CSharpGenericUnion<int, string>>]
+[GenerateShapeFor<CSharpGenericUnion<int, bool>>]
+[GenerateShapeFor<CSharpGenericUnion<DayOfWeek, bool>>]
+[GenerateShapeFor<CSharpGenericUnion<Memory<byte>, bool>>]
+[GenerateShapeFor<CSharpGenericUnion<ReadOnlyMemory<byte>, bool>>]
+[GenerateShapeFor<CSharpGenericUnion<CSharpValueUnion, string>>]
+[GenerateShapeFor<CSharpGenericUnion<CanonicalUnionTree, bool>>]
+[GenerateShapeFor<CSharpTryGetValueUnion<int>>]
+[GenerateShapeFor<CSharpTryGetValueUnion<string>>]
+[GenerateShapeFor<CSharpRecursiveUnion?>]
+[GenerateShapeFor<CSharpRecursivePayload?>]
+[GenerateShapeFor<PocoWithGenericProperty<string>>]
+[GenerateShapeFor<NotNullGenericRecord<CSharpMutableUnion>>]
+#if NET
+[GenerateShapeFor<CSharpGenericProviderUnion<int>>]
+#endif
 [GenerateShapeFor<object>]
 [GenerateShapeFor<bool>]
 [GenerateShapeFor<char>]

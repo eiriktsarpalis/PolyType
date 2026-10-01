@@ -154,7 +154,7 @@ public static partial class JsonSerializerTS
     /// <returns>A JSON encoded string containing the serialized value.</returns>
     public static void Serialize<T>(this JsonConverter<T> converter, Utf8JsonWriter writer, T? value)
     {
-        if (value is null)
+        if (value is null && !converter.HandleNull)
         {
             writer.WriteNullValue();
         }
@@ -226,7 +226,7 @@ public static partial class JsonSerializerTS
     {
         Utf8JsonReader reader = new(utf8Json, options);
         reader.EnsureRead();
-        return default(T) is null && reader.TokenType is JsonTokenType.Null ? default : converter.Read(ref reader, typeof(T), s_options);
+        return default(T) is null && !converter.HandleNull && reader.TokenType is JsonTokenType.Null ? default : converter.Read(ref reader, typeof(T), s_options);
     }
 
     /// <summary>

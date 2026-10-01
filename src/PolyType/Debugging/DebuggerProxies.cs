@@ -11,6 +11,7 @@ namespace PolyType.Debugging;
 internal abstract class TypeShapeDebugView(ITypeShape typeShape) : ITypeShape
 {
     public Type Type => typeShape.Type;
+    public bool IsContextual => typeShape.IsContextual;
     public TypeShapeKind Kind => typeShape.Kind;
     public ITypeShapeProvider Provider => typeShape.Provider;
     public IGenericCustomAttributeProvider AttributeProvider => typeShape.AttributeProvider;
@@ -95,6 +96,7 @@ internal sealed class SurrogateTypeShapeDebugView(ISurrogateTypeShape typeShape)
 [ExcludeFromCodeCoverage]
 internal sealed class UnionTypeShapeDebugView(IUnionTypeShape typeShape) : TypeShapeDebugView(typeShape), IUnionTypeShape
 {
+    public UnionTypeShapeKind UnionKind => typeShape.UnionKind;
     public ITypeShape BaseType => typeShape.BaseType;
     public IReadOnlyList<IUnionCaseShape> UnionCases => typeShape.UnionCases;
 }
@@ -212,6 +214,7 @@ internal sealed class UnionCaseShapeDebugView(IUnionCaseShape unionCaseShape) : 
     public string Name => unionCaseShape.Name;
     public int Tag => unionCaseShape.Tag;
     public bool IsTagSpecified => unionCaseShape.IsTagSpecified;
+    public bool IsNullable => unionCaseShape.IsNullable;
     public int Index => unionCaseShape.Index;
     public ITypeShape UnionCaseType => unionCaseShape.UnionCaseType;
     object? IUnionCaseShape.Accept(TypeShapeVisitor visitor, object? state) => unionCaseShape.Accept(visitor, state);

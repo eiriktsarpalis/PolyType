@@ -145,7 +145,7 @@ public static partial class XmlSerializer
         public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state)
         {
             var getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
-            var baseCaseConverter = (XmlConverter<TUnion>)unionShape.BaseType.Accept(this)!;
+            var baseCaseConverter = GetOrAddConverter(unionShape.BaseType);
             var unionCaseConverter = unionShape.UnionCases
                 .Select(unionCase =>
                 {
@@ -159,8 +159,7 @@ public static partial class XmlSerializer
 
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state)
         {
-            // NB: don't use the cached converter for TUnionCase, as it might equal TUnion.
-            var caseConverter = (XmlConverter<TUnionCase>)unionCaseShape.UnionCaseType.Invoke(this)!;
+            var caseConverter = GetOrAddConverter(unionCaseShape.UnionCaseType);
             return new XmlUnionCaseConverter<TUnionCase, TUnion>(caseConverter, unionCaseShape.Marshaler);
         }
 

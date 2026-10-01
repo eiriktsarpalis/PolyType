@@ -1,9 +1,25 @@
 ﻿using PolyType.Abstractions;
+using PolyType.Examples.JsonSerializer;
 
 namespace PolyType.Tests.NativeAOT;
 
 public partial class ResolveDynamicTests
 {
+    [Test]
+    public async Task UnionFactoryAndExtractorAreCallableWithoutReflection()
+    {
+        var shape = (IUnionTypeShape<FactoryUnion>)TypeShapeResolver.Resolve<FactoryUnion>();
+        var unionCase = (IUnionCaseShape<int, FactoryUnion>)shape.UnionCases[0];
+        FactoryUnion value = unionCase.Marshaler.Marshal(42)!;
+        await Assert.That(shape.GetGetUnionCaseIndex()(ref value)).IsEqualTo(0);
+        await Assert.That(unionCase.Marshaler.Unmarshal(value)).IsEqualTo(42);
+        await Assert.That(JsonSerializerTS.Serialize(value)).IsEqualTo("42");
+        FactoryUnion? result = JsonSerializerTS.Deserialize<FactoryUnion>("42");
+        await Assert.That(unionCase.Marshaler.Unmarshal(result)).IsEqualTo(42);
+        value = null!;
+        await Assert.That(() => shape.GetGetUnionCaseIndex()(ref value)).Throws<System.Runtime.CompilerServices.SwitchExpressionException>();
+    }
+
     [Test]
     public async Task ResolveDynamic_NativeAOT_Supported()
     {

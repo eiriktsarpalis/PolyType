@@ -1,11 +1,13 @@
 ﻿namespace PolyType.ReflectionProvider;
 
 /// <summary>
-/// A model that captures a type shape options as resolved
+/// Captures type shape configuration, including options resolved
 /// from <see cref="TypeShapeAttribute"/> and <see cref="TypeShapeExtensionAttribute"/> declarations.
 /// </summary>
 internal sealed class ReflectionTypeShapeOptions
 {
+    public bool IsContextual { get; init; }
+
     /// <inheritdoc cref="TypeShapeExtensionAttribute.Kind"/>/>
     public required TypeShapeKind? RequestedKind { get; init; }
 

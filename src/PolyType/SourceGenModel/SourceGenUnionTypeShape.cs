@@ -10,6 +10,12 @@ namespace PolyType.SourceGenModel;
 [DebuggerTypeProxy(typeof(PolyType.Debugging.UnionTypeShapeDebugView))]
 public sealed class SourceGenUnionTypeShape<TUnion> : SourceGenTypeShape<TUnion>, IUnionTypeShape<TUnion>
 {
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Values omitted by older generated code default to <see cref="UnionTypeShapeKind.Unknown"/>.
+    /// </remarks>
+    public required UnionTypeShapeKind UnionKind { get; init; }
+
     /// <summary>
     /// Gets a delayed base type shape factory for use with potentially recursive type graphs.
     /// </summary>

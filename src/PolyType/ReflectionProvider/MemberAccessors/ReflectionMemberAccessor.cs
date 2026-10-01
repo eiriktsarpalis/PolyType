@@ -832,6 +832,72 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         }
     }
 
+    public Getter<TUnion, object?> CreateCSharpUnionValueGetter<TUnion>(MethodInfo valueGetter)
+    {
+        if (valueGetter.DeclaringType!.IsInterface)
+        {
+#if NET
+            ReflectionMethodInvoker invoker = ReflectionMethodInvoker.Create(valueGetter);
+            return (ref union) => invoker.Invoke(union);
+#else
+            return (ref union) => valueGetter.InvokeNoWrapExceptions(union, parameters: null);
+#endif
+        }
+
+        if (typeof(TUnion).IsValueType)
+        {
+            return valueGetter.CreateDelegate<Getter<TUnion, object?>>();
+        }
+
+        Func<TUnion, object?> getter = valueGetter.CreateDelegate<Func<TUnion, object?>>();
+        return (ref union) => getter(union);
+    }
+
+    public Func<TUnionCase?, TUnion?> CreateCSharpUnionCaseConstructor<TUnionCase, TUnion>(MethodBase creationMember)
+    {
+        if (creationMember is ConstructorInfo constructor)
+        {
+#if NET
+            ReflectionConstructorInvoker invoker = ReflectionConstructorInvoker.Create(constructor);
+            return value => (TUnion?)invoker.Invoke(value);
+#else
+            return value => (TUnion?)constructor.InvokeNoWrapExceptions([value]);
+#endif
+        }
+
+#if NET
+        ReflectionMethodInvoker methodInvoker = ReflectionMethodInvoker.Create(creationMember);
+        return value => (TUnion?)methodInvoker.Invoke(null, value);
+#else
+        return value => (TUnion?)creationMember.InvokeNoWrapExceptions(obj: null, parameters: [value]);
+#endif
+    }
+
+    public OptionDeconstructor<TUnion, TUnionCase> CreateCSharpUnionCaseGetter<TUnionCase, TUnion>(MethodInfo tryGetValue)
+    {
+        if (typeof(TUnion).IsValueType)
+        {
+            var getter = tryGetValue.CreateDelegate<RefOptionDeconstructor<TUnion, TUnionCase>>();
+            return (TUnion? union, [MaybeNullWhen(false)] out TUnionCase value) => getter(ref union!, out value);
+        }
+
+        return tryGetValue.CreateDelegate<OptionDeconstructor<TUnion, TUnionCase>>();
+    }
+
+    public Func<TUnion, bool> CreateCSharpUnionCaseTester<TUnion>(MethodInfo tryGetValue)
+    {
+        return (Func<TUnion, bool>)typeof(ReflectionMemberAccessor)
+            .GetMethod(nameof(CreateCSharpUnionCaseTesterCore), BindingFlags.NonPublic | BindingFlags.Instance)!
+            .MakeGenericMethod(tryGetValue.GetParameters()[0].ParameterType.GetElementType()!, typeof(TUnion))
+            .InvokeNoWrapExceptions(this, [tryGetValue])!;
+    }
+
+    private Func<TUnion, bool> CreateCSharpUnionCaseTesterCore<TUnionCase, TUnion>(MethodInfo tryGetValue)
+    {
+        OptionDeconstructor<TUnion, TUnionCase> getter = CreateCSharpUnionCaseGetter<TUnionCase, TUnion>(tryGetValue);
+        return union => getter(union, out _);
+    }
+
     public bool IsCollectionConstructorSupported(MethodBase method, CollectionConstructorParameter[] signature)
     {
         if (signature.Contains(CollectionConstructorParameter.Span))
@@ -984,4 +1050,5 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
     private delegate void SpanAction<TElement, TArg1, TArg2>(ReadOnlySpan<TElement> span, TArg1 arg1, TArg2 arg2);
     private delegate void RefAction<T1, T2, T3>(ref T1 arg1, T2 arg2, T3 arg3);
     private delegate TResult RefFunc<T1, T2, TResult>(ref T1 arg1, T2 arg2);
+    private delegate bool RefOptionDeconstructor<TUnion, TUnionCase>(ref TUnion union, [MaybeNullWhen(false)] out TUnionCase value);
 }

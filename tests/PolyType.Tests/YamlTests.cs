@@ -1,6 +1,7 @@
 ﻿using System.Collections.Immutable;
 using System.Numerics;
 using PolyType.Examples.YamlSerializer;
+using PolyType.Tests.FSharp;
 using Xunit;
 
 namespace PolyType.Tests;
@@ -66,6 +67,52 @@ public abstract class YamlTests(ProviderUnderTest providerUnderTest)
             TestCase.Create(new Dictionary<string, string> { ["key1"] = "value", ["key2"] = "value" }, p),
             "- key: key1\n  value: value\n- key: key2\n  value: value"
         ];
+        yield return [TestCase.Create(new PolymorphicClass(42)), "_type: PolymorphicClass\nInt: 42"];
+        yield return [TestCase.Create<Tree>(new Tree.Leaf()), "_type: leaf"];
+        yield return [TestCase.Create(FSharpUnion.NewC(42), p), "_type: C\nfoo: 42"];
+        yield return [TestCase.Create(FSharpUnion.B, p), "_type: B"];
+        yield return [TestCase.Create(FSharpStructUnion.NewC(42), p), "_type: C\nfoo: 42"];
+        yield return [TestCase.Create(new CSharpScalarUnion(42)), "_type: Int32\n_value: 42"];
+        yield return [TestCase.Create(default(CSharpScalarUnion)), "_type: String\n_value: null"];
+        yield return [TestCase.Create(new CSharpArrayUnion(new int[] { 1, 2 })), "_type: Array_Int32\n_value:\n- 1\n- 2"];
+    }
+
+    [Fact]
+    public void NullRepresentedFSharpCaseRetainsEmptyMapping()
+    {
+        var converter = GetConverterUnderTest(TestCase.Create(NullaryUnion.A, new Witness()));
+        using YamlWriter writer = new();
+        converter.Write(writer, NullaryUnion.A);
+
+        string yaml = writer.ToString();
+        Assert.Equal("_type: A", yaml);
+        Assert.Null(converter.Deserialize(yaml));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ClassUnionNullPayloadIsDistinctFromNullReference(bool nullReference)
+    {
+        var converter = GetConverterUnderTest(TestCase.Create(new CSharpClassUnion(42)));
+        CSharpClassUnion? value = nullReference ? null : new((string?)null);
+        string yaml = converter.Serialize(value);
+        Assert.Equal(nullReference ? "null" : "_type: String\n_value: null", yaml);
+
+        CSharpClassUnion? result = converter.Deserialize(yaml);
+        Assert.Equal(nullReference, ReferenceEquals(result, null));
+        if (!nullReference)
+        {
+            Assert.Null(result!.Value);
+        }
+    }
+
+    [Fact]
+    public void NullObjectPayloadsCannotBeMergedIntoTheCaseMapping()
+    {
+        var testCase = TestCase.Create(new CSharpConstructorUnion((CSharpAnimal?)null));
+        var converter = GetConverterUnderTest(testCase);
+        Assert.Throws<NotSupportedException>(() => converter.Serialize(testCase.Value));
     }
 
     [Theory]
@@ -73,6 +120,14 @@ public abstract class YamlTests(ProviderUnderTest providerUnderTest)
     public void Roundtrip_Value<T>(TestCase<T> testCase)
     {
         YamlConverter<T> converter = GetConverterUnderTest<T>(testCase);
+
+        if (testCase.Value is object value &&
+            (value is CSharpHierarchyUnion hierarchy && hierarchy.Value is null ||
+             value is CSharpConstructorUnion constructor && constructor.Value is null))
+        {
+            Assert.Throws<NotSupportedException>(() => converter.Serialize(testCase.Value));
+            return;
+        }
 
         string yamlEncoding = converter.Serialize(testCase.Value);
 

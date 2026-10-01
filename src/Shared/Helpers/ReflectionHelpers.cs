@@ -9,7 +9,10 @@ using System.Text;
 
 namespace PolyType.ReflectionProvider;
 
-internal static class ReflectionHelpers
+/// <summary>
+/// Provides shared reflection helpers.
+/// </summary>
+internal static partial class ReflectionHelpers
 {
     private const string RequiresUnreferencedCodeMessage = "The method requires unreferenced code.";
     private const string RequiresDynamicCodeMessage = "The method requires dynamic code generation.";

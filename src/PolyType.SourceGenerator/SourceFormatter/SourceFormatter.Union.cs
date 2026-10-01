@@ -20,6 +20,8 @@ internal sealed partial class SourceFormatter
             {
                 return new global::PolyType.SourceGenModel.SourceGenUnionTypeShape<{{unionShapeModel.Type.FullyQualifiedName}}>
                 {
+                    IsContextual = {{FormatBool(unionShapeModel.IsContextual)}},
+                    UnionKind = global::PolyType.Abstractions.UnionTypeShapeKind.TypeHierarchy,
                     BaseTypeFactory = () => {{unionShapeModel.UnderlyingModel.SourceIdentifier}},
                     UnionCasesFactory = {{createUnionCasesMethodName}},
                     GetUnionCaseIndex = {{getUnionCaseIndexMethod}},
@@ -98,11 +100,11 @@ internal sealed partial class SourceFormatter
 
     private static void FormatUnionCaseIndexMethod(SourceWriter writer, UnionShapeModel unionShapeModel, string methodName)
     {
-        // Emit the union case index method.
+        // Casting to object keeps hierarchy dispatch on the wrapper instead of unwrapping a C# union payload.
         writer.WriteLine($$"""
             private int {{methodName}}(ref {{unionShapeModel.Type.FullyQualifiedName}} value)
             {
-                return value switch
+                return {{(unionShapeModel.UseObjectForDispatch ? "((object?)value)" : "value")}} switch
                 {
             """);
 

@@ -14,7 +14,7 @@ using PolyType.ReflectionProvider;
 
 namespace PolyType.Tests;
 
-public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
+public abstract class JsonTests(ProviderUnderTest providerUnderTest)
 {
     [Theory]
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
@@ -201,19 +201,27 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         }
     }
 
-    [Fact]
-    public void Serialize_NonNullablePropertyWithNullValue_ThrowsJsonException()
+    [Theory]
+    [MemberData(nameof(GetNonNullablePropertyNullCases))]
+    public void Serialize_NonNullablePropertyWithNullValue_ThrowsJsonException<T>(TestCase<T> testCase)
     {
-        var invalidValue = new NonNullStringRecord(null!);
-        var converter = JsonSerializerTS.CreateConverter<NonNullStringRecord>(providerUnderTest.Provider);
-        Assert.Throws<JsonException>(() => converter.Serialize(invalidValue));
+        var converter = JsonSerializerTS.CreateConverter(providerUnderTest.ResolveShape(testCase));
+        JsonException exception = Assert.Throws<JsonException>(() => converter.Serialize(testCase.Value));
+        Assert.Equal("The property 'value' cannot contain null.", exception.Message);
     }
 
-    [Fact]
-    public void Deserialize_NonNullablePropertyWithNullJsonValue_ThrowsJsonException()
+    [Theory]
+    [MemberData(nameof(GetNonNullablePropertyNullCases))]
+    public void Deserialize_NonNullablePropertyWithNullJsonValue_ThrowsJsonException<T>(TestCase<T> testCase)
     {
-        var converter = JsonSerializerTS.CreateConverter<NonNullStringRecord>(providerUnderTest.Provider);
+        var converter = JsonSerializerTS.CreateConverter(providerUnderTest.ResolveShape(testCase));
         Assert.Throws<JsonException>(() => converter.Deserialize("""{"value":null}"""));
+    }
+
+    public static IEnumerable<object[]> GetNonNullablePropertyNullCases()
+    {
+        yield return [TestCase.Create(new NonNullStringRecord(null!))];
+        yield return [Case(new NotNullGenericRecord<CSharpMutableUnion>(null!))];
     }
 
     [Fact]
@@ -528,11 +536,6 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
             .Where(c => c.Value is PartialAccessorOverrideBase<int> or PartialAccessorOverrideBase<string>)
             .Select(c => new object[] { c });
 
-    public class PocoWithGenericProperty<T>
-    { 
-        public T? Value { get; set; }
-    }
-
     protected static async Task<string> ToJsonBaseline<T>(T? value)
     {
         MemoryStream stream = new();
@@ -563,9 +566,65 @@ public abstract partial class JsonTests(ProviderUnderTest providerUnderTest)
         value.HasRefConstructorParameters ||
         value.CustomKind is not null ||
         value.UsesMarshaler ||
-        value.IsUnion && (!typeof(T).GetCustomAttributes<JsonDerivedTypeAttribute>().Any() || value.IsAbstract) ||
+#if !NET11_0_OR_GREATER
+        value.DefaultShape is IOptionalTypeShape { ElementType: IUnionTypeShape { UnionKind: UnionTypeShapeKind.CSharpUnion } } ||
+#endif
+        value.IsUnion && !IsComparableNativeCSharpUnion(typeof(T)) &&
+            (!typeof(T).GetCustomAttributes<JsonDerivedTypeAttribute>().Any() || value.IsAbstract) ||
         (ReflectionHelpers.IsMonoRuntime && value.Value is IDiamondInterface) ||
         value.Value is DerivedClassWithVirtualProperties or PartialAccessorOverrideBase<int> or PartialAccessorOverrideBase<string>; // https://github.com/dotnet/runtime/issues/96996
+
+    private static bool IsComparableNativeCSharpUnion(Type type)
+    {
+#if NET11_0_OR_GREATER
+        // Only compare configurations supported by both serializers.
+        return type == typeof(CSharpScalarUnion) ||
+            type == typeof(CSharpValueUnion) ||
+            type == typeof(CSharpRecursiveUnion) ||
+            type == typeof(CSharpTreeUnion) ||
+            type == typeof(CSharpArrayUnion) ||
+            type == typeof(CSharpClassUnion) ||
+            type == typeof(CSharpStructUnion) ||
+            type == typeof(CSharpValueStorageUnion) ||
+            type == typeof(CSharpGenericUnion<int, string>) ||
+            type == typeof(CSharpGenericUnion<int, bool>);
+#else
+        return false;
+#endif
+    }
+
+    [Fact]
+    public void AmbiguousUnionPayloadKindsAreRejected()
+    {
+        var converter = CreateConverter<CSharpNumericUnion>();
+        Assert.Throws<InvalidOperationException>(() => converter.Serialize(new CSharpNumericUnion(42)));
+        Assert.Throws<InvalidOperationException>(() => converter.Deserialize("42"));
+    }
+
+    [Fact]
+    public void NullCreatesNullableClassCase()
+    {
+        JsonConverter<CSharpClassUnion> converter = CreateConverter<CSharpClassUnion>();
+        CSharpClassUnion? value = converter.Deserialize("null");
+        Assert.NotNull(value);
+        Assert.Null(value.Value);
+        Assert.Equal("null", converter.Serialize(null));
+        Assert.Equal("null", converter.Serialize(value));
+    }
+
+    [Fact]
+    public void NestedCSharpCaseIsExcludedFromReadCategories()
+    {
+        var converter = CreateConverter<CSharpGenericUnion<CSharpValueUnion, string>>();
+        Assert.Equal("42", converter.Serialize(new CSharpGenericUnion<CSharpValueUnion, string>(new CSharpValueUnion(42))));
+        Assert.Throws<JsonException>(() => converter.Deserialize("42"));
+        Assert.Equal("text", converter.Deserialize("\"text\"").Value);
+    }
+
+    private JsonConverter<T> CreateConverter<T>() =>
+        JsonSerializerTS.CreateConverter(providerUnderTest.ResolveShape(Case<T>(default)));
+
+    private static TestCase<T> Case<T>(T? value) => new(value, Witness.GeneratedTypeShapeProvider);
 }
 
 public sealed class JsonTests_Reflection() : JsonTests(ReflectionProviderUnderTest.NoEmit);

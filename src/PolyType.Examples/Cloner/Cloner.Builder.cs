@@ -258,7 +258,7 @@ public static partial class Cloner
         public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)
         {
             var getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
-            var baseCloner = (Func<TUnion?, TUnion?>)unionShape.BaseType.Invoke(this)!; // Don't cache the base shape as its type matches the union type.
+            var baseCloner = GetOrAddCloner(unionShape.BaseType);
             var unionCaseCloners = unionShape.UnionCases
                 .Select(unionCase => (Func<TUnion?, TUnion?>)unionCase.Accept(this)!)
                 .ToArray();
@@ -278,7 +278,7 @@ public static partial class Cloner
 
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
         {
-            var cloner = (Func<TUnionCase?, TUnionCase?>)unionCaseShape.UnionCaseType.Invoke(this)!;
+            var cloner = GetOrAddCloner(unionCaseShape.UnionCaseType);
             var marshaler = unionCaseShape.Marshaler;
             return new Func<TUnion?, TUnion?>(t => marshaler.Marshal(cloner(marshaler.Unmarshal(t))));
         }

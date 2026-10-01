@@ -12,7 +12,7 @@ PolyType classifies .NET types into eight distinct type shape kinds, each repres
 - **Enum** - <xref:PolyType.Abstractions.IEnumTypeShape> for enum types.
 - **Optional** - <xref:PolyType.Abstractions.IOptionalTypeShape> for nullable value types and F# options.
 - **Surrogate** - <xref:PolyType.Abstractions.ISurrogateTypeShape> for types that define a marshaller to a surrogate type.
-- **Union** - <xref:PolyType.Abstractions.IUnionTypeShape> for polymorphic type hierarchies or discriminated union types.
+- **Union** - <xref:PolyType.Abstractions.IUnionTypeShape> for polymorphic type hierarchies, C# unions, or F# discriminated unions.
 - **Function** - <xref:PolyType.Abstractions.IFunctionTypeShape> for delegate and F# function types.
 
 ## Derivation Algorithm
@@ -47,9 +47,38 @@ attributes and doing so overrides the built-in shape kind inferred for the type.
 
 A type is mapped to <xref:PolyType.Abstractions.IUnionTypeShape> when:
 
-1. It is a class with <xref:PolyType.DerivedTypeShapeAttribute> annotations or
+1. It is a class or interface with <xref:PolyType.DerivedTypeShapeAttribute> annotations or
 2. It is a class with [`KnownTypeAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.knowntypeattribute) annotations or
-3. It is an F# union type.
+3. It is a [C# union type](https://github.com/dotnet/csharplang/blob/main/proposals/csharp-15.0/unions.md), or
+4. It is an F# union type, excluding representations handled by other shape kinds.
+
+`UnionKind` identifies the representation as `TypeHierarchy`, `CSharpUnion`, or `FSharpUnion`. Explicit hierarchy configuration takes precedence over automatic C# union recognition. Existing kind and surrogate overrides continue to apply.
+
+#### C# case mapping
+
+Case shapes describe payload types, not wrapper subtypes. A case marshaler binds to that case's creation member and must not redispatch construction using the argument's runtime type or a user-defined implicit conversion.
+
+Metadata indices and inferred tags follow creation-member enumeration order; inferred tags have `IsTagSpecified = false`. Names use the existing type-name formatter. Duplicate names and specializations in which distinct declared cases become identical closed types are rejected. `T` and `Nullable<T>` remain distinct case types.
+
+Enumeration order is an implementation detail; inferred identifiers have no cross-version stability guarantee. PolyType does not provide a C#-specific case-metadata attribute.
+
+Source-generated case selection and extraction use C# union patterns, allowing the compiler to use the non-boxing access pattern when available. The reflection provider tries public instance, nongeneric `bool TryGetValue(out TCase)` overloads whose parameter types exactly match declared cases, most-specific-first, before falling back to `Value`. Union accessors must satisfy the language's well-formedness requirements: `TryGetValue` and `HasValue` must agree with `Value`.
+
+The `Value` fallback uses a most-derived-first topological ordering. For example:
+
+```csharp
+class Animal;
+class Dog : Animal;
+union AnimalUnion(Animal, Dog);
+```
+
+A `Dog` payload selects the `Dog` case even when created with `new AnimalUnion((Animal)new Dog())`. Undeclared runtime subtypes select their most specific compatible declared ancestor. Selection between multiple compatible cases with no assignability relationship is unspecified.
+
+For a value type `T`, the overlap between `T` and `T?` is a special case of this rule: a non-null nullable value boxes as `T` and selects the `T` case when both are declared.
+
+Null union references and null payloads select the first nullable case in metadata order. If no case admits null, the index getter throws as for a non-exhaustive switch, including for an empty native default value. An unmatched non-null payload also throws rather than returning the fallback index. These failures are `InvalidOperationException` instances (`SwitchExpressionException` where supported by the target framework). The C# base shape is empty and uninhabited, as for F# unions; supported values select a declared case.
+
+`IsNullable` reflects the C# creation parameter's nullable contract. It is always `false` for F# and type-hierarchy cases, including F# cases with a null CLR representation and explicitly registered hierarchy base cases. These representations do not admit a nullable case payload.
 
 ### Dictionary Types
 
@@ -152,3 +181,9 @@ Event shapes may be included in type shapes of any kind. By default, types do _n
 
 - Configuring the `IncludeMethods` property in either of the <xref:PolyType.TypeShapeAttribute>, <xref:PolyType.GenerateShapeAttribute>, or <xref:PolyType.TypeShapeExtensionAttribute> or
 - Explicitly annotating an event with the <xref:PolyType.EventShapeAttribute>.
+
+<a id="contextual-representations"></a>
+
+> [!NOTE]
+> <xref:PolyType.ITypeShape.IsContextual> identifies role-specific views, such as union bases and F# case bodies, which must not share ordinary type-keyed cache entries.
+> Use <xref:PolyType.Utilities.TypeGenerationContext> for recursive traversal: it evaluates contextual views separately while caching their ordinary child shapes.

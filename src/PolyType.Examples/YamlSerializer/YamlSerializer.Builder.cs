@@ -147,7 +147,7 @@ public static partial class YamlSerializer
         public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state)
         {
             var getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
-            var baseCaseConverter = (YamlConverter<TUnion>)unionShape.BaseType.Accept(this)!;
+            var baseCaseConverter = GetOrAddConverter(unionShape.BaseType);
             var unionCaseConverters = unionShape.UnionCases
                 .Select(unionCase =>
                 {
@@ -162,7 +162,7 @@ public static partial class YamlSerializer
 
         public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state)
         {
-            var caseConverter = (YamlConverter<TUnionCase>)unionCaseShape.UnionCaseType.Invoke(this)!;
+            var caseConverter = GetOrAddConverter(unionCaseShape.UnionCaseType);
 
             return new YamlUnionCaseConverter<TUnionCase, TUnion>(caseConverter, unionCaseShape.Marshaler);
         }

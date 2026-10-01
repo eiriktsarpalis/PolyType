@@ -14,6 +14,84 @@ public static class SnapshotTests
     private static readonly bool UpdateSnapshots = Environment.GetEnvironmentVariable("POLYTYPE_UPDATE_SNAPSHOTS") is "true" or "1";
 
     [Fact]
+    public static void IsContextualHierarchy() => VerifySourceGeneratorOutput(CompilationTests.IsContextualHierarchySource);
+
+    [Fact]
+    public static void FSharp() => VerifySourceGeneratorOutput(CompilationTests.IsContextualFSharpUnionSource);
+
+    [Fact]
+    public static void CSharpSelf() => VerifySourceGeneratorOutput(
+        CompilationTests.IsContextualCSharpUnionSource,
+        parseOptions: CompilationHelpers.CreateParseOptions(LanguageVersion.Preview),
+        includeUnionContracts: true);
+
+    [Fact]
+    public static void CSharpUnion() => VerifySourceGeneratorOutput("""
+        using PolyType;
+
+        namespace TestNamespace
+        {
+            [GenerateShape]
+            public partial union NumberOrText(int?, int, string?);
+        }
+        """, parseOptions: CompilationHelpers.CreateParseOptions(LanguageVersion.Preview), includeUnionContracts: true);
+
+    [Fact]
+    public static void CSharpUnionWithoutNullableCase() => VerifySourceGeneratorOutput("""
+        using PolyType;
+
+        namespace TestNamespace
+        {
+            [GenerateShape]
+            public partial union Number(int)
+            {
+                public Number() : this(123) { }
+                public bool TryGetValue(out int value)
+                {
+                    value = Value is int number ? number : default;
+                    return Value is int;
+                }
+            }
+        }
+        """, parseOptions: CompilationHelpers.CreateParseOptions(LanguageVersion.Preview), includeUnionContracts: true);
+
+    [Fact]
+    public static void CSharpUnionProvider() => VerifySourceGeneratorOutput("""
+        using PolyType;
+
+        namespace TestNamespace
+        {
+            [System.Runtime.CompilerServices.Union]
+            public class Union<T> : Union<T>.IUnionMembers
+            {
+                private readonly object? _value;
+                private Union(object? value, bool ignored) => _value = value;
+                public interface IUnionMembers
+                {
+                    public static Union<T> Create(in T value) => new Union<T>(value, false);
+                    public static Union<T> Create(string? value) => new Union<T>(value, false);
+                    public object? Value { get; }
+                }
+                object? IUnionMembers.Value => _value;
+                public bool TryGetValue(out T value)
+                {
+                    if (_value is T result)
+                    {
+                        value = result;
+                        return true;
+                    }
+
+                    value = default!;
+                    return false;
+                }
+            }
+
+            [GenerateShapeFor(typeof(Union<int>))]
+            public partial class Witness { }
+        }
+        """, parseOptions: CompilationHelpers.CreateParseOptions(LanguageVersion.Preview), includeUnionContracts: true);
+
+    [Fact]
     public static void SimplePoco() => VerifySourceGeneratorOutput("""
         using PolyType;
         using System.Collections.Generic;
@@ -261,9 +339,15 @@ public static class SnapshotTests
     private static void VerifySourceGeneratorOutput(
         [StringSyntax("c#-test")] string source,
         CSharpParseOptions? parseOptions = null,
+        bool includeUnionContracts = false,
         [CallerMemberName] string testCaseName = "")
     {
         Compilation compilation = CompilationHelpers.CreateCompilation(source, parseOptions: parseOptions);
+        if (includeUnionContracts)
+        {
+            compilation = CompilationTests.AddCSharpUnionContracts(compilation);
+        }
+
         CSharpGeneratorDriver driver = CompilationHelpers.CreatePolyTypeSourceGeneratorDriver(compilation);
         driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation outCompilation, out var diagnostics, TestContext.Current.CancellationToken);
 
@@ -370,6 +454,10 @@ public static class SnapshotTests
             source,
             @"\[global::System\.CodeDom\.Compiler\.GeneratedCodeAttribute\(""[^""]*"",\s*""[^""]*""\)\]",
             """[global::System.CodeDom.Compiler.GeneratedCodeAttribute("PolyType.SourceGenerator.PolyTypeGenerator", "0.0.0.0")]""");
+        source = Regex.Replace(
+            source,
+            @"SourceGeneratorVersion = ""[^""]*"";",
+            """SourceGeneratorVersion = "0.0.0.0";""");
         source = SortSwitchCaseBlocks(source);
 
         return source;

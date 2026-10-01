@@ -5,11 +5,15 @@ using System.Text.Json.Serialization;
 
 namespace PolyType.Examples.JsonSerializer.Converters;
 
+// Handles the tagged JSON schema for type hierarchies and F# unions.
+// C# unions use JsonCSharpUnionConverter for a separate schema with System.Text.Json-style untagged payloads.
 internal sealed class JsonUnionConverter<TUnion>(
     Getter<TUnion, int> getUnionCaseIndex,
     JsonConverter<TUnion> baseConverter,
-    JsonUnionCaseConverter<TUnion>[] unionCaseConverters) : JsonConverter<TUnion>
+    JsonUnionCaseConverter<TUnion>[] unionCaseConverters) : JsonConverter<TUnion>, ISchematizedJsonConverter
 {
+    public JsonValueType ValueType => JsonValueType.Object;
+
     private readonly JsonPropertyDictionary<JsonUnionCaseConverter<TUnion>> _unionCaseIndex = unionCaseConverters.ToJsonPropertyDictionary(p => p.Name);
 
     public override TUnion? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

@@ -1192,6 +1192,70 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         return CreateDelegate<Getter<TUnion, int>>(dynamicMethod);
     }
 
+    public Getter<TUnion, object?> CreateCSharpUnionValueGetter<TUnion>(MethodInfo valueGetter)
+    {
+        DynamicMethod dynamicMethod = CreateDynamicMethod("getCSharpUnionValue", typeof(object), [typeof(TUnion).MakeByRefType()]);
+        ILGenerator generator = dynamicMethod.GetILGenerator();
+        generator.Emit(OpCodes.Ldarg_0);
+
+        if (!typeof(TUnion).IsValueType)
+        {
+            generator.Emit(OpCodes.Ldind_Ref);
+        }
+        else if (valueGetter.DeclaringType!.IsInterface)
+        {
+            // Default interface members inspect a boxed copy, as in the non-emit path.
+            generator.Emit(OpCodes.Ldobj, typeof(TUnion));
+            generator.Emit(OpCodes.Box, typeof(TUnion));
+        }
+
+        EmitCall(generator, valueGetter);
+        generator.Emit(OpCodes.Ret);
+        return CreateDelegate<Getter<TUnion, object?>>(dynamicMethod);
+    }
+
+    public Func<TUnionCase?, TUnion?> CreateCSharpUnionCaseConstructor<TUnionCase, TUnion>(MethodBase creationMember)
+    {
+        DynamicMethod dynamicMethod = CreateDynamicMethod("createCSharpUnionCase", typeof(TUnion), [typeof(TUnionCase)]);
+        ILGenerator generator = dynamicMethod.GetILGenerator();
+
+        if (creationMember.GetParameters()[0].ParameterType.IsByRef)
+        {
+            generator.Emit(OpCodes.Ldarga_S, (byte)0);
+        }
+        else
+        {
+            generator.Emit(OpCodes.Ldarg_0);
+        }
+
+        EmitCall(generator, creationMember);
+        generator.Emit(OpCodes.Ret);
+        return CreateDelegate<Func<TUnionCase?, TUnion?>>(dynamicMethod);
+    }
+
+    public OptionDeconstructor<TUnion, TUnionCase> CreateCSharpUnionCaseGetter<TUnionCase, TUnion>(MethodInfo tryGetValue)
+    {
+        DynamicMethod dynamicMethod = CreateDynamicMethod("tryGetCSharpUnionCase", typeof(bool), [typeof(TUnion), typeof(TUnionCase).MakeByRefType()]);
+        ILGenerator generator = dynamicMethod.GetILGenerator();
+        generator.Emit(typeof(TUnion).IsValueType ? OpCodes.Ldarga_S : OpCodes.Ldarg_S, (byte)0);
+        generator.Emit(OpCodes.Ldarg_1);
+        EmitCall(generator, tryGetValue);
+        generator.Emit(OpCodes.Ret);
+        return CreateDelegate<OptionDeconstructor<TUnion, TUnionCase>>(dynamicMethod);
+    }
+
+    public Func<TUnion, bool> CreateCSharpUnionCaseTester<TUnion>(MethodInfo tryGetValue)
+    {
+        DynamicMethod dynamicMethod = CreateDynamicMethod("testCSharpUnionCase", typeof(bool), [typeof(TUnion)]);
+        ILGenerator generator = dynamicMethod.GetILGenerator();
+        LocalBuilder value = generator.DeclareLocal(tryGetValue.GetParameters()[0].ParameterType.GetElementType()!);
+        generator.Emit(typeof(TUnion).IsValueType ? OpCodes.Ldarga_S : OpCodes.Ldarg_S, (byte)0);
+        generator.Emit(OpCodes.Ldloca, value);
+        EmitCall(generator, tryGetValue);
+        generator.Emit(OpCodes.Ret);
+        return CreateDelegate<Func<TUnion, bool>>(dynamicMethod);
+    }
+
     private static DynamicMethod CreateDynamicMethod(string name, Type returnType, Type[] parameters)
         => new(name, returnType, parameters, typeof(ReflectionEmitMemberAccessor).Module, skipVisibility: true);
 

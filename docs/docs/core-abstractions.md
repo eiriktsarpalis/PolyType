@@ -6,6 +6,8 @@ This document provides a walkthrough of the core type abstractions found in Poly
 
 The <xref:PolyType.ITypeShape> interface defines a reflection-like representation for a given .NET type. The type hierarchy that it creates encapsulates all information necessary to perform strongly typed traversal of its type graph.
 
+The <xref:PolyType.ITypeShape.IsContextual> property identifies a contextual view, such as a union case body, rather than the provider's ordinary representation of a type. Several shapes can describe the same CLR type without being interchangeable. PolyType's caching utilities account for this distinction; see [contextual representations](specification.md#contextual-representations) for the contract.
+
 To illustrate the idea, consider the following APIs modelling objects with properties:
 
 ```csharp
@@ -254,12 +256,16 @@ partial class CounterVisitor : TypeShapeVisitor
 
 ### Union types
 
-PolyType supports union types through the `IUnionTypeShape` abstraction. Currently two kinds of union types are supported:
+PolyType models union types through `IUnionTypeShape`. The `UnionKind` property identifies the representation when known:
 
-1. Polymorphic class or interface hierarchies declared via <xref:PolyType.DerivedTypeShapeAttribute> attribute annotations and
-2. F# [discriminated union](https://learn.microsoft.com/dotnet/fsharp/language-reference/discriminated-unions) types.
+| `UnionTypeShapeKind` | Representation |
+| --- | --- |
+| `TypeHierarchy` | Class or interface hierarchies configured using <xref:PolyType.DerivedTypeShapeAttribute> or `KnownTypeAttribute` |
+| `CSharpUnion` | Native C# union declarations and types implementing the C# union member pattern |
+| `FSharpUnion` | F# [discriminated unions](https://learn.microsoft.com/dotnet/fsharp/language-reference/discriminated-unions) |
+| `Unknown` | Not specified, including shapes produced by older source generators |
 
-The shape abstraction for union types looks as follows:
+The following sketch shows the core union shape members:
 
 ```csharp
 public interface IUnionTypeShape<TUnion> : ITypeShape<TUnion>
@@ -275,7 +281,6 @@ public interface IUnionTypeShape<TUnion> : ITypeShape<TUnion>
 }
 
 public interface IUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShape
-    where TUnionCase : TUnion
 {
     // A unique string identifier for the union case.
     string Name { get; }
@@ -284,9 +289,14 @@ public interface IUnionCaseShape<TUnionCase, TUnion> : IUnionCaseShape
     int Tag { get; }
 
     // The underlying shape for the current union case.
-    ITypeShape<TUnionCase> Type { get; }
+    ITypeShape<TUnionCase> UnionCaseType { get; }
+
+    // Constructs the union from a case value and extracts a case value.
+    IMarshaler<TUnionCase, TUnion> Marshaler { get; }
 }
 ```
+
+Case types need not derive from the union type.
 
 And as before, <xref:PolyType.Abstractions.TypeShapeVisitor> exposes relevant methods for the two types:
 
@@ -294,8 +304,7 @@ And as before, <xref:PolyType.Abstractions.TypeShapeVisitor> exposes relevant me
 public abstract partial class TypeShapeVisitor
 {
     object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null);
-    object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null)
-        where TUnionCase : TUnion;
+    object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? state = null);
 }
 ```
 
@@ -307,7 +316,7 @@ partial class CounterVisitor : TypeShapeVisitor
     public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? _)
     {
         var getUnionCaseIndex = unionShape.GetGetUnionCaseIndex();
-        var baseTypeCounter = (Func<TUnion, int>)unionShape.BaseType.Accept(this);
+        var baseTypeCounter = (Func<TUnion, int>)unionShape.BaseType.Accept(this)!;
         var unionCaseCounters = unionShape.UnionCases
             .Select(unionCase => (Func<TUnion, int>)unionCase.Accept(this))
             .ToArray();
@@ -322,11 +331,18 @@ partial class CounterVisitor : TypeShapeVisitor
 
     public override object? VisitUnionCase<TUnionCase, TUnion>(IUnionCaseShape<TUnionCase, TUnion> unionCaseShape, object? _)
     {
-        var caseCounter = (Func<TUnionCase, int>)unionCaseShape.Type.Accept(this)!;
-        return new Func<TUnion, int>(union => caseCounter((TUnionCase)union!));
+        var caseCounter = (Func<TUnionCase, int>)unionCaseShape.UnionCaseType.Accept(this)!;
+        var marshaler = unionCaseShape.Marshaler;
+        return new Func<TUnion, int>(union => caseCounter(marshaler.Unmarshal(union)!));
     }
 }
 ```
+
+Shape consumers must use the marshaler supplied by a shape for the conversions it defines, even when a direct cast would work. This applies to union cases and surrogate shapes alike.
+
+The examples here omit caching. A visitor supporting recursive types should resolve child type shapes, including `BaseType` and `UnionCaseType`, through its <xref:PolyType.Utilities.TypeGenerationContext>. It uses `IsContextual` to evaluate contextual bodies without replacing the cached results for ordinary shapes.
+
+See the [union mapping specification](specification.md#union-types) for detailed case-selection and validation rules.
 
 ### Surrogate types
 

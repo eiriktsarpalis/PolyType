@@ -531,6 +531,11 @@ internal static partial class RoslynHelpers
     /// </summary>
     public static string GetTypeKindKeyword(this BaseTypeDeclarationSyntax typeDeclaration)
     {
+        if (PolyType.Roslyn.Helpers.UnionHelpers.IsUnionDeclaration(typeDeclaration))
+        {
+            return "union";
+        }
+
         switch (typeDeclaration.Kind())
         {
             case SyntaxKind.ClassDeclaration:

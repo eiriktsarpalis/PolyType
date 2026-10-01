@@ -109,8 +109,8 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         }
 
         ValidateTypeMemberSafety(type);
-        ReflectionTypeShapeOptions options = ResolveTypeShapeOptions(type);
-        return DetermineTypeKind(type, allowUnionShapes, options, out FSharpUnionInfo? fSharpUnionInfo, out FSharpFuncInfo? fSharpFuncInfo) switch
+        ReflectionTypeShapeOptions options = ResolveTypeShapeOptions(type, isContextual: !allowUnionShapes);
+        return DetermineTypeKind(type, allowUnionShapes, options, out FSharpUnionInfo? fSharpUnionInfo, out FSharpFuncInfo? fSharpFuncInfo, out CSharpUnionInfo? cSharpUnionInfo) switch
         {
             TypeShapeKind.Enumerable => CreateEnumerableShape(type, options),
             TypeShapeKind.Dictionary => CreateDictionaryShape(type, options),
@@ -118,7 +118,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             TypeShapeKind.Optional => CreateOptionalShape(type, fSharpUnionInfo, options),
             TypeShapeKind.Object => CreateObjectShape(type, disableMemberResolution: false, options),
             TypeShapeKind.Surrogate => CreateSurrogateShape(type, options),
-            TypeShapeKind.Union => CreateUnionTypeShape(type, fSharpUnionInfo, options),
+            TypeShapeKind.Union => CreateUnionTypeShape(type, fSharpUnionInfo, cSharpUnionInfo, options),
             TypeShapeKind.Function => CreateFunctionTypeShape(type, fSharpFuncInfo, options),
             TypeShapeKind.None or _ => CreateObjectShape(type, disableMemberResolution: true, options),
         };
@@ -315,12 +315,18 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         return (IOptionalTypeShape)ReflectionHelpers.CreateInstanceNoWrapExceptions(nullableTypeTy, this, options)!;
     }
 
-    private IUnionTypeShape CreateUnionTypeShape(Type unionType, FSharpUnionInfo? fSharpUnionInfo, ReflectionTypeShapeOptions options)
+    private IUnionTypeShape CreateUnionTypeShape(Type unionType, FSharpUnionInfo? fSharpUnionInfo, CSharpUnionInfo? cSharpUnionInfo, ReflectionTypeShapeOptions options)
     {
         if (fSharpUnionInfo is not null)
         {
             Type fsharpUnionTypeTy = typeof(FSharpUnionTypeShape<>).MakeGenericType(unionType);
             return (IUnionTypeShape)ReflectionHelpers.CreateInstanceNoWrapExceptions(fsharpUnionTypeTy, fSharpUnionInfo, this, options)!;
+        }
+
+        if (cSharpUnionInfo is not null)
+        {
+            Type csharpUnionTypeTy = typeof(CSharpUnionTypeShape<>).MakeGenericType(unionType);
+            return (IUnionTypeShape)ReflectionHelpers.CreateInstanceNoWrapExceptions(csharpUnionTypeTy, cSharpUnionInfo, this, options)!;
         }
 
         List<DerivedTypeShapeAttribute> derivedTypeAttributes = unionType.GetCustomAttributes<DerivedTypeShapeAttribute>(inherit: false).ToList();
@@ -425,7 +431,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         return (IFunctionTypeShape)ReflectionHelpers.CreateInstanceNoWrapExceptions(functionShapeTy, methodShapeInfo, this, options)!;
     }
 
-    private ReflectionTypeShapeOptions ResolveTypeShapeOptions(Type type)
+    private ReflectionTypeShapeOptions ResolveTypeShapeOptions(Type type, bool isContextual)
     {
         Type? genericTypeDef = type.IsGenericType ? type.GetGenericTypeDefinition() : null;
         TypeShapeAttribute? typeShapeAttr = type.GetCustomAttribute<TypeShapeAttribute>();
@@ -471,15 +477,16 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
         return new ReflectionTypeShapeOptions
         {
+            IsContextual = isContextual,
             RequestedKind = requestedKind,
             Marshaler = marshaler,
             IncludeMethods = methodFlags ?? MethodShapeFlags.None,
         };
     }
 
-    private static TypeShapeKind DetermineTypeKind(Type type, bool allowUnionShapes, ReflectionTypeShapeOptions typeShapeOptions, out FSharpUnionInfo? fsharpUnionInfo, out FSharpFuncInfo? fSharpFuncInfo)
+    private static TypeShapeKind DetermineTypeKind(Type type, bool allowUnionShapes, ReflectionTypeShapeOptions typeShapeOptions, out FSharpUnionInfo? fsharpUnionInfo, out FSharpFuncInfo? fSharpFuncInfo, out CSharpUnionInfo? cSharpUnionInfo)
     {
-        TypeShapeKind builtInKind = DetermineBuiltInTypeKind(type, allowUnionShapes, typeShapeOptions, out fsharpUnionInfo, out fSharpFuncInfo);
+        TypeShapeKind builtInKind = DetermineBuiltInTypeKind(type, allowUnionShapes, typeShapeOptions, out fsharpUnionInfo, out fSharpFuncInfo, out cSharpUnionInfo);
 
         if (typeShapeOptions.RequestedKind is TypeShapeKind requestedKind && requestedKind != builtInKind)
         {
@@ -506,10 +513,12 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         bool allowUnionShapes,
         ReflectionTypeShapeOptions? options,
         out FSharpUnionInfo? fsharpUnionInfo,
-        out FSharpFuncInfo? fSharpFuncInfo)
+        out FSharpFuncInfo? fSharpFuncInfo,
+        out CSharpUnionInfo? cSharpUnionInfo)
     {
         fsharpUnionInfo = null;
         fSharpFuncInfo = null;
+        cSharpUnionInfo = null;
 
         if (options?.Marshaler is not null)
         {
@@ -550,6 +559,12 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             }
 
             if (customAttributeData.Any(attrData => attrData.AttributeType == typeof(KnownTypeAttribute)))
+            {
+                return TypeShapeKind.Union;
+            }
+
+            if (options?.RequestedKind is null or TypeShapeKind.Union &&
+                ReflectionHelpers.TryResolveCSharpUnionMetadata(type, out cSharpUnionInfo))
             {
                 return TypeShapeKind.Union;
             }

@@ -25,19 +25,29 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
         switch (shape)
         {
             case IEnumTypeShape enumShape:
-                AssertType("string");
+                JsonArray enumAlternatives = Assert.IsType<JsonArray>(schema["anyOf"]);
+                Assert.Equal(2, enumAlternatives.Count);
+                JsonObject enumNames = Assert.IsType<JsonObject>(enumAlternatives[0]);
+                Assert.Equal("string", (string?)enumNames["type"]);
+                Assert.Equal("integer", (string?)enumAlternatives[1]!["type"]);
                 if (enumShape.IsFlags)
                 {
-                    Assert.DoesNotContain("enum", schema);
+                    Assert.DoesNotContain("enum", enumNames);
                 }
                 else
                 {
-                    Assert.Equal(Enum.GetNames(enumShape.Type), schema["enum"]!.AsArray().Select(node => (string)node!));
+                    Assert.Equal(Enum.GetNames(enumShape.Type), enumNames["enum"]!.AsArray().Select(node => (string)node!));
                 }
                 break;
 
             case IOptionalTypeShape nullableShape:
                 JsonObject nullableElementSchema = JsonSchemaGenerator.Generate(nullableShape.ElementType);
+                if (schema["anyOf"] is JsonArray nullableAlternatives)
+                {
+                    Assert.Equal("null", (string?)nullableAlternatives[nullableAlternatives.Count - 1]!["type"]);
+                    nullableAlternatives.RemoveAt(nullableAlternatives.Count - 1);
+                }
+
                 schema.Remove("type");
                 nullableElementSchema.Remove("type");
                 Assert.True(JsonNode.DeepEquals(nullableElementSchema, schema));
@@ -108,6 +118,20 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
     }
 
     [Theory]
+    [InlineData(BindingFlags.Public)]
+    [InlineData(BindingFlags.Public | BindingFlags.Static)]
+    [InlineData((BindingFlags)0x40000000)]
+    public void FlagsSchemaMatchesNamedAndNumericOutput(BindingFlags value)
+    {
+        ITypeShape<BindingFlags> shape = providerUnderTest.Provider.GetTypeShapeOrThrow<BindingFlags>();
+        string json = JsonSerializerTS.CreateConverter(shape).Serialize(value);
+        JsonSchema schema = JsonSchema.FromText(JsonSchemaGenerator.Generate(shape).ToJsonString());
+        using JsonDocument document = JsonDocument.Parse(json);
+
+        Assert.True(schema.Evaluate(document.RootElement).IsValid);
+    }
+
+    [Theory]
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
     public void SchemaMatchesJsonSerializer<T>(TestCase<T> testCase)
     {
@@ -121,6 +145,20 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
 
         ITypeShape<T> shape = providerUnderTest.ResolveShape(testCase);
         JsonObject schema = JsonSchemaGenerator.Generate(shape);
+        if (typeof(T) == typeof(CSharpNumericUnion) ||
+            typeof(T) == typeof(CSharpAmbiguousNumericUnion) ||
+            typeof(T) == typeof(CSharpNullableValueUnion) ||
+            typeof(T) == typeof(CSharpObjectUnion) ||
+            typeof(T) == typeof(CSharpHierarchyUnion) ||
+            typeof(T) == typeof(CSharpConstructorUnion))
+        {
+            // These unions have overlapping JSON categories (e.g. int and long both map to numbers).
+            // The converter rejects that ambiguity on first read/write, rather than at construction.
+            var converter = JsonSerializerTS.CreateConverter(shape);
+            Assert.Throws<InvalidOperationException>(() => converter.Serialize(testCase.Value));
+            return;
+        }
+
         string json = JsonSerializerTS.CreateConverter(shape).Serialize(testCase.Value);
 
         JsonSchema jsonSchema = JsonSchema.FromText(JsonSerializer.Serialize(schema));
@@ -188,6 +226,37 @@ public abstract class JsonSchemaTests(ProviderUnderTest providerUnderTest)
             """);
 
         Assert.True(JsonNode.DeepEquals(expectedSchema, actualSchema));
+    }
+
+    [Fact]
+    public void RecursiveSchemaDescribesInlinePayloadWithoutSelfReference()
+    {
+        ITypeShape<CSharpRecursiveUnion> shape = providerUnderTest.ResolveShape(TestCase.Create(new CSharpRecursiveUnion(true)));
+        string schema = JsonSchemaGenerator.Generate(shape).ToJsonString();
+        Assert.Equal("""{"$schema":"https://json-schema.org/draft/2020-12/schema","anyOf":[{"type":"boolean"}]}""", schema);
+    }
+
+    [Theory]
+    [MemberData(nameof(GetSchemaNullCases))]
+    public void SchemaNullabilityFollowsPayloadCases<T>(TestCase<T> testCase, bool acceptsNull)
+    {
+        ITypeShape<T> shape = providerUnderTest.ResolveShape(testCase);
+        string schema = JsonSchemaGenerator.Generate(shape).ToJsonString();
+        Assert.Equal(acceptsNull, schema.Contains("\"null\""));
+    }
+
+    public static IEnumerable<object[]> GetSchemaNullCases()
+    {
+        yield return [TestCase.Create(new CSharpScalarUnion(42)), true];
+        yield return [TestCase.Create(new CSharpValueUnion(42)), false];
+    }
+
+    [Fact]
+    public void StructuralRecursionRetainsReferences()
+    {
+        ITypeShape<CSharpTreeUnion> shape = providerUnderTest.ResolveShape(TestCase.Create(new CSharpTreeUnion(true)));
+        JsonObject schema = JsonSchemaGenerator.Generate(shape);
+        Assert.Equal("#", (string?)schema["anyOf"]![1]!["items"]!["$ref"]);
     }
 }
 

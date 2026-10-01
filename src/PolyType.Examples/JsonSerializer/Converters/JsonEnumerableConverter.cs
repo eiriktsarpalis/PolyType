@@ -10,8 +10,10 @@ using PolyType.Examples.Utilities;
 
 namespace PolyType.Examples.JsonSerializer.Converters;
 
-internal class JsonEnumerableConverter<TEnumerable, TElement>(JsonConverter<TElement> elementConverter, IEnumerableTypeShape<TEnumerable, TElement> typeShape) : JsonConverter<TEnumerable>
+internal class JsonEnumerableConverter<TEnumerable, TElement>(JsonConverter<TElement> elementConverter, IEnumerableTypeShape<TEnumerable, TElement> typeShape) : JsonConverter<TEnumerable>, ISchematizedJsonConverter
 {
+    public JsonValueType ValueType => JsonValueType.Array;
+
     private static readonly bool s_isIList = typeof(IList<TElement>).IsAssignableFrom(typeof(TEnumerable));
     private protected readonly JsonConverter<TElement> _elementConverter = elementConverter;
     private readonly Func<TEnumerable, IEnumerable<TElement>> _getEnumerable = typeShape.GetGetPotentiallyBlockingEnumerable();
@@ -133,8 +135,10 @@ internal sealed class JsonParameterizedEnumerableConverter<TEnumerable, TElement
     }
 }
 
-internal sealed class JsonMDArrayConverter<TArray, TElement>(JsonConverter<TElement> elementConverter, int rank) : JsonConverter<TArray>
+internal sealed class JsonMDArrayConverter<TArray, TElement>(JsonConverter<TElement> elementConverter, int rank) : JsonConverter<TArray>, ISchematizedJsonConverter
 {
+    public JsonValueType ValueType => JsonValueType.Array;
+
     [ThreadStatic] private static int[]? _dimensions;
 
     [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The Array.CreateInstance method generates TArray instances.")]
