@@ -138,7 +138,8 @@ internal sealed partial class SourceFormatter
         writer.Indentation += 2;
         if (unionCase.IsNullable)
         {
-            // Match null separately so the switch retains a reachable malformed-payload rejection path.
+            // Temporary workaround for https://github.com/dotnet/roslyn/issues/85868.
+            // Matching null separately keeps the switch non-exhaustive and its malformed-payload rejection path reachable.
             writer.WriteLine($$"""
                 if (value is null)
                 {
