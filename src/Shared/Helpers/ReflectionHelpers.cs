@@ -114,18 +114,6 @@ internal static partial class ReflectionHelpers
         return null;
     }
 
-    public static ParameterInfo GetGenericParameterDefinition(this ParameterInfo parameter)
-    {
-        if (parameter.Member is { DeclaringType.IsConstructedGenericType: true }
-                             or MethodInfo { IsGenericMethod: true })
-        {
-            var genericMethod = (MethodBase)parameter.Member.GetGenericMemberDefinition();
-            return genericMethod.GetParameters()[parameter.Position];
-        }
-
-        return parameter;
-    }
-
     public static Type GetParameterType(this ParameterInfo parameter)
     {
         Type parameterType = parameter.ParameterType;
@@ -182,29 +170,6 @@ internal static partial class ReflectionHelpers
         }
 
         return false;
-    }
-
-    [UnconditionalSuppressMessage("Trimming", "IL2075:'this' argument does not satisfy 'DynamicallyAccessedMembersAttribute' in call to target method. The return value of the source method does not have matching annotations.", Justification = "Looking up the generic member definition of the input.")]
-    public static MemberInfo GetGenericMemberDefinition(this MemberInfo member)
-    {
-        if (member is Type type)
-        {
-            return type.IsConstructedGenericType ? type.GetGenericTypeDefinition() : type;
-        }
-
-        if (member.DeclaringType!.IsConstructedGenericType)
-        {
-            return member.DeclaringType.GetGenericTypeDefinition()
-                .GetMember(member.Name, AllMemberFlags)
-                .First(m => m.MetadataToken == member.MetadataToken);
-        }
-
-        if (member is MethodInfo { IsGenericMethod: true } method)
-        {
-            return method.GetGenericMethodDefinition();
-        }
-
-        return member;
     }
 
     public static bool CanBeGenericArgument(this Type type)
