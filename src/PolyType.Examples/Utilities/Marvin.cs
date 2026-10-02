@@ -68,7 +68,8 @@ internal static class Marvin
             Debug.Assert(count >= 4);
 
             // This read overlaps already-consumed bytes, which are shifted out below.
-            uint partialResult = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref data, (int)(count & 7) - 4));
+            // Keep the subtraction native-sized so Mono preserves negative offsets.
+            uint partialResult = Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref data, (nint)(count & 7) - 4));
             count = ~count << 3;
 
             if (BitConverter.IsLittleEndian)
