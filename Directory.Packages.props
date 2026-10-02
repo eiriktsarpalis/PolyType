@@ -39,7 +39,7 @@
     <PackageVersion Include="Microsoft.Testing.Extensions.CrashDump" Version="2.4.1" />
     <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="2.4.1" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="1.1.4" />
-    <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
+    <PackageVersion Include="BenchmarkDotNet" Version="0.16.0-preview.2" />
     <PackageVersion Include="JsonSchema.Net" Version="9.4.0" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsAnalyzerProject)'=='true'">
