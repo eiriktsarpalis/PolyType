@@ -41,7 +41,7 @@ public class JsonSerializeBenchmark
     [Benchmark(Baseline = true)]
     public void Serialize_StjReflection()
     {
-        JsonSerializer.Serialize(_writer, JsonData.Value, JsonData.StjSourceGenInfo);
+        JsonSerializer.Serialize(_writer, JsonData.Value, JsonData.StjReflectionInfo);
         Reset();
     }
 
