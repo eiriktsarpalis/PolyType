@@ -9,12 +9,109 @@ namespace PolyType.Tests;
 
 public static class ReflectionTypeShapeProviderTests
 {
+    private static readonly ReflectionTypeShapeProvider s_noEmitProvider = ReflectionTypeShapeProvider.Create(new() { UseReflectionEmit = false });
+    private static readonly ReflectionTypeShapeProvider s_emitProvider = ReflectionTypeShapeProvider.Create(new() { UseReflectionEmit = true });
+
+    private static ReflectionTypeShapeProvider GetProvider(bool useEmit) => useEmit ? s_emitProvider : s_noEmitProvider;
+
+    [Theory]
+    [InlineData(typeof(NonClosedInferenceTarget), false)]
+    [InlineData(typeof(NonClosedInferenceTarget), true)]
+    [InlineData(typeof(ClosedObjectInferenceTarget), false)]
+    [InlineData(typeof(ClosedObjectInferenceTarget), true)]
+    [InlineData(typeof(ClosedSurrogateInferenceTarget), false)]
+    [InlineData(typeof(ClosedSurrogateInferenceTarget), true)]
+    public static void ClosedInference_RejectsIncompatiblePublicConfiguration(Type type, bool useEmit)
+    {
+        var provider = GetProvider(useEmit);
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => provider.GetTypeShape(type));
+        Assert.Contains(nameof(TypeShapeAttribute.InferClosedTypePolymorphism), exception.Message);
+    }
+
+    [TypeShape(InferClosedTypePolymorphism = true)]
+    private class NonClosedInferenceTarget;
+
+    [TypeShape(InferClosedTypePolymorphism = true, Kind = TypeShapeKind.Object)]
+    private closed class ClosedObjectInferenceTarget;
+
+    [TypeShape(InferClosedTypePolymorphism = true, Marshaler = typeof(object))]
+    private closed class ClosedSurrogateInferenceTarget;
+
+    [Theory]
+    [MemberData(nameof(GetNonPublicClosedHierarchies))]
+    public static void NonPublicClosedHierarchiesRetainTheirVisibleTerminalCases(Type root, Type leaf, bool useEmit)
+    {
+        var provider = GetProvider(useEmit);
+        var shape = Assert.IsAssignableFrom<IUnionTypeShape>(provider.GetTypeShape(root));
+        var unionCase = Assert.Single(shape.UnionCases);
+        Assert.Equal(leaf, unionCase.UnionCaseType.Type);
+        Assert.Equal("Leaf", unionCase.Name);
+        Assert.False(unionCase.IsTagSpecified);
+        Assert.Equal(0, unionCase.Tag);
+    }
+
+    public static IEnumerable<object[]> GetNonPublicClosedHierarchies()
+    {
+        foreach ((Type root, Type leaf) in NonPublicClosedHierarchies.GetCases())
+        {
+            yield return [root, leaf, false];
+            yield return [root, leaf, true];
+        }
+    }
+
+    private class NonPublicClosedHierarchies
+    {
+        public static IEnumerable<(Type, Type)> GetCases()
+        {
+            yield return Protected.GetCase();
+            yield return PrivateProtected.GetCase();
+            yield return ProtectedInternal.GetCase();
+            yield return Private.GetCase();
+        }
+
+        public class Protected
+        {
+            public static (Type, Type) GetCase() => (typeof(Root), typeof(Leaf));
+
+            [TypeShape(InferClosedTypePolymorphism = true)]
+            protected closed class Root;
+            protected sealed class Leaf : Root;
+        }
+
+        public class PrivateProtected
+        {
+            public static (Type, Type) GetCase() => (typeof(Root), typeof(Leaf));
+
+            [TypeShape(InferClosedTypePolymorphism = true)]
+            private protected closed class Root;
+            private protected sealed class Leaf : Root;
+        }
+
+        public class ProtectedInternal
+        {
+            public static (Type, Type) GetCase() => (typeof(Root), typeof(Leaf));
+
+            [TypeShape(InferClosedTypePolymorphism = true)]
+            protected internal closed class Root;
+            protected internal sealed class Leaf : Root;
+        }
+
+        public class Private
+        {
+            public static (Type, Type) GetCase() => (typeof(Root), typeof(Leaf));
+
+            [TypeShape(InferClosedTypePolymorphism = true)]
+            private closed class Root;
+            private sealed class Leaf : Root;
+        }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public static void CollapsedGenericUnionCases_AreRejected(bool useEmit)
     {
-        var provider = ReflectionTypeShapeProvider.Create(new() { UseReflectionEmit = useEmit });
+        var provider = GetProvider(useEmit);
         Assert.Throws<InvalidOperationException>(() => provider.GetTypeShape<CSharpGenericUnion<int, int>>());
     }
 
@@ -23,7 +120,7 @@ public static class ReflectionTypeShapeProviderTests
     [InlineData(true)]
     public static void CollidingUnionCaseNames_AreRejected(bool useEmit)
     {
-        var provider = ReflectionTypeShapeProvider.Create(new() { UseReflectionEmit = useEmit });
+        var provider = GetProvider(useEmit);
         Assert.Throws<InvalidOperationException>(() => provider.GetTypeShape<NameCollisionUnion>());
     }
 

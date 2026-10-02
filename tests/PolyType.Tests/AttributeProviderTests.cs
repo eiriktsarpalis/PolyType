@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using PolyType.Utilities;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 
@@ -10,6 +11,42 @@ public abstract partial class AttributeProviderTests(ProviderUnderTest providerU
 {
     protected ProviderUnderTest ProviderUnderTest { get; } = providerUnderTest;
     protected ITypeShapeProvider Provider => ProviderUnderTest.Provider;
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AttributeProviderOverloads_HonorInheritanceAndMissingAttributes(bool inherit)
+    {
+        var attributes = Provider.GetTypeShapeOrThrow<DerivedClassWithInheritableAttributes>().AttributeProvider;
+        ICustomAttributeProvider legacyProvider = attributes;
+        string[] expectedNames = inherit ? ["BaseTypeAttribute"] : [];
+
+        Assert.Equal(expectedNames, attributes.GetCustomAttributes<InheritableAttribute>(inherit).Select(a => a.Name));
+        Assert.Equal(expectedNames, attributes.GetCustomAttributes(inherit).OfType<InheritableAttribute>().Select(a => a.Name));
+        Assert.Equal(expectedNames, attributes.GetCustomAttributes(typeof(InheritableAttribute), inherit).Cast<InheritableAttribute>().Select(a => a.Name));
+        Assert.Equal(expectedNames, ReflectionUtilities.GetCustomAttributes<InheritableAttribute>(legacyProvider, inherit).Select(a => a.Name));
+        Assert.Equal(inherit, attributes.IsDefined(typeof(InheritableAttribute), inherit));
+        Assert.Equal(inherit, ReflectionUtilities.IsDefined<InheritableAttribute>(legacyProvider, inherit));
+        Assert.Equal(inherit ? "BaseTypeAttribute" : null, ReflectionUtilities.GetCustomAttribute<InheritableAttribute>(legacyProvider, inherit)?.Name);
+
+        Assert.False(attributes.IsDefined(typeof(CLSCompliantAttribute), inherit));
+        Assert.False(ReflectionUtilities.IsDefined<CLSCompliantAttribute>(legacyProvider, inherit));
+        Assert.Null(ReflectionUtilities.GetCustomAttribute<CLSCompliantAttribute>(legacyProvider, inherit));
+        Assert.Empty(attributes.GetCustomAttributes(typeof(CLSCompliantAttribute), inherit));
+        Assert.Empty(ReflectionUtilities.GetCustomAttributes<CLSCompliantAttribute>(legacyProvider, inherit));
+
+        Assert.Throws<ArgumentNullException>(() => attributes.GetCustomAttributes(null!, inherit));
+        Assert.Throws<ArgumentNullException>(() => attributes.IsDefined(null!, inherit));
+    }
+
+    [Fact]
+    public void TypeValuedAttributeArguments_PreserveInaccessibleAndGenericTypes()
+    {
+        var shape = ProviderUnderTest.ResolveShape(TestCase.Create(new TypeWithInaccessibleAttributeTypes()));
+        var attribute = shape.AttributeProvider.GetCustomAttribute<TypeReferencesAttribute>();
+        Assert.NotNull(attribute);
+        Assert.Equal(TypeWithInaccessibleAttributeTypes.ExpectedTypes, attribute.Types);
+    }
 
     [Fact]
     public void TypeShape_ReturnsExpectedAttributes()
@@ -691,6 +728,25 @@ public abstract partial class AttributeProviderTests(ProviderUnderTest providerU
             }
             return null;
         }
+    }
+
+    [AttributeUsage(AttributeTargets.Class)]
+    public sealed class TypeReferencesAttribute(params Type[] types) : Attribute
+    {
+        public Type[] Types { get; } = types;
+    }
+
+    [GenerateShape]
+    [TypeReferences(typeof(TypeWithInaccessibleAttributeTypes.Hidden),
+        typeof(List<TypeWithInaccessibleAttributeTypes.Hidden>),
+        typeof(TypeWithInaccessibleAttributeTypes.Hidden[,]),
+        typeof(List<>))]
+    public partial class TypeWithInaccessibleAttributeTypes
+    {
+        public static Type[] ExpectedTypes =>
+            [typeof(Hidden), typeof(List<Hidden>), typeof(Hidden[,]), typeof(List<>)];
+
+        private sealed class Hidden;
     }
 
     /// <summary>

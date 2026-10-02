@@ -143,6 +143,19 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
     private static string FormatNull(string? stringExpr) => stringExpr is null ? "null" : stringExpr;
     private static string FormatStringLiteral(string value) => SymbolDisplay.FormatLiteral(value, quote: true);
 
+    private static string FormatParameterKind(ParameterShapeModel parameter)
+    {
+        string identifier = parameter.Kind switch
+        {
+            ParameterKind.MethodParameter => "MethodParameter",
+            ParameterKind.RequiredMember or
+            ParameterKind.OptionalMember => "MemberInitializer",
+            _ => throw new InvalidOperationException($"Unsupported parameter kind: {parameter.Kind}"),
+        };
+
+        return $"global::PolyType.Abstractions.ParameterKind.{identifier}";
+    }
+
     private static string FormatCollectionConstructionOptionsTypeName(TypeId keyType)
         => $"global::PolyType.Abstractions.CollectionConstructionOptions<{keyType}>";
 

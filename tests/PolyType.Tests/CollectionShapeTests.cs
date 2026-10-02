@@ -2,6 +2,21 @@
 
 public abstract partial class CollectionShapeTests(ProviderUnderTest providerUnderTest)
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CollectionMetadata_RetainsMethodsEventsAndAssociatedShapes(bool dictionary)
+    {
+        ITypeShape shape = dictionary
+            ? providerUnderTest.ResolveShape(TestCase.Create(new ObservableLookup { ["first"] = 42 }))
+            : providerUnderTest.ResolveShape(TestCase.Create(new ObservableValues { 1, 2, 3 }));
+        Assert.Equal("Sum", Assert.Single(shape.Methods).Name);
+        Assert.Equal("Added", Assert.Single(shape.Events).Name);
+        ITypeShape? associated = shape.GetAssociatedTypeShape(typeof(CollectionMetadataInfo));
+        Assert.NotNull(associated);
+        Assert.Equal(typeof(CollectionMetadataInfo), associated.Type);
+    }
+
     [Fact]
     public void MutableListWithInternalConstructorCannotBeConstructed()
     {
@@ -67,6 +82,40 @@ public abstract partial class CollectionShapeTests(ProviderUnderTest providerUnd
         {
         }
     }
+
+    [GenerateShape, AssociatedTypeShape(typeof(CollectionMetadataInfo))]
+    public partial class ObservableValues : List<int>
+    {
+        [MethodShape]
+        public int Sum() => this.Aggregate(0, (sum, value) => sum + value);
+
+        [EventShape]
+        public event Action<int>? Added;
+
+        public new void Add(int value)
+        {
+            base.Add(value);
+            Added?.Invoke(value);
+        }
+    }
+
+    [GenerateShape, AssociatedTypeShape(typeof(CollectionMetadataInfo))]
+    public partial class ObservableLookup : Dictionary<string, int>
+    {
+        [MethodShape]
+        public int Sum() => Values.Aggregate(0, (sum, value) => sum + value);
+
+        [EventShape]
+        public event Action<string>? Added;
+
+        public new void Add(string key, int value)
+        {
+            base.Add(key, value);
+            Added?.Invoke(key);
+        }
+    }
+
+    public sealed class CollectionMetadataInfo;
 
     [GenerateShapeFor<PublicListOfIntWithInternalConstructor>]
     partial class Witness;

@@ -502,8 +502,6 @@ public partial class TypeDataModelGenerator
         CollectionConstructorParameter ClassifyParameter(IParameterSymbol parameter)
         {
             ITypeSymbol parameterType = parameter.Type;
-            INamedTypeSymbol? namedType = parameter as INamedTypeSymbol;
-
             if (collectionType.IsAssignableFrom(parameterType))
             {
                 // The parameter is the same type as the collection, creating a recursive relationship.

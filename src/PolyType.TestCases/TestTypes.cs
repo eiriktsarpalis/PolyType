@@ -258,6 +258,12 @@ public static class TestTypes
         yield return TestCase.Create(new DictionaryWithEnumerableCtor([new("key", 42)]));
         yield return TestCase.Create(new CollectionWithSpanCtor([1, 2, 1, 3]), usesSpanConstructor: true);
         yield return TestCase.Create(new DictionaryWithSpanCtor([new("key", 42)]), usesSpanConstructor: true);
+        yield return TestCase.Create(new SetWithRequiredEqualityComparer(EqualityComparer<int>.Default) { 1, 2, 3 }, isSet: true);
+        yield return TestCase.Create(new SetWithRequiredComparer(Comparer<int>.Default) { 1, 2, 3 }, isSet: true);
+        yield return TestCase.Create(new EnumerableWithRequiredEqualityComparer([1, 2, 3], EqualityComparer<int>.Default));
+        yield return TestCase.Create(new EnumerableWithRequiredComparer([1, 2, 3], Comparer<int>.Default));
+        yield return TestCase.Create(new HashSetBackedCollection([1, 2, 3]));
+        yield return TestCase.Create(new TupleBackedDictionary([Tuple.Create(1, "first"), Tuple.Create(2, "second")]));
         yield return TestCase.Create(DictionaryWithBuilderAttribute.Create([new("key1", 1), new("key2", 2)], comparer: null));
         yield return TestCase.Create(GenericDictionaryWithBuilderAttribute.Create<string, int>([new("key1", 1), new("key2", 2)], comparer: null), p);
 
@@ -267,6 +273,9 @@ public static class TestTypes
         yield return TestCase.Create(new MyKeyedCollection<string> { "1", "2", "1", "3" }, p);
         yield return TestCase.Create(new ReadOnlyCollection<int>([1, 2, 1, 3]), p);
         yield return TestCase.Create(new ReadOnlyDictionary<int, int>(new Dictionary<int, int> { [1] = 1, [2] = 2 }), p);
+        yield return TestCase.Create<ISequenceView<int>, Witness>(new SequenceView<int>([1, 2, 3]), p);
+        yield return TestCase.Create<ICatalogueView<string, int>, Witness>(new CatalogueView<string, int>(
+            new Dictionary<string, int> { ["first"] = 42, ["second"] = 43 }), p);
 #if NET
         yield return TestCase.Create(new ReadOnlySet<int>(new HashSet<int> { 1, 2, 3 }), isSet: true, provider: p);
 #endif
@@ -337,6 +346,11 @@ public static class TestTypes
         yield return TestCase.Create(new SimpleRecord(42));
         yield return TestCase.Create(new GenericRecord<int>(42), p);
         yield return TestCase.Create(new GenericRecord<string>("str"), p);
+        yield return TestCase.Create(new GenericRecord<long>(long.MinValue), p);
+        yield return TestCase.Create(new GenericRecord<ulong>(ulong.MaxValue), p);
+        yield return TestCase.Create(new GenericRecord<float>(1.5f), p);
+        yield return TestCase.Create(new GenericRecord<double>(-2.75d), p);
+        yield return TestCase.Create(new GenericRecord<char>('C'), p);
         yield return TestCase.Create(new GenericRecord<GenericRecord<bool>>(new GenericRecord<bool>(true)), p);
         yield return TestCase.Create(new GenericRecordStruct<int>(42), p);
         yield return TestCase.Create(new GenericRecordStruct<string>("str"), p);
@@ -457,6 +471,8 @@ public static class TestTypes
         yield return TestCase.Create(new ClassWithIndexer());
 
         yield return TestCase.Create(new RecordWithDefaultParams());
+        yield return TestCase.Create(new TransportSettings());
+        yield return TestCase.Create(new SensorReading(1234, 21.5, 0.25f, 'C'));
         yield return TestCase.Create(new RecordWithDefaultParams2());
 
         yield return TestCase.Create(new RecordWithNullableDefaultParams());
@@ -619,6 +635,13 @@ public static class TestTypes
         yield return TestCase.Create(ClassWithMultipleRefConstructorParametersPrivate.Create(), hasRefConstructorParameters: true);
         yield return TestCase.Create(GenericClassWithMultipleRefConstructorParametersPrivate<int>.Create(42), hasRefConstructorParameters: true, provider: p);
         yield return TestCase.Create(GenericClassWithMultipleRefConstructorParametersPrivate<string>.Create("str"), hasRefConstructorParameters: true, provider: p);
+        yield return TestCase.Create(GenericClassWithMultipleRefConstructorParametersPrivate<ushort>.Create(65000), hasRefConstructorParameters: true, provider: p);
+        yield return TestCase.Create(GenericClassWithMultipleRefConstructorParametersPrivate<uint>.Create(uint.MaxValue), hasRefConstructorParameters: true, provider: p);
+        yield return TestCase.Create(GenericClassWithMultipleRefConstructorParametersPrivate<long>.Create(long.MinValue), hasRefConstructorParameters: true, provider: p);
+        yield return TestCase.Create(GenericClassWithMultipleRefConstructorParametersPrivate<float>.Create(1.5f), hasRefConstructorParameters: true, provider: p);
+        yield return TestCase.Create(GenericClassWithMultipleRefConstructorParametersPrivate<double>.Create(-2.75d), hasRefConstructorParameters: true, provider: p);
+        yield return TestCase.Create(GenericClassWithMultipleRefConstructorParametersPrivate<byte>.Create(byte.MaxValue), hasRefConstructorParameters: true, provider: p);
+        yield return TestCase.Create(GenericClassWithMultipleRefConstructorParametersPrivate<DayOfWeek>.Create(DayOfWeek.Friday), hasRefConstructorParameters: true, provider: p);
         yield return TestCase.Create(GenericClassWithPrivateConstructor<int>.Create(42), p);
         yield return TestCase.Create(GenericClassWithPrivateConstructor<string>.Create("str"), p);
         yield return TestCase.Create(GenericClassWithPrivateField<int>.Create(42), p);
@@ -1088,8 +1111,8 @@ public sealed partial class ExplicitlyImplementedIDictionary : IDictionary
     bool IDictionary.IsReadOnly => throw new NotImplementedException();
     bool ICollection.IsSynchronized => throw new NotImplementedException();
     object ICollection.SyncRoot => throw new NotImplementedException();
-    ICollection IDictionary.Keys => throw new NotImplementedException();
-    ICollection IDictionary.Values => throw new NotImplementedException();
+    ICollection IDictionary.Keys => _dictionary.Keys;
+    ICollection IDictionary.Values => _dictionary.Values;
     void ICollection.CopyTo(Array array, int index) => throw new NotImplementedException();
     void IDictionary.Remove(object? key) => throw new NotImplementedException();
 }
@@ -1728,6 +1751,12 @@ public partial record struct StructRecord(int x, int y, int z, int w);
 public partial record RecordWithDefaultParams(bool x1 = true, byte x2 = 10, sbyte x3 = 10, char x4 = 'x', ushort x5 = 10, short x6 = 10, long x7 = 10);
 
 [GenerateShape]
+public partial record TransportSettings(ushort Port = 65000, short Signal = -300, byte Marker = 255, sbyte Error = -128);
+
+[GenerateShape]
+public partial record SensorReading(long Timestamp, double Value, float Accuracy, char Unit);
+
+[GenerateShape]
 public partial record RecordWithDefaultParams2(ulong x1 = 10, float x2 = 3.1f, double x3 = 3.1d, decimal x4 = -3.1415926m, string x5 = "str", string? x6 = null, object? x7 = null);
 
 [GenerateShape]
@@ -2004,6 +2033,89 @@ public static class GenericCollectionWithBuilderAttribute
         }
         return result;
     }
+}
+
+public interface ISequenceView<T> : IEnumerable<T>;
+
+public sealed class SequenceView<T>(IEnumerable<T> values) : ISequenceView<T>
+{
+    public IEnumerator<T> GetEnumerator() => values.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+}
+
+public interface ICatalogueView<TKey, TValue> : IReadOnlyDictionary<TKey, TValue>
+    where TKey : notnull;
+
+public sealed class CatalogueView<TKey, TValue>(IDictionary<TKey, TValue> values)
+    : System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue>(values), ICatalogueView<TKey, TValue>
+    where TKey : notnull;
+
+[GenerateShape]
+public partial class HashSetBackedCollection(HashSet<int> values) : IReadOnlyCollection<int>
+{
+    public int Count => values.Count;
+    public IEnumerator<int> GetEnumerator() => values.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+}
+
+[GenerateShape]
+public partial class TupleBackedDictionary : IReadOnlyDictionary<int, string>
+{
+    private readonly Dictionary<int, string> _values;
+
+    public TupleBackedDictionary(IEnumerable<Tuple<int, string>> values)
+    {
+        _values = values.ToDictionary(item => item.Item1, item => item.Item2);
+    }
+
+    public int Count => _values.Count;
+    public string this[int key] => _values[key];
+    public IEnumerable<int> Keys => _values.Keys;
+    public IEnumerable<string> Values => _values.Values;
+    public bool ContainsKey(int key) => _values.ContainsKey(key);
+    public bool TryGetValue(int key, out string value) => _values.TryGetValue(key, out value!);
+    public IEnumerator<KeyValuePair<int, string>> GetEnumerator() => _values.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+}
+
+[GenerateShape]
+public partial class SetWithRequiredEqualityComparer(IEqualityComparer<int> comparer)
+    : HashSet<int>(comparer ?? throw new ArgumentNullException(nameof(comparer)));
+
+[GenerateShape]
+public partial class SetWithRequiredComparer(IComparer<int> comparer)
+    : SortedSet<int>(comparer ?? throw new ArgumentNullException(nameof(comparer)));
+
+[GenerateShape]
+public partial class EnumerableWithRequiredEqualityComparer : IReadOnlyCollection<int>
+{
+    private readonly HashSet<int> _values;
+
+    public EnumerableWithRequiredEqualityComparer(IEnumerable<int> values, IEqualityComparer<int> comparer)
+    {
+        _values = new(values, comparer ?? throw new ArgumentNullException(nameof(comparer)));
+    }
+
+    public IEqualityComparer<int> Comparer => _values.Comparer;
+    public int Count => _values.Count;
+    public IEnumerator<int> GetEnumerator() => _values.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+}
+
+[GenerateShape]
+public partial class EnumerableWithRequiredComparer : IReadOnlyCollection<int>
+{
+    private readonly SortedSet<int> _values;
+
+    public EnumerableWithRequiredComparer(IEnumerable<int> values, IComparer<int> comparer)
+    {
+        _values = new(values, comparer ?? throw new ArgumentNullException(nameof(comparer)));
+    }
+
+    public IComparer<int> Comparer => _values.Comparer;
+    public int Count => _values.Count;
+    public IEnumerator<int> GetEnumerator() => _values.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
 
 [GenerateShape]
@@ -3742,6 +3854,11 @@ public delegate Task<int> LargeAsyncDelegate(
 [GenerateShapeFor<ExplicitlyImplementedDictionary<string, string>>]
 [GenerateShapeFor<GenericRecord<int>>]
 [GenerateShapeFor<GenericRecord<string>>]
+[GenerateShapeFor<GenericRecord<long>>]
+[GenerateShapeFor<GenericRecord<ulong>>]
+[GenerateShapeFor<GenericRecord<float>>]
+[GenerateShapeFor<GenericRecord<double>>]
+[GenerateShapeFor<GenericRecord<char>>]
 [GenerateShapeFor<GenericRecord<GenericRecord<bool>>>]
 [GenerateShapeFor<GenericRecord<GenericRecord<int>>>]
 [GenerateShapeFor<GenericRecordStruct<int>>]
@@ -3816,6 +3933,8 @@ public delegate Task<int> LargeAsyncDelegate(
 [GenerateShapeFor<Collection<int>>]
 [GenerateShapeFor<ReadOnlyCollection<int>>]
 [GenerateShapeFor<ReadOnlyDictionary<int, int>>]
+[GenerateShapeFor<ISequenceView<int>>]
+[GenerateShapeFor<ICatalogueView<string, int>>]
 #if NET
 [GenerateShapeFor<ReadOnlySet<int>>]
 #endif
@@ -3845,6 +3964,13 @@ public delegate Task<int> LargeAsyncDelegate(
 [GenerateShapeFor<GenericStructWithPrivateField<string>>]
 [GenerateShapeFor<GenericClassWithMultipleRefConstructorParametersPrivate<int>>]
 [GenerateShapeFor<GenericClassWithMultipleRefConstructorParametersPrivate<string>>]
+[GenerateShapeFor<GenericClassWithMultipleRefConstructorParametersPrivate<ushort>>]
+[GenerateShapeFor<GenericClassWithMultipleRefConstructorParametersPrivate<uint>>]
+[GenerateShapeFor<GenericClassWithMultipleRefConstructorParametersPrivate<long>>]
+[GenerateShapeFor<GenericClassWithMultipleRefConstructorParametersPrivate<float>>]
+[GenerateShapeFor<GenericClassWithMultipleRefConstructorParametersPrivate<double>>]
+[GenerateShapeFor<GenericClassWithMultipleRefConstructorParametersPrivate<byte>>]
+[GenerateShapeFor<GenericClassWithMultipleRefConstructorParametersPrivate<DayOfWeek>>]
 [GenerateShapeFor<GenericStructWithPrivateIncludedMembers<int>>]
 [GenerateShapeFor<GenericStructWithPrivateIncludedMembers<string>>]
 [GenerateShapeFor<GenericPrivateDefaultConstructor<int>>]

@@ -528,18 +528,6 @@ internal static class RoslynHelpers
         }
     }
 
-    public static IMethodSymbol? GetMethodSymbol(this ITypeSymbol? type, Func<IMethodSymbol, bool> predicate)
-    {
-        if (type is null)
-        {
-            return null;
-        }
-
-        return type.GetMembers()
-            .OfType<IMethodSymbol>()
-            .FirstOrDefault(predicate);
-    }
-
     public static IMethodSymbol? MakeGenericMethod(this IMethodSymbol? method, params ITypeSymbol[] arguments)
     {
         if (method is null)

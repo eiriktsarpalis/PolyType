@@ -1,12 +1,144 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using System.Reflection;
+using System.Collections.Immutable;
 using Xunit;
 
 namespace PolyType.Roslyn.Tests;
 
 public static class TypeDataModelGeneratorTests
 {
+    [Theory]
+    [InlineData("int?", TypeDataKind.Optional, TypeDataKind.Optional)]
+    [InlineData("System.ValueTuple<int, string>", TypeDataKind.Tuple, TypeDataKind.Tuple)]
+    [InlineData("System.Action<int>", TypeDataKind.Delegate, TypeDataKind.None)]
+    [InlineData("System.Collections.Generic.Dictionary<int, string>", TypeDataKind.Dictionary, TypeDataKind.Dictionary)]
+    [InlineData("System.Collections.Generic.Dictionary<int, string>", TypeDataKind.Enumerable, TypeDataKind.Enumerable)]
+    [InlineData("Payload", TypeDataKind.Enum, TypeDataKind.None)]
+    [InlineData("Payload", TypeDataKind.Optional, TypeDataKind.None)]
+    [InlineData("Payload", TypeDataKind.Tuple, TypeDataKind.None)]
+    [InlineData("Payload", TypeDataKind.Delegate, TypeDataKind.None)]
+    public static void ExplicitKindPolicy_ModelsSupportedContractsAndFallsBackForIncompatibleKinds(
+        string typeName, TypeDataKind requestedKind, TypeDataKind expectedKind)
+    {
+        CSharpCompilation compilation = CreateCompilation($$"""
+            public class Payload { public int Value { get; set; } }
+            public class Consumer { public {{typeName}} Value => throw new System.NotSupportedException(); }
+            """);
+        ITypeSymbol type = ((IPropertySymbol)compilation.GetTypeByMetadataName("Consumer")!.GetMembers("Value").Single()).Type;
+        var generator = new KindPolicyGenerator(compilation, requestedKind);
+        Assert.Equal(TypeDataModelGenerationStatus.Success, generator.IncludeType(type));
+        Assert.Equal(expectedKind, generator.GeneratedModels[type].Kind);
+        Assert.True(generator.GeneratedModels[type].IsRootType);
+    }
+
+    private sealed class KindPolicyGenerator(CSharpCompilation compilation, TypeDataKind requestedKind)
+        : TypeDataModelGenerator(compilation.Assembly, new KnownSymbols(compilation), TestContext.Current.CancellationToken)
+    {
+        protected override TypeDataModelGenerationStatus MapType(
+            ITypeSymbol type, TypeDataKind? kind, BindingFlags? flags,
+            ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext context,
+            TypeShapeRequirements requirements, out TypeDataModel? model) =>
+            base.MapType(type, requestedKind, flags, associatedTypes, ref context, requirements, out model);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void DelegateParameterPolicyControlsTheGeneratedTypeGraph(bool includeParameters)
+    {
+        CSharpCompilation compilation = CreateCompilation("public delegate string Callback(int value);");
+        INamedTypeSymbol type = compilation.GetTypeByMetadataName("Callback")!;
+        var generator = new DelegateModelGenerator(compilation, includeParameters);
+
+        Assert.Equal(TypeDataModelGenerationStatus.Success, generator.IncludeType(type));
+        Assert.True(generator.GeneratedModels[type].IsRootType);
+
+        if (includeParameters)
+        {
+            var model = Assert.IsType<DelegateDataModel>(generator.GeneratedModels[type]);
+            Assert.Equal("Invoke", model.InvokeMethod.Name);
+            Assert.Equal(SpecialType.System_String, model.ReturnedValueType!.SpecialType);
+            Assert.Equal(SpecialType.System_Int32, Assert.Single(model.Parameters).Parameter.Type.SpecialType);
+            Assert.Equal(TypeShapeRequirements.Full, model.Requirements);
+        }
+        else
+        {
+            var model = Assert.IsType<TypeDataModel>(generator.GeneratedModels[type]);
+            Assert.Equal(TypeShapeRequirements.None, model.Requirements);
+            Assert.Single(generator.GeneratedModels);
+        }
+    }
+
+    [Theory]
+    [InlineData("public unsafe delegate int Callback(int* value);")]
+    [InlineData("public unsafe delegate int* Callback();")]
+    public static void RequestedDelegateSignaturesRejectUnsupportedTypes(string source)
+    {
+        CSharpCompilation compilation = CreateCompilation(source);
+        var generator = new DelegateModelGenerator(compilation, includeParameters: true);
+
+        Assert.Equal(TypeDataModelGenerationStatus.UnsupportedType, generator.IncludeType(compilation.GetTypeByMetadataName("Callback")!));
+        Assert.Empty(generator.GeneratedModels);
+    }
+
+#if NET
+    [Theory]
+    [InlineData("System.Span<int>", EnumerableKind.SpanOfT)]
+    [InlineData("System.ReadOnlySpan<int>", EnumerableKind.ReadOnlySpanOfT)]
+    [InlineData("System.Memory<int>", EnumerableKind.MemoryOfT)]
+    [InlineData("System.ReadOnlyMemory<int>", EnumerableKind.ReadOnlyMemoryOfT)]
+    public static void ModelsContiguousCollectionKinds(string typeName, EnumerableKind expectedKind)
+    {
+        CSharpCompilation compilation = CreateCompilation($$"""
+            public class Container
+            {
+                public {{typeName}} Value => default;
+            }
+            """);
+        ITypeSymbol type = ((IPropertySymbol)compilation.GetTypeByMetadataName("Container")!.GetMembers("Value").Single()).Type;
+        TypeDataModelGenerator generator = CreateGenerator(compilation);
+
+        Assert.Equal(TypeDataModelGenerationStatus.Success, generator.IncludeType(type));
+        var model = Assert.IsType<EnumerableDataModel>(generator.GeneratedModels[type]);
+        Assert.Equal(expectedKind, model.EnumerableKind);
+        Assert.Equal(SpecialType.System_Int32, model.ElementType.SpecialType);
+        Assert.True(model.IsRootType);
+        Assert.Null(model.AppendMethod);
+        Assert.Null(model.FactoryMethod);
+    }
+#endif
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void RejectedTraversalDoesNotCommitPartialModels(bool rejectRoot)
+    {
+        CSharpCompilation compilation = CreateCompilation("public class Container : System.Collections.Generic.List<int> { }");
+        var generator = new TraversalPolicyGenerator(compilation, rejectRoot ? "Container" : "Int32");
+        ITypeSymbol boolType = compilation.GetSpecialType(SpecialType.System_Boolean);
+        Assert.Equal(TypeDataModelGenerationStatus.Success, generator.IncludeType(boolType));
+        var modelsBefore = generator.GeneratedModels;
+
+        Assert.Equal(TypeDataModelGenerationStatus.UnsupportedType, generator.IncludeType(compilation.GetTypeByMetadataName("Container")!));
+        Assert.Same(modelsBefore, generator.GeneratedModels);
+        Assert.Single(generator.GeneratedModels);
+        Assert.Equal(TypeDataModelGenerationStatus.Success, generator.IncludeType(boolType));
+        Assert.Same(modelsBefore, generator.GeneratedModels);
+    }
+
+    private sealed class DelegateModelGenerator(CSharpCompilation compilation, bool includeParameters)
+        : TypeDataModelGenerator(compilation.Assembly, new KnownSymbols(compilation), TestContext.Current.CancellationToken)
+    {
+        protected override bool IncludeDelegateParameters => includeParameters;
+    }
+
+    private sealed class TraversalPolicyGenerator(CSharpCompilation compilation, string rejectedType)
+        : TypeDataModelGenerator(compilation.Assembly, new KnownSymbols(compilation), TestContext.Current.CancellationToken)
+    {
+        protected override bool OnTypeTraversalStarting(ITypeSymbol type) => type.Name != rejectedType;
+    }
+
     private const string Contracts = """
         namespace System.Runtime.CompilerServices
         {
@@ -393,7 +525,7 @@ public static class TypeDataModelGeneratorTests
             "UnionModels",
             [CSharpSyntaxTree.ParseText(source, parseOptions)],
             references,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable, allowUnsafe: true));
         if (compilation.GetTypeByMetadataName("System.Runtime.CompilerServices.UnionAttribute") is null)
         {
             compilation = compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText(Contracts, parseOptions));

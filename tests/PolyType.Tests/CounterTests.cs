@@ -5,6 +5,19 @@ namespace PolyType.Tests;
 
 public abstract partial class CounterTests(ProviderUnderTest providerUnderTest)
 {
+#if NET
+    [Theory]
+    [InlineData(0)]
+    [InlineData(42)]
+    public void ShapeableEntryPoints_ReturnExpectedCounts(int value)
+    {
+        SimpleRecord record = new(value);
+        Assert.Equal(2, Counter.GetCount(record));
+        Assert.Equal(2, Counter.Create<SimpleRecord>(providerUnderTest.Provider)(record));
+        Assert.Equal(1, Counter.GetCount<int, Witness>(value));
+    }
+#endif
+
     [Theory]
     [MemberData(nameof(GetValuesAndExpectedResult))]
     public void ReturnsExpectedCount<T>(TestCase<T> testCase, long expectedCount)

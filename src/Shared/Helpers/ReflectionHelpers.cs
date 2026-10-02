@@ -54,11 +54,6 @@ internal static partial class ReflectionHelpers
         return !type.IsValueType || type.IsNullableStruct();
     }
 
-    public static bool IsIEnumerable(this Type type)
-    {
-        return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>);
-    }
-
     public static void ResolveNullableAnnotation(this MemberInfo memberInfo, NullabilityInfoContext? ctx, out bool isGetterNonNullable, out bool isSetterNonNullable)
     {
         if (GetNullabilityInfo(memberInfo, ctx) is NullabilityInfo info)

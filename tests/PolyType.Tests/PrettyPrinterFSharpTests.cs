@@ -1,4 +1,6 @@
 using System.Collections.Immutable;
+using System.Globalization;
+using System.Numerics;
 using System.Text.RegularExpressions;
 using Microsoft.FSharp.Core;
 using PolyType.Abstractions;
@@ -18,10 +20,34 @@ public abstract class PrettyPrinterFSharpTests(ProviderUnderTest providerUnderTe
     {
         var shape = providerUnderTest.ResolveShape(testCase);
         var prettyPrinter = PrettyPrinter.create(shape);
-        #pragma warning disable CS8620 // Argument nullability mismatch
-        string result = PrettyPrinter.print(prettyPrinter, testCase.Value);
-        #pragma warning restore CS8620
+        Assert.Same(prettyPrinter, PrettyPrinter.createFromProvider<T>(providerUnderTest.Provider));
+
+        string result = PrettyPrinter.print(prettyPrinter, testCase.Value!);
         Assert.Equal(ReplaceLineEndings(expectedEncoding), result);
+    }
+
+    [Theory]
+    [InlineData("fr-FR")]
+    [InlineData("ar-SA")]
+    public void Print_UsesInvariantCulture(string cultureName)
+    {
+        CultureInfo originalCulture = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(cultureName);
+            Witness provider = new();
+            TestValue(TestCase.Create(-1234.5f, provider), "-1234.5");
+            TestValue(TestCase.Create(-1234.5d, provider), "-1234.5");
+            TestValue(TestCase.Create(-1234.5m, provider), "-1234.5");
+            TestValue(TestCase.Create(new DateTime(2024, 1, 2, 3, 4, 5), provider), "\"01/02/2024 03:04:05\"");
+            TestValue(TestCase.Create(new DateTimeOffset(2024, 1, 2, 3, 4, 5, TimeSpan.FromHours(2)), provider),
+                "\"01/02/2024 03:04:05 +02:00\"");
+            Assert.Equal(cultureName, CultureInfo.CurrentCulture.Name);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = originalCulture;
+        }
     }
 
     public static IEnumerable<object?[]> GetValues()
@@ -30,6 +56,22 @@ public abstract class PrettyPrinterFSharpTests(ProviderUnderTest providerUnderTe
         
         // Basic types
         yield return [TestCase.Create(1, p), "1"];
+        yield return [TestCase.Create(byte.MaxValue, p), "255"];
+        yield return [TestCase.Create(ushort.MaxValue, p), "65535"];
+        yield return [TestCase.Create(uint.MaxValue, p), "4294967295"];
+        yield return [TestCase.Create(ulong.MaxValue, p), "18446744073709551615"];
+        yield return [TestCase.Create(sbyte.MinValue, p), "-128"];
+        yield return [TestCase.Create(short.MinValue, p), "-32768"];
+        yield return [TestCase.Create(long.MinValue, p), "-9223372036854775808"];
+        yield return [TestCase.Create(1.5f, p), "1.5"];
+        yield return [TestCase.Create(-2.75d, p), "-2.75"];
+        yield return [TestCase.Create(3.5m, p), "3.5"];
+        yield return [TestCase.Create(new BigInteger(ulong.MaxValue), p), "18446744073709551615"];
+        yield return [TestCase.Create('x', p), "'x'"];
+        yield return [TestCase.Create(new DateTime(2024, 1, 2, 3, 4, 5), p), "\"01/02/2024 03:04:05\""];
+        yield return [TestCase.Create(new DateTimeOffset(2024, 1, 2, 3, 4, 5, TimeSpan.FromHours(2)), p), "\"01/02/2024 03:04:05 +02:00\""];
+        yield return [TestCase.Create(TimeSpan.FromSeconds(90), p), "\"00:01:30\""];
+        yield return [TestCase.Create(Guid.Empty, p), "\"00000000-0000-0000-0000-000000000000\""];
         yield return [TestCase.Create((string?)null, p), "null"];
         yield return [TestCase.Create("str", p), "\"str\""];
         yield return [TestCase.Create(false, p), "false"];
@@ -38,8 +80,39 @@ public abstract class PrettyPrinterFSharpTests(ProviderUnderTest providerUnderTe
         yield return [TestCase.Create((int?)42, p), "42"];
         
         // Collections
+        yield return [TestCase.Create((int[]?)null, p), "null"];
         yield return [TestCase.Create((int[])[], p), "[]"];
         yield return [TestCase.Create((int[])[1, 2, 3], p), "[1, 2, 3]"];
+        yield return [TestCase.Create((int[][])[[1, 2], [], [3]], p),
+            """
+            [
+              [1, 2],
+              [],
+              [3]
+            ]
+            """];
+        yield return [TestCase.Create((int[][])[], p),
+            """
+            [
+            ]
+            """];
+        yield return [TestCase.Create((Dictionary<string, int>?)null, p), "null"];
+        yield return [TestCase.Create(new Dictionary<string, int>(), p), "new Dictionary<String, Int32>()"];
+        yield return [TestCase.Create(new Dictionary<string, int> { ["first"] = 1, ["second"] = 2 }, p),
+            """
+            new Dictionary<String, Int32>
+            {
+              ["first"] = 1,
+              ["second"] = 2
+            }
+            """];
+        yield return [TestCase.Create(ImmutableDictionary.CreateRange(new Dictionary<string, string> { ["key"] = "value" }), p),
+            """
+            new ImmutableDictionary<String, String>
+            {
+              ["key"] = "value"
+            }
+            """];
         
         // F# option types
         yield return [TestCase.Create(FSharpOption<int>.None, p), "null"];
@@ -48,6 +121,7 @@ public abstract class PrettyPrinterFSharpTests(ProviderUnderTest providerUnderTe
         yield return [TestCase.Create(FSharpValueOption<int>.Some(42), p), "42"];
         
         // POCOs
+        yield return [TestCase.Create(new object(), p), "new Object()"];
         yield return [TestCase.Create(new SimplePoco { Value = 42 }), 
             """
             new SimplePoco
@@ -97,6 +171,42 @@ public abstract class PrettyPrinterFSharpTests(ProviderUnderTest providerUnderTe
               value = "str"
             }
             """];
+
+        yield return [TestCase.Create(new TypeWithStringSurrogate("text")), "\"text\""];
+        yield return [TestCase.Create(new TypeWithRecordSurrogate(42, "text")),
+            """
+            new Surrogate
+            {
+              Value1 = 42,
+              Value2 = "text"
+            }
+            """];
+        yield return [TestCase.Create<PolymorphicClass>(new PolymorphicClass(42), isUnion: true),
+            """
+            new PolymorphicClass
+            {
+              Int = 42
+            }
+            """];
+        yield return [TestCase.Create<PolymorphicClass>(new PolymorphicClass.DerivedClass(42, "text"), isUnion: true),
+            """
+            new DerivedClass
+            {
+              String = "text",
+              Int = 42
+            }
+            """];
+        yield return [TestCase.Create(FSharpUnion.NewC(42), p, isUnion: true),
+            """
+            new C
+            {
+              foo = 42
+            }
+            """];
+        yield return [TestCase.Create(new CSharpScalarUnion(42), isUnion: true), "42"];
+        yield return [TestCase.Create(new CSharpScalarUnion("text"), isUnion: true), "\"text\""];
+        yield return [TestCase.Create(default(CSharpScalarUnion), isUnion: true), "null"];
+        yield return [TestCase.Create((CSharpClassUnion?)null, isUnion: true), "null"];
         
         // Recursive types
         yield return [TestCase.Create(new MyLinkedList<int>

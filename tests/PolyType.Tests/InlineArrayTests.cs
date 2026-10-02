@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -37,6 +38,7 @@ public abstract partial class InlineArrayTests(ProviderUnderTest providerUnderTe
 
         var enumerable = shape.GetGetEnumerable()(value);
         Assert.Equal([1, 2, 3], enumerable.ToArray());
+        AssertReadOnlyCollectionView<byte>(enumerable, [1, 2, 3]);
     }
 
     [Fact]
@@ -77,6 +79,7 @@ public abstract partial class InlineArrayTests(ProviderUnderTest providerUnderTe
 
         var enumerable = shape.GetGetEnumerable()(value);
         Assert.Equal([1, 2, 3], enumerable.ToArray());
+        AssertReadOnlyCollectionView(enumerable, [1, 2, 3]);
     }
 
     [Fact]
@@ -122,6 +125,7 @@ public abstract partial class InlineArrayTests(ProviderUnderTest providerUnderTe
 
         var enumerable = shape.GetGetEnumerable()(value);
         Assert.Equal([1, 2, 3], enumerable.ToArray());
+        AssertReadOnlyCollectionView<byte>(enumerable, [1, 2, 3]);
     }
 
 #if NET
@@ -157,6 +161,7 @@ public abstract partial class InlineArrayTests(ProviderUnderTest providerUnderTe
 
         var getEnumerable = shape.GetGetEnumerable();
         Assert.Equal(["a", "b", "c"], getEnumerable(value).ToArray());
+        AssertReadOnlyCollectionView(getEnumerable(value), ["a", "b", "c"]);
     }
 
     [Fact]
@@ -190,6 +195,43 @@ public abstract partial class InlineArrayTests(ProviderUnderTest providerUnderTe
         Assert.False(shape.IsSetType);
         Assert.False(shape.IsAsyncEnumerable);
         Assert.Equal(CollectionComparerOptions.None, shape.SupportedComparer);
+    }
+
+    private static void AssertReadOnlyCollectionView<TElement>(IEnumerable<TElement> enumerable, TElement[] expected)
+    {
+        var collection = Assert.IsAssignableFrom<ICollection<TElement>>(enumerable);
+        Assert.Equal(expected.Length, collection.Count);
+        Assert.True(collection.IsReadOnly);
+        Assert.All(expected, element => Assert.True(collection.Contains(element)));
+        Assert.False(collection.Contains(default!));
+
+        TElement[] destination = new TElement[expected.Length + 2];
+        collection.CopyTo(destination, 1);
+        Assert.Equal(expected, destination.Skip(1).Take(expected.Length));
+        Assert.Equal(default, destination[0]);
+        Assert.Equal(default, destination[destination.Length - 1]);
+
+        Assert.Throws<ArgumentNullException>(() => collection.CopyTo(null!, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => collection.CopyTo(destination, -1));
+        Assert.Throws<ArgumentException>(() => collection.CopyTo(new TElement[expected.Length], 1));
+        Assert.Throws<NotSupportedException>(() => collection.Add(default!));
+        Assert.Throws<NotSupportedException>(() => collection.Clear());
+        Assert.Throws<NotSupportedException>(() => collection.Remove(default!));
+
+        IEnumerator enumerator = ((IEnumerable)enumerable).GetEnumerator();
+        Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+        foreach (TElement element in expected)
+        {
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(element, enumerator.Current);
+        }
+
+        Assert.False(enumerator.MoveNext());
+        Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+        enumerator.Reset();
+        Assert.True(enumerator.MoveNext());
+        Assert.Equal(expected[0], enumerator.Current);
+        ((IDisposable)enumerator).Dispose();
     }
 
     [GenerateShape]
