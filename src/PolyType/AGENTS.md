@@ -40,6 +40,8 @@ These types live under `Abstractions/` and are meant to be consumed by *librarie
 
 The **runtime reflection-based provider**: `ReflectionTypeShapeProvider` uses `System.Reflection` to build shapes on the fly, with no build-time step. Where available it uses `Reflection.Emit`-based member accessors (under `MemberAccessors/`) for performance, falling back to plain reflection otherwise. These implementations are **not trimming- or AOT-safe** — they depend on unreferenced/dynamic code — so the source-generated provider is the path for those scenarios.
 
+`ClosedTypeReflectionHelpers` reads compiler-provided `IsClosedTypeAttribute` metadata for opted-in closed-class hierarchies. It recursively expands closed branches in metadata order and validates terminal-case visibility using the shared `TypeVisibilityHelpers` comparison. Empty inferred hierarchies remain union shapes.
+
 ### `SourceGenModel/`
 
 The runtime model types that source-generated code targets — not a provider itself, but the model a source-generated provider instantiates. The source generator (`src/PolyType.SourceGenerator/`) emits code that creates these types at compile time, underpinning the trimming- and AOT-safe path.

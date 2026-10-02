@@ -11,6 +11,7 @@ public partial class TypeDataModelGenerator
         ref TypeDataModelGenerationContext ctx,
         ImmutableArray<MethodDataModel> methodModels,
         ImmutableArray<EventDataModel> eventModels,
+        ImmutableArray<DerivedTypeModel>? declaredDerivedTypes,
         out TypeDataModel? model,
         out TypeDataModelGenerationStatus status)
     {
@@ -134,7 +135,7 @@ public partial class TypeDataModelGenerator
             KeyType = keyType,
             ValueType = valueType,
             DictionaryKind = kind,
-            DerivedTypes = IncludeDerivedTypes(type, ref ctx, TypeShapeRequirements.Full),
+            DerivedTypes = IncludeDerivedTypes(type, declaredDerivedTypes, ref ctx, TypeShapeRequirements.Full),
             Methods = methodModels,
             Events = eventModels,
             FactoryMethod = factoryMethod,

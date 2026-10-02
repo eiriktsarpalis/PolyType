@@ -4,7 +4,8 @@
 /// Provides a discriminated union shape model for a .NET type.
 /// </summary>
 /// <remarks>
-/// Supports type hierarchies configured using <see cref="DerivedTypeShapeAttribute"/>,
+/// Supports type hierarchies configured using <see cref="DerivedTypeShapeAttribute"/> or
+/// <see cref="TypeShapeAttribute.InferClosedTypePolymorphism"/>,
 /// F# discriminated unions, and types implementing the C# union member pattern.
 /// </remarks>
 [InternalImplementationsOnly]
@@ -39,7 +40,8 @@ public interface IUnionTypeShape : ITypeShape
 /// </summary>
 /// <typeparam name="TUnion">The type of the union.</typeparam>
 /// <remarks>
-/// Supports type hierarchies configured using <see cref="DerivedTypeShapeAttribute"/>,
+/// Supports type hierarchies configured using <see cref="DerivedTypeShapeAttribute"/> or
+/// <see cref="TypeShapeAttribute.InferClosedTypePolymorphism"/>,
 /// F# discriminated unions, and types implementing the C# union member pattern.
 /// </remarks>
 [InternalImplementationsOnly]

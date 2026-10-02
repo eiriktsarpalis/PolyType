@@ -327,6 +327,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         {
             if (isCurrentCompilation)
             {
+                List<(Helpers.GlobPatternMatcher Matcher, AttributeData Attribute)>? inferencePatterns = null;
                 // If processing the current compilation, also incorporate all configuration from
                 // the [GenerateShape(For)] attributes applied to types in the compilation.
                 foreach (TypeWithAttributeDeclarationContext typeWithAttr in generateShapeDeclarations)
@@ -346,10 +347,37 @@ public sealed partial class Parser : TypeDataModelGenerator
                             ProcessExtensionAttribute(nonGenericTypeArgument, attributeData, assembly);
                         }
                         else if (
+                            SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, knownSymbols.GenerateShapeForAttribute) &&
+                            attributeData.ConstructorArguments is [{ Kind: TypedConstantKind.Primitive, Value: string pattern }] &&
+                            attributeData.NamedArguments.Any(argument => argument.Key == nameof(TypeExtensionModel.InferClosedTypePolymorphism)))
+                        {
+                            (inferencePatterns ??= []).Add((new Helpers.GlobPatternMatcher([(pattern, attributeData)]), attributeData));
+                        }
+                        else if (
                             attributeData.AttributeClass is { TypeArguments: [ITypeSymbol typeArgument] } &&
                             SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass.ConstructedFrom, knownSymbols.GenerateShapeForAttributeOfT))
                         {
                             ProcessExtensionAttribute(typeArgument, attributeData, assembly);
+                        }
+                    }
+                }
+
+                if (inferencePatterns is not null)
+                {
+                    foreach (INamedTypeSymbol type in GetAllAccessibleTypes(knownSymbols.Compilation))
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        if (type.IsGenericTypeDefinition() || type.IsRefLikeType || type.IsStatic)
+                        {
+                            continue;
+                        }
+
+                        foreach ((Helpers.GlobPatternMatcher matcher, AttributeData attribute) in inferencePatterns)
+                        {
+                            if (matcher.Matches(type))
+                            {
+                                ProcessExtensionAttribute(type, attribute, assembly);
+                            }
                         }
                     }
                 }
@@ -379,6 +407,7 @@ public sealed partial class Parser : TypeDataModelGenerator
             TypeShapeRequirements requirements = TypeShapeRequirements.Full;
             ImmutableArray<TypedConstant>? associatedTypesExpr = null;
             INamedTypeSymbol? marshaler = null;
+            bool? inferClosedTypePolymorphism = null;
             ImmutableArray<Location> locations = attribute.GetLocation() is Location loc
                 ? ImmutableArray.Create(loc)
                 : ImmutableArray<Location>.Empty;
@@ -404,6 +433,9 @@ public sealed partial class Parser : TypeDataModelGenerator
                         break;
                     case "Requirements":
                         requirements = (TypeShapeRequirements)namedArgument.Value.Value!;
+                        break;
+                    case nameof(TypeExtensionModel.InferClosedTypePolymorphism):
+                        inferClosedTypePolymorphism = (bool)namedArgument.Value.Value!;
                         break;
                 }
             }
@@ -432,8 +464,14 @@ public sealed partial class Parser : TypeDataModelGenerator
             TypeExtensionModel extensionModel = new()
             {
                 Kind = existing?.Kind ?? kind,
-                IncludeMethods = includeMethodFlags,
+                IncludeMethods = includeMethodFlags ?? existing?.IncludeMethods,
                 Marshaler = existing?.Marshaler ?? marshaler,
+                InferClosedTypePolymorphism = existing?.InferClosedTypePolymorphism ?? inferClosedTypePolymorphism,
+                HasConflictingClosedTypePolymorphism = existing?.HasConflictingClosedTypePolymorphism is true ||
+                    (existing?.InferClosedTypePolymorphism is { } existingInference &&
+                     inferClosedTypePolymorphism is { } newInference &&
+                     existingInference != newInference),
+                HasNonUnionKind = existing?.HasNonUnionKind is true || kind is not (null or TypeShapeKind.Union),
                 AssociatedTypes = existing?.AssociatedTypes.AddRange(associatedTypeModels) ?? associatedTypeModels,
                 Locations = existing?.Locations.AddRange(locations) ?? locations,
             };
@@ -896,7 +934,7 @@ public sealed partial class Parser : TypeDataModelGenerator
             int currentRegistrationIndex = registrationIndex++;
             if (TryCreateDerivedTypeModel(
                     type,
-                    attribute,
+                    attribute.GetLocation(),
                     derivedType,
                     name,
                     tag,
@@ -915,7 +953,7 @@ public sealed partial class Parser : TypeDataModelGenerator
 
     private bool TryCreateDerivedTypeModel(
         ITypeSymbol baseType,
-        AttributeData attribute,
+        Location? location,
         ITypeSymbol declaredDerivedType,
         string? name,
         int tag,
@@ -926,7 +964,6 @@ public sealed partial class Parser : TypeDataModelGenerator
         HashSet<string> names,
         [NotNullWhen(true)] out DerivedTypeModel? model)
     {
-        Location? location = attribute.GetLocation();
         ITypeSymbol? resolvedDerivedType = declaredDerivedType;
         bool isValid = true;
 
@@ -1197,15 +1234,37 @@ public sealed partial class Parser : TypeDataModelGenerator
             out TypeShapeKind? attrDeclaredKind,
             out ITypeSymbol? marshaler,
             out MethodShapeFlags? attrMethodBindingFlags,
+            out bool? inferClosedTypePolymorphism,
             out Location? typeShapeLocation);
 
         TypeExtensionModel? typeExtensionModel = GetExtensionModel(type);
+        Location? inferenceLocation = typeShapeLocation ?? typeExtensionModel?.Locations.FirstOrDefault();
+        if (typeExtensionModel?.HasConflictingClosedTypePolymorphism is true ||
+            (inferClosedTypePolymorphism is { } directInference &&
+             typeExtensionModel?.InferClosedTypePolymorphism is { } extensionInference &&
+             directInference != extensionInference))
+        {
+            ReportDiagnostic(ConflictingClosedTypeInference, inferenceLocation, type.ToDisplayString(), "explicit true and false settings disagree");
+            model = null;
+            return TypeDataModelGenerationStatus.UnsupportedType;
+        }
+
         if (typeExtensionModel is not null)
         {
             // Merge shape configuration with any extension model that targets the type.
             attrDeclaredKind ??= typeExtensionModel.Kind;
             marshaler ??= typeExtensionModel.Marshaler;
             attrMethodBindingFlags ??= typeExtensionModel.IncludeMethods;
+            inferClosedTypePolymorphism ??= typeExtensionModel.InferClosedTypePolymorphism;
+        }
+
+        ImmutableArray<DerivedTypeModel>? inferredTypes = null;
+        if (inferClosedTypePolymorphism is true &&
+            !TryConfigureClosedTypeInference(type, attrDeclaredKind, marshaler, typeExtensionModel?.HasNonUnionKind is true,
+                inferenceLocation, !ctx.GeneratedModels.ContainsKey(type), out inferredTypes))
+        {
+            model = null;
+            return TypeDataModelGenerationStatus.UnsupportedType;
         }
 
         ParseCustomAssociatedTypeAttributes(type, out ImmutableArray<AssociatedTypeModel> customAssociatedTypes);
@@ -1244,18 +1303,38 @@ public sealed partial class Parser : TypeDataModelGenerator
             return MapFSharpFunctionDataModel(namedType, ref ctx, out model);
         }
 
-        requestedKind = MapTypeShapeKindToDataKind(attrDeclaredKind);
+        requestedKind = MapTypeShapeKindToDataKind(inferClosedTypePolymorphism is true ? null : attrDeclaredKind);
         TypeDataKind? effectiveKind = requestedKind;
         bool inferCSharpUnion = requestedKind is null && type.IsCSharpUnion(CancellationToken);
         if (inferCSharpUnion &&
-            (type.HasAttribute(_knownSymbols.DerivedTypeShapeAttribute) || type.HasAttribute(_knownSymbols.KnownTypeAttribute)))
+            (inferClosedTypePolymorphism is true ||
+             type.HasAttribute(_knownSymbols.DerivedTypeShapeAttribute) ||
+             type.HasAttribute(_knownSymbols.KnownTypeAttribute)))
         {
-            // Explicit hierarchy configuration describes the wrapper, not its union payload.
+            // Hierarchy configuration describes the wrapper, not its union payload.
             effectiveKind = GetCSharpUnionHierarchyKind(type);
             inferCSharpUnion = false;
         }
 
-        TypeDataModelGenerationStatus status = base.MapType(type, effectiveKind, methodBindingFlags, associatedTypes, ref ctx, requirements, out model);
+        TypeDataModelGenerationStatus status = MapTypeCore(
+            type, effectiveKind, methodBindingFlags, associatedTypes, inferredTypes, ref ctx, requirements, out model);
+
+        if (model is not null && inferredTypes is { } registrations &&
+            model.DerivedTypes.Length != registrations.Length)
+        {
+            ImmutableArray<DerivedTypeModel> actualTypes = model.DerivedTypes;
+            DerivedTypeModel missingType = registrations.First(inferred =>
+                !actualTypes.Any(actual => SymbolEqualityComparer.Default.Equals(actual.Type, inferred.Type)));
+            ReportDiagnostic(ClosedTypeInferenceFailed, inferenceLocation, type.ToDisplayString(),
+                $"inferred derived type '{missingType.Type.ToDisplayString()}' does not support shape generation");
+            model = null;
+            return TypeDataModelGenerationStatus.UnsupportedType;
+        }
+
+        if (model is not null)
+        {
+            model.IsPolymorphic = inferClosedTypePolymorphism is true;
+        }
 
         if (inferCSharpUnion && model is null)
         {
@@ -1273,6 +1352,104 @@ public sealed partial class Parser : TypeDataModelGenerator
         }
 
         return status;
+    }
+
+    private bool TryConfigureClosedTypeInference(
+        ITypeSymbol type,
+        TypeShapeKind? kind,
+        ITypeSymbol? marshaler,
+        bool hasNonUnionExtensionKind,
+        Location? location,
+        bool reportSuppressedInference,
+        out ImmutableArray<DerivedTypeModel>? inferredTypes)
+    {
+        inferredTypes = null;
+        if (type is not INamedTypeSymbol namedType || !namedType.IsClosedType())
+        {
+            ReportDiagnostic(ClosedTypeInferenceOnNonClosedType, location, type.ToDisplayString());
+            return false;
+        }
+
+        if (marshaler is not null || kind is not (null or TypeShapeKind.Union) || hasNonUnionExtensionKind)
+        {
+            ReportDiagnostic(ConflictingClosedTypeInference, location, type.ToDisplayString(), "a marshaler or a non-union shape kind was specified");
+            return false;
+        }
+
+        bool hasDerivedTypeShapeAttribute = type.HasAttribute(_knownSymbols.DerivedTypeShapeAttribute);
+        bool hasKnownTypeAttribute = type.HasAttribute(_knownSymbols.KnownTypeAttribute);
+        if (hasDerivedTypeShapeAttribute || hasKnownTypeAttribute)
+        {
+            if (!hasDerivedTypeShapeAttribute)
+            {
+                bool hasMethodBasedKnownTypes = false;
+                foreach (AttributeData attribute in type.GetAttributes())
+                {
+                    if (SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, _knownSymbols.KnownTypeAttribute) &&
+                        attribute.ConstructorArguments is [{ Type.SpecialType: SpecialType.System_String }])
+                    {
+                        ReportDiagnostic(MethodBasedKnownTypesNotSupported, attribute.GetLocation(), type.ToDisplayString());
+                        hasMethodBasedKnownTypes = true;
+                    }
+                }
+
+                if (hasMethodBasedKnownTypes)
+                {
+                    return false;
+                }
+            }
+
+            if (reportSuppressedInference)
+            {
+                ReportDiagnostic(ClosedTypeInferenceSuppressed, location, type.ToDisplayString());
+            }
+
+            return true;
+        }
+
+        ImmutableArray<INamedTypeSymbol> candidates = namedType.GetClosedDerivedTypes(_knownSymbols.Compilation, CancellationToken);
+        var models = ImmutableArray.CreateBuilder<DerivedTypeModel>(candidates.Length);
+        HashSet<ITypeSymbol> types = new(SymbolEqualityComparer.Default);
+        HashSet<int> tags = [];
+        HashSet<string> names = new(StringComparer.Ordinal);
+        bool isValid = true; // Continue after failures to report all candidate diagnostics before rejecting the hierarchy.
+        for (int i = 0; i < candidates.Length; i++)
+        {
+            INamedTypeSymbol candidate = candidates[i];
+            bool isVisible = candidate.OriginalDefinition.IsAtLeastAsVisibleAs(namedType.OriginalDefinition);
+            if (!isVisible)
+            {
+                ReportDiagnostic(InferredDerivedTypeNotAccessible, location, candidate.ToDisplayString(), type.ToDisplayString());
+                isValid = false;
+            }
+
+            if (!TryCreateDerivedTypeModel(type, location, candidate, candidate.OriginalDefinition.GetDerivedTypeShapeName(), -1,
+                i, models.Count, types, tags, names, out DerivedTypeModel? derivedModel))
+            {
+                isValid = false;
+            }
+            else if (!IsAccessibleSymbol(derivedModel.Type))
+            {
+                if (isVisible)
+                {
+                    ReportDiagnostic(InferredDerivedTypeNotAccessible, location, derivedModel.Type.ToDisplayString(), type.ToDisplayString());
+                }
+
+                isValid = false;
+            }
+            else
+            {
+                models.Add(derivedModel);
+            }
+        }
+
+        if (!isValid)
+        {
+            return false;
+        }
+
+        inferredTypes = models.ToImmutable();
+        return true;
     }
 
     private bool ValidateCSharpUnionModel(CSharpUnionDataModel union)

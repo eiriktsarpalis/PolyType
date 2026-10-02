@@ -260,10 +260,15 @@ PolyType models union types through `IUnionTypeShape`. The `UnionKind` property 
 
 | `UnionTypeShapeKind` | Representation |
 | --- | --- |
-| `TypeHierarchy` | Class or interface hierarchies configured using <xref:PolyType.DerivedTypeShapeAttribute> or `KnownTypeAttribute` |
+| `TypeHierarchy` | Class or interface hierarchies configured using <xref:PolyType.DerivedTypeShapeAttribute> or `KnownTypeAttribute`, and inferred closed-class hierarchies |
 | `CSharpUnion` | Native C# union declarations and types implementing the C# union member pattern |
 | `FSharpUnion` | F# [discriminated unions](https://learn.microsoft.com/dotnet/fsharp/language-reference/discriminated-unions) |
 | `Unknown` | Not specified, including shapes produced by older source generators |
+
+Closed-class inference is enabled through <xref:PolyType.TypeShapeAttribute.InferClosedTypePolymorphism> or
+<xref:PolyType.TypeShapeExtensionAttribute.InferClosedTypePolymorphism>. A closed hierarchy with no terminal
+subclasses still has a union shape with an empty `UnionCases` collection. Its index getter returns -1,
+and `BaseType` remains the contextual, non-union representation of the closed base.
 
 The following sketch shows the core union shape members:
 

@@ -16,4 +16,7 @@ internal sealed class ReflectionTypeShapeOptions
 
     /// <inheritdoc cref="TypeShapeExtensionAttribute.IncludeMethods" />
     public required MethodShapeFlags IncludeMethods { get; init; }
+
+    /// <inheritdoc cref="TypeShapeAttribute.InferClosedTypePolymorphism" />
+    public bool InferClosedTypePolymorphism { get; init; }
 }

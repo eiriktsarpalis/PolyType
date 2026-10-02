@@ -754,7 +754,10 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
     public Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeInfo[] derivedTypeInfos)
     {
         Debug.Assert(!typeof(TUnion).IsValueType);
-        Debug.Assert(derivedTypeInfos.Length > 0);
+        if (derivedTypeInfos.Length == 0)
+        {
+            return static (ref _) => -1;
+        }
 
         ConcurrentDictionary<Type, int> cache = new();
         int defaultIndex = -1;

@@ -349,6 +349,20 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             derivedTypeAttributes.AddRange(mappedKnownTypeAttributes);
         }
 
+        if (derivedTypeAttributes.Count == 0 && options.InferClosedTypePolymorphism)
+        {
+            foreach (Type derivedType in ClosedTypeReflectionHelpers.GetClosedDerivedTypes(unionType))
+            {
+                if (!ClosedTypeReflectionHelpers.IsAtLeastAsVisibleAs(derivedType, unionType))
+                {
+                    throw new InvalidOperationException(
+                        $"Inferred derived type '{derivedType}' must be at least as accessible as the closed base type '{unionType}'.");
+                }
+
+                derivedTypeAttributes.Add(new DerivedTypeShapeAttribute(derivedType));
+            }
+        }
+
         HashSet<Type> types = new();
         HashSet<string> names = new(StringComparer.Ordinal);
         HashSet<int> tags = new();
@@ -438,6 +452,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
         TypeShapeKind? requestedKind = typeShapeAttr?.GetRequestedKind();
         MethodShapeFlags? methodFlags = typeShapeAttr?.GetRequestedIncludeMethods();
         Type? marshaler = typeShapeAttr?.Marshaler;
+        bool? inferClosedTypePolymorphism = typeShapeAttr?.GetRequestedInferClosedTypePolymorphism();
 
         foreach (TypeShapeExtensionAttribute extensionAttr in _typeShapeExtensions)
         {
@@ -472,6 +487,32 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
                     requestedKind = extensionRequestedKind;
                 }
+
+                if (extensionAttr.GetRequestedInferClosedTypePolymorphism() is { } extensionInference)
+                {
+                    if (inferClosedTypePolymorphism is not null && inferClosedTypePolymorphism != extensionInference)
+                    {
+                        throw new InvalidOperationException(
+                            $"Conflicting {nameof(TypeShapeAttribute.InferClosedTypePolymorphism)} settings for '{type}': {inferClosedTypePolymorphism} vs {extensionInference}.");
+                    }
+
+                    inferClosedTypePolymorphism = extensionInference;
+                }
+            }
+        }
+
+        if (inferClosedTypePolymorphism is true)
+        {
+            if (!ClosedTypeReflectionHelpers.IsClosedType(type))
+            {
+                throw new InvalidOperationException(
+                    $"{nameof(TypeShapeAttribute.InferClosedTypePolymorphism)} can only be enabled for a closed class, but '{type}' is not closed.");
+            }
+
+            if (marshaler is not null || requestedKind is not (null or TypeShapeKind.Union))
+            {
+                throw new InvalidOperationException(
+                    $"{nameof(TypeShapeAttribute.InferClosedTypePolymorphism)} on '{type}' cannot be combined with a marshaler or a non-union shape kind.");
             }
         }
 
@@ -481,6 +522,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
             RequestedKind = requestedKind,
             Marshaler = marshaler,
             IncludeMethods = methodFlags ?? MethodShapeFlags.None,
+            InferClosedTypePolymorphism = inferClosedTypePolymorphism is true,
         };
     }
 
@@ -488,7 +530,8 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
     {
         TypeShapeKind builtInKind = DetermineBuiltInTypeKind(type, allowUnionShapes, typeShapeOptions, out fsharpUnionInfo, out fSharpFuncInfo, out cSharpUnionInfo);
 
-        if (typeShapeOptions.RequestedKind is TypeShapeKind requestedKind && requestedKind != builtInKind)
+        if (typeShapeOptions.RequestedKind is TypeShapeKind requestedKind && requestedKind != builtInKind &&
+            (allowUnionShapes || requestedKind is not TypeShapeKind.Union || !typeShapeOptions.InferClosedTypePolymorphism))
         {
             bool isCustomKindSupported = requestedKind switch
             {
@@ -552,6 +595,11 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
 
         if (allowUnionShapes)
         {
+            if (options?.InferClosedTypePolymorphism is true)
+            {
+                return TypeShapeKind.Union;
+            }
+
             var customAttributeData = type.GetCustomAttributesData();
             if (customAttributeData.Any(attrData => attrData.AttributeType == typeof(DerivedTypeShapeAttribute)))
             {

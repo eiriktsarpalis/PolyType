@@ -227,4 +227,48 @@ public sealed partial class Parser
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true,
         customTags: WellKnownDiagnosticTags.NotConfigurable);
+
+    private static DiagnosticDescriptor ClosedTypeInferenceOnNonClosedType { get; } = new DiagnosticDescriptor(
+        id: "PT0032",
+        title: "Closed-type inference requires a closed class.",
+        messageFormat: "InferClosedTypePolymorphism can only be enabled for a closed class, but '{0}' is not closed.",
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        customTags: WellKnownDiagnosticTags.NotConfigurable);
+
+    private static DiagnosticDescriptor ConflictingClosedTypeInference { get; } = new DiagnosticDescriptor(
+        id: "PT0028",
+        title: "Conflicting closed-type inference configuration.",
+        messageFormat: "The type '{0}' has conflicting InferClosedTypePolymorphism configuration: {1}.",
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        customTags: WellKnownDiagnosticTags.NotConfigurable);
+
+    private static DiagnosticDescriptor InferredDerivedTypeNotAccessible { get; } = new DiagnosticDescriptor(
+        id: "PT0029",
+        title: "Inferred derived type is not accessible.",
+        messageFormat: "Inferred derived type '{0}' must be at least as accessible as the closed base type '{1}' and accessible for PolyType generation.",
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        customTags: WellKnownDiagnosticTags.NotConfigurable);
+
+    private static DiagnosticDescriptor ClosedTypeInferenceSuppressed { get; } = new DiagnosticDescriptor(
+        id: "PT0030",
+        title: "Explicit derived-type registrations suppress inference.",
+        messageFormat: "InferClosedTypePolymorphism has no effect on '{0}' because explicit derived-type registrations take precedence.",
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
+    private static DiagnosticDescriptor ClosedTypeInferenceFailed { get; } = new DiagnosticDescriptor(
+        id: "PT0031",
+        title: "Closed-type hierarchy could not be inferred.",
+        messageFormat: "The closed hierarchy of '{0}' could not be inferred: {1}.",
+        category: "PolyType.SourceGenerator",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        customTags: WellKnownDiagnosticTags.NotConfigurable);
 }

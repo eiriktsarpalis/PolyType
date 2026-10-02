@@ -11,6 +11,7 @@ public sealed class TypeShapeAttribute : Attribute
 {
     private readonly TypeShapeKind? _kind;
     private readonly MethodShapeFlags? _includeMethods;
+    private readonly bool? _inferClosedTypePolymorphism;
 
     /// <summary>
     /// Gets a type implementing an <see cref="IMarshaler{T,TSurrogate}"/> to a surrogate type.
@@ -46,6 +47,34 @@ public sealed class TypeShapeAttribute : Attribute
     }
 
     /// <summary>
+    /// Gets a value indicating whether compiler-provided closed-class metadata should be used to infer a polymorphic type hierarchy.
+    /// </summary>
+    /// <value>The default value is <see langword="false"/>.</value>
+    /// <remarks>
+    /// <para>
+    /// When enabled, the annotated type must be a C# closed class and its shape is a union,
+    /// including when the hierarchy contains no cases. Closed subclasses are expanded recursively;
+    /// only terminal, non-closed subclasses are registered. Configuration on intermediate closed
+    /// subclasses applies to their own shapes and does not affect inference for the annotated type.
+    /// </para>
+    /// <para>
+    /// Explicit <see cref="DerivedTypeShapeAttribute"/> registrations take precedence over
+    /// <see cref="System.Runtime.Serialization.KnownTypeAttribute"/> registrations, which take precedence
+    /// over inference. Inferred cases preserve compiler metadata order and receive implicit tags.
+    /// Those tags are not stable across changes to the hierarchy.
+    /// </para>
+    /// <para>
+    /// This setting cannot be combined with a <see cref="Marshaler"/> or an explicitly requested
+    /// <see cref="Kind"/> other than <see cref="TypeShapeKind.Union"/>.
+    /// </para>
+    /// </remarks>
+    public bool InferClosedTypePolymorphism
+    {
+        get => _inferClosedTypePolymorphism ?? false;
+        init => _inferClosedTypePolymorphism = value;
+    }
+
+    /// <summary>
     /// Gets the binding flags that determine what method or event shapes should be included in the type shape.
     /// </summary>
     /// <remarks>
@@ -62,4 +91,5 @@ public sealed class TypeShapeAttribute : Attribute
 
     internal TypeShapeKind? GetRequestedKind() => _kind;
     internal MethodShapeFlags? GetRequestedIncludeMethods() => _includeMethods;
+    internal bool? GetRequestedInferClosedTypePolymorphism() => _inferClosedTypePolymorphism;
 }

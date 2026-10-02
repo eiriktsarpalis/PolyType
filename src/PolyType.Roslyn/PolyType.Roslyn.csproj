@@ -14,6 +14,7 @@
   <ItemGroup>
     <Compile Include="..\Shared\Helpers\DebugExt.cs" Link="Shared\Helpers\DebugExt.cs" />
     <Compile Include="..\Shared\Helpers\CommonHelpers.cs" Link="Shared\Helpers\CommonHelpers.cs" />
+    <Compile Include="..\Shared\Helpers\TypeVisibilityHelpers.cs" Link="Shared\Helpers\TypeVisibilityHelpers.cs" />
   </ItemGroup>
 
   <ItemGroup>

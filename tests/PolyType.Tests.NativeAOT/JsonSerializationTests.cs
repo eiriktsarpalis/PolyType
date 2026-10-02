@@ -72,4 +72,25 @@ public class JsonSerializationTests
         await Assert.That(json).IsEqualTo("[true,[false]]");
         await Assert.That(StructuralEqualityComparer.Equals(value, roundtrip)).IsTrue();
     }
+
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task CanSerializeAndDeserializeClosedHierarchy(bool nested)
+    {
+        ClosedShape value = nested ? new ClosedAntelope { Number = 43 } : new ClosedZebra { Number = 42 };
+        var shape = (IUnionTypeShape<ClosedShape>)TypeShapeResolver.Resolve<ClosedShape>();
+        await Assert.That(shape.UnionKind).IsEqualTo(UnionTypeShapeKind.TypeHierarchy);
+        await Assert.That(shape.UnionCases.Count).IsEqualTo(2);
+        await Assert.That(shape.UnionCases[0].Name).IsEqualTo(nameof(ClosedZebra));
+        await Assert.That(shape.UnionCases[1].Name).IsEqualTo(nameof(ClosedAntelope));
+        await Assert.That(shape.UnionCases[0].IsTagSpecified).IsFalse();
+        await Assert.That(shape.UnionCases[1].IsTagSpecified).IsFalse();
+
+        string json = JsonSerializerTS.Serialize(value);
+        ClosedShape roundtrip = JsonSerializerTS.Deserialize<ClosedShape>(json)
+            ?? throw new InvalidOperationException("Closed hierarchy deserialization returned null.");
+        await Assert.That(roundtrip.GetType()).IsEqualTo(value.GetType());
+        await Assert.That(roundtrip.Number).IsEqualTo(value.Number);
+    }
 }
