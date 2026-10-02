@@ -37,10 +37,6 @@ Everything that flows through the incremental pipeline (the `Model/` types) **MU
 
 Flow: `PolyTypeGenerator.cs` → `Parser` (Roslyn symbols → PolyType.Roslyn `TypeDataModel`s) → `Parser.ModelMapper` (PolyType.Roslyn models → incremental-safe `Model/` types) → `SourceFormatter` (incremental model → C# source).
 
-Closed-class inference uses `PolyType.Roslyn/Helpers/ClosedTypeHelpers.cs`: source declarations follow the compiler's module traversal, while referenced classes use raw `IsClosedTypeAttribute` metadata to preserve candidate definitions and ordering that Roslyn's public API does not retain. Metadata readers and symbols stay in parser-side processing; they must not enter incremental models. Enabled empty hierarchies still map to union models.
-
-Inferred registrations are local to the current type traversal and passed to the mapping helpers. Union intent is recorded on the non-incremental `TypeDataModel`; the parser does not retain separate inference lookup tables.
-
 ## Separation of Concerns: Parser vs Formatter
 
 The pipeline above has a strict division of labour, and keeping it strict is what makes the generator both correct and fast:
