@@ -65,27 +65,64 @@ internal sealed partial class SourceFormatter
 
     private static void FormatGetShapeProviderMethod(TypeShapeProviderModel provider, SourceWriter writer)
     {
-        Debug.Assert(
-            provider.ProvidedTypes.Values.Select(t => t.ReflectionName).Distinct().Count() == provider.ProvidedTypes.Count, 
-            "The string-based type identifier should be unique to each generated type.");
-
         writer.WriteLine("""
             /// <inheritdoc/>
             public override global::PolyType.ITypeShape? GetTypeShape(global::System.Type type)
             {
-                // This method looks up type shapes from the entire transitive type graph
-                // being generated, as such in certain cases it can grow very large.
-                // In order to avoid performance issues associated loading all application
-                // types at once, perform a string-based lookup first before calling into
-                // a separate method returning the matching shape. The helper method guards
-                // the returned shape with a check against the literal type expression to aid
-                // trimmability of shapes of unused types.
-                switch (type?.ToString())
-                {
             """);
 
-        writer.Indentation += 2;
-        foreach (TypeShapeModel typeModel in provider.ProvidedTypes.Values.OrderBy(t => t.SourceIdentifier, StringComparer.Ordinal))
+        writer.Indentation++;
+        IEnumerable<TypeShapeModel> sortedTypes = provider.ProvidedTypes.Values.OrderBy(t => t.SourceIdentifier, StringComparer.Ordinal);
+        if (provider.UsesTypeEqualityLookup)
+        {
+            FormatTypeEqualityGetShapeProviderMethodBody(sortedTypes, writer);
+        }
+        else
+        {
+            Debug.Assert(
+                provider.ProvidedTypes.Values.Select(t => t.ReflectionName).Distinct().Count() == provider.ProvidedTypes.Count,
+                "The string-based type identifier should be unique to each generated type.");
+
+            FormatStringBasedGetShapeProviderMethodBody(sortedTypes, writer);
+        }
+
+        writer.Indentation--;
+        writer.WriteLine("}");
+    }
+
+    private static void FormatTypeEqualityGetShapeProviderMethodBody(IEnumerable<TypeShapeModel> sortedTypes, SourceWriter writer)
+    {
+        foreach (TypeShapeModel typeModel in sortedTypes)
+        {
+            // Keep explicit control flow so Native AOT can trim factories for unreachable types.
+            writer.WriteLine($$"""
+                if (type == typeof({{typeModel.Type.FullyQualifiedName}}))
+                {
+                    return {{typeModel.SourceIdentifier}};
+                }
+                """);
+            writer.WriteLine();
+        }
+
+        writer.WriteLine("return null;");
+    }
+
+    private static void FormatStringBasedGetShapeProviderMethodBody(IEnumerable<TypeShapeModel> sortedTypes, SourceWriter writer)
+    {
+        writer.WriteLine("""
+            // This method looks up type shapes from the entire transitive type graph
+            // being generated, as such in certain cases it can grow very large.
+            // In order to avoid performance issues associated loading all application
+            // types at once, perform a string-based lookup first before calling into
+            // a separate method returning the matching shape. The helper method guards
+            // the returned shape with a check against the literal type expression to aid
+            // trimmability of shapes of unused types.
+            switch (type?.ToString())
+            {
+            """);
+
+        writer.Indentation++;
+        foreach (TypeShapeModel typeModel in sortedTypes)
         {
             writer.WriteLine($$"""
                 case {{FormatStringLiteral(typeModel.ReflectionName)}}:
@@ -99,11 +136,10 @@ internal sealed partial class SourceFormatter
                 """);
         }
 
-        writer.Indentation -= 2;
+        writer.Indentation--;
         writer.WriteLine("""
-                    default:
-                        return null;
-                }
+                default:
+                    return null;
             }
             """);
     }

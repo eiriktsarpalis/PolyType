@@ -1802,6 +1802,7 @@ public sealed partial class Parser : TypeDataModelGenerator
                 ? diagnosticIds.OrderBy(id => id, StringComparer.Ordinal).ToImmutableEquatableArray()
                 : [],
             TargetSupportsIShapeableOfT = _knownSymbols.Compilation.GetTypeByMetadataName("PolyType.IShapeable`1") is not null,
+            UsesTypeEqualityLookup = _knownSymbols.TargetFramework >= TargetFramework.Net80,
             UsesUpdatedMemorySafetyRules = _usesUpdatedMemorySafetyRules,
             SupportsDoNotWrapExceptions = _knownSymbols.Compilation.GetTypeByMetadataName("System.Reflection.BindingFlags")?.GetMembers("DoNotWrapExceptions").Length > 0,
             SupportsMemoryMarshalCreateSpan = _knownSymbols.Compilation.GetTypeByMetadataName("System.Runtime.InteropServices.MemoryMarshal")?.GetMembers("CreateSpan").Length > 0,

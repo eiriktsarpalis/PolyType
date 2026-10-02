@@ -10,6 +10,9 @@ public sealed record TypeShapeProviderModel
     public required ImmutableEquatableArray<string> SuppressedDiagnosticIds { get; init; }
     public required bool TargetSupportsIShapeableOfT { get; init; }
 
+    /// <summary>Gets whether the consumer supports direct type equality lookup without legacy type-loading costs.</summary>
+    public bool UsesTypeEqualityLookup { get; init; }
+
     /// <summary>Gets whether the consumer enables the updated C# memory-safety rules.</summary>
     public bool UsesUpdatedMemorySafetyRules { get; init; }
 

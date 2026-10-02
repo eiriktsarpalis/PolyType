@@ -35,42 +35,22 @@ namespace PolyType.SourceGenerator
         /// <inheritdoc/>
         public override global::PolyType.ITypeShape? GetTypeShape(global::System.Type type)
         {
-            // This method looks up type shapes from the entire transitive type graph
-            // being generated, as such in certain cases it can grow very large.
-            // In order to avoid performance issues associated loading all application
-            // types at once, perform a string-based lookup first before calling into
-            // a separate method returning the matching shape. The helper method guards
-            // the returned shape with a check against the literal type expression to aid
-            // trimmability of shapes of unused types.
-            switch (type?.ToString())
+            if (type == typeof(int))
             {
-                case "System.Int32":
-                {
-                    return GetMatchingTypeShape(type);
-                
-                    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-                    ITypeShape? GetMatchingTypeShape(System.Type type) =>
-                        type == typeof(int) ? Int32 : null;
-                }
-                case "System.String":
-                {
-                    return GetMatchingTypeShape(type);
-                
-                    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-                    ITypeShape? GetMatchingTypeShape(System.Type type) =>
-                        type == typeof(string) ? String : null;
-                }
-                case "TestNamespace.Secrets":
-                {
-                    return GetMatchingTypeShape(type);
-                
-                    [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-                    ITypeShape? GetMatchingTypeShape(System.Type type) =>
-                        type == typeof(global::TestNamespace.Secrets) ? Secrets : null;
-                }
-                default:
-                    return null;
+                return Int32;
             }
+
+            if (type == typeof(global::TestNamespace.Secrets))
+            {
+                return Secrets;
+            }
+
+            if (type == typeof(string))
+            {
+                return String;
+            }
+
+            return null;
         }
     }
 }
