@@ -4,7 +4,7 @@
 
 The repo includes a [JSON serializer](https://github.com/eiriktsarpalis/PolyType/tree/main/src/PolyType.Examples/JsonSerializer) built on top of the `Utf8JsonWriter`/`Utf8JsonReader` primitives provided by System.Text.Json. At the time of writing, the full implementation is just under 1200 lines of code but exceeds STJ's built-in `JsonSerializer` both in terms of [supported types](https://github.com/eiriktsarpalis/PolyType/blob/main/tests/PolyType.Tests/JsonTests.cs) and performance.
 
-Here's a [benchmark](https://github.com/eiriktsarpalis/PolyType/blob/main/tests/PolyType.Benchmarks/JsonBenchmark.cs) comparing `System.Text.Json` with the included PolyType implementation[^benchmark-environment]:
+Here's a [benchmark](https://github.com/eiriktsarpalis/PolyType/blob/main/tests/PolyType.Benchmarks/JsonBenchmark.cs) comparing `System.Text.Json` with the included PolyType implementation<sup><a href="#benchmark-environment">1</a></sup>:
 
 ### Serialization
 
@@ -27,10 +27,12 @@ Here's a [benchmark](https://github.com/eiriktsarpalis/PolyType/blob/main/tests/
 
 Even though both serializers target the same underlying reader and writer types, the PolyType implementation takes approximately 34-37% less time for serialization and 51-53% less time for deserialization in this benchmark, when compared with System.Text.Json's metadata serializer. PolyType serialization allocates no managed memory per operation, while deserialization allocates 440 B compared with System.Text.Json's 992-1016 B. As expected, fast-path serialization is still fastest since its implementation is fully inlined.
 
-[^benchmark-environment]: Results collected using BenchmarkDotNet's default job on an Apple M4 Pro (Arm64) running macOS 27.0.1. The benchmarks target .NET 11 and use runtime `11.0.0-rc.1.26425.128` and SDK `11.0.100-rc.1.26425.128`.
+<a id="benchmark-environment"></a>
 
-    To rerun both JSON benchmark suites from the repository root:
+<sup>1</sup> Results collected using BenchmarkDotNet's default job on an Apple M4 Pro (Arm64) running macOS 27.0.1. The benchmarks target .NET 11 and use runtime `11.0.0-rc.1.26425.128` and SDK `11.0.100-rc.1.26425.128`.
 
-    ```bash
-    dotnet run --project tests/PolyType.Benchmarks -c Release -- --filter '*Json*'
-    ```
+To rerun both JSON benchmark suites from the repository root:
+
+```bash
+dotnet run --project tests/PolyType.Benchmarks -c Release -- --filter '*Json*'
+```
