@@ -25,11 +25,11 @@ Here's a [benchmark](https://github.com/eiriktsarpalis/PolyType/blob/main/tests/
 | Deserialize_PolyTypeReflection | 269.7 ns |  0.49 |     440 B |        0.43 |
 | Deserialize_PolyTypeSourceGen  | 260.4 ns |  0.47 |     440 B |        0.43 |
 
-Even though both serializers target the same underlying reader and writer types, the PolyType implementation takes approximately 34-37% less time for serialization and 51-53% less time for deserialization in this benchmark, when compared with System.Text.Json's metadata serializer. PolyType serialization allocates no managed memory per operation, while deserialization allocates 440 B compared with System.Text.Json's 992-1016 B. As expected, fast-path serialization is still fastest since its implementation is fully inlined.
+Even though both serializers target the same underlying reader and writer types, the PolyType implementation takes approximately 34-37% less time for serialization and 51-53% less time for deserialization in this benchmark, when compared with System.Text.Json's metadata serializer. As expected, fast-path serialization is still fastest since its implementation is fully inlined.
 
 <a id="benchmark-environment"></a>
 
-<sup>1</sup> Results collected using BenchmarkDotNet's default job on an Apple M4 Pro (Arm64) running macOS 27.0.1. The benchmarks target .NET 11 and use runtime `11.0.0-rc.1.26425.128` and SDK `11.0.100-rc.1.26425.128`.
+<sup>1</sup> Results collected using BenchmarkDotNet on an Apple M4 Pro (Arm64) running macOS 27.0.1. The benchmarks target .NET 11 and use SDK version `11.0.100-rc.1.26425.128`.
 
 To rerun both JSON benchmark suites from the repository root:
 
