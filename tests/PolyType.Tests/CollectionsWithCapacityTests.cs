@@ -23,10 +23,10 @@ public abstract partial class CollectionsWithCapacityTests(ProviderUnderTest pro
     {
         IDictionaryTypeShape<Dictionary<int, bool>, int, bool> shape = (IDictionaryTypeShape<Dictionary<int, bool>, int, bool>)providerUnderTest.Provider.GetTypeShapeOrThrow<Dictionary<int, bool>>();
         Dictionary<int, bool> dict = shape.GetDefaultConstructor()(new() { Capacity = 11 });
-#if NET9_0_OR_GREATER
+#if NET
         Assert.Equal(11, dict.Capacity);
 #else
-        Assert.Skip(".NET 9+ is required to assert capacity.");
+        Assert.Skip("Capacity is not exposed on .NET Framework.");
 #endif
     }
 
@@ -35,10 +35,10 @@ public abstract partial class CollectionsWithCapacityTests(ProviderUnderTest pro
     {
         IEnumerableTypeShape<HashSet<int>, int> shape = (IEnumerableTypeShape<HashSet<int>, int>)providerUnderTest.Provider.GetTypeShapeOrThrow<HashSet<int>>();
         HashSet<int> set = shape.GetDefaultConstructor()(new() { Capacity = 11 });
-#if NET9_0_OR_GREATER
+#if NET
         Assert.Equal(11, set.Capacity);
 #else
-        Assert.Skip(".NET 9+ is required to assert capacity.");
+        Assert.Skip("Capacity is not exposed on .NET Framework.");
 #endif
     }
 

@@ -107,7 +107,7 @@ public static partial class CompilationTests
                 public HashSet<int>? HashSet { get; set; }
                 public Dictionary<string, int>? Dict { get; set; }
 
-            #if NET8_0_OR_GREATER
+            #if NET
                 public static PolyType.ITypeShape<MyPoco> Test()
                     => PolyType.Abstractions.TypeShapeResolver.Resolve<MyPoco>();
             #endif
@@ -518,7 +518,7 @@ public static partial class CompilationTests
         Assert.Empty(result.Diagnostics);
     }
 
-#if NET8_0_OR_GREATER
+#if NET
     [Fact]
     public static void UseTypesWithNullableAnnotations_NoWarnings()
     {
@@ -619,7 +619,7 @@ public static partial class CompilationTests
         Compilation compilation = CompilationHelpers.CreateCompilation("""
             using PolyType;
 
-            #if NET8_0_OR_GREATER
+            #if NET
             public static class Test
             {
                 public static void TestMethod()
@@ -1889,7 +1889,7 @@ public static partial class CompilationTests
         Assert.Empty(result.Diagnostics);
     }
 
-#if NET8_0_OR_GREATER
+#if NET
     [Fact]
     public static void DictionaryWithCollectionBuilderAttribute_NoErrors()
     {

@@ -23,20 +23,6 @@
   <Suppression>
     <DiagnosticId>CP0006</DiagnosticId>
     <Target>P:PolyType.ITypeShape.IsContextual</Target>
-    <Left>lib/net8.0/PolyType.dll</Left>
-    <Right>lib/net8.0/PolyType.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0006</DiagnosticId>
-    <Target>P:PolyType.ITypeShape.IsContextual</Target>
-    <Left>lib/net9.0/PolyType.dll</Left>
-    <Right>lib/net9.0/PolyType.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0006</DiagnosticId>
-    <Target>P:PolyType.ITypeShape.IsContextual</Target>
     <Left>lib/netstandard2.0/PolyType.dll</Left>
     <Right>lib/netstandard2.0/PolyType.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
@@ -67,34 +53,6 @@
     <Target>P:PolyType.Abstractions.IUnionTypeShape.UnionKind</Target>
     <Left>lib/net472/PolyType.dll</Left>
     <Right>lib/net472/PolyType.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0006</DiagnosticId>
-    <Target>P:PolyType.Abstractions.IUnionCaseShape.IsNullable</Target>
-    <Left>lib/net8.0/PolyType.dll</Left>
-    <Right>lib/net8.0/PolyType.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0006</DiagnosticId>
-    <Target>P:PolyType.Abstractions.IUnionTypeShape.UnionKind</Target>
-    <Left>lib/net8.0/PolyType.dll</Left>
-    <Right>lib/net8.0/PolyType.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0006</DiagnosticId>
-    <Target>P:PolyType.Abstractions.IUnionCaseShape.IsNullable</Target>
-    <Left>lib/net9.0/PolyType.dll</Left>
-    <Right>lib/net9.0/PolyType.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0006</DiagnosticId>
-    <Target>P:PolyType.Abstractions.IUnionTypeShape.UnionKind</Target>
-    <Left>lib/net9.0/PolyType.dll</Left>
-    <Right>lib/net9.0/PolyType.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>

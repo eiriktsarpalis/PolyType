@@ -13,7 +13,7 @@ namespace PolyType;
 /// to the <see cref="ITypeShapeProvider"/> that was generated for the entire project.
 /// </para>
 /// <para>
-/// For projects targeting .NET 8 or later, this additionally augments the class
+/// For projects targeting .NET 10 or later, this additionally augments the class
 /// with an implementation of IShapeable for <typeparamref name="T"/>.
 /// </para>
 /// </remarks>
@@ -43,7 +43,7 @@ public sealed class GenerateShapeForAttribute<T> : Attribute
 /// to the <see cref="ITypeShapeProvider"/> that was generated for the entire project.
 /// </para>
 /// <para>
-/// For projects targeting .NET 8 or later, this additionally augments the class
+/// For projects targeting .NET 10 or later, this additionally augments the class
 /// with an implementation of IShapeable for the generated types.
 /// </para>
 /// </remarks>

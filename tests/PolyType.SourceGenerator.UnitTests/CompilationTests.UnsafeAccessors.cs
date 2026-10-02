@@ -209,7 +209,7 @@ public static partial class CompilationTests
         Assert.All(accessorClasses.GroupBy(declaration => declaration.Identifier.ValueText), group => Assert.Single(group));
         Assert.All(accessorClasses, declaration => Assert.DoesNotContain(declaration.Modifiers, modifier => modifier.IsKind(SyntaxKind.PartialKeyword)));
 
-#if NET9_0_OR_GREATER
+#if NET
         Assert.True(genericType.Constructor!.CanUseUnsafeAccessors);
         GenericTypeModel definition = Assert.IsType<GenericTypeModel>(genericType.Constructor.GenericDeclaringType);
         Assert.Equal(["@class", "TCollection"], definition.TypeParameters);
@@ -317,6 +317,89 @@ public static partial class CompilationTests
         Assert.True(result.NewCompilation.Emit(stream, cancellationToken: TestContext.Current.CancellationToken).Success);
         var assembly = System.Reflection.Assembly.Load(stream.ToArray());
         Assert.Equal("Getter failure.", assembly.GetType("Entry")!.GetMethod("Run")!.Invoke(null, null));
+    }
+
+    [Theory]
+    [InlineData("class")]
+    [InlineData("struct")]
+    public static void NestedGenericAccessors_ReflectionFallbackPreservesValues(string typeKind)
+    {
+        string source = $$"""
+            using PolyType;
+
+            public class Outer<T>
+            {
+                public {{typeKind}} Nested<U>
+                {
+                    [PropertyShape]
+                    private T Value;
+
+                    [PropertyShape]
+                    private readonly U Label;
+
+                    [ConstructorShape]
+                    private Nested(ref T value, out U label, U initialLabel)
+                    {
+                        Value = value;
+                        Label = label = initialLabel;
+                        value = default;
+                    }
+
+                    public T ReadValue() => Value;
+                    public U ReadLabel() => Label;
+                }
+            }
+
+            [GenerateShapeFor(typeof(Outer<int>.Nested<string>))]
+            public partial class Witness { }
+            """;
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(
+            CompilationHelpers.CreateCompilation(source, nullableContextOptions: NullableContextOptions.Disable));
+        ObjectShapeModel model = Assert.Single(result.AllGeneratedTypes.OfType<ObjectShapeModel>(),
+            type => type.Type.FullyQualifiedName.Contains(".Nested<"));
+        Assert.False(model.Constructor!.CanUseUnsafeAccessors);
+        Assert.Null(model.Constructor.GenericDeclaringType);
+        Assert.All(model.Properties, property =>
+        {
+            Assert.True(property.IsField);
+            Assert.False(property.CanUseUnsafeAccessors);
+            Assert.Null(property.GenericDeclaringType);
+        });
+
+        PropertyShapeModel valueProperty = Assert.Single(model.Properties, property => property.Name is "Value");
+        PropertyShapeModel labelProperty = Assert.Single(model.Properties, property => property.Name is "Label");
+        Assert.True(valueProperty.EmitSetter);
+        Assert.False(labelProperty.EmitSetter);
+
+        using var stream = new MemoryStream();
+        var emit = result.NewCompilation.Emit(stream, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.True(emit.Success, string.Join("\n", emit.Diagnostics));
+        var assembly = System.Reflection.Assembly.Load(stream.ToArray());
+        Type provider = assembly.GetType(Assert.Single(result.GeneratedModels).ProviderDeclaration.Id.FullyQualifiedName.Replace("global::", ""))!;
+        const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic;
+        var constructor = provider.GetMethod($"__CtorAccessor_{model.SourceIdentifier}", flags)!;
+        var getter = provider.GetMethod($"__FieldAccessor_{model.SourceIdentifier}_Value", flags)!;
+        var setter = provider.GetMethod($"__FieldAccessor_{model.SourceIdentifier}_Value_set", flags)!;
+        var labelGetter = provider.GetMethod($"__FieldAccessor_{model.SourceIdentifier}_Label", flags)!;
+        Assert.Null(provider.GetMethod($"__FieldAccessor_{model.SourceIdentifier}_Label_set", flags));
+
+        foreach (int initialValue in new[] { 42, 51 })
+        {
+            object?[] constructorArguments = [initialValue, null, "label"];
+            object instance = constructor.Invoke(null, constructorArguments)!;
+            Assert.Equal(0, constructorArguments[0]);
+            Assert.Equal("label", constructorArguments[1]);
+            Assert.Equal(initialValue, getter.Invoke(null, [instance]));
+            Assert.Equal("label", labelGetter.Invoke(null, [instance]));
+
+            object?[] setterArguments = [instance, 77];
+            setter.Invoke(null, setterArguments);
+            instance = setterArguments[0]!;
+            Assert.Equal(77, getter.Invoke(null, [instance]));
+            Assert.Equal(77, instance.GetType().GetMethod("ReadValue")!.Invoke(instance, null));
+            Assert.Equal("label", instance.GetType().GetMethod("ReadLabel")!.Invoke(instance, null));
+        }
     }
 
     [Theory]

@@ -52,7 +52,7 @@ public class CallerSafetyTests
         Assert.False(property.HasSetter);
     }
 
-#if NET8_0_OR_GREATER
+#if NET
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

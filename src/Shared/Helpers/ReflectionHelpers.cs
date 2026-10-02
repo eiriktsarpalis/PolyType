@@ -83,78 +83,6 @@ internal static partial class ReflectionHelpers
     {
         if (GetNullabilityInfo(parameterInfo, ctx) is NullabilityInfo info)
         {
-#if NET && !NET9_0_OR_GREATER
-            // Workaround for https://github.com/dotnet/runtime/issues/92487
-            // The fix has been incorporated into .NET 9 (and the polyfilled implementations in netfx).
-            // Should be removed once .NET 8 support is dropped.
-            if (parameterInfo.GetGenericParameterDefinition() is ParameterInfo genericParam &&
-                genericParam.GetParameterType() is { IsGenericTypeParameter: true } typeParam)
-            {
-                // Step 1. Look for nullable annotations on the type parameter.
-                if (GetNullableFlags(typeParam) is byte[] flags)
-                {
-                    return flags[0] == 1;
-                }
-
-                // Step 2. Look for nullable annotations on the generic method declaration.
-                if (typeParam.DeclaringMethod != null && GetNullableContextFlag(typeParam.DeclaringMethod) is byte flag)
-                {
-                    return flag == 1;
-                }
-
-                // Step 3. Look for nullable annotations on the generic method declaration.
-                if (GetNullableContextFlag(typeParam.DeclaringType!) is byte flag2)
-                {
-                    return flag2 == 1;
-                }
-
-                // Default to nullable.
-                return false;
-
-                static byte[]? GetNullableFlags(MemberInfo member)
-                {
-                    foreach (CustomAttributeData attr in member.GetCustomAttributesData())
-                    {
-                        Type attrType = attr.AttributeType;
-                        if (attrType is { Name: "NullableAttribute", Namespace: "System.Runtime.CompilerServices" })
-                        {
-                            foreach (CustomAttributeTypedArgument ctorArg in attr.ConstructorArguments)
-                            {
-                                switch (ctorArg.Value)
-                                {
-                                    case byte flag:
-                                        return [flag];
-                                    case byte[] flags:
-                                        return flags;
-                                }
-                            }
-                        }
-                    }
-
-                    return null;
-                }
-
-                static byte? GetNullableContextFlag(MemberInfo member)
-                {
-                    foreach (CustomAttributeData attr in member.GetCustomAttributesData())
-                    {
-                        Type attrType = attr.AttributeType;
-                        if (attrType is { Name: "NullableContextAttribute", Namespace: "System.Runtime.CompilerServices" })
-                        {
-                            foreach (CustomAttributeTypedArgument ctorArg in attr.ConstructorArguments)
-                            {
-                                if (ctorArg.Value is byte flag)
-                                {
-                                    return flag;
-                                }
-                            }
-                        }
-                    }
-
-                    return null;
-                }
-            }
-#endif
             return info.WriteState is NullabilityState.NotNull;
         }
         else
@@ -184,18 +112,6 @@ internal static partial class ReflectionHelpers
         }
 
         return null;
-    }
-
-    public static ParameterInfo GetGenericParameterDefinition(this ParameterInfo parameter)
-    {
-        if (parameter.Member is { DeclaringType.IsConstructedGenericType: true }
-                             or MethodInfo { IsGenericMethod: true })
-        {
-            var genericMethod = (MethodBase)parameter.Member.GetGenericMemberDefinition();
-            return genericMethod.GetParameters()[parameter.Position];
-        }
-
-        return parameter;
     }
 
     public static Type GetParameterType(this ParameterInfo parameter)
@@ -254,29 +170,6 @@ internal static partial class ReflectionHelpers
         }
 
         return false;
-    }
-
-    [UnconditionalSuppressMessage("Trimming", "IL2075:'this' argument does not satisfy 'DynamicallyAccessedMembersAttribute' in call to target method. The return value of the source method does not have matching annotations.", Justification = "Looking up the generic member definition of the input.")]
-    public static MemberInfo GetGenericMemberDefinition(this MemberInfo member)
-    {
-        if (member is Type type)
-        {
-            return type.IsConstructedGenericType ? type.GetGenericTypeDefinition() : type;
-        }
-
-        if (member.DeclaringType!.IsConstructedGenericType)
-        {
-            return member.DeclaringType.GetGenericTypeDefinition()
-                .GetMember(member.Name, AllMemberFlags)
-                .First(m => m.MetadataToken == member.MetadataToken);
-        }
-
-        if (member is MethodInfo { IsGenericMethod: true } method)
-        {
-            return method.GetGenericMethodDefinition();
-        }
-
-        return member;
     }
 
     public static bool CanBeGenericArgument(this Type type)

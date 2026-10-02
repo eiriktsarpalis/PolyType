@@ -550,7 +550,7 @@ public abstract class JsonTests(ProviderUnderTest providerUnderTest)
         { 
             new JsonStringEnumConverter(),
             new BigIntegerConverter(),
-#if NET8_0_OR_GREATER
+#if NET
             new RuneConverter(),
 #endif
         },

@@ -56,7 +56,7 @@ public abstract class YamlTests(ProviderUnderTest providerUnderTest)
         yield return [TestCase.Create("Hello World", p), "Hello World"];
         yield return [TestCase.Create(Guid.Empty, p), "00000000-0000-0000-0000-000000000000"];
         yield return [TestCase.Create(new SimpleRecord(value: 42)), "value: 42"];
-#if NET8_0_OR_GREATER
+#if NET
         yield return [TestCase.Create(Int128.MaxValue, p), "170141183460469231731687303715884105727"];
         yield return [TestCase.Create((Half)1, p), "1"];
 #endif
