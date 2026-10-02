@@ -26,32 +26,36 @@ internal sealed class JsonPropertyDictionary<TValue>(IEnumerable<KeyValuePair<st
             return null;
         }
 
-        scoped ReadOnlySpan<byte> source;
-        byte[]? rentedBuffer = null;
-        int bytesWritten = 0;
-
         if (!reader.ValueIsEscaped)
         {
-            source = reader.ValueSpan;
+            _dict.TryGetValue(reader.ValueSpan, out TValue? result);
+            return result;
         }
-        else
+
+        return LookupUnescapedProperty(ref reader);
+    }
+
+    private TValue? LookupUnescapedProperty(ref Utf8JsonReader reader)
+    {
+        int length = reader.ValueSpan.Length;
+        byte[]? rentedBuffer = null;
+        Span<byte> buffer = length <= 128
+            ? stackalloc byte[128]
+            : rentedBuffer = ArrayPool<byte>.Shared.Rent(length);
+
+        try
         {
-            Span<byte> tmpBuffer = reader.ValueSpan.Length <= 128
-                ? stackalloc byte[128]
-                : rentedBuffer = ArrayPool<byte>.Shared.Rent(reader.ValueSpan.Length);
-
-            bytesWritten = reader.CopyString(tmpBuffer);
-            source = tmpBuffer[..bytesWritten];
+            int bytesWritten = reader.CopyString(buffer);
+            _dict.TryGetValue(buffer[..bytesWritten], out TValue? result);
+            return result;
         }
-
-        _dict.TryGetValue(source, out TValue? result);
-
-        if (rentedBuffer != null)
+        finally
         {
-            rentedBuffer.AsSpan(0, bytesWritten).Clear();
-            ArrayPool<byte>.Shared.Return(rentedBuffer);
+            if (rentedBuffer is not null)
+            {
+                buffer[..length].Clear();
+                ArrayPool<byte>.Shared.Return(rentedBuffer);
+            }
         }
-
-        return result;
     }
 }
