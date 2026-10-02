@@ -20,6 +20,12 @@ public static class SnapshotTests
     public static void FSharp() => VerifySourceGeneratorOutput(CompilationTests.IsContextualFSharpUnionSource);
 
     [Fact]
+    public static void ClosedHierarchy() => VerifySourceGeneratorOutput(
+        CompilationTests.ClosedHierarchySource,
+        parseOptions: CompilationHelpers.CreateParseOptions(LanguageVersion.Preview),
+        includeClosedTypeContract: true);
+
+    [Fact]
     public static void CSharpSelf() => VerifySourceGeneratorOutput(
         CompilationTests.IsContextualCSharpUnionSource,
         parseOptions: CompilationHelpers.CreateParseOptions(LanguageVersion.Preview),
@@ -340,12 +346,18 @@ public static class SnapshotTests
         [StringSyntax("c#-test")] string source,
         CSharpParseOptions? parseOptions = null,
         bool includeUnionContracts = false,
+        bool includeClosedTypeContract = false,
         [CallerMemberName] string testCaseName = "")
     {
         Compilation compilation = CompilationHelpers.CreateCompilation(source, parseOptions: parseOptions);
         if (includeUnionContracts)
         {
             compilation = CompilationTests.AddCSharpUnionContracts(compilation);
+        }
+
+        if (includeClosedTypeContract)
+        {
+            compilation = CompilationTests.AddClosedTypeContract(compilation);
         }
 
         CSharpGeneratorDriver driver = CompilationHelpers.CreatePolyTypeSourceGeneratorDriver(compilation);

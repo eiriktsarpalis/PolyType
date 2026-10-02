@@ -31,6 +31,19 @@ public partial union ScalarUnion(int, string?);
 [GenerateShape]
 public partial union RecursiveUnion(bool, RecursiveUnion[]);
 
+[GenerateShape(InferClosedTypePolymorphism = true)]
+public closed partial class ClosedShape
+{
+    public int Number { get; set; }
+}
+
+public sealed class ClosedZebra : ClosedShape;
+public closed class ClosedBranch : ClosedShape;
+public sealed class ClosedAntelope : ClosedBranch;
+
+[GenerateShape(InferClosedTypePolymorphism = true)]
+public closed partial class EmptyClosedShape;
+
 [System.Runtime.CompilerServices.Union, GenerateShape]
 public sealed partial class FactoryUnion : FactoryUnion.IUnionMembers
 {

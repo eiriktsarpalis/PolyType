@@ -49,10 +49,38 @@ A type is mapped to <xref:PolyType.Abstractions.IUnionTypeShape> when:
 
 1. It is a class or interface with <xref:PolyType.DerivedTypeShapeAttribute> annotations or
 2. It is a class with [`KnownTypeAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.serialization.knowntypeattribute) annotations or
-3. It is a [C# union type](https://github.com/dotnet/csharplang/blob/main/proposals/csharp-15.0/unions.md), or
-4. It is an F# union type, excluding representations handled by other shape kinds.
+3. It is a C# closed class with `InferClosedTypePolymorphism` enabled or
+4. It is a [C# union type](https://github.com/dotnet/csharplang/blob/main/proposals/csharp-15.0/unions.md), or
+5. It is an F# union type, excluding representations handled by other shape kinds.
 
 `UnionKind` identifies the representation as `TypeHierarchy`, `CSharpUnion`, or `FSharpUnion`. Explicit hierarchy configuration takes precedence over automatic C# union recognition. Existing kind and surrogate overrides continue to apply.
+
+#### Closed-class hierarchy mapping
+
+`TypeShapeAttribute.InferClosedTypePolymorphism` and `TypeShapeExtensionAttribute.InferClosedTypePolymorphism`
+are opt-in settings with a public default of `false`. `GenerateShapeAttribute` and both
+`GenerateShapeForAttribute` forms expose the same setting for source generation only. On
+`GenerateShapeForAttribute`, it applies to the requested types rather than the witness. Their mapping rules are:
+
+1. An enabled setting requires a C# closed class. It must not be combined with a marshaler or an explicit
+   kind other than `TypeShapeKind.Union`. These constraints are validated even when explicit registrations
+   suppress inference.
+2. Omitted settings do not conflict with explicit settings. Explicit `true` and `false` values from
+   matching configuration sources must agree.
+3. `DerivedTypeShapeAttribute` registrations take precedence over `KnownTypeAttribute` registrations,
+   which take precedence over inference. Suppressed inference produces a source-generator warning.
+4. Inference reads each closed class's direct subclasses in compiler metadata order. A closed subclass
+   is expanded recursively in place; a non-closed subclass is registered as a terminal case. Intermediate
+   classes' own shape configuration does not affect ancestor inference.
+5. Case names use the existing PolyType type-name formatter. Tags are sequential and implicit, with
+   `IsTagSpecified = false`. No alphabetical sort is applied. Names and tags retain the existing
+   uniqueness requirements; implicit identifiers have no stability guarantee across hierarchy changes.
+6. Every inferred terminal case must be at least as accessible as the original requesting base, including
+   containing-type restrictions. Abstract cases remain valid. Generic cases use the existing structural
+   resolution rules. Inaccessible, unresolved, or unsupported cases are errors, not partial inference.
+7. A valid enabled setting always produces a `TypeHierarchy` union shape, including an empty hierarchy.
+   Empty hierarchies have no cases and their index getter returns -1. `BaseType` is the contextual,
+   non-union representation of the base. This mapping takes precedence over automatic C# union recognition.
 
 #### C# case mapping
 

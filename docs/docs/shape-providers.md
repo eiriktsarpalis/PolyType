@@ -318,6 +318,54 @@ class Impl : IDerived1, IDerived2;
 
 Instances of type `Impl` could resolve as either `IDerived1` or `IDerived2`, depending on the particular runtime and shape provider implementation. This ambiguity can be resolved by explicitly adding a `DerivedTypeShape` declaration for `Impl` or any intermediate interface type implementing both `IDerived1` and `IDerived2`.
 
+#### Closed class hierarchies
+
+`InferClosedTypePolymorphism` infers polymorphic cases for a closed class:
+
+```csharp
+[GenerateShape, TypeShape(InferClosedTypePolymorphism = true)]
+public closed partial class Animal;
+
+public sealed class Zebra : Animal;
+public closed class Dog : Animal;
+public sealed class Labrador : Dog;
+public sealed class Collie : Dog;
+```
+
+The shape for `Animal` has `UnionKind = UnionTypeShapeKind.TypeHierarchy` and registers `Zebra`, `Labrador`,
+and `Collie`. The closed `Dog` branch is expanded rather than registered as a case.
+Enabled closed-class inference takes precedence over automatic C# union member-pattern recognition.
+
+Inference follows closed branches recursively and stops at non-closed classes, including abstract classes.
+Configuration on an intermediate closed class applies to its own shape, not to inference for an ancestor.
+The setting does not propagate to subclasses. A closed class with no terminal subclasses still produces
+a union shape with no cases.
+
+For generator-only configuration, the property is also available on `GenerateShapeAttribute` and both
+`GenerateShapeForAttribute` forms. For example, `[GenerateShape(InferClosedTypePolymorphism = true)]`
+combines generation and inference in one annotation. On `GenerateShapeForAttribute`, the setting applies
+to the requested type or types matched by its pattern, not to the witness type. Use `TypeShapeAttribute`
+or `TypeShapeExtensionAttribute` when the setting should also apply to reflection.
+Omitting `IncludeMethods` on a pattern declaration preserves existing method inclusion configuration.
+
+Both providers preserve the compiler's recorded order. Inferred names use PolyType's existing type-name
+formatter, and numeric tags follow registration order with `IsTagSpecified = false`. Note that changing
+the hierarchy can change implicit tags. Use explicit registrations when a serialized contract needs
+stable identifiers.
+
+Explicit `DerivedTypeShape` registrations take precedence over `KnownType` registrations, which take
+precedence over inference. The generator reports `PT0030` when explicit registrations suppress an
+enabled inference setting. The annotated type must still be closed in that case.
+
+An inferred case must be at least as accessible as the original requesting base, including its containing
+types. A case that the generator cannot reference, or a generic case that cannot be resolved against
+the requested base, is an error rather than an omitted registration.
+
+The property defaults to `false` and is also available on `TypeShapeExtensionAttribute` for external types.
+Omitting the property is distinct from explicitly setting it to `false`; conflicting explicit settings
+are rejected. Enabling inference on a non-closed type, or combining it with a marshaler or an explicit
+kind other than `TypeShapeKind.Union`, is also rejected.
+
 #### Generic polymorphism
 
 `DerivedTypeShape` accepts both closed and open generic types. When the derived type is a constructed generic, it is registered as-is:

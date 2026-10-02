@@ -147,6 +147,7 @@ public partial class TypeDataModelGenerator
         ImmutableArray<MethodDataModel> methodModels,
         ImmutableArray<EventDataModel> eventModels,
         TypeShapeRequirements requirements,
+        ImmutableArray<DerivedTypeModel>? declaredDerivedTypes,
         out TypeDataModel? model,
         out TypeDataModelGenerationStatus status)
     {
@@ -163,7 +164,7 @@ public partial class TypeDataModelGenerator
 
         ImmutableArray<PropertyDataModel> properties = requirements.HasFlag(TypeShapeRequirements.Properties) ? MapProperties(namedType, ref ctx) : ImmutableArray<PropertyDataModel>.Empty;
         ImmutableArray<ConstructorDataModel> constructors = requirements.HasFlag(TypeShapeRequirements.Constructor) ? MapConstructors(namedType, properties, ref ctx) : ImmutableArray<ConstructorDataModel>.Empty;
-        ImmutableArray<DerivedTypeModel> derivedTypes = IncludeDerivedTypes(type, ref ctx, requirements);
+        ImmutableArray<DerivedTypeModel> derivedTypes = IncludeDerivedTypes(type, declaredDerivedTypes, ref ctx, requirements);
 
         model = new ObjectDataModel
         {

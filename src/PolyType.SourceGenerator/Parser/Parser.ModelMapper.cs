@@ -16,7 +16,9 @@ public sealed partial class Parser
     private TypeShapeModel MapModel(TypeDataModel model, TypeId typeId, string sourceIdentifier)
     {
         TypeShapeModel incrementalModel = MapModelCore(model, typeId, sourceIdentifier);
-        return model.DerivedTypes is [] ? incrementalModel : MapUnionModel(model, incrementalModel);
+        return model.DerivedTypes is [] && !model.IsPolymorphic
+            ? incrementalModel
+            : MapUnionModel(model, incrementalModel);
     }
 
     private TypeShapeModel MapModelCore(TypeDataModel model, TypeId typeId, string sourceIdentifier, bool isFSharpUnionCase = false)
@@ -503,7 +505,7 @@ public sealed partial class Parser
 
     private UnionShapeModel MapUnionModel(TypeDataModel model, TypeShapeModel underlyingIncrementalModel)
     {
-        Debug.Assert(model.DerivedTypes.Length > 0);
+        Debug.Assert(model.DerivedTypes.Length > 0 || model.IsPolymorphic);
 
         return new UnionShapeModel
         {
@@ -1242,14 +1244,16 @@ public sealed partial class Parser
         out TypeShapeKind? kind,
         out ITypeSymbol? marshaler,
         out MethodShapeFlags? includeMethodFlags,
+        out bool? inferClosedTypePolymorphism,
         out Location? location)
     {
         kind = null;
         marshaler = null;
         location = null;
         includeMethodFlags = null;
+        inferClosedTypePolymorphism = null;
 
-        if (typeSymbol.GetAttribute(_knownSymbols.TypeShapeAttribute) is AttributeData propertyAttr)
+        if (typeSymbol.GetAttribute(_knownSymbols.TypeShapeAttribute, inherit: false) is AttributeData propertyAttr)
         {
             location = propertyAttr.GetLocation();
             foreach (KeyValuePair<string, TypedConstant> namedArgument in propertyAttr.NamedArguments)
@@ -1264,6 +1268,9 @@ public sealed partial class Parser
                         break;
                     case "IncludeMethods":
                         includeMethodFlags = (MethodShapeFlags)namedArgument.Value.Value!;
+                        break;
+                    case nameof(TypeExtensionModel.InferClosedTypePolymorphism):
+                        inferClosedTypePolymorphism = (bool)namedArgument.Value.Value!;
                         break;
                 }
             }

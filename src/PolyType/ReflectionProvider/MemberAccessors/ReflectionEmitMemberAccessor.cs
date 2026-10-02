@@ -1108,7 +1108,10 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
     public Getter<TUnion, int> CreateGetUnionCaseIndex<TUnion>(DerivedTypeInfo[] derivedTypeInfos)
     {
         Debug.Assert(!typeof(TUnion).IsValueType);
-        Debug.Assert(derivedTypeInfos.Length > 0);
+        if (derivedTypeInfos.Length == 0)
+        {
+            return static (ref _) => -1;
+        }
 
         // Creates a topological sort of all cases from most derived to least derived
         // and then emits a switch statement in that order to obtain the correct index.

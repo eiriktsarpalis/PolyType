@@ -235,6 +235,17 @@ public partial class TypeDataModelGenerator
         ref TypeDataModelGenerationContext ctx,
         TypeShapeRequirements requirements,
         out TypeDataModel? model)
+        => MapTypeCore(type, requestedKind, methodBindingFlags, associatedTypes, null, ref ctx, requirements, out model);
+
+    internal TypeDataModelGenerationStatus MapTypeCore(
+        ITypeSymbol type,
+        TypeDataKind? requestedKind,
+        BindingFlags? methodBindingFlags,
+        ImmutableArray<AssociatedTypeModel> associatedTypes,
+        ImmutableArray<DerivedTypeModel>? declaredDerivedTypes,
+        ref TypeDataModelGenerationContext ctx,
+        TypeShapeRequirements requirements,
+        out TypeDataModel? model)
     {
         TypeDataModelGenerationStatus status;
         IncludeAssociatedShapes(type, associatedTypes, ref ctx);
@@ -266,14 +277,14 @@ public partial class TypeDataModelGenerator
                 goto None;
 
             case TypeDataKind.Dictionary:
-                if (TryMapDictionary(type, ref ctx, methodModels, eventModels, out model, out status))
+                if (TryMapDictionary(type, ref ctx, methodModels, eventModels, declaredDerivedTypes, out model, out status))
                 {
                     return status;
                 }
                 goto None;
 
             case TypeDataKind.Enumerable:
-                if (TryMapEnumerable(type, ref ctx, methodModels, eventModels, out model, out status))
+                if (TryMapEnumerable(type, ref ctx, methodModels, eventModels, declaredDerivedTypes, out model, out status))
                 {
                     return status;
                 }
@@ -294,7 +305,7 @@ public partial class TypeDataModelGenerator
                 goto None;
 
             case TypeDataKind.Object:
-                if (TryMapObject(type, ref ctx, methodModels, eventModels, requirements, out model, out status))
+                if (TryMapObject(type, ref ctx, methodModels, eventModels, requirements, declaredDerivedTypes, out model, out status))
                 {
                     return status;
                 }
@@ -321,12 +332,12 @@ public partial class TypeDataModelGenerator
 
         // Important: Dictionary resolution goes before Enumerable
         // since Dictionary also implements IEnumerable
-        if (TryMapDictionary(type, ref ctx, methodModels, eventModels, out model, out status))
+        if (TryMapDictionary(type, ref ctx, methodModels, eventModels, declaredDerivedTypes, out model, out status))
         {
             return status;
         }
 
-        if (TryMapEnumerable(type, ref ctx, methodModels, eventModels, out model, out status))
+        if (TryMapEnumerable(type, ref ctx, methodModels, eventModels, declaredDerivedTypes, out model, out status))
         {
             return status;
         }
@@ -341,7 +352,7 @@ public partial class TypeDataModelGenerator
             return status;
         }
 
-        if (TryMapObject(type, ref ctx, methodModels, eventModels, requirements, out model, out status))
+        if (TryMapObject(type, ref ctx, methodModels, eventModels, requirements, declaredDerivedTypes, out model, out status))
         {
             return status;
         }
@@ -351,7 +362,7 @@ public partial class TypeDataModelGenerator
         model = new TypeDataModel
         {
             Type = type,
-            DerivedTypes = IncludeDerivedTypes(type, ref ctx, requirements),
+            DerivedTypes = IncludeDerivedTypes(type, declaredDerivedTypes, ref ctx, requirements),
             Methods = methodModels,
             Events = eventModels,
             Requirements = TypeShapeRequirements.Full,
@@ -405,12 +416,19 @@ public partial class TypeDataModelGenerator
         associatedTypes = ImmutableArray<AssociatedTypeModel>.Empty;
     }
 
-    private ImmutableArray<DerivedTypeModel> IncludeDerivedTypes(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, TypeShapeRequirements requirements)
+    private ImmutableArray<DerivedTypeModel> IncludeDerivedTypes(
+        ITypeSymbol type,
+        ImmutableArray<DerivedTypeModel>? declaredDerivedTypes,
+        ref TypeDataModelGenerationContext ctx,
+        TypeShapeRequirements requirements)
     {
         // 1. Resolve the shapes for all derived types.
         List<DerivedTypeModel> derivedTypeModels = [];
         DerivedTypeModel baseTypeModel = new() { Type = type, Name = null!, Tag = -1, IsTagSpecified = false, Index = -1, IsBaseType = true };
-        foreach (DerivedTypeModel derivedType in ResolveDerivedTypes(type))
+        IEnumerable<DerivedTypeModel> registrations = declaredDerivedTypes is { } declared
+            ? declared
+            : ResolveDerivedTypes(type);
+        foreach (DerivedTypeModel derivedType in registrations)
         {
             if (IncludeNestedType(derivedType.Type, ref ctx, requirements) is TypeDataModelGenerationStatus.Success)
             {

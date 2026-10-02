@@ -33,6 +33,8 @@ public class TypeDataModel
     /// </summary>
     public ImmutableArray<DerivedTypeModel> DerivedTypes { get; init; } = ImmutableArray<DerivedTypeModel>.Empty;
 
+    internal bool IsPolymorphic { get; set; }
+
     /// <summary>
     /// The collection of associated types specified via TypeShapeAttribute.AssociatedTypes.
     /// </summary>

@@ -18,6 +18,7 @@ public class TypeShapeExtensionAttribute(Type target) : Attribute
 {
     private TypeShapeKind? _kind;
     private MethodShapeFlags? _includeMethods;
+    private bool? _inferClosedTypePolymorphism;
 
     /// <summary>
     /// Gets the target type.
@@ -61,6 +62,13 @@ public class TypeShapeExtensionAttribute(Type target) : Attribute
     /// <inheritdoc cref="TypeShapeAttribute.IncludeMethods" />
     public MethodShapeFlags IncludeMethods { get => _includeMethods ?? MethodShapeFlags.None; init => _includeMethods = value; }
 
+    /// <inheritdoc cref="TypeShapeAttribute.InferClosedTypePolymorphism"/>
+    public bool InferClosedTypePolymorphism
+    {
+        get => _inferClosedTypePolymorphism ?? false;
+        init => _inferClosedTypePolymorphism = value;
+    }
+
     /// <summary>
     /// Types for which a shape should be generated when a type shape is generated for <see cref="Target"/>.
     /// </summary>
@@ -72,4 +80,5 @@ public class TypeShapeExtensionAttribute(Type target) : Attribute
 
     internal TypeShapeKind? GetRequestedKind() => _kind;
     internal MethodShapeFlags? GetRequestedIncludeMethods() => _includeMethods;
+    internal bool? GetRequestedInferClosedTypePolymorphism() => _inferClosedTypePolymorphism;
 }

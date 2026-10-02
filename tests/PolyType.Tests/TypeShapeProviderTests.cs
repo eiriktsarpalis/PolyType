@@ -1,6 +1,7 @@
 using PolyType.Examples.RandomGenerator;
 using PolyType.ReflectionProvider;
 using PolyType.SourceGenModel;
+using PolyType.Utilities;
 using System.Collections;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -367,7 +368,6 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
             DerivedTypeShapeAttribute[] attributes = unionShape.Type.GetCustomAttributes<DerivedTypeShapeAttribute>(inherit: false).ToArray() ?? [];
             Assert.NotSame(shape, unionShape.BaseType);
             Assert.True(unionShape.BaseType.IsContextual);
-            Assert.NotEmpty(unionShape.UnionCases);
             Assert.Equal(unionShape.UnionCases.Count, unionShape.UnionCases.Select(c => c.Name).Distinct(StringComparer.Ordinal).Count());
             Assert.Equal(unionShape.UnionCases.Count, unionShape.UnionCases.Select(c => c.Tag).Distinct().Count());
             int i = 0;
@@ -398,6 +398,12 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
 
             Getter<T, int> unionCaseIndexGetter = unionShape.GetGetUnionCaseIndex();
             Assert.NotNull(unionCaseIndexGetter);
+            if (unionShape.UnionCases.Count == 0)
+            {
+                T emptyValue = default!;
+                Assert.Equal(-1, unionCaseIndexGetter(ref emptyValue));
+            }
+
             if (testCase.Value is { } value)
             {
                 int index = unionCaseIndexGetter(ref value);
@@ -431,6 +437,125 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
         Assert.DoesNotContain(shape.UnionCases, unionCase => unionCase.IsNullable);
         int index = (int)shape.Accept(new DefaultUnionIndexVisitor())!;
         Assert.Equal(nullCaseName, shape.UnionCases[index].Name);
+    }
+
+    [Theory]
+    [InlineData(typeof(ClosedAnimal))]
+    [InlineData(typeof(ClosedEmptyRoot))]
+    [InlineData(typeof(ClosedEmptyBranchesRoot))]
+    [InlineData(typeof(ClosedBoundaryRoot))]
+    [InlineData(typeof(ClosedGenericRoot<List<int>, string[]>))]
+    [InlineData(typeof(ClosedExtensionRoot))]
+    [InlineData(typeof(ClosedUnionHierarchy))]
+    [InlineData(typeof(ClosedEmptyUnionHierarchy))]
+    public void ClosedHierarchyPreservesCompilerMetadata(Type type)
+    {
+        IUnionTypeShape shape = Assert.IsAssignableFrom<IUnionTypeShape>(Provider.GetTypeShapeOrThrow(type));
+        Type[] declaredTypes = GetCompilerTerminalTypes(type).ToArray();
+
+        Assert.Equal(UnionTypeShapeKind.TypeHierarchy, shape.UnionKind);
+        Assert.Equal(declaredTypes, shape.UnionCases.Select(caseShape => Normalize(caseShape.UnionCaseType.Type)));
+        Assert.Equal(declaredTypes.Select(ReflectionUtilities.GetDerivedTypeShapeName), shape.UnionCases.Select(caseShape => caseShape.Name));
+        Assert.Equal(Enumerable.Range(0, declaredTypes.Length), shape.UnionCases.Select(caseShape => caseShape.Tag));
+        Assert.Equal(Enumerable.Range(0, declaredTypes.Length), shape.UnionCases.Select(caseShape => caseShape.Index));
+        Assert.All(shape.UnionCases, caseShape => Assert.False(caseShape.IsTagSpecified));
+        Assert.NotEqual(TypeShapeKind.Union, shape.BaseType.Kind);
+        Assert.True(shape.BaseType.IsContextual);
+        Assert.Equal(-1, shape.Accept(new DefaultUnionIndexVisitor()));
+
+        static Type Normalize(Type type) => type.IsGenericType ? type.GetGenericTypeDefinition() : type;
+    }
+
+    [Theory]
+    [InlineData(typeof(ClosedExplicitRoot), typeof(ClosedExplicitLeaf), "selected", 42, true)]
+    [InlineData(typeof(ClosedKnownRoot), typeof(ClosedKnownLeaf), nameof(ClosedKnownLeaf), 0, false)]
+    public void ClosedHierarchyExplicitRegistrationsTakePrecedence(Type type, Type expectedCase, string name, int tag, bool isTagSpecified)
+    {
+        IUnionTypeShape shape = Assert.IsAssignableFrom<IUnionTypeShape>(Provider.GetTypeShapeOrThrow(type));
+        IUnionCaseShape caseShape = Assert.Single(shape.UnionCases);
+        Assert.Equal(expectedCase, caseShape.UnionCaseType.Type);
+        Assert.Equal(name, caseShape.Name);
+        Assert.Equal(tag, caseShape.Tag);
+        Assert.Equal(isTagSpecified, caseShape.IsTagSpecified);
+    }
+
+    [Theory]
+    [InlineData(typeof(ClosedDog), true)]
+    [InlineData(typeof(ClosedDisabledRoot), false)]
+    public void ClosedHierarchyOwnConfigurationIsIndependent(Type type, bool hasExplicitHierarchy)
+    {
+        ITypeShape shape = Provider.GetTypeShapeOrThrow(type);
+        if (hasExplicitHierarchy)
+        {
+            IUnionCaseShape caseShape = Assert.Single(Assert.IsAssignableFrom<IUnionTypeShape>(shape).UnionCases);
+            Assert.Equal(typeof(ClosedLabrador), caseShape.UnionCaseType.Type);
+            Assert.Equal("independent", caseShape.Name);
+            Assert.Equal(42, caseShape.Tag);
+        }
+        else
+        {
+            Assert.IsAssignableFrom<IObjectTypeShape>(shape);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetClosedHierarchyDispatchCases))]
+    public void ClosedHierarchyDispatchUsesOnlyTerminalCases(Type type, object value, Type expectedCase)
+    {
+        IUnionTypeShape shape = Assert.IsAssignableFrom<IUnionTypeShape>(Provider.GetTypeShapeOrThrow(type));
+        int index = Assert.IsType<int>(shape.Accept(new ClosedHierarchyIndexVisitor(), value));
+        Assert.Equal(expectedCase, shape.UnionCases[index].UnionCaseType.Type);
+    }
+
+    public static IEnumerable<object[]> GetClosedHierarchyDispatchCases()
+    {
+        yield return [typeof(ClosedAnimal), new ClosedZebra(), typeof(ClosedZebra)];
+        yield return [typeof(ClosedAnimal), new ClosedCollie(), typeof(ClosedCollie)];
+        yield return [typeof(ClosedAnimal), new ClosedLabrador(), typeof(ClosedLabrador)];
+        yield return [typeof(ClosedAnimal), new ClosedAnimalContainer.Antelope(), typeof(ClosedAnimalContainer.Antelope)];
+        yield return [typeof(ClosedBoundaryRoot), new ClosedOpenLeaf(), typeof(ClosedOpenBranch)];
+        yield return [typeof(ClosedGenericRoot<List<int>, string[]>), new ClosedWrappedLeaf<string, int>(), typeof(ClosedWrappedLeaf<string, int>)];
+        yield return [typeof(ClosedUnionHierarchy), new ClosedUnionLeaf(42), typeof(ClosedUnionLeaf)];
+    }
+
+    private static IEnumerable<Type> GetCompilerTerminalTypes(Type type)
+    {
+        Type definition = type.IsGenericType ? type.GetGenericTypeDefinition() : type;
+        CustomAttributeData attribute = Assert.Single(definition.GetCustomAttributesData(),
+            attribute => attribute.AttributeType.FullName == "System.Runtime.CompilerServices.IsClosedTypeAttribute");
+        object? value = attribute.NamedArguments.SingleOrDefault(argument => argument.MemberName == "DerivedTypes").TypedValue.Value;
+        IEnumerable<Type> declaredTypes = value switch
+        {
+            Type[] types => types,
+            IList<CustomAttributeTypedArgument> arguments => arguments.Select(argument => Assert.IsAssignableFrom<Type>(argument.Value)),
+            null => [],
+            _ => throw new InvalidOperationException("Unexpected compiler metadata."),
+        };
+
+        foreach (Type derivedType in declaredTypes)
+        {
+            if (derivedType.GetCustomAttributesData().Any(attribute =>
+                attribute.AttributeType.FullName == "System.Runtime.CompilerServices.IsClosedTypeAttribute"))
+            {
+                foreach (Type terminalType in GetCompilerTerminalTypes(derivedType))
+                {
+                    yield return terminalType;
+                }
+            }
+            else
+            {
+                yield return derivedType;
+            }
+        }
+    }
+
+    private sealed class ClosedHierarchyIndexVisitor : TypeShapeVisitor
+    {
+        public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> shape, object? state)
+        {
+            TUnion value = (TUnion)state!;
+            return shape.GetGetUnionCaseIndex()(ref value);
+        }
     }
 
     private sealed class DefaultUnionIndexVisitor : TypeShapeVisitor

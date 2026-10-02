@@ -24,6 +24,10 @@ internal sealed record TypeExtensionModel
     /// </summary>
     public required MethodShapeFlags? IncludeMethods { get; init; }
 
+    public required bool? InferClosedTypePolymorphism { get; init; }
+    public bool HasConflictingClosedTypePolymorphism { get; init; }
+    public bool HasNonUnionKind { get; init; }
+
     /// <summary>
     /// An aggregate of all the associated types registered with the <see cref="Target"/>.
     /// </summary>
@@ -49,6 +53,12 @@ internal sealed record TypeExtensionModel
             Kind = primary.Kind ?? secondary.Kind,
             Marshaler = primary.Marshaler ?? secondary.Marshaler,
             IncludeMethods = primary.IncludeMethods ?? secondary.IncludeMethods,
+            InferClosedTypePolymorphism = primary.InferClosedTypePolymorphism ?? secondary.InferClosedTypePolymorphism,
+            HasConflictingClosedTypePolymorphism = primary.HasConflictingClosedTypePolymorphism || secondary.HasConflictingClosedTypePolymorphism ||
+                (primary.InferClosedTypePolymorphism is { } primaryInference &&
+                 secondary.InferClosedTypePolymorphism is { } secondaryInference &&
+                 primaryInference != secondaryInference),
+            HasNonUnionKind = primary.HasNonUnionKind || secondary.HasNonUnionKind,
             AssociatedTypes = primary.AssociatedTypes.AddRange(secondary.AssociatedTypes),
             Locations = primary.Locations.AddRange(secondary.Locations)
         };

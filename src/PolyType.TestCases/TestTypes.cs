@@ -95,6 +95,34 @@ public static class TestTypes
         yield return TestCase.Create(new Version("1.0.0.0"), p);
         yield return TestCase.Create(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, p);
 
+        yield return TestCase.Create<ClosedAnimal>(
+            new ClosedZebra { Name = "zebra", Stripes = 42 },
+            additionalValues:
+            [
+                new ClosedCollie { Name = "collie", GoodBoy = true, Herding = true },
+                new ClosedLabrador { Name = "labrador", GoodBoy = true, Color = "black" },
+                new ClosedAnimalContainer.Antelope { Name = "antelope", HornLength = 10 },
+            ],
+            isUnion: true);
+        yield return TestCase.Create<ClosedDog>(
+            new ClosedLabrador { Name = "independent", GoodBoy = true, Color = "brown" }, isUnion: true);
+        yield return TestCase.Create<ClosedEmptyRoot>(null, isUnion: true);
+        yield return TestCase.Create<ClosedEmptyBranchesRoot>(null, isUnion: true);
+        yield return TestCase.Create<ClosedBoundaryRoot>(null, isUnion: true);
+        yield return TestCase.Create<ClosedGenericRoot<List<int>, string[]>, Witness>(
+            new ClosedReorderedLeaf<string[], List<int>> { Left = [1, 2], Right = ["left", "right"], Marker = 42 },
+            p,
+            additionalValues: [new ClosedWrappedLeaf<string, int> { Left = [3, 4], Right = ["wrapped"], Description = "value" }],
+            isUnion: true);
+        yield return TestCase.Create<ClosedExtensionRoot>(new ClosedExtensionZebra { Number = 42 },
+            additionalValues: [new ClosedExtensionAntelope { Number = 43 }], isUnion: true);
+        yield return TestCase.Create<ClosedExplicitRoot>(new ClosedExplicitLeaf { Number = 42 }, isUnion: true);
+        yield return TestCase.Create<ClosedKnownRoot>(new ClosedKnownLeaf { Number = 42 }, isUnion: true);
+        yield return TestCase.Create<ClosedDisabledRoot>(null);
+        yield return TestCase.Create<ClosedUnionHierarchy>(new ClosedUnionLeaf(42),
+            additionalValues: [new ClosedUnionLeaf(43)], isUnion: true);
+        yield return TestCase.Create<ClosedEmptyUnionHierarchy>(null, isUnion: true);
+
         yield return TestCase.Create(new CSharpScalarUnion(42), additionalValues: [new(true), new("text"), default], isUnion: true);
         yield return TestCase.Create(new CSharpValueUnion(42), additionalValues: [new(new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero))], isUnion: true);
         yield return TestCase.Create(new CSharpNumericUnion("text"), additionalValues: [default], isUnion: true);
@@ -3605,6 +3633,7 @@ public delegate Task<int> LargeAsyncDelegate(
     int p51, int p52, int p53, int p54, int p55, int p56, int p57, int p58, int p59, int p60,
     int p61, int p62, int p63, int p64, int p65, int p66, int p67, int p68, int p69, int p70);
 
+[GenerateShapeFor<ClosedGenericRoot<List<int>, string[]>>]
 [GenerateShapeFor<CSharpGenericUnion<int, string>>]
 [GenerateShapeFor<CSharpGenericUnion<int, bool>>]
 [GenerateShapeFor<CSharpGenericUnion<DayOfWeek, bool>>]
