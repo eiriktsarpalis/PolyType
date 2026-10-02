@@ -13,12 +13,14 @@ public static partial class TypeShapeProviderExtensionsTests
         Assert.Same(shape1, provider.GetTypeShape<AvailableType>()); // nullable path returns same instance
     }
 
-    [Fact]
-    public static void GetTypeShape_ReturnsNullIfMissing()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void GetTypeShape_ReturnsNullIfMissing(bool nullInput)
     {
         var provider = CreateProvider();
         Assert.Null(provider.GetTypeShape<UnAvailableType>()); // generic extension should return null
-        Assert.Null(provider.GetTypeShape(typeof(UnAvailableType))); // underlying GetTypeShape returns null
+        Assert.Null(provider.GetTypeShape(nullInput ? null! : typeof(UnAvailableType)));
     }
 
     [Fact]

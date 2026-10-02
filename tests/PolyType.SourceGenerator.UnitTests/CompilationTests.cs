@@ -10,6 +10,44 @@ namespace PolyType.SourceGenerator.UnitTests;
 public static partial class CompilationTests
 {
     [Theory]
+    [InlineData("int")]
+    [InlineData("System.Collections.Generic.List<string>")]
+    public static void GetTypeShapeLookup_UsesTargetSpecificStrategy(string typeName)
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation($$"""
+            using PolyType;
+
+            [GenerateShapeFor(typeof({{typeName}}))]
+            internal partial class Witness { }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        TypeShapeProviderModel provider = Assert.Single(result.GeneratedModels);
+        string generatedSource = Assert.Single(result.NewCompilation.SyntaxTrees,
+            tree => Path.GetFileName(tree.FilePath) == $"{provider.ProviderDeclaration.SourceFilenamePrefix}.g.cs")
+            .ToString();
+
+#if NET
+        Assert.True(provider.UsesTypeEqualityLookup);
+        Assert.DoesNotContain("type?.ToString()", generatedSource);
+        Assert.DoesNotContain("GetMatchingTypeShape", generatedSource);
+        foreach (TypeShapeModel type in provider.ProvidedTypes.Values)
+        {
+            Assert.Contains($"if (type == typeof({type.Type.FullyQualifiedName}))", generatedSource);
+            Assert.Contains($"return {type.SourceIdentifier};", generatedSource);
+        }
+#else
+        Assert.False(provider.UsesTypeEqualityLookup);
+        Assert.Contains("switch (type?.ToString())", generatedSource);
+        Assert.Contains("MethodImplOptions.NoInlining", generatedSource);
+        foreach (TypeShapeModel type in provider.ProvidedTypes.Values)
+        {
+            Assert.Contains($"type == typeof({type.Type.FullyQualifiedName}) ? {type.SourceIdentifier} : null;", generatedSource);
+        }
+#endif
+    }
+
+    [Theory]
     [InlineData(null)]
     [InlineData(UnionTypeShapeKind.Unknown)]
     [InlineData(UnionTypeShapeKind.TypeHierarchy)]
