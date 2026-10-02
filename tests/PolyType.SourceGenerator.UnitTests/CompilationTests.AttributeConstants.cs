@@ -9,6 +9,71 @@ public static partial class CompilationTests
     public static class AttributeConstants
     {
         [Theory]
+        [InlineData("byte")]
+        [InlineData("sbyte")]
+        [InlineData("short")]
+        [InlineData("ushort")]
+        [InlineData("int")]
+        [InlineData("uint")]
+        [InlineData("long")]
+        [InlineData("ulong")]
+        public static void FlagsEnumDefaults_PreserveUnnamedZeroAndCompositeValues(string underlyingType)
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation($$"""
+                using System;
+                using PolyType;
+
+                [Flags]
+                public enum Access : {{underlyingType}} { Read = 1, Write = 2 }
+
+                [GenerateShape]
+                public partial record Permissions(Access Empty = (Access)0, Access Combined = Access.Read | Access.Write);
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+            var model = Assert.Single(result.AllGeneratedTypes.OfType<ObjectShapeModel>(), m => m.Type.FullyQualifiedName == "global::Permissions");
+            Assert.NotNull(model.Constructor);
+            Assert.Equal("(global::Access)(0)", model.Constructor.Parameters[0].DefaultValueExpr);
+            Assert.Equal("global::Access.Read | global::Access.Write", model.Constructor.Parameters[1].DefaultValueExpr);
+        }
+
+        [Theory]
+        [InlineData("Container.Hidden")]
+        [InlineData("Container.Hidden[]")]
+        [InlineData("Container.Hidden[,]")]
+        [InlineData("Container.Hidden*")]
+        [InlineData("Container.HiddenGeneric<int>")]
+        [InlineData("Container.HiddenGeneric<>")]
+        [InlineData("System.Collections.Generic.List<Container.Hidden>")]
+        public static void TypeValuedAttributes_PreserveInaccessibleTypes(string typeName)
+        {
+            Compilation compilation = CompilationHelpers.CreateCompilation($$"""
+                using System;
+                using PolyType;
+
+                [AttributeUsage(AttributeTargets.Class)]
+                public sealed class TypeReferenceAttribute : Attribute
+                {
+                    public TypeReferenceAttribute(Type type) { }
+                }
+
+                [GenerateShape, TypeReference(typeof({{typeName}}))]
+                public unsafe partial class Container
+                {
+                    private struct Hidden { }
+                    private class HiddenGeneric<T> { }
+                }
+                """);
+
+            PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+            Assert.Empty(result.Diagnostics);
+            using var stream = new MemoryStream();
+            var emitted = result.NewCompilation.Emit(stream, cancellationToken: TestContext.Current.CancellationToken);
+            Assert.True(emitted.Success, string.Join(Environment.NewLine, emitted.Diagnostics));
+        }
+
+        [Theory]
         [InlineData("""[Obsolete("Do not use this property.", true)] public byte AttributeId { get; set; }""")]
         [InlineData("""public byte AttributeId { get; [Obsolete("Do not write.", true)] set; }""")]
         public static void AttributeWithErrorObsoleteNamedArgument_IsSkipped(string propertyDeclaration)

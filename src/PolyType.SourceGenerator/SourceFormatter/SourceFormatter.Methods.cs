@@ -317,18 +317,6 @@ internal sealed partial class SourceFormatter
                 return $$"""{ {{assignValueExpr}}; state.MarkArgumentSet({{parameter.Position}}); }""";
             }
 
-            static string FormatParameterKind(ParameterShapeModel parameter)
-            {
-                string identifier = parameter.Kind switch
-                {
-                    ParameterKind.MethodParameter => "MethodParameter",
-                    ParameterKind.RequiredMember or
-                    ParameterKind.OptionalMember => "MemberInitializer",
-                    _ => throw new InvalidOperationException($"Unsupported parameter kind: {parameter.Kind}"),
-                };
-
-                return $"global::PolyType.Abstractions.ParameterKind.{identifier}";
-            }
         }
 
         writer.Indentation--;

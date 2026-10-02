@@ -6,6 +6,34 @@ namespace PolyType.SourceGenerator.UnitTests;
 
 public static partial class CompilationTests
 {
+    [Theory]
+    [InlineData("int")]
+    [InlineData("System.Threading.Tasks.Task")]
+    [InlineData("System.Threading.Tasks.ValueTask")]
+    public static void AttributedDelegateShapes_PreserveNullableParameterMetadata(string returnType)
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation($$"""
+            using System;
+            using System.Collections.Generic;
+            using PolyType;
+
+            [AttributeUsage(AttributeTargets.Delegate)]
+            public sealed class CallbackDescriptionAttribute(string name) : Attribute
+            {
+                public string Name { get; } = name;
+            }
+
+            [CallbackDescription("processor")]
+            public delegate {{returnType}} Callback([ParameterShape(Name = "values")] List<string?>? items);
+
+            [GenerateShapeFor<Callback>]
+            public partial class Witness { }
+            """, parseOptions: CompilationHelpers.CreateParseOptions(LanguageVersion.CSharp12));
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
     [Fact]
     public static void DelegateShapes_Simple_NoErrors()
     {

@@ -176,8 +176,13 @@ internal sealed partial class SourceFormatter
                 return """static _ => throw new global::System.NotSupportedException("F# function creation from delegates is currently not supported.")""";
             }
 
+            // Inference retains nested nullable annotations erased from the parameter's TypeId.
+            bool inferParameterTypes = functionShapeModel.Parameters.All(p => p.RefKind is RefKind.None) &&
+                functionShapeModel.Parameters.Any(p => p.ParameterTypeContainsNullabilityAnnotations);
             string delegateSignature = string.Join(", ", functionShapeModel.Parameters
-                .Select(parameter => $"{FormatRefPrefix(parameter)}{parameter.ParameterType.FullyQualifiedName}{GetNullableSuffix(parameter)} {parameter.Name}"));
+                .Select(parameter => inferParameterTypes
+                    ? parameter.Name
+                    : $"{FormatRefPrefix(parameter)}{parameter.ParameterType.FullyQualifiedName}{GetNullableSuffix(parameter)} {parameter.Name}"));
 
             string argumentStateCtorExpr = functionShapeModel.Parameters switch
             {
@@ -281,10 +286,6 @@ internal sealed partial class SourceFormatter
                     return $"static () => typeof({functionShapeModel.Type.FullyQualifiedName}){nestedFunctionGetter}.GetMethod(\"Invoke\")!.GetParameters()[0]";
                 }
 
-                string parameterTypes = functionShapeModel.Parameters.Length == 0
-                    ? "global::System.Type.EmptyTypes"
-                    : $$"""new global::System.Type[] { {{string.Join(", ", functionShapeModel.Parameters.Select(FormatParameterTypeExpr))}} }""";
-
                 return $"static () => typeof({functionShapeModel.Type.FullyQualifiedName}).GetMethod(\"Invoke\")?.GetParameters()[{parameter.Position}]";
             }
 
@@ -322,18 +323,6 @@ internal sealed partial class SourceFormatter
                 return $$"""{ {{assignValueExpr}}; state.MarkArgumentSet({{parameter.Position}}); }""";
             }
 
-            static string FormatParameterKind(ParameterShapeModel parameter)
-            {
-                string identifier = parameter.Kind switch
-                {
-                    ParameterKind.MethodParameter => "MethodParameter",
-                    ParameterKind.RequiredMember or
-                    ParameterKind.OptionalMember => "MemberInitializer",
-                    _ => throw new InvalidOperationException($"Unsupported parameter kind: {parameter.Kind}"),
-                };
-
-                return $"global::PolyType.Abstractions.ParameterKind.{identifier}";
-            }
         }
 
         writer.Indentation--;

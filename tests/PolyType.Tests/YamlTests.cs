@@ -9,6 +9,62 @@ namespace PolyType.Tests;
 public abstract class YamlTests(ProviderUnderTest providerUnderTest)
 {
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DictionaryEntries_SkipUnknownNodesAndAcceptReorderedFields(bool readOnly)
+    {
+        const string yaml = """
+            - extra: [1, { nested: value }]
+              value: 42
+              key: 1
+            - key: 2
+              extra: { nested: [1, 2] }
+              value: 43
+            """;
+        IReadOnlyDictionary<int, int>? value;
+        if (readOnly)
+        {
+            var converter = YamlSerializer.CreateConverter<System.Collections.ObjectModel.ReadOnlyDictionary<int, int>>(providerUnderTest.Provider);
+            value = converter.Deserialize(yaml);
+        }
+        else
+        {
+            var converter = YamlSerializer.CreateConverter<IDictionary<int, int>>(providerUnderTest.Provider);
+            value = Assert.IsAssignableFrom<IReadOnlyDictionary<int, int>>(converter.Deserialize(yaml));
+        }
+
+        Assert.NotNull(value);
+        Assert.Equal(new Dictionary<int, int> { [1] = 42, [2] = 43 }, value);
+    }
+
+    [Theory]
+    [InlineData("ignored: text\nValue: 42")]
+    [InlineData("ignored: [1, { nested: [2, 3] }]\nValue: 42")]
+    [InlineData("ignored: { nested: [1, { deep: text }] }\nValue: 42")]
+    public void UnknownProperties_AreSkippedWithoutConsumingTheNextProperty(string yaml)
+    {
+        var converter = YamlSerializer.CreateConverter(providerUnderTest.ResolveShape(TestCase.Create(new SimplePoco())));
+        SimplePoco? value = converter.Deserialize(yaml);
+        Assert.NotNull(value);
+        Assert.Equal(42, value.Value);
+    }
+
+#if NET
+    [Theory]
+    [InlineData(0)]
+    [InlineData(42)]
+    public void ShapeableEntryPoints_InteroperateWithProviderConverters(int value)
+    {
+        SimpleRecord record = new(value);
+        var converter = YamlSerializer.CreateConverter<SimpleRecord>(providerUnderTest.Provider);
+        Assert.Equal(record, converter.Deserialize(YamlSerializer.Serialize(record)));
+        Assert.Equal(record, YamlSerializer.Deserialize<SimpleRecord>(converter.Serialize(record)));
+        Assert.Equal(value, YamlSerializer.Deserialize<int, Witness>(YamlSerializer.Serialize<int, Witness>(value)));
+        Assert.Equal(record, YamlSerializer.CreateConverterUsingReflection<SimpleRecord>().Deserialize(converter.Serialize(record)));
+    }
+#endif
+
+    [Theory]
     [MemberData(nameof(GetValuesAndExpectedEncoding))]
     public void ReturnsExpectedEncoding<T>(TestCase<T> testCase, string expectedEncoding)
     {

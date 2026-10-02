@@ -29,6 +29,12 @@ public abstract class ProviderUnderTest
                         (testCase.Value is null || unionCase.UnionCaseType.Type.IsInstanceOfType(testCase.Value)));
         }
 
+        if (ResolveShape(testCase) is IEnumerableTypeShape { ConstructionStrategy: CollectionConstructionStrategy.None } or
+            IDictionaryTypeShape { ConstructionStrategy: CollectionConstructionStrategy.None })
+        {
+            return false;
+        }
+
         return !(testCase.IsAbstract && !typeof(IEnumerable).IsAssignableFrom(testCase.Type)) &&
             !testCase.IsMultiDimensionalArray &&
             !(testCase.HasOutConstructorParameters && Kind is not ProviderKind.SourceGen) &&

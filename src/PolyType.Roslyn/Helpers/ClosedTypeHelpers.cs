@@ -254,65 +254,18 @@ internal static class ClosedTypeHelpers
         public ITypeSymbol GetSZArrayType(ITypeSymbol elementType) => compilation.CreateArrayTypeSymbol(elementType);
         public ITypeSymbol GetTypeFromSerializedName(string name) => ResolveType(name.Split(',')[0].Trim());
 
+        // The compiler's closed-type contract contains only a System.Type[] named argument.
         public ITypeSymbol GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind) =>
-            ResolveType(GetMetadataName(reader, handle));
+            throw new BadImageFormatException("Unexpected type definition in closed-type metadata.");
 
-        public ITypeSymbol GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
-        {
-            TypeReference reference = reader.GetTypeReference(handle);
-            string name = reader.GetString(reference.Name);
-            string @namespace = reader.GetString(reference.Namespace);
-            if (reference.ResolutionScope.Kind is HandleKind.TypeReference)
-            {
-                return ResolveType(GetReferenceName((TypeReferenceHandle)reference.ResolutionScope) + "+" + name);
-            }
+        public ITypeSymbol GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind) =>
+            throw new BadImageFormatException("Unexpected type reference in closed-type metadata.");
 
-            return ResolveType(string.IsNullOrEmpty(@namespace) ? name : @namespace + "." + name);
+        public ITypeSymbol GetPrimitiveType(PrimitiveTypeCode typeCode) =>
+            throw new BadImageFormatException($"Unexpected primitive type '{typeCode}' in closed-type metadata.");
 
-            string GetReferenceName(TypeReferenceHandle parent)
-            {
-                TypeReference type = reader.GetTypeReference(parent);
-                string typeName = reader.GetString(type.Name);
-                return type.ResolutionScope.Kind is HandleKind.TypeReference
-                    ? GetReferenceName((TypeReferenceHandle)type.ResolutionScope) + "+" + typeName
-                    : reader.GetString(type.Namespace) is { Length: > 0 } ns ? ns + "." + typeName : typeName;
-            }
-        }
-
-        public ITypeSymbol GetPrimitiveType(PrimitiveTypeCode typeCode) => compilation.GetSpecialType(typeCode switch
-        {
-            PrimitiveTypeCode.Void => SpecialType.System_Void,
-            PrimitiveTypeCode.Boolean => SpecialType.System_Boolean,
-            PrimitiveTypeCode.Byte => SpecialType.System_Byte,
-            PrimitiveTypeCode.SByte => SpecialType.System_SByte,
-            PrimitiveTypeCode.Char => SpecialType.System_Char,
-            PrimitiveTypeCode.Int16 => SpecialType.System_Int16,
-            PrimitiveTypeCode.UInt16 => SpecialType.System_UInt16,
-            PrimitiveTypeCode.Int32 => SpecialType.System_Int32,
-            PrimitiveTypeCode.UInt32 => SpecialType.System_UInt32,
-            PrimitiveTypeCode.Int64 => SpecialType.System_Int64,
-            PrimitiveTypeCode.UInt64 => SpecialType.System_UInt64,
-            PrimitiveTypeCode.Single => SpecialType.System_Single,
-            PrimitiveTypeCode.Double => SpecialType.System_Double,
-            PrimitiveTypeCode.String => SpecialType.System_String,
-            PrimitiveTypeCode.Object => SpecialType.System_Object,
-            _ => throw new BadImageFormatException($"Unsupported custom-attribute type code '{typeCode}'."),
-        });
-
-        public PrimitiveTypeCode GetUnderlyingEnumType(ITypeSymbol type) => type is INamedTypeSymbol { EnumUnderlyingType: { } underlying }
-            ? underlying.SpecialType switch
-            {
-                SpecialType.System_Byte => PrimitiveTypeCode.Byte,
-                SpecialType.System_SByte => PrimitiveTypeCode.SByte,
-                SpecialType.System_Int16 => PrimitiveTypeCode.Int16,
-                SpecialType.System_UInt16 => PrimitiveTypeCode.UInt16,
-                SpecialType.System_Int32 => PrimitiveTypeCode.Int32,
-                SpecialType.System_UInt32 => PrimitiveTypeCode.UInt32,
-                SpecialType.System_Int64 => PrimitiveTypeCode.Int64,
-                SpecialType.System_UInt64 => PrimitiveTypeCode.UInt64,
-                _ => throw new BadImageFormatException($"Invalid custom-attribute enum type '{type}'."),
-            }
-            : throw new BadImageFormatException($"Invalid custom-attribute enum type '{type}'.");
+        public PrimitiveTypeCode GetUnderlyingEnumType(ITypeSymbol type) =>
+            throw new BadImageFormatException($"Unexpected enum type '{type}' in closed-type metadata.");
 
         private INamedTypeSymbol ResolveType(string name) =>
             assembly.GetTypeByMetadataName(name) ?? compilation.GetTypeByMetadataName(name)

@@ -7,6 +7,34 @@ namespace PolyType.Tests;
 
 public abstract class RandomGeneratorTests(ProviderUnderTest providerUnderTest)
 {
+#if NET
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(32)]
+    public void ShapeableEntryPoints_PreserveSeedsAndSizeBounds(int size)
+    {
+        var generator = RandomGenerator.Create<SimpleRecord>(providerUnderTest.Provider);
+        Assert.Equal(generator.GenerateValue(size, seed: 42), RandomGenerator.GenerateValue<SimpleRecord>(size, seed: 42));
+        Assert.Equal(generator.GenerateValues(seed: 42, minSize: size, maxSize: size).Take(3),
+            RandomGenerator.GenerateValues<SimpleRecord>(seed: 42, minSize: size, maxSize: size).Take(3));
+        var primitiveGenerator = RandomGenerator.Create<int>(providerUnderTest.Provider);
+        Assert.Equal(primitiveGenerator.GenerateValue(size, seed: 42), RandomGenerator.GenerateValue<int, Witness>(size, seed: 42));
+        Assert.Equal(primitiveGenerator.GenerateValues(seed: 42, minSize: size, maxSize: size).Take(3),
+            RandomGenerator.GenerateValues<int, Witness>(seed: 42, minSize: size, maxSize: size).Take(3));
+    }
+#endif
+
+    [Theory]
+    [InlineData(-1, 0)]
+    [InlineData(2, 1)]
+    public void InvalidSizeBounds_AreRejected(int minSize, int maxSize)
+    {
+        var generator = RandomGenerator.Create<int>(providerUnderTest.Provider);
+        Assert.Throws<ArgumentOutOfRangeException>(() => generator.GenerateValue(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => generator.GenerateValues(minSize: minSize, maxSize: maxSize).First());
+    }
+
     [Theory]
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
     public void ProducesDeterministicRandomValues<T>(TestCase<T> testCase)

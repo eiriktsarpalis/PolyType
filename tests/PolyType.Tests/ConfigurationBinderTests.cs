@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using System.Collections.ObjectModel;
 using PolyType.Abstractions;
 using PolyType.Examples.ConfigurationBinder;
 using PolyType.Examples.JsonSerializer;
@@ -12,6 +13,39 @@ namespace PolyType.Tests;
 
 public abstract class ConfigurationBinderTests(ProviderUnderTest providerUnderTest)
 {
+    [Theory]
+    [InlineData("01")]
+    [InlineData("+1")]
+    public void ParameterizedDictionaries_RejectKeysThatCollideAfterConversion(string secondKey)
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(
+            new Dictionary<string, string?>
+            {
+                ["Root:1"] = "10",
+                [$"Root:{secondKey}"] = "20",
+            }).Build().GetSection("Root");
+        var binder = ConfigurationBinderTS.Create<ReadOnlyDictionary<int, int>>(providerUnderTest.Provider);
+        ArgumentException exception = Assert.Throws<ArgumentException>(() => binder(configuration));
+        Assert.Contains("'1'", exception.Message);
+    }
+
+#if NET
+    [Theory]
+    [InlineData(0)]
+    [InlineData(42)]
+    public void ShapeableEntryPoints_BindTheSameConfiguration(int value)
+    {
+        var testCase = TestCase.Create(new SimpleRecord(value));
+        var shape = providerUnderTest.ResolveShape(testCase);
+        (IConfiguration configuration, _) = CreateConfiguration(testCase, shape);
+        Assert.Equal(testCase.Value, ConfigurationBinderTS.Get<SimpleRecord>(configuration));
+        Assert.Equal(testCase.Value, ConfigurationBinderTS.Create<SimpleRecord>(providerUnderTest.Provider)(configuration));
+        Assert.Equal(testCase.Value, ConfigurationBinderTS.CreateUsingReflection<SimpleRecord>()(configuration));
+        Assert.Equal(testCase.Value, ConfigurationBinderTS.CreateUsingSourceGen<SimpleRecord>()(configuration));
+        Assert.Equal(value, ConfigurationBinderTS.Get<int, Witness>(configuration.GetSection("value")));
+    }
+#endif
+
     [Theory]
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
     public void BoundResultEqualsOriginalValue<T>(TestCase<T> testCase)

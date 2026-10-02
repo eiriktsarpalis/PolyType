@@ -40,6 +40,49 @@ public static partial class CompilationTests
         """;
 
     [Theory]
+    [InlineData("internal", "internal", true)]
+    [InlineData("protected internal", "protected internal", true)]
+    [InlineData("public", "public", true)]
+    [InlineData("public", "protected", false)]
+    [InlineData("public", "private protected", false)]
+    [InlineData("public", "protected internal", false)]
+    [InlineData("public", "internal", false)]
+    [InlineData("public", "private", false)]
+    [InlineData("protected internal", "protected", false)]
+    [InlineData("protected internal", "internal", false)]
+    [InlineData("internal", "private", false)]
+    public static void ClosedHierarchyVisibilityUsesTheEntireContainingScope(string rootAccessibility, string leafAccessibility, bool visible)
+    {
+        Compilation compilation = CreateClosedClassCompilation($$"""
+            using PolyType;
+
+            public partial class Container
+            {
+                [TypeShape(InferClosedTypePolymorphism = true)]
+                {{rootAccessibility}} closed class Root;
+                {{leafAccessibility}} sealed class Leaf : Root;
+
+                [GenerateShapeFor(typeof(Root))]
+                public partial class Witness;
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation, disableDiagnosticValidation: true);
+        Assert.Equal(!visible, result.Diagnostics.Any(d => d.Id == "PT0029"));
+        if (visible)
+        {
+            result.Diagnostics.AssertMaxSeverity(DiagnosticSeverity.Info);
+            UnionShapeModel root = Assert.Single(result.AllGeneratedTypes.OfType<UnionShapeModel>(),
+                m => m.Type.FullyQualifiedName == "global::Container.Root");
+            Assert.Equal("Leaf", Assert.Single(root.UnionCases).Name);
+        }
+        else
+        {
+            Assert.DoesNotContain(result.AllGeneratedTypes.OfType<UnionShapeModel>(), m => m.Type.FullyQualifiedName == "global::Container.Root");
+        }
+    }
+
+    [Theory]
     [InlineData(ClosedHierarchySource, "global::TestNamespace.Root", 3)]
     [InlineData(ClosedHierarchySource, "global::TestNamespace.Empty", 0)]
     [InlineData("""

@@ -1286,6 +1286,7 @@ public sealed partial class Parser : TypeDataModelGenerator
 
         if (_knownSymbols.ResolveFSharpUnionMetadata(type) is FSharpUnionInfo unionInfo)
         {
+            IncludeAssociatedShapes(type, associatedTypes, ref ctx);
             return unionInfo switch
             {
                 FSharpOptionInfo optionInfo => MapFSharpOptionDataModel(optionInfo, ref ctx, requirements, methodBindingFlags, out model),
@@ -1295,11 +1296,13 @@ public sealed partial class Parser : TypeDataModelGenerator
 
         if (SymbolEqualityComparer.Default.Equals(type, _knownSymbols.FSharpUnitType))
         {
+            IncludeAssociatedShapes(type, associatedTypes, ref ctx);
             return MapFSharpUnitDataModel(type, ref ctx, out model);
         }
 
         if (type is INamedTypeSymbol { IsGenericType: true } namedType && SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _knownSymbols.FSharpFunc))
         {
+            IncludeAssociatedShapes(type, associatedTypes, ref ctx);
             return MapFSharpFunctionDataModel(namedType, ref ctx, out model);
         }
 
@@ -1798,7 +1801,7 @@ public sealed partial class Parser : TypeDataModelGenerator
             SuppressedDiagnosticIds = _suppressedDiagnosticIds is { Count: > 0 } diagnosticIds
                 ? diagnosticIds.OrderBy(id => id, StringComparer.Ordinal).ToImmutableEquatableArray()
                 : [],
-            TargetSupportsIShapeableOfT = _knownSymbols.TargetFramework >= TargetFramework.Net80,
+            TargetSupportsIShapeableOfT = _knownSymbols.Compilation.GetTypeByMetadataName("PolyType.IShapeable`1") is not null,
             UsesTypeEqualityLookup = _knownSymbols.TargetFramework >= TargetFramework.Net80,
             UsesUpdatedMemorySafetyRules = _usesUpdatedMemorySafetyRules,
             SupportsDoNotWrapExceptions = _knownSymbols.Compilation.GetTypeByMetadataName("System.Reflection.BindingFlags")?.GetMembers("DoNotWrapExceptions").Length > 0,

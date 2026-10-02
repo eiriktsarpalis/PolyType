@@ -1,4 +1,6 @@
 ﻿using System.Collections.Immutable;
+using System.Globalization;
+using System.Numerics;
 using System.Text.RegularExpressions;
 using PolyType.Abstractions;
 using PolyType.Examples.PrettyPrinter;
@@ -18,10 +20,46 @@ public abstract class PrettyPrinterTests(ProviderUnderTest providerUnderTest)
         Assert.Equal(ReplaceLineEndings(expectedEncoding), prettyPrinter.Print(testCase.Value));
     }
 
+    [Theory]
+    [InlineData("fr-FR")]
+    [InlineData("ar-SA")]
+    public void Print_UsesInvariantCulture(string cultureName)
+    {
+        CultureInfo originalCulture = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(cultureName);
+            Witness provider = new();
+            TestValue(TestCase.Create(-1234.5f, provider), "-1234.5");
+            TestValue(TestCase.Create(-1234.5d, provider), "-1234.5");
+            TestValue(TestCase.Create(-1234.5m, provider), "-1234.5");
+            TestValue(TestCase.Create(new DateTime(2024, 1, 2, 3, 4, 5), provider), "\"01/02/2024 03:04:05\"");
+            TestValue(TestCase.Create(new DateTimeOffset(2024, 1, 2, 3, 4, 5, TimeSpan.FromHours(2)), provider),
+                "\"01/02/2024 03:04:05 +02:00\"");
+            Assert.Equal(cultureName, CultureInfo.CurrentCulture.Name);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = originalCulture;
+        }
+    }
+
     public static IEnumerable<object?[]> GetValues()
     {
         Witness p = new();
         yield return [TestCase.Create(1, p), "1"];
+        yield return [TestCase.Create(byte.MaxValue, p), "255"];
+        yield return [TestCase.Create(ushort.MaxValue, p), "65535"];
+        yield return [TestCase.Create(uint.MaxValue, p), "4294967295"];
+        yield return [TestCase.Create(ulong.MaxValue, p), "18446744073709551615"];
+        yield return [TestCase.Create(sbyte.MinValue, p), "-128"];
+        yield return [TestCase.Create(short.MinValue, p), "-32768"];
+        yield return [TestCase.Create(long.MinValue, p), "-9223372036854775808"];
+        yield return [TestCase.Create(1.5f, p), "1.5"];
+        yield return [TestCase.Create(-2.75d, p), "-2.75"];
+        yield return [TestCase.Create(3.5m, p), "3.5"];
+        yield return [TestCase.Create(new BigInteger(ulong.MaxValue), p), "18446744073709551615"];
+        yield return [TestCase.Create('x', p), "'x'"];
         yield return [TestCase.Create((string?)null, p), "null"];
         yield return [TestCase.Create("str", p), "\"str\""];
         yield return [TestCase.Create(false, p), "false"];
@@ -67,6 +105,15 @@ public abstract class PrettyPrinterTests(ProviderUnderTest providerUnderTest)
             """];
         
         yield return [TestCase.Create(ImmutableArray.Create(1,2,3), p), """[1, 2, 3]"""];
+        yield return [TestCase.Create(new TypeWithStringSurrogate("text")), "\"text\""];
+        yield return [TestCase.Create(new TypeWithRecordSurrogate(42, "text")),
+            """
+            new Surrogate
+            {
+              Value1 = 42,
+              Value2 = "text"
+            }
+            """];
         yield return [TestCase.Create(ImmutableList.Create("1", "2", "3"), p), """["1", "2", "3"]"""];
         yield return [TestCase.Create(ImmutableQueue.Create(1, 2, 3), p), """[1, 2, 3]"""];
         yield return [TestCase.Create(

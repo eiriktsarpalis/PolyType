@@ -43,7 +43,7 @@ public partial class TypeDataModelGenerator
         if (status is not TypeDataModelGenerationStatus.Success)
         {
             model = null;
-            return false;
+            return true;
         }
 
         model = new DelegateDataModel

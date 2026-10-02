@@ -22,11 +22,6 @@ public static class ByteSpanEqualityComparer
         public bool Equals(ReadOnlySpan<byte> x, ReadOnlySpan<byte> y)
             => x.SequenceEqual(y);
 
-        public int GetHashCode(ReadOnlySpan<byte> buffer)
-        {
-            var hc = new HashCode();
-            hc.AddBytes(buffer);
-            return hc.ToHashCode();
-        }
+        public int GetHashCode(ReadOnlySpan<byte> buffer) => Marvin.ComputeHash32(buffer, Marvin.DefaultSeed);
     }
 }

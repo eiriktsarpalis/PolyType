@@ -2,6 +2,7 @@
 using PolyType;
 using PolyType.Examples.JsonSerializer;
 using PolyType.Examples.JsonSerializer.Converters;
+using PolyType.Examples.Utilities;
 using PolyType.Tests.FSharp;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
@@ -16,6 +17,80 @@ namespace PolyType.Tests;
 
 public abstract class JsonTests(ProviderUnderTest providerUnderTest)
 {
+    [Theory]
+    [InlineData("42")]
+    [InlineData("\"text\"")]
+    [InlineData("{}")]
+    [InlineData("[1")]
+    public void CollectionPayloads_RejectWrongTokensAndIncompleteInput(string json)
+    {
+        var converter = JsonSerializerTS.CreateConverter<int[]>(providerUnderTest.Provider);
+        Assert.ThrowsAny<JsonException>(() => converter.Deserialize(json));
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("""{"other":42}""")]
+    public void RequiredConstructorArguments_CannotBeOmitted(string json)
+    {
+        var converter = JsonSerializerTS.CreateConverter<SimpleRecord>(providerUnderTest.Provider);
+        KeyNotFoundException exception = Assert.Throws<KeyNotFoundException>(() => converter.Deserialize(json));
+        Assert.Contains("value", exception.Message);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(300)]
+    [InlineData(4096)]
+    public void Utf8BufferWriter_CanGrowAndBeReused(int length)
+    {
+        var converter = JsonSerializerTS.CreateConverter<string>(providerUnderTest.Provider);
+        string value = new('x', length);
+        ByteBufferWriter buffer = new();
+
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            converter.Write(writer, value, new JsonSerializerOptions());
+        }
+
+        byte[] encoding = buffer.WrittenMemory.ToArray();
+        Assert.Equal(JsonSerializer.Serialize(value), Encoding.UTF8.GetString(encoding));
+        Assert.Equal(encoding.Length, buffer.WrittenCount);
+        Assert.Equal(buffer.Capacity - buffer.WrittenCount, buffer.FreeCapacity);
+
+        buffer.ResetWrittenCount();
+        Assert.Empty(buffer.WrittenMemory.ToArray());
+        Assert.Equal(encoding, buffer.GetMemory(encoding.Length).Slice(0, encoding.Length).ToArray());
+        buffer.Advance(encoding.Length);
+        buffer.Clear();
+        Assert.Equal(0, buffer.WrittenCount);
+        Assert.All(buffer.GetSpan(encoding.Length).Slice(0, encoding.Length).ToArray(), b => Assert.Equal(0, b));
+
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            converter.Write(writer, "reused", new JsonSerializerOptions());
+        }
+
+        Assert.Equal("\"reused\"", Encoding.UTF8.GetString(buffer.WrittenSpan.ToArray()));
+    }
+
+#if NET
+    [Theory]
+    [InlineData(0)]
+    [InlineData(42)]
+    public void ShapeableEntryPoints_InteroperateWithProviderConverters(int value)
+    {
+        SimpleRecord record = new(value);
+        var converter = JsonSerializerTS.CreateConverter<SimpleRecord>(providerUnderTest.Provider);
+        Assert.Equal(record, converter.Deserialize(JsonSerializerTS.Serialize(record)));
+        Assert.Equal(record, JsonSerializerTS.Deserialize<SimpleRecord>(converter.Serialize(record)));
+        Assert.Equal(value, JsonSerializerTS.Deserialize<int, Witness>(JsonSerializerTS.Serialize<int, Witness>(value)));
+        Assert.Equal(record, JsonSerializerTS.CreateConverter<SimpleRecord>().Deserialize(converter.Serialize(record)));
+        Assert.Equal(record, JsonSerializerTS.CreateConverterUsingReflection<SimpleRecord>().Deserialize(
+            JsonSerializerTS.CreateConverterUsingSourceGen<SimpleRecord>().Serialize(record)));
+    }
+#endif
+
     [Theory]
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
     public async Task Roundtrip_Value<T>(TestCase<T> testCase)
