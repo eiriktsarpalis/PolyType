@@ -9,6 +9,20 @@ namespace PolyType.Tests;
 
 public abstract class XmlTests(ProviderUnderTest providerUnderTest)
 {
+#if NET
+    [Theory]
+    [InlineData(0)]
+    [InlineData(42)]
+    public void ShapeableEntryPoints_InteroperateWithProviderConverters(int value)
+    {
+        SimpleRecord record = new(value);
+        var converter = XmlSerializer.CreateConverter<SimpleRecord>(providerUnderTest.Provider);
+        Assert.Equal(record, converter.Deserialize(XmlSerializer.Serialize(record)));
+        Assert.Equal(record, XmlSerializer.Deserialize<SimpleRecord>(converter.Serialize(record)));
+        Assert.Equal(value, XmlSerializer.Deserialize<int, Witness>(XmlSerializer.Serialize<int, Witness>(value)));
+    }
+#endif
+
     private static readonly XmlWriterSettings s_writerSettings = new()
     {
         ConformanceLevel = ConformanceLevel.Fragment,

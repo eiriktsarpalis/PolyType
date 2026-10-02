@@ -6,6 +6,56 @@ namespace PolyType.Tests;
 public abstract partial class StructuralEqualityTests(ProviderUnderTest providerUnderTest)
 {
     [Theory]
+    [InlineData(0, 0)]
+    [InlineData(0, 1)]
+    [InlineData(1, 0)]
+    [InlineData(1, 1)]
+    public void DictionaryComparison_IgnoresStorageComparersButDetectsDifferentEntries(int leftComparerKind, int rightComparerKind)
+    {
+        IEqualityComparer<string> leftComparer = leftComparerKind == 0 ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+        IEqualityComparer<string> rightComparer = rightComparerKind == 0 ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+        var left = new Dictionary<string, int>(leftComparer) { ["key"] = 42 };
+        var right = new Dictionary<string, int>(rightComparer) { ["key"] = 42 };
+        var comparer = StructuralEqualityComparer.Create<Dictionary<string, int>>(providerUnderTest.Provider);
+        Assert.True(comparer.Equals(left, right));
+        Assert.True(comparer.Equals(right, left));
+        Assert.Equal(comparer.GetHashCode(left), comparer.GetHashCode(right));
+        right["key"] = 43;
+        Assert.False(comparer.Equals(left, right));
+        right.Clear();
+        right["other"] = 42;
+        Assert.False(comparer.Equals(left, right));
+        right["key"] = 42;
+        Assert.False(comparer.Equals(left, right));
+        Assert.False(comparer.Equals(left, null!));
+        Assert.False(comparer.Equals(null!, right));
+    }
+
+#if NET
+    [Theory]
+    [InlineData(0)]
+    [InlineData(42)]
+    public void ShapeableEntryPoints_UseStructuralEqualityAndHashing(int value)
+    {
+        SimplePoco left = new() { Value = value };
+        SimplePoco right = new() { Value = value };
+        var comparer = StructuralEqualityComparer.Create<SimplePoco>();
+        var providerComparer = StructuralEqualityComparer.Create<SimplePoco>(providerUnderTest.Provider);
+        Assert.True(comparer.Equals(left, right));
+        Assert.True(providerComparer.Equals(left, right));
+        Assert.True(StructuralEqualityComparer.Equals(left, right));
+        Assert.Equal(comparer.GetHashCode(left), StructuralEqualityComparer.GetHashCode(right));
+        right.Value++;
+        Assert.False(StructuralEqualityComparer.Equals(left, right));
+
+        var externalComparer = StructuralEqualityComparer.Create<int, Witness>();
+        Assert.True(StructuralEqualityComparer.Equals<int, Witness>(value, value));
+        Assert.False(StructuralEqualityComparer.Equals<int, Witness>(value, value + 1));
+        Assert.Equal(externalComparer.GetHashCode(value), StructuralEqualityComparer.GetHashCode<int, Witness>(value));
+    }
+#endif
+
+    [Theory]
     [MemberData(nameof(TestTypes.GetEqualValuePairs), MemberType = typeof(TestTypes))]
     public void EqualityComparer_EqualValues<T>(TestCase<T> left, TestCase<T> right)
     {

@@ -1,5 +1,6 @@
 ﻿using PolyType.Abstractions;
 using PolyType.Utilities;
+using System.Globalization;
 using System.Text;
 
 namespace PolyType.Examples.PrettyPrinter;
@@ -35,7 +36,7 @@ public static partial class PrettyPrinter
         => (PrettyPrinter<T>)s_cache.GetOrAdd(typeof(T), typeShapeProvider)!;
 
     /// <summary>
-    /// Pretty prints the specified value to a string.
+    /// Pretty prints the specified value to a string using invariant culture.
     /// </summary>
     /// <typeparam name="T">The type of the value to be pretty printed.</typeparam>
     /// <param name="prettyPrinter">The pretty-printer handling the formatting.</param>
@@ -43,14 +44,14 @@ public static partial class PrettyPrinter
     /// <returns>A string containing a pretty-printed rendering of the value.</returns>
     public static string Print<T>(this PrettyPrinter<T> prettyPrinter, T? value)
     {
-        var sb = new StringWriter();
+        var sb = new StringWriter(CultureInfo.InvariantCulture);
         prettyPrinter(sb, 0, value);
         return sb.ToString();
     }
 
 #if NET
     /// <summary>
-    /// Pretty prints the specified value to a string using its <see cref="IShapeable{T}"/> implementation.
+    /// Pretty prints the specified value to a string using invariant culture and its <see cref="IShapeable{T}"/> implementation.
     /// </summary>
     /// <typeparam name="T">The type of the value to be pretty printed.</typeparam>
     /// <param name="value">The value to be formatted.</param>
@@ -59,7 +60,7 @@ public static partial class PrettyPrinter
         => PrettyPrinterCache<T, T>.Value.Print(value);
 
     /// <summary>
-    /// Pretty prints the specified value to a string using an externally provided <see cref="IShapeable{T}"/> implementation.
+    /// Pretty prints the specified value to a string using invariant culture and an externally provided <see cref="IShapeable{T}"/> implementation.
     /// </summary>
     /// <typeparam name="T">The type of the value to be pretty printed.</typeparam>
     /// <typeparam name="TProvider">The type providing an <see cref="IShapeable{T}"/> implementation.</typeparam>

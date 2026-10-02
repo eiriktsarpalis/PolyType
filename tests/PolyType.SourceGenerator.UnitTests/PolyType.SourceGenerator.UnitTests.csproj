@@ -45,8 +45,21 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\PolyType.SourceGenerator\PolyType.SourceGenerator.csproj" />
+    <ProjectReference Include="..\..\src\PolyType.TestCases\PolyType.TestCases.csproj" />
+    <ProjectReference Include="..\..\src\PolyType.TestCases.FSharp\PolyType.TestCases.FSharp.fsproj" />
     <ProjectReference Include="..\..\src\PolyType\PolyType.csproj" />
+    <ProjectReference Include="..\..\src\PolyType\PolyType.csproj"
+                      AdditionalProperties="TargetFramework=netstandard2.0"
+                      SkipGetTargetFrameworkProperties="true"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="NetStandardPolyTypeReference" />
   </ItemGroup>
+
+  <Target Name="CopyNetStandardPolyTypeReference" AfterTargets="Build">
+    <Copy SourceFiles="@(NetStandardPolyTypeReference)"
+          DestinationFolder="$(TargetDir)LegacyReferences"
+          SkipUnchangedFiles="true" />
+  </Target>
 
   <!--
     Usage: dotnet msbuild -t:UpdateSnapshots

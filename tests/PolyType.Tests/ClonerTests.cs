@@ -7,6 +7,26 @@ namespace PolyType.Tests;
 
 public abstract class ClonerTests(ProviderUnderTest providerUnderTest)
 {
+#if NET
+    [Theory]
+    [InlineData(0)]
+    [InlineData(42)]
+    public void ShapeableEntryPoints_ProduceIndependentCopies(int value)
+    {
+        SimplePoco original = new() { Value = value };
+        SimplePoco? directCopy = Cloner.Clone(original);
+        SimplePoco? providerCopy = Cloner.CreateCloner<SimplePoco>(providerUnderTest.Provider)(original);
+        Assert.NotNull(directCopy);
+        Assert.NotNull(providerCopy);
+        Assert.NotSame(original, directCopy);
+        Assert.NotSame(original, providerCopy);
+        directCopy.Value++;
+        Assert.Equal(value, original.Value);
+        Assert.Equal(value, providerCopy.Value);
+        Assert.Equal(value, Cloner.Clone<int, Witness>(value));
+    }
+#endif
+
     [Theory]
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
     public void Cloner_ProducesEqualCopy<T>(TestCase<T> testCase)

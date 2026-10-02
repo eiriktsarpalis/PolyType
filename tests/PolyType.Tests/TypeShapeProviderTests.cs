@@ -612,6 +612,22 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
             RandomGenerator<TKey> keyGenerator = RandomGenerator.Create(dictionaryShape.KeyType);
             var getter = dictionaryShape.GetGetDictionary();
 
+            if (testCase.Value is not null)
+            {
+                var view = getter(testCase.Value);
+                Assert.Equal(view.Count, view.Keys.Count());
+                Assert.Equal(view.Count, view.Values.Count());
+                Assert.Equal(view.ToArray(), ((IEnumerable)view).Cast<KeyValuePair<TKey, TValue>>().ToArray());
+
+                foreach (var entry in view)
+                {
+                    Assert.True(view.ContainsKey(entry.Key));
+                    Assert.True(view.TryGetValue(entry.Key, out TValue? value));
+                    Assert.Equal(entry.Value, value);
+                    Assert.Equal(entry.Value, view[entry.Key]);
+                }
+            }
+
             if (dictionaryShape.ConstructionStrategy is CollectionConstructionStrategy.Mutable)
             {
                 var defaultCtor = dictionaryShape.GetDefaultConstructor();
@@ -635,6 +651,12 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
                         dictionary = defaultCtor();
                         Assert.Empty(getter(dictionary));
                         TKey key = keyGenerator.GenerateValue(size: 1000, seed: 42);
+                        var emptyView = getter(dictionary);
+                        Assert.Empty(emptyView.Keys);
+                        Assert.Empty(emptyView.Values);
+                        Assert.False(emptyView.ContainsKey(key));
+                        Assert.False(emptyView.TryGetValue(key, out TValue? missingValue));
+                        Assert.Equal(default, missingValue);
                         Assert.True(inserter(ref dictionary, key, default!));
                         Assert.Single(getter(dictionary));
 

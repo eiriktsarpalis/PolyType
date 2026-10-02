@@ -1384,19 +1384,19 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                 generator.Emit(OpCodes.Ldc_I4, b ? 1 : 0);
                 break;
             case byte b:
-                generator.Emit(OpCodes.Ldc_I4_S, b);
+                generator.Emit(OpCodes.Ldc_I4, (int)b);
                 break;
             case sbyte b:
-                generator.Emit(OpCodes.Ldc_I4_S, b);
+                generator.Emit(OpCodes.Ldc_I4, (int)b);
                 break;
             case char c:
                 generator.Emit(OpCodes.Ldc_I4, c);
                 break;
             case ushort s:
-                generator.Emit(OpCodes.Ldc_I4_S, s);
+                generator.Emit(OpCodes.Ldc_I4, (int)s);
                 break;
             case short s:
-                generator.Emit(OpCodes.Ldc_I4_S, s);
+                generator.Emit(OpCodes.Ldc_I4, (int)s);
                 break;
             case int i:
                 generator.Emit(OpCodes.Ldc_I4, i);

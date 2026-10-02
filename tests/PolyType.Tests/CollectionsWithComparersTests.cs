@@ -73,6 +73,80 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     [Fact]
     public void SortedSet() => this.AssertDefaultEnumerable<SortedSet<int>, int>(new ReverseComparer(), s => s.Comparer);
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void RequiredEqualityComparer_DefaultsOrPreservesSuppliedComparer(bool parameterized, bool customComparer)
+    {
+        IEqualityComparer<int>? comparer = customComparer ? new EvenOddEqualityComparer() : null;
+        CollectionConstructionOptions<int> options = new() { EqualityComparer = comparer };
+        IEqualityComparer<int> actualComparer;
+        IEnumerable<int> values;
+
+        if (parameterized)
+        {
+            var shape = GetEnumerableShape<EnumerableWithRequiredEqualityComparer, int>();
+            var collection = shape.GetParameterizedConstructor()([3, 6, 5], options);
+            actualComparer = collection.Comparer;
+            values = shape.GetGetEnumerable()(collection);
+        }
+        else
+        {
+            var shape = GetEnumerableShape<SetWithRequiredEqualityComparer, int>();
+            var collection = shape.GetDefaultConstructor()(options);
+            var appender = shape.GetAppender();
+            foreach (int value in new[] { 3, 6, 5 })
+            {
+                appender(ref collection, value);
+            }
+
+            actualComparer = collection.Comparer;
+            values = shape.GetGetEnumerable()(collection);
+        }
+
+        Assert.Same(comparer ?? EqualityComparer<int>.Default, actualComparer);
+        Assert.Equal(customComparer ? [3, 6] : [3, 5, 6], values.OrderBy(x => x));
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void RequiredComparer_DefaultsOrPreservesSuppliedComparer(bool parameterized, bool customComparer)
+    {
+        IComparer<int>? comparer = customComparer ? new ReverseComparer() : null;
+        CollectionConstructionOptions<int> options = new() { Comparer = comparer };
+        IComparer<int> actualComparer;
+        IEnumerable<int> values;
+
+        if (parameterized)
+        {
+            var shape = GetEnumerableShape<EnumerableWithRequiredComparer, int>();
+            var collection = shape.GetParameterizedConstructor()(NonEmptyEnumerable, options);
+            actualComparer = collection.Comparer;
+            values = shape.GetGetEnumerable()(collection);
+        }
+        else
+        {
+            var shape = GetEnumerableShape<SetWithRequiredComparer, int>();
+            var collection = shape.GetDefaultConstructor()(options);
+            var appender = shape.GetAppender();
+            foreach (int value in NonEmptyEnumerable)
+            {
+                appender(ref collection, value);
+            }
+
+            actualComparer = collection.Comparer;
+            values = shape.GetGetEnumerable()(collection);
+        }
+
+        Assert.Same(comparer ?? Comparer<int>.Default, actualComparer);
+        Assert.Equal(customComparer ? [6, 3] : [3, 6], values);
+    }
+
     // REVISIT: This test is skipped for no-emit Reflection because it uses Span, which isn't supported by that provider.
     //          Consider adding an array/list construction strategy for better support.
     [Fact]
@@ -333,6 +407,10 @@ public abstract partial class CollectionsWithComparersTests(ProviderUnderTest pr
     [GenerateShapeFor<ImmutableSortedDictionary<int, bool>>]
     [GenerateShapeFor<HashSet<int>>]
     [GenerateShapeFor<SortedSet<int>>]
+    [GenerateShapeFor<SetWithRequiredEqualityComparer>]
+    [GenerateShapeFor<SetWithRequiredComparer>]
+    [GenerateShapeFor<EnumerableWithRequiredEqualityComparer>]
+    [GenerateShapeFor<EnumerableWithRequiredComparer>]
     [GenerateShapeFor<ImmutableHashSet<int>>]
     [GenerateShapeFor<ImmutableSortedSet<int>>]
     [GenerateShapeFor<IImmutableSet<int>>]

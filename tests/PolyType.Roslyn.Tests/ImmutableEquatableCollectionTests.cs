@@ -5,6 +5,35 @@ using System.Collections;
 
 public static class ImmutableEquatableCollectionTests
 {
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public static void ImmutableDictionaryEquality_DistinguishesKeysAndCounts(int count)
+    {
+        var left = Enumerable.Range(0, count).ToImmutableEquatableDictionary(i => i, i => i);
+        var right = Enumerable.Range(0, count).ToImmutableEquatableDictionary(i => i, i => i);
+        Assert.True(left.Equals(right));
+        Assert.Equal(left.GetHashCode(), right.GetHashCode());
+        Assert.True(left.Equals(left));
+        Assert.False(left.Equals((object?)null));
+        var differentKeys = Enumerable.Range(1, count).ToImmutableEquatableDictionary(i => i, i => i);
+        Assert.Equal(count == 0, left.Equals(differentKeys));
+        var differentCount = Enumerable.Range(0, count + 1).ToImmutableEquatableDictionary(i => i, i => i);
+        Assert.False(left.Equals(differentCount));
+        Assert.False(left.Equals(new object()));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public static void ImmutableSetEquality_RejectsNullAndDifferentCounts(int count)
+    {
+        var set = Enumerable.Range(0, count).ToImmutableEquatableSet();
+        Assert.False(set.Equals((object?)null));
+        Assert.False(set.Equals(Enumerable.Range(0, count + 1).ToImmutableEquatableSet()));
+        Assert.False(set.Equals(new object()));
+    }
+
     [Fact]
     public static void ImmutableEquatableArray_EqualsSequenceEqualValue()
     {

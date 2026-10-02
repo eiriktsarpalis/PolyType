@@ -2,6 +2,7 @@ namespace PolyType.Examples.FSharp
 
 open System
 open System.IO
+open System.Globalization
 open System.Numerics
 open System.Collections.Generic
 open PolyType
@@ -220,7 +221,7 @@ module PrettyPrinter =
                     derivedPrinter.Invoke(writer, indentation, value))
         
         override this.VisitUnionCase<'TUnionCase, 'TUnion>(unionCaseShape: IUnionCaseShape<'TUnionCase, 'TUnion>, _state: obj) : obj =
-            let underlying = unionCaseShape.UnionCaseType.Accept this :?> PrettyPrinter<'TUnionCase>
+            let underlying = this.GetOrAddPrettyPrinter unionCaseShape.UnionCaseType
             let marshaler = unionCaseShape.Marshaler
             box <| PrettyPrinter<'TUnion>(fun writer indentation value ->
                 underlying.Invoke(writer, indentation, marshaler.Unmarshal value))
@@ -245,8 +246,8 @@ module PrettyPrinter =
     let createFromProvider<'T> (provider: ITypeShapeProvider) : PrettyPrinter<'T> =
         cache.GetOrAdd(typeof<'T>, provider) :?> PrettyPrinter<'T>
     
-    /// Pretty prints the specified value to a string.
+    /// Pretty prints the specified value to a string using invariant culture.
     let print<'T> (prettyPrinter: PrettyPrinter<'T>) (value: 'T) : string =
-        use writer = new StringWriter()
+        use writer = new StringWriter(CultureInfo.InvariantCulture)
         prettyPrinter.Invoke(writer, 0, value)
         writer.ToString()

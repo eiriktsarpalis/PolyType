@@ -360,7 +360,6 @@ public static partial class Mapper
         public IGenericCustomAttributeProvider AttributeProvider => throw new NotImplementedException();
         public object? Accept(TypeShapeVisitor visitor, object? state = null) => ((MapperTypeShapeVisitor)visitor).VisitMapper(source, target, state);
         public object? Invoke(ITypeShapeFunc func, object? state = null) => func.Invoke(this, state);
-        public Func<object>? GetAssociatedTypeFactory(Type relatedType) => throw new NotImplementedException();
         public ITypeShape? GetAssociatedTypeShape(Type associatedType) => throw new NotImplementedException();
     }
 

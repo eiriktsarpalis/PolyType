@@ -10,6 +10,183 @@ namespace PolyType.SourceGenerator.UnitTests;
 public static partial class CompilationTests
 {
     [Theory]
+    [InlineData("ExplicitlyImplementedIList")]
+    [InlineData("ExplicitlyImplementedIDictionary")]
+    [InlineData("HashSetBackedCollection")]
+    [InlineData("TupleBackedDictionary")]
+    [InlineData("SetWithRequiredEqualityComparer")]
+    [InlineData("SetWithRequiredComparer")]
+    [InlineData("DictionaryWithBuilderAttribute")]
+    [InlineData("GenericDictionaryWithBuilderAttribute<string, int>")]
+    [InlineData("TransportSettings")]
+    [InlineData("GenericClassWithMultipleRefConstructorParametersPrivate<ushort>")]
+    [InlineData("GenericClassWithMultipleRefConstructorParametersPrivate<uint>")]
+    [InlineData("GenericClassWithMultipleRefConstructorParametersPrivate<long>")]
+    [InlineData("GenericClassWithMultipleRefConstructorParametersPrivate<float>")]
+    [InlineData("GenericClassWithMultipleRefConstructorParametersPrivate<double>")]
+    [InlineData("GenericClassWithMultipleRefConstructorParametersPrivate<byte>")]
+    [InlineData("GenericPrivateConstructorWithInitializers<int>")]
+    [InlineData("GenericPrivateConstructorWithInitializers<string>")]
+    [InlineData("GenericPrivateCompositeMembers<int>")]
+    [InlineData("GenericPrivateCompositeMembers<string>")]
+    [InlineData("GenericPrivateConstructorStruct<int>")]
+    [InlineData("GenericPrivateConstructorStruct<string>")]
+    [InlineData("PartialAccessorOverrides<int>")]
+    [InlineData("PartialAccessorOverrides<string>")]
+    [InlineData("NonGenericPartialAccessorOverrides")]
+    public static void ReferencedCollectionContracts_CompileWithEquivalentConstruction(string typeName)
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation($$"""
+            [PolyType.GenerateShapeFor(typeof(PolyType.Tests.{{typeName}}))]
+            public partial class Witness;
+            """,
+            additionalReferences:
+            [
+                MetadataReference.CreateFromFile(typeof(PolyType.Tests.TestCase).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(System.Text.Json.Serialization.JsonConstructorAttribute).Assembly.Location),
+            ],
+            parseOptions: CompilationHelpers.CreateParseOptions(LanguageVersion.Preview));
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+        Assert.Contains(result.AllGeneratedTypes, model => model.Type.FullyQualifiedName.StartsWith("global::PolyType.Tests.", StringComparison.Ordinal));
+        using var image = new MemoryStream();
+        var emitted = result.NewCompilation.Emit(image, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.True(emitted.Success, string.Join(Environment.NewLine, emitted.Diagnostics));
+    }
+
+    [Theory]
+    [InlineData("int?")]
+    [InlineData("Microsoft.FSharp.Core.FSharpOption<int>")]
+    [InlineData("Microsoft.FSharp.Core.FSharpValueOption<int>")]
+    [InlineData("Microsoft.FSharp.Core.Unit")]
+    [InlineData("Microsoft.FSharp.Core.FSharpFunc<int, bool>")]
+    [InlineData("PolyType.Tests.FSharp.FSharpUnion")]
+    public static void FrameworkShapes_CanResolveAssociatedCodecs(string typeName)
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation($$"""
+            using PolyType;
+
+            [assembly: TypeShapeExtension(typeof({{typeName}}), AssociatedTypes = new[] { typeof(Codec) })]
+            [GenerateShapeFor(typeof({{typeName}}))]
+            public partial class Witness;
+            public class Codec { public int Version { get; set; } }
+            """,
+            additionalReferences: [MetadataReference.CreateFromFile(typeof(PolyType.Tests.FSharp.FSharpUnion).Assembly.Location)],
+            parseOptions: CompilationHelpers.CreateParseOptions(LanguageVersion.CSharp12));
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+        Assert.Contains(result.AllGeneratedTypes, model => model.Type.FullyQualifiedName == "global::Codec");
+    }
+
+    [Theory]
+    [InlineData("System.Collections.Generic.List<int>", false)]
+    [InlineData("System.Collections.Generic.List<int>", true)]
+    [InlineData("System.Collections.Generic.Dictionary<string, int>", false)]
+    [InlineData("System.Collections.Generic.Dictionary<string, int>", true)]
+    public static void CollectionShapes_PreserveCallableAndAssociatedMetadata(string baseType, bool useMetadataReference)
+    {
+        string declarations = $$"""
+            using PolyType;
+
+            [GenerateShape, AssociatedTypeShape(typeof(CollectionInfo))]
+            public partial class Collection : {{baseType}}
+            {
+                [MethodShape]
+                public int GetCount() => Count;
+                [EventShape]
+                public event System.Action? Changed { add { } remove { } }
+            }
+
+            public class CollectionInfo { public int Version { get; set; } }
+            """;
+        Compilation compilation;
+        if (useMetadataReference)
+        {
+            Compilation library = CompilationHelpers.CreateCompilation(declarations, assemblyName: "CollectionLibrary");
+            using var image = new MemoryStream();
+            var emitted = library.Emit(image, cancellationToken: TestContext.Current.CancellationToken);
+            Assert.True(emitted.Success, string.Join(Environment.NewLine, emitted.Diagnostics));
+            compilation = CompilationHelpers.CreateCompilation("""
+                [PolyType.GenerateShapeFor(typeof(Collection))]
+                public partial class Witness { }
+                """, additionalReferences: [MetadataReference.CreateFromImage(image.ToArray())]);
+        }
+        else
+        {
+            compilation = CompilationHelpers.CreateCompilation(declarations);
+        }
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+        TypeShapeModel collection = Assert.Single(result.AllGeneratedTypes, model => model.Type.FullyQualifiedName == "global::Collection");
+        Assert.Equal("GetCount", Assert.Single(collection.Methods).Name);
+        Assert.Equal("Changed", Assert.Single(collection.Events).Name);
+        Assert.Contains(result.AllGeneratedTypes, model => model.Type.FullyQualifiedName == "global::CollectionInfo");
+        using var consumerImage = new MemoryStream();
+        var consumerEmitted = result.NewCompilation.Emit(consumerImage, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.True(consumerEmitted.Success, string.Join(Environment.NewLine, consumerEmitted.Diagnostics));
+    }
+
+    [Theory]
+    [InlineData(64)]
+    [InlineData(65)]
+    public static void RequiredMembers_CrossArgumentStateMaskBoundary(int memberCount)
+    {
+        string properties = string.Join(Environment.NewLine,
+            Enumerable.Range(0, memberCount).Select(i => $"public required int Value{i} {{ get; init; }}"));
+        Compilation compilation = CompilationHelpers.CreateCompilation($$"""
+            using PolyType;
+
+            [GenerateShape]
+            public partial class Payload
+            {
+                {{properties}}
+            }
+            """, parseOptions: CompilationHelpers.CreateParseOptions(LanguageVersion.CSharp11));
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        var model = Assert.Single(result.AllGeneratedTypes.OfType<ObjectShapeModel>(), m => m.Type.FullyQualifiedName == "global::Payload");
+        Assert.NotNull(model.Constructor);
+        Assert.Equal(memberCount, model.Constructor.RequiredMembers.Length);
+        Assert.Equal(memberCount <= 64 ? ArgumentStateType.SmallArgumentState : ArgumentStateType.LargeArgumentState,
+            model.Constructor.ArgumentStateType);
+    }
+
+    [Theory]
+    [InlineData("HashSet<int>", "IEqualityComparer<int>", false)]
+    [InlineData("SortedSet<int>", "IComparer<int>", false)]
+    [InlineData("HashSet<int>", "IEqualityComparer<int>", true)]
+    [InlineData("SortedSet<int>", "IComparer<int>", true)]
+    public static void CollectionsWithRequiredComparers_Compile(string setType, string comparerType, bool parameterized)
+    {
+        string declaration = parameterized
+            ? $$"""
+                public partial class Collection : IEnumerable<int>
+                {
+                    private readonly {{setType}} _values;
+                    public Collection(IEnumerable<int> values, {{comparerType}} comparer) =>
+                        _values = new(values, comparer ?? throw new ArgumentNullException(nameof(comparer)));
+                    public IEnumerator<int> GetEnumerator() => _values.GetEnumerator();
+                    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+                }
+                """
+            : $$"""
+                public partial class Collection({{comparerType}} comparer)
+                    : {{setType}}(comparer ?? throw new ArgumentNullException(nameof(comparer)));
+                """;
+        Compilation compilation = CompilationHelpers.CreateCompilation($$"""
+            using System;
+            using System.Collections.Generic;
+            using PolyType;
+
+            [GenerateShape]
+            {{declaration}}
+            """, parseOptions: CompilationHelpers.CreateParseOptions(LanguageVersion.CSharp12));
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Theory]
     [InlineData(null)]
     [InlineData(UnionTypeShapeKind.Unknown)]
     [InlineData(UnionTypeShapeKind.TypeHierarchy)]

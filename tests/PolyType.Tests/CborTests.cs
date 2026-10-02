@@ -8,6 +8,35 @@ namespace PolyType.Tests;
 public abstract partial class CborTests(ProviderUnderTest providerUnderTest)
 {
     [Theory]
+    [InlineData("A2616B01616B02")]
+    [InlineData("BF616B01616B02FF")]
+    public void DictionaryPayloads_RejectDuplicateKeys(string encoding)
+    {
+        var converter = CborSerializer.CreateConverter<Dictionary<string, int>>(providerUnderTest.Provider);
+        ArgumentException exception = Assert.Throws<ArgumentException>(() => converter.DecodeFromHex(encoding));
+        Assert.Contains("'k", exception.Message);
+    }
+
+#if NET
+    [Theory]
+    [InlineData(0)]
+    [InlineData(42)]
+    public void ShapeableEntryPoints_InteroperateWithProviderConverters(int value)
+    {
+        SimpleRecord record = new(value);
+        var converter = CborSerializer.CreateConverter<SimpleRecord>(providerUnderTest.Provider);
+        Assert.Equal(record, converter.Decode(CborSerializer.Encode(record)));
+        Assert.Equal(record, CborSerializer.Decode<SimpleRecord>(converter.Encode(record)));
+        Assert.Equal(record, converter.DecodeFromHex(CborSerializer.EncodeToHex(record)));
+        Assert.Equal(record, CborSerializer.DecodeFromHex<SimpleRecord>(converter.EncodeToHex(record)));
+        Assert.Equal(value, CborSerializer.Decode<int, Witness>(CborSerializer.Encode<int, Witness>(value)));
+        Assert.Equal(value, CborSerializer.DecodeFromHex<int, Witness>(CborSerializer.EncodeToHex<int, Witness>(value)));
+        Assert.Equal(record, CborSerializer.CreateConverterUsingReflection<SimpleRecord>().Decode(
+            CborSerializer.CreateConverterUsingSourceGen<SimpleRecord>().Encode(record)));
+    }
+#endif
+
+    [Theory]
     [MemberData(nameof(GetValuesAndExpectedEncoding))]
     public void ReturnsExpectedEncoding<T>(TestCase<T> testCase, string expectedEncoding)
     {

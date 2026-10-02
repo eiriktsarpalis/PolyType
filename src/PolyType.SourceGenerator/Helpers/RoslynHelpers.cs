@@ -511,21 +511,6 @@ internal static partial class RoslynHelpers
         return false;
     }
 
-    public static bool TryGetNamedArguments(this AttributeData attributeData, string name, out ImmutableArray<TypedConstant> result)
-    {
-        foreach (KeyValuePair<string, TypedConstant> namedArg in attributeData.NamedArguments)
-        {
-            if (namedArg.Key == name)
-            {
-                result = namedArg.Value.Values!;
-                return true;
-            }
-        }
-
-        result = default;
-        return false;
-    }
-
     /// <summary>
     /// Returns the kind keyword corresponding to the specified declaration syntax node.
     /// </summary>

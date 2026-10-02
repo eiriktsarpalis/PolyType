@@ -4,6 +4,38 @@ namespace PolyType.Tests;
 
 public abstract partial class ValidationTests(ProviderUnderTest providerUnderTest)
 {
+#if NET
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ShapeableEntryPoints_ReportAndThrowTheSameValidationErrors(bool valid)
+    {
+        BindingModel value = new()
+        {
+            Id = valid ? "id" : null,
+            Components = ["1", "2"],
+            Sample = 0.5,
+            PhoneNumber = "+447777777777",
+        };
+        Assert.Equal(valid, Validator.TryValidate(value, out List<string>? errors));
+        if (valid)
+        {
+            Assert.Null(errors);
+            Validator.Validate(value);
+        }
+        else
+        {
+            Assert.Equal(["$.Id: value is null or empty."], errors);
+            Assert.Throws<ValidationException>(() => Validator.Validate(value));
+        }
+
+        Assert.True(Validator.TryValidate<int, Witness>(42, out errors));
+        Assert.Null(errors);
+        Validator.Validate<int, Witness>(42);
+        Validator.Create<int>(providerUnderTest.Provider).Validate(42);
+    }
+#endif
+
     [Theory]
     [MemberData(nameof(GetValidatorScenaria))]
     public void SimpleValidationScenaria<T>(TestCase<T> testCase, List<string>? expectedErrors)
