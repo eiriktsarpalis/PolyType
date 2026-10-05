@@ -20,6 +20,32 @@ public static class ClassArgumentStateTests
     }
 
     [Fact]
+    public static void ClassSmallArgumentState_MarkAllArgumentsSet_Supports64Arguments()
+    {
+        ClassSmallArgumentState<int> state = ClassSmallArgumentState<int>.Rent(42, 64, ulong.MaxValue, markAllArgumentsSet: true);
+
+        Assert.Equal(64, state.Count);
+        Assert.True(state.AreRequiredArgumentsSet);
+        Assert.True(state.IsArgumentSet(0));
+        Assert.True(state.IsArgumentSet(63));
+        Assert.False(state.IsArgumentSet(-1));
+        Assert.False(state.IsArgumentSet(64));
+
+        state.MarkArgumentSet(-1);
+        state.MarkArgumentSet(64);
+        Assert.True(state.IsArgumentSet(63));
+
+        state.Return();
+    }
+
+    [Fact]
+    public static void ClassSmallArgumentState_RentRejectsMoreThan64Arguments()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            ClassSmallArgumentState<int>.Rent(42, 65, 0));
+    }
+
+    [Fact]
     public static void ClassSmallArgumentState_RentReusesAndReinitializesReturnedState()
     {
         ClassSmallArgumentState<(string? Name, int Value)> first = ClassSmallArgumentState<(string? Name, int Value)>.Rent(("retained", 42), 2, 0b10);
@@ -37,6 +63,32 @@ public static class ClassArgumentStateTests
         Assert.True(next.AreRequiredArgumentsSet);
 
         next.Return();
+    }
+
+    [Fact]
+    public static void ClassLargeArgumentState_MarkAllArgumentsSet_ResizesReturnedState()
+    {
+        ClassLargeArgumentState<int> first = ClassLargeArgumentState<int>.Rent(42, 65, new ValueBitArray(65));
+        first.Return();
+
+        ValueBitArray requiredArgumentsMask = new(66);
+        requiredArgumentsMask[65] = true;
+        ClassLargeArgumentState<int> next = ClassLargeArgumentState<int>.Rent(7, 66, requiredArgumentsMask, markAllArgumentsSet: true);
+
+        Assert.Same(first, next);
+        Assert.Equal(66, next.Count);
+        Assert.True(next.AreRequiredArgumentsSet);
+        Assert.True(next.IsArgumentSet(0));
+        Assert.True(next.IsArgumentSet(65));
+
+        next.Return();
+    }
+
+    [Fact]
+    public static void ClassLargeArgumentState_RentRejectsMismatchedRequiredArgumentsMask()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            ClassLargeArgumentState<int>.Rent(42, 65, new ValueBitArray(64)));
     }
 
     [Fact]
@@ -63,5 +115,18 @@ public static class ClassArgumentStateTests
         Assert.True(next.AreRequiredArgumentsSet);
 
         next.Return();
+    }
+
+    [Fact]
+    public static void EmptyArgumentState_IsNotPoolable()
+    {
+        EmptyArgumentState state = EmptyArgumentState.Instance;
+
+        Assert.Equal(0, state.Count);
+        Assert.True(state.AreRequiredArgumentsSet);
+        Assert.False(state.IsArgumentSet(0));
+        Assert.False(state.IsPoolable);
+
+        state.Return();
     }
 }
