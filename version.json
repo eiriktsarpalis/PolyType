@@ -1,5 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/dotnet/Nerdbank.GitVersioning/main/src/NerdBank.GitVersioning/version.schema.json",
+  // When switching to a stable version, uncomment "prerelease": "unstable" in
+  // the version.json files under src/PolyType.Roslyn, src/PolyType.Examples, and src/PolyType.TestCases.
   "version": "1.4",
   "nuGetPackageVersion": {
     "semVer": 2.0
