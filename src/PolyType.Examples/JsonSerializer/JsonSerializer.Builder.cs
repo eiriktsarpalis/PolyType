@@ -153,6 +153,22 @@ public static partial class JsonSerializerTS
                 return new JsonMDArrayConverter<TEnumerable, TElement>(elementConverter, enumerableShape.Rank);
             }
 
+            if (enumerableShape.Type == typeof(TElement[]) &&
+                enumerableShape.ConstructionStrategy is CollectionConstructionStrategy.Parameterized)
+            {
+                return new JsonArrayConverter<TElement>(
+                    elementConverter,
+                    (IEnumerableTypeShape<TElement[], TElement>)(object)enumerableShape);
+            }
+
+            if (enumerableShape.Type == typeof(List<TElement>) &&
+                enumerableShape.ConstructionStrategy is CollectionConstructionStrategy.Mutable)
+            {
+                return new JsonListConverter<TElement>(
+                    elementConverter,
+                    (IEnumerableTypeShape<List<TElement>, TElement>)(object)enumerableShape);
+            }
+
             return enumerableShape.ConstructionStrategy switch
             {
                 CollectionConstructionStrategy.Mutable => 

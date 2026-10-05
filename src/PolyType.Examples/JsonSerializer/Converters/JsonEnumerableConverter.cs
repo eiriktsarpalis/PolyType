@@ -28,7 +28,7 @@ internal class JsonEnumerableConverter<TEnumerable, TElement>(JsonConverter<TEle
         throw new NotSupportedException($"Deserialization not supported for type {typeof(TEnumerable)}.");
     }
 
-    public sealed override void Write(Utf8JsonWriter writer, TEnumerable value, JsonSerializerOptions options)
+    public override void Write(Utf8JsonWriter writer, TEnumerable value, JsonSerializerOptions options)
     {
         if (value is null)
         {
@@ -71,7 +71,7 @@ internal class JsonEnumerableConverter<TEnumerable, TElement>(JsonConverter<TEle
     }
 }
 
-internal sealed class JsonMutableEnumerableConverter<TEnumerable, TElement>(
+internal class JsonMutableEnumerableConverter<TEnumerable, TElement>(
     JsonConverter<TElement> elementConverter,
     IEnumerableTypeShape<TEnumerable, TElement> typeShape,
     MutableCollectionConstructor<TElement, TEnumerable> createObject,
@@ -105,7 +105,7 @@ internal sealed class JsonMutableEnumerableConverter<TEnumerable, TElement>(
     }
 }
 
-internal sealed class JsonParameterizedEnumerableConverter<TEnumerable, TElement>(
+internal class JsonParameterizedEnumerableConverter<TEnumerable, TElement>(
     JsonConverter<TElement> elementConverter,
     IEnumerableTypeShape<TEnumerable, TElement> typeShape,
     ParameterizedCollectionConstructor<TElement, TElement, TEnumerable> spanConstructor)
@@ -132,6 +132,64 @@ internal sealed class JsonParameterizedEnumerableConverter<TEnumerable, TElement
         }
 
         return spanConstructor(buffer.AsSpan());
+    }
+}
+
+internal sealed class JsonArrayConverter<TElement>(
+    JsonConverter<TElement> elementConverter,
+    IEnumerableTypeShape<TElement[], TElement> typeShape)
+    : JsonParameterizedEnumerableConverter<TElement[], TElement>(
+        elementConverter,
+        typeShape,
+        typeShape.GetParameterizedConstructor())
+{
+    // Isolate the hot loop from callers so it receives its own JIT optimization budget.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public override void Write(Utf8JsonWriter writer, TElement[] value, JsonSerializerOptions options)
+    {
+        if (value is null)
+        {
+            writer.WriteNullValue();
+            return;
+        }
+
+        writer.WriteStartArray();
+        JsonConverter<TElement> elementConverter = _elementConverter;
+        for (int i = 0; i < value.Length; i++)
+        {
+            elementConverter.Write(writer, value[i], options);
+        }
+
+        writer.WriteEndArray();
+    }
+}
+
+internal sealed class JsonListConverter<TElement>(
+    JsonConverter<TElement> elementConverter,
+    IEnumerableTypeShape<List<TElement>, TElement> typeShape)
+    : JsonMutableEnumerableConverter<List<TElement>, TElement>(
+        elementConverter,
+        typeShape,
+        typeShape.GetDefaultConstructor(),
+        typeShape.GetAppender())
+{
+    public override void Write(Utf8JsonWriter writer, List<TElement> value, JsonSerializerOptions options)
+    {
+        if (value is null)
+        {
+            writer.WriteNullValue();
+            return;
+        }
+
+        writer.WriteStartArray();
+        JsonConverter<TElement> elementConverter = _elementConverter;
+        int count = value.Count;
+        for (int i = 0; i < count; i++)
+        {
+            elementConverter.Write(writer, value[i], options);
+        }
+
+        writer.WriteEndArray();
     }
 }
 
