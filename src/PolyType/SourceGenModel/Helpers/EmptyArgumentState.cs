@@ -7,7 +7,7 @@ namespace PolyType.SourceGenModel;
 /// Denotes an argument state corresponding to a type that accepts no constructor arguments.
 /// </summary>
 [EditorBrowsable(EditorBrowsableState.Never)]
-public sealed class EmptyArgumentState : IArgumentState
+public sealed class EmptyArgumentState : IPoolableArgumentState
 {
     /// <summary>
     /// Gets the default empty argument state instance.

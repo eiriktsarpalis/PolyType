@@ -8,7 +8,7 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TArguments">The type storing the arguments.</typeparam>
 [EditorBrowsable(EditorBrowsableState.Never)]
-public sealed class ClassSmallArgumentState<TArguments> : IArgumentState
+public sealed class ClassSmallArgumentState<TArguments> : IPoolableArgumentState
 {
     [ThreadStatic]
     private static ClassSmallArgumentState<TArguments>? t_cached;

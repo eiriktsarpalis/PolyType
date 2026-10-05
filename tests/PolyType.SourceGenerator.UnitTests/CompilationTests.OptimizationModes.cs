@@ -25,7 +25,7 @@ public static partial class CompilationTests
             }
 
             [GenerateShapeFor(typeof(System.Func<int, int>))]
-            public partial class FunctionWitness;
+            public partial class FunctionWitness { }
             """);
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);

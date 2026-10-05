@@ -10,7 +10,7 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TArguments">The type storing the arguments.</typeparam>
 [EditorBrowsable(EditorBrowsableState.Never)]
 [StructLayout(LayoutKind.Auto)]
-public struct SmallArgumentState<TArguments> : IArgumentState
+public struct SmallArgumentState<TArguments> : IPoolableArgumentState
 {
     private readonly uint _count;
     private readonly ulong _requiredArgumentsMask;
