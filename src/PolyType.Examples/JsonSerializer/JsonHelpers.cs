@@ -1,5 +1,4 @@
-﻿using PolyType.Abstractions;
-using PolyType.Examples.Utilities;
+﻿using PolyType.Examples.Utilities;
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -157,25 +156,9 @@ internal static class JsonHelpers
     }
 
 #if NET
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Reset")]
-    public static safe extern void Reset(this Utf8JsonWriter writer, IBufferWriter<byte> bufferWriter, JsonWriterOptions options);
-
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "WriteAsObject")]
     public static safe extern void WriteAsObject(this JsonConverter converter, Utf8JsonWriter writer, object? value, JsonSerializerOptions options);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "GetRawValue")]
-    public static safe extern ReadOnlyMemory<byte> GetRawValue(ref this JsonElement element);
 #else
-    public static void Reset(this Utf8JsonWriter writer, IBufferWriter<byte> bufferWriter, JsonWriterOptions options)
-    {
-        (s_resetMethod ??= CreateResetMethod())(writer, bufferWriter, options);
-        static Action<Utf8JsonWriter, IBufferWriter<byte>, JsonWriterOptions> CreateResetMethod()
-        {
-            MethodInfo resetMethod = typeof(Utf8JsonWriter).GetMethod("Reset", BindingFlags.Instance | BindingFlags.NonPublic, null, [typeof(IBufferWriter<byte>), typeof(JsonWriterOptions)], null)!;
-            return (Action<Utf8JsonWriter, IBufferWriter<byte>, JsonWriterOptions>)Delegate.CreateDelegate(typeof(Action<Utf8JsonWriter, IBufferWriter<byte>, JsonWriterOptions>), resetMethod);
-        }
-    }
-
     public static void WriteAsObject(this JsonConverter converter, Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
     {
         (s_writeAsObjectMethod ??= CreateWriteAsObjectMethod())(converter, writer, value, options);
@@ -186,18 +169,6 @@ internal static class JsonHelpers
         }
     }
 
-    public static ReadOnlyMemory<byte> GetRawValue(this JsonElement element)
-    {
-        return (s_getRawValue ??= CreateGetRawValueMethod())(ref element);
-        static Constructor<JsonElement, ReadOnlyMemory<byte>> CreateGetRawValueMethod()
-        {
-            MethodInfo getRawValueMethod = typeof(JsonElement).GetMethod("GetRawValue", BindingFlags.Instance | BindingFlags.NonPublic, null, Type.EmptyTypes, null)!;
-            return (Constructor<JsonElement, ReadOnlyMemory<byte>>)Delegate.CreateDelegate(typeof(Constructor<JsonElement, ReadOnlyMemory<byte>>), getRawValueMethod);
-        }
-    }
-
-    private static Action<Utf8JsonWriter, IBufferWriter<byte>, JsonWriterOptions>? s_resetMethod;
     private static Action<JsonConverter, Utf8JsonWriter, object?, JsonSerializerOptions>? s_writeAsObjectMethod;
-    private static Constructor<JsonElement, ReadOnlyMemory<byte>>? s_getRawValue;
 #endif
 }
