@@ -81,7 +81,7 @@ internal sealed partial class SourceFormatter
                 or MethodReturnTypeKind.ValueTaskOfT;
         }
 
-        static string FormatArgumentStateConstructor(FunctionShapeModel functionShapeModel, string functionArgumentStateFQN, string? requiredParametersMaskFieldName)
+        string FormatArgumentStateConstructor(FunctionShapeModel functionShapeModel, string functionArgumentStateFQN, string? requiredParametersMaskFieldName)
         {
             if (functionShapeModel.Parameters.Length == 0)
             {
@@ -96,7 +96,7 @@ internal sealed partial class SourceFormatter
                 _ => FormatTupleConstructor(functionShapeModel.Parameters.Select(FormatDefaultValueExpr)),
             };
 
-            return $"static () => new {functionArgumentStateFQN}({stateValueExpr}, count: {functionShapeModel.Parameters.Length}, requiredArgumentsMask: {requiredParametersMaskFieldName})";
+            return $"static () => {FormatArgumentStateCreation(functionShapeModel.ArgumentStateType, functionArgumentStateFQN, stateValueExpr, functionShapeModel.Parameters.Length, requiredParametersMaskFieldName!, useExplicitTypeName: true)}";
 
             static string FormatTupleConstructor(IEnumerable<string> parameters)
                 => $"({string.Join(", ", parameters)})";
@@ -164,7 +164,7 @@ internal sealed partial class SourceFormatter
             }
         }
 
-        static string? FormatFromDelegateFunc(FunctionShapeModel functionShapeModel, string functionArgumentStateFQN, string? requiredParametersMaskFieldName, bool requireAsync)
+        string? FormatFromDelegateFunc(FunctionShapeModel functionShapeModel, string functionArgumentStateFQN, string? requiredParametersMaskFieldName, bool requireAsync)
         {
             if (IsAsync(functionShapeModel) != requireAsync)
             {
@@ -184,12 +184,17 @@ internal sealed partial class SourceFormatter
                     ? parameter.Name
                     : $"{FormatRefPrefix(parameter)}{parameter.ParameterType.FullyQualifiedName}{GetNullableSuffix(parameter)} {parameter.Name}"));
 
-            string argumentStateCtorExpr = functionShapeModel.Parameters switch
-            {
-                [] => "global::PolyType.SourceGenModel.EmptyArgumentState.Instance",
-                [var p] => $"new({p.Name}{GetSuppressionSuffix(p)}, count: 1, requiredArgumentsMask: {requiredParametersMaskFieldName}, markAllArgumentsSet: true)",
-                _ => $"new(({string.Join(", ", functionShapeModel.Parameters.Select(p => p.Name + GetSuppressionSuffix(p)))}), count: {functionShapeModel.Parameters.Length}, requiredArgumentsMask: {requiredParametersMaskFieldName}, markAllArgumentsSet: true)",
-            };
+            string argumentStateCtorExpr = functionShapeModel.Parameters.Length == 0
+                ? "global::PolyType.SourceGenModel.EmptyArgumentState.Instance"
+                : FormatArgumentStateCreation(
+                    functionShapeModel.ArgumentStateType,
+                    functionArgumentStateFQN,
+                    functionShapeModel.Parameters.Length == 1
+                        ? functionShapeModel.Parameters[0].Name + GetSuppressionSuffix(functionShapeModel.Parameters[0])
+                        : $"({string.Join(", ", functionShapeModel.Parameters.Select(p => p.Name + GetSuppressionSuffix(p)))})",
+                    functionShapeModel.Parameters.Length,
+                    requiredParametersMaskFieldName!,
+                    markAllArgumentsSet: true);
 
             const string innerFuncVar = "innerFunc";
             const string stateVar = "state";
@@ -220,16 +225,10 @@ internal sealed partial class SourceFormatter
         }
     }
 
-    private static string FormatFunctionArgumentStateFQN(FunctionShapeModel method)
+    private string FormatFunctionArgumentStateFQN(FunctionShapeModel method)
     {
         string typeParameter = FormatArgumentStateTypeTypeParameter();
-        return method.ArgumentStateType switch
-        {
-            ArgumentStateType.EmptyArgumentState => $"global::PolyType.SourceGenModel.EmptyArgumentState",
-            ArgumentStateType.SmallArgumentState => $"global::PolyType.SourceGenModel.SmallArgumentState<{typeParameter}>",
-            ArgumentStateType.LargeArgumentState => $"global::PolyType.SourceGenModel.LargeArgumentState<{typeParameter}>",
-            _ => throw new InvalidOperationException(method.ArgumentStateType.ToString()),
-        };
+        return FormatArgumentStateTypeName(method.ArgumentStateType, typeParameter);
 
         string FormatArgumentStateTypeTypeParameter()
         {

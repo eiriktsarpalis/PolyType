@@ -12,6 +12,31 @@ The source generator is implemented by the `PolyType.SourceGenerator` project an
 
 3. **Source formatting** — The `SourceFormatter` class walks the `TypeShapeProviderModel` and emits C# source files: one main file for the `SourceGenTypeShapeProvider` implementation and one file per provided type shape.
 
+## Generation optimization mode
+
+Source generation defaults to <xref:PolyType.PolyTypeOptimizationMode.Performance>. To favor application size, set <xref:PolyType.PolyTypeSourceGenerationOptionsAttribute.OptimizationMode> at the assembly level:
+
+```csharp
+[assembly: PolyTypeSourceGenerationOptions(
+    OptimizationMode = PolyTypeOptimizationMode.AppSize)]
+```
+
+`AppSize` currently emits reference-type argument states to reduce Native AOT generic specialization. This trades some runtime allocation cost for a smaller native image; it does not currently promise smaller IL output. Consumers can return these mutable states after their final use so the implementation can reuse them:
+
+```csharp
+TArgumentState state = constructor.GetArgumentStateConstructor()();
+try
+{
+    // Set arguments and invoke the constructor.
+}
+finally
+{
+    state.Return();
+}
+```
+
+Do not access a state after calling `Return()`. Value-type states used by the default `Performance` mode treat `Return()` as a no-op.
+
 ## Generated output
 
 The generator produces a single <xref:PolyType.SourceGenModel.SourceGenTypeShapeProvider> subclass per project. This class:

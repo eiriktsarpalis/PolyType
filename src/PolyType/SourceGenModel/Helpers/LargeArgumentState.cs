@@ -66,6 +66,12 @@ public struct LargeArgumentState<TArguments> : IArgumentState
     /// <inheritdoc />
     public readonly bool IsArgumentSet(int index) => _setArguments[index];
 
+    /// <inheritdoc />
+    public readonly bool IsPoolable => false;
+
+    /// <inheritdoc />
+    public readonly void Return() { }
+
     /// <summary>
     /// Marks the argument at the specified index as set.
     /// </summary>
