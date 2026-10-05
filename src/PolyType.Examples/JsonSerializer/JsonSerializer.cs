@@ -4,6 +4,7 @@ using PolyType.Examples.Utilities;
 using PolyType.Utilities;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -194,7 +195,7 @@ public static partial class JsonSerializerTS
     /// <returns>The deserialized value.</returns>
     public static T? Deserialize<T>(this JsonConverter<T> converter, JsonElement element)
     {
-        ReadOnlySpan<byte> rawBytes = element.GetRawValue().Span;
+        ReadOnlySpan<byte> rawBytes = JsonMarshal.GetRawUtf8Value(element);
         return converter.Deserialize(rawBytes);
     }
 

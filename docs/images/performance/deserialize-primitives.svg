@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="492" viewBox="0 0 1100 492" role="img" aria-labelledby="title desc">
+<title id="title">Deserialization: primitives</title>
+<desc id="desc">Mean time relative to STJ reflection for each payload; lower is better. Whiskers show one standard error. Each bar is labelled with its ratio, mean time, and allocated bytes per operation.</desc>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<g font-family="Arial, sans-serif" font-size="14" fill="#0f172a">
+<text x="20" y="30" font-size="22" font-weight="bold">Deserialization: primitives</text>
+<text x="20" y="54" >Lower is better | normalized to STJ reflection per payload | whiskers: +/-1 standard error</text>
+<text x="740" y="79" font-size="13">Ratio | Mean | Allocated / operation</text>
+<line x1="258.00" y1="90" x2="258.00" y2="457" stroke="#e2e8f0"/>
+<text x="258.00" y="477" text-anchor="middle" font-size="12">0x</text>
+<line x1="342.00" y1="90" x2="342.00" y2="457" stroke="#e2e8f0"/>
+<text x="342.00" y="477" text-anchor="middle" font-size="12">0.25x</text>
+<line x1="426.00" y1="90" x2="426.00" y2="457" stroke="#e2e8f0"/>
+<text x="426.00" y="477" text-anchor="middle" font-size="12">0.5x</text>
+<line x1="510.00" y1="90" x2="510.00" y2="457" stroke="#e2e8f0"/>
+<text x="510.00" y="477" text-anchor="middle" font-size="12">0.75x</text>
+<line x1="594.00" y1="90" x2="594.00" y2="457" stroke="#e2e8f0"/>
+<text x="594.00" y="477" text-anchor="middle" font-size="12">1x</text>
+<line x1="678.00" y1="90" x2="678.00" y2="457" stroke="#e2e8f0"/>
+<text x="678.00" y="477" text-anchor="middle" font-size="12">1.25x</text>
+<line x1="594.00" y1="90" x2="594.00" y2="457" stroke="#475569" stroke-dasharray="4 4"/>
+<text x="20" y="110" font-weight="bold" font-size="16">int: 42</text>
+<text x="246" y="140" text-anchor="end">STJ reflection</text>
+<rect x="258" y="124" width="336.00" height="22" fill="#64748b"/>
+<path d="M 593.51 135 H 594.49 M 593.51 130 V 140 M 594.49 130 V 140" stroke="#0f172a" fill="none"/>
+<text x="740" y="140" >1.00x | 22.93 ns | 0 B</text>
+<text x="246" y="172" text-anchor="end">STJ source-gen metadata</text>
+<rect x="258" y="156" width="336.04" height="22" fill="#2563eb"/>
+<path d="M 593.42 167 H 594.66 M 593.42 162 V 172 M 594.66 162 V 172" stroke="#0f172a" fill="none"/>
+<text x="740" y="172" >1.00x | 22.93 ns | 0 B</text>
+<text x="246" y="204" text-anchor="end">PolyType reflection</text>
+<rect x="258" y="188" width="221.94" height="22" fill="#b45309"/>
+<path d="M 479.51 199 H 480.36 M 479.51 194 V 204 M 480.36 194 V 204" stroke="#0f172a" fill="none"/>
+<text x="740" y="204" >0.66x | 15.15 ns | 0 B</text>
+<text x="246" y="236" text-anchor="end">PolyType source-gen</text>
+<rect x="258" y="220" width="218.70" height="22" fill="#047857"/>
+<path d="M 476.55 231 H 476.85 M 476.55 226 V 236 M 476.85 226 V 236" stroke="#0f172a" fill="none"/>
+<text x="740" y="236" >0.65x | 14.93 ns | 0 B</text>
+<text x="20" y="298" font-weight="bold" font-size="16">string: Hello, PolyType!</text>
+<text x="246" y="328" text-anchor="end">STJ reflection</text>
+<rect x="258" y="312" width="336.00" height="22" fill="#64748b"/>
+<path d="M 591.62 323 H 596.38 M 591.62 318 V 328 M 596.38 318 V 328" stroke="#0f172a" fill="none"/>
+<text x="740" y="328" >1.00x | 32.51 ns | 56 B</text>
+<text x="246" y="360" text-anchor="end">STJ source-gen metadata</text>
+<rect x="258" y="344" width="344.06" height="22" fill="#2563eb"/>
+<path d="M 600.43 355 H 603.70 M 600.43 350 V 360 M 603.70 350 V 360" stroke="#0f172a" fill="none"/>
+<text x="740" y="360" >1.02x | 33.29 ns | 56 B</text>
+<text x="246" y="392" text-anchor="end">PolyType reflection</text>
+<rect x="258" y="376" width="297.60" height="22" fill="#b45309"/>
+<path d="M 554.84 387 H 556.37 M 554.84 382 V 392 M 556.37 382 V 392" stroke="#0f172a" fill="none"/>
+<text x="740" y="392" >0.89x | 28.80 ns | 56 B</text>
+<text x="246" y="424" text-anchor="end">PolyType source-gen</text>
+<rect x="258" y="408" width="296.31" height="22" fill="#047857"/>
+<path d="M 553.03 419 H 555.59 M 553.03 414 V 424 M 555.59 414 V 424" stroke="#0f172a" fill="none"/>
+<text x="740" y="424" >0.88x | 28.67 ns | 56 B</text>
+</g>
+</svg>
