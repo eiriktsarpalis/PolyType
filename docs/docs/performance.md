@@ -46,7 +46,7 @@ The **CITM event catalog** is a common JSON benchmark dataset distributed by [na
 
 The original file is 1,727,204 bytes including whitespace, but only about 0.5 MB when serialized compactly. To measure a genuinely multi-MB workload, the fixture contains **five independently loaded catalogs**, totaling **2,505,471 UTF-8 bytes** (2.39 MiB). Each catalog contains 184 events and 243 performances, so the batch has 920 events and 1,215 performances plus their nested records. This is a scaled version of the dataset, not the standard single-catalog benchmark.
 
-The pinned dataset is embedded in compressed form with its [MIT license and provenance](https://github.com/eiriktsarpalis/PolyType/blob/main/tests/PolyType.Benchmarks/Data/NOTICE.txt). Decompression, loading, and comparison of the complete typed model against the original JSON occur only during setup. The measured deserialization input is compact JSON generated from the batch with the same default escaping settings for all serializers.
+The pinned dataset is embedded in compressed form with its [MIT license and provenance](https://github.com/eiriktsarpalis/PolyType/blob/e7f8c3750fd2529d3729af86d5639dbccf0fddea/tests/PolyType.Benchmarks/Data/NOTICE.txt). Decompression, loading, and comparison of the complete typed model against the original JSON occur only during setup. The measured deserialization input is compact JSON generated from the batch with the same default escaping settings for all serializers.
 
 A second workload contains **4,096 distinct large POCOs**, totaling **2,763,729 UTF-8 bytes** (2.64 MiB). Both fixtures are checked to exceed 2 MB of serialized JSON before measurement.
 
