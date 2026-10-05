@@ -22,36 +22,36 @@
 <text x="20" y="110" font-weight="bold" font-size="16">int: 42</text>
 <text x="246" y="140" text-anchor="end">STJ reflection</text>
 <rect x="258" y="124" width="336.00" height="22" fill="#64748b"/>
-<path d="M 593.68 135 H 594.32 M 593.68 130 V 140 M 594.32 130 V 140" stroke="#0f172a" fill="none"/>
-<text x="740" y="140" >1.00x | 22.78 ns | 0 B</text>
+<path d="M 593.51 135 H 594.49 M 593.51 130 V 140 M 594.49 130 V 140" stroke="#0f172a" fill="none"/>
+<text x="740" y="140" >1.00x | 22.93 ns | 0 B</text>
 <text x="246" y="172" text-anchor="end">STJ source-gen metadata</text>
-<rect x="258" y="156" width="335.93" height="22" fill="#2563eb"/>
-<path d="M 593.22 167 H 594.64 M 593.22 162 V 172 M 594.64 162 V 172" stroke="#0f172a" fill="none"/>
-<text x="740" y="172" >1.00x | 22.78 ns | 0 B</text>
+<rect x="258" y="156" width="336.04" height="22" fill="#2563eb"/>
+<path d="M 593.42 167 H 594.66 M 593.42 162 V 172 M 594.66 162 V 172" stroke="#0f172a" fill="none"/>
+<text x="740" y="172" >1.00x | 22.93 ns | 0 B</text>
 <text x="246" y="204" text-anchor="end">PolyType reflection</text>
-<rect x="258" y="188" width="219.50" height="22" fill="#b45309"/>
-<path d="M 477.40 199 H 477.60 M 477.40 194 V 204 M 477.60 194 V 204" stroke="#0f172a" fill="none"/>
-<text x="740" y="204" >0.65x | 14.88 ns | 0 B</text>
+<rect x="258" y="188" width="221.94" height="22" fill="#b45309"/>
+<path d="M 479.51 199 H 480.36 M 479.51 194 V 204 M 480.36 194 V 204" stroke="#0f172a" fill="none"/>
+<text x="740" y="204" >0.66x | 15.15 ns | 0 B</text>
 <text x="246" y="236" text-anchor="end">PolyType source-gen</text>
-<rect x="258" y="220" width="228.24" height="22" fill="#047857"/>
-<path d="M 483.64 231 H 488.83 M 483.64 226 V 236 M 488.83 226 V 236" stroke="#0f172a" fill="none"/>
-<text x="740" y="236" >0.68x | 15.47 ns | 0 B</text>
+<rect x="258" y="220" width="218.70" height="22" fill="#047857"/>
+<path d="M 476.55 231 H 476.85 M 476.55 226 V 236 M 476.85 226 V 236" stroke="#0f172a" fill="none"/>
+<text x="740" y="236" >0.65x | 14.93 ns | 0 B</text>
 <text x="20" y="298" font-weight="bold" font-size="16">string: Hello, PolyType!</text>
 <text x="246" y="328" text-anchor="end">STJ reflection</text>
 <rect x="258" y="312" width="336.00" height="22" fill="#64748b"/>
-<path d="M 588.09 323 H 599.91 M 588.09 318 V 328 M 599.91 318 V 328" stroke="#0f172a" fill="none"/>
-<text x="740" y="328" >1.00x | 34.53 ns | 56 B</text>
+<path d="M 591.62 323 H 596.38 M 591.62 318 V 328 M 596.38 318 V 328" stroke="#0f172a" fill="none"/>
+<text x="740" y="328" >1.00x | 32.51 ns | 56 B</text>
 <text x="246" y="360" text-anchor="end">STJ source-gen metadata</text>
-<rect x="258" y="344" width="325.94" height="22" fill="#2563eb"/>
-<path d="M 580.75 355 H 587.14 M 580.75 350 V 360 M 587.14 350 V 360" stroke="#0f172a" fill="none"/>
-<text x="740" y="360" >0.97x | 33.50 ns | 56 B</text>
+<rect x="258" y="344" width="344.06" height="22" fill="#2563eb"/>
+<path d="M 600.43 355 H 603.70 M 600.43 350 V 360 M 603.70 350 V 360" stroke="#0f172a" fill="none"/>
+<text x="740" y="360" >1.02x | 33.29 ns | 56 B</text>
 <text x="246" y="392" text-anchor="end">PolyType reflection</text>
-<rect x="258" y="376" width="273.90" height="22" fill="#b45309"/>
-<path d="M 530.52 387 H 533.29 M 530.52 382 V 392 M 533.29 382 V 392" stroke="#0f172a" fill="none"/>
-<text x="740" y="392" >0.82x | 28.15 ns | 56 B</text>
+<rect x="258" y="376" width="297.60" height="22" fill="#b45309"/>
+<path d="M 554.84 387 H 556.37 M 554.84 382 V 392 M 556.37 382 V 392" stroke="#0f172a" fill="none"/>
+<text x="740" y="392" >0.89x | 28.80 ns | 56 B</text>
 <text x="246" y="424" text-anchor="end">PolyType source-gen</text>
-<rect x="258" y="408" width="283.47" height="22" fill="#047857"/>
-<path d="M 538.48 419 H 544.46 M 538.48 414 V 424 M 544.46 414 V 424" stroke="#0f172a" fill="none"/>
-<text x="740" y="424" >0.84x | 29.13 ns | 56 B</text>
+<rect x="258" y="408" width="296.31" height="22" fill="#047857"/>
+<path d="M 553.03 419 H 555.59 M 553.03 414 V 424 M 555.59 414 V 424" stroke="#0f172a" fill="none"/>
+<text x="740" y="424" >0.88x | 28.67 ns | 56 B</text>
 </g>
 </svg>

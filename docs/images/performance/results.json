@@ -24,35 +24,36 @@
       "operation": "Deserialize",
       "scenario": "CitmCatalog[]",
       "method": "StjReflection",
-      "job": "JsonDeserializeBenchmark<CitmCatalog[]>.Deserialize_StjReflection: DefaultJob",
+      "job": "JsonDeserializeBenchmark\u003CCitmCatalog[]\u003E.Deserialize_StjReflection: DefaultJob",
       "statistics": {
-        "N": 13,
+        "N": 14,
         "OriginalValues": [
-          7673088.8671875,
-          7680617.1875,
-          7694081.0546875,
-          7720272.7890625,
-          7698915.359375,
-          7705509.1171875,
-          7678380.203125,
-          7702048.5078125,
-          7725915.3671875,
-          7692171.21875,
-          7734470.3828125,
-          7688991.53125,
-          7742774.7421875
+          7757376.953125,
+          7803478.515625,
+          7752152.9921875,
+          7699435.21875,
+          7717718.1015625,
+          7712278.3203125,
+          7722217.453125,
+          7726557.9375,
+          7710682.9375,
+          7697011.0625,
+          7752971.6796875,
+          7720872.0703125,
+          7689531.8984375,
+          7726179.0390625
         ],
-        "Mean": 7702864.332932692,
-        "StandardError": 6105.0484963852905,
-        "StandardDeviation": 22012.065392911492,
+        "Mean": 7727747.44140625,
+        "StandardError": 8039.919734519589,
+        "StandardDeviation": 30082.625063734806,
         "ConfidenceInterval": {
-          "N": 13,
-          "Mean": 7702864.332932692,
-          "StandardError": 6105.0484963852905,
+          "N": 14,
+          "Mean": 7727747.44140625,
+          "StandardError": 8039.919734519589,
           "Level": 12,
-          "Margin": 26360.325176584505,
-          "Lower": 7676504.0077561075,
-          "Upper": 7729224.658109277
+          "Margin": 33935.14829287654,
+          "Lower": 7693812.293113373,
+          "Upper": 7761682.589699127
         }
       },
       "allocated_bytes": 6006912
@@ -61,35 +62,37 @@
       "operation": "Deserialize",
       "scenario": "CitmCatalog[]",
       "method": "StjSourceGen",
-      "job": "JsonDeserializeBenchmark<CitmCatalog[]>.Deserialize_StjSourceGen: DefaultJob",
+      "job": "JsonDeserializeBenchmark\u003CCitmCatalog[]\u003E.Deserialize_StjSourceGen: DefaultJob",
       "statistics": {
-        "N": 13,
+        "N": 15,
         "OriginalValues": [
-          7704663.7421875,
-          7722877.9296875,
-          7682450.84375,
-          7678331.0546875,
-          7701027.9921875,
-          7701674.484375,
-          7703695.3125,
-          7689086.9140625,
-          7711404.296875,
-          7689097.65625,
-          7689958.984375,
-          7688243.484375,
-          7682853.1875
+          7743750.9765625,
+          7767897.1328125,
+          7779231.765625,
+          7710646.8125,
+          7767966.796875,
+          7727638.015625,
+          7730377.6015625,
+          7753541.015625,
+          7760715.8203125,
+          7712627.2734375,
+          7758433.921875,
+          7735083.984375,
+          7749243.8203125,
+          7744683.59375,
+          7740351.890625
         ],
-        "Mean": 7695797.375600962,
-        "StandardError": 3590.979550767729,
-        "StandardDeviation": 12947.460899435688,
+        "Mean": 7745479.361458333,
+        "StandardError": 5165.598685310124,
+        "StandardDeviation": 20006.277681397038,
         "ConfidenceInterval": {
-          "N": 13,
-          "Mean": 7695797.375600962,
-          "StandardError": 3590.979550767729,
+          "N": 15,
+          "Mean": 7745479.361458333,
+          "StandardError": 5165.598685310124,
           "Level": 12,
-          "Margin": 15505.10019973619,
-          "Lower": 7680292.275401225,
-          "Upper": 7711302.475800699
+          "Margin": 21387.92431280717,
+          "Lower": 7724091.437145526,
+          "Upper": 7766867.285771141
         }
       },
       "allocated_bytes": 6006912
@@ -98,37 +101,36 @@
       "operation": "Deserialize",
       "scenario": "CitmCatalog[]",
       "method": "PolyTypeReflection",
-      "job": "JsonDeserializeBenchmark<CitmCatalog[]>.Deserialize_PolyTypeReflection: DefaultJob",
+      "job": "JsonDeserializeBenchmark\u003CCitmCatalog[]\u003E.Deserialize_PolyTypeReflection: DefaultJob",
       "statistics": {
-        "N": 15,
+        "N": 14,
         "OriginalValues": [
-          5689143.234375,
-          5685145.1796875,
-          5705200.84375,
-          5707031.8984375,
-          5700080.078125,
-          5708007.4921875,
-          5711822.921875,
-          5710773.765625,
-          5696054.359375,
-          5702672.1953125,
-          5709808.2734375,
-          5679909.1796875,
-          5692223.3046875,
-          5701655.921875,
-          5680698.5703125
+          5601412.109375,
+          5593088.5390625,
+          5643013.671875,
+          5607004.8828125,
+          5606943.359375,
+          5607531.25,
+          5606811.8515625,
+          5596631.515625,
+          5669511.71875,
+          5605316.734375,
+          5619107.421875,
+          5584340.4921875,
+          5640798.1796875,
+          5610585.9375
         ],
-        "Mean": 5698681.814583333,
-        "StandardError": 2817.6867652282754,
-        "StandardDeviation": 10912.853916558159,
+        "Mean": 5613721.26171875,
+        "StandardError": 6077.7365062942345,
+        "StandardDeviation": 22740.80769364147,
         "ConfidenceInterval": {
-          "N": 15,
-          "Mean": 5698681.814583333,
-          "StandardError": 2817.6867652282754,
+          "N": 14,
+          "Mean": 5613721.26171875,
+          "StandardError": 6077.7365062942345,
           "Level": 12,
-          "Margin": 11666.502750838987,
-          "Lower": 5687015.311832494,
-          "Upper": 5710348.317334172
+          "Margin": 25653.103070244553,
+          "Lower": 5588068.158648506,
+          "Upper": 5639374.364788994
         }
       },
       "allocated_bytes": 2932144
@@ -137,145 +139,145 @@
       "operation": "Deserialize",
       "scenario": "CitmCatalog[]",
       "method": "PolyTypeSourceGen",
-      "job": "JsonDeserializeBenchmark<CitmCatalog[]>.Deserialize_PolyTypeSourceGen: DefaultJob",
+      "job": "JsonDeserializeBenchmark\u003CCitmCatalog[]\u003E.Deserialize_PolyTypeSourceGen: DefaultJob",
       "statistics": {
         "N": 15,
         "OriginalValues": [
-          5738496.4140625,
-          5754132.8125,
-          5719450.1953125,
-          5754256.5078125,
-          5731247.71875,
-          5754589.5234375,
-          5714066.7265625,
-          5735902.015625,
-          5779008.7890625,
-          5744809.5703125,
-          5754137.3671875,
-          5750174.8046875,
-          5743544.265625,
-          5752488.609375,
-          5743602.859375
+          5827467.125,
+          5786261.3984375,
+          5798817.0546875,
+          5838483.0703125,
+          5889958.0078125,
+          5827732.7421875,
+          5799629.5625,
+          5790387.3671875,
+          5853515.3046875,
+          5857720.703125,
+          5850083.0078125,
+          5840050.1328125,
+          5844862.3046875,
+          5811201.171875,
+          5832019.53125
         ],
-        "Mean": 5744660.5453125,
-        "StandardError": 4088.4455932452897,
-        "StandardDeviation": 15834.48169451411,
+        "Mean": 5829879.232291667,
+        "StandardError": 7387.031646847989,
+        "StandardDeviation": 28609.85054614941,
         "ConfidenceInterval": {
           "N": 15,
-          "Mean": 5744660.5453125,
-          "StandardError": 4088.4455932452897,
+          "Mean": 5829879.232291667,
+          "StandardError": 7387.031646847989,
           "Level": 12,
-          "Margin": 16928.02136449949,
-          "Lower": 5727732.523948,
-          "Upper": 5761588.566676999
+          "Margin": 30585.665550906175,
+          "Lower": 5799293.566740761,
+          "Upper": 5860464.897842573
         }
       },
       "allocated_bytes": 2932144
     },
     {
       "operation": "Deserialize",
-      "scenario": "Dictionary<String, Int32>",
+      "scenario": "Dictionary\u003CString, Int32\u003E",
       "method": "StjReflection",
-      "job": "JsonDeserializeBenchmark<Dictionary<String, Int32>>.Deserialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CDictionary\u003CString, Int32\u003E\u003E.Deserialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          2490.1836700439453,
-          2518.27986907959,
-          2660.7734375
+          2498.6003227233887,
+          2651.4172554016113,
+          2650.2448692321777
         ],
-        "Mean": 2556.4123255411782,
-        "StandardError": 52.807134514899005,
-        "StandardDeviation": 91.46463998192915,
+        "Mean": 2600.0874824523926,
+        "StandardError": 50.74470847529436,
+        "StandardDeviation": 87.89241329448085,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 2556.4123255411782,
-          "StandardError": 52.807134514899005,
+          "Mean": 2600.0874824523926,
+          "StandardError": 50.74470847529436,
           "Level": 12,
-          "Margin": 1668.6555188093441,
-          "Lower": 887.7568067318341,
-          "Upper": 4225.067844350522
+          "Margin": 1603.4848060877248,
+          "Lower": 996.6026763646678,
+          "Upper": 4203.572288540117
         }
       },
       "allocated_bytes": 6672
     },
     {
       "operation": "Deserialize",
-      "scenario": "Dictionary<String, Int32>",
+      "scenario": "Dictionary\u003CString, Int32\u003E",
       "method": "StjSourceGen",
-      "job": "JsonDeserializeBenchmark<Dictionary<String, Int32>>.Deserialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CDictionary\u003CString, Int32\u003E\u003E.Deserialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          2542.6643714904785,
-          2506.756149291992,
-          2571.6017112731934
+          2815.4567070007324,
+          2715.2811698913574,
+          2825.800895690918
         ],
-        "Mean": 2540.3407440185547,
-        "StandardError": 18.755320672950916,
-        "StandardDeviation": 32.48516831779789,
+        "Mean": 2785.512924194336,
+        "StandardError": 35.24261172818116,
+        "StandardDeviation": 61.041994104632565,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 2540.3407440185547,
-          "StandardError": 18.755320672950916,
+          "Mean": 2785.512924194336,
+          "StandardError": 35.24261172818116,
           "Level": 12,
-          "Margin": 592.6503991449986,
-          "Lower": 1947.6903448735561,
-          "Upper": 3132.9911431635533
+          "Margin": 1113.6332069086684,
+          "Lower": 1671.8797172856675,
+          "Upper": 3899.1461311030043
         }
       },
       "allocated_bytes": 6672
     },
     {
       "operation": "Deserialize",
-      "scenario": "Dictionary<String, Int32>",
+      "scenario": "Dictionary\u003CString, Int32\u003E",
       "method": "PolyTypeReflection",
-      "job": "JsonDeserializeBenchmark<Dictionary<String, Int32>>.Deserialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CDictionary\u003CString, Int32\u003E\u003E.Deserialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          2403.7911109924316,
-          2347.0560722351074,
-          2480.151653289795
+          2776.075523376465,
+          2749.937057495117,
+          2516.6139602661133
         ],
-        "Mean": 2410.332945505778,
-        "StandardError": 38.56036446564974,
-        "StandardDeviation": 66.78851041287886,
+        "Mean": 2680.875513712565,
+        "StandardError": 82.4766599411388,
+        "StandardDeviation": 142.85376545663314,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 2410.332945505778,
-          "StandardError": 38.56036446564974,
+          "Mean": 2680.875513712565,
+          "StandardError": 82.4766599411388,
           "Level": 12,
-          "Margin": 1218.4710563068359,
-          "Lower": 1191.861889198942,
-          "Upper": 3628.804001812614
+          "Margin": 2606.1844682163783,
+          "Lower": 74.69104549618669,
+          "Upper": 5287.059981928944
         }
       },
       "allocated_bytes": 6672
     },
     {
       "operation": "Deserialize",
-      "scenario": "Dictionary<String, Int32>",
+      "scenario": "Dictionary\u003CString, Int32\u003E",
       "method": "PolyTypeSourceGen",
-      "job": "JsonDeserializeBenchmark<Dictionary<String, Int32>>.Deserialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CDictionary\u003CString, Int32\u003E\u003E.Deserialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          2333.24019241333,
-          2389.7927589416504,
-          2411.517936706543
+          2665.202461242676,
+          2690.184913635254,
+          2690.028667449951
         ],
-        "Mean": 2378.1836293538413,
-        "StandardError": 23.330453847909585,
-        "StandardDeviation": 40.40953142822021,
+        "Mean": 2681.805347442627,
+        "StandardError": 8.301565632337116,
+        "StandardDeviation": 14.378733457575539,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 2378.1836293538413,
-          "StandardError": 23.330453847909585,
+          "Mean": 2681.805347442627,
+          "StandardError": 8.301565632337116,
           "Level": 12,
-          "Margin": 737.2202814499843,
-          "Lower": 1640.963347903857,
-          "Upper": 3115.4039108038255
+          "Margin": 262.3216244246122,
+          "Lower": 2419.4837230180146,
+          "Upper": 2944.1269718672393
         }
       },
       "allocated_bytes": 6672
@@ -284,25 +286,25 @@
       "operation": "Deserialize",
       "scenario": "Int32[]",
       "method": "StjReflection",
-      "job": "JsonDeserializeBenchmark<Int32[]>.Deserialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CInt32[]\u003E.Deserialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          3230.0095558166504,
-          3227.834541320801,
-          3254.244804382324
+          3253.433864593506,
+          3231.137275695801,
+          3246.1721115112305
         ],
-        "Mean": 3237.3629671732583,
-        "StandardError": 8.464238352806014,
-        "StandardDeviation": 14.660490874433119,
+        "Mean": 3243.581083933512,
+        "StandardError": 6.5655549917654366,
+        "StandardDeviation": 11.371874825625197,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 3237.3629671732583,
-          "StandardError": 8.464238352806014,
+          "Mean": 3243.581083933512,
+          "StandardError": 6.5655549917654366,
           "Level": 12,
-          "Margin": 267.46192857600613,
-          "Lower": 2969.9010385972524,
-          "Upper": 3504.824895749264
+          "Margin": 207.4653296698878,
+          "Lower": 3036.1157542636242,
+          "Upper": 3451.0464136034
         }
       },
       "allocated_bytes": 3280
@@ -311,25 +313,25 @@
       "operation": "Deserialize",
       "scenario": "Int32[]",
       "method": "StjSourceGen",
-      "job": "JsonDeserializeBenchmark<Int32[]>.Deserialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CInt32[]\u003E.Deserialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          3306.5651245117188,
-          3250.3341026306152,
-          3270.3684158325195
+          3202.472370147705,
+          3196.746826171875,
+          3195.690315246582
         ],
-        "Mean": 3275.7558809916177,
-        "StandardError": 16.454488152463238,
-        "StandardDeviation": 28.500009492606473,
+        "Mean": 3198.303170522054,
+        "StandardError": 2.1067924255221446,
+        "StandardDeviation": 3.6490715220056242,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 3275.7558809916177,
-          "StandardError": 16.454488152463238,
+          "Mean": 3198.303170522054,
+          "StandardError": 2.1067924255221446,
           "Level": 12,
-          "Margin": 519.9462670530639,
-          "Lower": 2755.809613938554,
-          "Upper": 3795.7021480446815
+          "Margin": 66.5726485659127,
+          "Lower": 3131.7305219561413,
+          "Upper": 3264.875819087967
         }
       },
       "allocated_bytes": 3280
@@ -338,25 +340,25 @@
       "operation": "Deserialize",
       "scenario": "Int32[]",
       "method": "PolyTypeReflection",
-      "job": "JsonDeserializeBenchmark<Int32[]>.Deserialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CInt32[]\u003E.Deserialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          3242.1377487182617,
-          3223.8125801086426,
-          3220.2445640563965
+          3053.3264503479004,
+          3055.0452880859375,
+          3054.069679260254
         ],
-        "Mean": 3228.7316309611,
-        "StandardError": 6.7817323162161465,
-        "StandardDeviation": 11.746304935018129,
+        "Mean": 3054.147139231364,
+        "StandardError": 0.49769496272596747,
+        "StandardDeviation": 0.8620329621124742,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 3228.7316309611,
-          "StandardError": 6.7817323162161465,
+          "Mean": 3054.147139231364,
+          "StandardError": 0.49769496272596747,
           "Level": 12,
-          "Margin": 214.29632871575234,
-          "Lower": 3014.435302245348,
-          "Upper": 3443.0279596768523
+          "Margin": 15.726690225957714,
+          "Lower": 3038.420449005406,
+          "Upper": 3069.8738294573213
         }
       },
       "allocated_bytes": 1048
@@ -365,25 +367,25 @@
       "operation": "Deserialize",
       "scenario": "Int32[]",
       "method": "PolyTypeSourceGen",
-      "job": "JsonDeserializeBenchmark<Int32[]>.Deserialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CInt32[]\u003E.Deserialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          3196.0570030212402,
-          3178.7627563476562,
-          3176.734603881836
+          3431.1677589416504,
+          3119.2191429138184,
+          3035.767078399658
         ],
-        "Mean": 3183.8514544169107,
-        "StandardError": 6.130794215967979,
-        "StandardDeviation": 10.61884707280594,
+        "Mean": 3195.3846600850425,
+        "StandardError": 120.3277663270032,
+        "StandardDeviation": 208.41380483964505,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 3183.8514544169107,
-          "StandardError": 6.130794215967979,
+          "Mean": 3195.3846600850425,
+          "StandardError": 120.3277663270032,
           "Level": 12,
-          "Margin": 193.7273002433607,
-          "Lower": 2990.12415417355,
-          "Upper": 3377.5787546602714
+          "Margin": 3802.2436398419877,
+          "Lower": -606.8589797569452,
+          "Upper": 6997.62829992703
         }
       },
       "allocated_bytes": 1048
@@ -392,25 +394,25 @@
       "operation": "Deserialize",
       "scenario": "Int32",
       "method": "StjReflection",
-      "job": "JsonDeserializeBenchmark<Int32>.Deserialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CInt32\u003E.Deserialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          22.736457467079163,
-          22.80450612306595,
-          22.799059748649597
+          22.99327775835991,
+          22.879024356603622,
+          22.92438969016075
         ],
-        "Mean": 22.780007779598236,
-        "StandardError": 0.021831842485633215,
-        "StandardDeviation": 0.037813860407957534,
+        "Mean": 22.932230601708095,
+        "StandardError": 0.03321430351340018,
+        "StandardDeviation": 0.05752886122322257,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 22.780007779598236,
-          "StandardError": 0.021831842485633215,
+          "Mean": 22.932230601708095,
+          "StandardError": 0.03321430351340018,
           "Level": 12,
-          "Margin": 0.6898655794161651,
-          "Lower": 22.090142200182072,
-          "Upper": 23.4698733590144
+          "Margin": 1.0495405851913189,
+          "Lower": 21.882690016516776,
+          "Upper": 23.981771186899415
         }
       },
       "allocated_bytes": 0
@@ -419,25 +421,25 @@
       "operation": "Deserialize",
       "scenario": "Int32",
       "method": "StjSourceGen",
-      "job": "JsonDeserializeBenchmark<Int32>.Deserialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CInt32\u003E.Deserialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          22.741397231817245,
-          22.71459251642227,
-          22.86999425292015
+          22.903586447238922,
+          23.0185327231884,
+          22.882373362779617
         ],
-        "Mean": 22.775328000386555,
-        "StandardError": 0.04796143491882181,
-        "StandardDeviation": 0.08307164208330746,
+        "Mean": 22.934830844402313,
+        "StandardError": 0.04229658032792567,
+        "StandardDeviation": 0.07325982611438554,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 22.775328000386555,
-          "StandardError": 0.04796143491882181,
+          "Mean": 22.934830844402313,
+          "StandardError": 0.04229658032792567,
           "Level": 12,
-          "Margin": 1.5155359934314787,
-          "Lower": 21.259792006955077,
-          "Upper": 24.290863993818032
+          "Margin": 1.3365319447705104,
+          "Lower": 21.598298899631803,
+          "Upper": 24.271362789172823
         }
       },
       "allocated_bytes": 0
@@ -446,25 +448,25 @@
       "operation": "Deserialize",
       "scenario": "Int32",
       "method": "PolyTypeReflection",
-      "job": "JsonDeserializeBenchmark<Int32>.Deserialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CInt32\u003E.Deserialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          14.868975311517715,
-          14.88271914422512,
-          14.892296865582466
+          15.132247149944305,
+          15.203283488750458,
+          15.10639238357544
         ],
-        "Mean": 14.881330440441767,
-        "StandardError": 0.006768064584187435,
-        "StandardDeviation": 0.011722631728720165,
+        "Mean": 15.147307674090067,
+        "StandardError": 0.028965992164191028,
+        "StandardDeviation": 0.05017057012002084,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 14.881330440441767,
-          "StandardError": 0.006768064584187435,
+          "Mean": 15.147307674090067,
+          "StandardError": 0.028965992164191028,
           "Level": 12,
-          "Margin": 0.21386444130718862,
-          "Lower": 14.667465999134578,
-          "Upper": 15.095194881748956
+          "Margin": 0.9152979635531738,
+          "Lower": 14.232009710536893,
+          "Upper": 16.06260563764324
         }
       },
       "allocated_bytes": 0
@@ -473,25 +475,25 @@
       "operation": "Deserialize",
       "scenario": "Int32",
       "method": "PolyTypeSourceGen",
-      "job": "JsonDeserializeBenchmark<Int32>.Deserialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CInt32\u003E.Deserialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          15.155558794736862,
-          15.502270311117172,
-          15.763852745294571
+          14.910219863057137,
+          14.944625407457352,
+          14.924375966191292
         ],
-        "Mean": 15.473893950382868,
-        "StandardError": 0.17617159812492345,
-        "StandardDeviation": 0.30513815880297335,
+        "Mean": 14.926407078901926,
+        "StandardError": 0.009983810820544609,
+        "StandardDeviation": 0.017292467594339184,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 15.473893950382868,
-          "StandardError": 0.17617159812492345,
+          "Mean": 14.926407078901926,
+          "StandardError": 0.009983810820544609,
           "Level": 12,
-          "Margin": 5.566855921441349,
-          "Lower": 9.907038028941518,
-          "Upper": 21.040749871824218
+          "Margin": 0.3154789817226285,
+          "Lower": 14.610928097179297,
+          "Upper": 15.241886060624555
         }
       },
       "allocated_bytes": 0
@@ -500,25 +502,25 @@
       "operation": "Deserialize",
       "scenario": "LargePoco[]",
       "method": "StjReflection",
-      "job": "JsonDeserializeBenchmark<LargePoco[]>.Deserialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CLargePoco[]\u003E.Deserialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          7384003.25,
-          7347150.71875,
-          7415192.0546875
+          7565898.4375,
+          7467645.5078125,
+          7690849.9375
         ],
-        "Mean": 7382115.341145833,
-        "StandardError": 19664.51117216972,
-        "StandardDeviation": 34059.93245620377,
+        "Mean": 7574797.9609375,
+        "StandardError": 64587.03558272226,
+        "StandardDeviation": 111868.0271395339,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 7382115.341145833,
-          "StandardError": 19664.51117216972,
+          "Mean": 7574797.9609375,
+          "StandardError": 64587.03558272226,
           "Level": 12,
-          "Margin": 621379.9592339377,
-          "Lower": 6760735.381911895,
-          "Upper": 8003495.300379771
+          "Margin": 2040889.254050279,
+          "Lower": 5533908.706887221,
+          "Upper": 9615687.214987779
         }
       },
       "allocated_bytes": 9011160
@@ -527,25 +529,25 @@
       "operation": "Deserialize",
       "scenario": "LargePoco[]",
       "method": "StjSourceGen",
-      "job": "JsonDeserializeBenchmark<LargePoco[]>.Deserialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CLargePoco[]\u003E.Deserialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          7357838.8671875,
-          7306167.3125,
-          7423870.4453125
+          7525236.9765625,
+          7638409.5078125,
+          7387656.8984375
         ],
-        "Mean": 7362625.541666667,
-        "StandardError": 34062.15425706554,
-        "StandardDeviation": 58997.381788486025,
+        "Mean": 7517101.127604167,
+        "StandardError": 72500.25702436612,
+        "StandardDeviation": 125574.12872800449,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 7362625.541666667,
-          "StandardError": 34062.15425706554,
+          "Mean": 7517101.127604167,
+          "StandardError": 72500.25702436612,
           "Level": 12,
-          "Margin": 1076331.8670046625,
-          "Lower": 6286293.674662004,
-          "Upper": 8438957.408671329
+          "Margin": 2290939.5692483885,
+          "Lower": 5226161.558355778,
+          "Upper": 9808040.696852555
         }
       },
       "allocated_bytes": 8912856
@@ -554,25 +556,25 @@
       "operation": "Deserialize",
       "scenario": "LargePoco[]",
       "method": "PolyTypeReflection",
-      "job": "JsonDeserializeBenchmark<LargePoco[]>.Deserialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CLargePoco[]\u003E.Deserialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          5987375.3203125,
-          6073212.5625,
-          6042069.6640625
+          6201971.359375,
+          6137833.328125,
+          6131731.4453125
         ],
-        "Mean": 6034219.182291667,
-        "StandardError": 25088.04884544646,
-        "StandardDeviation": 43453.77526308298,
+        "Mean": 6157178.7109375,
+        "StandardError": 22465.48655900479,
+        "StandardDeviation": 38911.364136952,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 6034219.182291667,
-          "StandardError": 25088.04884544646,
+          "Mean": 6157178.7109375,
+          "StandardError": 22465.48655900479,
           "Level": 12,
-          "Margin": 792758.6214756893,
-          "Lower": 5241460.560815978,
-          "Upper": 6826977.803767356
+          "Margin": 709888.1329916483,
+          "Lower": 5447290.577945852,
+          "Upper": 6867066.843929148
         }
       },
       "allocated_bytes": 7273720
@@ -581,25 +583,25 @@
       "operation": "Deserialize",
       "scenario": "LargePoco[]",
       "method": "PolyTypeSourceGen",
-      "job": "JsonDeserializeBenchmark<LargePoco[]>.Deserialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CLargePoco[]\u003E.Deserialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          5961065.75,
-          6002468.421875,
-          5922137.6953125
+          6031136.390625,
+          6190039.3828125,
+          6085177.0859375
         ],
-        "Mean": 5961890.622395833,
-        "StandardError": 23193.150701351766,
-        "StandardDeviation": 40171.715402343,
+        "Mean": 6102117.619791667,
+        "StandardError": 46646.81660086176,
+        "StandardDeviation": 80794.65636403993,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 5961890.622395833,
-          "StandardError": 23193.150701351766,
+          "Mean": 6102117.619791667,
+          "StandardError": 46646.81660086176,
           "Level": 12,
-          "Margin": 732881.6318459436,
-          "Lower": 5229008.990549889,
-          "Upper": 6694772.254241777
+          "Margin": 1473995.2976231696,
+          "Lower": 4628122.322168497,
+          "Upper": 7576112.917414837
         }
       },
       "allocated_bytes": 7273720
@@ -608,25 +610,25 @@
       "operation": "Deserialize",
       "scenario": "LargePoco",
       "method": "StjReflection",
-      "job": "JsonDeserializeBenchmark<LargePoco>.Deserialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CLargePoco\u003E.Deserialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          1794.696569442749,
-          1769.0800037384033,
-          1775.494176864624
+          1905.086597442627,
+          1872.0097541809082,
+          1901.1831283569336
         ],
-        "Mean": 1779.7569166819255,
-        "StandardError": 7.695893335274565,
-        "StandardDeviation": 13.329678266326251,
+        "Mean": 1892.7598266601562,
+        "StandardError": 10.43604967801956,
+        "StandardDeviation": 18.075768272642698,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 1779.7569166819255,
-          "StandardError": 7.695893335274565,
+          "Mean": 1892.7598266601562,
+          "StandardError": 10.43604967801956,
           "Level": 12,
-          "Margin": 243.18295253174114,
-          "Lower": 1536.5739641501843,
-          "Upper": 2022.9398692136667
+          "Margin": 329.7693020037393,
+          "Lower": 1562.990524656417,
+          "Upper": 2222.529128663896
         }
       },
       "allocated_bytes": 2640
@@ -635,25 +637,25 @@
       "operation": "Deserialize",
       "scenario": "LargePoco",
       "method": "StjSourceGen",
-      "job": "JsonDeserializeBenchmark<LargePoco>.Deserialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CLargePoco\u003E.Deserialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          1787.7641525268555,
-          1804.3255805969238,
-          1805.537540435791
+          1861.0906600952148,
+          1858.06862449646,
+          1842.6865730285645
         ],
-        "Mean": 1799.2090911865234,
-        "StandardError": 5.733154377694376,
-        "StandardDeviation": 9.930114669802588,
+        "Mean": 1853.9486192067463,
+        "StandardError": 5.698199653681934,
+        "StandardDeviation": 9.86957131184849,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 1799.2090911865234,
-          "StandardError": 5.733154377694376,
+          "Mean": 1853.9486192067463,
+          "StandardError": 5.698199653681934,
           "Level": 12,
-          "Margin": 181.16225734283185,
-          "Lower": 1618.0468338436915,
-          "Upper": 1980.3713485293554
+          "Margin": 180.0577211155279,
+          "Lower": 1673.8908980912183,
+          "Upper": 2034.0063403222744
         }
       },
       "allocated_bytes": 2616
@@ -662,25 +664,25 @@
       "operation": "Deserialize",
       "scenario": "LargePoco",
       "method": "PolyTypeReflection",
-      "job": "JsonDeserializeBenchmark<LargePoco>.Deserialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CLargePoco\u003E.Deserialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          1427.8386421203613,
-          1427.3610916137695,
-          1430.201768875122
+          1506.9572925567627,
+          1489.5431995391846,
+          1507.601182937622
         ],
-        "Mean": 1428.4671675364177,
-        "StandardError": 0.8781884715638424,
-        "StandardDeviation": 1.5210670513698312,
+        "Mean": 1501.3672250111897,
+        "StandardError": 5.914933994492579,
+        "StandardDeviation": 10.244966201877476,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 1428.4671675364177,
-          "StandardError": 0.8781884715638424,
+          "Mean": 1501.3672250111897,
+          "StandardError": 5.914933994492579,
           "Level": 12,
-          "Margin": 27.749925329053823,
-          "Lower": 1400.7172422073638,
-          "Upper": 1456.2170928654716
+          "Margin": 186.90632135167877,
+          "Lower": 1314.460903659511,
+          "Upper": 1688.2735463628685
         }
       },
       "allocated_bytes": 1760
@@ -689,133 +691,133 @@
       "operation": "Deserialize",
       "scenario": "LargePoco",
       "method": "PolyTypeSourceGen",
-      "job": "JsonDeserializeBenchmark<LargePoco>.Deserialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CLargePoco\u003E.Deserialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          1393.9820919036865,
-          1382.4130687713623,
-          1393.334228515625
+          1458.9978065490723,
+          1441.9557247161865,
+          1474.806785583496
         ],
-        "Mean": 1389.9097963968914,
-        "StandardError": 3.7530265813484713,
-        "StandardDeviation": 6.500432721052082,
+        "Mean": 1458.5867722829182,
+        "StandardError": 9.485511089777647,
+        "StandardDeviation": 16.429387143252914,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 1389.9097963968914,
-          "StandardError": 3.7530265813484713,
+          "Mean": 1458.5867722829182,
+          "StandardError": 9.485511089777647,
           "Level": 12,
-          "Margin": 118.59209129096729,
-          "Lower": 1271.317705105924,
-          "Upper": 1508.5018876878587
+          "Margin": 299.7331813984147,
+          "Lower": 1158.8535908845035,
+          "Upper": 1758.319953681333
         }
       },
       "allocated_bytes": 1760
     },
     {
       "operation": "Deserialize",
-      "scenario": "List<Int32>",
+      "scenario": "List\u003CInt32\u003E",
       "method": "StjReflection",
-      "job": "JsonDeserializeBenchmark<List<Int32>>.Deserialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CList\u003CInt32\u003E\u003E.Deserialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          3123.3135871887207,
-          3115.906078338623,
-          3093.993663787842
+          3400.588191986084,
+          3245.2810592651367,
+          3264.404613494873
         ],
-        "Mean": 3111.0711097717285,
-        "StandardError": 8.802408152327697,
-        "StandardDeviation": 15.246218148790055,
+        "Mean": 3303.4246215820312,
+        "StandardError": 48.894434386209035,
+        "StandardDeviation": 84.68764456425684,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 3111.0711097717285,
-          "StandardError": 8.802408152327697,
+          "Mean": 3303.4246215820312,
+          "StandardError": 48.894434386209035,
           "Level": 12,
-          "Margin": 278.1477744839544,
-          "Lower": 2832.923335287774,
-          "Upper": 3389.218884255683
+          "Margin": 1545.0178944019362,
+          "Lower": 1758.406727180095,
+          "Upper": 4848.4425159839675
         }
       },
       "allocated_bytes": 2232
     },
     {
       "operation": "Deserialize",
-      "scenario": "List<Int32>",
+      "scenario": "List\u003CInt32\u003E",
       "method": "StjSourceGen",
-      "job": "JsonDeserializeBenchmark<List<Int32>>.Deserialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CList\u003CInt32\u003E\u003E.Deserialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          3119.434356689453,
-          3113.0220108032227,
-          3094.801586151123
+          3153.232894897461,
+          3219.7257690429688,
+          3231.517635345459
         ],
-        "Mean": 3109.085984547933,
-        "StandardError": 7.378178933184282,
-        "StandardDeviation": 12.779380779609513,
+        "Mean": 3201.492099761963,
+        "StandardError": 24.368525932299285,
+        "StandardDeviation": 42.2075250203021,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 3109.085984547933,
-          "StandardError": 7.378178933184282,
+          "Mean": 3201.492099761963,
+          "StandardError": 24.368525932299285,
           "Level": 12,
-          "Margin": 233.14347784099485,
-          "Lower": 2875.9425067069383,
-          "Upper": 3342.229462388928
+          "Margin": 770.0223777661568,
+          "Lower": 2431.469721995806,
+          "Upper": 3971.5144775281196
         }
       },
       "allocated_bytes": 2232
     },
     {
       "operation": "Deserialize",
-      "scenario": "List<Int32>",
+      "scenario": "List\u003CInt32\u003E",
       "method": "PolyTypeReflection",
-      "job": "JsonDeserializeBenchmark<List<Int32>>.Deserialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CList\u003CInt32\u003E\u003E.Deserialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          3137.1728553771973,
-          3191.5084495544434,
-          3171.4676246643066
+          3204.8258781433105,
+          3214.5729064941406,
+          3192.965347290039
         ],
-        "Mean": 3166.716309865316,
-        "StandardError": 15.864220149841668,
-        "StandardDeviation": 27.477635321983715,
+        "Mean": 3204.1213773091636,
+        "StandardError": 6.247503361575034,
+        "StandardDeviation": 10.820993242705313,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 3166.716309865316,
-          "StandardError": 15.864220149841668,
+          "Mean": 3204.1213773091636,
+          "StandardError": 6.247503361575034,
           "Level": 12,
-          "Margin": 501.2943562989753,
-          "Lower": 2665.4219535663406,
-          "Upper": 3668.0106661642913
+          "Margin": 197.41519889004428,
+          "Lower": 3006.706178419119,
+          "Upper": 3401.536576199208
         }
       },
       "allocated_bytes": 2232
     },
     {
       "operation": "Deserialize",
-      "scenario": "List<Int32>",
+      "scenario": "List\u003CInt32\u003E",
       "method": "PolyTypeSourceGen",
-      "job": "JsonDeserializeBenchmark<List<Int32>>.Deserialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CList\u003CInt32\u003E\u003E.Deserialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          3102.7979850769043,
-          3106.351215362549,
-          3090.3337783813477
+          3047.4651641845703,
+          3068.032741546631,
+          3065.0226287841797
         ],
-        "Mean": 3099.8276596069336,
-        "StandardError": 4.856497260023772,
-        "StandardDeviation": 8.411700001180215,
+        "Mean": 3060.173511505127,
+        "StandardError": 6.413313325304693,
+        "StandardDeviation": 11.108184524286235,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 3099.8276596069336,
-          "StandardError": 4.856497260023772,
+          "Mean": 3060.173511505127,
+          "StandardError": 6.413313325304693,
           "Level": 12,
-          "Margin": 153.4607213488305,
-          "Lower": 2946.366938258103,
-          "Upper": 3253.2883809557643
+          "Margin": 202.65463696205347,
+          "Lower": 2857.5188745430733,
+          "Upper": 3262.8281484671807
         }
       },
       "allocated_bytes": 2232
@@ -824,25 +826,25 @@
       "operation": "Deserialize",
       "scenario": "MyPoco",
       "method": "StjReflection",
-      "job": "JsonDeserializeBenchmark<MyPoco>.Deserialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CMyPoco\u003E.Deserialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          546.5571088790894,
-          548.0968952178955,
-          544.8136329650879
+          587.8012971878052,
+          586.5679979324341,
+          592.8222742080688
         ],
-        "Mean": 546.4892123540243,
-        "StandardError": 0.9484039590745382,
-        "StandardDeviation": 1.6426838432165742,
+        "Mean": 589.0638564427694,
+        "StandardError": 1.9126364733192915,
+        "StandardDeviation": 3.312783548198368,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 546.4892123540243,
-          "StandardError": 0.9484039590745382,
+          "Mean": 589.0638564427694,
+          "StandardError": 1.9126364733192915,
           "Level": 12,
-          "Margin": 29.968668342037308,
-          "Lower": 516.520544011987,
-          "Upper": 576.4578806960616
+          "Margin": 60.437504060740466,
+          "Lower": 528.6263523820289,
+          "Upper": 649.5013605035099
         }
       },
       "allocated_bytes": 1016
@@ -851,25 +853,25 @@
       "operation": "Deserialize",
       "scenario": "MyPoco",
       "method": "StjSourceGen",
-      "job": "JsonDeserializeBenchmark<MyPoco>.Deserialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CMyPoco\u003E.Deserialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          574.9995708465576,
-          559.9586963653564,
-          562.2134208679199
+          592.8753614425659,
+          586.6515636444092,
+          597.264726638794
         ],
-        "Mean": 565.7238960266113,
-        "StandardError": 4.683287775685448,
-        "StandardDeviation": 8.111692373953431,
+        "Mean": 592.2638839085897,
+        "StandardError": 3.0789736259162077,
+        "StandardDeviation": 5.332938755251441,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 565.7238960266113,
-          "StandardError": 4.683287775685448,
+          "Mean": 592.2638839085897,
+          "StandardError": 3.0789736259162077,
           "Level": 12,
-          "Margin": 147.98746542221477,
-          "Lower": 417.73643060439656,
-          "Upper": 713.7113614488261
+          "Margin": 97.29265525104252,
+          "Lower": 494.9712286575472,
+          "Upper": 689.5565391596323
         }
       },
       "allocated_bytes": 992
@@ -878,25 +880,25 @@
       "operation": "Deserialize",
       "scenario": "MyPoco",
       "method": "PolyTypeReflection",
-      "job": "JsonDeserializeBenchmark<MyPoco>.Deserialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CMyPoco\u003E.Deserialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          276.20317554473877,
-          277.277072429657,
-          281.275351524353
+          298.5427975654602,
+          273.59612798690796,
+          270.8595595359802
         ],
-        "Mean": 278.25186649958295,
-        "StandardError": 1.54320120756779,
-        "StandardDeviation": 2.672902897809057,
+        "Mean": 280.99949502944946,
+        "StandardError": 8.80715238928289,
+        "StandardDeviation": 15.254435408239598,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 278.25186649958295,
-          "StandardError": 1.54320120756779,
+          "Mean": 280.99949502944946,
+          "StandardError": 8.80715238928289,
           "Level": 12,
-          "Margin": 48.76369898303621,
-          "Lower": 229.48816751654675,
-          "Upper": 327.01556548261914
+          "Margin": 278.2976878858185,
+          "Lower": 2.7018071436309583,
+          "Upper": 559.297182915268
         }
       },
       "allocated_bytes": 440
@@ -905,25 +907,25 @@
       "operation": "Deserialize",
       "scenario": "MyPoco",
       "method": "PolyTypeSourceGen",
-      "job": "JsonDeserializeBenchmark<MyPoco>.Deserialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CMyPoco\u003E.Deserialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          267.36609172821045,
-          259.45524406433105,
-          259.8426537513733
+          284.9269509315491,
+          277.335325717926,
+          289.1649007797241
         ],
-        "Mean": 262.2213298479716,
-        "StandardError": 2.574810845458532,
-        "StandardDeviation": 4.459703204213554,
+        "Mean": 283.8090591430664,
+        "StandardError": 3.4603455065328657,
+        "StandardDeviation": 5.993494229057585,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 262.2213298479716,
-          "StandardError": 2.574810845458532,
+          "Mean": 283.8090591430664,
+          "StandardError": 3.4603455065328657,
           "Level": 12,
-          "Margin": 81.36158810041711,
-          "Lower": 180.8597417475545,
-          "Upper": 343.58291794838874
+          "Margin": 109.34364607180248,
+          "Lower": 174.46541307126392,
+          "Upper": 393.1527052148689
         }
       },
       "allocated_bytes": 440
@@ -932,25 +934,25 @@
       "operation": "Deserialize",
       "scenario": "String",
       "method": "StjReflection",
-      "job": "JsonDeserializeBenchmark<String>.Deserialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CString\u003E.Deserialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          34.35424715280533,
-          35.66344082355499,
-          33.583062410354614
+          32.17143315076828,
+          32.410815358161926,
+          32.95110660791397
         ],
-        "Mean": 34.53358346223831,
-        "StandardError": 0.6072107595221266,
-        "StandardDeviation": 1.0517198863948105,
+        "Mean": 32.511118372281395,
+        "StandardError": 0.23059213337656437,
+        "StandardDeviation": 0.39939729083390857,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 34.53358346223831,
-          "StandardError": 0.6072107595221266,
+          "Mean": 32.511118372281395,
+          "StandardError": 0.23059213337656437,
           "Level": 12,
-          "Margin": 19.18728585189826,
-          "Lower": 15.346297610340052,
-          "Upper": 53.72086931413657
+          "Margin": 7.286493377978368,
+          "Lower": 25.224624994303028,
+          "Upper": 39.79761175025976
         }
       },
       "allocated_bytes": 56
@@ -959,25 +961,25 @@
       "operation": "Deserialize",
       "scenario": "String",
       "method": "StjSourceGen",
-      "job": "JsonDeserializeBenchmark<String>.Deserialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CString\u003E.Deserialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          33.33534550666809,
-          33.032235980033875,
-          34.13242346048355
+          33.17044425010681,
+          33.098014652729034,
+          33.60517817735672
         ],
-        "Mean": 33.500001649061836,
-        "StandardError": 0.32809391793384635,
-        "StandardDeviation": 0.5682753355157555,
+        "Mean": 33.291212360064186,
+        "StandardError": 0.15836920204088725,
+        "StandardDeviation": 0.27430350428895744,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 33.500001649061836,
-          "StandardError": 0.32809391793384635,
+          "Mean": 33.291212360064186,
+          "StandardError": 0.15836920204088725,
           "Level": 12,
-          "Margin": 10.367457577036829,
-          "Lower": 23.132544072025006,
-          "Upper": 43.86745922609867
+          "Margin": 5.0043170382668505,
+          "Lower": 28.286895321797335,
+          "Upper": 38.295529398331034
         }
       },
       "allocated_bytes": 56
@@ -986,25 +988,25 @@
       "operation": "Deserialize",
       "scenario": "String",
       "method": "PolyTypeReflection",
-      "job": "JsonDeserializeBenchmark<String>.Deserialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CString\u003E.Deserialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          28.391290456056595,
-          28.164871037006378,
-          27.89788442850113
+          28.89629825949669,
+          28.650845110416412,
+          28.840401530265808
         ],
-        "Mean": 28.151348640521366,
-        "StandardError": 0.14259443468808033,
-        "StandardDeviation": 0.24698080575631706,
+        "Mean": 28.795848300059635,
+        "StandardError": 0.07427551153130084,
+        "StandardDeviation": 0.12864895973038107,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 28.151348640521366,
-          "StandardError": 0.14259443468808033,
+          "Mean": 28.795848300059635,
+          "StandardError": 0.07427551153130084,
           "Level": 12,
-          "Margin": 4.505849305771953,
-          "Lower": 23.645499334749413,
-          "Upper": 32.65719794629332
+          "Margin": 2.347035933073091,
+          "Lower": 26.448812366986544,
+          "Upper": 31.142884233132726
         }
       },
       "allocated_bytes": 56
@@ -1013,25 +1015,25 @@
       "operation": "Deserialize",
       "scenario": "String",
       "method": "PolyTypeSourceGen",
-      "job": "JsonDeserializeBenchmark<String>.Deserialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonDeserializeBenchmark\u003CString\u003E.Deserialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          28.526616603136063,
-          29.36645969748497,
-          29.510994732379913
+          28.84160229563713,
+          28.429415076971054,
+          28.74090275168419
         ],
-        "Mean": 29.13469034433365,
-        "StandardError": 0.3068864340047972,
-        "StandardDeviation": 0.531542895849942,
+        "Mean": 28.67064004143079,
+        "StandardError": 0.12406612772635099,
+        "StandardDeviation": 0.2148888367203697,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 29.13469034433365,
-          "StandardError": 0.3068864340047972,
+          "Mean": 28.67064004143079,
+          "StandardError": 0.12406612772635099,
           "Level": 12,
-          "Margin": 9.697321137645595,
-          "Lower": 19.437369206688054,
-          "Upper": 38.832011481979244
+          "Margin": 3.9203723252484175,
+          "Lower": 24.75026771618237,
+          "Upper": 32.59101236667921
         }
       },
       "allocated_bytes": 56
@@ -1040,37 +1042,37 @@
       "operation": "Serialize",
       "scenario": "CitmCatalog[]",
       "method": "StjReflection",
-      "job": "JsonSerializeBenchmark<CitmCatalog[]>.Serialize_StjReflection: DefaultJob",
+      "job": "JsonSerializeBenchmark\u003CCitmCatalog[]\u003E.Serialize_StjReflection: DefaultJob",
       "statistics": {
         "N": 15,
         "OriginalValues": [
-          3146594.078125,
-          3211745.9296875,
-          3219150.06640625,
-          3199473.9609375,
-          3253055.98828125,
-          3225527.1796875,
-          3162673.50390625,
-          3144972.33203125,
-          3093828.125,
-          3136753.25390625,
-          3136020.34375,
-          3214749.671875,
-          3172094.40234375,
-          3196457.03125,
-          3173080.890625
+          3242020.18359375,
+          3222321.77734375,
+          3322707.51953125,
+          3332638.01953125,
+          3380654.62109375,
+          3282644.859375,
+          3323899.73828125,
+          3262215.65625,
+          3215914.71484375,
+          3192555.33984375,
+          3237826.66015625,
+          3228116.2109375,
+          3219185.7109375,
+          3300570.47265625,
+          3220556.640625
         ],
-        "Mean": 3179078.4505208335,
-        "StandardError": 11079.552079498539,
-        "StandardDeviation": 42910.920687335594,
+        "Mean": 3265588.5416666665,
+        "StandardError": 14227.647248606301,
+        "StandardDeviation": 55103.44084956598,
         "ConfidenceInterval": {
           "N": 15,
-          "Mean": 3179078.4505208335,
-          "StandardError": 11079.552079498539,
+          "Mean": 3265588.5416666665,
+          "StandardError": 14227.647248606301,
           "Level": 12,
-          "Margin": 45874.37695653922,
-          "Lower": 3133204.0735642943,
-          "Upper": 3224952.8274773727
+          "Margin": 58908.920541558036,
+          "Lower": 3206679.6211251086,
+          "Upper": 3324497.4622082245
         }
       },
       "allocated_bytes": 912
@@ -1079,37 +1081,37 @@
       "operation": "Serialize",
       "scenario": "CitmCatalog[]",
       "method": "StjSourceGen",
-      "job": "JsonSerializeBenchmark<CitmCatalog[]>.Serialize_StjSourceGen: DefaultJob",
+      "job": "JsonSerializeBenchmark\u003CCitmCatalog[]\u003E.Serialize_StjSourceGen: DefaultJob",
       "statistics": {
         "N": 15,
         "OriginalValues": [
-          3095251.46484375,
-          3082977.5390625,
-          3073987.140625,
-          3186696.94140625,
-          3167345.54296875,
-          3172085.7734375,
-          3099555.6640625,
-          3086115.234375,
-          3094005.53515625,
-          3173890.953125,
-          3192991.69921875,
-          3115786.9453125,
-          3154244.95703125,
-          3099921.22265625,
-          3046202.1484375
+          3247174.31640625,
+          3243414.2265625,
+          3158451.171875,
+          3135344.078125,
+          3173790.36328125,
+          3159095.86328125,
+          3193586.58984375,
+          3158661.296875,
+          3195737.6328125,
+          3247531.57421875,
+          3288134.765625,
+          3262521.80859375,
+          3196218.421875,
+          3158483.5625,
+          3208431.15234375
         ],
-        "Mean": 3122737.25078125,
-        "StandardError": 12131.146147564845,
-        "StandardDeviation": 46983.72699992691,
+        "Mean": 3201771.78828125,
+        "StandardError": 11920.982049534055,
+        "StandardDeviation": 46169.76494828296,
         "ConfidenceInterval": {
           "N": 15,
-          "Mean": 3122737.25078125,
-          "StandardError": 12131.146147564845,
+          "Mean": 3201771.78828125,
+          "StandardError": 11920.982049534055,
           "Level": 12,
-          "Margin": 50228.453938856874,
-          "Lower": 3072508.7968423935,
-          "Upper": 3172965.704720107
+          "Margin": 49358.27913516284,
+          "Lower": 3152413.509146087,
+          "Upper": 3251130.0674164128
         }
       },
       "allocated_bytes": 912
@@ -1118,35 +1120,37 @@
       "operation": "Serialize",
       "scenario": "CitmCatalog[]",
       "method": "StjSourceGen_FastPath",
-      "job": "JsonSerializeBenchmark<CitmCatalog[]>.Serialize_StjSourceGen_FastPath: DefaultJob",
+      "job": "JsonSerializeBenchmark\u003CCitmCatalog[]\u003E.Serialize_StjSourceGen_FastPath: DefaultJob",
       "statistics": {
-        "N": 13,
+        "N": 15,
         "OriginalValues": [
-          1497978.841796875,
-          1498048.2578125,
-          1503348.30859375,
-          1497883.7890625,
-          1499809.244140625,
-          1498469.64453125,
-          1498278.076171875,
-          1501711.9140625,
-          1498422.4453125,
-          1499331.869140625,
-          1502466.470703125,
-          1502195.474609375,
-          1501660.400390625
+          1544906.330078125,
+          1549521.80859375,
+          1543125.48828125,
+          1546867.1875,
+          1550927.8984375,
+          1559966.876953125,
+          1557160.806640625,
+          1513744.466796875,
+          1510485.431640625,
+          1511433.10546875,
+          1515584.228515625,
+          1510241.861328125,
+          1512859.943359375,
+          1513440.185546875,
+          1512356.771484375
         ],
-        "Mean": 1499969.5951021635,
-        "StandardError": 557.2455147470088,
-        "StandardDeviation": 2009.1772764426648,
+        "Mean": 1530174.8260416666,
+        "StandardError": 5164.25584786953,
+        "StandardDeviation": 20001.076894352955,
         "ConfidenceInterval": {
-          "N": 13,
-          "Mean": 1499969.5951021635,
-          "StandardError": 557.2455147470088,
+          "N": 15,
+          "Mean": 1530174.8260416666,
+          "StandardError": 5164.25584786953,
           "Level": 12,
-          "Margin": 2406.069825755129,
-          "Lower": 1497563.5252764083,
-          "Upper": 1502375.6649279187
+          "Margin": 21382.364356005743,
+          "Lower": 1508792.4616856608,
+          "Upper": 1551557.1903976724
         }
       },
       "allocated_bytes": 0
@@ -1155,37 +1159,37 @@
       "operation": "Serialize",
       "scenario": "CitmCatalog[]",
       "method": "PolyTypeReflection",
-      "job": "JsonSerializeBenchmark<CitmCatalog[]>.Serialize_PolyTypeReflection: DefaultJob",
+      "job": "JsonSerializeBenchmark\u003CCitmCatalog[]\u003E.Serialize_PolyTypeReflection: DefaultJob",
       "statistics": {
         "N": 15,
         "OriginalValues": [
-          1721868.9765625,
-          1715142.08984375,
-          1721576.822265625,
-          1711785.806640625,
-          1713279.78515625,
-          1710262.533203125,
-          1719051.7578125,
-          1728681.0703125,
-          1711708.333984375,
-          1718393.880859375,
-          1711090.982421875,
-          1714708.740234375,
-          1706763.58984375,
-          1710900.716796875,
-          1710647.298828125
+          1735392.08984375,
+          1738038.412109375,
+          1749647.541015625,
+          1746966.876953125,
+          1749905.35546875,
+          1749419.02734375,
+          1743477.5390625,
+          1743111.896484375,
+          1736854.572265625,
+          1736049.966796875,
+          1735416.748046875,
+          1734555.2578125,
+          1750489.91015625,
+          1747350.748046875,
+          1748189.779296875
         ],
-        "Mean": 1715057.4923177084,
-        "StandardError": 1497.6768689399662,
-        "StandardDeviation": 5800.477571404557,
+        "Mean": 1742991.048046875,
+        "StandardError": 1615.9929431598637,
+        "StandardDeviation": 6258.713756446861,
         "ConfidenceInterval": {
           "N": 15,
-          "Mean": 1715057.4923177084,
-          "StandardError": 1497.6768689399662,
+          "Mean": 1742991.048046875,
+          "StandardError": 1615.9929431598637,
           "Level": 12,
-          "Margin": 6201.062349079277,
-          "Lower": 1708856.4299686293,
-          "Upper": 1721258.5546667876
+          "Margin": 6690.9446249904795,
+          "Lower": 1736300.1034218846,
+          "Upper": 1749681.9926718655
         }
       },
       "allocated_bytes": 0
@@ -1194,255 +1198,236 @@
       "operation": "Serialize",
       "scenario": "CitmCatalog[]",
       "method": "PolyTypeSourceGen",
-      "job": "JsonSerializeBenchmark<CitmCatalog[]>.Serialize_PolyTypeSourceGen: DefaultJob",
+      "job": "JsonSerializeBenchmark\u003CCitmCatalog[]\u003E.Serialize_PolyTypeSourceGen: DefaultJob",
+      "statistics": {
+        "N": 14,
+        "OriginalValues": [
+          1754509.44140625,
+          1732244.62890625,
+          1737976.5625,
+          1745997.314453125,
+          1732753.09375,
+          1743419.43359375,
+          1735944.25390625,
+          1728548.259765625,
+          1786296.95703125,
+          1750974.0390625,
+          1774196.126953125,
+          1767882.162109375,
+          1768011.3125,
+          1752160.482421875
+        ],
+        "Mean": 1750779.5763113839,
+        "StandardError": 4710.802659209426,
+        "StandardDeviation": 17626.209567465274,
+        "ConfidenceInterval": {
+          "N": 14,
+          "Mean": 1750779.5763113839,
+          "StandardError": 4710.802659209426,
+          "Level": 12,
+          "Margin": 19883.505320628836,
+          "Lower": 1730896.070990755,
+          "Upper": 1770663.0816320127
+        }
+      },
+      "allocated_bytes": 0
+    },
+    {
+      "operation": "Serialize",
+      "scenario": "Dictionary\u003CString, Int32\u003E",
+      "method": "StjReflection",
+      "job": "JsonSerializeBenchmark\u003CDictionary\u003CString, Int32\u003E\u003E.Serialize_StjReflection: DefaultJob",
+      "statistics": {
+        "N": 13,
+        "OriginalValues": [
+          644.6381416320801,
+          647.1991930007935,
+          652.3044509887695,
+          647.8839321136475,
+          643.9671907424927,
+          646.7409133911133,
+          645.460844039917,
+          650.9706974029541,
+          641.8933868408203,
+          642.7605543136597,
+          642.5879402160645,
+          649.0780515670776,
+          646.1421251296997
+        ],
+        "Mean": 646.2790324137761,
+        "StandardError": 0.8906590664004242,
+        "StandardDeviation": 3.2113169328636153,
+        "ConfidenceInterval": {
+          "N": 13,
+          "Mean": 646.2790324137761,
+          "StandardError": 0.8906590664004242,
+          "Level": 12,
+          "Margin": 3.8456799525326244,
+          "Lower": 642.4333524612435,
+          "Upper": 650.1247123663087
+        }
+      },
+      "allocated_bytes": 0
+    },
+    {
+      "operation": "Serialize",
+      "scenario": "Dictionary\u003CString, Int32\u003E",
+      "method": "StjSourceGen",
+      "job": "JsonSerializeBenchmark\u003CDictionary\u003CString, Int32\u003E\u003E.Serialize_StjSourceGen: DefaultJob",
       "statistics": {
         "N": 15,
         "OriginalValues": [
-          1790445.962890625,
-          1784291.828125,
-          1788869.873046875,
-          1790507.568359375,
-          1785463.54296875,
-          1783384.27734375,
-          1786452.47265625,
-          1781083.087890625,
-          1784532.552734375,
-          1785223.6328125,
-          1788113.931640625,
-          1784310.05859375,
-          1784982.177734375,
-          1789983.96875,
-          1786712.7265625
+          696.6674327850342,
+          695.2476100921631,
+          695.151686668396,
+          693.3644218444824,
+          696.9571514129639,
+          703.3172454833984,
+          692.3313932418823,
+          705.6314554214478,
+          679.2155904769897,
+          674.8884916305542,
+          690.2523431777954,
+          673.2830200195312,
+          685.0974960327148,
+          675.0266551971436,
+          690.7278699874878
         ],
-        "Mean": 1786290.5108072916,
-        "StandardError": 720.3837772218457,
-        "StandardDeviation": 2790.0343720582023,
+        "Mean": 689.810657564799,
+        "StandardError": 2.634740399592596,
+        "StandardDeviation": 10.204305689202,
         "ConfidenceInterval": {
           "N": 15,
-          "Mean": 1786290.5108072916,
-          "StandardError": 720.3837772218457,
+          "Mean": 689.810657564799,
+          "StandardError": 2.634740399592596,
           "Level": 12,
-          "Margin": 2982.7159719570755,
-          "Lower": 1783307.7948353346,
-          "Upper": 1789273.2267792486
+          "Margin": 10.909021719134694,
+          "Lower": 678.9016358456644,
+          "Upper": 700.7196792839337
         }
       },
       "allocated_bytes": 0
     },
     {
       "operation": "Serialize",
-      "scenario": "Dictionary<String, Int32>",
-      "method": "StjReflection",
-      "job": "JsonSerializeBenchmark<Dictionary<String, Int32>>.Serialize_StjReflection: DefaultJob",
+      "scenario": "Dictionary\u003CString, Int32\u003E",
+      "method": "StjSourceGen_FastPath",
+      "job": "JsonSerializeBenchmark\u003CDictionary\u003CString, Int32\u003E\u003E.Serialize_StjSourceGen_FastPath: DefaultJob",
       "statistics": {
-        "N": 17,
+        "N": 15,
         "OriginalValues": [
-          678.9488391876221,
-          685.8569784164429,
-          702.4892568588257,
-          701.7920017242432,
-          691.8964385986328,
-          657.1834487915039,
-          699.9517679214478,
-          684.0753555297852,
-          684.3798561096191,
-          670.9188623428345,
-          695.9379510879517,
-          710.0369930267334,
-          704.9591150283813,
-          693.2457685470581,
-          699.8416576385498,
-          673.9252805709839,
-          678.5588264465332
+          645.973801612854,
+          637.668888092041,
+          646.4729309082031,
+          639.8574504852295,
+          649.3902206420898,
+          629.9126148223877,
+          632.7056083679199,
+          634.8917083740234,
+          635.3075904846191,
+          634.7181396484375,
+          640.9648656845093,
+          637.8823909759521,
+          633.4772109985352,
+          648.4599914550781,
+          629.7606229782104
         ],
-        "Mean": 689.0587292839499,
-        "StandardError": 3.4228938333557304,
-        "StandardDeviation": 14.112952820201011,
+        "Mean": 638.4962690353393,
+        "StandardError": 1.679924715366207,
+        "StandardDeviation": 6.506320445495555,
         "ConfidenceInterval": {
-          "N": 17,
-          "Mean": 689.0587292839499,
-          "StandardError": 3.4228938333557304,
+          "N": 15,
+          "Mean": 638.4962690353393,
+          "StandardError": 1.679924715366207,
           "Level": 12,
-          "Margin": 13.742906159813455,
-          "Lower": 675.3158231241365,
-          "Upper": 702.8016354437633
+          "Margin": 6.955651194051178,
+          "Lower": 631.5406178412882,
+          "Upper": 645.4519202293905
         }
       },
       "allocated_bytes": 0
     },
     {
       "operation": "Serialize",
-      "scenario": "Dictionary<String, Int32>",
-      "method": "StjSourceGen",
-      "job": "JsonSerializeBenchmark<Dictionary<String, Int32>>.Serialize_StjSourceGen: DefaultJob",
+      "scenario": "Dictionary\u003CString, Int32\u003E",
+      "method": "PolyTypeReflection",
+      "job": "JsonSerializeBenchmark\u003CDictionary\u003CString, Int32\u003E\u003E.Serialize_PolyTypeReflection: DefaultJob",
       "statistics": {
         "N": 16,
         "OriginalValues": [
-          676.2237548828125,
-          681.56898021698,
-          713.0273580551147,
-          672.1793012619019,
-          662.206093788147,
-          685.1628618240356,
-          693.577766418457,
-          687.8639059066772,
-          679.3926954269409,
-          696.8583669662476,
-          693.0962009429932,
-          706.7339029312134,
-          697.0055894851685,
-          691.3142604827881,
-          679.9212293624878,
-          681.4750823974609
+          639.0419406890869,
+          642.8783740997314,
+          650.9208679199219,
+          666.1798553466797,
+          670.6049842834473,
+          671.27184009552,
+          674.6952133178711,
+          652.2504091262817,
+          661.9809465408325,
+          656.4511461257935,
+          684.9517030715942,
+          654.4287605285645,
+          669.7332458496094,
+          647.5096549987793,
+          656.0672121047974,
+          669.6070432662964
         ],
-        "Mean": 687.3504593968391,
-        "StandardError": 3.217056377439935,
-        "StandardDeviation": 12.86822550975974,
+        "Mean": 660.5358248353004,
+        "StandardError": 3.1573953989546344,
+        "StandardDeviation": 12.629581595818538,
         "ConfidenceInterval": {
           "N": 16,
-          "Mean": 687.3504593968391,
-          "StandardError": 3.217056377439935,
+          "Mean": 660.5358248353004,
+          "StandardError": 3.1573953989546344,
           "Level": 12,
-          "Margin": 13.102315240484797,
-          "Lower": 674.2481441563543,
-          "Upper": 700.452774637324
+          "Margin": 12.859330083882645,
+          "Lower": 647.6764947514177,
+          "Upper": 673.3951549191831
         }
       },
       "allocated_bytes": 0
     },
     {
       "operation": "Serialize",
-      "scenario": "Dictionary<String, Int32>",
-      "method": "StjSourceGen_FastPath",
-      "job": "JsonSerializeBenchmark<Dictionary<String, Int32>>.Serialize_StjSourceGen_FastPath: DefaultJob",
-      "statistics": {
-        "N": 13,
-        "OriginalValues": [
-          627.2131204605103,
-          626.886884689331,
-          626.1731386184692,
-          628.5114288330078,
-          626.6616582870483,
-          627.4450225830078,
-          626.4931755065918,
-          626.6072988510132,
-          626.2319087982178,
-          627.4152994155884,
-          626.639048576355,
-          626.6558170318604,
-          627.1642446517944
-        ],
-        "Mean": 626.9306189463689,
-        "StandardError": 0.17404540175038843,
-        "StandardDeviation": 0.6275296202697555,
-        "ConfidenceInterval": {
-          "N": 13,
-          "Mean": 626.9306189463689,
-          "StandardError": 0.17404540175038843,
-          "Level": 12,
-          "Margin": 0.7514917184271269,
-          "Lower": 626.1791272279418,
-          "Upper": 627.682110664796
-        }
-      },
-      "allocated_bytes": 0
-    },
-    {
-      "operation": "Serialize",
-      "scenario": "Dictionary<String, Int32>",
-      "method": "PolyTypeReflection",
-      "job": "JsonSerializeBenchmark<Dictionary<String, Int32>>.Serialize_PolyTypeReflection: DefaultJob",
-      "statistics": {
-        "N": 25,
-        "OriginalValues": [
-          702.538688659668,
-          699.3918018341064,
-          724.6063947677612,
-          727.324764251709,
-          748.3523283004761,
-          726.9260091781616,
-          756.6339168548584,
-          708.9090747833252,
-          693.9103202819824,
-          734.9289655685425,
-          723.0052156448364,
-          750.6098356246948,
-          738.4706335067749,
-          716.1073684692383,
-          751.9310312271118,
-          696.5949926376343,
-          735.2433204650879,
-          697.7442903518677,
-          737.5064296722412,
-          721.1529016494751,
-          709.6705436706543,
-          732.8416900634766,
-          702.8110427856445,
-          709.6059322357178,
-          744.5076313018799
-        ],
-        "Mean": 723.6530049514771,
-        "StandardError": 3.845382461902556,
-        "StandardDeviation": 19.22691230951278,
-        "ConfidenceInterval": {
-          "N": 25,
-          "Mean": 723.6530049514771,
-          "StandardError": 3.845382461902556,
-          "Level": 12,
-          "Margin": 14.402490158882093,
-          "Lower": 709.250514792595,
-          "Upper": 738.0554951103592
-        }
-      },
-      "allocated_bytes": 0
-    },
-    {
-      "operation": "Serialize",
-      "scenario": "Dictionary<String, Int32>",
+      "scenario": "Dictionary\u003CString, Int32\u003E",
       "method": "PolyTypeSourceGen",
-      "job": "JsonSerializeBenchmark<Dictionary<String, Int32>>.Serialize_PolyTypeSourceGen: DefaultJob",
+      "job": "JsonSerializeBenchmark\u003CDictionary\u003CString, Int32\u003E\u003E.Serialize_PolyTypeSourceGen: DefaultJob",
       "statistics": {
-        "N": 27,
+        "N": 21,
         "OriginalValues": [
-          725.9800434112549,
-          717.2625064849854,
-          725.8161706924438,
-          751.6926918029785,
-          700.6636066436768,
-          755.362232208252,
-          723.8513231277466,
-          707.9566326141357,
-          712.7088308334351,
-          731.1207456588745,
-          723.2620716094971,
-          699.1156339645386,
-          731.9488525390625,
-          762.122631072998,
-          734.8541421890259,
-          710.2672262191772,
-          722.8033542633057,
-          739.0175657272339,
-          720.8122415542603,
-          740.1942415237427,
-          693.4179468154907,
-          739.248950958252,
-          771.8929452896118,
-          708.3602352142334,
-          754.021167755127,
-          719.7098731994629,
-          736.2147569656372
+          659.5066785812378,
+          681.8418502807617,
+          658.2373380661011,
+          658.4552917480469,
+          663.7585954666138,
+          671.7613935470581,
+          671.4812917709351,
+          660.3214740753174,
+          664.8374004364014,
+          670.1795263290405,
+          654.0499925613403,
+          627.6138229370117,
+          649.6746940612793,
+          645.8859043121338,
+          647.1092700958252,
+          627.9745101928711,
+          653.106728553772,
+          636.6466283798218,
+          627.0474195480347,
+          645.9235343933105,
+          668.0906610488892
         ],
-        "Mean": 728.13624519772,
-        "StandardError": 3.781501756903442,
-        "StandardDeviation": 19.649259515603205,
+        "Mean": 654.4525717326572,
+        "StandardError": 3.3708197214981195,
+        "StandardDeviation": 15.447036527815095,
         "ConfidenceInterval": {
-          "N": 27,
-          "Mean": 728.13624519772,
-          "StandardError": 3.781501756903442,
+          "N": 21,
+          "Mean": 654.4525717326572,
+          "StandardError": 3.3708197214981195,
           "Level": 12,
-          "Margin": 14.01655881464623,
-          "Lower": 714.1196863830737,
-          "Upper": 742.1528040123662
+          "Margin": 12.976025374823909,
+          "Lower": 641.4765463578333,
+          "Upper": 667.4285971074812
         }
       },
       "allocated_bytes": 0
@@ -1451,75 +1436,37 @@
       "operation": "Serialize",
       "scenario": "Int32[]",
       "method": "StjReflection",
-      "job": "JsonSerializeBenchmark<Int32[]>.Serialize_StjReflection: DefaultJob",
-      "statistics": {
-        "N": 14,
-        "OriginalValues": [
-          793.9295768737793,
-          793.0650310516357,
-          798.5481023788452,
-          797.0617609024048,
-          795.7282066345215,
-          797.0279855728149,
-          794.510006904602,
-          791.4557857513428,
-          795.3027486801147,
-          795.9806518554688,
-          798.1032524108887,
-          796.3111009597778,
-          795.8459453582764,
-          794.7754058837891
-        ],
-        "Mean": 795.5461115155902,
-        "StandardError": 0.5144483356460131,
-        "StandardDeviation": 1.9248894151834648,
-        "ConfidenceInterval": {
-          "N": 14,
-          "Mean": 795.5461115155902,
-          "StandardError": 0.5144483356460131,
-          "Level": 12,
-          "Margin": 2.171399856669607,
-          "Lower": 793.3747116589205,
-          "Upper": 797.7175113722598
-        }
-      },
-      "allocated_bytes": 0
-    },
-    {
-      "operation": "Serialize",
-      "scenario": "Int32[]",
-      "method": "StjSourceGen",
-      "job": "JsonSerializeBenchmark<Int32[]>.Serialize_StjSourceGen: DefaultJob",
+      "job": "JsonSerializeBenchmark\u003CInt32[]\u003E.Serialize_StjReflection: DefaultJob",
       "statistics": {
         "N": 15,
         "OriginalValues": [
-          793.7021255493164,
-          792.7794456481934,
-          794.7655916213989,
-          794.2800121307373,
-          793.9774990081787,
-          793.8864231109619,
-          793.4836149215698,
-          792.4363212585449,
-          793.1708498001099,
-          793.2690382003784,
-          793.6460180282593,
-          793.0843029022217,
-          792.3863334655762,
-          794.009129524231,
-          792.0197649002075
+          793.2719793319702,
+          794.151782989502,
+          794.1257562637329,
+          796.1837844848633,
+          794.5909900665283,
+          793.7973737716675,
+          795.1622009277344,
+          793.4583425521851,
+          796.6696424484253,
+          795.3688697814941,
+          793.224175453186,
+          795.4088449478149,
+          792.5920486450195,
+          794.6878271102905,
+          793.8555479049683
         ],
-        "Mean": 793.393098004659,
-        "StandardError": 0.19705152117791114,
-        "StandardDeviation": 0.763177259866888,
+        "Mean": 794.4366111119588,
+        "StandardError": 0.2974223838421971,
+        "StandardDeviation": 1.1519119394101394,
         "ConfidenceInterval": {
           "N": 15,
-          "Mean": 793.393098004659,
-          "StandardError": 0.19705152117791114,
+          "Mean": 794.4366111119588,
+          "StandardError": 0.2974223838421971,
           "Level": 12,
-          "Margin": 0.8158827809566197,
-          "Lower": 792.5772152237024,
-          "Upper": 794.2089807856156
+          "Margin": 1.2314637319081025,
+          "Lower": 793.2051473800507,
+          "Upper": 795.6680748438669
         }
       },
       "allocated_bytes": 0
@@ -1527,76 +1474,116 @@
     {
       "operation": "Serialize",
       "scenario": "Int32[]",
-      "method": "StjSourceGen_FastPath",
-      "job": "JsonSerializeBenchmark<Int32[]>.Serialize_StjSourceGen_FastPath: DefaultJob",
-      "statistics": {
-        "N": 14,
-        "OriginalValues": [
-          1053.1531982421875,
-          1050.703525543213,
-          1052.1361827850342,
-          1054.2322006225586,
-          1053.2214641571045,
-          1053.9846420288086,
-          1055.6671619415283,
-          1053.0827045440674,
-          1053.6766052246094,
-          1052.9998931884766,
-          1053.3559322357178,
-          1053.3796138763428,
-          1050.5764484405518,
-          1051.3328704833984
-        ],
-        "Mean": 1052.9644602366857,
-        "StandardError": 0.37110431711775577,
-        "StandardDeviation": 1.38854520940735,
-        "ConfidenceInterval": {
-          "N": 14,
-          "Mean": 1052.9644602366857,
-          "StandardError": 0.37110431711775577,
-          "Level": 12,
-          "Margin": 1.5663688754810965,
-          "Lower": 1051.3980913612045,
-          "Upper": 1054.5308291121669
-        }
-      },
-      "allocated_bytes": 0
-    },
-    {
-      "operation": "Serialize",
-      "scenario": "Int32[]",
-      "method": "PolyTypeReflection",
-      "job": "JsonSerializeBenchmark<Int32[]>.Serialize_PolyTypeReflection: DefaultJob",
+      "method": "StjSourceGen",
+      "job": "JsonSerializeBenchmark\u003CInt32[]\u003E.Serialize_StjSourceGen: DefaultJob",
       "statistics": {
         "N": 15,
         "OriginalValues": [
-          800.3929853439331,
-          795.5556316375732,
-          795.9306240081787,
-          797.1141338348389,
-          798.758864402771,
-          796.5952548980713,
-          797.414381980896,
-          796.6772718429565,
-          799.8780012130737,
-          801.689863204956,
-          801.5444679260254,
-          798.6369934082031,
-          802.0087080001831,
-          798.2964515686035,
-          797.7612819671631
+          797.1545066833496,
+          797.9951696395874,
+          797.1236305236816,
+          799.1023864746094,
+          796.5723276138306,
+          798.743049621582,
+          796.9560232162476,
+          798.4230909347534,
+          798.5548572540283,
+          796.6670188903809,
+          798.2662124633789,
+          796.4847478866577,
+          799.7420625686646,
+          798.5333204269409,
+          799.0401983261108
         ],
-        "Mean": 798.5503276824951,
-        "StandardError": 0.5485601387767538,
-        "StandardDeviation": 2.124564281875597,
+        "Mean": 797.9572401682536,
+        "StandardError": 0.2706499123341761,
+        "StandardDeviation": 1.0482226031227615,
         "ConfidenceInterval": {
           "N": 15,
-          "Mean": 798.5503276824951,
-          "StandardError": 0.5485601387767538,
+          "Mean": 797.9572401682536,
+          "StandardError": 0.2706499123341761,
           "Level": 12,
-          "Margin": 2.2712880817755257,
-          "Lower": 796.2790396007196,
-          "Upper": 800.8216157642706
+          "Margin": 1.1206135421888133,
+          "Lower": 796.8366266260648,
+          "Upper": 799.0778537104425
+        }
+      },
+      "allocated_bytes": 0
+    },
+    {
+      "operation": "Serialize",
+      "scenario": "Int32[]",
+      "method": "StjSourceGen_FastPath",
+      "job": "JsonSerializeBenchmark\u003CInt32[]\u003E.Serialize_StjSourceGen_FastPath: DefaultJob",
+      "statistics": {
+        "N": 15,
+        "OriginalValues": [
+          1054.673671722412,
+          1057.5382709503174,
+          1056.8905658721924,
+          1055.6702613830566,
+          1054.603895187378,
+          1058.3857688903809,
+          1056.4075317382812,
+          1060.3439807891846,
+          1055.6366443634033,
+          1055.55979347229,
+          1054.7638721466064,
+          1059.9990692138672,
+          1058.5713386535645,
+          1058.8300228118896,
+          1054.5153617858887
+        ],
+        "Mean": 1056.826003265381,
+        "StandardError": 0.5170503772818653,
+        "StandardDeviation": 2.0025275003629264,
+        "ConfidenceInterval": {
+          "N": 15,
+          "Mean": 1056.826003265381,
+          "StandardError": 0.5170503772818653,
+          "Level": 12,
+          "Margin": 2.140823360254709,
+          "Lower": 1054.6851799051262,
+          "Upper": 1058.9668266256356
+        }
+      },
+      "allocated_bytes": 0
+    },
+    {
+      "operation": "Serialize",
+      "scenario": "Int32[]",
+      "method": "PolyTypeReflection",
+      "job": "JsonSerializeBenchmark\u003CInt32[]\u003E.Serialize_PolyTypeReflection: DefaultJob",
+      "statistics": {
+        "N": 15,
+        "OriginalValues": [
+          794.212381362915,
+          794.0443754196167,
+          791.9290857315063,
+          796.0555553436279,
+          793.0371761322021,
+          793.3193845748901,
+          792.9300861358643,
+          793.2588262557983,
+          795.5482006072998,
+          792.9628295898438,
+          793.7415838241577,
+          792.9657306671143,
+          795.0891256332397,
+          795.1273126602173,
+          792.9650545120239
+        ],
+        "Mean": 793.8124472300211,
+        "StandardError": 0.3028045859287353,
+        "StandardDeviation": 1.1727571184572247,
+        "ConfidenceInterval": {
+          "N": 15,
+          "Mean": 793.8124472300211,
+          "StandardError": 0.3028045859287353,
+          "Level": 12,
+          "Margin": 1.2537484926639997,
+          "Lower": 792.5586987373571,
+          "Upper": 795.0661957226852
         }
       },
       "allocated_bytes": 0
@@ -1605,35 +1592,36 @@
       "operation": "Serialize",
       "scenario": "Int32[]",
       "method": "PolyTypeSourceGen",
-      "job": "JsonSerializeBenchmark<Int32[]>.Serialize_PolyTypeSourceGen: DefaultJob",
+      "job": "JsonSerializeBenchmark\u003CInt32[]\u003E.Serialize_PolyTypeSourceGen: DefaultJob",
       "statistics": {
-        "N": 13,
+        "N": 14,
         "OriginalValues": [
-          791.3062181472778,
-          792.5119791030884,
-          791.6028099060059,
-          790.2418775558472,
-          790.0329437255859,
-          790.8478183746338,
-          793.9630346298218,
-          790.0166110992432,
-          789.6134853363037,
-          790.4548254013062,
-          792.9487228393555,
-          792.8116722106934,
-          794.8918342590332
+          793.3450536727905,
+          793.1321859359741,
+          792.4907999038696,
+          793.6393814086914,
+          792.6835222244263,
+          793.8080625534058,
+          793.6710519790649,
+          792.9135961532593,
+          793.5456037521362,
+          794.601598739624,
+          793.4547262191772,
+          794.5085763931274,
+          794.4608926773071,
+          792.2927942276001
         ],
-        "Mean": 791.6341409683228,
-        "StandardError": 0.461608821910185,
-        "StandardDeviation": 1.664354276603697,
+        "Mean": 793.4677032743182,
+        "StandardError": 0.1951726097653412,
+        "StandardDeviation": 0.7302690370244368,
         "ConfidenceInterval": {
-          "N": 13,
-          "Mean": 791.6341409683228,
-          "StandardError": 0.461608821910185,
+          "N": 14,
+          "Mean": 793.4677032743182,
+          "StandardError": 0.1951726097653412,
           "Level": 12,
-          "Margin": 1.9931305471426068,
-          "Lower": 789.6410104211801,
-          "Upper": 793.6272715154654
+          "Margin": 0.8237907434147209,
+          "Lower": 792.6439125309034,
+          "Upper": 794.2914940177329
         }
       },
       "allocated_bytes": 0
@@ -1642,25 +1630,25 @@
       "operation": "Serialize",
       "scenario": "Int32",
       "method": "StjReflection",
-      "job": "JsonSerializeBenchmark<Int32>.Serialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonSerializeBenchmark\u003CInt32\u003E.Serialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          14.189083129167557,
-          14.11982873082161,
-          13.726934164762497
+          13.959258183836937,
+          13.849587485194206,
+          13.808964431285858
         ],
-        "Mean": 14.011948674917221,
-        "StandardError": 0.14390274050160615,
-        "StandardDeviation": 0.2492468578971815,
+        "Mean": 13.872603366772333,
+        "StandardError": 0.044886342086002874,
+        "StandardDeviation": 0.07774542505887416,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 14.011948674917221,
-          "StandardError": 0.14390274050160615,
+          "Mean": 13.872603366772333,
+          "StandardError": 0.044886342086002874,
           "Level": 12,
-          "Margin": 4.547190532408938,
-          "Lower": 9.464758142508284,
-          "Upper": 18.559139207326158
+          "Margin": 1.4183659675728206,
+          "Lower": 12.454237399199513,
+          "Upper": 15.290969334345153
         }
       },
       "allocated_bytes": 0
@@ -1669,25 +1657,25 @@
       "operation": "Serialize",
       "scenario": "Int32",
       "method": "StjSourceGen",
-      "job": "JsonSerializeBenchmark<Int32>.Serialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonSerializeBenchmark\u003CInt32\u003E.Serialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          13.707034289836884,
-          13.724413394927979,
-          13.650918379426003
+          13.766581803560257,
+          14.01941229403019,
+          13.893470168113708
         ],
-        "Mean": 13.694122021396955,
-        "StandardError": 0.02217674707967415,
-        "StandardDeviation": 0.03841125268860035,
+        "Mean": 13.893154755234718,
+        "StandardError": 0.07298604625036177,
+        "StandardDeviation": 0.12641554034919852,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 13.694122021396955,
-          "StandardError": 0.02217674707967415,
+          "Mean": 13.893154755234718,
+          "StandardError": 0.07298604625036177,
           "Level": 12,
-          "Margin": 0.7007642384628271,
-          "Lower": 12.993357782934128,
-          "Upper": 14.394886259859783
+          "Margin": 2.306290049451155,
+          "Lower": 11.586864705783563,
+          "Upper": 16.199444804685875
         }
       },
       "allocated_bytes": 0
@@ -1696,25 +1684,25 @@
       "operation": "Serialize",
       "scenario": "Int32",
       "method": "StjSourceGen_FastPath",
-      "job": "JsonSerializeBenchmark<Int32>.Serialize_StjSourceGen_FastPath: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonSerializeBenchmark\u003CInt32\u003E.Serialize_StjSourceGen_FastPath: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          13.603343948721886,
-          13.595281168818474,
-          13.59628513455391
+          13.881055638194084,
+          13.814271733164787,
+          13.827359303832054
         ],
-        "Mean": 13.598303417364756,
-        "StandardError": 0.002536874985169471,
-        "StandardDeviation": 0.004393996366764065,
+        "Mean": 13.840895558396975,
+        "StandardError": 0.020432369200815453,
+        "StandardDeviation": 0.03538990157481786,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 13.598303417364756,
-          "StandardError": 0.002536874985169471,
+          "Mean": 13.840895558396975,
+          "StandardError": 0.020432369200815453,
           "Level": 12,
-          "Margin": 0.08016285078558966,
-          "Lower": 13.518140566579167,
-          "Upper": 13.678466268150345
+          "Margin": 0.6456435468898871,
+          "Lower": 13.195252011507087,
+          "Upper": 14.486539105286862
         }
       },
       "allocated_bytes": 0
@@ -1723,25 +1711,25 @@
       "operation": "Serialize",
       "scenario": "Int32",
       "method": "PolyTypeReflection",
-      "job": "JsonSerializeBenchmark<Int32>.Serialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonSerializeBenchmark\u003CInt32\u003E.Serialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          8.478545278310776,
-          8.442042395472527,
-          8.402205377817154
+          8.50839726626873,
+          8.468211323022842,
+          8.462709054350853
         ],
-        "Mean": 8.440931017200151,
-        "StandardError": 0.02204443598047854,
-        "StandardDeviation": 0.038182083142388266,
+        "Mean": 8.479772547880808,
+        "StandardError": 0.01440022704943171,
+        "StandardDeviation": 0.024941924890143383,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 8.440931017200151,
-          "StandardError": 0.02204443598047854,
+          "Mean": 8.479772547880808,
+          "StandardError": 0.01440022704943171,
           "Level": 12,
-          "Margin": 0.6965833328351947,
-          "Lower": 7.744347684364957,
-          "Upper": 9.137514350035346
+          "Margin": 0.45503355860678774,
+          "Lower": 8.02473898927402,
+          "Upper": 8.934806106487596
         }
       },
       "allocated_bytes": 0
@@ -1750,25 +1738,25 @@
       "operation": "Serialize",
       "scenario": "Int32",
       "method": "PolyTypeSourceGen",
-      "job": "JsonSerializeBenchmark<Int32>.Serialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonSerializeBenchmark\u003CInt32\u003E.Serialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          8.34551702439785,
-          8.327896386384964,
-          8.327120289206505
+          8.832552775740623,
+          8.749492466449738,
+          8.676042169332504
         ],
-        "Mean": 8.333511233329773,
-        "StandardError": 0.006007074886757635,
-        "StandardDeviation": 0.010404558908735283,
+        "Mean": 8.752695803840956,
+        "StandardError": 0.04520910124960379,
+        "StandardDeviation": 0.07830446032883938,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 8.333511233329773,
-          "StandardError": 0.006007074886757635,
+          "Mean": 8.752695803840956,
+          "StandardError": 0.04520910124960379,
           "Level": 12,
-          "Margin": 0.18981788642330225,
-          "Lower": 8.14369334690647,
-          "Upper": 8.523329119753075
+          "Margin": 1.4285648519572216,
+          "Lower": 7.324130951883734,
+          "Upper": 10.181260655798177
         }
       },
       "allocated_bytes": 0
@@ -1777,25 +1765,25 @@
       "operation": "Serialize",
       "scenario": "LargePoco[]",
       "method": "StjReflection",
-      "job": "JsonSerializeBenchmark<LargePoco[]>.Serialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonSerializeBenchmark\u003CLargePoco[]\u003E.Serialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          2544313.3125,
-          2520432.78125,
-          2520566.40625
+          2612221.83984375,
+          2602884.27734375,
+          2607754.71875
         ],
-        "Mean": 2528437.5,
-        "StandardError": 7937.999975046684,
-        "StandardDeviation": 13749.019267261336,
+        "Mean": 2607620.2786458335,
+        "StandardError": 2696.3601370834363,
+        "StandardDeviation": 4670.2327529318945,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 2528437.5,
-          "StandardError": 7937.999975046684,
+          "Mean": 2607620.2786458335,
+          "StandardError": 2696.3601370834363,
           "Level": 12,
-          "Margin": 250833.29342426104,
-          "Lower": 2277604.206575739,
-          "Upper": 2779270.793424261
+          "Margin": 85202.43078465779,
+          "Lower": 2522417.847861176,
+          "Upper": 2692822.709430491
         }
       },
       "allocated_bytes": 312
@@ -1804,25 +1792,25 @@
       "operation": "Serialize",
       "scenario": "LargePoco[]",
       "method": "StjSourceGen",
-      "job": "JsonSerializeBenchmark<LargePoco[]>.Serialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonSerializeBenchmark\u003CLargePoco[]\u003E.Serialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          2510889.80859375,
-          2477034.9921875,
-          2472376.30078125
+          2516645.99609375,
+          2488762.37109375,
+          2527040.85546875
         ],
-        "Mean": 2486767.0338541665,
-        "StandardError": 12136.131278914996,
-        "StandardDeviation": 21020.39598240663,
+        "Mean": 2510816.4075520835,
+        "StandardError": 11428.01628215542,
+        "StandardDeviation": 19793.904830417574,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 2486767.0338541665,
-          "StandardError": 12136.131278914996,
+          "Mean": 2510816.4075520835,
+          "StandardError": 11428.01628215542,
           "Level": 12,
-          "Margin": 383490.2730774492,
-          "Lower": 2103276.760776717,
-          "Upper": 2870257.306931616
+          "Margin": 361114.5087389932,
+          "Lower": 2149701.8988130903,
+          "Upper": 2871930.9162910767
         }
       },
       "allocated_bytes": 312
@@ -1831,25 +1819,25 @@
       "operation": "Serialize",
       "scenario": "LargePoco[]",
       "method": "StjSourceGen_FastPath",
-      "job": "JsonSerializeBenchmark<LargePoco[]>.Serialize_StjSourceGen_FastPath: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonSerializeBenchmark\u003CLargePoco[]\u003E.Serialize_StjSourceGen_FastPath: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          1964213.5390625,
-          1966215.984375,
-          1992260.25390625
+          2028859.69921875,
+          2048410.15625,
+          2038218.42578125
         ],
-        "Mean": 1974229.92578125,
-        "StandardError": 9033.677656945018,
-        "StandardDeviation": 15646.78868102854,
+        "Mean": 2038496.09375,
+        "StandardError": 5645.438192568713,
+        "StandardDeviation": 9778.185780518821,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 1974229.92578125,
-          "StandardError": 9033.677656945018,
+          "Mean": 2038496.09375,
+          "StandardError": 5645.438192568713,
           "Level": 12,
-          "Margin": 285455.6721526513,
-          "Lower": 1688774.2536285988,
-          "Upper": 2259685.5979339015
+          "Margin": 178390.50883302503,
+          "Lower": 1860105.5849169749,
+          "Upper": 2216886.602583025
         }
       },
       "allocated_bytes": 0
@@ -1858,25 +1846,25 @@
       "operation": "Serialize",
       "scenario": "LargePoco[]",
       "method": "PolyTypeReflection",
-      "job": "JsonSerializeBenchmark<LargePoco[]>.Serialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonSerializeBenchmark\u003CLargePoco[]\u003E.Serialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          2242774.08984375,
-          2243869.140625,
-          2245411.78515625
+          2250195.63671875,
+          2247486.65234375,
+          2279629.23046875
         ],
-        "Mean": 2244018.3385416665,
-        "StandardError": 765.082599930529,
-        "StandardDeviation": 1325.161935066569,
+        "Mean": 2259103.83984375,
+        "StandardError": 10292.446976911871,
+        "StandardDeviation": 17827.041098220056,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 2244018.3385416665,
-          "StandardError": 765.082599930529,
+          "Mean": 2259103.83984375,
+          "StandardError": 10292.446976911871,
           "Level": 12,
-          "Margin": 24175.88673285959,
-          "Lower": 2219842.451808807,
-          "Upper": 2268194.225274526
+          "Margin": 325231.59243247553,
+          "Lower": 1933872.2474112744,
+          "Upper": 2584335.4322762256
         }
       },
       "allocated_bytes": 0
@@ -1885,25 +1873,25 @@
       "operation": "Serialize",
       "scenario": "LargePoco[]",
       "method": "PolyTypeSourceGen",
-      "job": "JsonSerializeBenchmark<LargePoco[]>.Serialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonSerializeBenchmark\u003CLargePoco[]\u003E.Serialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          2234694.66015625,
-          2229020.83203125,
-          2227739.74609375
+          2224070.96484375,
+          2245531.57421875,
+          2221749.0234375
         ],
-        "Mean": 2230485.0794270835,
-        "StandardError": 2137.032423037734,
-        "StandardDeviation": 3701.4487341233817,
+        "Mean": 2230450.5208333335,
+        "StandardError": 7570.2593831355425,
+        "StandardDeviation": 13112.073878065787,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 2230485.0794270835,
-          "StandardError": 2137.032423037734,
+          "Mean": 2230450.5208333335,
+          "StandardError": 7570.2593831355425,
           "Level": 12,
-          "Margin": 67528.2038939325,
-          "Lower": 2162956.875533151,
-          "Upper": 2298013.283321016
+          "Margin": 239213.0384375109,
+          "Lower": 1991237.4823958226,
+          "Upper": 2469663.5592708443
         }
       },
       "allocated_bytes": 0
@@ -1912,25 +1900,25 @@
       "operation": "Serialize",
       "scenario": "LargePoco",
       "method": "StjReflection",
-      "job": "JsonSerializeBenchmark<LargePoco>.Serialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonSerializeBenchmark\u003CLargePoco\u003E.Serialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          633.943995475769,
-          628.1687412261963,
-          631.2317447662354
+          694.7677927017212,
+          669.5270938873291,
+          648.0650501251221
         ],
-        "Mean": 631.1148271560669,
-        "StandardError": 1.6681969015954188,
-        "StandardDeviation": 2.889401790592244,
+        "Mean": 670.7866455713907,
+        "StandardError": 13.496621723943095,
+        "StandardDeviation": 23.37683455640729,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 631.1148271560669,
-          "StandardError": 1.6681969015954188,
+          "Mean": 670.7866455713907,
+          "StandardError": 13.496621723943095,
           "Level": 12,
-          "Margin": 52.71344472445226,
-          "Lower": 578.4013824316146,
-          "Upper": 683.8282718805192
+          "Margin": 426.48048472665363,
+          "Lower": 244.30616084473712,
+          "Upper": 1097.2671302980443
         }
       },
       "allocated_bytes": 312
@@ -1939,25 +1927,25 @@
       "operation": "Serialize",
       "scenario": "LargePoco",
       "method": "StjSourceGen",
-      "job": "JsonSerializeBenchmark<LargePoco>.Serialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonSerializeBenchmark\u003CLargePoco\u003E.Serialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          629.6628713607788,
-          628.2066898345947,
-          628.1679468154907
+          634.3749761581421,
+          636.1267166137695,
+          631.3581867218018
         ],
-        "Mean": 628.6791693369547,
-        "StandardError": 0.4919781530173134,
-        "StandardDeviation": 0.8521311572398823,
+        "Mean": 633.9532931645712,
+        "StandardError": 1.3926092707513444,
+        "StandardDeviation": 2.412070012032771,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 628.6791693369547,
-          "StandardError": 0.4919781530173134,
+          "Mean": 633.9532931645712,
+          "StandardError": 1.3926092707513444,
           "Level": 12,
-          "Margin": 15.546044444701831,
-          "Lower": 613.1331248922529,
-          "Upper": 644.2252137816565
+          "Margin": 44.005136172057476,
+          "Lower": 589.9481569925136,
+          "Upper": 677.9584293366287
         }
       },
       "allocated_bytes": 312
@@ -1966,25 +1954,25 @@
       "operation": "Serialize",
       "scenario": "LargePoco",
       "method": "StjSourceGen_FastPath",
-      "job": "JsonSerializeBenchmark<LargePoco>.Serialize_StjSourceGen_FastPath: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonSerializeBenchmark\u003CLargePoco\u003E.Serialize_StjSourceGen_FastPath: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          501.77903938293457,
-          501.31841564178467,
-          501.47370529174805
+          501.0397434234619,
+          500.7636938095093,
+          505.1167402267456
         ],
-        "Mean": 501.5237201054891,
-        "StandardError": 0.13530172322491793,
-        "StandardDeviation": 0.2343494589771798,
+        "Mean": 502.3067258199056,
+        "StandardError": 1.4072652643013146,
+        "StandardDeviation": 2.4374549374967214,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 501.5237201054891,
-          "StandardError": 0.13530172322491793,
+          "Mean": 502.3067258199056,
+          "StandardError": 1.4072652643013146,
           "Level": 12,
-          "Margin": 4.275406519169761,
-          "Lower": 497.24831358631934,
-          "Upper": 505.7991266246588
+          "Margin": 44.4682517102409,
+          "Lower": 457.8384741096647,
+          "Upper": 546.7749775301464
         }
       },
       "allocated_bytes": 0
@@ -1993,25 +1981,25 @@
       "operation": "Serialize",
       "scenario": "LargePoco",
       "method": "PolyTypeReflection",
-      "job": "JsonSerializeBenchmark<LargePoco>.Serialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonSerializeBenchmark\u003CLargePoco\u003E.Serialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          562.5565853118896,
-          570.8972606658936,
-          564.9687051773071
+          581.7367238998413,
+          575.0288963317871,
+          574.4380559921265
         ],
-        "Mean": 566.1408503850301,
-        "StandardError": 2.478047593786488,
-        "StandardDeviation": 4.292104336012,
+        "Mean": 577.067892074585,
+        "StandardError": 2.3406385194455996,
+        "StandardDeviation": 4.054104837832572,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 566.1408503850301,
-          "StandardError": 2.478047593786488,
+          "Mean": 577.067892074585,
+          "StandardError": 2.3406385194455996,
           "Level": 12,
-          "Margin": 78.30396084221135,
-          "Lower": 487.83688954281877,
-          "Upper": 644.4448112272415
+          "Margin": 73.96196402038578,
+          "Lower": 503.1059280541992,
+          "Upper": 651.0298560949707
         }
       },
       "allocated_bytes": 0
@@ -2020,441 +2008,363 @@
       "operation": "Serialize",
       "scenario": "LargePoco",
       "method": "PolyTypeSourceGen",
-      "job": "JsonSerializeBenchmark<LargePoco>.Serialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonSerializeBenchmark\u003CLargePoco\u003E.Serialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          549.3720378875732,
-          548.2724113464355,
-          548.5173072814941
+          571.0084838867188,
+          574.0001993179321,
+          573.9167137145996
         ],
-        "Mean": 548.7205855051676,
-        "StandardError": 0.3333097456613512,
-        "StandardDeviation": 0.5773094141433204,
+        "Mean": 572.9751323064169,
+        "StandardError": 0.9836195007075761,
+        "StandardDeviation": 1.703678950541053,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 548.7205855051676,
-          "StandardError": 0.3333097456613512,
+          "Mean": 572.9751323064169,
+          "StandardError": 0.9836195007075761,
           "Level": 12,
-          "Margin": 10.532272801392624,
-          "Lower": 538.188312703775,
-          "Upper": 559.2528583065603
+          "Margin": 31.081446159535616,
+          "Lower": 541.8936861468812,
+          "Upper": 604.0565784659525
         }
       },
       "allocated_bytes": 0
     },
     {
       "operation": "Serialize",
-      "scenario": "List<Int32>",
+      "scenario": "List\u003CInt32\u003E",
       "method": "StjReflection",
-      "job": "JsonSerializeBenchmark<List<Int32>>.Serialize_StjReflection: DefaultJob",
+      "job": "JsonSerializeBenchmark\u003CList\u003CInt32\u003E\u003E.Serialize_StjReflection: DefaultJob",
       "statistics": {
-        "N": 14,
+        "N": 12,
         "OriginalValues": [
-          878.0161533355713,
-          875.2810564041138,
-          879.7460794448853,
-          878.934344291687,
-          877.8541479110718,
-          876.3580722808838,
-          878.6210613250732,
-          875.7521305084229,
-          875.4913806915283,
-          878.7328395843506,
-          878.507773399353,
-          878.1470861434937,
-          877.5340719223022,
-          876.4533996582031
+          879.0312204360962,
+          887.9075841903687,
+          880.0114793777466,
+          882.7149868011475,
+          880.9572458267212,
+          884.3641681671143,
+          892.8153123855591,
+          914.2385721206665,
+          877.8084917068481,
+          880.1422119140625,
+          877.8050346374512,
+          878.2548904418945
         ],
-        "Mean": 877.5306854929242,
-        "StandardError": 0.37873205704038304,
-        "StandardDeviation": 1.417085598833239,
+        "Mean": 884.6709331671397,
+        "StandardError": 2.9875865091573983,
+        "StandardDeviation": 10.34930325173591,
         "ConfidenceInterval": {
-          "N": 14,
-          "Mean": 877.5306854929242,
-          "StandardError": 0.37873205704038304,
+          "N": 12,
+          "Mean": 884.6709331671397,
+          "StandardError": 2.9875865091573983,
           "Level": 12,
-          "Margin": 1.5985642821469714,
-          "Lower": 875.9321212107773,
-          "Upper": 879.1292497750712
+          "Margin": 13.255859609070022,
+          "Lower": 871.4150735580696,
+          "Upper": 897.9267927762097
         }
       },
       "allocated_bytes": 0
     },
     {
       "operation": "Serialize",
-      "scenario": "List<Int32>",
+      "scenario": "List\u003CInt32\u003E",
       "method": "StjSourceGen",
-      "job": "JsonSerializeBenchmark<List<Int32>>.Serialize_StjSourceGen: DefaultJob",
+      "job": "JsonSerializeBenchmark\u003CList\u003CInt32\u003E\u003E.Serialize_StjSourceGen: DefaultJob",
       "statistics": {
-        "N": 13,
+        "N": 14,
         "OriginalValues": [
-          863.4148044586182,
-          864.7575378417969,
-          865.1614189147949,
-          864.0530910491943,
-          864.8232221603394,
-          864.2321825027466,
-          864.4021348953247,
-          863.8121681213379,
-          863.9922542572021,
-          863.599817276001,
-          863.2278833389282,
-          865.4091758728027,
-          866.3967447280884
+          871.2467346191406,
+          874.913215637207,
+          870.6789808273315,
+          869.7520093917847,
+          868.1863946914673,
+          867.9529829025269,
+          866.8815689086914,
+          867.329517364502,
+          868.1930303573608,
+          865.8880796432495,
+          865.962028503418,
+          867.1723203659058,
+          866.4381103515625,
+          866.0434875488281
         ],
-        "Mean": 864.4063411859365,
-        "StandardError": 0.2472501055789657,
-        "StandardDeviation": 0.8914729335288458,
+        "Mean": 868.3313186509268,
+        "StandardError": 0.6809180182196656,
+        "StandardDeviation": 2.547761932659085,
         "ConfidenceInterval": {
-          "N": 13,
-          "Mean": 864.4063411859365,
-          "StandardError": 0.2472501055789657,
+          "N": 14,
+          "Mean": 868.3313186509268,
+          "StandardError": 0.6809180182196656,
           "Level": 12,
-          "Margin": 1.067574350451984,
-          "Lower": 863.3387668354845,
-          "Upper": 865.4739155363885
+          "Margin": 2.874040374354146,
+          "Lower": 865.4572782765727,
+          "Upper": 871.205359025281
         }
       },
       "allocated_bytes": 0
     },
     {
       "operation": "Serialize",
-      "scenario": "List<Int32>",
+      "scenario": "List\u003CInt32\u003E",
       "method": "StjSourceGen_FastPath",
-      "job": "JsonSerializeBenchmark<List<Int32>>.Serialize_StjSourceGen_FastPath: DefaultJob",
-      "statistics": {
-        "N": 14,
-        "OriginalValues": [
-          1117.556411743164,
-          1118.0448532104492,
-          1115.7552394866943,
-          1116.9997863769531,
-          1117.061773300171,
-          1117.7202072143555,
-          1118.7353134155273,
-          1116.408109664917,
-          1119.218427658081,
-          1115.264892578125,
-          1115.0695495605469,
-          1112.6006450653076,
-          1112.6267910003662,
-          1114.4870128631592
-        ],
-        "Mean": 1116.2535009384155,
-        "StandardError": 0.5521501101381816,
-        "StandardDeviation": 2.0659565382065725,
-        "ConfidenceInterval": {
-          "N": 14,
-          "Mean": 1116.2535009384155,
-          "StandardError": 0.5521501101381816,
-          "Level": 12,
-          "Margin": 2.330532702586355,
-          "Lower": 1113.922968235829,
-          "Upper": 1118.584033641002
-        }
-      },
-      "allocated_bytes": 0
-    },
-    {
-      "operation": "Serialize",
-      "scenario": "List<Int32>",
-      "method": "PolyTypeReflection",
-      "job": "JsonSerializeBenchmark<List<Int32>>.Serialize_PolyTypeReflection: DefaultJob",
-      "statistics": {
-        "N": 14,
-        "OriginalValues": [
-          921.5943422317505,
-          919.7870893478394,
-          920.2800598144531,
-          921.9359159469604,
-          920.1085567474365,
-          922.2655296325684,
-          921.0006399154663,
-          920.4169902801514,
-          921.3018417358398,
-          919.1122055053711,
-          923.6163692474365,
-          921.9997720718384,
-          921.1283531188965,
-          923.0432510375977
-        ],
-        "Mean": 921.2564940452576,
-        "StandardError": 0.3374508010516272,
-        "StandardDeviation": 1.2626252824276047,
-        "ConfidenceInterval": {
-          "N": 14,
-          "Mean": 921.2564940452576,
-          "StandardError": 0.3374508010516272,
-          "Level": 12,
-          "Margin": 1.4243230471654964,
-          "Lower": 919.8321709980921,
-          "Upper": 922.680817092423
-        }
-      },
-      "allocated_bytes": 0
-    },
-    {
-      "operation": "Serialize",
-      "scenario": "List<Int32>",
-      "method": "PolyTypeSourceGen",
-      "job": "JsonSerializeBenchmark<List<Int32>>.Serialize_PolyTypeSourceGen: DefaultJob",
-      "statistics": {
-        "N": 14,
-        "OriginalValues": [
-          923.2780141830444,
-          923.3883619308472,
-          924.7629251480103,
-          922.9437112808228,
-          921.9534006118774,
-          921.6591119766235,
-          918.95250415802,
-          920.9266510009766,
-          922.3959054946899,
-          926.6590671539307,
-          922.1834735870361,
-          921.7431154251099,
-          922.4088983535767,
-          925.4279136657715
-        ],
-        "Mean": 922.7630752835955,
-        "StandardError": 0.5155388531588285,
-        "StandardDeviation": 1.9289697580906968,
-        "ConfidenceInterval": {
-          "N": 14,
-          "Mean": 922.7630752835955,
-          "StandardError": 0.5155388531588285,
-          "Level": 12,
-          "Margin": 2.176002747585853,
-          "Lower": 920.5870725360097,
-          "Upper": 924.9390780311813
-        }
-      },
-      "allocated_bytes": 0
-    },
-    {
-      "operation": "Serialize",
-      "scenario": "MyPoco",
-      "method": "StjReflection",
-      "job": "JsonSerializeBenchmark<MyPoco>.Serialize_StjReflection: DefaultJob",
-      "statistics": {
-        "N": 19,
-        "OriginalValues": [
-          144.93696904182434,
-          144.78315925598145,
-          149.03097343444824,
-          151.45457792282104,
-          148.72107911109924,
-          144.73004150390625,
-          145.02246165275574,
-          151.37313795089722,
-          154.23566102981567,
-          148.31309509277344,
-          141.51325821876526,
-          148.23318529129028,
-          145.80474305152893,
-          143.70362973213196,
-          143.7581479549408,
-          146.34003233909607,
-          146.19155716896057,
-          146.36100339889526,
-          144.29566264152527
-        ],
-        "Mean": 146.77907241018195,
-        "StandardError": 0.7268459666116242,
-        "StandardDeviation": 3.1682481159802087,
-        "ConfidenceInterval": {
-          "N": 19,
-          "Mean": 146.77907241018195,
-          "StandardError": 0.7268459666116242,
-          "Level": 12,
-          "Margin": 2.850432449708679,
-          "Lower": 143.92863996047328,
-          "Upper": 149.62950485989063
-        }
-      },
-      "allocated_bytes": 312
-    },
-    {
-      "operation": "Serialize",
-      "scenario": "MyPoco",
-      "method": "StjSourceGen",
-      "job": "JsonSerializeBenchmark<MyPoco>.Serialize_StjSourceGen: DefaultJob",
-      "statistics": {
-        "N": 83,
-        "OriginalValues": [
-          200.5978226661682,
-          186.7427031993866,
-          181.31165719032288,
-          175.2034227848053,
-          190.47031784057617,
-          173.17249393463135,
-          177.16791224479675,
-          168.23851084709167,
-          170.50886154174805,
-          225.02228617668152,
-          175.582617521286,
-          183.5128664970398,
-          190.07310271263123,
-          219.901104927063,
-          225.94251227378845,
-          224.68316555023193,
-          223.31901383399963,
-          202.14268565177917,
-          209.9025845527649,
-          201.08747482299805,
-          196.93280267715454,
-          201.03926467895508,
-          203.2138705253601,
-          189.2695426940918,
-          180.58282136917114,
-          190.2576186656952,
-          184.76131558418274,
-          182.37275886535645,
-          186.21689081192017,
-          176.95489525794983,
-          193.83475184440613,
-          180.8342535495758,
-          186.31979823112488,
-          188.8150670528412,
-          184.38437581062317,
-          184.41688013076782,
-          180.6363561153412,
-          183.80111455917358,
-          182.6012830734253,
-          179.5144875049591,
-          182.91231989860535,
-          181.54488015174866,
-          169.47860527038574,
-          169.94017362594604,
-          174.9449770450592,
-          172.97598719596863,
-          173.16495370864868,
-          181.46722507476807,
-          173.15589380264282,
-          178.4080364704132,
-          175.68615078926086,
-          170.98383116722107,
-          186.4460804462433,
-          171.82292532920837,
-          180.02877616882324,
-          179.42329239845276,
-          177.06779646873474,
-          171.58377170562744,
-          168.90329122543335,
-          177.19518160820007,
-          172.06479120254517,
-          183.30778670310974,
-          180.2965304851532,
-          183.34507942199707,
-          177.3732204437256,
-          169.80055975914001,
-          162.71933913230896,
-          167.30213165283203,
-          158.646653175354,
-          164.3406946659088,
-          163.36766862869263,
-          166.49281978607178,
-          166.76340508460999,
-          164.48902082443237,
-          164.0136640071869,
-          164.01833295822144,
-          162.3719334602356,
-          209.39522981643677,
-          171.29528522491455,
-          166.17124271392822,
-          165.12268781661987,
-          162.1166169643402,
-          165.0490264892578
-        ],
-        "Mean": 181.5462787438588,
-        "StandardError": 1.7110079949250994,
-        "StandardDeviation": 15.588024691149984,
-        "ConfidenceInterval": {
-          "N": 83,
-          "Mean": 181.5462787438588,
-          "StandardError": 1.7110079949250994,
-          "Level": 12,
-          "Margin": 5.839955543759877,
-          "Lower": 175.70632320009892,
-          "Upper": 187.3862342876187
-        }
-      },
-      "allocated_bytes": 312
-    },
-    {
-      "operation": "Serialize",
-      "scenario": "MyPoco",
-      "method": "StjSourceGen_FastPath",
-      "job": "JsonSerializeBenchmark<MyPoco>.Serialize_StjSourceGen_FastPath: DefaultJob",
-      "statistics": {
-        "N": 14,
-        "OriginalValues": [
-          68.81578266620636,
-          68.90499091148376,
-          69.37215220928192,
-          69.21114027500153,
-          69.2257285118103,
-          69.1540390253067,
-          69.2557692527771,
-          68.93950700759888,
-          68.7704930305481,
-          68.98903846740723,
-          69.06211376190186,
-          69.11421811580658,
-          68.34841275215149,
-          69.62913775444031
-        ],
-        "Mean": 69.05660883869443,
-        "StandardError": 0.08170614861503192,
-        "StandardDeviation": 0.30571641451028364,
-        "ConfidenceInterval": {
-          "N": 14,
-          "Mean": 69.05660883869443,
-          "StandardError": 0.08170614861503192,
-          "Level": 12,
-          "Margin": 0.34486790431330044,
-          "Lower": 68.71174093438113,
-          "Upper": 69.40147674300773
-        }
-      },
-      "allocated_bytes": 0
-    },
-    {
-      "operation": "Serialize",
-      "scenario": "MyPoco",
-      "method": "PolyTypeReflection",
-      "job": "JsonSerializeBenchmark<MyPoco>.Serialize_PolyTypeReflection: DefaultJob",
+      "job": "JsonSerializeBenchmark\u003CList\u003CInt32\u003E\u003E.Serialize_StjSourceGen_FastPath: DefaultJob",
       "statistics": {
         "N": 15,
         "OriginalValues": [
-          95.10763490200043,
-          94.77628767490387,
-          94.58478283882141,
-          94.60228180885315,
-          94.33865547180176,
-          95.42569017410278,
-          96.03365767002106,
-          97.20537567138672,
-          96.30153572559357,
-          97.15665876865387,
-          95.59550392627716,
-          97.06391394138336,
-          95.03074491024017,
-          97.2092102766037,
-          96.37833142280579
+          990.6628131866455,
+          1001.3501644134521,
+          996.806224822998,
+          995.5073986053467,
+          994.3424072265625,
+          998.8764114379883,
+          1003.7024021148682,
+          991.736888885498,
+          991.106351852417,
+          990.9073505401611,
+          1010.6987171173096,
+          1010.7746925354004,
+          991.245189666748,
+          992.6689453125,
+          994.5707321166992
         ],
-        "Mean": 95.78735101222992,
-        "StandardError": 0.27066938891511266,
-        "StandardDeviation": 1.0482980355963698,
+        "Mean": 996.9971126556396,
+        "StandardError": 1.7614727224806996,
+        "StandardDeviation": 6.822154518966389,
         "ConfidenceInterval": {
           "N": 15,
-          "Mean": 95.78735101222992,
-          "StandardError": 0.27066938891511266,
+          "Mean": 996.9971126556396,
+          "StandardError": 1.7614727224806996,
           "Level": 12,
-          "Margin": 1.1206941840784217,
-          "Lower": 94.6666568281515,
-          "Upper": 96.90804519630834
+          "Margin": 7.293296975359162,
+          "Lower": 989.7038156802805,
+          "Upper": 1004.2904096309987
+        }
+      },
+      "allocated_bytes": 0
+    },
+    {
+      "operation": "Serialize",
+      "scenario": "List\u003CInt32\u003E",
+      "method": "PolyTypeReflection",
+      "job": "JsonSerializeBenchmark\u003CList\u003CInt32\u003E\u003E.Serialize_PolyTypeReflection: DefaultJob",
+      "statistics": {
+        "N": 13,
+        "OriginalValues": [
+          918.0885152816772,
+          919.5618629455566,
+          918.4390306472778,
+          918.9821481704712,
+          919.6595754623413,
+          919.408281326294,
+          919.2302227020264,
+          918.7701539993286,
+          919.5408029556274,
+          919.2839460372925,
+          919.1528959274292,
+          918.9050989151001,
+          918.5995264053345
+        ],
+        "Mean": 919.0478508289044,
+        "StandardError": 0.13168421624450852,
+        "StandardDeviation": 0.47479419383886345,
+        "ConfidenceInterval": {
+          "N": 13,
+          "Mean": 919.0478508289044,
+          "StandardError": 0.13168421624450852,
+          "Level": 12,
+          "Margin": 0.5685849609358854,
+          "Lower": 918.4792658679685,
+          "Upper": 919.6164357898404
+        }
+      },
+      "allocated_bytes": 0
+    },
+    {
+      "operation": "Serialize",
+      "scenario": "List\u003CInt32\u003E",
+      "method": "PolyTypeSourceGen",
+      "job": "JsonSerializeBenchmark\u003CList\u003CInt32\u003E\u003E.Serialize_PolyTypeSourceGen: DefaultJob",
+      "statistics": {
+        "N": 13,
+        "OriginalValues": [
+          920.0770854949951,
+          919.1205501556396,
+          919.610182762146,
+          919.4749593734741,
+          919.3741474151611,
+          919.4290246963501,
+          919.2537469863892,
+          918.98814868927,
+          919.2800121307373,
+          919.4854497909546,
+          918.962161064148,
+          918.4643831253052,
+          919.2633628845215
+        ],
+        "Mean": 919.2910165053147,
+        "StandardError": 0.10536563380691107,
+        "StandardDeviation": 0.3799011953625798,
+        "ConfidenceInterval": {
+          "N": 13,
+          "Mean": 919.2910165053147,
+          "StandardError": 0.10536563380691107,
+          "Level": 12,
+          "Margin": 0.45494681512056817,
+          "Lower": 918.8360696901941,
+          "Upper": 919.7459633204353
+        }
+      },
+      "allocated_bytes": 0
+    },
+    {
+      "operation": "Serialize",
+      "scenario": "MyPoco",
+      "method": "StjReflection",
+      "job": "JsonSerializeBenchmark\u003CMyPoco\u003E.Serialize_StjReflection: DefaultJob",
+      "statistics": {
+        "N": 13,
+        "OriginalValues": [
+          141.83677220344543,
+          141.3928668498993,
+          138.54673504829407,
+          140.55770635604858,
+          140.19702863693237,
+          140.69780707359314,
+          140.65050077438354,
+          139.82333731651306,
+          141.14309358596802,
+          142.79818534851074,
+          141.4393982887268,
+          141.4285500049591,
+          139.77645826339722
+        ],
+        "Mean": 140.79141844235934,
+        "StandardError": 0.29821668933685486,
+        "StandardDeviation": 1.0752355646031453,
+        "ConfidenceInterval": {
+          "N": 13,
+          "Mean": 140.79141844235934,
+          "StandardError": 0.29821668933685486,
+          "Level": 12,
+          "Margin": 1.2876374214977016,
+          "Lower": 139.50378102086165,
+          "Upper": 142.07905586385704
+        }
+      },
+      "allocated_bytes": 312
+    },
+    {
+      "operation": "Serialize",
+      "scenario": "MyPoco",
+      "method": "StjSourceGen",
+      "job": "JsonSerializeBenchmark\u003CMyPoco\u003E.Serialize_StjSourceGen: DefaultJob",
+      "statistics": {
+        "N": 15,
+        "OriginalValues": [
+          144.61146783828735,
+          145.38123226165771,
+          144.6532211303711,
+          143.23737215995789,
+          144.58060264587402,
+          145.1634964942932,
+          141.70316863059998,
+          145.95121145248413,
+          147.02311158180237,
+          143.2790756225586,
+          143.67907238006592,
+          142.08265137672424,
+          145.61800169944763,
+          145.75656270980835,
+          145.54738020896912
+        ],
+        "Mean": 144.5511752128601,
+        "StandardError": 0.3844758352134223,
+        "StandardDeviation": 1.4890685068007719,
+        "ConfidenceInterval": {
+          "N": 15,
+          "Mean": 144.5511752128601,
+          "StandardError": 0.3844758352134223,
+          "Level": 12,
+          "Margin": 1.5919045525222233,
+          "Lower": 142.95927066033786,
+          "Upper": 146.14307976538234
+        }
+      },
+      "allocated_bytes": 312
+    },
+    {
+      "operation": "Serialize",
+      "scenario": "MyPoco",
+      "method": "StjSourceGen_FastPath",
+      "job": "JsonSerializeBenchmark\u003CMyPoco\u003E.Serialize_StjSourceGen_FastPath: DefaultJob",
+      "statistics": {
+        "N": 14,
+        "OriginalValues": [
+          67.35154497623444,
+          67.53985095024109,
+          67.5657490491867,
+          67.88866722583771,
+          67.82476603984833,
+          67.42978096008301,
+          67.491814494133,
+          67.4127985239029,
+          67.6599988937378,
+          67.2474205493927,
+          68.37357580661774,
+          68.4456924200058,
+          67.6751583814621,
+          67.4633036851883
+        ],
+        "Mean": 67.6692944254194,
+        "StandardError": 0.09592609471564258,
+        "StandardDeviation": 0.3589225808771608,
+        "ConfidenceInterval": {
+          "N": 14,
+          "Mean": 67.6692944254194,
+          "StandardError": 0.09592609471564258,
+          "Level": 12,
+          "Margin": 0.4048879039619373,
+          "Lower": 67.26440652145746,
+          "Upper": 68.07418232938133
+        }
+      },
+      "allocated_bytes": 0
+    },
+    {
+      "operation": "Serialize",
+      "scenario": "MyPoco",
+      "method": "PolyTypeReflection",
+      "job": "JsonSerializeBenchmark\u003CMyPoco\u003E.Serialize_PolyTypeReflection: DefaultJob",
+      "statistics": {
+        "N": 13,
+        "OriginalValues": [
+          92.36864244937897,
+          93.47898268699646,
+          93.27325224876404,
+          92.28465449810028,
+          92.17768406867981,
+          91.59067273139954,
+          92.0139948129654,
+          91.54790139198303,
+          91.6351627111435,
+          93.6347097158432,
+          91.65190660953522,
+          91.69713163375854,
+          91.59992134571075
+        ],
+        "Mean": 92.22727822340451,
+        "StandardError": 0.21085934019763083,
+        "StandardDeviation": 0.7602641629930631,
+        "ConfidenceInterval": {
+          "N": 13,
+          "Mean": 92.22727822340451,
+          "StandardError": 0.21085934019763083,
+          "Level": 12,
+          "Margin": 0.9104466209270254,
+          "Lower": 91.31683160247749,
+          "Upper": 93.13772484433153
         }
       },
       "allocated_bytes": 0
@@ -2463,35 +2373,37 @@
       "operation": "Serialize",
       "scenario": "MyPoco",
       "method": "PolyTypeSourceGen",
-      "job": "JsonSerializeBenchmark<MyPoco>.Serialize_PolyTypeSourceGen: DefaultJob",
+      "job": "JsonSerializeBenchmark\u003CMyPoco\u003E.Serialize_PolyTypeSourceGen: DefaultJob",
       "statistics": {
-        "N": 13,
+        "N": 15,
         "OriginalValues": [
-          90.71635711193085,
-          89.66170752048492,
-          89.64288234710693,
-          90.1605486869812,
-          89.50448536872864,
-          89.9188369512558,
-          89.4546309709549,
-          89.1816269159317,
-          89.2117669582367,
-          89.3817892074585,
-          89.20643222332001,
-          89.39970028400421,
-          89.39852821826935
+          89.32691311836243,
+          88.91290426254272,
+          88.28865480422974,
+          88.86574697494507,
+          88.79425632953644,
+          88.70432269573212,
+          89.30592238903046,
+          89.42453563213348,
+          89.44821357727051,
+          89.46444582939148,
+          88.9633297920227,
+          89.30709958076477,
+          89.61036312580109,
+          89.73174798488617,
+          89.6553943157196
         ],
-        "Mean": 89.60302252035875,
-        "StandardError": 0.12160495929136855,
-        "StandardDeviation": 0.4384529160757404,
+        "Mean": 89.18692336082458,
+        "StandardError": 0.10618410058090998,
+        "StandardDeviation": 0.41124925318187766,
         "ConfidenceInterval": {
-          "N": 13,
-          "Mean": 89.60302252035875,
-          "StandardError": 0.12160495929136855,
+          "N": 15,
+          "Mean": 89.18692336082458,
+          "StandardError": 0.10618410058090998,
           "Level": 12,
-          "Margin": 0.5250648331301141,
-          "Lower": 89.07795768722863,
-          "Upper": 90.12808735348887
+          "Margin": 0.43965039578208354,
+          "Lower": 88.7472729650425,
+          "Upper": 89.62657375660666
         }
       },
       "allocated_bytes": 0
@@ -2500,25 +2412,25 @@
       "operation": "Serialize",
       "scenario": "String",
       "method": "StjReflection",
-      "job": "JsonSerializeBenchmark<String>.Serialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonSerializeBenchmark\u003CString\u003E.Serialize_StjReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          17.04888540506363,
-          17.04765233397484,
-          17.408293962478638
+          17.67563945055008,
+          17.43629825115204,
+          17.541927605867386
         ],
-        "Mean": 17.168277233839035,
-        "StandardError": 0.12000889222084059,
-        "StandardDeviation": 0.2078614986865533,
+        "Mean": 17.551288435856502,
+        "StandardError": 0.06925020165045737,
+        "StandardDeviation": 0.11994486769298227,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 17.168277233839035,
-          "StandardError": 0.12000889222084059,
+          "Mean": 17.551288435856502,
+          "StandardError": 0.06925020165045737,
           "Level": 12,
-          "Margin": 3.792167519599116,
-          "Lower": 13.37610971423992,
-          "Upper": 20.96044475343815
+          "Margin": 2.188240892527373,
+          "Lower": 15.36304754332913,
+          "Upper": 19.739529328383874
         }
       },
       "allocated_bytes": 0
@@ -2527,25 +2439,25 @@
       "operation": "Serialize",
       "scenario": "String",
       "method": "StjSourceGen",
-      "job": "JsonSerializeBenchmark<String>.Serialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonSerializeBenchmark\u003CString\u003E.Serialize_StjSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          17.424549907445908,
-          17.431966960430145,
-          17.44496202468872
+          17.25412905216217,
+          17.435763031244278,
+          17.288011819124222
         ],
-        "Mean": 17.43382629752159,
-        "StandardError": 0.00596535786571957,
-        "StandardDeviation": 0.010332302908756934,
+        "Mean": 17.325967967510223,
+        "StandardError": 0.055762076388662214,
+        "StandardDeviation": 0.0965827494406998,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 17.43382629752159,
-          "StandardError": 0.00596535786571957,
+          "Mean": 17.325967967510223,
+          "StandardError": 0.055762076388662214,
           "Level": 12,
-          "Margin": 0.1884996680040882,
-          "Lower": 17.245326629517503,
-          "Upper": 17.62232596552568
+          "Margin": 1.7620288879707522,
+          "Lower": 15.563939079539471,
+          "Upper": 19.087996855480977
         }
       },
       "allocated_bytes": 0
@@ -2554,25 +2466,25 @@
       "operation": "Serialize",
       "scenario": "String",
       "method": "StjSourceGen_FastPath",
-      "job": "JsonSerializeBenchmark<String>.Serialize_StjSourceGen_FastPath: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonSerializeBenchmark\u003CString\u003E.Serialize_StjSourceGen_FastPath: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          17.06438884139061,
-          17.10219058394432,
-          17.06249514222145
+          17.279046267271042,
+          17.298142105340958,
+          17.289693146944046
         ],
-        "Mean": 17.07635818918546,
-        "StandardError": 0.012927760677047052,
-        "StandardDeviation": 0.02239153832073652,
+        "Mean": 17.28896050651868,
+        "StandardError": 0.005524651705244096,
+        "StandardDeviation": 0.00956897744760481,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 17.07635818918546,
-          "StandardError": 0.012927760677047052,
+          "Mean": 17.28896050651868,
+          "StandardError": 0.005524651705244096,
           "Level": 12,
-          "Margin": 0.40850501353211405,
-          "Lower": 16.667853175653345,
-          "Upper": 17.484863202717573
+          "Margin": 0.17457377004340274,
+          "Lower": 17.11438673647528,
+          "Upper": 17.463534276562083
         }
       },
       "allocated_bytes": 0
@@ -2581,25 +2493,25 @@
       "operation": "Serialize",
       "scenario": "String",
       "method": "PolyTypeReflection",
-      "job": "JsonSerializeBenchmark<String>.Serialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonSerializeBenchmark\u003CString\u003E.Serialize_PolyTypeReflection: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          11.827418580651283,
-          11.862987652420998,
-          11.930117383599281
+          12.054836377501488,
+          12.187448024749756,
+          12.19891881942749
         ],
-        "Mean": 11.873507872223854,
-        "StandardError": 0.030109618066122123,
-        "StandardDeviation": 0.05215138828701728,
+        "Mean": 12.147067740559578,
+        "StandardError": 0.04623441370270858,
+        "StandardDeviation": 0.08008035359124996,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 11.873507872223854,
-          "StandardError": 0.030109618066122123,
+          "Mean": 12.147067740559578,
+          "StandardError": 0.04623441370270858,
           "Level": 12,
-          "Margin": 0.9514354606970914,
-          "Lower": 10.922072411526763,
-          "Upper": 12.824943332920945
+          "Margin": 1.4609637559896784,
+          "Lower": 10.6861039845699,
+          "Upper": 13.608031496549255
         }
       },
       "allocated_bytes": 0
@@ -2608,25 +2520,25 @@
       "operation": "Serialize",
       "scenario": "String",
       "method": "PolyTypeSourceGen",
-      "job": "JsonSerializeBenchmark<String>.Serialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
+      "job": "JsonSerializeBenchmark\u003CString\u003E.Serialize_PolyTypeSourceGen: ShortRun(IterationCount=3, LaunchCount=1, WarmupCount=3)",
       "statistics": {
         "N": 3,
         "OriginalValues": [
-          12.067536517977715,
-          12.016567096114159,
-          12.006855264306068
+          12.135199591517448,
+          12.095411613583565,
+          12.024932846426964
         ],
-        "Mean": 12.030319626132647,
-        "StandardError": 0.01881845457897414,
-        "StandardDeviation": 0.032594519450710395,
+        "Mean": 12.085181350509325,
+        "StandardError": 0.03223963647509374,
+        "StandardDeviation": 0.055840688392413136,
         "ConfidenceInterval": {
           "N": 3,
-          "Mean": 12.030319626132647,
-          "StandardError": 0.01881845457897414,
+          "Mean": 12.085181350509325,
+          "StandardError": 0.03223963647509374,
           "Level": 12,
-          "Margin": 0.5946453708789775,
-          "Lower": 11.43567425525367,
-          "Upper": 12.624964997011624
+          "Margin": 1.0187420283786455,
+          "Lower": 11.06643932213068,
+          "Upper": 13.10392337888797
         }
       },
       "allocated_bytes": 0

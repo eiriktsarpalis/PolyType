@@ -54,7 +54,7 @@ A second workload contains **4,096 distinct large POCOs**, totaling **2,763,729 
 
 ![Megabyte-scale deserialization: normalized mean time and allocations for typed CITM event catalogs and an array of large objects.](../images/performance/deserialize-megabyte.svg)
 
-For the CITM batch, PolyType serialization takes **1.72-1.79 ms**, compared with **3.12-3.18 ms** for STJ metadata and **1.50 ms** for STJ's fast path. Deserialization takes **5.70-5.74 ms** with PolyType versus **about 7.70 ms** with STJ, with approximately **51% fewer allocated bytes** (2,932,144 versus 6,006,912 bytes per operation).
+For the CITM batch, PolyType serialization takes **1.74-1.75 ms**, compared with **3.20-3.27 ms** for STJ metadata and **1.53 ms** for STJ's fast path. Deserialization takes **5.61-5.83 ms** with PolyType versus **7.73-7.75 ms** with STJ, with approximately **51% fewer allocated bytes** (2,932,144 versus 6,006,912 bytes per operation).
 
 ## Environment and reproduction
 
@@ -74,15 +74,21 @@ dotnet run --project tests/PolyType.Benchmarks -c Release -- \
   --filter '*JsonSerializeBenchmark<MyPoco>*' '*JsonSerializeBenchmark<Int32[]>*' '*JsonSerializeBenchmark<List*' \
            '*JsonSerializeBenchmark<Dictionary*' '*Json*Benchmark<CitmCatalog*' \
   --exporters json --artifacts artifacts/json-benchmarks
-python3 eng/plot-json-benchmarks.py artifacts/json-benchmarks/results --date 2026-10-05
+dotnet run --file eng/plot-json-benchmarks.cs -- artifacts/json-benchmarks/results --date 2026-10-05
 ```
 
-The second benchmark command uses the default job for the six selected suites and overwrites their reports in the same results directory. The plotter uses only Python's standard library and rejects incomplete or duplicate result sets. It writes eight SVG bar charts and a compact JSON export under `docs/images/performance`, and prints every case where a PolyType mean trails its matched STJ configuration or the fastest STJ mean. The printed comparisons include small, potentially noisy differences; they are investigation leads, not significance tests.
+The second benchmark command uses the default job for the six selected suites and overwrites their reports in the same results directory. The plotter is a single-file C# app with no external dependencies and rejects incomplete or duplicate result sets. It writes eight SVG bar charts and a compact JSON export under `docs/images/performance`, and prints every case where a PolyType mean trails its matched STJ configuration or the fastest STJ mean. The printed comparisons include small, potentially noisy differences; they are investigation leads, not significance tests.
 
 To regenerate the charts without running benchmarks:
 
 ```bash
-python3 eng/plot-json-benchmarks.py docs/images/performance/results.json
+dotnet run --file eng/plot-json-benchmarks.cs -- docs/images/performance/results.json
+```
+
+Run the plotter's single-file regression test app:
+
+```bash
+dotnet run --file eng/test-plot-json-benchmarks.cs
 ```
 
 For investigating a gap, omit `--job short` to use BenchmarkDotNet's longer default job and restrict `--filter` to the relevant generic benchmark type. For example:
