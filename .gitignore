@@ -379,3 +379,6 @@ artifacts/
 _site
 docs/api
 dotnet-install.sh
+
+# Local release notes draft
+/latest-release-notes.md
