@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <!-- Keep the test compiler aligned with global.json for preview union-pattern semantics. -->
-    <RoslynVersion>5.11.0-1.26425.128</RoslynVersion>
+    <RoslynVersion>5.11.0-1.26505.1</RoslynVersion>
     <RoslynVersionForAnalyzers>4.3.0</RoslynVersionForAnalyzers>
   </PropertyGroup>
   <ItemGroup>
