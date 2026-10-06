@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <!-- Keep the test compiler aligned with global.json for preview union-pattern semantics. -->
-    <RoslynVersion>5.11.0-1.26505.1</RoslynVersion>
+    <RoslynVersion>5.11.0-1.26425.128</RoslynVersion>
     <RoslynVersionForAnalyzers>4.3.0</RoslynVersionForAnalyzers>
   </PropertyGroup>
   <ItemGroup>
@@ -12,7 +12,7 @@
     <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
     <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
     <!-- Source Generator dependencies -->
-    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="$(RoslynVersion)" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="5.11.0-1.26505.1" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="$(RoslynVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(RoslynVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="$(RoslynVersion)" />
