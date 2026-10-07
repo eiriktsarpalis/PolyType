@@ -66,12 +66,12 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.Abstractions.IConstructorShape __CreateConstructor_SimpleRecord()
         {
-            return new global::PolyType.SourceGenModel.SourceGenConstructorShape<global::TestNamespace.SimpleRecord, global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool)>>
+            return new global::PolyType.SourceGenModel.SourceGenConstructorShape<global::TestNamespace.SimpleRecord, global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool)>>
             {
                 DeclaringType = (global::PolyType.Abstractions.IObjectTypeShape<global::TestNamespace.SimpleRecord>)SimpleRecord,
                 ParametersFactory = __CreateConstructorParameters_SimpleRecord,
-                ArgumentStateConstructor = static () => new(default!, count: 3, requiredArgumentsMask: __RequiredMembersMask_SimpleRecord),
-                ParameterizedConstructor = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool)> state) => new global::TestNamespace.SimpleRecord(state.Arguments.Item1, state.Arguments.Item2, state.Arguments.Item3),
+                ArgumentStateConstructor = static () => { (int, string, bool) arguments = default!; return global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool)>.Rent(in arguments, count: 3, requiredArgumentsMask: __RequiredMembersMask_SimpleRecord); },
+                ParameterizedConstructor = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool)> state) => new global::TestNamespace.SimpleRecord(state.Arguments.Item1, state.Arguments.Item2, state.Arguments.Item3),
                 MethodBaseFactory = __ConstructorInfo_SimpleRecord,
                 IsPublic = true,
             };
@@ -79,7 +79,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.Abstractions.IParameterShape[] __CreateConstructorParameters_SimpleRecord() => new global::PolyType.Abstractions.IParameterShape[]
         {
-            new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool)>, int>
+            new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool)>, int>
             {
                 Position = 0,
                 Name = "X",
@@ -88,12 +88,12 @@ namespace PolyType.SourceGenerator
                 IsRequired = true,
                 IsNonNullable = true,
                 IsPublic = true,
-                Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool)> state) => state.Arguments.Item1,
-                Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool)> state, int value) => { state.Arguments.Item1 = value; state.MarkArgumentSet(0); },
+                Getter = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool)> state) => state.Arguments.Item1,
+                Setter = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool)> state, int value) => { state.Arguments.Item1 = value; state.MarkArgumentSet(0); },
                 ReflectionInfoFactory = static () => __ConstructorInfo_SimpleRecord()?.GetParameters()[0],
             },
 
-            new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool)>, string>
+            new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool)>, string>
             {
                 Position = 1,
                 Name = "Y",
@@ -103,12 +103,12 @@ namespace PolyType.SourceGenerator
                 IsNonNullable = true,
                 IsPublic = true,
                 DefaultValue = default!,
-                Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool)> state) => state.Arguments.Item2,
-                Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool)> state, string value) => { state.Arguments.Item2 = value; state.MarkArgumentSet(1); },
+                Getter = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool)> state) => state.Arguments.Item2,
+                Setter = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool)> state, string value) => { state.Arguments.Item2 = value; state.MarkArgumentSet(1); },
                 ReflectionInfoFactory = static () => __ConstructorInfo_SimpleRecord()?.GetParameters()[1],
             },
 
-            new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool)>, bool>
+            new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool)>, bool>
             {
                 Position = 2,
                 Name = "Z",
@@ -117,8 +117,8 @@ namespace PolyType.SourceGenerator
                 IsRequired = true,
                 IsNonNullable = true,
                 IsPublic = true,
-                Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool)> state) => state.Arguments.Item3,
-                Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool)> state, bool value) => { state.Arguments.Item3 = value; state.MarkArgumentSet(2); },
+                Getter = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool)> state) => state.Arguments.Item3,
+                Setter = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool)> state, bool value) => { state.Arguments.Item3 = value; state.MarkArgumentSet(2); },
                 ReflectionInfoFactory = static () => __ConstructorInfo_SimpleRecord()?.GetParameters()[2],
             },
         };

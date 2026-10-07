@@ -26,7 +26,7 @@ namespace PolyType.SourceGenerator
                 ConstructionStrategy = global::PolyType.Abstractions.CollectionConstructionStrategy.Mutable,
                 DefaultConstructor = static (in global::PolyType.Abstractions.CollectionConstructionOptions<string> options) => new global::TestNamespace.DictionaryBase(),
                 OverwritingInserter = static (ref global::TestNamespace.DictionaryBase dict, string key, global::TestNamespace.DictionaryBase value) => { dict[key] = value; return true; },
-                DiscardingInserter = static (ref global::TestNamespace.DictionaryBase dict, string key, global::TestNamespace.DictionaryBase value) => { if (dict.ContainsKey(key)) return false; dict.Add(key, value); return true; },
+                DiscardingInserter = static (ref global::TestNamespace.DictionaryBase dict, string key, global::TestNamespace.DictionaryBase value) => dict.TryAdd(key, value),
                 ThrowingInserter = static (ref global::TestNamespace.DictionaryBase dict, string key, global::TestNamespace.DictionaryBase value) => { dict.Add(key, value); return true; },
                 AttributeFactory = __CreateAttributes_DictionaryBase__Underlying,
                 Provider = this,

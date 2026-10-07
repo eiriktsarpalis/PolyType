@@ -66,12 +66,12 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.Abstractions.IConstructorShape __CreateConstructor_SimplePoco()
         {
-            return new global::PolyType.SourceGenModel.SourceGenConstructorShape<global::TestNamespace.SimplePoco, global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool?)>>
+            return new global::PolyType.SourceGenModel.SourceGenConstructorShape<global::TestNamespace.SimplePoco, global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool?)>>
             {
                 DeclaringType = (global::PolyType.Abstractions.IObjectTypeShape<global::TestNamespace.SimplePoco>)SimplePoco,
                 ParametersFactory = __CreateConstructorParameters_SimplePoco,
-                ArgumentStateConstructor = static () => new((default, "default", default), count: 3, requiredArgumentsMask: __RequiredMembersMask_SimplePoco),
-                ParameterizedConstructor = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool?)> state) => { var obj = new global::TestNamespace.SimplePoco(state.Arguments.Item1, state.Arguments.Item2); if (state.IsArgumentSet(2)) obj.IsActive = state.Arguments.Item3!; return obj; },
+                ArgumentStateConstructor = static () => { (int, string, bool?) arguments = (default, "default", default); return global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool?)>.Rent(in arguments, count: 3, requiredArgumentsMask: __RequiredMembersMask_SimplePoco); },
+                ParameterizedConstructor = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool?)> state) => { var obj = new global::TestNamespace.SimplePoco(state.Arguments.Item1, state.Arguments.Item2); if (state.IsArgumentSet(2)) obj.IsActive = state.Arguments.Item3!; return obj; },
                 MethodBaseFactory = __ConstructorInfo_SimplePoco,
                 IsPublic = true,
             };
@@ -79,7 +79,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.Abstractions.IParameterShape[] __CreateConstructorParameters_SimplePoco() => new global::PolyType.Abstractions.IParameterShape[]
         {
-            new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool?)>, int>
+            new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool?)>, int>
             {
                 Position = 0,
                 Name = "Id",
@@ -88,12 +88,12 @@ namespace PolyType.SourceGenerator
                 IsRequired = true,
                 IsNonNullable = true,
                 IsPublic = true,
-                Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool?)> state) => state.Arguments.Item1,
-                Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool?)> state, int value) => { state.Arguments.Item1 = value; state.MarkArgumentSet(0); },
+                Getter = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool?)> state) => state.Arguments.Item1,
+                Setter = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool?)> state, int value) => { state.Arguments.Item1 = value; state.MarkArgumentSet(0); },
                 ReflectionInfoFactory = static () => __ConstructorInfo_SimplePoco()?.GetParameters()[0],
             },
 
-            new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool?)>, string>
+            new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool?)>, string>
             {
                 Position = 1,
                 Name = "Name",
@@ -103,20 +103,20 @@ namespace PolyType.SourceGenerator
                 IsPublic = true,
                 HasDefaultValue = true,
                 DefaultValue = "default",
-                Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool?)> state) => state.Arguments.Item2,
-                Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool?)> state, string value) => { state.Arguments.Item2 = value; state.MarkArgumentSet(1); },
+                Getter = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool?)> state) => state.Arguments.Item2,
+                Setter = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool?)> state, string value) => { state.Arguments.Item2 = value; state.MarkArgumentSet(1); },
                 ReflectionInfoFactory = static () => __ConstructorInfo_SimplePoco()?.GetParameters()[1],
             },
 
-            new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool?)>, bool?>
+            new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool?)>, bool?>
             {
                 Position = 2,
                 Name = "IsActive",
                 ParameterType = Nullable_Boolean,
                 Kind = global::PolyType.Abstractions.ParameterKind.MemberInitializer,
                 IsPublic = true,
-                Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool?)> state) => state.Arguments.Item3!,
-                Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(int, string, bool?)> state, bool? value) => { state.Arguments.Item3 = value!; state.MarkArgumentSet(2); },
+                Getter = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool?)> state) => state.Arguments.Item3!,
+                Setter = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool?)> state, bool? value) => { state.Arguments.Item3 = value!; state.MarkArgumentSet(2); },
                 ReflectionInfoFactory = static () => typeof(global::TestNamespace.SimplePoco).GetProperty("IsActive", __BindingFlags_Instance_All, null, typeof(bool?), global::System.Type.EmptyTypes, null),
             },
         };

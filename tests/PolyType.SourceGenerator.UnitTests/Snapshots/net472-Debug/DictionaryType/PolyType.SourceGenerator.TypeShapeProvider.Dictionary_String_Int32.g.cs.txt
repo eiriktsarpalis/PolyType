@@ -25,7 +25,7 @@ namespace PolyType.SourceGenerator
                 ConstructionStrategy = global::PolyType.Abstractions.CollectionConstructionStrategy.Mutable,
                 DefaultConstructor = static (in global::PolyType.Abstractions.CollectionConstructionOptions<string> options) => new global::System.Collections.Generic.Dictionary<string, int>(options.Capacity ?? 0, options.EqualityComparer!),
                 OverwritingInserter = static (ref global::System.Collections.Generic.Dictionary<string, int> dict, string key, int value) => { dict[key] = value; return true; },
-                DiscardingInserter = static (ref global::System.Collections.Generic.Dictionary<string, int> dict, string key, int value) => { if (dict.ContainsKey(key)) return false; dict.Add(key, value); return true; },
+                DiscardingInserter = static (ref global::System.Collections.Generic.Dictionary<string, int> dict, string key, int value) => dict.TryAdd(key, value),
                 ThrowingInserter = static (ref global::System.Collections.Generic.Dictionary<string, int> dict, string key, int value) => { dict.Add(key, value); return true; },
                 Provider = this,
             };
