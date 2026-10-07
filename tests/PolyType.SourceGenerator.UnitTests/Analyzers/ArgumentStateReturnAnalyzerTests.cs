@@ -150,4 +150,109 @@ public class ArgumentStateReturnAnalyzerTests
 
         await VerifyCS.VerifyAnalyzerAsync(source);
     }
+
+    [Fact]
+    public async Task DoesNotWarnForDynamicInvocation()
+    {
+        string source = /* lang=c#-test */ """
+            using PolyType.Abstractions;
+
+            class Usage
+            {
+                void Create<TState>(dynamic createObject, ref TState state)
+                    where TState : IArgumentState
+                    => createObject(ref state);
+            }
+            """;
+
+        await VerifyCS.VerifyAnalyzerAsync(source);
+    }
+
+    [Fact]
+    public async Task WarnsForConcreteArgumentStatePassedByParenthesizedReference()
+    {
+        string source = /* lang=c#-test */ """
+            using PolyType.Abstractions;
+
+            class State : IArgumentState
+            {
+                public int Count => 0;
+                public bool AreRequiredArgumentsSet => true;
+                public bool IsArgumentSet(int index) => true;
+                public void Return() { }
+            }
+
+            class Usage
+            {
+                object Create(Constructor<State, object> createObject, ref State state)
+                {
+                    State local = state;
+                    return createObject(ref ({|PT0033:local|}));
+                }
+            }
+            """;
+
+        await VerifyCS.VerifyAnalyzerAsync(source);
+    }
+
+    [Fact]
+    public async Task DoesNotWarnForAConstructorWithNonArgumentStateType()
+    {
+        string source = /* lang=c#-test */ """
+            using PolyType.Abstractions;
+
+            class Usage
+            {
+                object Create(Constructor<int[], object> createObject, ref int[] state)
+                    => createObject(ref state);
+            }
+            """;
+
+        await VerifyCS.VerifyAnalyzerAsync(source);
+    }
+
+    [Fact]
+    public async Task WarnsForArgumentStateFieldPassedByReference()
+    {
+        string source = /* lang=c#-test */ """
+            using PolyType.Abstractions;
+
+            class State : IArgumentState
+            {
+                public int Count => 0;
+                public bool AreRequiredArgumentsSet => true;
+                public bool IsArgumentSet(int index) => true;
+                public void Return() { }
+            }
+
+            class Usage
+            {
+                private State state = new();
+
+                object Create(Constructor<State, object> createObject)
+                    => createObject(ref {|PT0033:state|});
+            }
+            """;
+
+        await VerifyCS.VerifyAnalyzerAsync(source);
+    }
+
+    [Fact]
+    public async Task WarnsForArgumentStateInheritedThroughGenericConstraint()
+    {
+        string source = /* lang=c#-test */ """
+            using PolyType.Abstractions;
+
+            class Usage
+            {
+                object Create<TState, TBase>(Constructor<TState, object> createObject, ref TState state)
+                    where TState : TBase
+                    where TBase : IArgumentState
+                    => createObject(ref {|PT0033:state|});
+            }
+            """;
+
+        await VerifyCS.VerifyAnalyzerAsync(source);
+    }
+
 }

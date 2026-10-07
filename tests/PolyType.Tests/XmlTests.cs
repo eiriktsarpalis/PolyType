@@ -56,6 +56,14 @@ public abstract class XmlTests(ProviderUnderTest providerUnderTest)
         }
     }
 
+    [Fact]
+    public void MissingRequiredConstructorArgumentsAreRejected()
+    {
+        XmlConverter<SimpleRecord> converter = GetConverterUnderTest(TestCase.Create(new SimpleRecord(42)));
+        KeyNotFoundException exception = Assert.Throws<KeyNotFoundException>(() => converter.Deserialize("<value></value>"));
+        Assert.Equal("Missing required parameters: 'value'", exception.Message);
+    }
+
     public static IEnumerable<object?[]> GetValuesAndExpectedEncoding()
     {
         Witness p = new();
