@@ -31,6 +31,7 @@
     <PackageVersion Include="FSharp.Core" Version="10.1.401" />
     <!-- Test infrastructure -->
     <PackageVersion Include="xunit.v3.mtp-v2" Version="4.0.1" />
+    <PackageVersion Include="Microsoft.NETFramework.ReferenceAssemblies.net472" Version="1.0.3" />
     <PackageVersion Include="TUnit" Version="1.72.16" />
     <PackageVersion Include="TUnit.Assertions" Version="1.72.16" />
     <PackageVersion Include="TUnit.Engine" Version="1.72.16" />
