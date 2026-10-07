@@ -27,7 +27,7 @@ dotnet test                        # add --framework net10.0 for fast single-TFM
 | `make test-aot-size` | Publish the canonical AOT app and check its binary size against the committed per-RID baselines |
 | `make pack` | Create NuGet packages |
 | `make generate-docs` / `make serve-docs` | Build / serve the DocFX site (port 8080) |
-| `make release VERSION=x.y` | Bump version, tag, push, and create a GitHub release |
+| `make release [VERSION=x.y]` | Commit the version change, tag, push, and create a GitHub release using `version.json` or an explicit `VERSION` |
 
 Test conventions:
 

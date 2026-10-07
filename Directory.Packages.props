@@ -25,19 +25,19 @@
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="10.0.5" />
     <PackageVersion Include="System.Collections.Immutable" Version="10.0.5" />
     <PackageVersion Include="System.Formats.Cbor" Version="10.0.5" />
-    <PackageVersion Include="System.Text.Json" Version="10.0.5" />
+    <PackageVersion Include="System.Text.Json" Version="11.0.0-rc.1.26425.128" />
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
     <PackageVersion Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
     <PackageVersion Include="FSharp.Core" Version="10.1.401" />
     <!-- Test infrastructure -->
     <PackageVersion Include="xunit.v3.mtp-v2" Version="4.0.1" />
-    <PackageVersion Include="TUnit" Version="1.71.0" />
-    <PackageVersion Include="TUnit.Assertions" Version="1.71.0" />
-    <PackageVersion Include="TUnit.Engine" Version="1.71.0" />
-    <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.4.1" />
+    <PackageVersion Include="TUnit" Version="1.72.16" />
+    <PackageVersion Include="TUnit.Assertions" Version="1.72.16" />
+    <PackageVersion Include="TUnit.Engine" Version="1.72.16" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.5.0" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.2" />
-    <PackageVersion Include="Microsoft.Testing.Extensions.CrashDump" Version="2.4.1" />
-    <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="2.4.1" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CrashDump" Version="2.5.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="2.5.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="1.1.4" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.16.0-preview.2" />
     <PackageVersion Include="JsonSchema.Net" Version="9.4.0" />

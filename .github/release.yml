@@ -1,0 +1,12 @@
+---
+# Configuration for GitHub's automatically generated release notes,
+# used by `gh release create --generate-notes` (see the `release` target
+# in the Makefile). Dependabot PRs are automatically labeled "dependencies",
+# so excluding that label (and the bot author, as a belt-and-braces measure)
+# keeps routine dependency bumps out of the release notes.
+changelog:
+  exclude:
+    labels:
+      - dependencies
+    authors:
+      - dependabot[bot]

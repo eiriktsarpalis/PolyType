@@ -18,6 +18,26 @@ namespace PolyType.Tests;
 public abstract class JsonTests(ProviderUnderTest providerUnderTest)
 {
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PooledWriter_ResetsOptionsBetweenCalls(bool indented)
+    {
+        var converter = JsonSerializerTS.CreateConverter<int[]>(providerUnderTest.Provider);
+        int[] value = [1, 2, 3];
+
+        foreach (bool useIndentation in new[] { indented, !indented, indented })
+        {
+            string expected = JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = useIndentation });
+            JsonWriterOptions options = new() { Indented = useIndentation };
+            Assert.Equal(expected, converter.Serialize(value, options));
+
+            JsonElement element = converter.SerializeToElement(value, options);
+            Assert.Equal(expected, element.GetRawText());
+            Assert.Equal(value, converter.Deserialize(element));
+        }
+    }
+
+    [Theory]
     [InlineData("42")]
     [InlineData("\"text\"")]
     [InlineData("{}")]

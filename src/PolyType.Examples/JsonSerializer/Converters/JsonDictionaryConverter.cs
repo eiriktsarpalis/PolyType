@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Xml.Linq;
@@ -58,6 +59,8 @@ internal class JsonDictionaryConverter<TDictionary, TKey, TValue>(
         }
     }
 
+    // Isolate the hot loop from callers so it receives its own JIT optimization budget.
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private void WriteEntriesAsDictionary(Utf8JsonWriter writer, Dictionary<TKey, TValue> value, JsonSerializerOptions options)
     {
         JsonConverter<TKey> keyConverter = _keyConverter;

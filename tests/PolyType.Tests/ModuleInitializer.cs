@@ -44,4 +44,21 @@ internal static class AvoidCrashingOnDebugAsserts
     }
 }
 
+#else
+
+using Json.Schema;
+using System.Runtime.CompilerServices;
+
+namespace PolyType.Tests;
+
+internal static class InitializeJsonSchemaOnMono
+{
+    [ModuleInitializer]
+    internal static void Initializer()
+    {
+        // Initialize JsonSchema.Net before parallel tests can race its module and static initializers on Mono.
+        _ = JsonSchema.FromText("{}");
+    }
+}
+
 #endif
