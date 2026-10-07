@@ -25,11 +25,6 @@ public static class CompilationHelpers
     private static readonly CSharpParseOptions s_defaultParseOptions = CreateParseOptions();
 #if NET
     private static readonly Assembly s_systemRuntimeAssembly = Assembly.Load(new AssemblyName("System.Runtime"));
-#else
-    private static readonly string s_netFrameworkReferenceAssembliesDirectory = typeof(CompilationHelpers).Assembly
-        .GetCustomAttributes<AssemblyMetadataAttribute>()
-        .Single(attribute => attribute.Key == "PolyTypeReferenceAssembliesDirectory")
-        .Value ?? throw new InvalidOperationException("Missing .NET Framework reference assembly path.");
 #endif
     public static bool IsMonoRuntime { get; } = Type.GetType("Mono.Runtime") is not null;
 
@@ -85,9 +80,8 @@ public static class CompilationHelpers
 
         MetadataReference[] references =
         [
-#if NET
             MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-            MetadataReference.CreateFromFile(GetAssemblyFromSharedFrameworkDirectory("netstandard.dll")),
+            MetadataReference.CreateFromFile(GetAssemblyFromSharedFrameworkDirectory(IsMonoRuntime ? "Facades/netstandard.dll" : "netstandard.dll")),
             MetadataReference.CreateFromFile(typeof(System.Linq.Enumerable).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.Collections.Immutable.ImmutableArray).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.Collections.Concurrent.ConcurrentDictionary<,>).Assembly.Location),
@@ -96,20 +90,14 @@ public static class CompilationHelpers
             MetadataReference.CreateFromFile(typeof(Microsoft.FSharp.Core.Unit).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.Drawing.Point).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.Runtime.Serialization.DataContractAttribute).Assembly.Location),
+#if NET
             MetadataReference.CreateFromFile(typeof(LinkedList<>).Assembly.Location),
             MetadataReference.CreateFromFile(s_systemRuntimeAssembly.Location),
 #else
-            MetadataReference.CreateFromFile(Path.Combine(s_netFrameworkReferenceAssembliesDirectory, "mscorlib.dll")),
-            MetadataReference.CreateFromFile(Path.Combine(s_netFrameworkReferenceAssembliesDirectory, "Facades/netstandard.dll")),
-            MetadataReference.CreateFromFile(Path.Combine(s_netFrameworkReferenceAssembliesDirectory, "System.Core.dll")),
-            MetadataReference.CreateFromFile(typeof(System.Collections.Immutable.ImmutableArray).Assembly.Location),
-            MetadataReference.CreateFromFile(Path.Combine(s_netFrameworkReferenceAssembliesDirectory, "System.dll")),
-            MetadataReference.CreateFromFile(typeof(Microsoft.FSharp.Core.Unit).Assembly.Location),
-            MetadataReference.CreateFromFile(Path.Combine(s_netFrameworkReferenceAssembliesDirectory, "System.Drawing.dll")),
-            MetadataReference.CreateFromFile(Path.Combine(s_netFrameworkReferenceAssembliesDirectory, "System.Runtime.Serialization.dll")),
             MetadataReference.CreateFromFile(typeof(ReadOnlySpan<>).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.Runtime.CompilerServices.Unsafe).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(System.Collections.Immutable.ImmutableArray).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(System.Threading.Tasks.ValueTask).Assembly.Location),
 #endif
             MetadataReference.CreateFromFile(typeof(PolyType.ITypeShape).Assembly.Location),
