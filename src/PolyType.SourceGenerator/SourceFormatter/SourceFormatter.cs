@@ -19,28 +19,36 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
     private const string GetShapeMethodName = "GetTypeShape";
     private const string SourceGeneratorVersionProperty = "SourceGeneratorVersion";
 
-    private string FormatArgumentStateTypeName(ArgumentStateType argumentStateType, string typeParameter) =>
+    private static string FormatArgumentStateTypeName(ArgumentStateType argumentStateType, string typeParameter) =>
         argumentStateType switch
         {
             ArgumentStateType.EmptyArgumentState => "global::PolyType.SourceGenModel.EmptyArgumentState",
-            ArgumentStateType.SmallArgumentState => $"global::PolyType.SourceGenModel.{(provider.UseReferenceTypeArgumentStates ? "ClassSmallArgumentState" : "SmallArgumentState")}<{typeParameter}>",
-            ArgumentStateType.LargeArgumentState => $"global::PolyType.SourceGenModel.{(provider.UseReferenceTypeArgumentStates ? "ClassLargeArgumentState" : "LargeArgumentState")}<{typeParameter}>",
+            ArgumentStateType.SmallArgumentState => $"global::PolyType.SourceGenModel.SmallClassArgumentState<{typeParameter}>",
+            ArgumentStateType.LargeArgumentState => $"global::PolyType.SourceGenModel.LargeClassArgumentState<{typeParameter}>",
             _ => throw new InvalidOperationException(argumentStateType.ToString()),
         };
 
-    private string FormatArgumentStateCreation(
+    private static string FormatArgumentStateCreation(
         ArgumentStateType argumentStateType,
         string argumentStateTypeName,
         string argumentsExpression,
         int count,
         string requiredArgumentsMask,
         bool markAllArgumentsSet = false,
-        bool useExplicitTypeName = false)
+        bool useExplicitTypeName = false,
+        bool passArgumentsByReadonlyReference = false)
     {
         string arguments = $"{argumentsExpression}, count: {count}, requiredArgumentsMask: {requiredArgumentsMask}" +
             (markAllArgumentsSet ? ", markAllArgumentsSet: true" : "");
 
-        return provider.UseReferenceTypeArgumentStates && argumentStateType is not ArgumentStateType.EmptyArgumentState
+        if (passArgumentsByReadonlyReference)
+        {
+            int typeParameterStart = argumentStateTypeName.IndexOf('<');
+            string argumentsTypeName = argumentStateTypeName[(typeParameterStart + 1)..^1];
+            return $"static () => {{ {argumentsTypeName} arguments = {argumentsExpression}; return {argumentStateTypeName}.Rent(in arguments, count: {count}, requiredArgumentsMask: {requiredArgumentsMask}); }}";
+        }
+
+        return argumentStateType is not ArgumentStateType.EmptyArgumentState
             ? $"{argumentStateTypeName}.Rent({arguments})"
             : useExplicitTypeName ? $"new {argumentStateTypeName}({arguments})" : $"new({arguments})";
     }

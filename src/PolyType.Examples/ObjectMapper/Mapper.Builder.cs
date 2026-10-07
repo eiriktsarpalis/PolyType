@@ -171,12 +171,19 @@ public static partial class Mapper
                         }
 
                         TArgumentState argumentState = argumentStateCtor();
-                        foreach (PropertyMapper<TSource, TArgumentState> mapper in propertyMappers)
+                        try
                         {
-                            mapper(ref source, ref argumentState);
-                        }
+                            foreach (PropertyMapper<TSource, TArgumentState> mapper in propertyMappers)
+                            {
+                                mapper(ref source, ref argumentState);
+                            }
 
-                        return ctor(ref argumentState);
+                            return ctor(ref argumentState);
+                        }
+                        finally
+                        {
+                            argumentState.Return();
+                        }
                     });
                 }
             }

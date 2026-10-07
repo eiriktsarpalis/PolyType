@@ -9,7 +9,6 @@ public sealed record TypeShapeProviderModel
     public required ImmutableEquatableArray<TypeDeclarationModel> AnnotatedTypes { get; init; }
     public required ImmutableEquatableArray<string> SuppressedDiagnosticIds { get; init; }
     public required bool TargetSupportsIShapeableOfT { get; init; }
-    public required bool UseReferenceTypeArgumentStates { get; init; }
 
     /// <summary>Gets whether the consumer enables the updated C# memory-safety rules.</summary>
     public bool UsesUpdatedMemorySafetyRules { get; init; }

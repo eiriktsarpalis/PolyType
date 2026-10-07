@@ -3,6 +3,8 @@ using PolyType.SourceGenModel;
 
 namespace PolyType.Tests.SourceGenModel;
 
+#pragma warning disable CS0618 // Verify compatibility of the legacy argument state.
+
 public static class LargeArgumentStateTests
 {
     public struct TestArguments
@@ -446,11 +448,4 @@ public static class LargeArgumentStateTests
         Assert.Equal(42, state.Arguments.Value1);
     }
 
-    [Fact]
-    public static void LargeArgumentState_IsNotPoolable()
-    {
-        var state = new LargeArgumentState<TestArguments>(new(), 1, new ValueBitArray(1));
-
-        Assert.False(state.IsPoolable);
-    }
 }

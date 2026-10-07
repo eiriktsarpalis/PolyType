@@ -99,34 +99,41 @@ internal sealed class CborObjectConverterWithParameterizedCtor<TDeclaringType, T
 
         reader.ReadStartMap();
         TArgumentState argumentState = createArgumentState();
-        Dictionary<string, CborPropertyConverter<TArgumentState>> ctorParams = _constructorParameters;
-
-        while (reader.PeekState() != CborReaderState.EndMap)
+        try
         {
-            string key = reader.ReadTextString();
-            if (!ctorParams.TryGetValue(key, out CborPropertyConverter<TArgumentState>? propertyConverter))
+            Dictionary<string, CborPropertyConverter<TArgumentState>> ctorParams = _constructorParameters;
+
+            while (reader.PeekState() != CborReaderState.EndMap)
             {
-                reader.SkipValue();
-                continue;
+                string key = reader.ReadTextString();
+                if (!ctorParams.TryGetValue(key, out CborPropertyConverter<TArgumentState>? propertyConverter))
+                {
+                    reader.SkipValue();
+                    continue;
+                }
+
+                if (argumentState.IsArgumentSet(propertyConverter.Position))
+                {
+                    ThrowDuplicateProperty(key);
+                    static void ThrowDuplicateProperty(string key) => throw CreateDuplicatePropertyException(key);
+                }
+
+                propertyConverter.Read(reader, ref argumentState);
+                Debug.Assert(argumentState.IsArgumentSet(propertyConverter.Position));
             }
 
-            if (argumentState.IsArgumentSet(propertyConverter.Position))
+            reader.ReadEndMap();
+
+            if (!argumentState.AreRequiredArgumentsSet)
             {
-                ThrowDuplicateProperty(key);
-                static void ThrowDuplicateProperty(string key) => throw CreateDuplicatePropertyException(key);
+                Helpers.ThrowMissingRequiredArguments(ref argumentState, parameters);
             }
 
-            propertyConverter.Read(reader, ref argumentState);
-            Debug.Assert(argumentState.IsArgumentSet(propertyConverter.Position));
+            return createObject(ref argumentState);
         }
-
-        reader.ReadEndMap();
-
-        if (!argumentState.AreRequiredArgumentsSet)
+        finally
         {
-            Helpers.ThrowMissingRequiredArguments(ref argumentState, parameters);
+            argumentState.Return();
         }
-
-        return createObject(ref argumentState);
     }
 }

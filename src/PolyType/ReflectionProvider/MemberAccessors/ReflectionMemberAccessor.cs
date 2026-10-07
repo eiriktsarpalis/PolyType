@@ -344,8 +344,8 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         return ctorInfo switch
         {
             { Parameters: [] } => typeof(EmptyArgumentState),
-            MethodShapeInfo { MemberInitializers.Length: > 0 } => typeof(LargeArgumentState<(object?[], object?[])>),
-            _ => typeof(LargeArgumentState<object?[]>),
+            MethodShapeInfo { MemberInitializers.Length: > 0 } => typeof(LargeClassArgumentState<(object?[], object?[])>),
+            _ => typeof(LargeClassArgumentState<object?[]>),
         };
     }
 
@@ -360,20 +360,20 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
 
         if (ctorInfo is MethodShapeInfo { MemberInitializers.Length: > 0 } ctor)
         {
-            Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<(object?[], object?[])>));
+            Debug.Assert(typeof(TArgumentState) == typeof(LargeClassArgumentState<(object?[], object?[])>));
             Func<object?[]> createCtorParameterArray = CreateConstructorArgumentArrayFunc(ctor.ConstructorParameters);
             int memberInitializerLength = ctor.MemberInitializers.Length;
             ValueBitArray requiredPropertiesMask = CreateRequiredParametersMask(ctorInfo);
-            return (Func<TArgumentState>)(object)new Func<LargeArgumentState<(object?[], object?[])>>(
-                () => new((createCtorParameterArray(), new object?[memberInitializerLength]), ctor.Parameters.Length, requiredPropertiesMask));
+            return (Func<TArgumentState>)(object)new Func<LargeClassArgumentState<(object?[], object?[])>>(
+                () => LargeClassArgumentState<(object?[], object?[])>.Rent((createCtorParameterArray(), new object?[memberInitializerLength]), ctor.Parameters.Length, requiredPropertiesMask));
         }
         else
         {
-            Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<object?[]>));
+            Debug.Assert(typeof(TArgumentState) == typeof(LargeClassArgumentState<object?[]>));
             Func<object?[]> createCtorParameterArray = CreateConstructorArgumentArrayFunc(ctorInfo.Parameters);
             ValueBitArray requiredPropertiesMask = CreateRequiredParametersMask(ctorInfo);
-            return (Func<TArgumentState>)(object)new Func<LargeArgumentState<object?[]>>(
-                () => new(createCtorParameterArray(), ctorInfo.Parameters.Length, requiredPropertiesMask));
+            return (Func<TArgumentState>)(object)new Func<LargeClassArgumentState<object?[]>>(
+                () => LargeClassArgumentState<object?[]>.Rent(createCtorParameterArray(), ctorInfo.Parameters.Length, requiredPropertiesMask));
         }
 
         static ValueBitArray CreateRequiredParametersMask(IMethodShapeInfo ctorInfo)
@@ -415,18 +415,18 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         Debug.Assert(ctorInfo.Parameters.Length > 0);
         if (ctorInfo is MethodShapeInfo { MemberInitializers.Length: > 0 } ctor)
         {
-            Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<(object?[], object?[])>));
+            Debug.Assert(typeof(TArgumentState) == typeof(LargeClassArgumentState<(object?[], object?[])>));
             int initializerIndex = parameterIndex - ctor.ConstructorParameters.Length;
-            return (Getter<TArgumentState, TParameter>)(object)new Getter<LargeArgumentState<(object?[], object?[])>, TParameter>(
-                (ref LargeArgumentState<(object?[] ctorArgs, object?[] memberArgs)> state) =>
+            return (Getter<TArgumentState, TParameter>)(object)new Getter<LargeClassArgumentState<(object?[], object?[])>, TParameter>(
+                (ref LargeClassArgumentState<(object?[] ctorArgs, object?[] memberArgs)> state) =>
                 {
                     return Cast(initializerIndex < 0 ? state.Arguments.ctorArgs[parameterIndex] : state.Arguments.memberArgs[initializerIndex]);
                 });
         }
         else
         {
-            Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<object?[]>));
-            return (Getter<TArgumentState, TParameter>)(object)new Getter<LargeArgumentState<object?[]>, TParameter>(
+            Debug.Assert(typeof(TArgumentState) == typeof(LargeClassArgumentState<object?[]>));
+            return (Getter<TArgumentState, TParameter>)(object)new Getter<LargeClassArgumentState<object?[]>, TParameter>(
                 (ref state) => Cast(state.Arguments[parameterIndex]));
         }
 
@@ -439,10 +439,10 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         Debug.Assert(ctorInfo.Parameters.Length > 0);
         if (ctorInfo is MethodShapeInfo { MemberInitializers.Length: > 0 } ctor)
         {
-            Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<(object?[], object?[])>));
+            Debug.Assert(typeof(TArgumentState) == typeof(LargeClassArgumentState<(object?[], object?[])>));
             int initializerIndex = parameterIndex - ctor.ConstructorParameters.Length;
-            return (Setter<TArgumentState, TParameter>)(object)new Setter<LargeArgumentState<(object?[], object?[])>, TParameter>(
-                (ref LargeArgumentState<(object?[] ctorArgs, object?[] memberArgs)> state, TParameter value) =>
+            return (Setter<TArgumentState, TParameter>)(object)new Setter<LargeClassArgumentState<(object?[], object?[])>, TParameter>(
+                (ref LargeClassArgumentState<(object?[] ctorArgs, object?[] memberArgs)> state, TParameter value) =>
                 {
                     if (initializerIndex < 0)
                     {
@@ -458,8 +458,8 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         }
         else
         {
-            Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<object?[]>));
-            return (Setter<TArgumentState, TParameter>)(object)new Setter<LargeArgumentState<object?[]>, TParameter>(
+            Debug.Assert(typeof(TArgumentState) == typeof(LargeClassArgumentState<object?[]>));
+            return (Setter<TArgumentState, TParameter>)(object)new Setter<LargeClassArgumentState<object?[]>, TParameter>(
                 (ref state, value) =>
                 {
                     state.Arguments[parameterIndex] = value;
@@ -474,7 +474,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         Debug.Assert(ctorInfo.Parameters.Length > 0);
         if (ctorInfo is TupleConstructorShapeInfo tupleCtor)
         {
-            Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<object?[]>));
+            Debug.Assert(typeof(TArgumentState) == typeof(LargeClassArgumentState<object?[]>));
 #if NET
             List<(ReflectionConstructorInvoker, int)> ctorStack = new();
 #else
@@ -491,7 +491,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
 
             ctorStack.Reverse();
 
-            return (Constructor<TArgumentState, TDeclaringType>)(object)new Constructor<LargeArgumentState<object?[]>, TDeclaringType>(
+            return (Constructor<TArgumentState, TDeclaringType>)(object)new Constructor<LargeClassArgumentState<object?[]>, TDeclaringType>(
                 (ref state) =>
             {
                 object?[] arguments = state.Arguments;
@@ -543,7 +543,7 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
 
         if (ctorInfo is MethodShapeInfo { MemberInitializers.Length: > 0 } methodCtor)
         {
-            Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<(object?[], object?[])>));
+            Debug.Assert(typeof(TArgumentState) == typeof(LargeClassArgumentState<(object?[], object?[])>));
             Action<object, object?>[] memberSetters = methodCtor.MemberInitializers
                 .Select(CreateMemberSetter)
                 .ToArray();
@@ -553,8 +553,8 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
 #if NET
                 Func<object?[], object?> invokeConstructor = CreateFactoryInvoker(ctor);
 #endif
-                return (Constructor<TArgumentState, TDeclaringType>)(object)new Constructor<LargeArgumentState<(object?[], object?[])>, TDeclaringType>(
-                    (ref LargeArgumentState<(object?[] ctorArgs, object?[] memberArgs)> state) =>
+                return (Constructor<TArgumentState, TDeclaringType>)(object)new Constructor<LargeClassArgumentState<(object?[], object?[])>, TDeclaringType>(
+                    (ref LargeClassArgumentState<(object?[] ctorArgs, object?[] memberArgs)> state) =>
                     {
 #if NET
                         object obj = invokeConstructor(state.Arguments.ctorArgs)!;
@@ -567,8 +567,8 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
             }
             else
             {
-                return (Constructor<TArgumentState, TDeclaringType>)(object)new Constructor<LargeArgumentState<(object?[], object?[])>, TDeclaringType>(
-                    (ref LargeArgumentState<(object?[] ctorArgs, object?[] memberArgs)> state) =>
+                return (Constructor<TArgumentState, TDeclaringType>)(object)new Constructor<LargeClassArgumentState<(object?[], object?[])>, TDeclaringType>(
+                    (ref LargeClassArgumentState<(object?[] ctorArgs, object?[] memberArgs)> state) =>
                     {
                         object obj = default(TDeclaringType)!;
                         PopulateMemberInitializers(ref state, obj, ctorArity: 0, memberSetters, state.Arguments.memberArgs);
@@ -592,14 +592,14 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
         }
 
         Debug.Assert(ctorInfo is MethodShapeInfo { Method: not null });
-        Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<object?[]>));
+        Debug.Assert(typeof(TArgumentState) == typeof(LargeClassArgumentState<object?[]>));
         var cI = ((MethodShapeInfo)ctorInfo).Method!;
 #if NET
         Func<object?[], object?> invokeFactory = CreateFactoryInvoker(cI);
-        return (Constructor<TArgumentState, TDeclaringType>)(object)new Constructor<LargeArgumentState<object?[]>, TDeclaringType>(
+        return (Constructor<TArgumentState, TDeclaringType>)(object)new Constructor<LargeClassArgumentState<object?[]>, TDeclaringType>(
             (ref state) => (TDeclaringType)invokeFactory(state.Arguments)!);
 #else
-        return (Constructor<TArgumentState, TDeclaringType>)(object)new Constructor<LargeArgumentState<object?[]>, TDeclaringType>(
+        return (Constructor<TArgumentState, TDeclaringType>)(object)new Constructor<LargeClassArgumentState<object?[]>, TDeclaringType>(
             (ref state) => (TDeclaringType)cI.InvokeNoWrapExceptions(state.Arguments)!);
 #endif
     }
@@ -629,8 +629,8 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
             };
         }
 
-        Debug.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<object?[]>));
-        return (MethodInvoker<TDeclaringType?, TArgumentState, TResult>)(object)new MethodInvoker<TDeclaringType?, LargeArgumentState<object?[]>, TResult>(
+        Debug.Assert(typeof(TArgumentState) == typeof(LargeClassArgumentState<object?[]>));
+        return (MethodInvoker<TDeclaringType?, TArgumentState, TResult>)(object)new MethodInvoker<TDeclaringType?, LargeClassArgumentState<object?[]>, TResult>(
             (ref target, ref state) =>
             {
                 object? boxedTarget = target;
@@ -670,13 +670,13 @@ internal sealed class ReflectionMemberAccessor : IReflectionMemberAccessor
                 });
         }
 
-        DebugExt.Assert(typeof(TArgumentState) == typeof(LargeArgumentState<object?[]>));
+        DebugExt.Assert(typeof(TArgumentState) == typeof(LargeClassArgumentState<object?[]>));
 #if NET
         ReflectionMethodInvoker[] invokers = funcInfo.CurriedInvocationChain
             .Select(ReflectionMethodInvoker.Create)
             .ToArray();
 #endif
-        return (MethodInvoker<TFunction, TArgumentState, TResult>)(object)new MethodInvoker<TFunction, LargeArgumentState<object?[]>, TResult>(
+        return (MethodInvoker<TFunction, TArgumentState, TResult>)(object)new MethodInvoker<TFunction, LargeClassArgumentState<object?[]>, TResult>(
             (ref target, ref state) =>
             {
                 object? current = target;

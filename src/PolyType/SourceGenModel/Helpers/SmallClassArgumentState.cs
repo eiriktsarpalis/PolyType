@@ -8,15 +8,15 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TArguments">The type storing the arguments.</typeparam>
 [EditorBrowsable(EditorBrowsableState.Never)]
-public sealed class ClassSmallArgumentState<TArguments> : IPoolableArgumentState
+public sealed class SmallClassArgumentState<TArguments> : IArgumentState
 {
     [ThreadStatic]
-    private static ClassSmallArgumentState<TArguments>? t_cached;
+    private static SmallClassArgumentState<TArguments>? t_cached;
     private uint _count;
     private ulong _requiredArgumentsMask;
     private ulong _setArguments;
 
-    private ClassSmallArgumentState() { }
+    private SmallClassArgumentState() { }
 
     /// <summary>
     /// Rents an argument state initialized with the specified arguments and required-argument mask.
@@ -26,7 +26,7 @@ public sealed class ClassSmallArgumentState<TArguments> : IPoolableArgumentState
     /// <param name="requiredArgumentsMask">A mask identifying required arguments.</param>
     /// <param name="markAllArgumentsSet">Whether all arguments should initially be marked as set.</param>
     /// <returns>A reusable argument state instance.</returns>
-    public static ClassSmallArgumentState<TArguments> Rent(TArguments arguments, int count, ulong requiredArgumentsMask, bool markAllArgumentsSet = false)
+    public static SmallClassArgumentState<TArguments> Rent(in TArguments arguments, int count, ulong requiredArgumentsMask, bool markAllArgumentsSet = false)
     {
         if ((uint)count > 64)
         {
@@ -34,7 +34,7 @@ public sealed class ClassSmallArgumentState<TArguments> : IPoolableArgumentState
             static void Throw() => throw new ArgumentOutOfRangeException(nameof(count), "Count must be 64 or fewer.");
         }
 
-        ClassSmallArgumentState<TArguments>? state = t_cached;
+        SmallClassArgumentState<TArguments>? state = t_cached;
         t_cached = null;
         state ??= new();
         state.Arguments = arguments;
@@ -49,7 +49,8 @@ public sealed class ClassSmallArgumentState<TArguments> : IPoolableArgumentState
     /// <summary>
     /// The actual arguments being tracked by this state.
     /// </summary>
-#pragma warning disable CA1051, SA1401
+#pragma warning disable CA1051 // Do not declare visible instance fields: generated accessors require direct field access.
+#pragma warning disable SA1401
     public TArguments Arguments = default!;
 #pragma warning restore CA1051, SA1401
 
@@ -62,9 +63,6 @@ public sealed class ClassSmallArgumentState<TArguments> : IPoolableArgumentState
     /// <inheritdoc />
     public bool IsArgumentSet(int index) =>
         (uint)index < _count && (_setArguments & (1UL << index)) != 0;
-
-    /// <inheritdoc />
-    public bool IsPoolable => true;
 
     /// <summary>
     /// Marks the argument at the specified index as set.

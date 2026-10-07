@@ -146,9 +146,16 @@ public abstract partial class MemberAccessorExceptionTests(ProviderUnderTest pro
         public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructor, object? state)
         {
             TArgumentState arguments = constructor.GetArgumentStateConstructor()();
-            var parameter = Assert.IsAssignableFrom<IParameterShape<TArgumentState, int>>(constructor.Parameters[0]);
-            parameter.GetSetter()(ref arguments, -1);
-            return constructor.GetParameterizedConstructor()(ref arguments);
+            try
+            {
+                var parameter = Assert.IsAssignableFrom<IParameterShape<TArgumentState, int>>(constructor.Parameters[0]);
+                parameter.GetSetter()(ref arguments, -1);
+                return constructor.GetParameterizedConstructor()(ref arguments);
+            }
+            finally
+            {
+                arguments.Return();
+            }
         }
     }
 
@@ -185,7 +192,14 @@ public abstract partial class MemberAccessorExceptionTests(ProviderUnderTest pro
                 argumentState = (TArgumentState)parameter.Accept(this, argumentState)!;
             }
 
-            return constructor.GetParameterizedConstructor()(ref argumentState);
+            try
+            {
+                return constructor.GetParameterizedConstructor()(ref argumentState);
+            }
+            finally
+            {
+                argumentState.Return();
+            }
         }
 
         public override object? VisitMethod<TDeclaringType, TArgumentState, TResult>(IMethodShape<TDeclaringType, TArgumentState, TResult> method, object? state)

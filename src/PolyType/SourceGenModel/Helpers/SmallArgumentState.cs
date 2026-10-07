@@ -10,7 +10,8 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TArguments">The type storing the arguments.</typeparam>
 [EditorBrowsable(EditorBrowsableState.Never)]
 [StructLayout(LayoutKind.Auto)]
-public struct SmallArgumentState<TArguments> : IPoolableArgumentState
+[Obsolete("SmallArgumentState will be deleted in a future release. Use SmallClassArgumentState instead.")]
+public struct SmallArgumentState<TArguments> : IArgumentState
 {
     private readonly uint _count;
     private readonly ulong _requiredArgumentsMask;
@@ -75,9 +76,6 @@ public struct SmallArgumentState<TArguments> : IPoolableArgumentState
         // Check if the bit at the specified index is set in _setArguments.
         return (_setArguments & (1UL << index)) != 0;
     }
-
-    /// <inheritdoc />
-    public readonly bool IsPoolable => false;
 
     /// <inheritdoc />
     public readonly void Return() { }

@@ -337,7 +337,7 @@ internal sealed partial class SourceFormatter
             : null;
     }
 
-    private string FormatMethodArgumentStateFQN(MethodShapeModel method)
+    private static string FormatMethodArgumentStateFQN(MethodShapeModel method)
     {
         string typeParameter = FormatArgumentStateTypeTypeParameter();
         return FormatArgumentStateTypeName(method.ArgumentStateType, typeParameter);

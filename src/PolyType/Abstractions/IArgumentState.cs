@@ -22,4 +22,14 @@ public interface IArgumentState
     /// <param name="index">The index of the argument to check.</param>
     /// <returns>True if the argument is set; otherwise, false.</returns>
     bool IsArgumentSet(int index);
+
+    /// <summary>
+    /// Returns this argument state to its implementation for reuse.
+    /// </summary>
+    /// <remarks>
+    /// Call this method exactly once after the state will no longer be accessed, including
+    /// when construction or invocation throws. Accessing a state after returning it is
+    /// undefined behavior. Implementations that do not pool states treat this as a no-op.
+    /// </remarks>
+    void Return();
 }

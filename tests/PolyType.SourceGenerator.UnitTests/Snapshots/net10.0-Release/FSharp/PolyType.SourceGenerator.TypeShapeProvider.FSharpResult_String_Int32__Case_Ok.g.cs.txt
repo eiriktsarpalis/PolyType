@@ -41,19 +41,19 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.Abstractions.IConstructorShape __CreateConstructor_FSharpResult_String_Int32__Case_Ok()
         {
-            return new global::PolyType.SourceGenModel.SourceGenConstructorShape<global::Microsoft.FSharp.Core.FSharpResult<string, int>, global::PolyType.SourceGenModel.SmallArgumentState<string>>
+            return new global::PolyType.SourceGenModel.SourceGenConstructorShape<global::Microsoft.FSharp.Core.FSharpResult<string, int>, global::PolyType.SourceGenModel.SmallClassArgumentState<string>>
             {
                 DeclaringType = (global::PolyType.Abstractions.IObjectTypeShape<global::Microsoft.FSharp.Core.FSharpResult<string, int>>)FSharpResult_String_Int32__Case_Ok,
                 ParametersFactory = __CreateConstructorParameters_FSharpResult_String_Int32__Case_Ok,
-                ArgumentStateConstructor = static () => new(default!, count: 1, requiredArgumentsMask: __RequiredMembersMask_FSharpResult_String_Int32__Case_Ok),
-                ParameterizedConstructor = static (ref global::PolyType.SourceGenModel.SmallArgumentState<string> state) => global::Microsoft.FSharp.Core.FSharpResult<string, int>.NewOk(state.Arguments),
+                ArgumentStateConstructor = static () => { string arguments = default!; return global::PolyType.SourceGenModel.SmallClassArgumentState<string>.Rent(in arguments, count: 1, requiredArgumentsMask: __RequiredMembersMask_FSharpResult_String_Int32__Case_Ok); },
+                ParameterizedConstructor = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<string> state) => global::Microsoft.FSharp.Core.FSharpResult<string, int>.NewOk(state.Arguments),
                 IsPublic = true,
             };
         }
 
         private global::PolyType.Abstractions.IParameterShape[] __CreateConstructorParameters_FSharpResult_String_Int32__Case_Ok() => new global::PolyType.Abstractions.IParameterShape[]
         {
-            new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallArgumentState<string>, string>
+            new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallClassArgumentState<string>, string>
             {
                 Position = 0,
                 Name = "ResultValue",
@@ -62,8 +62,8 @@ namespace PolyType.SourceGenerator
                 IsRequired = true,
                 IsPublic = true,
                 DefaultValue = default!,
-                Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<string> state) => state.Arguments,
-                Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<string> state, string value) => { state.Arguments = value; state.MarkArgumentSet(0); },
+                Getter = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<string> state) => state.Arguments,
+                Setter = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<string> state, string value) => { state.Arguments = value; state.MarkArgumentSet(0); },
             },
         };
 

@@ -190,6 +190,7 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
                 Assert.Same(constructor.GetArgumentStateConstructor(), constructor.GetArgumentStateConstructor());
 
                 TArgumentState argumentState = argumentStateCtor();
+                Assert.False(typeof(TArgumentState).IsValueType);
                 Assert.Equal(argumentState.Count, constructor.Parameters.Count);
                 int lastRequiredIndex = constructor.Parameters.LastOrDefault(p => p.IsRequired)?.Position ?? -1;
                 Assert.Equal(lastRequiredIndex == -1, argumentState.AreRequiredArgumentsSet);
@@ -208,9 +209,30 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
 
                 if (typeof(TDeclaringType).Assembly == Assembly.GetExecutingAssembly())
                 {
-                    TDeclaringType value = parameterizedCtor.Invoke(ref argumentState);
-                    Assert.NotNull(value);
+                    try
+                    {
+                        TDeclaringType value = parameterizedCtor.Invoke(ref argumentState);
+                        Assert.NotNull(value);
+                    }
+                    finally
+                    {
+                        argumentState.Return();
+                    }
                 }
+                else
+                {
+                    argumentState.Return();
+                }
+                TArgumentState reusedState = argumentStateCtor();
+                Assert.Same(argumentState, reusedState);
+                Assert.Equal(constructor.Parameters.Count, reusedState.Count);
+                Assert.Equal(lastRequiredIndex == -1, reusedState.AreRequiredArgumentsSet);
+                foreach (IParameterShape parameter in constructor.Parameters)
+                {
+                    Assert.False(reusedState.IsArgumentSet(parameter.Position));
+                }
+
+                reusedState.Return();
             }
 
             return null;
@@ -968,14 +990,17 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
             Assert.Equal(functionShape.IsVoidLike, result is Unit);
 
             // FromDelegate/FromAsyncDelegate round-trip test
+            TArgumentState wrapperState = default!;
             RefFunc<TArgumentState, TResult> wrappedInvoker = (ref arg) =>
             {
+                wrapperState = arg;
                 Assert.True(arg.AreRequiredArgumentsSet);
                 return functionInvoker(ref func, ref arg).GetAwaiter().GetResult();
             };
 
             RefFunc<TArgumentState, ValueTask<TResult>> wrappedInvokerAsync = (ref arg) =>
             {
+                wrapperState = arg;
                 Assert.True(arg.AreRequiredArgumentsSet);
                 return functionInvoker(ref func, ref arg);
             };
@@ -992,6 +1017,7 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
                     TFunction wrapped = functionShape.FromAsyncDelegate(wrappedInvokerAsync);
                     TResult newResult = functionInvoker.Invoke(ref wrapped, ref argumentState).GetAwaiter().GetResult();
                     Assert.Equal(result, newResult);
+                    AssertWrapperStateReturned();
                 }
             }
             else
@@ -1006,10 +1032,27 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
                     TFunction wrapped = functionShape.FromDelegate(wrappedInvoker);
                     TResult newResult = functionInvoker.Invoke(ref wrapped, ref argumentState).Result;
                     Assert.Equal(result, newResult);
+                    AssertWrapperStateReturned();
+
+                    wrapped = functionShape.FromDelegate((ref arg) =>
+                    {
+                        wrapperState = arg;
+                        throw new InvalidOperationException("Callback failed.");
+                    });
+                    Assert.Throws<InvalidOperationException>(() => functionInvoker.Invoke(ref wrapped, ref argumentState).GetAwaiter().GetResult());
+                    AssertWrapperStateReturned();
                 }
             }
 
+            argumentState.Return();
             return null;
+
+            void AssertWrapperStateReturned()
+            {
+                TArgumentState rentedState = argumentStateCtor();
+                Assert.Same(wrapperState, rentedState);
+                rentedState.Return();
+            }
         }
 
         public override object? VisitParameter<TArgumentState, TParameter>(IParameterShape<TArgumentState, TParameter> parameter, object? state)

@@ -54,12 +54,12 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.Abstractions.IConstructorShape __CreateConstructor_Address()
         {
-            return new global::PolyType.SourceGenModel.SourceGenConstructorShape<global::TestNamespace.Address, global::PolyType.SourceGenModel.SmallArgumentState<(string, string)>>
+            return new global::PolyType.SourceGenModel.SourceGenConstructorShape<global::TestNamespace.Address, global::PolyType.SourceGenModel.SmallClassArgumentState<(string, string)>>
             {
                 DeclaringType = (global::PolyType.Abstractions.IObjectTypeShape<global::TestNamespace.Address>)Address,
                 ParametersFactory = __CreateConstructorParameters_Address,
-                ArgumentStateConstructor = static () => new(default!, count: 2, requiredArgumentsMask: __RequiredMembersMask_Address),
-                ParameterizedConstructor = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(string, string)> state) => new global::TestNamespace.Address(state.Arguments.Item1, state.Arguments.Item2),
+                ArgumentStateConstructor = static () => { (string, string) arguments = default!; return global::PolyType.SourceGenModel.SmallClassArgumentState<(string, string)>.Rent(in arguments, count: 2, requiredArgumentsMask: __RequiredMembersMask_Address); },
+                ParameterizedConstructor = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(string, string)> state) => new global::TestNamespace.Address(state.Arguments.Item1, state.Arguments.Item2),
                 MethodBaseFactory = __ConstructorInfo_Address,
                 IsPublic = true,
             };
@@ -67,7 +67,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.Abstractions.IParameterShape[] __CreateConstructorParameters_Address() => new global::PolyType.Abstractions.IParameterShape[]
         {
-            new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallArgumentState<(string, string)>, string>
+            new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallClassArgumentState<(string, string)>, string>
             {
                 Position = 0,
                 Name = "Street",
@@ -77,12 +77,12 @@ namespace PolyType.SourceGenerator
                 IsNonNullable = true,
                 IsPublic = true,
                 DefaultValue = default!,
-                Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(string, string)> state) => state.Arguments.Item1,
-                Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(string, string)> state, string value) => { state.Arguments.Item1 = value; state.MarkArgumentSet(0); },
+                Getter = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(string, string)> state) => state.Arguments.Item1,
+                Setter = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(string, string)> state, string value) => { state.Arguments.Item1 = value; state.MarkArgumentSet(0); },
                 ReflectionInfoFactory = static () => __ConstructorInfo_Address()?.GetParameters()[0],
             },
 
-            new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallArgumentState<(string, string)>, string>
+            new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallClassArgumentState<(string, string)>, string>
             {
                 Position = 1,
                 Name = "City",
@@ -92,8 +92,8 @@ namespace PolyType.SourceGenerator
                 IsNonNullable = true,
                 IsPublic = true,
                 DefaultValue = default!,
-                Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(string, string)> state) => state.Arguments.Item2,
-                Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<(string, string)> state, string value) => { state.Arguments.Item2 = value; state.MarkArgumentSet(1); },
+                Getter = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(string, string)> state) => state.Arguments.Item2,
+                Setter = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(string, string)> state, string value) => { state.Arguments.Item2 = value; state.MarkArgumentSet(1); },
                 ReflectionInfoFactory = static () => __ConstructorInfo_Address()?.GetParameters()[1],
             },
         };

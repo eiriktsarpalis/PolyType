@@ -97,12 +97,19 @@ public static partial class Cloner
                 }
                 
                 TArgumentState state = argumentStateCtor();
-                foreach (PropertyCloner<TDeclaringType, TArgumentState> parameterMapper in parameterMappers)
+                try
                 {
-                    parameterMapper(ref source, ref state);
-                }
+                    foreach (PropertyCloner<TDeclaringType, TArgumentState> parameterMapper in parameterMappers)
+                    {
+                        parameterMapper(ref source, ref state);
+                    }
 
-                return ctor(ref state);
+                    return ctor(ref state);
+                }
+                finally
+                {
+                    state.Return();
+                }
             });
         }
 

@@ -41,19 +41,19 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.Abstractions.IConstructorShape __CreateConstructor_FSharpChoice_String_Int32__Case_Choice1Of2()
         {
-            return new global::PolyType.SourceGenModel.SourceGenConstructorShape<global::Microsoft.FSharp.Core.FSharpChoice<string, int>.Choice1Of2, global::PolyType.SourceGenModel.SmallArgumentState<string>>
+            return new global::PolyType.SourceGenModel.SourceGenConstructorShape<global::Microsoft.FSharp.Core.FSharpChoice<string, int>.Choice1Of2, global::PolyType.SourceGenModel.SmallClassArgumentState<string>>
             {
                 DeclaringType = (global::PolyType.Abstractions.IObjectTypeShape<global::Microsoft.FSharp.Core.FSharpChoice<string, int>.Choice1Of2>)FSharpChoice_String_Int32__Case_Choice1Of2,
                 ParametersFactory = __CreateConstructorParameters_FSharpChoice_String_Int32__Case_Choice1Of2,
-                ArgumentStateConstructor = static () => new(default!, count: 1, requiredArgumentsMask: __RequiredMembersMask_FSharpChoice_String_Int32__Case_Choice1Of2),
-                ParameterizedConstructor = static (ref global::PolyType.SourceGenModel.SmallArgumentState<string> state) => (global::Microsoft.FSharp.Core.FSharpChoice<string, int>.Choice1Of2)global::Microsoft.FSharp.Core.FSharpChoice<string, int>.NewChoice1Of2(state.Arguments),
+                ArgumentStateConstructor = static () => { string arguments = default!; return global::PolyType.SourceGenModel.SmallClassArgumentState<string>.Rent(in arguments, count: 1, requiredArgumentsMask: __RequiredMembersMask_FSharpChoice_String_Int32__Case_Choice1Of2); },
+                ParameterizedConstructor = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<string> state) => (global::Microsoft.FSharp.Core.FSharpChoice<string, int>.Choice1Of2)global::Microsoft.FSharp.Core.FSharpChoice<string, int>.NewChoice1Of2(state.Arguments),
                 IsPublic = true,
             };
         }
 
         private global::PolyType.Abstractions.IParameterShape[] __CreateConstructorParameters_FSharpChoice_String_Int32__Case_Choice1Of2() => new global::PolyType.Abstractions.IParameterShape[]
         {
-            new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallArgumentState<string>, string>
+            new global::PolyType.SourceGenModel.SourceGenParameterShape<global::PolyType.SourceGenModel.SmallClassArgumentState<string>, string>
             {
                 Position = 0,
                 Name = "Item",
@@ -62,8 +62,8 @@ namespace PolyType.SourceGenerator
                 IsRequired = true,
                 IsPublic = true,
                 DefaultValue = default!,
-                Getter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<string> state) => state.Arguments,
-                Setter = static (ref global::PolyType.SourceGenModel.SmallArgumentState<string> state, string value) => { state.Arguments = value; state.MarkArgumentSet(0); },
+                Getter = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<string> state) => state.Arguments,
+                Setter = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<string> state, string value) => { state.Arguments = value; state.MarkArgumentSet(0); },
             },
         };
 

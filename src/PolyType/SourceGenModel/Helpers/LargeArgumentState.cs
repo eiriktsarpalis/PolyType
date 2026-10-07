@@ -10,7 +10,8 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TArguments">The type storing the arguments.</typeparam>
 [EditorBrowsable(EditorBrowsableState.Never)]
 [StructLayout(LayoutKind.Auto)]
-public struct LargeArgumentState<TArguments> : IPoolableArgumentState
+[Obsolete("LargeArgumentState will be deleted in a future release. Use LargeClassArgumentState instead.")]
+public struct LargeArgumentState<TArguments> : IArgumentState
 {
     private readonly ValueBitArray _requiredArgumentsMask;
     private readonly ValueBitArray _setArguments;
@@ -65,9 +66,6 @@ public struct LargeArgumentState<TArguments> : IPoolableArgumentState
 
     /// <inheritdoc />
     public readonly bool IsArgumentSet(int index) => _setArguments[index];
-
-    /// <inheritdoc />
-    public readonly bool IsPoolable => false;
 
     /// <inheritdoc />
     public readonly void Return() { }

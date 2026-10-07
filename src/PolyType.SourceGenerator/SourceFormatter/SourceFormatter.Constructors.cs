@@ -110,7 +110,13 @@ internal sealed partial class SourceFormatter
                 _ => FormatTupleConstructor(constructor.GetAllParameters().Select(FormatDefaultValueExpr)),
             };
 
-            return $"static () => {FormatArgumentStateCreation(constructor.ArgumentStateType, constructorArgumentStateFQN, stateValueExpr, constructor.TotalArity, requiredMembersMaskFieldName)}";
+            return FormatArgumentStateCreation(
+                constructor.ArgumentStateType,
+                constructorArgumentStateFQN,
+                stateValueExpr,
+                constructor.TotalArity,
+                requiredMembersMaskFieldName,
+                passArgumentsByReadonlyReference: true);
             static string FormatTupleConstructor(IEnumerable<string> parameters)
                 => $"({string.Join(", ", parameters)})";
         }
@@ -434,7 +440,7 @@ internal sealed partial class SourceFormatter
         };
     }
 
-    private string FormatConstructorArgumentStateFQN(ObjectShapeModel type, ConstructorShapeModel constructorModel)
+    private static string FormatConstructorArgumentStateFQN(ObjectShapeModel type, ConstructorShapeModel constructorModel)
     {
         string typeParameter = FormatArgumentStateTypeTypeParameter();
         return FormatArgumentStateTypeName(constructorModel.ArgumentStateType, typeParameter);

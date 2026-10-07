@@ -208,7 +208,11 @@ internal sealed partial class SourceFormatter
                 _ => throw new InvalidOperationException(),
             };
 
-            return $$"""static {{innerFuncVar}} => ({{delegateSignature}}) => { {{functionArgumentStateFQN}} {{stateVar}} = {{argumentStateCtorExpr}}; {{tailExpr}}; }""";
+            string functionBody = functionShapeModel.ArgumentStateType is not ArgumentStateType.EmptyArgumentState
+                ? $"try {{ {tailExpr}; }} finally {{ {stateVar}.Return(); }}"
+                : $"{tailExpr};";
+
+            return $$"""static {{innerFuncVar}} => ({{delegateSignature}}) => { {{functionArgumentStateFQN}} {{stateVar}} = {{argumentStateCtorExpr}}; {{functionBody}} }""";
 
             static string GetNullableSuffix(ParameterShapeModel parameter) => parameter.NullableAnnotation is NullableAnnotation.Annotated ? "?" : "";
             static string GetSuppressionSuffix(ParameterShapeModel parameter) => parameter.ParameterTypeContainsNullabilityAnnotations ? "!" : "";
@@ -225,7 +229,7 @@ internal sealed partial class SourceFormatter
         }
     }
 
-    private string FormatFunctionArgumentStateFQN(FunctionShapeModel method)
+    private static string FormatFunctionArgumentStateFQN(FunctionShapeModel method)
     {
         string typeParameter = FormatArgumentStateTypeTypeParameter();
         return FormatArgumentStateTypeName(method.ArgumentStateType, typeParameter);

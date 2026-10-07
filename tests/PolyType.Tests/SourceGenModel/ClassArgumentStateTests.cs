@@ -5,24 +5,21 @@ namespace PolyType.Tests.SourceGenModel;
 public static class ClassArgumentStateTests
 {
     [Fact]
-    public static void ClassArgumentStates_ArePoolable()
+    public static void ClassArgumentStates_ImplementReturnContract()
     {
-        ClassSmallArgumentState<(string? Name, int Value)> small =
-            ClassSmallArgumentState<(string? Name, int Value)>.Rent((null, 0), 2, 0);
-        ClassLargeArgumentState<(string? Name, int Value)> large =
-            ClassLargeArgumentState<(string? Name, int Value)>.Rent((null, 0), 65, new ValueBitArray(65));
+        SmallClassArgumentState<(string? Name, int Value)> small =
+            SmallClassArgumentState<(string? Name, int Value)>.Rent((null, 0), 2, 0);
+        LargeClassArgumentState<(string? Name, int Value)> large =
+            LargeClassArgumentState<(string? Name, int Value)>.Rent((null, 0), 65, new ValueBitArray(65));
 
-        Assert.True(small.IsPoolable);
-        Assert.True(large.IsPoolable);
-
-        small.Return();
-        large.Return();
+        ((PolyType.Abstractions.IArgumentState)small).Return();
+        ((PolyType.Abstractions.IArgumentState)large).Return();
     }
 
     [Fact]
-    public static void ClassSmallArgumentState_MarkAllArgumentsSet_Supports64Arguments()
+    public static void SmallClassArgumentState_MarkAllArgumentsSet_Supports64Arguments()
     {
-        ClassSmallArgumentState<int> state = ClassSmallArgumentState<int>.Rent(42, 64, ulong.MaxValue, markAllArgumentsSet: true);
+        SmallClassArgumentState<int> state = SmallClassArgumentState<int>.Rent(42, 64, ulong.MaxValue, markAllArgumentsSet: true);
 
         Assert.Equal(64, state.Count);
         Assert.True(state.AreRequiredArgumentsSet);
@@ -39,20 +36,20 @@ public static class ClassArgumentStateTests
     }
 
     [Fact]
-    public static void ClassSmallArgumentState_RentRejectsMoreThan64Arguments()
+    public static void SmallClassArgumentState_RentRejectsMoreThan64Arguments()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            ClassSmallArgumentState<int>.Rent(42, 65, 0));
+            SmallClassArgumentState<int>.Rent(42, 65, 0));
     }
 
     [Fact]
-    public static void ClassSmallArgumentState_RentReusesAndReinitializesReturnedState()
+    public static void SmallClassArgumentState_RentReusesAndReinitializesReturnedState()
     {
-        ClassSmallArgumentState<(string? Name, int Value)> first = ClassSmallArgumentState<(string? Name, int Value)>.Rent(("retained", 42), 2, 0b10);
+        SmallClassArgumentState<(string? Name, int Value)> first = SmallClassArgumentState<(string? Name, int Value)>.Rent(("retained", 42), 2, 0b10);
         first.MarkArgumentSet(1);
         first.Return();
 
-        ClassSmallArgumentState<(string? Name, int Value)> next = ClassSmallArgumentState<(string? Name, int Value)>.Rent((null, 7), 2, 0b01);
+        SmallClassArgumentState<(string? Name, int Value)> next = SmallClassArgumentState<(string? Name, int Value)>.Rent((null, 7), 2, 0b01);
 
         Assert.Same(first, next);
         Assert.Equal((null, 7), next.Arguments);
@@ -66,14 +63,14 @@ public static class ClassArgumentStateTests
     }
 
     [Fact]
-    public static void ClassLargeArgumentState_MarkAllArgumentsSet_ResizesReturnedState()
+    public static void LargeClassArgumentState_MarkAllArgumentsSet_ResizesReturnedState()
     {
-        ClassLargeArgumentState<int> first = ClassLargeArgumentState<int>.Rent(42, 65, new ValueBitArray(65));
+        LargeClassArgumentState<int> first = LargeClassArgumentState<int>.Rent(42, 65, new ValueBitArray(65));
         first.Return();
 
         ValueBitArray requiredArgumentsMask = new(66);
         requiredArgumentsMask[65] = true;
-        ClassLargeArgumentState<int> next = ClassLargeArgumentState<int>.Rent(7, 66, requiredArgumentsMask, markAllArgumentsSet: true);
+        LargeClassArgumentState<int> next = LargeClassArgumentState<int>.Rent(7, 66, requiredArgumentsMask, markAllArgumentsSet: true);
 
         Assert.Same(first, next);
         Assert.Equal(66, next.Count);
@@ -85,26 +82,26 @@ public static class ClassArgumentStateTests
     }
 
     [Fact]
-    public static void ClassLargeArgumentState_RentRejectsMismatchedRequiredArgumentsMask()
+    public static void LargeClassArgumentState_RentRejectsMismatchedRequiredArgumentsMask()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            ClassLargeArgumentState<int>.Rent(42, 65, new ValueBitArray(64)));
+            LargeClassArgumentState<int>.Rent(42, 65, new ValueBitArray(64)));
     }
 
     [Fact]
-    public static void ClassLargeArgumentState_RentReusesAndReinitializesReturnedState()
+    public static void LargeClassArgumentState_RentReusesAndReinitializesReturnedState()
     {
         ValueBitArray firstRequiredMask = new(65);
         firstRequiredMask[64] = true;
-        ClassLargeArgumentState<(string? Name, int Value)> first =
-            ClassLargeArgumentState<(string? Name, int Value)>.Rent(("retained", 42), 65, firstRequiredMask);
+        LargeClassArgumentState<(string? Name, int Value)> first =
+            LargeClassArgumentState<(string? Name, int Value)>.Rent(("retained", 42), 65, firstRequiredMask);
         first.MarkArgumentSet(64);
         first.Return();
 
         ValueBitArray nextRequiredMask = new(65);
         nextRequiredMask[0] = true;
-        ClassLargeArgumentState<(string? Name, int Value)> next =
-            ClassLargeArgumentState<(string? Name, int Value)>.Rent((null, 7), 65, nextRequiredMask);
+        LargeClassArgumentState<(string? Name, int Value)> next =
+            LargeClassArgumentState<(string? Name, int Value)>.Rent((null, 7), 65, nextRequiredMask);
 
         Assert.Same(first, next);
         Assert.Equal((null, 7), next.Arguments);
@@ -118,15 +115,15 @@ public static class ClassArgumentStateTests
     }
 
     [Fact]
-    public static void EmptyArgumentState_IsNotPoolable()
+    public static void EmptyArgumentState_ReturnIsNoOp()
     {
         EmptyArgumentState state = EmptyArgumentState.Instance;
 
         Assert.Equal(0, state.Count);
         Assert.True(state.AreRequiredArgumentsSet);
         Assert.False(state.IsArgumentSet(0));
-        Assert.False(state.IsPoolable);
-
         state.Return();
+        Assert.Equal(0, state.Count);
+        Assert.True(state.AreRequiredArgumentsSet);
     }
 }

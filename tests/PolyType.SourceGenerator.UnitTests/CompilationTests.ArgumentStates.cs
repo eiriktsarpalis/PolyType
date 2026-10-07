@@ -5,15 +5,11 @@ namespace PolyType.SourceGenerator.UnitTests;
 
 public static partial class CompilationTests
 {
-    [Theory]
-    [InlineData("Performance", "global::PolyType.SourceGenModel.SmallArgumentState<")]
-    [InlineData("AppSize", "global::PolyType.SourceGenModel.ClassSmallArgumentState<")]
-    public static void GenerationOptimizationMode_SelectsArgumentStateRepresentation(string mode, string expectedArgumentStateType)
+    [Fact]
+    public static void Generation_UsesPooledArgumentStates()
     {
         Compilation compilation = CompilationHelpers.CreateCompilation($$"""
             using PolyType;
-
-            [assembly: PolyTypeSourceGenerationOptions(OptimizationMode = PolyTypeOptimizationMode.{{mode}})]
 
             [GenerateShape]
             public partial class Model
@@ -32,24 +28,17 @@ public static partial class CompilationTests
         Assert.Empty(result.Diagnostics);
 
         string generatedSource = string.Join(Environment.NewLine, result.NewCompilation.SyntaxTrees.Skip(1).Select(tree => tree.ToString()));
-        Assert.Contains(expectedArgumentStateType, generatedSource);
-
-        if (mode is "AppSize")
-        {
-            Assert.Contains(".Rent(", generatedSource);
-        }
+        Assert.Contains("global::PolyType.SourceGenModel.SmallClassArgumentState<", generatedSource);
+        Assert.Contains(".Rent(", generatedSource);
+        Assert.Contains("finally { state.Return(); }", generatedSource);
     }
 
-    [Theory]
-    [InlineData("Performance", "global::PolyType.SourceGenModel.LargeArgumentState<")]
-    [InlineData("AppSize", "global::PolyType.SourceGenModel.ClassLargeArgumentState<")]
-    public static void OptimizationMode_SelectsLargeArgumentStateRepresentation(string mode, string expectedArgumentStateType)
+    [Fact]
+    public static void Generation_UsesLargePooledArgumentStates()
     {
         string parameters = string.Join(", ", Enumerable.Range(0, 65).Select(index => $"int value{index}"));
         Compilation compilation = CompilationHelpers.CreateCompilation($$"""
             using PolyType;
-
-            [assembly: PolyTypeSourceGenerationOptions(OptimizationMode = PolyTypeOptimizationMode.{{mode}})]
 
             [GenerateShape]
             public partial class Model
@@ -62,11 +51,7 @@ public static partial class CompilationTests
         Assert.Empty(result.Diagnostics);
 
         string generatedSource = string.Join(Environment.NewLine, result.NewCompilation.SyntaxTrees.Skip(1).Select(tree => tree.ToString()));
-        Assert.Contains(expectedArgumentStateType, generatedSource);
-
-        if (mode is "AppSize")
-        {
-            Assert.Contains(".Rent(", generatedSource);
-        }
+        Assert.Contains("global::PolyType.SourceGenModel.LargeClassArgumentState<", generatedSource);
+        Assert.Contains(".Rent(", generatedSource);
     }
 }
