@@ -46,7 +46,7 @@ namespace PolyType.SourceGenerator
             {
                 DeclaringType = (global::PolyType.Abstractions.IObjectTypeShape<global::Microsoft.FSharp.Core.FSharpResult<string, int>>)FSharpResult_String_Int32__Case_Error,
                 ParametersFactory = __CreateConstructorParameters_FSharpResult_String_Int32__Case_Error,
-                ArgumentStateConstructor = static () => { int arguments = default!; return global::PolyType.SourceGenModel.SmallClassArgumentState<int>.Rent(in arguments, count: 1, requiredArgumentsMask: __RequiredMembersMask_FSharpResult_String_Int32__Case_Error); },
+                ArgumentStateConstructor = static () => global::PolyType.SourceGenModel.SmallClassArgumentState<int>.Rent(default!, count: 1, requiredArgumentsMask: __RequiredMembersMask_FSharpResult_String_Int32__Case_Error),
                 ParameterizedConstructor = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<int> state) => global::Microsoft.FSharp.Core.FSharpResult<string, int>.NewError(state.Arguments),
                 IsPublic = true,
             };

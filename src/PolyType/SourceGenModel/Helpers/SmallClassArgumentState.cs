@@ -1,5 +1,6 @@
 using PolyType.Abstractions;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace PolyType.SourceGenModel;
 
@@ -77,12 +78,18 @@ public sealed class SmallClassArgumentState<TArguments> : IArgumentState
     }
 
     /// <inheritdoc />
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Return()
     {
+#if NET
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<TArguments>())
+        {
+            Arguments = default!;
+        }
+#else
         Arguments = default!;
-        _count = 0;
-        _requiredArgumentsMask = 0;
-        _setArguments = 0;
+#endif
+        // Rent overwrites the payload and tracking fields; only references need clearing here.
         t_cached = this;
     }
 }

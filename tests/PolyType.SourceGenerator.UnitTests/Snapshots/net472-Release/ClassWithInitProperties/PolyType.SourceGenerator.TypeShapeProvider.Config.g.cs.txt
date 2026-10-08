@@ -68,7 +68,7 @@ namespace PolyType.SourceGenerator
             {
                 DeclaringType = (global::PolyType.Abstractions.IObjectTypeShape<global::TestNamespace.Config>)Config,
                 ParametersFactory = __CreateConstructorParameters_Config,
-                ArgumentStateConstructor = static () => { (string, int, string) arguments = default!; return global::PolyType.SourceGenModel.SmallClassArgumentState<(string, int, string)>.Rent(in arguments, count: 3, requiredArgumentsMask: __RequiredMembersMask_Config); },
+                ArgumentStateConstructor = static () => global::PolyType.SourceGenModel.SmallClassArgumentState<(string, int, string)>.Rent(default!, count: 3, requiredArgumentsMask: __RequiredMembersMask_Config),
                 ParameterizedConstructor = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(string, int, string)> state) => { var obj = new global::TestNamespace.Config(); if (state.IsArgumentSet(0)) __SetAccessor_Config_Host(obj, state.Arguments.Item1); if (state.IsArgumentSet(1)) __SetAccessor_Config_Port(obj, state.Arguments.Item2); if (state.IsArgumentSet(2)) __SetAccessor_Config_ConnectionString(obj, state.Arguments.Item3!); return obj; },
                 MethodBaseFactory = static () => typeof(global::TestNamespace.Config).GetConstructor(__BindingFlags_Instance_All, null, global::System.Type.EmptyTypes, null),
                 IsPublic = true,

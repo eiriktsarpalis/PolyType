@@ -57,7 +57,7 @@ namespace PolyType.SourceGenerator
             {
                 DeclaringType = (global::PolyType.Abstractions.IObjectTypeShape<global::TestNamespace.Pair<int, string>>)Pair_Int32_String,
                 ParametersFactory = __CreateConstructorParameters_Pair_Int32_String,
-                ArgumentStateConstructor = static () => { (int, string) arguments = default!; return global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string)>.Rent(in arguments, count: 2, requiredArgumentsMask: __RequiredMembersMask_Pair_Int32_String); },
+                ArgumentStateConstructor = static () => global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string)>.Rent(default!, count: 2, requiredArgumentsMask: __RequiredMembersMask_Pair_Int32_String),
                 ParameterizedConstructor = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string)> state) => new global::TestNamespace.Pair<int, string>(state.Arguments.Item1, state.Arguments.Item2),
                 MethodBaseFactory = __ConstructorInfo_Pair_Int32_String,
                 IsPublic = true,

@@ -70,7 +70,7 @@ namespace PolyType.SourceGenerator
             {
                 DeclaringType = (global::PolyType.Abstractions.IObjectTypeShape<global::TestNamespace.SimpleRecord>)SimpleRecord,
                 ParametersFactory = __CreateConstructorParameters_SimpleRecord,
-                ArgumentStateConstructor = static () => { (int, string, bool) arguments = default!; return global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool)>.Rent(in arguments, count: 3, requiredArgumentsMask: __RequiredMembersMask_SimpleRecord); },
+                ArgumentStateConstructor = static () => global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool)>.Rent(default!, count: 3, requiredArgumentsMask: __RequiredMembersMask_SimpleRecord),
                 ParameterizedConstructor = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool)> state) => new global::TestNamespace.SimpleRecord(state.Arguments.Item1, state.Arguments.Item2, state.Arguments.Item3),
                 MethodBaseFactory = __ConstructorInfo_SimpleRecord,
                 IsPublic = true,

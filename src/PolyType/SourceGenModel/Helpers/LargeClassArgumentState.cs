@@ -41,15 +41,14 @@ public sealed class LargeClassArgumentState<TArguments> : IArgumentState
         if (state._setArguments.Length != count)
         {
             state._setArguments = new ValueBitArray(count);
+            if (markAllArgumentsSet)
+            {
+                state._setArguments.SetAll(true);
+            }
         }
         else
         {
-            state._setArguments.SetAll(false);
-        }
-
-        if (markAllArgumentsSet)
-        {
-            state._setArguments.SetAll(true);
+            state._setArguments.SetAll(markAllArgumentsSet);
         }
 
         return state;

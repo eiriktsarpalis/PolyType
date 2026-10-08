@@ -110,13 +110,12 @@ internal sealed partial class SourceFormatter
                 _ => FormatTupleConstructor(constructor.GetAllParameters().Select(FormatDefaultValueExpr)),
             };
 
-            return FormatArgumentStateCreation(
+            return $"static () => {FormatArgumentStateCreation(
                 constructor.ArgumentStateType,
                 constructorArgumentStateFQN,
                 stateValueExpr,
                 constructor.TotalArity,
-                requiredMembersMaskFieldName,
-                passArgumentsByReadonlyReference: true);
+                requiredMembersMaskFieldName)}";
             static string FormatTupleConstructor(IEnumerable<string> parameters)
                 => $"({string.Join(", ", parameters)})";
         }

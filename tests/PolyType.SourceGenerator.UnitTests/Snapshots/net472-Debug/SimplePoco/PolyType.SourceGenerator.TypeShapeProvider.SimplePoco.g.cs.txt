@@ -70,7 +70,7 @@ namespace PolyType.SourceGenerator
             {
                 DeclaringType = (global::PolyType.Abstractions.IObjectTypeShape<global::TestNamespace.SimplePoco>)SimplePoco,
                 ParametersFactory = __CreateConstructorParameters_SimplePoco,
-                ArgumentStateConstructor = static () => { (int, string, bool?) arguments = (default, "default", default); return global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool?)>.Rent(in arguments, count: 3, requiredArgumentsMask: __RequiredMembersMask_SimplePoco); },
+                ArgumentStateConstructor = static () => global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool?)>.Rent((default, "default", default), count: 3, requiredArgumentsMask: __RequiredMembersMask_SimplePoco),
                 ParameterizedConstructor = static (ref global::PolyType.SourceGenModel.SmallClassArgumentState<(int, string, bool?)> state) => { var obj = new global::TestNamespace.SimplePoco(state.Arguments.Item1, state.Arguments.Item2); if (state.IsArgumentSet(2)) obj.IsActive = state.Arguments.Item3!; return obj; },
                 MethodBaseFactory = __ConstructorInfo_SimplePoco,
                 IsPublic = true,

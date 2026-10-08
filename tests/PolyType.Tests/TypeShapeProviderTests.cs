@@ -209,15 +209,9 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
 
                 if (typeof(TDeclaringType).Assembly == Assembly.GetExecutingAssembly())
                 {
-                    try
-                    {
-                        TDeclaringType value = parameterizedCtor.Invoke(ref argumentState);
-                        Assert.NotNull(value);
-                    }
-                    finally
-                    {
-                        argumentState.Return();
-                    }
+                    TDeclaringType value = parameterizedCtor.Invoke(ref argumentState);
+                    Assert.NotNull(value);
+                    argumentState.Return();
                 }
                 else
                 {

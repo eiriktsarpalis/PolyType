@@ -48,6 +48,8 @@ The runtime model types that source-generated code targets — not a provider it
 
 > When changing the shape of generated code in the source generator, the `SourceGenModel/` types here usually need matching updates — the two evolve together.
 
+The class-based argument states use a one-slot thread-static cache per closed storage type. `Rent` reinitializes their tracking state; `Return` clears payload references before caching the instance, but need not reset scalar fields that the next rent overwrites. Modern .NET targets also skip clearing reference-free small-state payloads. Access after returning a state is undefined; tests should verify reinitialization on the next rent rather than require cleared scalar fields on a returned instance.
+
 ### `Utilities/`
 
 Cross-cutting runtime helpers for library authors building on PolyType:

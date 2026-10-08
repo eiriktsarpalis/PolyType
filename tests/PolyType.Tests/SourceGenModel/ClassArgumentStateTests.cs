@@ -4,6 +4,90 @@ namespace PolyType.Tests.SourceGenModel;
 
 public static class ClassArgumentStateTests
 {
+    [Theory]
+    [InlineData(1, 64)]
+    [InlineData(64, 1)]
+    [InlineData(0, 0)]
+    public static void SmallClassArgumentState_RentReinitializesTrackingFields(int firstCount, int nextCount)
+    {
+        ulong firstMask = firstCount == 0 ? 0 : 1UL << (firstCount - 1);
+        SmallClassArgumentState<(int, int)> first = SmallClassArgumentState<(int, int)>.Rent((42, 43), firstCount, firstMask, markAllArgumentsSet: true);
+        Assert.True(first.AreRequiredArgumentsSet);
+        first.Return();
+
+        ulong nextMask = nextCount == 0 ? 0 : 1UL << (nextCount - 1);
+        SmallClassArgumentState<(int, int)> next = SmallClassArgumentState<(int, int)>.Rent((1, 2), nextCount, nextMask);
+        Assert.Same(first, next);
+        Assert.Equal((1, 2), next.Arguments);
+        Assert.Equal(nextCount, next.Count);
+        Assert.Equal(nextCount == 0, next.AreRequiredArgumentsSet);
+        for (int i = 0; i < nextCount; i++)
+        {
+            Assert.False(next.IsArgumentSet(i));
+        }
+
+        next.MarkArgumentSet(nextCount - 1);
+        Assert.True(next.AreRequiredArgumentsSet);
+        next.Return();
+    }
+
+    [Theory]
+    [InlineData(65)]
+    [InlineData(66)]
+    [InlineData(127)]
+    [InlineData(128)]
+    [InlineData(129)]
+    public static void LargeClassArgumentState_RentInitializesReusedAndResizedBitsets(int count)
+    {
+        ValueBitArray mask = new(count);
+        mask[count - 1] = true;
+        LargeClassArgumentState<int> first = LargeClassArgumentState<int>.Rent(42, count, mask, markAllArgumentsSet: true);
+        Assert.True(first.AreRequiredArgumentsSet);
+        first.Return();
+
+        foreach (bool markAllArgumentsSet in new[] { false, true })
+        {
+            LargeClassArgumentState<int> next = LargeClassArgumentState<int>.Rent(7, count, mask, markAllArgumentsSet);
+            Assert.Same(first, next);
+            Assert.Equal(7, next.Arguments);
+            Assert.Equal(count, next.Count);
+            Assert.Equal(markAllArgumentsSet, next.AreRequiredArgumentsSet);
+            for (int i = 0; i < count; i++)
+            {
+                Assert.Equal(markAllArgumentsSet, next.IsArgumentSet(i));
+            }
+
+            Assert.False(next.IsArgumentSet(count));
+            next.Return();
+        }
+
+        ValueBitArray resizedMask = new(count + 1);
+        resizedMask[count] = true;
+        LargeClassArgumentState<int> resized = LargeClassArgumentState<int>.Rent(9, count + 1, resizedMask, markAllArgumentsSet: true);
+        Assert.Same(first, resized);
+        Assert.True(resized.AreRequiredArgumentsSet);
+        Assert.True(resized.IsArgumentSet(count));
+        resized.Return();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void ClassArgumentState_ReturnClearsNestedReferences(bool large)
+    {
+        (object?, (object?, int)) arguments = (new object(), (new object(), 42));
+        PolyType.Abstractions.IArgumentState state = large
+            ? LargeClassArgumentState<(object?, (object?, int))>.Rent(arguments, 65, new ValueBitArray(65))
+            : SmallClassArgumentState<(object?, (object?, int))>.Rent(arguments, 2, 0);
+        state.Return();
+
+        // Inspect backing storage rather than depend on GC stack-scanning precision on Mono.
+        string fieldName = nameof(SmallClassArgumentState<(object?, (object?, int))>.Arguments);
+        var cleared = ((object?, (object?, int)))state.GetType().GetField(fieldName)!.GetValue(state)!;
+        Assert.Null(cleared.Item1);
+        Assert.Null(cleared.Item2.Item1);
+    }
+
     [Fact]
     public static void ClassArgumentStates_ImplementReturnContract()
     {

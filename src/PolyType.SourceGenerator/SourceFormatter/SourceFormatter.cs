@@ -35,18 +35,10 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
         int count,
         string requiredArgumentsMask,
         bool markAllArgumentsSet = false,
-        bool useExplicitTypeName = false,
-        bool passArgumentsByReadonlyReference = false)
+        bool useExplicitTypeName = false)
     {
         string arguments = $"{argumentsExpression}, count: {count}, requiredArgumentsMask: {requiredArgumentsMask}" +
             (markAllArgumentsSet ? ", markAllArgumentsSet: true" : "");
-
-        if (passArgumentsByReadonlyReference)
-        {
-            int typeParameterStart = argumentStateTypeName.IndexOf('<');
-            string argumentsTypeName = argumentStateTypeName[(typeParameterStart + 1)..^1];
-            return $"static () => {{ {argumentsTypeName} arguments = {argumentsExpression}; return {argumentStateTypeName}.Rent(in arguments, count: {count}, requiredArgumentsMask: {requiredArgumentsMask}); }}";
-        }
 
         return argumentStateType is not ArgumentStateType.EmptyArgumentState
             ? $"{argumentStateTypeName}.Rent({arguments})"

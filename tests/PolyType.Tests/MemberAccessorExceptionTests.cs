@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 
 namespace PolyType.Tests;
 
@@ -146,16 +147,12 @@ public abstract partial class MemberAccessorExceptionTests(ProviderUnderTest pro
         public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructor, object? state)
         {
             TArgumentState arguments = constructor.GetArgumentStateConstructor()();
-            try
-            {
-                var parameter = Assert.IsAssignableFrom<IParameterShape<TArgumentState, int>>(constructor.Parameters[0]);
-                parameter.GetSetter()(ref arguments, -1);
-                return constructor.GetParameterizedConstructor()(ref arguments);
-            }
-            finally
-            {
-                arguments.Return();
-            }
+            var parameter = Assert.IsAssignableFrom<IParameterShape<TArgumentState, int>>(constructor.Parameters[0]);
+            parameter.GetSetter()(ref arguments, -1);
+            Exception? exception = Record.Exception(() => constructor.GetParameterizedConstructor()(ref arguments));
+            arguments.Return();
+            ExceptionDispatchInfo.Capture(Assert.IsType<ArgumentOutOfRangeException>(exception)).Throw();
+            return null;
         }
     }
 
@@ -192,14 +189,15 @@ public abstract partial class MemberAccessorExceptionTests(ProviderUnderTest pro
                 argumentState = (TArgumentState)parameter.Accept(this, argumentState)!;
             }
 
-            try
+            object? result = null;
+            Exception? exception = Record.Exception(() => result = constructor.GetParameterizedConstructor()(ref argumentState));
+            argumentState.Return();
+            if (exception is not null)
             {
-                return constructor.GetParameterizedConstructor()(ref argumentState);
+                ExceptionDispatchInfo.Capture(exception).Throw();
             }
-            finally
-            {
-                argumentState.Return();
-            }
+
+            return result;
         }
 
         public override object? VisitMethod<TDeclaringType, TArgumentState, TResult>(IMethodShape<TDeclaringType, TArgumentState, TResult> method, object? state)
