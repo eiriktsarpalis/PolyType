@@ -9,8 +9,6 @@ DOCKER_IMAGE_NAME ?= "polytype-docker-build"
 DOCKER_CMD ?= make pack
 VERSION_FILE = $(SOURCE_DIRECTORY)version.json
 VERSION ?=
-.SHELLFLAGS := -e -c
-.ONESHELL:
 
 clean:
 	dotnet clean --configuration $(CONFIGURATION)
@@ -89,40 +87,42 @@ generate-docs: restore
 serve-docs: generate-docs
 	dotnet docfx serve $(ARTIFACT_PATH)/_site --port 8080
 
+# Explicit continuations support macOS's bundled GNU Make 3.81.
 release: restore
-	cd "$(SOURCE_DIRECTORY)"
-	changes=$$(git -C "$(SOURCE_DIRECTORY)" status --porcelain --untracked-files=all -- . ':(exclude)version.json')
-	if [ -n "$$changes" ]; then
-		echo "repo contains uncommitted changes outside version.json" >&2
-		exit 1
-	fi
-	if [ ! -f "$(VERSION_FILE)" ]; then
-		echo "version file does not exist: $(VERSION_FILE)" >&2
-		exit 1
-	fi
-	version="$(VERSION)"
-	if [ -z "$$version" ]; then
-		if ! command -v jq > /dev/null 2>&1; then
-			echo "jq is required when VERSION is not specified" >&2
-			exit 1
-		elif ! version=$$(jq -er '.version | select(type == "string" and length > 0)' "$(VERSION_FILE)"); then
-			echo "could not read a nonempty version string from $(VERSION_FILE)" >&2
-			exit 1
-		fi
-	fi
-	dotnet nbgv set-version "$$version" --project "$(SOURCE_DIRECTORY)"
-	git commit -m "Bump version to $$version"
-	dotnet nbgv tag
-	git push
-	git push --tags
-	gh_args=""
-	case "$${version%%+*}" in
-		*-*) gh_args="--prerelease" ;;
-	esac
-	if [ -f latest-release-notes.md ]; then
-		gh_args="$$gh_args --notes-file latest-release-notes.md"
-	fi
-	tag=$$(git describe --tags --abbrev=0)
+	set -e; \
+	cd "$(SOURCE_DIRECTORY)"; \
+	changes=$$(git -C "$(SOURCE_DIRECTORY)" status --porcelain --untracked-files=all -- . ':(exclude)version.json'); \
+	if [ -n "$$changes" ]; then \
+		echo "repo contains uncommitted changes outside version.json" >&2; \
+		exit 1; \
+	fi; \
+	if [ ! -f "$(VERSION_FILE)" ]; then \
+		echo "version file does not exist: $(VERSION_FILE)" >&2; \
+		exit 1; \
+	fi; \
+	version="$(VERSION)"; \
+	if [ -z "$$version" ]; then \
+		if ! command -v jq > /dev/null 2>&1; then \
+			echo "jq is required when VERSION is not specified" >&2; \
+			exit 1; \
+		elif ! version=$$(jq -er '.version | select(type == "string" and length > 0)' "$(VERSION_FILE)"); then \
+			echo "could not read a nonempty version string from $(VERSION_FILE)" >&2; \
+			exit 1; \
+		fi; \
+	fi; \
+	dotnet nbgv set-version "$$version" --project "$(SOURCE_DIRECTORY)"; \
+	git commit -m "Bump version to $$version"; \
+	dotnet nbgv tag; \
+	git push; \
+	git push --tags; \
+	gh_args=""; \
+	case "$${version%%+*}" in \
+		*-*) gh_args="--prerelease" ;; \
+	esac; \
+	if [ -f latest-release-notes.md ]; then \
+		gh_args="$$gh_args --notes-file latest-release-notes.md"; \
+	fi; \
+	tag=$$(git describe --tags --abbrev=0); \
 	gh release create "$$tag" --generate-notes --verify-tag $$gh_args
 
 docker-build: clean
