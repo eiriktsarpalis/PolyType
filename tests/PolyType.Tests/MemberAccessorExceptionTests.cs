@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 
 namespace PolyType.Tests;
 
@@ -148,7 +149,10 @@ public abstract partial class MemberAccessorExceptionTests(ProviderUnderTest pro
             TArgumentState arguments = constructor.GetArgumentStateConstructor()();
             var parameter = Assert.IsAssignableFrom<IParameterShape<TArgumentState, int>>(constructor.Parameters[0]);
             parameter.GetSetter()(ref arguments, -1);
-            return constructor.GetParameterizedConstructor()(ref arguments);
+            Exception? exception = Record.Exception(() => constructor.GetParameterizedConstructor()(ref arguments));
+            arguments.Return();
+            ExceptionDispatchInfo.Capture(Assert.IsType<ArgumentOutOfRangeException>(exception)).Throw();
+            return null;
         }
     }
 
@@ -185,7 +189,15 @@ public abstract partial class MemberAccessorExceptionTests(ProviderUnderTest pro
                 argumentState = (TArgumentState)parameter.Accept(this, argumentState)!;
             }
 
-            return constructor.GetParameterizedConstructor()(ref argumentState);
+            object? result = null;
+            Exception? exception = Record.Exception(() => result = constructor.GetParameterizedConstructor()(ref argumentState));
+            argumentState.Return();
+            if (exception is not null)
+            {
+                ExceptionDispatchInfo.Capture(exception).Throw();
+            }
+
+            return result;
         }
 
         public override object? VisitMethod<TDeclaringType, TArgumentState, TResult>(IMethodShape<TDeclaringType, TArgumentState, TResult> method, object? state)

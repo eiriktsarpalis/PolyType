@@ -140,7 +140,7 @@ internal sealed partial class SourceFormatter
             return callSites >= 2 ? $"__MethodInfo_{declaringType.SourceIdentifier}_{method.Position}" : null;
         }
 
-        static string FormatArgumentStateConstructor(TypeShapeModel declaringType, MethodShapeModel method, string methodArgumentStateFQN)
+        string FormatArgumentStateConstructor(TypeShapeModel declaringType, MethodShapeModel method, string methodArgumentStateFQN)
         {
             int shapedCount = method.ShapedParameterCount;
             if (shapedCount == 0)
@@ -157,7 +157,7 @@ internal sealed partial class SourceFormatter
             };
 
             string requiredParametersMaskFieldName = FormatRequiredParametersMaskFieldName(declaringType, method)!;
-            return $"static () => new {methodArgumentStateFQN}({stateValueExpr}, count: {shapedCount}, requiredArgumentsMask: {requiredParametersMaskFieldName})";
+            return $"static () => {FormatArgumentStateCreation(method.ArgumentStateType, methodArgumentStateFQN, stateValueExpr, shapedCount, requiredParametersMaskFieldName!, useExplicitTypeName: true)}";
             
             static string FormatTupleConstructor(IEnumerable<string> parameters)
                 => $"({string.Join(", ", parameters)})";
@@ -340,13 +340,7 @@ internal sealed partial class SourceFormatter
     private static string FormatMethodArgumentStateFQN(MethodShapeModel method)
     {
         string typeParameter = FormatArgumentStateTypeTypeParameter();
-        return method.ArgumentStateType switch
-        {
-            ArgumentStateType.EmptyArgumentState => $"global::PolyType.SourceGenModel.EmptyArgumentState",
-            ArgumentStateType.SmallArgumentState => $"global::PolyType.SourceGenModel.SmallArgumentState<{typeParameter}>",
-            ArgumentStateType.LargeArgumentState => $"global::PolyType.SourceGenModel.LargeArgumentState<{typeParameter}>",
-            _ => throw new InvalidOperationException(method.ArgumentStateType.ToString()),
-        };
+        return FormatArgumentStateTypeName(method.ArgumentStateType, typeParameter);
 
         string FormatArgumentStateTypeTypeParameter()
         {

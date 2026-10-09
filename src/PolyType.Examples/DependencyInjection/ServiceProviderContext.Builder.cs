@@ -1,4 +1,5 @@
 ﻿using PolyType.Abstractions;
+using PolyType.Examples.Utilities;
 using PolyType.Utilities;
 using System.Diagnostics;
 
@@ -62,11 +63,19 @@ public sealed partial class ServiceProviderContext
             return ServiceFactory.FromFunc(provider =>
             {
                 TArgumentState argumentState = argumentStateCtor();
-                foreach (var mapper in parameterMappers)
+                try
                 {
-                    mapper(provider, ref argumentState);
+                    foreach (var mapper in parameterMappers)
+                    {
+                        mapper(provider, ref argumentState);
+                    }
+
+                    return parameterizedCtor(ref argumentState);
                 }
-                return parameterizedCtor(ref argumentState);
+                finally
+                {
+                    argumentState.Return();
+                }
             }, lifetime);
         }
 

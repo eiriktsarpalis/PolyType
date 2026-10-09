@@ -3,6 +3,8 @@ using PolyType.SourceGenModel;
 
 namespace PolyType.Tests.SourceGenModel;
 
+#pragma warning disable CS0618 // Verify compatibility of the legacy argument state.
+
 public static class LargeArgumentStateTests
 {
     public struct TestArguments
@@ -433,4 +435,17 @@ public static class LargeArgumentStateTests
         state.MarkArgumentSet(199);
         Assert.True(state.AreRequiredArgumentsSet); // Now all required are set
     }
+
+    [Fact]
+    public static void Return_IsNoOpForStructArgumentStates()
+    {
+        var state = new LargeArgumentState<TestArguments>(new() { Value1 = 42 }, 1, new ValueBitArray(1));
+        state.MarkArgumentSet(0);
+
+        state.Return();
+
+        Assert.True(state.IsArgumentSet(0));
+        Assert.Equal(42, state.Arguments.Value1);
+    }
+
 }

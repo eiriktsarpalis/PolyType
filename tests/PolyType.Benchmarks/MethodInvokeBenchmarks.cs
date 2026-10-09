@@ -113,13 +113,21 @@ public partial class MethodInvokeBenchmarks
             return new Func<int[], TResult>(args =>
             {
                 var argumentState = argumentStateCtor();
-                for (int i = 0; i < 6; i++)
+                try
                 {
-                    parameterSetters[i](ref argumentState, args[i]);
-                }
+                    for (int i = 0; i < 6; i++)
+                    {
+                        parameterSetters[i](ref argumentState, args[i]);
+                    }
 
-                return methodInvoker(ref instance.Value, ref argumentState).Result;
+                    return methodInvoker(ref instance.Value, ref argumentState).Result;
+                }
+                finally
+                {
+                    argumentState.Return();
+                }
             });
         }
+
     }
 }

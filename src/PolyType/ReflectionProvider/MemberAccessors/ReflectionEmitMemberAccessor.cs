@@ -372,8 +372,8 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         };
 
         return ctorInfo.Parameters.Length <= 64
-            ? typeof(SmallArgumentState<>).MakeGenericType(argumentType)
-            : typeof(LargeArgumentState<>).MakeGenericType(argumentType);
+            ? typeof(SmallClassArgumentState<>).MakeGenericType(argumentType)
+            : typeof(LargeClassArgumentState<>).MakeGenericType(argumentType);
     }
 
     public Func<TArgumentState> CreateConstructorArgumentStateCtor<TArgumentState>(IMethodShapeInfo ctorInfo)
@@ -406,7 +406,8 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
             Debug.Assert(argumentsType == singleParameter.Type);
             ulong requiredMask = singleParameter.IsRequired ? 1UL : 0UL;
 
-            // new SmallArgumentState<T>(defaultValue, count: 1, requiredMask);
+            // SmallClassArgumentState<T>.Rent(defaultValue, count: 1, requiredMask);
+            LocalBuilder argument = generator.DeclareLocal(singleParameter.Type);
             if (singleParameter.HasDefaultValue)
             {
                 LdLiteral(generator, singleParameter.Type, singleParameter.DefaultValue);
@@ -416,27 +417,34 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
                 LdDefaultValue(generator, singleParameter.Type);
             }
 
+            generator.Emit(OpCodes.Stloc, argument);
+            generator.Emit(OpCodes.Ldloca, argument);
             generator.Emit(OpCodes.Ldc_I4_1); // Argument state count
             LdLiteral(generator, typeof(ulong), requiredMask); // Required mask
 
-            ConstructorInfo cI = typeof(TArgumentState).GetConstructor([argumentsType, typeof(int), typeof(ulong)])!;
-            generator.Emit(OpCodes.Newobj, cI);
+            generator.Emit(OpCodes.Ldc_I4_0);
+            MethodInfo rent = typeof(TArgumentState).GetMethod("Rent")!;
+            generator.Emit(OpCodes.Call, rent);
             generator.Emit(OpCodes.Ret);
             return CreateDelegate<Func<TArgumentState>>(dynamicMethod);
         }
         else if (ctorInfo.Parameters.Length <= 64)
         {
-            Debug.Assert(typeof(TArgumentState).GetGenericTypeDefinition() == typeof(SmallArgumentState<>));
+            Debug.Assert(typeof(TArgumentState).GetGenericTypeDefinition() == typeof(SmallClassArgumentState<>));
             Debug.Assert(argumentsType.IsValueTupleType());
             ulong requiredMask = ComputeRequiredMask(ctorInfo);
 
-            // new SmallArgumentState<T>(argumentTuple, length, requiredMask);
+            // SmallClassArgumentState<T>.Rent(argumentTuple, length, requiredMask);
+            LocalBuilder arguments = generator.DeclareLocal(argumentsType);
             LdDefaultArgsAsTuple(generator, ctorInfo, argumentsType);
+            generator.Emit(OpCodes.Stloc, arguments);
+            generator.Emit(OpCodes.Ldloca, arguments);
             LdLiteral(generator, typeof(int), ctorInfo.Parameters.Length);
             LdLiteral(generator, typeof(ulong), requiredMask);
 
-            ConstructorInfo cI = typeof(TArgumentState).GetConstructor([argumentsType, typeof(int), typeof(ulong)])!;
-            generator.Emit(OpCodes.Newobj, cI);
+            generator.Emit(OpCodes.Ldc_I4_0);
+            MethodInfo rent = typeof(TArgumentState).GetMethod("Rent")!;
+            generator.Emit(OpCodes.Call, rent);
             generator.Emit(OpCodes.Ret);
             return CreateDelegate<Func<TArgumentState>>(dynamicMethod);
 
@@ -456,20 +464,24 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         }
         else
         {
-            Debug.Assert(typeof(TArgumentState).GetGenericTypeDefinition() == typeof(LargeArgumentState<>));
+            Debug.Assert(typeof(TArgumentState).GetGenericTypeDefinition() == typeof(LargeClassArgumentState<>));
             Debug.Assert(argumentsType.IsValueTupleType());
 
             // We need to box the ValueBitArray so that it can be captured by the dynamic method delegate.
             StrongBox<ValueBitArray> requiredMask = new(ComputeRequiredMask(ctorInfo));
 
-            // new LargeArgumentState<T>(argumentTuple, length, strongBox.Value);
+            // LargeClassArgumentState<T>.Rent(argumentTuple, length, strongBox.Value);
+            LocalBuilder arguments = generator.DeclareLocal(argumentsType);
             LdDefaultArgsAsTuple(generator, ctorInfo, argumentsType);
+            generator.Emit(OpCodes.Stloc, arguments);
+            generator.Emit(OpCodes.Ldloca, arguments);
             LdLiteral(generator, typeof(int), ctorInfo.Parameters.Length);
             generator.Emit(OpCodes.Ldarg_0); // Load the StrongBox parameter
             generator.Emit(OpCodes.Ldfld, requiredMask.GetType().GetField("Value")!);
 
-            ConstructorInfo cI = typeof(TArgumentState).GetConstructor([argumentsType, typeof(int), typeof(ValueBitArray)])!;
-            generator.Emit(OpCodes.Newobj, cI);
+            generator.Emit(OpCodes.Ldc_I4_0);
+            MethodInfo rent = typeof(TArgumentState).GetMethod("Rent")!;
+            generator.Emit(OpCodes.Call, rent);
             generator.Emit(OpCodes.Ret);
 
             // Create a delegate that captures the precomputed BitArray
@@ -554,11 +566,13 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         if (ctorInfo.Parameters.Length == 1)
         {
             generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Ldind_Ref);
             generator.Emit(OpCodes.Ldfld, argumentsField);
         }
         else
         {
             generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Ldind_Ref);
             generator.Emit(OpCodes.Ldflda, argumentsField);
             FieldInfo nestedField = LdNestedTuple(generator, argumentsType, parameterIndex);
             generator.Emit(OpCodes.Ldfld, nestedField);
@@ -589,12 +603,14 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         if (ctorInfo.Parameters.Length == 1)
         {
             generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Ldind_Ref);
             generator.Emit(OpCodes.Ldarg_1);
             generator.Emit(OpCodes.Stfld, argumentsField);
         }
         else
         {
             generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Ldind_Ref);
             generator.Emit(OpCodes.Ldflda, argumentsField);
             FieldInfo nestedField = LdNestedTuple(generator, argumentsType, parameterIndex);
             generator.Emit(OpCodes.Ldarg_1);
@@ -693,6 +709,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
 
                     // if (state.IsArgumentSet(memberIndex))
                     generator.Emit(OpCodes.Ldarg_0);
+                    generator.Emit(OpCodes.Ldind_Ref);
                     LdLiteral(generator, typeof(int), i);
                     EmitCall(generator, isArgumentSetMethod);
                     generator.Emit(OpCodes.Brfalse_S, label);
@@ -717,6 +734,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
 
             // return state.Arguments;
             generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Ldind_Ref);
             generator.Emit(OpCodes.Ldfld, argumentsField);
             generator.Emit(OpCodes.Ret);
         }
@@ -885,45 +903,49 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
 
             case [IParameterShapeInfo singleParameter]:
             {
-                // argStateLocal = new SmallArgumentState<T>(arg_1, count: 1, requiredMask, markAllArgumentsSet: true);
+                // argStateLocal = SmallClassArgumentState<T>.Rent(arg_1, count: 1, requiredMask, markAllArgumentsSet: true);
                 Debug.Assert(typeof(TArgumentState).IsGenericType);
-                Debug.Assert(typeof(TArgumentState).GetGenericTypeDefinition() == typeof(SmallArgumentState<>));
+                Debug.Assert(typeof(TArgumentState).GetGenericTypeDefinition() == typeof(SmallClassArgumentState<>));
 
                 Type parameterType = singleParameter.Type;
                 Debug.Assert(parameterType == typeof(TArgumentState).GetGenericArguments()[0]);
                 ulong requiredMask = singleParameter.IsRequired ? 1UL : 0UL;
 
+                LocalBuilder argument = generator.DeclareLocal(parameterType);
                 generator.Emit(OpCodes.Ldarg_1); // Load the single parameter (arg_1)
                 if (singleParameter.IsByRef)
                 {
                     LdRef(generator, parameterType, copyValueTypes: true);
                 }
 
+                generator.Emit(OpCodes.Stloc, argument);
+                generator.Emit(OpCodes.Ldloca, argument);
                 generator.Emit(OpCodes.Ldc_I4_1); // Load the count (1)
                 LdLiteral(generator, typeof(ulong), requiredMask); // Load the requiredMask
                 generator.Emit(OpCodes.Ldc_I4_1); // Load the markAllArgumentsSet (true)
-                ConstructorInfo ctor = typeof(TArgumentState).GetConstructor([parameterType, typeof(int), typeof(ulong), typeof(bool)])!;
-                generator.Emit(OpCodes.Newobj, ctor);
+                generator.Emit(OpCodes.Call, typeof(TArgumentState).GetMethod("Rent")!);
                 generator.Emit(OpCodes.Stloc, argStateLocal);
                 break;
             }
 
             case { Length: <= 64 }:
             {
-                // argStateLocal = new SmallArgumentState<(t1, t2, ..., tn)>((arg_1, arg_2, ... arg_N), count: 1, requiredMask, markAllArgumentsSet: true);
+                // argStateLocal = SmallClassArgumentState<(t1, t2, ..., tn)>.Rent((arg_1, arg_2, ... arg_N), count: 1, requiredMask, markAllArgumentsSet: true);
                 Debug.Assert(typeof(TArgumentState).IsGenericType);
-                Debug.Assert(typeof(TArgumentState).GetGenericTypeDefinition() == typeof(SmallArgumentState<>));
+                Debug.Assert(typeof(TArgumentState).GetGenericTypeDefinition() == typeof(SmallClassArgumentState<>));
 
                 Type argumentType = typeof(TArgumentState).GetGenericArguments()[0];
                 Debug.Assert(argumentType.IsValueTupleType());
                 ulong requiredMask = ComputeRequiredMask(shapeInfo);
 
+                LocalBuilder arguments = generator.DeclareLocal(argumentType);
                 LdArgsAsTuple(generator, shapeInfo, argumentType); // Load the arguments as a tuple
+                generator.Emit(OpCodes.Stloc, arguments);
+                generator.Emit(OpCodes.Ldloca, arguments);
                 LdLiteral(generator, typeof(int), shapeInfo.Parameters.Length); // Load the count
                 LdLiteral(generator, typeof(ulong), requiredMask); // Load the requiredMask
                 LdLiteral(generator, typeof(bool), true); // Load the markAllArgumentsSet (true)
-                ConstructorInfo ctor = typeof(TArgumentState).GetConstructor([argumentType, typeof(int), typeof(ulong), typeof(bool)])!;
-                generator.Emit(OpCodes.Newobj, ctor);
+                generator.Emit(OpCodes.Call, typeof(TArgumentState).GetMethod("Rent")!);
                 generator.Emit(OpCodes.Stloc, argStateLocal);
                 break;
 
@@ -944,23 +966,25 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
 
             default:
             {
-                // argStateLocal = new LargeArgumentState<(t1, t2, ..., tn)>((arg_2, arg_3, ... arg_N), count: 1, requiredMask, markAllArgumentsSet: true);
+                // argStateLocal = LargeClassArgumentState<(t1, t2, ..., tn)>.Rent((arg_2, arg_3, ... arg_N), count: 1, requiredMask, markAllArgumentsSet: true);
                 Debug.Assert(typeof(TArgumentState).IsGenericType);
-                Debug.Assert(typeof(TArgumentState).GetGenericTypeDefinition() == typeof(LargeArgumentState<>));
+                Debug.Assert(typeof(TArgumentState).GetGenericTypeDefinition() == typeof(LargeClassArgumentState<>));
 
                 Type argumentType = typeof(TArgumentState).GetGenericArguments()[0];
                 Debug.Assert(argumentType.IsValueTupleType());
 
                 largeRequiredArgumentMask = ComputeRequiredMask(shapeInfo);
 
+                LocalBuilder arguments = generator.DeclareLocal(argumentType);
                 LdArgsAsTuple(generator, shapeInfo, argumentType); // Load the arguments as a tuple
+                generator.Emit(OpCodes.Stloc, arguments);
+                generator.Emit(OpCodes.Ldloca, arguments);
                 LdLiteral(generator, typeof(int), shapeInfo.Parameters.Length); // Load the count
                 generator.Emit(OpCodes.Ldarg_0); // Load the argument mask from the environment
                 generator.Emit(OpCodes.Ldfld, typeof(DelegateWrapperEnvironment<TArgumentState, TResult>).GetField(nameof(DelegateWrapperEnvironment<,>.LargeRequiredParametersMask))!);
                 LdLiteral(generator, typeof(bool), true); // Load the markAllArgumentsSet (true)
 
-                ConstructorInfo cI = typeof(TArgumentState).GetConstructor([argumentType, typeof(int), typeof(ValueBitArray), typeof(bool)])!;
-                generator.Emit(OpCodes.Newobj, cI);
+                generator.Emit(OpCodes.Call, typeof(TArgumentState).GetMethod("Rent")!);
                 generator.Emit(OpCodes.Stloc, argStateLocal);
                 break;
 
@@ -981,10 +1005,18 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         }
 
         // 2. Invoke the inner delegate
+        generator.BeginExceptionBlock();
         generator.Emit(OpCodes.Ldarg_0); // Load the inner delegate from the environment argument
         generator.Emit(OpCodes.Ldfld, typeof(DelegateWrapperEnvironment<TArgumentState, TResult>).GetField(nameof(DelegateWrapperEnvironment<,>.InnerFunc))!);
         generator.Emit(OpCodes.Ldloca_S, argStateLocal); // Load the argument state
         generator.Emit(OpCodes.Callvirt, innerDelegateInvoker); // Call the inner delegate
+        LocalBuilder resultLocal = generator.DeclareLocal(typeof(TResult));
+        generator.Emit(OpCodes.Stloc, resultLocal);
+        generator.BeginFinallyBlock();
+        generator.Emit(OpCodes.Ldloc, argStateLocal);
+        generator.Emit(OpCodes.Callvirt, typeof(IArgumentState).GetMethod(nameof(IArgumentState.Return))!);
+        generator.EndExceptionBlock();
+        generator.Emit(OpCodes.Ldloc, resultLocal);
 
         // 3. Handle the return parameter
         Type delegateReturnType = outerDelegateInvoker.ReturnType;
@@ -1081,6 +1113,7 @@ internal sealed class ReflectionEmitMemberAccessor : IReflectionMemberAccessor
         (string LogicalName, MemberInfo Member, MemberInfo[]? ParentMembers)? tupleElement,
         bool isByRefParameter)
     {
+        generator.Emit(OpCodes.Ldind_Ref);
         OpCode ldfldOpCode = isByRefParameter ? OpCodes.Ldflda : OpCodes.Ldfld;
 
         if (tupleElement is null)

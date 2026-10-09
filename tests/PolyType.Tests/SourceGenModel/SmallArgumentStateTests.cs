@@ -3,6 +3,8 @@ using PolyType.SourceGenModel;
 
 namespace PolyType.Tests.SourceGenModel;
 
+#pragma warning disable CS0618 // Verify compatibility of the legacy argument state.
+
 public static class SmallArgumentStateTests
 {
     public struct TestArguments
@@ -286,6 +288,16 @@ public static class SmallArgumentStateTests
     }
 
     [Fact]
+    public static void MarkAllArgumentsSet_With64Arguments_SetsAllBits()
+    {
+        var state = new SmallArgumentState<TestArguments>(new(), 64, ulong.MaxValue, markAllArgumentsSet: true);
+
+        Assert.True(state.IsArgumentSet(0));
+        Assert.True(state.IsArgumentSet(63));
+        Assert.True(state.AreRequiredArgumentsSet);
+    }
+
+    [Fact]
     public static void MarkArgumentSet_CanSetSameArgumentMultipleTimes()
     {
         // Arrange
@@ -358,4 +370,17 @@ public static class SmallArgumentStateTests
         Assert.False(state.IsArgumentSet(0));
         Assert.False(state.IsArgumentSet(2));
     }
+
+    [Fact]
+    public static void Return_IsNoOpForStructArgumentStates()
+    {
+        var state = new SmallArgumentState<TestArguments>(new() { Value1 = 42 }, 1, 1);
+        state.MarkArgumentSet(0);
+
+        state.Return();
+
+        Assert.True(state.IsArgumentSet(0));
+        Assert.Equal(42, state.Arguments.Value1);
+    }
+
 }

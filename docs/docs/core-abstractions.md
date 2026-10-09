@@ -558,10 +558,17 @@ class EmptyConstructorVisitor : TypeShapeVisitor
         return new Func<TDeclaringType>(() =>
         {
             TArgumentState state = argumentStateCtor();
-            foreach (ParameterSetter<TArgumentState> parameterSetter in parameterSetters)
-                parameterSetter(ref state);
+            try
+            {
+                foreach (ParameterSetter<TArgumentState> parameterSetter in parameterSetters)
+                    parameterSetter(ref state);
 
-            return ctor(state);
+                return ctor(state);
+            }
+            finally
+            {
+                state.Return();
+            }
         });
     }
 
@@ -726,14 +733,21 @@ partial class LoggingVisitor : TypeShapeVisitor
         {
             Console.WriteLine($"Invoking {methodShape.Name}");
             TArgumentState argumentState = argumentStateCtor();
-            foreach (var parameterSetter in parameterSetters)
+            try
             {
-                parameterSetter(ref argumentState, arguments);
-            }
+                foreach (var parameterSetter in parameterSetters)
+                {
+                    parameterSetter(ref argumentState, arguments);
+                }
 
-            TResult result = await invoker(ref instance.Value, ref argumentState);
-            Console.WriteLine($"Completed {methodShape.Name} with result {result}");
-            return result;
+                TResult result = await invoker(ref instance.Value, ref argumentState);
+                Console.WriteLine($"Completed {methodShape.Name} with result {result}");
+                return result;
+            }
+            finally
+            {
+                argumentState.Return();
+            }
         });
     }
 

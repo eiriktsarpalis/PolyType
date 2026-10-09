@@ -110,32 +110,38 @@ internal sealed class JsonObjectConverterWithParameterizedCtor<TDeclaringType, T
 
         JsonPropertyDictionary<JsonPropertyConverter<TArgumentState>> ctorParams = _constructorParameters;
         TArgumentState argumentState = createArgumentState();
-
-        while (reader.TokenType != JsonTokenType.EndObject)
+        try
         {
-            Debug.Assert(reader.TokenType is JsonTokenType.PropertyName);
-
-            JsonPropertyConverter<TArgumentState>? jsonProperty = ctorParams.LookupProperty(ref reader);
-            reader.EnsureRead();
-
-            if (jsonProperty != null)
+            while (reader.TokenType != JsonTokenType.EndObject)
             {
-                jsonProperty.Read(ref reader, ref argumentState, options);
-            }
-            else
-            {
-                reader.Skip();
+                Debug.Assert(reader.TokenType is JsonTokenType.PropertyName);
+
+                JsonPropertyConverter<TArgumentState>? jsonProperty = ctorParams.LookupProperty(ref reader);
+                reader.EnsureRead();
+
+                if (jsonProperty != null)
+                {
+                    jsonProperty.Read(ref reader, ref argumentState, options);
+                }
+                else
+                {
+                    reader.Skip();
+                }
+
+                reader.EnsureRead();
             }
 
-            reader.EnsureRead();
+            if (!argumentState.AreRequiredArgumentsSet)
+            {
+                Helpers.ThrowMissingRequiredArguments(ref argumentState, parameters);
+            }
+
+            return createObject(ref argumentState);
         }
-
-        if (!argumentState.AreRequiredArgumentsSet)
+        finally
         {
-            Helpers.ThrowMissingRequiredArguments(ref argumentState, parameters);
+            argumentState.Return();
         }
-
-        return createObject(ref argumentState);
     }
 }
 

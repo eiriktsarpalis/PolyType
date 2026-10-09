@@ -110,24 +110,31 @@ internal sealed class YamlObjectConverterWithParameterizedCtor<TDeclaringType, T
     private TDeclaringType ReadMappingContentCore(YamlReader reader)
     {
         TArgumentState argumentState = createArgumentState();
-        Dictionary<string, YamlPropertyConverter<TArgumentState>> ctorParams = _constructorParameters;
-
-        while (reader.TryReadMappingKey(out string key))
+        try
         {
-            if (!ctorParams.TryGetValue(key, out YamlPropertyConverter<TArgumentState>? propertyConverter))
+            Dictionary<string, YamlPropertyConverter<TArgumentState>> ctorParams = _constructorParameters;
+
+            while (reader.TryReadMappingKey(out string key))
             {
-                reader.SkipValue();
-                continue;
+                if (!ctorParams.TryGetValue(key, out YamlPropertyConverter<TArgumentState>? propertyConverter))
+                {
+                    reader.SkipValue();
+                    continue;
+                }
+
+                propertyConverter.Read(reader, ref argumentState);
             }
 
-            propertyConverter.Read(reader, ref argumentState);
-        }
+            if (!argumentState.AreRequiredArgumentsSet)
+            {
+                Helpers.ThrowMissingRequiredArguments(ref argumentState, parameters);
+            }
 
-        if (!argumentState.AreRequiredArgumentsSet)
+            return createObject(ref argumentState);
+        }
+        finally
         {
-            Helpers.ThrowMissingRequiredArguments(ref argumentState, parameters);
+            argumentState.Return();
         }
-
-        return createObject(ref argumentState);
     }
 }

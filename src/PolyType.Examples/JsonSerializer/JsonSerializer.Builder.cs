@@ -1,5 +1,6 @@
 ﻿using PolyType.Abstractions;
 using PolyType.Examples.JsonSerializer.Converters;
+using PolyType.Examples.Utilities;
 using PolyType.Utilities;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -297,19 +298,25 @@ public static partial class JsonSerializerTS
             return new JsonFunc(async (parameters, cancellationToken) =>
             {
                 TArgumentState argumentState = argumentStateCtor();
-
-                foreach (var setter in parameterSetters)
+                try
                 {
-                    setter(ref argumentState, parameters, cancellationToken);
-                }
+                    foreach (var setter in parameterSetters)
+                    {
+                        setter(ref argumentState, parameters, cancellationToken);
+                    }
 
-                if (!argumentState.AreRequiredArgumentsSet)
+                    if (!argumentState.AreRequiredArgumentsSet)
+                    {
+                        ThrowMissingRequiredArguments(ref argumentState);
+                    }
+
+                    TResult result = await invoker(ref boxedTarget.Value, ref argumentState).ConfigureAwait(false);
+                    return resultConverter.SerializeToElement(result);
+                }
+                finally
                 {
-                    ThrowMissingRequiredArguments(ref argumentState);
+                    argumentState.Return();
                 }
-
-                TResult result = await invoker(ref boxedTarget.Value, ref argumentState).ConfigureAwait(false);
-                return resultConverter.SerializeToElement(result);
             });
 
             void ThrowMissingRequiredArguments(ref TArgumentState argumentState)

@@ -82,20 +82,27 @@ public static partial class ConfigurationBinderTS
                     }
                     
                     TArgumentState argState = argStateCtor();
-                    foreach ((string name, bool isRequired, PropertyBinder<TArgumentState> binder) in paramBinders)
+                    try
                     {
-                        if (configuration.GetSection(name) is { } section)
+                        foreach ((string name, bool isRequired, PropertyBinder<TArgumentState> binder) in paramBinders)
                         {
-                            binder(ref argState, section);
+                            if (configuration.GetSection(name) is { } section)
+                            {
+                                binder(ref argState, section);
+                            }
+                            else if (isRequired)
+                            {
+                                Throw(name);
+                                static void Throw(string name) => throw new InvalidOperationException($"Missing required configuration key '{name}'.");
+                            }
                         }
-                        else if (isRequired)
-                        {
-                            Throw(name);
-                            static void Throw(string name) => throw new InvalidOperationException($"Missing required configuration key '{name}'.");
-                        }
-                    }
 
-                    return paramCtor(ref argState);
+                        return paramCtor(ref argState);
+                    }
+                    finally
+                    {
+                        argState.Return();
+                    }
                 });
             }
         }

@@ -24,4 +24,7 @@ public sealed class EmptyArgumentState : IArgumentState
 
     /// <inheritdoc/>
     public bool IsArgumentSet(int index) => false;
+
+    /// <inheritdoc/>
+    public void Return() { }
 }

@@ -91,6 +91,14 @@ public abstract class YamlTests(ProviderUnderTest providerUnderTest)
         }
     }
 
+    [Fact]
+    public void MissingRequiredConstructorArgumentsAreRejected()
+    {
+        YamlConverter<SimpleRecord> converter = GetConverterUnderTest(TestCase.Create(new SimpleRecord(42)));
+        KeyNotFoundException exception = Assert.Throws<KeyNotFoundException>(() => converter.Deserialize("{}"));
+        Assert.Equal("Missing required parameters: 'value'", exception.Message);
+    }
+
     public static IEnumerable<object?[]> GetValuesAndExpectedEncoding()
     {
         Witness p = new();

@@ -95,7 +95,7 @@ internal sealed partial class SourceFormatter
             return callSites >= 2 ? $"__ConstructorInfo_{type.SourceIdentifier}" : null;
         }
 
-        static string FormatArgumentStateCtor(ObjectShapeModel type, ConstructorShapeModel constructor, string constructorArgumentStateFQN)
+        string FormatArgumentStateCtor(ObjectShapeModel type, ConstructorShapeModel constructor, string constructorArgumentStateFQN)
         {
             if (constructor.TotalArity == 0)
             {
@@ -110,7 +110,12 @@ internal sealed partial class SourceFormatter
                 _ => FormatTupleConstructor(constructor.GetAllParameters().Select(FormatDefaultValueExpr)),
             };
 
-            return $"static () => new({stateValueExpr}, count: {constructor.TotalArity}, requiredArgumentsMask: {requiredMembersMaskFieldName})";
+            return $"static () => {FormatArgumentStateCreation(
+                constructor.ArgumentStateType,
+                constructorArgumentStateFQN,
+                stateValueExpr,
+                constructor.TotalArity,
+                requiredMembersMaskFieldName)}";
             static string FormatTupleConstructor(IEnumerable<string> parameters)
                 => $"({string.Join(", ", parameters)})";
         }
@@ -437,13 +442,7 @@ internal sealed partial class SourceFormatter
     private static string FormatConstructorArgumentStateFQN(ObjectShapeModel type, ConstructorShapeModel constructorModel)
     {
         string typeParameter = FormatArgumentStateTypeTypeParameter();
-        return constructorModel.ArgumentStateType switch
-        {
-            ArgumentStateType.EmptyArgumentState => $"global::PolyType.SourceGenModel.EmptyArgumentState",
-            ArgumentStateType.SmallArgumentState => $"global::PolyType.SourceGenModel.SmallArgumentState<{typeParameter}>",
-            ArgumentStateType.LargeArgumentState => $"global::PolyType.SourceGenModel.LargeArgumentState<{typeParameter}>",
-            _ => throw new InvalidOperationException(constructorModel.ArgumentStateType.ToString()),
-        };
+        return FormatArgumentStateTypeName(constructorModel.ArgumentStateType, typeParameter);
 
         string FormatArgumentStateTypeTypeParameter()
         {

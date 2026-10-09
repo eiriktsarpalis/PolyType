@@ -93,14 +93,21 @@ public partial class RandomGenerator
                     }
 
                     TArgumentState argState = argumentStateCtor();
-                    int propertySize = GetChildSize(size, parameterSetters.Length);
-
-                    foreach (var parameterSetter in parameterSetters)
+                    try
                     {
-                        parameterSetter(ref argState, random, propertySize);
-                    }
+                        int propertySize = GetChildSize(size, parameterSetters.Length);
 
-                    return ctor(ref argState);
+                        foreach (var parameterSetter in parameterSetters)
+                        {
+                            parameterSetter(ref argState, random, propertySize);
+                        }
+
+                        return ctor(ref argState);
+                    }
+                    finally
+                    {
+                        argState.Return();
+                    }
                 });
             }
         }

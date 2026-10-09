@@ -93,36 +93,42 @@ internal sealed class XmlObjectConverterWithParameterizedCtor<TDeclaringType, TA
         bool isEmptyElement = reader.IsEmptyElement;
         reader.ReadStartElement();
         TArgumentState argumentState = createArgumentState();
-
-        if (!isEmptyElement)
+        try
         {
-            Dictionary<string, XmlPropertyConverter<TArgumentState>> ctorParams = _constructorParameters;
-
-            while (reader.NodeType != XmlNodeType.EndElement)
+            if (!isEmptyElement)
             {
-                if (reader.NodeType != XmlNodeType.Element)
-                {
-                    continue;
-                }
+                Dictionary<string, XmlPropertyConverter<TArgumentState>> ctorParams = _constructorParameters;
 
-                string key = reader.Name;
-                if (!ctorParams.TryGetValue(key, out XmlPropertyConverter<TArgumentState>? propertyConverter))
+                while (reader.NodeType != XmlNodeType.EndElement)
                 {
-                    reader.Skip();
-                    continue;
-                }
+                    if (reader.NodeType != XmlNodeType.Element)
+                    {
+                        continue;
+                    }
 
-                propertyConverter.Read(reader, ref argumentState);
+                    string key = reader.Name;
+                    if (!ctorParams.TryGetValue(key, out XmlPropertyConverter<TArgumentState>? propertyConverter))
+                    {
+                        reader.Skip();
+                        continue;
+                    }
+
+                    propertyConverter.Read(reader, ref argumentState);
+                }
             }
+
+            reader.ReadEndElement();
+
+            if (!argumentState.AreRequiredArgumentsSet)
+            {
+                Helpers.ThrowMissingRequiredArguments(ref argumentState, parameters);
+            }
+
+            return createObject(ref argumentState);
         }
-
-        reader.ReadEndElement();
-
-        if (!argumentState.AreRequiredArgumentsSet)
+        finally
         {
-            Helpers.ThrowMissingRequiredArguments(ref argumentState, parameters);
+            argumentState.Return();
         }
-
-        return createObject(ref argumentState);
     }
 }

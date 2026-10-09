@@ -7,13 +7,13 @@
   "tolerance_percent": 3,
   "platforms": {
     "linux-x64": {
-      "size_bytes": 3018952
+      "size_bytes": 4972504
     },
     "osx-arm64": {
-      "size_bytes": 2862912
+      "size_bytes": 4789840
     },
     "win-x64": {
-      "size_bytes": 2543104
+      "size_bytes": 4380160
     }
   }
 }
