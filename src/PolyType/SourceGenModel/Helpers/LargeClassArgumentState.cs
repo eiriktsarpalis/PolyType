@@ -1,5 +1,7 @@
 using PolyType.Abstractions;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace PolyType.SourceGenModel;
 
@@ -15,7 +17,12 @@ public sealed class LargeClassArgumentState<TArguments> : IArgumentState
     private ValueBitArray _requiredArgumentsMask;
     private ValueBitArray _setArguments;
 
-    private LargeClassArgumentState() { }
+    private LargeClassArgumentState(in TArguments arguments, int count, ValueBitArray requiredArgumentsMask, bool markAllArgumentsSet)
+    {
+        Debug.Assert(requiredArgumentsMask.Length == count);
+        Arguments = arguments;
+        Initialize(count, requiredArgumentsMask, markAllArgumentsSet);
+    }
 
     /// <summary>
     /// Rents an argument state initialized with the specified arguments and required-argument mask.
@@ -34,21 +41,15 @@ public sealed class LargeClassArgumentState<TArguments> : IArgumentState
         }
 
         LargeClassArgumentState<TArguments>? state = t_cached;
-        t_cached = null;
-        state ??= new();
-        state.Arguments = arguments;
-        state._requiredArgumentsMask = requiredArgumentsMask;
-        if (state._setArguments.Length != count)
+        if (state is null)
         {
-            state._setArguments = new ValueBitArray(count);
-            if (markAllArgumentsSet)
-            {
-                state._setArguments.SetAll(true);
-            }
+            state = new(in arguments, count, requiredArgumentsMask, markAllArgumentsSet);
         }
         else
         {
-            state._setArguments.SetAll(markAllArgumentsSet);
+            state.Arguments = arguments;
+            state.Initialize(count, requiredArgumentsMask, markAllArgumentsSet);
+            t_cached = null;
         }
 
         return state;
@@ -57,9 +58,8 @@ public sealed class LargeClassArgumentState<TArguments> : IArgumentState
     /// <summary>
     /// The actual arguments being tracked by this state.
     /// </summary>
-#pragma warning disable CA1051 // Do not declare visible instance fields: generated accessors require direct field access.
-#pragma warning disable SA1401
-    public TArguments Arguments = default!;
+#pragma warning disable CA1051, SA1401 // Do not declare visible instance fields: generated accessors require direct field access.
+    public TArguments Arguments;
 #pragma warning restore CA1051, SA1401
 
     /// <inheritdoc />
@@ -80,8 +80,32 @@ public sealed class LargeClassArgumentState<TArguments> : IArgumentState
     /// <inheritdoc />
     public void Return()
     {
+#if NET
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<TArguments>())
+        {
+            Arguments = default!;
+        }
+#else
         Arguments = default!;
+#endif
         _requiredArgumentsMask = default;
         t_cached = this;
+    }
+
+    private void Initialize(int count, ValueBitArray requiredArgumentsMask, bool markAllArgumentsSet)
+    {
+        _requiredArgumentsMask = requiredArgumentsMask;
+        if (_setArguments.Length != count)
+        {
+            _setArguments = new ValueBitArray(count);
+            if (markAllArgumentsSet)
+            {
+                _setArguments.SetAll(true);
+            }
+        }
+        else
+        {
+            _setArguments.SetAll(markAllArgumentsSet);
+        }
     }
 }

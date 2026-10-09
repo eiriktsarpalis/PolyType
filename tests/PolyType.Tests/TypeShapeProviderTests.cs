@@ -155,7 +155,7 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
             Assert.All(objectShape.Constructor.Parameters, param => Assert.True(param.IsRequired));
         }
 
-        var visitor = new ConstructorTestVisitor(testCase);
+        var visitor = new ConstructorTestVisitor(testCase, providerUnderTest.Kind);
         if (objectShape.Constructor is { } ctor)
         {
             Assert.Equal(typeof(T), ctor.DeclaringType.Type);
@@ -163,8 +163,87 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
         }
     }
 
-    private sealed class ConstructorTestVisitor(ITestCase testCase) : TypeShapeVisitor
+    [Fact]
+    public void ReflectionNoEmitArgumentStatesUseFreshReferenceStatesAcrossArities()
     {
+        if (providerUnderTest.Kind is not ProviderKind.ReflectionNoEmit)
+        {
+            return;
+        }
+
+        var one = GetFactory<OneArgumentConstructor>();
+        var two = GetFactory<TwoArgumentConstructor>();
+        var three = GetFactory<ThreeArgumentConstructor>();
+        var withInitializers = GetFactory<ClassWithInitOnlyProperties>();
+
+        Assert.Equal(one.StateType, two.StateType);
+        Assert.Equal(one.StateType, three.StateType);
+        Assert.Equal(one.StateType, withInitializers.StateType);
+        Assert.False(one.StateType.IsValueType);
+
+        object first = one.Factory();
+        object second = two.Factory();
+        object third = three.Factory();
+        Assert.NotSame(first, second);
+        Assert.NotSame(first, third);
+        Assert.NotSame(second, third);
+        Assert.Equal(1, ((IArgumentState)first).Count);
+        Assert.Equal(2, ((IArgumentState)second).Count);
+        Assert.Equal(3, ((IArgumentState)third).Count);
+
+        ((IArgumentState)second).Return();
+        object afterReturn = two.Factory();
+        Assert.NotSame(second, afterReturn);
+        Assert.Equal(2, ((IArgumentState)afterReturn).Count);
+        ((IArgumentState)first).Return();
+        ((IArgumentState)third).Return();
+        ((IArgumentState)afterReturn).Return();
+
+        (Type StateType, Func<object> Factory) GetFactory<TDeclaringType>()
+        {
+            IObjectTypeShape<TDeclaringType> shape = (IObjectTypeShape<TDeclaringType>)providerUnderTest.Provider.GetTypeShapeOrThrow<TDeclaringType>();
+            var visitor = new ArgumentStateFactoryVisitor();
+            shape.Constructor!.Accept(visitor);
+            return (visitor.StateType!, visitor.Factory!);
+        }
+    }
+
+    public sealed class OneArgumentConstructor(int value)
+    {
+        public int Value { get; } = value;
+    }
+
+    public sealed class TwoArgumentConstructor(int value, string name)
+    {
+        public int Value { get; } = value;
+        public string Name { get; } = name;
+    }
+
+    public sealed class ThreeArgumentConstructor(int value, string name, bool enabled)
+    {
+        public int Value { get; } = value;
+        public string Name { get; } = name;
+        public bool Enabled { get; } = enabled;
+    }
+
+    private sealed class ArgumentStateFactoryVisitor : TypeShapeVisitor
+    {
+        public Type? StateType { get; private set; }
+        public Func<object>? Factory { get; private set; }
+
+        public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructor, object? state)
+        {
+            Func<TArgumentState> factory = constructor.GetArgumentStateConstructor();
+            StateType = typeof(TArgumentState);
+            Factory = () => factory()!;
+            return null;
+        }
+    }
+
+    private sealed class ConstructorTestVisitor(ITestCase testCase, ProviderKind providerKind) : TypeShapeVisitor
+    {
+        private IArgumentState? _independentState;
+
         public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructor, object? state)
         {
             var expectedType = (Type)state!;
@@ -195,6 +274,13 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
                 int lastRequiredIndex = constructor.Parameters.LastOrDefault(p => p.IsRequired)?.Position ?? -1;
                 Assert.Equal(lastRequiredIndex == -1, argumentState.AreRequiredArgumentsSet);
 
+                if (providerKind is ProviderKind.ReflectionNoEmit)
+                {
+                    TArgumentState independentState = argumentStateCtor();
+                    Assert.NotSame(argumentState, independentState);
+                    _independentState = independentState;
+                }
+
                 foreach (IParameterShape parameter in constructor.Parameters)
                 {
                     Assert.Equal(i++, parameter.Position);
@@ -203,6 +289,13 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
                 }
 
                 Assert.True(argumentState.AreRequiredArgumentsSet);
+                if (_independentState is not null)
+                {
+                    Assert.Equal(constructor.Parameters.Count, _independentState.Count);
+                    Assert.Equal(lastRequiredIndex == -1, _independentState.AreRequiredArgumentsSet);
+                    _independentState.Return();
+                }
+
                 var parameterizedCtor = constructor.GetParameterizedConstructor();
                 Assert.NotNull(parameterizedCtor);
                 Assert.Same(constructor.GetParameterizedConstructor(), constructor.GetParameterizedConstructor());
@@ -218,7 +311,14 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
                     argumentState.Return();
                 }
                 TArgumentState reusedState = argumentStateCtor();
-                Assert.Same(argumentState, reusedState);
+                if (providerKind is not ProviderKind.ReflectionNoEmit)
+                {
+                    Assert.Same(argumentState, reusedState);
+                }
+                else
+                {
+                    Assert.NotSame(argumentState, reusedState);
+                }
                 Assert.Equal(constructor.Parameters.Count, reusedState.Count);
                 Assert.Equal(lastRequiredIndex == -1, reusedState.AreRequiredArgumentsSet);
                 foreach (IParameterShape parameter in constructor.Parameters)
@@ -250,6 +350,16 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
             setter(ref argState, newValue);
             Assert.True(argState.IsArgumentSet(parameter.Position));
             Assert.Equal(getter(ref argState), newValue);
+            if (_independentState is TArgumentState independentState)
+            {
+                Assert.False(independentState.IsArgumentSet(parameter.Position));
+                Assert.Equal(value, getter(ref independentState));
+
+                argState.Return();
+                Assert.True(argState.IsArgumentSet(parameter.Position));
+                Assert.Equal(newValue, getter(ref argState));
+            }
+
             return argState;
         }
     }
@@ -1039,6 +1149,15 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
             }
 
             argumentState.Return();
+            TArgumentState nextState = argumentStateCtor();
+            if (functionShape.Parameters.Count > 0 &&
+                (providerUnderTest.Kind is ProviderKind.ReflectionNoEmit ||
+                 isFsharpFunc && providerUnderTest.Kind is ProviderKind.ReflectionEmit))
+            {
+                Assert.NotSame(argumentState, nextState);
+            }
+
+            nextState.Return();
             return null;
 
             void AssertWrapperStateReturned()

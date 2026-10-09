@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>Nullable</WarningsAsErrors>
@@ -20,7 +20,7 @@
       aot-size-baselines.json (next to this file) and compared on every CI run
       by `make test-aot-size` (see eng/AotSizeCheck and .github/workflows/build.yml).
 
-      DO NOT EDIT THIS PROJECT OR Program.cs CASUALLY: any change to the
+      DO NOT EDIT THIS PROJECT, Program.cs, OR RepresentativeModel.cs CASUALLY: any change to the
       consumed PolyType surface, the project references, or the AOT-related
       MSBuild properties will shift the measured size on every supported
       platform and force every committed baseline to be re-generated. Treat
@@ -33,6 +33,10 @@
     <ProjectReference Include="..\..\src\PolyType\PolyType.csproj" />
     <ProjectReference Include="..\..\src\PolyType.SourceGenerator\PolyType.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\..\src\PolyType.Examples\PolyType.Examples.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
   </ItemGroup>
 
   <ItemGroup>

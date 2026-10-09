@@ -66,7 +66,7 @@ For deeper, scoped detail see the nested files: [`src/PolyType/AGENTS.md`](src/P
 ## Project Layout
 
 - **`src/`** — `PolyType` (core library: both providers, abstractions, attributes), `PolyType.Roslyn` (general-purpose `ITypeSymbol` → model extraction, reusable by third-party generators), `PolyType.SourceGenerator` (built-in incremental generator), `PolyType.Examples` (reference serializers/binders/mappers built on PolyType), `PolyType.TestCases` (+ `.FSharp`, shared test types), and `Shared` (polyfills/helpers).
-- **`tests/`** — `PolyType.Tests` (main xUnit suite), `PolyType.Tests.NativeAOT` (AOT smoke tests, TUnit), `PolyType.SourceGenerator.UnitTests` (generator + snapshot tests), `PolyType.Roslyn.Tests`, `PolyType.Benchmarks` (BenchmarkDotNet; not a test project), and `SizeTrackingApp.AOT` (canonical app whose published size is tracked per-RID in `aot-size-baselines.json` via `make test-aot-size`).
+- **`tests/`** — `PolyType.Tests` (main xUnit suite), `PolyType.Tests.NativeAOT` (AOT smoke tests, TUnit), `PolyType.SourceGenerator.UnitTests` (generator + snapshot tests), `PolyType.Roslyn.Tests`, `PolyType.Benchmarks` (BenchmarkDotNet; not a test project), and `SizeTrackingApp.AOT` (canonical .NET 11 JSON/configuration-binding app whose published size is tracked per-RID in `aot-size-baselines.json` via `make test-aot-size`).
 - **`applications/`** — five Native AOT sample apps plus one reflection-based app.
 - **`eng/AotSizeCheck/`** — internal CLI that backs `make test-aot-size`.
 

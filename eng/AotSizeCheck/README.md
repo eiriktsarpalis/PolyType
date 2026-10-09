@@ -5,6 +5,23 @@ This tool measures the file size of the Native AOT publish output of
 compares it against the per-platform baselines committed in
 [`tests/SizeTrackingApp.AOT/aot-size-baselines.json`](../../tests/SizeTrackingApp.AOT/aot-size-baselines.json).
 
+The canary targets .NET 11 and uses the source-generated JSON serializer and
+configuration binder over the connected commerce/service model in
+[`RepresentativeModel.cs`](../../tests/SizeTrackingApp.AOT/RepresentativeModel.cs).
+The model has 75 record types and five enums, spanning 135 generated shapes
+including contextual union base shapes.
+Both consumers verify a complete round trip, including the union cases and
+surrogate identifier. The fixed model spans varied constructor signatures,
+nullable values, enums, arrays, sets, and dictionaries so the measurement
+captures generic-specialization costs across a representative shape graph.
+Keep the model, consumers, and publish settings stable; deliberate changes
+require new measurements for every platform baseline.
+
+The .NET 11 representative workload currently has a refreshed `osx-arm64`
+baseline. The `linux-x64` and `win-x64` entries still describe the previous
+workload and must be refreshed from their native CI measurements before merging
+this fixture change; do not infer those values from a different platform.
+
 The check is bidirectional — it fails on both **growth** and significant
 **shrinkage** so the baseline window can be ratcheted tighter over time
 as PolyType gets leaner.

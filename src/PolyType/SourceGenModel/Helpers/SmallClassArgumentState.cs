@@ -1,5 +1,6 @@
 using PolyType.Abstractions;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace PolyType.SourceGenModel;
@@ -17,7 +18,13 @@ public sealed class SmallClassArgumentState<TArguments> : IArgumentState
     private ulong _requiredArgumentsMask;
     private ulong _setArguments;
 
-    private SmallClassArgumentState() { }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private SmallClassArgumentState(in TArguments arguments, int count, ulong requiredArgumentsMask, bool markAllArgumentsSet)
+    {
+        Debug.Assert((uint)count <= 64);
+        Arguments = arguments;
+        Initialize(count, requiredArgumentsMask, markAllArgumentsSet);
+    }
 
     /// <summary>
     /// Rents an argument state initialized with the specified arguments and required-argument mask.
@@ -36,23 +43,25 @@ public sealed class SmallClassArgumentState<TArguments> : IArgumentState
         }
 
         SmallClassArgumentState<TArguments>? state = t_cached;
-        t_cached = null;
-        state ??= new();
-        state.Arguments = arguments;
-        state._count = (uint)count;
-        state._requiredArgumentsMask = requiredArgumentsMask;
-        state._setArguments = markAllArgumentsSet
-            ? count == 64 ? ulong.MaxValue : (1UL << count) - 1
-            : 0;
+        if (state is null)
+        {
+            state = new(in arguments, count, requiredArgumentsMask, markAllArgumentsSet);
+        }
+        else
+        {
+            state.Arguments = arguments;
+            state.Initialize(count, requiredArgumentsMask, markAllArgumentsSet);
+            t_cached = null;
+        }
+
         return state;
     }
 
     /// <summary>
     /// The actual arguments being tracked by this state.
     /// </summary>
-#pragma warning disable CA1051 // Do not declare visible instance fields: generated accessors require direct field access.
-#pragma warning disable SA1401
-    public TArguments Arguments = default!;
+#pragma warning disable CA1051, SA1401 // Do not declare visible instance fields: generated accessors require direct field access.
+    public TArguments Arguments;
 #pragma warning restore CA1051, SA1401
 
     /// <inheritdoc />
@@ -91,5 +100,15 @@ public sealed class SmallClassArgumentState<TArguments> : IArgumentState
 #endif
         // Rent overwrites the payload and tracking fields; only references need clearing here.
         t_cached = this;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void Initialize(int count, ulong requiredArgumentsMask, bool markAllArgumentsSet)
+    {
+        _count = (uint)count;
+        _requiredArgumentsMask = requiredArgumentsMask;
+        _setArguments = markAllArgumentsSet
+            ? count == 64 ? ulong.MaxValue : (1UL << count) - 1
+            : 0;
     }
 }
