@@ -17,11 +17,6 @@ captures generic-specialization costs across a representative shape graph.
 Keep the model, consumers, and publish settings stable; deliberate changes
 require new measurements for every platform baseline.
 
-The .NET 11 representative workload currently has a refreshed `osx-arm64`
-baseline. The `linux-x64` and `win-x64` entries still describe the previous
-workload and must be refreshed from their native CI measurements before merging
-this fixture change; do not infer those values from a different platform.
-
 The check is bidirectional — it fails on both **growth** and significant
 **shrinkage** so the baseline window can be ratcheted tighter over time
 as PolyType gets leaner.
