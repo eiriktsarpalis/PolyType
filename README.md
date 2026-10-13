@@ -49,3 +49,20 @@ CI builds of NuGet packages are available on [feedz.io](https://feedz.io/). To u
     <add key="feedz.io" value="https://f.feedz.io/eiriktsarpalis/PolyType/nuget/index.json" />
   </packageSources>
 ```
+
+## Publishing releases
+
+Publishing a GitHub release triggers [the NuGet publishing workflow](.github/workflows/release.yml). It uses [NuGet trusted publishing](https://learn.microsoft.com/en-us/nuget/nuget-org/trusted-publishing) to exchange a GitHub Actions OIDC token for a short-lived API key immediately before pushing packages.
+
+Create a GitHub Actions environment named `nuget` and set its `NUGET_USER` variable to the NuGet.org username that creates the trust policy, not an email address or organization name. On NuGet.org, open **Trusted Publishing** and create a policy owned by the account that owns the packages, with these GitHub settings:
+
+| Field | Value |
+|-------|-------|
+| Repository owner | `eiriktsarpalis` |
+| Repository | `PolyType` |
+| Workflow file | `release.yml` |
+| Environment | `nuget` |
+
+Scope the policy to publishing new versions of `PolyType`, `PolyType.Roslyn`, `PolyType.Examples`, and `PolyType.TestCases`. After the first successful trusted-publishing release, revoke the old publishing API key on NuGet.org and delete the repository's `NUGET_API_KEY` secret.
+
+NuGet.org credentials are not used for CI publishing to GitHub Packages or Feedz.io; those feeds keep their existing authentication.
