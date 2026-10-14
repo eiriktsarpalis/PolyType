@@ -65,9 +65,9 @@ namespace PolyType.SourceGenerator
             return value switch
             {
                 null => 2,
-                { Value: int } => 0,
-                { Value: global::TestNamespace.RecursiveUnion } => 1,
-                { Value: string } => 2,
+                int => 0,
+                global::TestNamespace.RecursiveUnion => 1,
+                string => 2,
             };
         }
 
@@ -79,7 +79,7 @@ namespace PolyType.SourceGenerator
             {
                 switch (value)
                 {
-                    case { Value: int caseValue }:
+                    case int caseValue:
                         return caseValue;
                 }
 
@@ -96,7 +96,7 @@ namespace PolyType.SourceGenerator
             {
                 switch (value)
                 {
-                    case { Value: global::TestNamespace.RecursiveUnion caseValue }:
+                    case global::TestNamespace.RecursiveUnion caseValue:
                         return caseValue;
                 }
 
@@ -118,7 +118,7 @@ namespace PolyType.SourceGenerator
 
                 switch (value)
                 {
-                    case { Value: string caseValue }:
+                    case string caseValue:
                         return caseValue;
                 }
 

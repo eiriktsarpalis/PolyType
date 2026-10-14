@@ -55,8 +55,8 @@ namespace PolyType.SourceGenerator
             return value switch
             {
                 null => 1,
-                global::TestNamespace.Union<int>.IUnionMembers { Value: int } => 0,
-                global::TestNamespace.Union<int>.IUnionMembers { Value: string } => 1,
+                int => 0,
+                string => 1,
             };
         }
 
@@ -68,7 +68,7 @@ namespace PolyType.SourceGenerator
             {
                 switch (value)
                 {
-                    case global::TestNamespace.Union<int>.IUnionMembers { Value: int caseValue }:
+                    case int caseValue:
                         return caseValue;
                 }
 
@@ -90,7 +90,7 @@ namespace PolyType.SourceGenerator
 
                 switch (value)
                 {
-                    case global::TestNamespace.Union<int>.IUnionMembers { Value: string caseValue }:
+                    case string caseValue:
                         return caseValue;
                 }
 

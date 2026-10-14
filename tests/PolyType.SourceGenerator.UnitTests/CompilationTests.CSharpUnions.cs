@@ -65,10 +65,11 @@ public static partial class CompilationTests
         string generated = GetCSharpUnionGeneratedSource(result, model.SourceIdentifier);
         Assert.Contains("UnionKind = global::PolyType.Abstractions.UnionTypeShapeKind.CSharpUnion", generated);
         Assert.Contains("return value switch", generated);
-        Assert.Contains("{ Value: int } => 0", generated);
+        Assert.Contains("int => 0", generated);
         Assert.Contains("switch (value)", generated);
-        Assert.Contains("case { Value: int caseValue }:", generated);
-        Assert.Contains("case { Value: string caseValue }:", generated);
+        Assert.Contains("case int caseValue:", generated);
+        Assert.Contains("case string caseValue:", generated);
+        Assert.DoesNotContain("{ Value:", generated);
         Assert.Contains("if (value is null)", generated);
         Assert.DoesNotContain("__UnionValue_", generated);
         Assert.DoesNotContain("object? payload", generated);
@@ -332,7 +333,7 @@ public static partial class CompilationTests
         }
         else
         {
-            Assert.DoesNotContain("{ Value: null }", generated);
+            Assert.DoesNotContain("null =>", generated);
         }
     }
 

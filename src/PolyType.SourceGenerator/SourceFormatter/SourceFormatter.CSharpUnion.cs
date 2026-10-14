@@ -104,7 +104,7 @@ internal sealed partial class SourceFormatter
         foreach (int index in model.CaseDispatchOrder)
         {
             CSharpUnionCaseShapeModel unionCase = model.UnionCases[index];
-            writer.WriteLine($"{FormatCSharpUnionPattern(model, unionCase.PatternType.FullyQualifiedName)} => {index},");
+            writer.WriteLine($"{unionCase.PatternType.FullyQualifiedName} => {index},");
         }
 
         writer.Indentation--;
@@ -152,7 +152,7 @@ internal sealed partial class SourceFormatter
         writer.WriteLine($$"""
             switch (value)
             {
-                case {{FormatCSharpUnionPattern(model, $"{unionCase.PatternType.FullyQualifiedName} caseValue")}}:
+                case {{unionCase.PatternType.FullyQualifiedName}} caseValue:
                     return caseValue;
             }
             """);
@@ -178,13 +178,5 @@ internal sealed partial class SourceFormatter
 
         writer.Indentation--;
         writer.WriteLine("}");
-    }
-
-    private static string FormatCSharpUnionPattern(CSharpUnionShapeModel model, string pattern)
-    {
-        // RC1 can match the union wrapper for direct type patterns. Use Value property
-        // patterns until the RC2 compiler fix allows matching the payload type directly.
-        string declaringType = model.ValuePatternType is { } type ? type.FullyQualifiedName + " " : "";
-        return $"{declaringType}{{ Value: {pattern} }}";
     }
 }
