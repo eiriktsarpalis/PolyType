@@ -8,7 +8,6 @@ public sealed record CSharpUnionShapeModel : TypeShapeModel
     public required ImmutableEquatableArray<CSharpUnionCaseShapeModel> UnionCases { get; init; }
     public required ImmutableEquatableArray<int> CaseDispatchOrder { get; init; }
     public required int NullableCaseIndex { get; init; }
-    public required TypeId? ValuePatternType { get; init; }
 }
 
 public sealed record CSharpUnionCaseShapeModel

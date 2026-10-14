@@ -2,7 +2,8 @@
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <LangVersion>preview</LangVersion>
-    <Features>$(Features);updated-memory-safety-rules</Features>
+    <!-- Disabled until .NET 11 GA, which will include the fix from https://github.com/dotnet/roslyn/pull/85773. -->
+    <!-- <Features>$(Features);updated-memory-safety-rules</Features> -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

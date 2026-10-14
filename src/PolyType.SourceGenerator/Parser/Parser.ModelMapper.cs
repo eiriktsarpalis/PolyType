@@ -443,19 +443,6 @@ public sealed partial class Parser
             .Reverse()
             .ToArray();
 
-        // A typed property pattern is only needed to reach an explicit or hidden Value getter.
-        TypeId? valuePatternType = model.UnionMemberProvider is not null ? CreateTypeId(model.ValueProperty.ContainingType) : null;
-        for (INamedTypeSymbol? current = model.Type as INamedTypeSymbol;
-             current is not null && !SymbolEqualityComparer.Default.Equals(current, model.ValueProperty.ContainingType);
-             current = current.BaseType)
-        {
-            if (current.GetMembers("Value").Length > 0)
-            {
-                valuePatternType = CreateTypeId(model.ValueProperty.ContainingType);
-                break;
-            }
-        }
-
         ImmutableEquatableSet<AssociatedTypeId> associatedTypes = CollectAssociatedTypes(model);
         return new CSharpUnionShapeModel
         {
@@ -465,7 +452,6 @@ public sealed partial class Parser
             UnionCases = cases.ToImmutableEquatableArray(),
             CaseDispatchOrder = dispatchOrder.ToImmutableEquatableArray(),
             NullableCaseIndex = nullableCaseIndex,
-            ValuePatternType = valuePatternType,
             UnderlyingModel = new ObjectShapeModel
             {
                 Type = typeId,

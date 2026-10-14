@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <!-- Keep the test compiler aligned with global.json for preview union-pattern semantics. -->
-    <RoslynVersion>5.11.0-1.26425.128</RoslynVersion>
+    <RoslynVersion>5.12.0-1.26473.112</RoslynVersion>
     <RoslynVersionForAnalyzers>4.3.0</RoslynVersionForAnalyzers>
   </PropertyGroup>
   <ItemGroup>
@@ -25,7 +25,7 @@
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="10.0.5" />
     <PackageVersion Include="System.Collections.Immutable" Version="10.0.5" />
     <PackageVersion Include="System.Formats.Cbor" Version="10.0.5" />
-    <PackageVersion Include="System.Text.Json" Version="11.0.0-rc.1.26425.128" />
+    <PackageVersion Include="System.Text.Json" Version="11.0.0-rc.2.26504.105" />
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
     <PackageVersion Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
     <PackageVersion Include="FSharp.Core" Version="10.1.401" />

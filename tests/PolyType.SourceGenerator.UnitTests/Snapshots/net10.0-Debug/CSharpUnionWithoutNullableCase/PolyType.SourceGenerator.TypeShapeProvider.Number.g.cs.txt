@@ -44,7 +44,7 @@ namespace PolyType.SourceGenerator
         {
             return value switch
             {
-                { Value: int } => 0,
+                int => 0,
             };
         }
 
@@ -56,7 +56,7 @@ namespace PolyType.SourceGenerator
             {
                 switch (value)
                 {
-                    case { Value: int caseValue }:
+                    case int caseValue:
                         return caseValue;
                 }
 
