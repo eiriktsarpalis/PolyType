@@ -1,6 +1,6 @@
 # Source generator
 
-PolyType ships a Roslyn [incremental source generator](https://github.com/dotnet/roslyn/blob/main/docs/features/incremental-generators.md) that emits shape metadata at compile time. This article describes the internal strategy of the generator and how shapes are discovered at run time. For information on how to annotate your types and consume generated shapes, see [Shape providers](shape-providers.md).
+PolyType ships a Roslyn [incremental source generator](https://github.com/dotnet/roslyn/blob/main/docs/features/incremental-generators.cookbook.md) that emits shape metadata at compile time. This article describes the internal strategy of the generator and how shapes are discovered at run time. For information on how to annotate your types and consume generated shapes, see [Shape providers](shape-providers.md).
 
 ## Pipeline overview
 
