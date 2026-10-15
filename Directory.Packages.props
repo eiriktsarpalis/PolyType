@@ -36,8 +36,8 @@
     <PackageVersion Include="TUnit.Engine" Version="1.75.0" />
     <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.5.1" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />
-    <PackageVersion Include="Microsoft.Testing.Extensions.CrashDump" Version="2.5.0" />
-    <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="2.5.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CrashDump" Version="2.5.1" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="2.5.1" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="1.1.4" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.16.0-preview.2" />
     <PackageVersion Include="JsonSchema.Net" Version="9.4.0" />
