@@ -4,6 +4,9 @@
   "nuGetPackageVersion": {
     "semVer": 2.0
   },
+  "cloudBuild": {
+    "setVersionVariables": false
+  },
   "publicReleaseRefSpec": [
     "^refs/heads/v\\d+(?:\\.\\d+)?$",
     "^refs/tags/v\\d+(?:\\.\\d+)?"
