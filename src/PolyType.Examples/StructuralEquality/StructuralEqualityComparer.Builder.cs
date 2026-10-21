@@ -17,7 +17,7 @@ public static partial class StructuralEqualityComparer
 
         public override object? VisitObject<T>(IObjectTypeShape<T> type, object? state)
         {
-            if (!Helpers.IsReferenceOrContainsReferences<T>() ||
+            if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>() ||
                 (typeof(IEquatable<T>).IsAssignableFrom(typeof(T)) && !type.IsRecordType))
             {
                 // Use default comparison for types that don't contain references

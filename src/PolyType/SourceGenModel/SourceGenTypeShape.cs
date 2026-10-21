@@ -69,12 +69,7 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
 
     ITypeShape? ITypeShape.GetAssociatedTypeShape(Type associatedType)
     {
-        if (associatedType is null)
-        {
-            ThrowArgumentNull();
-            [DoesNotReturn]
-            static void ThrowArgumentNull() => throw new ArgumentNullException(nameof(associatedType));
-        }
+        ArgumentNullException.ThrowIfNull(associatedType);
 
         if (associatedType.IsGenericTypeDefinition && typeof(T).GenericTypeArguments.Length != associatedType.GetTypeInfo().GenericTypeParameters.Length)
         {

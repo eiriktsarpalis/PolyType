@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Reflection;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using PolyType.ReflectionProvider;
@@ -17,6 +18,20 @@ namespace PolyType.Tests;
 
 public abstract class JsonTests(ProviderUnderTest providerUnderTest)
 {
+    [Theory]
+    [InlineData("")]
+    [InlineData("text")]
+    [InlineData("\u00E9\u6F22\uD83D\uDE00")]
+    public void Utf8StringDecoding_PreservesUnescapedUnicode(string value)
+    {
+        var converter = JsonSerializerTS.CreateConverter<string>(providerUnderTest.Provider);
+        var encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+        string json = converter.Serialize(value, new JsonWriterOptions { Encoder = encoder });
+
+        Assert.Equal(JsonSerializer.Serialize(value, new JsonSerializerOptions { Encoder = encoder }), json);
+        Assert.Equal(value, converter.Deserialize(json));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

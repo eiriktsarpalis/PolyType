@@ -15,6 +15,33 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
     protected ITypeShapeProvider Provider => providerUnderTest.Provider;
 
     [Theory]
+    [InlineData(nameof(RecordWithSpecialValueDefaultParams.s1), false)]
+    [InlineData(nameof(RecordWithSpecialValueDefaultParams.s2), true)]
+    [InlineData(nameof(RecordWithSpecialValueDefaultParams.g1), false)]
+    [InlineData(nameof(RecordWithSpecialValueDefaultParams.g2), true)]
+    public void OptionalStructParameters_RetainZeroInitializedDefaults(string name, bool isNullable)
+    {
+        var shape = Assert.IsAssignableFrom<IObjectTypeShape>(Provider.GetTypeShapeOrThrow<RecordWithSpecialValueDefaultParams>());
+        Assert.NotNull(shape.Constructor);
+        IParameterShape parameter = Assert.Single(shape.Constructor.Parameters, parameter => parameter.Name == name);
+
+        Assert.True(parameter.HasDefaultValue);
+        Assert.False(parameter.IsRequired);
+        if (isNullable)
+        {
+            Assert.Null(parameter.DefaultValue);
+        }
+        else if (name == nameof(RecordWithSpecialValueDefaultParams.s1))
+        {
+            Assert.Equal(0, Assert.IsType<StructWithDefaultCtor>(parameter.DefaultValue).Value);
+        }
+        else
+        {
+            Assert.Equal(Guid.Empty, Assert.IsType<Guid>(parameter.DefaultValue));
+        }
+    }
+
+    [Theory]
     [MemberData(nameof(TestTypes.GetTestCases), MemberType = typeof(TestTypes))]
     public void TypeShapeReportsExpectedInfo<T>(TestCase<T> testCase)
     {

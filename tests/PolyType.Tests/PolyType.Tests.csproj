@@ -24,8 +24,11 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="..\..\src\Shared\Polyfills\ArgumentNullExceptionPolyfills.cs" Link="Shared\Polyfills\%(Filename).cs" />
     <Compile Include="..\..\src\Shared\Polyfills\LinkerAttributes\*.cs " Link="Shared\Polyfills\LinkerAttributes\%(Filename).cs" />
     <Compile Include="..\..\src\Shared\Polyfills\NullabilityInfo\*.cs " Link="Shared\Polyfills\NullabilityInfo\%(Filename).cs" />
+    <Compile Include="..\..\src\Shared\Polyfills\RuntimeHelpersPolyfills.cs" Link="Shared\Polyfills\%(Filename).cs" />
+    <Compile Include="..\..\src\Shared\Polyfills\TypePolyfills.cs" Link="Shared\Polyfills\%(Filename).cs" />
   </ItemGroup>
 
   <ItemGroup>

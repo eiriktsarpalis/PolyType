@@ -15,6 +15,17 @@ public static class ReflectionTypeShapeProviderTests
     private static ReflectionTypeShapeProvider GetProvider(bool useEmit) => useEmit ? s_emitProvider : s_noEmitProvider;
 
     [Theory]
+    [InlineData(typeof(Span<int>), false)]
+    [InlineData(typeof(Span<int>), true)]
+    [InlineData(typeof(ReadOnlySpan<int>), false)]
+    [InlineData(typeof(ReadOnlySpan<int>), true)]
+    public static void ByRefLikeTypes_CannotBeUsedAsShapeArguments(Type type, bool useEmit)
+    {
+        ArgumentException exception = Assert.Throws<ArgumentException>(() => GetProvider(useEmit).GetTypeShape(type));
+        Assert.Equal(nameof(type), exception.ParamName);
+    }
+
+    [Theory]
     [InlineData(typeof(NonClosedInferenceTarget), false)]
     [InlineData(typeof(NonClosedInferenceTarget), true)]
     [InlineData(typeof(ClosedObjectInferenceTarget), false)]

@@ -7,6 +7,15 @@ namespace PolyType.Tests;
 
 public abstract class RandomGeneratorTests(ProviderUnderTest providerUnderTest)
 {
+    [Theory]
+    [InlineData(0, MyEnum.A)]
+    [InlineData(7, MyEnum.H)]
+    public void EnumGeneration_SelectsDeclaredValuesInNumericOrder(int index, MyEnum expected)
+    {
+        var generator = RandomGenerator.Create<MyEnum>(providerUnderTest.Provider);
+        Assert.Equal(expected, generator(new SequenceRandom([index]), size: 0));
+    }
+
 #if NET
     [Theory]
     [InlineData(0)]

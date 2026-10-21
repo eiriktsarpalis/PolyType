@@ -13,6 +13,8 @@
 
   <ItemGroup>
     <Compile Include="..\Shared\Helpers\DebugExt.cs" Link="Shared\Helpers\%(Filename).cs" />
+    <Compile Include="..\Shared\Polyfills\ArgumentNullExceptionPolyfills.cs" Link="Shared\Polyfills\%(Filename).cs" />
+    <Compile Include="..\Shared\Polyfills\EnumPolyfills.cs" Link="Shared\Polyfills\%(Filename).cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">

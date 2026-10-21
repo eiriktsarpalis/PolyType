@@ -178,7 +178,7 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     /// <returns>The final computed value.</returns>
     public object? GetOrAdd(Type type)
     {
-        Throw.IfNull(type);
+        ArgumentNullException.ThrowIfNull(type);
 
         if (_cache.TryGetValue(type, out Entry? entry))
         {
@@ -202,7 +202,7 @@ public sealed class TypeCache : IReadOnlyDictionary<Type, object?>
     /// <returns>The final computed value.</returns>
     public object? GetOrAdd(ITypeShape typeShape)
     {
-        Throw.IfNull(typeShape);
+        ArgumentNullException.ThrowIfNull(typeShape);
 
         if (!typeShape.IsContextual && _cache.TryGetValue(typeShape.Type, out Entry? entry))
         {

@@ -97,7 +97,7 @@ public static partial class CborSerializer
     public static string EncodeToHex<T>(this CborConverter<T> converter, T? value)
     {
         byte[] encoding = converter.Encode(value);
-        return Helpers.ConvertBytesToHexString(encoding);
+        return Convert.ToHexString(encoding);
     }
 
     /// <summary>
@@ -109,7 +109,7 @@ public static partial class CborSerializer
     /// <returns>The deserialized value.</returns>
     public static T? DecodeFromHex<T>(this CborConverter<T> converter, string hexEncoding)
     {
-        byte[] encoding = Helpers.ConvertHexStringToBytes(hexEncoding);
+        byte[] encoding = Convert.FromHexString(hexEncoding);
         return converter.Decode(encoding);
     }
 

@@ -121,11 +121,7 @@ public partial class RandomGenerator
 
         public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state)
         {
-#if NET
             TEnum[] values = Enum.GetValues<TEnum>();
-#else
-            TEnum[] values = (TEnum[])Enum.GetValues(typeof(TEnum));
-#endif
             return new RandomGenerator<TEnum>((Random random, int _) => values[random.Next(0, values.Length)]);
         }
 

@@ -11,7 +11,7 @@ A few cross-cutting facts:
 - The project references `PolyType.SourceGenerator` as an analyzer and packs that generator into the NuGet package (under `analyzers/dotnet/cs`), so installing PolyType brings the generator along.
 - `IShapeable<T>` and other static-abstract-interface features only exist on **net10.0+** targets; guard such APIs accordingly when touching multi-targeted code.
 - Package validation runs against the **v1.0.0** baseline, so avoid breaking public API changes. Include XML docs on new public APIs.
-- Some helpers and polyfills are linked in from [`../Shared/`](../Shared); they are not defined in this project.
+- Some helpers and polyfills are linked in from [`../Shared/`](../Shared); they are not defined in this project. Internal extension blocks in `Shared/Polyfills/` provide missing framework static members and properties while preserving framework API spelling at call sites.
 
 ## Project Structure
 

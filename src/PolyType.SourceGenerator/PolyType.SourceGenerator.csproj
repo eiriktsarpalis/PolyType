@@ -3,7 +3,6 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <DefineConstants Condition="'$(LaunchDebugger)' == 'true'">$(DefineConstants);LAUNCH_DEBUGGER</DefineConstants>
     <IsAnalyzerProject>true</IsAnalyzerProject>
-    <DefineConstants>$(DefineConstants);ROSLYN4_4_OR_GREATER</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

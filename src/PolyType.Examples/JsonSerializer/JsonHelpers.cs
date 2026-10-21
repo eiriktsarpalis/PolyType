@@ -102,17 +102,7 @@ internal static class JsonHelpers
 
     public static string DecodeFromUtf8(ReadOnlySpan<byte> utf8Json)
     {
-#if NET
         return Encoding.UTF8.GetString(utf8Json);
-#else
-        unsafe
-        {
-            fixed (byte* pUtf8Json = utf8Json)
-            {
-                return Encoding.UTF8.GetString(pUtf8Json, utf8Json.Length);
-            }
-        }
-#endif
     }
 
     [ThreadStatic]

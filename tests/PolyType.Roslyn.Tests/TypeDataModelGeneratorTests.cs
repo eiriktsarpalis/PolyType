@@ -9,6 +9,45 @@ namespace PolyType.Roslyn.Tests;
 public static class TypeDataModelGeneratorTests
 {
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void RequiredMembers_ArePreservedForSourceAndMetadata(bool fromMetadata)
+    {
+        string source = """
+            public class Payload
+            {
+                public required int RequiredProperty { get; set; }
+                public required int RequiredField;
+                public int OptionalProperty { get; set; }
+                public int OptionalField;
+            }
+            """;
+#if !NET
+        source += """
+            namespace System.Runtime.CompilerServices
+            {
+                public sealed class RequiredMemberAttribute : System.Attribute { }
+                public sealed class CompilerFeatureRequiredAttribute(string featureName) : System.Attribute { }
+            }
+            """;
+#endif
+        CSharpCompilation compilation = CreateCompilation(source);
+        if (fromMetadata)
+        {
+            compilation = CreateMetadataCompilation(compilation);
+        }
+
+        INamedTypeSymbol type = compilation.GetTypeByMetadataName("Payload")!;
+        TypeDataModelGenerator generator = CreateGenerator(compilation);
+        Assert.Equal(TypeDataModelGenerationStatus.Success, generator.IncludeType(type));
+        var model = Assert.IsType<ObjectDataModel>(generator.GeneratedModels[type]);
+
+        Assert.Equal(4, model.Properties.Length);
+        Assert.All(model.Properties, property =>
+            Assert.Equal(property.PropertySymbol.Name.StartsWith("Required", StringComparison.Ordinal), property.IsRequiredBySyntax));
+    }
+
+    [Theory]
     [InlineData("int?", TypeDataKind.Optional, TypeDataKind.Optional)]
     [InlineData("System.ValueTuple<int, string>", TypeDataKind.Tuple, TypeDataKind.Tuple)]
     [InlineData("System.Action<int>", TypeDataKind.Delegate, TypeDataKind.None)]

@@ -14,6 +14,21 @@ namespace PolyType.Tests;
 public abstract class ConfigurationBinderTests(ProviderUnderTest providerUnderTest)
 {
     [Theory]
+    [InlineData("A", MyEnum.A)]
+    [InlineData("A, B", MyEnum.A | MyEnum.B)]
+    [InlineData("3", MyEnum.A | MyEnum.B)]
+    public void EnumBinding_AcceptsNamesFlagsAndNumericValues(string text, MyEnum expected)
+    {
+        IConfigurationSection configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["value"] = text })
+            .Build()
+            .GetSection("value");
+        var binder = ConfigurationBinderTS.Create<MyEnum>(providerUnderTest.Provider);
+
+        Assert.Equal(expected, binder(configuration));
+    }
+
+    [Theory]
     [InlineData("01")]
     [InlineData("+1")]
     public void ParameterizedDictionaries_RejectKeysThatCollideAfterConversion(string secondKey)

@@ -256,11 +256,7 @@ public static partial class ConfigurationBinderTS
 
         public override object? VisitEnum<TEnum, TUnderlying>(IEnumTypeShape<TEnum, TUnderlying> enumShape, object? state = null)
         {
-#if NET
             return CreateValueBinder(Enum.Parse<TEnum>);
-#else
-            return CreateValueBinder(text => (TEnum)Enum.Parse(typeof(TEnum), text));
-#endif
         }
 
         public override object? VisitUnion<TUnion>(IUnionTypeShape<TUnion> unionShape, object? state = null)

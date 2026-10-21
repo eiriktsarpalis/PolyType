@@ -12,7 +12,6 @@ internal static class ClosedTypeHelpers
     private const string AttributeNamespace = "System.Runtime.CompilerServices";
     private const string AttributeName = "IsClosedTypeAttribute";
     private static readonly Func<ITypeSymbol, bool>? s_isClosedAccessor = CreateIsClosedAccessor();
-    private static readonly Func<ISymbol, int>? s_metadataTokenAccessor = CreateMetadataTokenAccessor();
 
     public static bool IsClosedType(this INamedTypeSymbol type)
     {
@@ -116,12 +115,6 @@ internal static class ClosedTypeHelpers
         return getter is null ? null : (Func<ITypeSymbol, bool>)getter.CreateDelegate(typeof(Func<ITypeSymbol, bool>));
     }
 
-    private static Func<ISymbol, int>? CreateMetadataTokenAccessor()
-    {
-        MethodInfo? getter = typeof(ISymbol).GetProperty("MetadataToken")?.GetMethod;
-        return getter is null ? null : (Func<ISymbol, int>)getter.CreateDelegate(typeof(Func<ISymbol, int>));
-    }
-
     private static bool TryGetMetadata(
         INamedTypeSymbol type,
         [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out MetadataReader? reader,
@@ -130,7 +123,7 @@ internal static class ClosedTypeHelpers
         if (type.DeclaringSyntaxReferences.IsEmpty && type.ContainingModule.GetMetadata() is { } metadata)
         {
             reader = metadata.GetMetadataReader();
-            int token = s_metadataTokenAccessor?.Invoke(type) ?? 0;
+            int token = type.MetadataToken;
             if (token != 0)
             {
                 handle = (TypeDefinitionHandle)MetadataTokens.EntityHandle(token);
