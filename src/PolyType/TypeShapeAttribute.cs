@@ -1,5 +1,4 @@
 ﻿using PolyType.Abstractions;
-using PolyType.ReflectionProvider;
 
 namespace PolyType;
 
@@ -37,7 +36,7 @@ public sealed class TypeShapeAttribute : Attribute
         get => _kind ?? TypeShapeKind.None;
         init
         {
-            if (!ReflectionHelpers.IsEnumDefined(value))
+            if (!Enum.IsDefined(value))
             {
                 throw new ArgumentOutOfRangeException(nameof(value), value, "The specified value is not a valid TypeShapeKind.");
             }

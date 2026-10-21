@@ -18,7 +18,7 @@ public static class ReflectionUtilities
     public static bool IsDefined<TAttribute>(this ICustomAttributeProvider attributeProvider, bool inherit = false)
         where TAttribute : Attribute
     {
-        Throw.IfNull(attributeProvider);
+        ArgumentNullException.ThrowIfNull(attributeProvider);
         return attributeProvider.IsDefined(typeof(TAttribute), inherit);
     }
 
@@ -32,7 +32,7 @@ public static class ReflectionUtilities
     public static TAttribute? GetCustomAttribute<TAttribute>(this ICustomAttributeProvider attributeProvider, bool inherit = false)
         where TAttribute : Attribute
     {
-        Throw.IfNull(attributeProvider);
+        ArgumentNullException.ThrowIfNull(attributeProvider);
         return attributeProvider.GetCustomAttributes(typeof(TAttribute), inherit).OfType<TAttribute>().FirstOrDefault();
     }
 
@@ -46,7 +46,7 @@ public static class ReflectionUtilities
     public static IEnumerable<TAttribute> GetCustomAttributes<TAttribute>(this ICustomAttributeProvider attributeProvider, bool inherit = false)
         where TAttribute : Attribute
     {
-        Throw.IfNull(attributeProvider);
+        ArgumentNullException.ThrowIfNull(attributeProvider);
         return attributeProvider.GetCustomAttributes(typeof(TAttribute), inherit).OfType<TAttribute>();
     }
 
@@ -62,7 +62,7 @@ public static class ReflectionUtilities
     /// </remarks>
     public static string GetDerivedTypeShapeName(Type type)
     {
-        Throw.IfNull(type);
+        ArgumentNullException.ThrowIfNull(type);
         StringBuilder builder = new();
         Type? skipDeclaringType = type.DeclaringType;
         FormatTypeWithUnderscores(type, builder, skipDeclaringType);

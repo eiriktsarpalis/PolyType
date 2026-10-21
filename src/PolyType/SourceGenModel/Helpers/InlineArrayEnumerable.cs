@@ -43,10 +43,7 @@ public sealed class InlineArrayEnumerable<TArray, TElement>(TArray array, int le
     /// <inheritdoc/>
     public void CopyTo(TElement[] array, int arrayIndex)
     {
-        if (array is null)
-        {
-            throw new ArgumentNullException(nameof(array));
-        }
+        ArgumentNullException.ThrowIfNull(array);
 
         if (arrayIndex < 0)
         {

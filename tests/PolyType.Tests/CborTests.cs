@@ -8,6 +8,41 @@ namespace PolyType.Tests;
 public abstract partial class CborTests(ProviderUnderTest providerUnderTest)
 {
     [Theory]
+    [InlineData("00", 0)]
+    [InlineData("0A", 10)]
+    [InlineData("0a", 10)]
+    [InlineData("181a", 26)]
+    public void HexEncoding_AcceptsEitherCaseAndWritesUppercase(string encoding, int value)
+    {
+        var converter = CborSerializer.CreateConverter<int>(providerUnderTest.Provider);
+        Assert.Equal(value, converter.DecodeFromHex(encoding));
+        Assert.Equal(encoding.ToUpperInvariant(), converter.EncodeToHex(value));
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("GG")]
+    [InlineData("0G")]
+    public void HexEncoding_RejectsMalformedInput(string encoding)
+    {
+        var converter = CborSerializer.CreateConverter<int>(providerUnderTest.Provider);
+        Assert.Throws<FormatException>(() => converter.DecodeFromHex(encoding));
+    }
+
+    [Theory]
+    [InlineData("0 ")]
+    [InlineData(" 0")]
+    public void HexEncoding_PreservesFrameworkSpecificWhitespaceHandling(string encoding)
+    {
+        var converter = CborSerializer.CreateConverter<int>(providerUnderTest.Provider);
+#if NET
+        Assert.Throws<FormatException>(() => converter.DecodeFromHex(encoding));
+#else
+        Assert.Equal(0, converter.DecodeFromHex(encoding));
+#endif
+    }
+
+    [Theory]
     [InlineData("A2616B01616B02")]
     [InlineData("BF616B01616B02FF")]
     public void DictionaryPayloads_RejectDuplicateKeys(string encoding)

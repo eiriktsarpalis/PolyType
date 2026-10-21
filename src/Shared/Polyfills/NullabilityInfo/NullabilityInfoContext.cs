@@ -64,11 +64,7 @@ internal sealed class NullabilityInfoContext
     /// <returns><see cref="NullabilityInfo" />.</returns>
     public NullabilityInfo Create(ParameterInfo parameterInfo)
     {
-#if NET
         ArgumentNullException.ThrowIfNull(parameterInfo);
-#else
-        NetstandardHelpers.ThrowIfNull(parameterInfo, nameof(parameterInfo));
-#endif
         IList<CustomAttributeData> attributes = parameterInfo.GetCustomAttributesData();
         NullableAttributeStateParser parser = parameterInfo.Member is MethodBase method && IsPrivateOrInternalMethodAndAnnotationDisabled(method)
             ? NullableAttributeStateParser.Unknown
@@ -192,11 +188,7 @@ internal sealed class NullabilityInfoContext
     /// <returns><see cref="NullabilityInfo" />.</returns>
     public NullabilityInfo Create(PropertyInfo propertyInfo)
     {
-#if NET
         ArgumentNullException.ThrowIfNull(propertyInfo);
-#else
-        NetstandardHelpers.ThrowIfNull(propertyInfo, nameof(propertyInfo));
-#endif
         MethodInfo? getter = propertyInfo.GetGetMethod(true);
         MethodInfo? setter = propertyInfo.GetSetMethod(true);
         bool annotationsDisabled = (getter == null || IsPrivateOrInternalMethodAndAnnotationDisabled(getter))
@@ -248,11 +240,7 @@ internal sealed class NullabilityInfoContext
     /// <returns><see cref="NullabilityInfo" />.</returns>
     public NullabilityInfo Create(EventInfo eventInfo)
     {
-#if NET
         ArgumentNullException.ThrowIfNull(eventInfo);
-#else
-        NetstandardHelpers.ThrowIfNull(eventInfo, nameof(eventInfo));
-#endif
         return GetNullabilityInfo(eventInfo, eventInfo.EventHandlerType!, CreateParser(eventInfo.GetCustomAttributesData()));
     }
 
@@ -266,11 +254,7 @@ internal sealed class NullabilityInfoContext
     /// <returns><see cref="NullabilityInfo" />.</returns>
     public NullabilityInfo Create(FieldInfo fieldInfo)
     {
-#if NET
         ArgumentNullException.ThrowIfNull(fieldInfo);
-#else
-        NetstandardHelpers.ThrowIfNull(fieldInfo, nameof(fieldInfo));
-#endif
         IList<CustomAttributeData> attributes = fieldInfo.GetCustomAttributesData();
         NullableAttributeStateParser parser = IsPrivateOrInternalFieldAndAnnotationDisabled(fieldInfo) ? NullableAttributeStateParser.Unknown : CreateParser(attributes);
         NullabilityInfo nullability = GetNullabilityInfo(fieldInfo, fieldInfo.FieldType, parser);
@@ -497,11 +481,7 @@ internal sealed class NullabilityInfoContext
         Debug.Assert(genericParameter.IsGenericParameter);
 
         if (reflectedType is not null
-#if NET
             && !genericParameter.IsGenericMethodParameter
-#else
-            && !genericParameter.IsGenericMethodParameter()
-#endif
             && TryUpdateGenericTypeParameterNullabilityFromReflectedType(nullability, genericParameter, reflectedType, reflectedType))
         {
             return true;
@@ -533,11 +513,7 @@ internal sealed class NullabilityInfoContext
     private bool TryUpdateGenericTypeParameterNullabilityFromReflectedType(NullabilityInfo nullability, Type genericParameter, Type context, Type reflectedType)
     {
         Debug.Assert(genericParameter.IsGenericParameter &&
-#if NET
             !genericParameter.IsGenericMethodParameter);
-#else
-            !genericParameter.IsGenericMethodParameter());
-#endif
 
         Type contextTypeDefinition = context.IsGenericType && !context.IsGenericTypeDefinition ? context.GetGenericTypeDefinition() : context;
         if (genericParameter.DeclaringType == contextTypeDefinition)
@@ -681,18 +657,9 @@ internal sealed class NullabilityInfoContext
 #if !NET
 internal static class NetstandardHelpers
 {
-    public static void ThrowIfNull(object? argument, string paramName)
-    {
-        if (argument is null)
-        {
-            Throw(paramName);
-            static void Throw(string paramName) => throw new ArgumentNullException(paramName);
-        }
-    }
-
     public static MemberInfo GetMemberWithSameMetadataDefinitionAs(this Type type, MemberInfo member)
     {
-        ThrowIfNull(member, nameof(member));
+        ArgumentNullException.ThrowIfNull(member);
 
         const BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
         foreach (MemberInfo myMemberInfo in type.GetMembers(all))
@@ -720,9 +687,6 @@ internal static class NetstandardHelpers
 
         return true;
     }
-
-    public static bool IsGenericMethodParameter(this Type type)
-        => type.IsGenericParameter && type.DeclaringMethod is not null;
 
     public static ReadOnlySpan<ParameterInfo> GetParametersAsSpan(this MethodBase metaMethod)
         => metaMethod.GetParameters();

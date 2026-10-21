@@ -9,6 +9,18 @@ namespace PolyType.Tests;
 public abstract partial class InlineArrayTests(ProviderUnderTest providerUnderTest)
 {
     [Theory]
+    [InlineData(-1)]
+    [InlineData(0)]
+    public void CollectionCopy_ValidatesDestinationBeforeIndex(int arrayIndex)
+    {
+        var shape = Assert.IsAssignableFrom<IEnumerableTypeShape<StructWithFixedArrayInt, int>>(
+            providerUnderTest.Provider.GetTypeShapeOrThrow<StructWithFixedArrayInt>());
+        var collection = Assert.IsAssignableFrom<ICollection<int>>(shape.GetGetEnumerable()(default));
+
+        Assert.Equal("array", Assert.Throws<ArgumentNullException>(() => collection.CopyTo(null!, arrayIndex)).ParamName);
+    }
+
+    [Theory]
     [InlineData(0)]
     [InlineData(2)]
     [InlineData(4)]

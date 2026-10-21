@@ -35,7 +35,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
     /// <returns>A <see cref="ReflectionTypeShapeProviderOptions"/> corresponding to the specified options.</returns>
     public static ReflectionTypeShapeProvider Create(ReflectionTypeShapeProviderOptions options)
     {
-        Throw.IfNull(options);
+        ArgumentNullException.ThrowIfNull(options);
 
         if (options == ReflectionTypeShapeProviderOptions.Default)
         {
@@ -95,7 +95,7 @@ public class ReflectionTypeShapeProvider : ITypeShapeProvider
     /// <exception cref="ArgumentException">The <paramref name="type"/> cannot be a generic argument.</exception>
     public ITypeShape GetTypeShape(Type type)
     {
-        Throw.IfNull(type);
+        ArgumentNullException.ThrowIfNull(type);
         return _cache.GetValue(type, _typeShapeFactory);
     }
 

@@ -27,10 +27,7 @@ public sealed class AggregatingTypeShapeProvider : ITypeShapeProvider
     /// <param name="providers">The sequence of providers to solicit for type shapes.</param>
     public AggregatingTypeShapeProvider(params ITypeShapeProvider[] providers)
     {
-        if (providers is null)
-        {
-            throw new ArgumentNullException(nameof(providers));
-        }
+        ArgumentNullException.ThrowIfNull(providers);
 
         foreach (ITypeShapeProvider provider in providers)
         {

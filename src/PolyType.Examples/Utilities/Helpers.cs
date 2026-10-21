@@ -26,40 +26,38 @@ internal static class Helpers
         throw new KeyNotFoundException($"Missing required parameters: {string.Join(", ", missingRequiredParams)}");
     }
 
-    public static string ConvertBytesToHexString(byte[] bytes)
-    {
-#if NET
-        return Convert.ToHexString(bytes);
-#else
-        StringBuilder sb = new(bytes.Length * 2);
-        foreach (byte b in bytes)
-        {
-            sb.Append(b.ToString("X2", CultureInfo.InvariantCulture));
-        }
-        return sb.ToString();
-#endif
-    }
-
-    public static byte[] ConvertHexStringToBytes(string hex)
-    {
-#if NET
-        return Convert.FromHexString(hex);
-#else
-        if (hex.Length % 2 != 0)
-        {
-            throw new FormatException("The hex string must have an even number of characters.");
-        }
-
-        byte[] bytes = new byte[hex.Length / 2];
-        for (int i = 0; i < bytes.Length; i++)
-        {
-            bytes[i] = byte.Parse(hex.Substring(i * 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
-        }
-        return bytes;
-#endif
-    }
-
 #if !NET
+    extension(Convert)
+    {
+        public static string ToHexString(byte[] bytes)
+        {
+            StringBuilder sb = new(bytes.Length * 2);
+            foreach (byte b in bytes)
+            {
+                sb.Append(b.ToString("X2", CultureInfo.InvariantCulture));
+            }
+
+            return sb.ToString();
+        }
+
+        public static byte[] FromHexString(string hex)
+        {
+            if (hex.Length % 2 != 0)
+            {
+                throw new FormatException("The hex string must have an even number of characters.");
+            }
+
+            byte[] bytes = new byte[hex.Length / 2];
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                // Preserve the legacy parser's whitespace handling.
+                bytes[i] = byte.Parse(hex.Substring(i * 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+            }
+
+            return bytes;
+        }
+    }
+
     public static int GetChars(this Encoding encoding, ReadOnlySpan<byte> bytes, Span<char> chars)
     {
         unsafe
@@ -116,7 +114,7 @@ internal static class Helpers
 
         private static GCHandle PinArray(Array array)
         {
-            Debug.Assert(array.GetType().GetElementType() == typeof(TElement) && !IsReferenceOrContainsReferences<TElement>());
+            Debug.Assert(array.GetType().GetElementType() == typeof(TElement) && !RuntimeHelpers.IsReferenceOrContainsReferences<TElement>());
             return GCHandle.Alloc(array, GCHandleType.Pinned);
         }
     }
@@ -159,38 +157,40 @@ internal static class Helpers
     }
 #endif
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsReferenceOrContainsReferences<T>()
+#if !NET
+    extension(RuntimeHelpers)
     {
-#if NET
-        return RuntimeHelpers.IsReferenceOrContainsReferences<T>();
-#else
-        HashSet<Type>? visited = null;
-        return IsReferenceOrContainsReferencesCore(typeof(T));
-        bool IsReferenceOrContainsReferencesCore(Type type)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsReferenceOrContainsReferences<T>()
         {
-            if (!type.IsValueType)
-            {
-                return true;
-            }
+            HashSet<Type>? visited = null;
+            return IsReferenceOrContainsReferencesCore(typeof(T));
 
-            if (!(visited ??= new()).Add(type))
+            bool IsReferenceOrContainsReferencesCore(Type type)
             {
-                return false;
-            }
-
-            foreach (FieldInfo field in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
-            {
-                if (IsReferenceOrContainsReferencesCore(field.FieldType))
+                if (!type.IsValueType)
                 {
                     return true;
                 }
-            }
 
-            return false;
+                if (!(visited ??= new()).Add(type))
+                {
+                    return false;
+                }
+
+                foreach (FieldInfo field in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+                {
+                    if (IsReferenceOrContainsReferencesCore(field.FieldType))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
-#endif
     }
+#endif
 
     /// <summary>
     /// Gets an enumerable view that is potentially blocking if the source collection is an <see cref="IAsyncEnumerable{T}"/>.

@@ -82,7 +82,7 @@ public sealed class TypeGenerationContext : IReadOnlyDictionary<Type, object?>, 
     /// </remarks>
     public object? GetOrAdd(ITypeShape typeShape, object? state = null)
     {
-        Throw.IfNull(typeShape);
+        ArgumentNullException.ThrowIfNull(typeShape);
         if (ValueBuilder is null)
         {
             throw new InvalidOperationException($"Calling this method requires specifying a {ValueBuilder} property.");
@@ -113,7 +113,7 @@ public sealed class TypeGenerationContext : IReadOnlyDictionary<Type, object?>, 
     /// <exception cref="InvalidOperationException"><paramref name="typeShape"/> is contextual.</exception>
     public bool TryGetValue(ITypeShape typeShape, [MaybeNullWhen(false)] out object? value)
     {
-        Throw.IfNull(typeShape);
+        ArgumentNullException.ThrowIfNull(typeShape);
         ParentCache?.ValidateProvider(typeShape.Provider);
 
         if (typeShape.IsContextual)
@@ -186,7 +186,7 @@ public sealed class TypeGenerationContext : IReadOnlyDictionary<Type, object?>, 
     /// <param name="overwrite">Whether to overwrite existing entries.</param>
     public void Add(Type key, object? value, bool overwrite = false)
     {
-        Throw.IfNull(key);
+        ArgumentNullException.ThrowIfNull(key);
 
 #if NET
         ref Entry entry = ref CollectionsMarshal.GetValueRefOrAddDefault(_entries, key, out bool exists);

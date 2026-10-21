@@ -23,7 +23,8 @@ public struct DuplicatePropertyValidator
         IReadOnlyList<IPropertyShape> properties,
         Func<IPropertyShape, Exception>? throwOnDuplicateProperty = null)
     {
-        _properties = properties ?? throw new ArgumentNullException(nameof(properties));
+        ArgumentNullException.ThrowIfNull(properties);
+        _properties = properties;
         _throwOnDuplicateProperty = throwOnDuplicateProperty ?? (static prop => new ArgumentException($"Duplicate property: {prop.Name}"));
         _length = (uint)properties.Count;
         if (_length > 64)

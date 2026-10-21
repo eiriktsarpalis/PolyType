@@ -14,7 +14,7 @@ public readonly struct PropertyDataModel
     public PropertyDataModel(IPropertySymbol property)
     {
         PropertySymbol = property;
-        IsRequiredBySyntax = property.IsRequired();
+        IsRequiredBySyntax = property.IsRequired;
     }
 
     /// <summary>
@@ -23,7 +23,7 @@ public readonly struct PropertyDataModel
     public PropertyDataModel(IFieldSymbol field)
     {
         PropertySymbol = field;
-        IsRequiredBySyntax = field.IsRequired();
+        IsRequiredBySyntax = field.IsRequired;
     }
 
     /// <summary>

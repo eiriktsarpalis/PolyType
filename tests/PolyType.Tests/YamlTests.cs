@@ -9,6 +9,16 @@ namespace PolyType.Tests;
 public abstract class YamlTests(ProviderUnderTest providerUnderTest)
 {
     [Theory]
+    [InlineData("A", MyEnum.A)]
+    [InlineData("A, B", MyEnum.A | MyEnum.B)]
+    [InlineData("3", MyEnum.A | MyEnum.B)]
+    public void EnumParsing_AcceptsNamesFlagsAndNumericValues(string text, MyEnum expected)
+    {
+        var converter = YamlSerializer.CreateConverter<MyEnum>(providerUnderTest.Provider);
+        Assert.Equal(expected, converter.Deserialize(text));
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void DictionaryEntries_SkipUnknownNodesAndAcceptReorderedFields(bool readOnly)

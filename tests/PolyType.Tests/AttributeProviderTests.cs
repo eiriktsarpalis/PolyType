@@ -15,6 +15,17 @@ public abstract partial class AttributeProviderTests(ProviderUnderTest providerU
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void NullAttributeType_PreservesParameterName(bool inherit)
+    {
+        var attributes = Provider.GetTypeShapeOrThrow<DerivedClassWithInheritableAttributes>().AttributeProvider;
+
+        Assert.Equal("attributeType", Assert.Throws<ArgumentNullException>(() => attributes.GetCustomAttributes(null!, inherit)).ParamName);
+        Assert.Equal("attributeType", Assert.Throws<ArgumentNullException>(() => attributes.IsDefined(null!, inherit)).ParamName);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void AttributeProviderOverloads_HonorInheritanceAndMissingAttributes(bool inherit)
     {
         var attributes = Provider.GetTypeShapeOrThrow<DerivedClassWithInheritableAttributes>().AttributeProvider;

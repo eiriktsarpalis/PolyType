@@ -169,39 +169,7 @@ internal static partial class ReflectionHelpers
 
     public static bool CanBeGenericArgument(this Type type)
     {
-        return !(type == typeof(void) || type.IsPointer || type.IsByRef || IsByRefLike(type) || type.ContainsGenericParameters);
-    }
-
-    public static bool IsEnumDefined<TEnum>(TEnum value)
-        where TEnum : struct, Enum
-    {
-#if NET
-        return Enum.IsDefined(value);
-#else
-        return Enum.IsDefined(typeof(TEnum), value);
-#endif
-    }
-
-    private static bool IsByRefLike(Type type)
-    {
-#if NET
-        return type.IsByRefLike;
-#else
-        if (!type.IsValueType)
-        {
-            return false;
-        }
-
-        foreach (var attributeData in type.GetCustomAttributesData())
-        {
-            if (attributeData.AttributeType.FullName == "System.Runtime.CompilerServices.IsByRefLikeAttribute")
-            {
-                return true;
-            }
-        }
-
-        return false;
-#endif
+        return !(type == typeof(void) || type.IsPointer || type.IsByRef || type.IsByRefLike || type.ContainsGenericParameters);
     }
 
     /// <summary>Creates an instance using its public parameterless constructor without wrapping constructor exceptions.</summary>
@@ -551,11 +519,8 @@ internal static partial class ReflectionHelpers
         {
             return null;
         }
-#if NET
+
         return RuntimeHelpers.GetUninitializedObject(type);
-#else
-        return System.Runtime.Serialization.FormatterServices.GetUninitializedObject(type);
-#endif
     }
 
     public static bool TryGetDefaultValueNormalized(this ParameterInfo parameterInfo, out object? result)

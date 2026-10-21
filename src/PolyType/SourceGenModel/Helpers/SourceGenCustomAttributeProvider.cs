@@ -51,7 +51,7 @@ internal sealed class SourceGenCustomAttributeProvider(Func<SourceGenAttributeIn
 
     public object[] GetCustomAttributes(Type attributeType, bool inherit)
     {
-        Throw.IfNull(attributeType);
+        ArgumentNullException.ThrowIfNull(attributeType);
 
         List<Attribute> list = [];
         foreach (SourceGenAttributeInfo attributeInfo in attributeFactory())
@@ -80,7 +80,7 @@ internal sealed class SourceGenCustomAttributeProvider(Func<SourceGenAttributeIn
 
     public bool IsDefined(Type attributeType, bool inherit)
     {
-        Throw.IfNull(attributeType);
+        ArgumentNullException.ThrowIfNull(attributeType);
 
         foreach (SourceGenAttributeInfo attributeInfo in attributeFactory())
         {
