@@ -212,7 +212,13 @@ partial class TypeDataModelGenerator
                 continue;
             }
 
-            IncludeNestedType(closedAssociatedType, ref ctx, associatedType.Requirements);
+            TypeShapeRequirements requirements = associatedType.Requirements;
+            if (requirements.HasFlag(TypeShapeRequirements.Full))
+            {
+                requirements |= TypeShapeRequirements.Methods;
+            }
+
+            IncludeNestedType(closedAssociatedType, ref ctx, requirements);
         }
     }
 

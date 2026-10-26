@@ -494,6 +494,55 @@ public static partial class CompilationTests
     }
 
     [Fact]
+    public static void AssociatedTypeAttribute_FullShapeIncludesMethods()
+    {
+        Compilation compilation = CompilationHelpers.CreateCompilation("""
+            using System;
+            using System.Linq;
+            using PolyType;
+            using PolyType.Abstractions;
+
+            [AssociatedTypeAttribute(nameof(serviceType), TypeShapeRequirements.Full)]
+            [AttributeUsage(AttributeTargets.Class)]
+            public sealed class ServiceAttribute : Attribute
+            {
+                public ServiceAttribute(Type serviceType) => ServiceType = serviceType;
+                public Type ServiceType { get; }
+            }
+
+            [Service(typeof(IService))]
+            public class ServiceClient { }
+
+            public interface IService
+            {
+                void Send();
+            }
+
+            [GenerateShapeFor(typeof(ServiceClient))]
+            public partial class Witness { }
+
+            public static class Test
+            {
+                public static string Run()
+                {
+                    ITypeShape<ServiceClient> shape = TypeShapeResolver.Resolve<ServiceClient, Witness>();
+                    return string.Join(",", shape.GetAssociatedTypeShape(typeof(IService))!.Methods.Select(method => method.Name));
+                }
+            }
+            """);
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Empty(result.Diagnostics);
+
+        using var stream = new global::System.IO.MemoryStream();
+        var emit = result.NewCompilation.Emit(stream, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.True(emit.Success, string.Join(Environment.NewLine, emit.Diagnostics));
+        global::System.Reflection.Assembly assembly = global::System.Reflection.Assembly.Load(stream.ToArray());
+        string methods = (string)assembly.GetType("Test")!.GetMethod("Run")!.Invoke(null, null)!;
+        Assert.Equal("Send", methods);
+    }
+
+    [Fact]
     [Trait("AssociatedTypes", "true")]
     public static void AssociatedTypeAttribute_RequirementsNone()
     {

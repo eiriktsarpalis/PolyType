@@ -16,6 +16,7 @@ public class AssociatedTypeAttributeAttribute : Attribute
     /// </param>
     /// <param name="requirements">
     /// The requirements to apply to each associated type.
+    /// For object shapes, full shapes include public methods.
     /// Only applicable to object shapes.
     /// All other shapes (e.g. collections, enums, unions) are always completely defined.
     /// </param>
