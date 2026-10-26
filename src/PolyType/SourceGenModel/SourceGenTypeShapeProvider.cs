@@ -23,4 +23,12 @@ public abstract class SourceGenTypeShapeProvider : ITypeShapeProvider
     /// A <see cref="ITypeShape"/> instance corresponding to the current type.
     /// </returns>
     public abstract ITypeShape? GetTypeShape(Type type);
+
+    /// <summary>
+    /// Infers contextual status for shapes created by legacy generated output.
+    /// </summary>
+    /// <param name="shape">The shape whose contextual status is being resolved.</param>
+    /// <returns>Whether the shape differs from the legacy provider's ordinary representation.</returns>
+    protected internal virtual bool IsLegacyShapeContextual(ITypeShape shape) =>
+        SourceGeneratorVersion is null && !ReferenceEquals(shape, GetTypeShape(shape.Type));
 }
