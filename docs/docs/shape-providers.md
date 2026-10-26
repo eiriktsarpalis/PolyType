@@ -73,6 +73,19 @@ public static class MyRandomGenerator
 
 The runtime recovers omitted `IsContextual` metadata from older generated providers without requiring those assemblies to be rebuilt. Omitted `UnionKind` values default to `UnionTypeShapeKind.Unknown`. See [contextual representations](specification.md#contextual-representations).
 
+### Custom generation attributes
+
+Library authors can annotate their own attribute classes with <xref:PolyType.Abstractions.GenerateShapeAttributeAttribute> to trigger shape generation for types carrying those attributes.
+Its <xref:PolyType.Abstractions.GenerateShapeAttributeAttribute.IncludeMethods>, <xref:PolyType.Abstractions.GenerateShapeAttributeAttribute.Kind>, <xref:PolyType.Abstractions.GenerateShapeAttributeAttribute.Marshaler>, and <xref:PolyType.Abstractions.GenerateShapeAttributeAttribute.InferClosedTypePolymorphism> properties configure the generated shapes in the same way as <xref:PolyType.GenerateShapeAttribute>.
+For example, an RPC contract attribute can request public instance methods by default, without requiring its users to add a second annotation.
+
+The target type and its containing types must still be partial, and the usual restrictions on static and open generic types apply.
+An explicit <xref:PolyType.GenerateShapeAttribute> on the target replaces the custom attribute's defaults.
+Only annotations directly on the custom attribute class are inspected; this mechanism does not follow inherited or recursively composed meta-attributes.
+
+Unlike <xref:PolyType.GenerateShapeAttribute>, the meta-attribute is retained in compiled metadata, so a library-defined attribute works in consuming projects.
+It triggers only source generation and does not change the reflection provider's configuration.
+
 ## Reflection Provider
 
 PolyType includes a reflection-based provider that resolves shape metadata at run time:

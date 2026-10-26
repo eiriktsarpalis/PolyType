@@ -39,6 +39,10 @@ Everything that flows through the incremental pipeline (the `Model/` types) **MU
 
 Flow: `PolyTypeGenerator.cs` → `Parser` (Roslyn symbols → PolyType.Roslyn `TypeDataModel`s) → `Parser.ModelMapper` (PolyType.Roslyn models → incremental-safe `Model/` types) → `SourceFormatter` (incremental model → C# source).
 
+Discovery also inspects attributes on type declarations for `PolyType.Abstractions.GenerateShapeAttributeAttribute`.
+The syntax helper weakly keys its meta-attribute cache by compilation and caches both positive and negative results per attribute class, including across constructed generic attributes.
+Do not move that cache onto the generator instance without compilation isolation: edits to attribute declarations must invalidate previous results.
+
 ## Separation of Concerns: Parser vs Formatter
 
 The pipeline above has a strict division of labour, and keeping it strict is what makes the generator both correct and fast:
