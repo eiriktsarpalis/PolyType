@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::Microsoft.FSharp.Core.FSharpResult<string, int>> __Create_FSharpResult_String_Int32()
         {
-            return new global::PolyType.SourceGenModel.SourceGenUnionTypeShape<global::Microsoft.FSharp.Core.FSharpResult<string, int>>
+            return new global::PolyType.SourceGenModel.SourceGenUnionTypeShape<global::Microsoft.FSharp.Core.FSharpResult<string, int>>.Current
             {
                 UnionKind = global::PolyType.Abstractions.UnionTypeShapeKind.FSharpUnion,
                 BaseTypeFactory = () => FSharpResult_String_Int32__Underlying,

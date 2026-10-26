@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.Person> __Create_Person()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.Person>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.Person>.Current
             {
                 PropertiesFactory = __CreateProperties_Person,
                 ConstructorFactory = __CreateConstructor_Person,

@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<bool> __Create_Boolean()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<bool>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<bool>.Current
             {
                 Provider = this,
             };

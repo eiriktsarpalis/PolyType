@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.Pair<int, string>> __Create_Pair_Int32_String()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.Pair<int, string>>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.Pair<int, string>>.Current
             {
                 PropertiesFactory = __CreateProperties_Pair_Int32_String,
                 ConstructorFactory = __CreateConstructor_Pair_Int32_String,

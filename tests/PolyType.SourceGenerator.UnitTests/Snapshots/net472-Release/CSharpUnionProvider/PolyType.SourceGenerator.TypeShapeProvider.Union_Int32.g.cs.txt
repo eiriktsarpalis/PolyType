@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.Union<int>> __Create_Union_Int32()
         {
-            return new global::PolyType.SourceGenModel.SourceGenUnionTypeShape<global::TestNamespace.Union<int>>
+            return new global::PolyType.SourceGenModel.SourceGenUnionTypeShape<global::TestNamespace.Union<int>>.Current
             {
                 UnionKind = global::PolyType.Abstractions.UnionTypeShapeKind.CSharpUnion,
                 BaseTypeFactory = () => Union_Int32__Underlying,

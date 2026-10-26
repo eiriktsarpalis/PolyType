@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.Zebra> __Create_Zebra()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.Zebra>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.Zebra>.Current
             {
                 PropertiesFactory = __CreateProperties_Zebra,
                 ConstructorFactory = __CreateConstructor_Zebra,

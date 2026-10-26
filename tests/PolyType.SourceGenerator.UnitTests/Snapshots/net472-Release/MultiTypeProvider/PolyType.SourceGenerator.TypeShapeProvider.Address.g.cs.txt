@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.Address> __Create_Address()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.Address>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.Address>.Current
             {
                 PropertiesFactory = __CreateProperties_Address,
                 ConstructorFactory = __CreateConstructor_Address,

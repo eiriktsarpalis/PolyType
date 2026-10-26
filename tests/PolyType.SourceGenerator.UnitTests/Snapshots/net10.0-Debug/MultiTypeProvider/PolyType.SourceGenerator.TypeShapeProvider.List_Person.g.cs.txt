@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::System.Collections.Generic.List<global::TestNamespace.Person>> __Create_List_Person()
         {
-            return new global::PolyType.SourceGenModel.SourceGenEnumerableTypeShape<global::System.Collections.Generic.List<global::TestNamespace.Person>, global::TestNamespace.Person>
+            return new global::PolyType.SourceGenModel.SourceGenEnumerableTypeShape<global::System.Collections.Generic.List<global::TestNamespace.Person>, global::TestNamespace.Person>.Current
             {
                 ElementTypeFactory = () => Person,
                 ConstructionStrategy = global::PolyType.Abstractions.CollectionConstructionStrategy.Mutable,

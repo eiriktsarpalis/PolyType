@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.DictionaryHolder> __Create_DictionaryHolder()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.DictionaryHolder>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.DictionaryHolder>.Current
             {
                 PropertiesFactory = __CreateProperties_DictionaryHolder,
                 ConstructorFactory = __CreateConstructor_DictionaryHolder,

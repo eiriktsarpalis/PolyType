@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.Collie> __Create_Collie()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.Collie>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.Collie>.Current
             {
                 PropertiesFactory = __CreateProperties_Collie,
                 ConstructorFactory = __CreateConstructor_Collie,

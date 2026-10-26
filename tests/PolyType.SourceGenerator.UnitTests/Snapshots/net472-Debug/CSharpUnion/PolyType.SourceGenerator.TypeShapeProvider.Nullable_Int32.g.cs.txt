@@ -17,7 +17,7 @@ namespace PolyType.SourceGenerator
         #pragma warning disable CS8622 // Nullability warning for out parameter mismatch
         private global::PolyType.ITypeShape<int?> __Create_Nullable_Int32()
         {
-            return new global::PolyType.SourceGenModel.SourceGenOptionalTypeShape<int?, int>
+            return new global::PolyType.SourceGenModel.SourceGenOptionalTypeShape<int?, int>.Current
             {
                 ElementTypeFactory = () => Int32,
                 NoneConstructor = static () => null,

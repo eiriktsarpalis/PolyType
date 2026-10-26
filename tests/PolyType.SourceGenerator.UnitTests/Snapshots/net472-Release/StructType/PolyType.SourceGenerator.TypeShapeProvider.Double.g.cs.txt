@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<double> __Create_Double()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<double>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<double>.Current
             {
                 Provider = this,
             };

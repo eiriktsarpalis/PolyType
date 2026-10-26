@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.ListBase> __Create_ListBase__Underlying()
         {
-            return new global::PolyType.SourceGenModel.SourceGenEnumerableTypeShape<global::TestNamespace.ListBase, global::TestNamespace.ListBase>
+            return new global::PolyType.SourceGenModel.SourceGenEnumerableTypeShape<global::TestNamespace.ListBase, global::TestNamespace.ListBase>.Current
             {
                 IsContextual = true,
                 ElementTypeFactory = () => ListBase,

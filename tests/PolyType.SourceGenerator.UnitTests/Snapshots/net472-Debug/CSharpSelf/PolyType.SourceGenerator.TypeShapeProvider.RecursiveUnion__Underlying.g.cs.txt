@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.RecursiveUnion> __Create_RecursiveUnion__Underlying()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.RecursiveUnion>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.RecursiveUnion>.Current
             {
                 IsContextual = true,
                 Provider = this,

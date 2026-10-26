@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<string> __Create_String()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<string>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<string>.Current
             {
                 Provider = this,
             };

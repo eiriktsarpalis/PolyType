@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::System.DateTime> __Create_DateTime()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::System.DateTime>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::System.DateTime>.Current
             {
                 Provider = this,
             };

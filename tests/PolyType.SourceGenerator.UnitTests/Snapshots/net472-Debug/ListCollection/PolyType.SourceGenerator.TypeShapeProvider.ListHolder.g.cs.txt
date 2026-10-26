@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.ListHolder> __Create_ListHolder()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.ListHolder>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.ListHolder>.Current
             {
                 PropertiesFactory = __CreateProperties_ListHolder,
                 ConstructorFactory = __CreateConstructor_ListHolder,

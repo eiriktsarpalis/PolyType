@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.NumberOrText> __Create_NumberOrText__Underlying()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.NumberOrText>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.NumberOrText>.Current
             {
                 IsContextual = true,
                 Provider = this,

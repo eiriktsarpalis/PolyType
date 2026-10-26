@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.SimplePoco> __Create_SimplePoco()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.SimplePoco>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.SimplePoco>.Current
             {
                 PropertiesFactory = __CreateProperties_SimplePoco,
                 ConstructorFactory = __CreateConstructor_SimplePoco,

@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.RefParamDemo> __Create_RefParamDemo()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.RefParamDemo>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.RefParamDemo>.Current
             {
                 PropertiesFactory = __CreateProperties_RefParamDemo,
                 ConstructorFactory = __CreateConstructor_RefParamDemo,

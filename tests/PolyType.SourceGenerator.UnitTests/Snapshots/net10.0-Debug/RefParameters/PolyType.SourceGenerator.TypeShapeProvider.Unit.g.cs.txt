@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::PolyType.Abstractions.Unit> __Create_Unit()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::PolyType.Abstractions.Unit>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::PolyType.Abstractions.Unit>.Current
             {
                 ConstructorFactory = __CreateConstructor_Unit,
                 Provider = this,

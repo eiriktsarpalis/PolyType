@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.Empty> __Create_Empty__Underlying()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.Empty>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.Empty>.Current
             {
                 IsContextual = true,
                 AttributeFactory = __CreateAttributes_Empty__Underlying,

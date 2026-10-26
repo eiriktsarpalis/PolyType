@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.EnumHolder> __Create_EnumHolder()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.EnumHolder>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.EnumHolder>.Current
             {
                 PropertiesFactory = __CreateProperties_EnumHolder,
                 ConstructorFactory = __CreateConstructor_EnumHolder,

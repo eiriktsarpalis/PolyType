@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.MyEnum> __Create_MyEnum()
         {
-            return new global::PolyType.SourceGenModel.SourceGenEnumTypeShape<global::TestNamespace.MyEnum, int>
+            return new global::PolyType.SourceGenModel.SourceGenEnumTypeShape<global::TestNamespace.MyEnum, int>.Current
             {
                 UnderlyingTypeFactory = () => Int32,
                 Members = __CreateMemberDictionary_MyEnum(),

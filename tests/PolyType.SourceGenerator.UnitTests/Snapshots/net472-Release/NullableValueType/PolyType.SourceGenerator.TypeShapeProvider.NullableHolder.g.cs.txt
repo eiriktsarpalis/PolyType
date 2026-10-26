@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.NullableHolder> __Create_NullableHolder()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.NullableHolder>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.NullableHolder>.Current
             {
                 PropertiesFactory = __CreateProperties_NullableHolder,
                 ConstructorFactory = __CreateConstructor_NullableHolder,

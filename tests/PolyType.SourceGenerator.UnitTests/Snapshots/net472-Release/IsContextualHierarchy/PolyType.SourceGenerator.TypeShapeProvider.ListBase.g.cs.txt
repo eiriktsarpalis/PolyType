@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.ListBase> __Create_ListBase()
         {
-            return new global::PolyType.SourceGenModel.SourceGenUnionTypeShape<global::TestNamespace.ListBase>
+            return new global::PolyType.SourceGenModel.SourceGenUnionTypeShape<global::TestNamespace.ListBase>.Current
             {
                 UnionKind = global::PolyType.Abstractions.UnionTypeShapeKind.TypeHierarchy,
                 BaseTypeFactory = () => ListBase__Underlying,

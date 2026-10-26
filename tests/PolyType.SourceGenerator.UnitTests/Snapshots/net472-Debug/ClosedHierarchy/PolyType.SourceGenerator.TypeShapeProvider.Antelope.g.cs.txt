@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.Antelope> __Create_Antelope()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.Antelope>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.Antelope>.Current
             {
                 PropertiesFactory = __CreateProperties_Antelope,
                 ConstructorFactory = __CreateConstructor_Antelope,

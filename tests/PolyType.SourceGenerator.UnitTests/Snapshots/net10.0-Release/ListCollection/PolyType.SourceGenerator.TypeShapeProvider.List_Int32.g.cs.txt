@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::System.Collections.Generic.List<int>> __Create_List_Int32()
         {
-            return new global::PolyType.SourceGenModel.SourceGenEnumerableTypeShape<global::System.Collections.Generic.List<int>, int>
+            return new global::PolyType.SourceGenModel.SourceGenEnumerableTypeShape<global::System.Collections.Generic.List<int>, int>.Current
             {
                 ElementTypeFactory = () => Int32,
                 ConstructionStrategy = global::PolyType.Abstractions.CollectionConstructionStrategy.Mutable,

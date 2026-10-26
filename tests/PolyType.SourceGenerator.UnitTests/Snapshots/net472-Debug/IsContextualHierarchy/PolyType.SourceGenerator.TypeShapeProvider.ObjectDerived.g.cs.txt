@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.ObjectDerived> __Create_ObjectDerived()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.ObjectDerived>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::TestNamespace.ObjectDerived>.Current
             {
                 PropertiesFactory = __CreateProperties_ObjectDerived,
                 ConstructorFactory = __CreateConstructor_ObjectDerived,

@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::Microsoft.FSharp.Core.FSharpChoice<string, int>.Choice2Of2> __Create_FSharpChoice_String_Int32__Case_Choice2Of2()
         {
-            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::Microsoft.FSharp.Core.FSharpChoice<string, int>.Choice2Of2>
+            return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<global::Microsoft.FSharp.Core.FSharpChoice<string, int>.Choice2Of2>.Current
             {
                 IsContextual = true,
                 PropertiesFactory = __CreateProperties_FSharpChoice_String_Int32__Case_Choice2Of2,

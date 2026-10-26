@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.Number> __Create_Number()
         {
-            return new global::PolyType.SourceGenModel.SourceGenUnionTypeShape<global::TestNamespace.Number>
+            return new global::PolyType.SourceGenModel.SourceGenUnionTypeShape<global::TestNamespace.Number>.Current
             {
                 UnionKind = global::PolyType.Abstractions.UnionTypeShapeKind.CSharpUnion,
                 BaseTypeFactory = () => Number__Underlying,

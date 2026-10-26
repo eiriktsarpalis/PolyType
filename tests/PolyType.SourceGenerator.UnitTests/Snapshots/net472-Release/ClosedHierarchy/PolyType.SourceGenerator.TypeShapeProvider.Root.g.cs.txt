@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.Root> __Create_Root()
         {
-            return new global::PolyType.SourceGenModel.SourceGenUnionTypeShape<global::TestNamespace.Root>
+            return new global::PolyType.SourceGenModel.SourceGenUnionTypeShape<global::TestNamespace.Root>.Current
             {
                 UnionKind = global::PolyType.Abstractions.UnionTypeShapeKind.TypeHierarchy,
                 BaseTypeFactory = () => Root__Underlying,

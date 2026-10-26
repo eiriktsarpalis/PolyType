@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::TestNamespace.DictionaryBase> __Create_DictionaryBase__Underlying()
         {
-            return new global::PolyType.SourceGenModel.SourceGenDictionaryTypeShape<global::TestNamespace.DictionaryBase, string, global::TestNamespace.DictionaryBase>
+            return new global::PolyType.SourceGenModel.SourceGenDictionaryTypeShape<global::TestNamespace.DictionaryBase, string, global::TestNamespace.DictionaryBase>.Current
             {
                 IsContextual = true,
                 KeyTypeFactory = () => String,

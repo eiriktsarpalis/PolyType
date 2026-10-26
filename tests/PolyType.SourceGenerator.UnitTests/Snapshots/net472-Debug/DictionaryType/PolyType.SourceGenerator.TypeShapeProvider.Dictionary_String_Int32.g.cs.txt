@@ -16,7 +16,7 @@ namespace PolyType.SourceGenerator
 
         private global::PolyType.ITypeShape<global::System.Collections.Generic.Dictionary<string, int>> __Create_Dictionary_String_Int32()
         {
-            return new global::PolyType.SourceGenModel.SourceGenDictionaryTypeShape<global::System.Collections.Generic.Dictionary<string, int>, string, int>
+            return new global::PolyType.SourceGenModel.SourceGenDictionaryTypeShape<global::System.Collections.Generic.Dictionary<string, int>, string, int>.Current
             {
                 KeyTypeFactory = () => String,
                 ValueTypeFactory = () => Int32,
