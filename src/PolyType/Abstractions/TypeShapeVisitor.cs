@@ -11,7 +11,7 @@ namespace PolyType.Abstractions;
 public abstract class TypeShapeVisitor
 {
     /// <summary>
-    /// Visits an <see cref="IObjectTypeShape{T}"/> representing a simple type or object.
+    /// Visits an <see cref="IObjectTypeShape{T}"/> representing a scalar type or object.
     /// </summary>
     /// <typeparam name="T">The object type represented by the shape instance.</typeparam>
     /// <param name="objectShape">The type shape to visit.</param>

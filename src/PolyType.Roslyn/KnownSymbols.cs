@@ -317,10 +317,14 @@ public class KnownSymbols(Compilation compilation)
     }
 
     /// <summary>
-    /// A "simple type" in this context defines a type that is either
+    /// A scalar type in this context defines a type that is either
     /// a primitive, string or represents an irreducible value such as Guid or DateTime.
     /// </summary>
-    public bool IsSimpleType(ITypeSymbol type)
+    /// <remarks>
+    /// Half, Int128, UInt128, DateOnly, TimeOnly, and Rune are recognized by metadata name,
+    /// including user-defined polyfills.
+    /// </remarks>
+    public bool IsScalarType(ITypeSymbol type)
     {
         return type.SpecialType switch
         {
@@ -342,12 +346,12 @@ public class KnownSymbols(Compilation compilation)
             SpecialType.System_String or
             SpecialType.System_Decimal or
             SpecialType.System_DateTime => true,
-            _ => (_simpleTypes ??= CreateSimpleTypes(Compilation)).Contains(type),
+            _ => (_scalarTypes ??= CreateScalarTypes(Compilation)).Contains(type),
         };
 
-        static HashSet<ITypeSymbol> CreateSimpleTypes(Compilation compilation)
+        static HashSet<ITypeSymbol> CreateScalarTypes(Compilation compilation)
         {
-            ReadOnlySpan<string> simpleTypeNames =
+            ReadOnlySpan<string> scalarTypeNames =
             [
                 "System.Half",
                 "System.Int128",
@@ -364,21 +368,21 @@ public class KnownSymbols(Compilation compilation)
                 "System.Threading.CancellationToken",
             ];
 
-            var simpleTypes = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
-            foreach (string simpleTypeName in simpleTypeNames)
+            var scalarTypes = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
+            foreach (string scalarTypeName in scalarTypeNames)
             {
-                INamedTypeSymbol? simpleType = compilation.GetTypeByMetadataName(simpleTypeName);
-                if (simpleType is not null)
+                INamedTypeSymbol? scalarType = compilation.GetTypeByMetadataName(scalarTypeName);
+                if (scalarType is not null)
                 {
-                    simpleTypes.Add(simpleType);
+                    scalarTypes.Add(scalarType);
                 }
             }
 
-            return simpleTypes;
+            return scalarTypes;
         }
     }
 
-    private HashSet<ITypeSymbol>? _simpleTypes;
+    private HashSet<ITypeSymbol>? _scalarTypes;
 
     /// <summary>
     /// Get or resolve a type by its fully qualified name.

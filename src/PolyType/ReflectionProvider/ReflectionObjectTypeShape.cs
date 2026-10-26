@@ -57,12 +57,12 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
     public override bool IsTupleType => _isTuple ??= typeof(T).IsTupleType();
     private bool? _isTuple;
 
-    public bool IsSimpleType => _isSimpleType ??= DetermineIsSimpleType(typeof(T));
-    private bool? _isSimpleType;
+    public bool IsScalarType => _isScalarType ??= DetermineIsScalarType(typeof(T));
+    private bool? _isScalarType;
 
     protected override IConstructorShape? GetConstructor()
     {
-        if (typeof(T).IsAbstract || IsSimpleType)
+        if (typeof(T).IsAbstract || IsScalarType)
         {
             return null;
         }
@@ -295,7 +295,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
 
     protected override IEnumerable<IPropertyShape> GetProperties()
     {
-        if (IsSimpleType)
+        if (IsScalarType)
         {
             yield break;
         }
@@ -322,7 +322,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
 
     private IEnumerable<PropertyShapeInfo> GetMembers(NullabilityInfoContext? nullabilityCtx)
     {
-        Debug.Assert(!IsSimpleType);
+        Debug.Assert(!IsScalarType);
         List<PropertyShapeInfo> results = [];
         HashSet<string>? propertyNames = null;
         bool isOrderSpecified = false;
@@ -442,7 +442,7 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
 
     private const BindingFlags AllInstanceMembers = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
-    private bool DetermineIsSimpleType(Type type)
+    private bool DetermineIsScalarType(Type type)
     {
         // A primitive or self-contained value type that
         // shouldn't expose its properties or constructors.
@@ -458,14 +458,8 @@ internal sealed class DefaultReflectionObjectTypeShape<T>(ReflectionTypeShapePro
             type == typeof(Version) ||
             type == typeof(Uri) ||
             type == typeof(System.Numerics.BigInteger) ||
-#if NET
-            type == typeof(UInt128) ||
-            type == typeof(Int128) ||
-            type == typeof(Half) ||
-            type == typeof(DateOnly) ||
-            type == typeof(TimeOnly) ||
-            type == typeof(System.Text.Rune) ||
-#endif
+            type.FullName is "System.UInt128" or "System.Int128" or "System.Half" or
+                "System.DateOnly" or "System.TimeOnly" or "System.Text.Rune" ||
             type == typeof(System.Threading.CancellationToken) ||
             typeof(MemberInfo).IsAssignableFrom(type) ||
             typeof(Delegate).IsAssignableFrom(type) ||

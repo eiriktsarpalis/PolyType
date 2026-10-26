@@ -12,13 +12,13 @@ public partial class TypeDataModelGenerator
     /// Whether property or field resolution should be skipped for the given type.
     /// </summary>
     /// <remarks>
-    /// Currently skipped for simple types, nullable types, and <see cref="MemberInfo"/>.
+    /// Currently skipped for scalar types, nullable types, and <see cref="MemberInfo"/>.
     /// </remarks>
     protected virtual bool SkipObjectMemberResolution(INamedTypeSymbol type)
     {
         return
             type.TypeKind is not (TypeKind.Class or TypeKind.Struct or TypeKind.Interface) ||
-            KnownSymbols.IsSimpleType(type) ||
+            KnownSymbols.IsScalarType(type) ||
             type.SpecialType is SpecialType.System_Object or SpecialType.System_Nullable_T or SpecialType.System_Delegate or SpecialType.System_MulticastDelegate ||
             KnownSymbols.MemberInfoType.IsAssignableFrom(type) ||
             KnownSymbols.ExceptionType.IsAssignableFrom(type) ||
