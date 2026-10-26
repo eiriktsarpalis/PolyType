@@ -23,14 +23,18 @@ namespace PolyType.SourceGenerator
         public static TypeShapeProvider_TestAssembly Default { get; } = new();
         
         /// <summary>Initializes a new instance of the <see cref="TypeShapeProvider_TestAssembly"/> class.</summary>
-        private TypeShapeProvider_TestAssembly() : base("2.0.0.21-rc.2+d8f096ba8e")
+        private TypeShapeProvider_TestAssembly()
         {
+            SourceGeneratorVersion = "0.0.0.0";
         }
         
         /// <summary>Initializes the field ensuring the same instance is always returned.</summary>
         private T __Init_Singleton<T>(ref T? field, T value) where T : class =>
             global::System.Threading.Interlocked.CompareExchange(ref field, value, null) ?? value;
         
+        /// <inheritdoc/>
+        protected override global::System.Func<global::PolyType.ITypeShape, bool>? IsLegacyShapeContextual => null;
+
         /// <inheritdoc/>
         public override global::PolyType.ITypeShape? GetTypeShape(global::System.Type type)
         {

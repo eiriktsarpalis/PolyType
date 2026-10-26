@@ -32,8 +32,9 @@ internal sealed partial class SourceFormatter
             public static {{provider.ProviderDeclaration.Name}} {{ProviderSingletonProperty}} { get; } = new();
 
             /// <summary>Initializes a new instance of the <see cref="{{provider.ProviderDeclaration.Name}}"/> class.</summary>
-            private {{provider.ProviderDeclaration.Name}}() : base({{FormatStringLiteral(PolyTypeGenerator.SourceGeneratorVersion)}})
+            private {{provider.ProviderDeclaration.Name}}()
             {
+                {{SourceGeneratorVersionProperty}} = {{FormatStringLiteral(PolyTypeGenerator.SourceGeneratorVersion)}};
             }
 
             /// <summary>Initializes the field ensuring the same instance is always returned.</summary>
@@ -41,6 +42,10 @@ internal sealed partial class SourceFormatter
                 global::System.Threading.Interlocked.CompareExchange(ref field, value, null) ?? value;
 
             """);
+
+        writer.WriteLine("/// <inheritdoc/>");
+        writer.WriteLine($"protected override global::System.Func<global::PolyType.ITypeShape, bool>? {IsLegacyShapeContextualProperty} => null;");
+        writer.WriteLine();
 
         FormatGetShapeProviderMethod(provider, writer);
         FormatConstructorInvoker(writer);

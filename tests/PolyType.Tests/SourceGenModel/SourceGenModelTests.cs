@@ -152,14 +152,14 @@ public static class SourceGenModelTests
     [InlineData(null)]
     [InlineData(false)]
     [InlineData(true)]
-    public static void VersionedConstructorDoesNotUseProviderLookup(bool? isContextual)
+    public static void DisabledLegacyInferenceDoesNotUseProviderLookup(bool? isContextual)
     {
-        var provider = new VersionedSourceGenProvider();
+        var provider = new ModernSourceGenProvider();
         var shape = isContextual is bool value
             ? new SourceGenObjectTypeShape<int> { Provider = provider, IsContextual = value }
             : new SourceGenObjectTypeShape<int> { Provider = provider };
 
-        Assert.Equal("2.0.0", provider.SourceGeneratorVersion);
+        Assert.Null(provider.SourceGeneratorVersion);
         Assert.Equal(isContextual ?? false, shape.IsContextual);
         Assert.Equal(isContextual ?? false, shape.IsContextual);
     }
@@ -169,8 +169,10 @@ public static class SourceGenModelTests
         public override ITypeShape? GetTypeShape(Type type) => lookup(type);
     }
 
-    private sealed class VersionedSourceGenProvider() : SourceGenTypeShapeProvider("2.0.0")
+    private sealed class ModernSourceGenProvider : SourceGenTypeShapeProvider
     {
+        protected override Func<ITypeShape, bool>? IsLegacyShapeContextual => null;
+
         public override ITypeShape? GetTypeShape(Type type) =>
             throw new InvalidOperationException("Provider lookup must not be called.");
     }

@@ -10,7 +10,7 @@ namespace PolyType.SourceGenerator;
 
 internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
 {
-    public static string[] ReservedIdentifiers { get; } = [ProviderSingletonProperty, GetShapeMethodName, SourceGeneratorVersionProperty];
+    public static string[] ReservedIdentifiers { get; } = [ProviderSingletonProperty, GetShapeMethodName, SourceGeneratorVersionProperty, IsLegacyShapeContextualProperty];
 
     private const string InstanceBindingFlagsConstMember = "__BindingFlags_Instance_All";
     private const string AllBindingFlagsConstMember = "__BindingFlags_All";
@@ -18,6 +18,7 @@ internal sealed partial class SourceFormatter(TypeShapeProviderModel provider)
     private const string ProviderSingletonProperty = "Default";
     private const string GetShapeMethodName = "GetTypeShape";
     private const string SourceGeneratorVersionProperty = "SourceGeneratorVersion";
+    private const string IsLegacyShapeContextualProperty = "IsLegacyShapeContextual";
 
     private static string FormatArgumentStateTypeName(ArgumentStateType argumentStateType, string typeParameter) =>
         argumentStateType switch
