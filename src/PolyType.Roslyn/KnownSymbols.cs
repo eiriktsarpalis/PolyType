@@ -320,6 +320,10 @@ public class KnownSymbols(Compilation compilation)
     /// A "simple type" in this context defines a type that is either
     /// a primitive, string or represents an irreducible value such as Guid or DateTime.
     /// </summary>
+    /// <remarks>
+    /// Half, Int128, UInt128, DateOnly, TimeOnly, and Rune are recognized only from the core library.
+    /// User-defined polyfills of these types retain their object members.
+    /// </remarks>
     public bool IsSimpleType(ITypeSymbol type)
     {
         return type.SpecialType switch
@@ -342,32 +346,44 @@ public class KnownSymbols(Compilation compilation)
             SpecialType.System_String or
             SpecialType.System_Decimal or
             SpecialType.System_DateTime => true,
-            _ => (_simpleTypes ??= CreateSimpleTypes(Compilation)).Contains(type),
+            _ => (_simpleTypes ??= CreateSimpleTypes()).Contains(type),
         };
 
-        static HashSet<ITypeSymbol> CreateSimpleTypes(Compilation compilation)
+        HashSet<ITypeSymbol> CreateSimpleTypes()
         {
-            ReadOnlySpan<string> simpleTypeNames =
+            ReadOnlySpan<string> coreLibSimpleTypeNames =
             [
                 "System.Half",
                 "System.Int128",
                 "System.UInt128",
+                "System.DateOnly",
+                "System.TimeOnly",
+                "System.Text.Rune",
+            ];
+
+            ReadOnlySpan<string> simpleTypeNames =
+            [
                 "System.Guid",
                 "System.DateTimeOffset",
-                "System.DateOnly",
                 "System.TimeSpan",
-                "System.TimeOnly",
                 "System.Version",
                 "System.Uri",
-                "System.Text.Rune",
                 "System.Numerics.BigInteger",
                 "System.Threading.CancellationToken",
             ];
 
             var simpleTypes = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
+            foreach (string simpleTypeName in coreLibSimpleTypeNames)
+            {
+                if (CoreLibAssembly.GetTypeByMetadataName(simpleTypeName) is { } simpleType)
+                {
+                    simpleTypes.Add(simpleType);
+                }
+            }
+
             foreach (string simpleTypeName in simpleTypeNames)
             {
-                INamedTypeSymbol? simpleType = compilation.GetTypeByMetadataName(simpleTypeName);
+                INamedTypeSymbol? simpleType = Compilation.GetTypeByMetadataName(simpleTypeName);
                 if (simpleType is not null)
                 {
                     simpleTypes.Add(simpleType);
