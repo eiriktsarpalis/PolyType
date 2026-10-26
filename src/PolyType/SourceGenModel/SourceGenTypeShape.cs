@@ -17,8 +17,10 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
 
     /// <inheritdoc/>
     /// <remarks>
-    /// If unspecified, contextual status is inferred from an unversioned source-generated provider's
-    /// type lookup and cached. Otherwise, it defaults to <see langword="false"/>.
+    /// If unspecified, contextual status is inferred from a legacy source-generated provider's
+    /// type lookup and cached. This applies to providers created using the parameterless constructor
+    /// with no <see cref="SourceGenTypeShapeProvider.SourceGeneratorVersion"/>.
+    /// Otherwise, it defaults to <see langword="false"/>.
     /// </remarks>
     public bool IsContextual
     {
@@ -86,9 +88,7 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
 
     private bool ResolveIsContextual()
     {
-        // Old generated factories publish contextual bodies separately from the provider's ordinary type lookup.
-        bool value = Provider is SourceGenTypeShapeProvider { SourceGeneratorVersion: null } &&
-            !ReferenceEquals(this, Provider.GetTypeShape(typeof(T)));
+        bool value = Provider is SourceGenTypeShapeProvider provider && provider.IsShapeContextual(this);
         _isContextual = value ? 1 : 0;
         return value;
     }

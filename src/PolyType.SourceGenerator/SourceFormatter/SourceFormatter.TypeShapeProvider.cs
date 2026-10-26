@@ -32,9 +32,8 @@ internal sealed partial class SourceFormatter
             public static {{provider.ProviderDeclaration.Name}} {{ProviderSingletonProperty}} { get; } = new();
 
             /// <summary>Initializes a new instance of the <see cref="{{provider.ProviderDeclaration.Name}}"/> class.</summary>
-            private {{provider.ProviderDeclaration.Name}}()
+            private {{provider.ProviderDeclaration.Name}}() : base({{FormatStringLiteral(PolyTypeGenerator.SourceGeneratorVersion)}})
             {
-                {{SourceGeneratorVersionProperty}} = {{FormatStringLiteral(PolyTypeGenerator.SourceGeneratorVersion)}};
             }
 
             /// <summary>Initializes the field ensuring the same instance is always returned.</summary>

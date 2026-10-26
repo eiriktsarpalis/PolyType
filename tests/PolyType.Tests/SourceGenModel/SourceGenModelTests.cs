@@ -148,9 +148,31 @@ public static class SourceGenModelTests
         Assert.Equal(isNullable, shape.IsNullable);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void VersionedConstructorDoesNotUseProviderLookup(bool? isContextual)
+    {
+        var provider = new VersionedSourceGenProvider();
+        var shape = isContextual is bool value
+            ? new SourceGenObjectTypeShape<int> { Provider = provider, IsContextual = value }
+            : new SourceGenObjectTypeShape<int> { Provider = provider };
+
+        Assert.Equal("2.0.0", provider.SourceGeneratorVersion);
+        Assert.Equal(isContextual ?? false, shape.IsContextual);
+        Assert.Equal(isContextual ?? false, shape.IsContextual);
+    }
+
     private sealed class TestSourceGenProvider(Func<Type, ITypeShape?> lookup) : SourceGenTypeShapeProvider
     {
         public override ITypeShape? GetTypeShape(Type type) => lookup(type);
+    }
+
+    private sealed class VersionedSourceGenProvider() : SourceGenTypeShapeProvider("2.0.0")
+    {
+        public override ITypeShape? GetTypeShape(Type type) =>
+            throw new InvalidOperationException("Provider lookup must not be called.");
     }
 
     private sealed class TestProvider : ITypeShapeProvider
