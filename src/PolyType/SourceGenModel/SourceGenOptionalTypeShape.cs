@@ -9,8 +9,21 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TOptional">The optional type described by the shape.</typeparam>
 /// <typeparam name="TElement">The type of the value encapsulated by the option type.</typeparam>
 [DebuggerTypeProxy(typeof(PolyType.Debugging.OptionalTypeShapeDebugView))]
-public sealed class SourceGenOptionalTypeShape<TOptional, TElement> : SourceGenTypeShape<TOptional>, IOptionalTypeShape<TOptional, TElement>
+public class SourceGenOptionalTypeShape<TOptional, TElement> : SourceGenTypeShape<TOptional>, IOptionalTypeShape<TOptional, TElement>
 {
+    /// <summary>
+    /// A shape type for current source generators that stores contextual status without legacy lookup.
+    /// </summary>
+    public sealed class Current : SourceGenOptionalTypeShape<TOptional, TElement>
+    {
+        /// <inheritdoc/>
+        public override bool IsContextual
+        {
+            get => ExplicitIsContextual;
+            init => base.IsContextual = value;
+        }
+    }
+
     /// <summary>
     /// Gets a delayed element type shape factory for use with potentially recursive type graphs.
     /// </summary>

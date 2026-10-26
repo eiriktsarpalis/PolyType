@@ -9,8 +9,21 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="T">The type that the shape describes.</typeparam>
 /// <typeparam name="TSurrogate">The surrogate type used by the shape.</typeparam>
 [DebuggerTypeProxy(typeof(PolyType.Debugging.SurrogateTypeShapeDebugView))]
-public sealed class SourceGenSurrogateTypeShape<T, TSurrogate> : SourceGenTypeShape<T>, ISurrogateTypeShape<T, TSurrogate>
+public class SourceGenSurrogateTypeShape<T, TSurrogate> : SourceGenTypeShape<T>, ISurrogateTypeShape<T, TSurrogate>
 {
+    /// <summary>
+    /// A shape type for current source generators that stores contextual status without legacy lookup.
+    /// </summary>
+    public sealed class Current : SourceGenSurrogateTypeShape<T, TSurrogate>
+    {
+        /// <inheritdoc/>
+        public override bool IsContextual
+        {
+            get => ExplicitIsContextual;
+            init => base.IsContextual = value;
+        }
+    }
+
     /// <inheritdoc/>
     public required IMarshaler<T, TSurrogate> Marshaler { get; init; }
 

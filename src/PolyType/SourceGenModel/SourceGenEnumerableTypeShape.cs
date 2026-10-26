@@ -9,8 +9,21 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TEnumerable">The type of the enumerable collection.</typeparam>
 /// <typeparam name="TElement">The element type of the collection.</typeparam>
 [DebuggerTypeProxy(typeof(PolyType.Debugging.EnumerableTypeShapeDebugView))]
-public sealed class SourceGenEnumerableTypeShape<TEnumerable, TElement> : SourceGenTypeShape<TEnumerable>, IEnumerableTypeShape<TEnumerable, TElement>
+public class SourceGenEnumerableTypeShape<TEnumerable, TElement> : SourceGenTypeShape<TEnumerable>, IEnumerableTypeShape<TEnumerable, TElement>
 {
+    /// <summary>
+    /// A shape type for current source generators that stores contextual status without legacy lookup.
+    /// </summary>
+    public sealed class Current : SourceGenEnumerableTypeShape<TEnumerable, TElement>
+    {
+        /// <inheritdoc/>
+        public override bool IsContextual
+        {
+            get => ExplicitIsContextual;
+            init => base.IsContextual = value;
+        }
+    }
+
     /// <summary>
     /// Gets a delayed element type shape factory for use with potentially recursive type graphs.
     /// </summary>

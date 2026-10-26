@@ -77,6 +77,26 @@ public static class SourceGenModelTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public static void CurrentShapeUsesExplicitContextualStatus(bool isContextual)
+    {
+        var provider = new TestSourceGenProvider(_ => throw new InvalidOperationException("Provider lookup must not be called."));
+        var shape = new SourceGenObjectTypeShape<int>.Current { Provider = provider, IsContextual = isContextual };
+
+        Assert.Equal(isContextual, shape.IsContextual);
+    }
+
+    [Fact]
+    public static void CurrentShapeDefaultsUnsetContextualStatusToFalse()
+    {
+        var provider = new TestSourceGenProvider(_ => throw new InvalidOperationException("Provider lookup must not be called."));
+        var shape = new SourceGenObjectTypeShape<int>.Current { Provider = provider };
+
+        Assert.False(shape.IsContextual);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public static void UnsetIsContextualDefaultsToFalseForOtherProviders(bool versionedSourceGenProvider)
     {
         ITypeShapeProvider provider = versionedSourceGenProvider

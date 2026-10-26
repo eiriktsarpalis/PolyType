@@ -17,7 +17,7 @@ internal sealed partial class SourceFormatter
         writer.WriteLine($$"""
             private global::PolyType.ITypeShape<{{objectShapeModel.Type.FullyQualifiedName}}> {{methodName}}()
             {
-                return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<{{objectShapeModel.Type.FullyQualifiedName}}>
+                return new global::PolyType.SourceGenModel.SourceGenObjectTypeShape<{{objectShapeModel.Type.FullyQualifiedName}}>.Current
                 {
                     IsContextual = {{FormatBool(objectShapeModel.IsContextual)}},
                     PropertiesFactory = {{FormatNullOrThrowPartial("PropertiesFactory", propertiesFactoryMethodName, !objectShapeModel.Requirements.HasFlag(TypeShapeRequirements.Properties))}},

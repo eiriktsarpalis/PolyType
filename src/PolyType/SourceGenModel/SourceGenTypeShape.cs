@@ -17,10 +17,10 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
 
     /// <inheritdoc/>
     /// <remarks>
-    /// If unspecified, contextual status is inferred from an unversioned source-generated provider's
-    /// type lookup and cached. Otherwise, it defaults to <see langword="false"/>.
+    /// Legacy shapes infer contextual status from an unversioned source-generated provider's type
+    /// lookup and cache the result. Otherwise, it defaults to <see langword="false"/>.
     /// </remarks>
-    public bool IsContextual
+    public virtual bool IsContextual
     {
         get
         {
@@ -83,6 +83,8 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private int _isContextual = -1;
+
+    private protected bool ExplicitIsContextual => _isContextual == 1;
 
     private bool ResolveIsContextual()
     {

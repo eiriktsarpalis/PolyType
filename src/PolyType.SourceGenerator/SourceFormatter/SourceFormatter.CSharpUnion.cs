@@ -17,7 +17,7 @@ internal sealed partial class SourceFormatter
         writer.WriteLine($$"""
             private global::PolyType.ITypeShape<{{model.Type.FullyQualifiedName}}> {{methodName}}()
             {
-                return new global::PolyType.SourceGenModel.SourceGenUnionTypeShape<{{model.Type.FullyQualifiedName}}>
+                return new global::PolyType.SourceGenModel.SourceGenUnionTypeShape<{{model.Type.FullyQualifiedName}}>.Current
                 {
                     IsContextual = {{FormatBool(model.IsContextual)}},
                     UnionKind = global::PolyType.Abstractions.UnionTypeShapeKind.CSharpUnion,

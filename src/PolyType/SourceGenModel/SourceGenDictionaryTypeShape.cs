@@ -10,9 +10,22 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TKey">The type of the dictionary key.</typeparam>
 /// <typeparam name="TValue">The type of the dictionary value.</typeparam>
 [DebuggerTypeProxy(typeof(PolyType.Debugging.DictionaryTypeShapeDebugView))]
-public sealed class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : SourceGenTypeShape<TDictionary>, IDictionaryTypeShape<TDictionary, TKey, TValue>
+public class SourceGenDictionaryTypeShape<TDictionary, TKey, TValue> : SourceGenTypeShape<TDictionary>, IDictionaryTypeShape<TDictionary, TKey, TValue>
     where TKey : notnull
 {
+    /// <summary>
+    /// A shape type for current source generators that stores contextual status without legacy lookup.
+    /// </summary>
+    public sealed class Current : SourceGenDictionaryTypeShape<TDictionary, TKey, TValue>
+    {
+        /// <inheritdoc/>
+        public override bool IsContextual
+        {
+            get => ExplicitIsContextual;
+            init => base.IsContextual = value;
+        }
+    }
+
     /// <summary>
     /// Gets a delayed key type shape factory for use with potentially recursive type graphs.
     /// </summary>

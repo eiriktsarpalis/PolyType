@@ -11,9 +11,22 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TArgumentState">The mutable state type used for aggregating function arguments.</typeparam>
 /// <typeparam name="TResult">The return type of the underlying method.</typeparam>
 [DebuggerTypeProxy(typeof(PolyType.Debugging.FunctionTypeShapeDebugView))]
-public sealed class SourceGenFunctionTypeShape<TFunction, TArgumentState, TResult> : SourceGenTypeShape<TFunction>, IFunctionTypeShape<TFunction, TArgumentState, TResult>
+public class SourceGenFunctionTypeShape<TFunction, TArgumentState, TResult> : SourceGenTypeShape<TFunction>, IFunctionTypeShape<TFunction, TArgumentState, TResult>
     where TArgumentState : IArgumentState
 {
+    /// <summary>
+    /// A shape type for current source generators that stores contextual status without legacy lookup.
+    /// </summary>
+    public sealed class Current : SourceGenFunctionTypeShape<TFunction, TArgumentState, TResult>
+    {
+        /// <inheritdoc/>
+        public override bool IsContextual
+        {
+            get => ExplicitIsContextual;
+            init => base.IsContextual = value;
+        }
+    }
+
     /// <inheritdoc/>
     public bool IsVoidLike { get; init; }
 

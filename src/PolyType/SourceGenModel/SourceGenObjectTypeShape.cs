@@ -8,8 +8,21 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TObject">The type whose shape is described.</typeparam>
 [DebuggerTypeProxy(typeof(PolyType.Debugging.ObjectTypeShapeDebugView))]
-public sealed class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObject>, IObjectTypeShape<TObject>
+public class SourceGenObjectTypeShape<TObject> : SourceGenTypeShape<TObject>, IObjectTypeShape<TObject>
 {
+    /// <summary>
+    /// A shape type for current source generators that stores contextual status without legacy lookup.
+    /// </summary>
+    public sealed class Current : SourceGenObjectTypeShape<TObject>
+    {
+        /// <inheritdoc/>
+        public override bool IsContextual
+        {
+            get => ExplicitIsContextual;
+            init => base.IsContextual = value;
+        }
+    }
+
     /// <inheritdoc/>
     public bool IsRecordType { get; init; }
 

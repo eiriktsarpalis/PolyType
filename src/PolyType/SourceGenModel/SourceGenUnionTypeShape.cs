@@ -8,8 +8,21 @@ namespace PolyType.SourceGenModel;
 /// </summary>
 /// <typeparam name="TUnion">The type whose shape is described.</typeparam>
 [DebuggerTypeProxy(typeof(PolyType.Debugging.UnionTypeShapeDebugView))]
-public sealed class SourceGenUnionTypeShape<TUnion> : SourceGenTypeShape<TUnion>, IUnionTypeShape<TUnion>
+public class SourceGenUnionTypeShape<TUnion> : SourceGenTypeShape<TUnion>, IUnionTypeShape<TUnion>
 {
+    /// <summary>
+    /// A shape type for current source generators that stores contextual status without legacy lookup.
+    /// </summary>
+    public sealed class Current : SourceGenUnionTypeShape<TUnion>
+    {
+        /// <inheritdoc/>
+        public override bool IsContextual
+        {
+            get => ExplicitIsContextual;
+            init => base.IsContextual = value;
+        }
+    }
+
     /// <inheritdoc/>
     /// <remarks>
     /// Values omitted by older generated code default to <see cref="UnionTypeShapeKind.Unknown"/>.

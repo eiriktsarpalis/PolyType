@@ -9,10 +9,23 @@ namespace PolyType.SourceGenModel;
 /// <typeparam name="TEnum">The type of the enum.</typeparam>
 /// <typeparam name="TUnderlying">The type of the underlying type of the enum.</typeparam>
 [DebuggerTypeProxy(typeof(PolyType.Debugging.EnumTypeShapeDebugView))]
-public sealed class SourceGenEnumTypeShape<TEnum, TUnderlying> : SourceGenTypeShape<TEnum>, IEnumTypeShape<TEnum, TUnderlying>
+public class SourceGenEnumTypeShape<TEnum, TUnderlying> : SourceGenTypeShape<TEnum>, IEnumTypeShape<TEnum, TUnderlying>
     where TEnum : struct, Enum
     where TUnderlying : unmanaged
 {
+    /// <summary>
+    /// A shape type for current source generators that stores contextual status without legacy lookup.
+    /// </summary>
+    public sealed class Current : SourceGenEnumTypeShape<TEnum, TUnderlying>
+    {
+        /// <inheritdoc/>
+        public override bool IsContextual
+        {
+            get => ExplicitIsContextual;
+            init => base.IsContextual = value;
+        }
+    }
+
     /// <summary>
     /// Gets a delayed underlying type shape factory for use with potentially recursive type graphs.
     /// </summary>
