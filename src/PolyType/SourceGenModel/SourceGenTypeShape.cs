@@ -16,12 +16,6 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
     public abstract TypeShapeKind Kind { get; }
 
     /// <inheritdoc/>
-    /// <remarks>
-    /// If unspecified, contextual status is inferred from a legacy source-generated provider's
-    /// type lookup and cached. This applies to unversioned providers that retain the default
-    /// <see cref="SourceGenTypeShapeProvider.IsLegacyShapeContextual"/> callback.
-    /// Otherwise, it defaults to <see langword="false"/>.
-    /// </remarks>
     public bool IsContextual
     {
         get

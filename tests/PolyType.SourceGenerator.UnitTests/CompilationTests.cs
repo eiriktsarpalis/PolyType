@@ -1021,7 +1021,7 @@ public static partial class CompilationTests
             partial class SourceGeneratorVersion { }
 
             [GenerateShape]
-            partial class IsLegacyShapeContextual { }
+            partial class IsShapeContextual { }
 
             [GenerateShape]
             partial class @class { }

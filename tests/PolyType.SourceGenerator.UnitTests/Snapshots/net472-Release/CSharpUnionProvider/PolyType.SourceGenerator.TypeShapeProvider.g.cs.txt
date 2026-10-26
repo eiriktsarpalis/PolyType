@@ -33,7 +33,7 @@ namespace PolyType.SourceGenerator
             global::System.Threading.Interlocked.CompareExchange(ref field, value, null) ?? value;
         
         /// <inheritdoc/>
-        protected override global::System.Func<global::PolyType.ITypeShape, bool>? IsLegacyShapeContextual => null;
+        protected override bool IsShapeContextual(global::PolyType.ITypeShape shape) => false;
 
         /// <inheritdoc/>
         public override global::PolyType.ITypeShape? GetTypeShape(global::System.Type type)

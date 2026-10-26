@@ -44,7 +44,7 @@ internal sealed partial class SourceFormatter
             """);
 
         writer.WriteLine("/// <inheritdoc/>");
-        writer.WriteLine($"protected override global::System.Func<global::PolyType.ITypeShape, bool>? {IsLegacyShapeContextualProperty} => null;");
+        writer.WriteLine($"protected override bool {IsShapeContextualMethod}(global::PolyType.ITypeShape shape) => false;");
         writer.WriteLine();
 
         FormatGetShapeProviderMethod(provider, writer);
