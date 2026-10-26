@@ -171,7 +171,7 @@ public static class SourceGenModelTests
 
     private sealed class ModernSourceGenProvider : SourceGenTypeShapeProvider
     {
-        protected override bool IsShapeContextual(ITypeShape shape) => false;
+        protected override bool IsLegacyShapeContextual(ITypeShape shape) => false;
 
         public override ITypeShape? GetTypeShape(Type type) =>
             throw new InvalidOperationException("Provider lookup must not be called.");

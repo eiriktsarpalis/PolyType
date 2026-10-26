@@ -29,6 +29,6 @@ public abstract class SourceGenTypeShapeProvider : ITypeShapeProvider
     /// </summary>
     /// <param name="shape">The shape whose contextual status is being resolved.</param>
     /// <returns>Whether the shape differs from the legacy provider's ordinary representation.</returns>
-    protected internal virtual bool IsShapeContextual(ITypeShape shape) =>
+    protected internal virtual bool IsLegacyShapeContextual(ITypeShape shape) =>
         SourceGeneratorVersion is null && !ReferenceEquals(shape, GetTypeShape(shape.Type));
 }

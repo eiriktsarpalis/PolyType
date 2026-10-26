@@ -82,7 +82,7 @@ public abstract class SourceGenTypeShape<T> : ITypeShape<T>
 
     private bool ResolveIsContextual()
     {
-        bool value = Provider is SourceGenTypeShapeProvider provider && provider.IsShapeContextual(this);
+        bool value = Provider is SourceGenTypeShapeProvider provider && provider.IsLegacyShapeContextual(this);
         _isContextual = value ? 1 : 0;
         return value;
     }
