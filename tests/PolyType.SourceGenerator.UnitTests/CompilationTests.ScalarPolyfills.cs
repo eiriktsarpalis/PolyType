@@ -14,7 +14,7 @@ public static partial class CompilationTests
     [InlineData("System", "DateOnly")]
     [InlineData("System", "TimeOnly")]
     [InlineData("System.Text", "Rune")]
-    public static void ScalarPolyfills_PreserveObjectMembers(string typeNamespace, string typeName)
+    public static void ScalarPolyfills_RemainOpaque(string typeNamespace, string typeName)
     {
         Compilation compilation = CompilationHelpers.CreateCompilation($$"""
             using PolyType;
@@ -45,21 +45,13 @@ public static partial class CompilationTests
 
                 private static string Describe(IObjectTypeShape<{{typeNamespace}}.{{typeName}}> shape)
                 {
-                    if (shape.Properties.Count != 1 || shape.Constructor is null)
-                    {
-                        return shape.Properties.Count + ":" + (shape.Constructor is not null);
-                    }
-
-                    var property = (IPropertyShape<{{typeNamespace}}.{{typeName}}, int>)shape.Properties[0];
-                    {{typeNamespace}}.{{typeName}} value = default;
-                    property.GetSetter()(ref value, 42);
-                    return property.Name + ":" + property.GetGetter()(ref value) + ":" + shape.Constructor.Parameters.Count;
+                    return shape.Properties.Count + ":" + (shape.Constructor is not null);
                 }
             }
             """, assemblyName: "ScalarPolyfill_" + Guid.NewGuid().ToString("N"));
         compilation = compilation.WithOptions(((CSharpCompilationOptions)compilation.Options)
             .WithSpecificDiagnosticOptions(compilation.Options.SpecificDiagnosticOptions.SetItem("CS0436", ReportDiagnostic.Suppress)));
-        Assert.Equal("Value:42:0;Value:42:0", RunScalarShapeTest(compilation));
+        Assert.Equal("0:False;0:False", RunScalarShapeTest(compilation));
     }
 
 #if NET

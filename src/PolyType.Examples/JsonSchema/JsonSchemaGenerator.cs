@@ -102,9 +102,9 @@ public static class JsonSchemaGenerator
         {
             allowNull = allowNull && IsNullableType(typeShape.Type);
 
-            if (s_simpleTypeInfo.TryGetValue(typeShape.Type, out SimpleTypeJsonSchema simpleType))
+            if (s_scalarTypeInfo.TryGetValue(typeShape.Type, out ScalarTypeJsonSchema scalarType))
             {
-                return CompleteDocument(simpleType.ToSchemaDocument(), allowNull, depth);
+                return CompleteDocument(scalarType.ToSchemaDocument(), allowNull, depth);
             }
 
             bool isContextual = typeShape.IsContextual;
@@ -446,9 +446,9 @@ public static class JsonSchemaGenerator
             return !type.IsValueType || Nullable.GetUnderlyingType(type) != null;
         }
 
-        private readonly struct SimpleTypeJsonSchema
+        private readonly struct ScalarTypeJsonSchema
         {
-            public SimpleTypeJsonSchema(string? type, string? format = null, string? pattern = null)
+            public ScalarTypeJsonSchema(string? type, string? format = null, string? pattern = null)
             {
                 Type = type;
                 Format = format;
@@ -481,7 +481,7 @@ public static class JsonSchemaGenerator
             }
         }
 
-        private static readonly Dictionary<Type, SimpleTypeJsonSchema> s_simpleTypeInfo = new()
+        private static readonly Dictionary<Type, ScalarTypeJsonSchema> s_scalarTypeInfo = new()
         {
             [typeof(object)] = new(),
             [typeof(bool)] = new("boolean"),
