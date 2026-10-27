@@ -24,9 +24,11 @@ try
         Check((string?)chart.Attribute("role") == "img", "Missing accessible image role.");
         XElement[] bars = chart.Element(ns + "g")!.Elements(ns + "rect").ToArray();
         int scenarios = file.Contains("collections", StringComparison.Ordinal) ? 3 : 2;
-        int methods = Path.GetFileName(file).StartsWith("serialize", StringComparison.Ordinal) ? 5 : 4;
+        int methods = Path.GetFileName(file).StartsWith("serialize", StringComparison.Ordinal) ? 6 : 5;
         Check(bars.Length == scenarios * methods, "Incorrect bar count.");
         Check(bars.All(b => double.Parse(b.Attribute("width")!.Value, CultureInfo.InvariantCulture) > 0), "Invalid bar width.");
+        Check(chart.Descendants(ns + "text").Count(label => label.Value == "PolyType fast path") == scenarios,
+            "Missing PolyType fast path benchmark label.");
         string committed = Path.Combine(root, "docs", "images", "performance", Path.GetFileName(file));
         Check(File.ReadAllText(file) == File.ReadAllText(committed), $"Chart differs: {file}");
     }
@@ -54,13 +56,22 @@ try
     }
     Console.WriteLine("PASS: synthetic measurements produce expected labels");
 
-    foreach (string kind in new[] { "missing", "duplicate", "unknown", "null-statistics", "few-iterations", "zero-mean", "negative-error", "infinite-mean", "infinite-error", "negative-allocation", "missing-host", "missing-date" })
+    foreach (string kind in new[] { "missing", "missing-fast-path-json", "duplicate", "unknown", "null-statistics", "few-iterations", "zero-mean", "negative-error", "infinite-mean", "infinite-error", "negative-allocation", "missing-host", "missing-date" })
     {
         JsonObject data = original.DeepClone().AsObject();
         JsonArray benchmarks = data["benchmarks"]!.AsArray();
         switch (kind)
         {
             case "missing": benchmarks.RemoveAt(benchmarks.Count - 1); break;
+            case "missing-fast-path-json":
+                for (int i = benchmarks.Count - 1; i >= 0; i--)
+                {
+                    if (benchmarks[i]!["method"]!.GetValue<string>() == "PolyTypeFastPath")
+                    {
+                        benchmarks.RemoveAt(i);
+                    }
+                }
+                break;
             case "duplicate": benchmarks.Add(benchmarks[0]!.DeepClone()); break;
             case "unknown": benchmarks[0]!["scenario"] = "Unknown"; break;
             case "null-statistics": benchmarks[0]!["statistics"] = null; break;
@@ -86,7 +97,7 @@ try
         JsonNode record = node!;
         JsonObject benchmark = new()
         {
-            ["Type"] = $"Json{record["operation"]!.GetValue<string>()}Benchmark<{record["scenario"]!.GetValue<string>()}>",
+            ["Type"] = $"Json{record["operation"]!.GetValue<string>()}Benchmark<{record["scenario"]!.GetValue<string>()}, JsonBenchmarkWitness>",
             ["Method"] = $"{record["operation"]!.GetValue<string>()}_{record["method"]!.GetValue<string>()}",
             ["DisplayInfo"] = record["job"]!.DeepClone(),
             ["Statistics"] = record["statistics"]!.DeepClone(),
@@ -99,6 +110,15 @@ try
     File.WriteAllText(Path.Combine(reports, "test-report-full-compressed.json"), report.ToJsonString());
     Execute(reports, expectSuccess: true);
     Check(JsonNode.DeepEquals(original, JsonNode.Parse(File.ReadAllText(Path.Combine(output, "results.json")))), "BDN import changed measurements or environment.");
+    foreach (JsonNode? node in exported)
+    {
+        string type = node!["Type"]!.GetValue<string>();
+        node["Type"] = type.Replace(", JsonBenchmarkWitness>", ">", StringComparison.Ordinal);
+    }
+    File.WriteAllText(Path.Combine(reports, "test-report-full-compressed.json"), report.ToJsonString());
+    Execute(reports, expectSuccess: true);
+    Check(JsonNode.DeepEquals(original, JsonNode.Parse(File.ReadAllText(Path.Combine(output, "results.json")))), "Legacy generic benchmark names changed imported measurements.");
+
     report["HostEnvironmentInfo"] = new JsonObject { ["ProcessorName"] = "different" };
     File.WriteAllText(Path.Combine(reports, "other-report-full-compressed.json"), report.ToJsonString());
     Execute(reports, expectSuccess: false);

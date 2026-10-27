@@ -3,6 +3,8 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace PolyType.Examples.Utilities;
 
@@ -11,7 +13,6 @@ namespace PolyType.Examples.Utilities;
 /// </summary>
 public sealed class ByteBufferWriter : IBufferWriter<byte>
 {
-    private const int ArrayMaxLength = 0x7FFFFFC7;
     private const int DefaultInitialBufferSize = 256;
 
     private byte[] _buffer;
@@ -32,15 +33,12 @@ public sealed class ByteBufferWriter : IBufferWriter<byte>
     /// with an initial capacity specified.
     /// </summary>
     /// <param name="initialCapacity">The minimum capacity with which to initialize the underlying buffer.</param>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="ArgumentOutOfRangeException">
     /// Thrown when <paramref name="initialCapacity"/> is not positive (i.e. less than or equal to 0).
     /// </exception>
     public ByteBufferWriter(int initialCapacity)
     {
-        if (initialCapacity <= 0)
-        {
-            throw new ArgumentException(null, nameof(initialCapacity));
-        }
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(initialCapacity);
 
         _buffer = new byte[initialCapacity];
         _index = 0;
@@ -108,7 +106,7 @@ public sealed class ByteBufferWriter : IBufferWriter<byte>
     /// <summary>
     /// Notifies <see cref="IBufferWriter{T}"/> that <paramref name="count"/> amount of data was written to the output <see cref="Span{T}"/>/<see cref="Memory{T}"/>
     /// </summary>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="ArgumentOutOfRangeException">
     /// Thrown when <paramref name="count"/> is negative.
     /// </exception>
     /// <exception cref="InvalidOperationException">
@@ -119,10 +117,7 @@ public sealed class ByteBufferWriter : IBufferWriter<byte>
     /// </remarks>
     public void Advance(int count)
     {
-        if (count < 0)
-        {
-            throw new ArgumentException(null, nameof(count));
-        }
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         if (_index > _buffer.Length - count)
         {
@@ -136,7 +131,7 @@ public sealed class ByteBufferWriter : IBufferWriter<byte>
     /// Returns a <see cref="Memory{T}"/> to write to that is at least the requested length (specified by <paramref name="sizeHint"/>).
     /// If no <paramref name="sizeHint"/> is provided (or it's equal to <code>0</code>), some non-empty buffer is returned.
     /// </summary>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="ArgumentOutOfRangeException">
     /// Thrown when <paramref name="sizeHint"/> is negative.
     /// </exception>
     /// <remarks>
@@ -167,7 +162,7 @@ public sealed class ByteBufferWriter : IBufferWriter<byte>
     /// Returns a <see cref="Span{T}"/> to write to that is at least the requested length (specified by <paramref name="sizeHint"/>).
     /// If no <paramref name="sizeHint"/> is provided (or it's equal to <code>0</code>), some non-empty buffer is returned.
     /// </summary>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="ArgumentOutOfRangeException">
     /// Thrown when <paramref name="sizeHint"/> is negative.
     /// </exception>
     /// <remarks>
@@ -196,10 +191,7 @@ public sealed class ByteBufferWriter : IBufferWriter<byte>
 
     private void CheckAndResizeBuffer(int sizeHint)
     {
-        if (sizeHint < 0)
-        {
-            throw new ArgumentException("must be non-negative value.", nameof(sizeHint));
-        }
+        ArgumentOutOfRangeException.ThrowIfNegative(sizeHint);
 
         if (sizeHint == 0)
         {
@@ -222,16 +214,16 @@ public sealed class ByteBufferWriter : IBufferWriter<byte>
 
             if ((uint)newSize > int.MaxValue)
             {
-                // Attempt to grow to ArrayMaxLength.
+                // Attempt to grow to Array.MaxLength.
                 uint needed = (uint)(currentLength - FreeCapacity + sizeHint);
                 Debug.Assert(needed > currentLength);
 
-                if (needed > ArrayMaxLength)
+                if (needed > Array.MaxLength)
                 {
                     ThrowOutOfMemoryException();
                 }
 
-                newSize = ArrayMaxLength;
+                newSize = Array.MaxLength;
             }
 
             Array.Resize(ref _buffer, newSize);
@@ -240,11 +232,15 @@ public sealed class ByteBufferWriter : IBufferWriter<byte>
         Debug.Assert(FreeCapacity > 0 && FreeCapacity >= sizeHint);
     }
 
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ThrowInvalidOperationException_AdvancedTooFar()
     {
         throw new InvalidOperationException("buffer advanced too far.");
     }
 
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ThrowOutOfMemoryException()
     {
 #pragma warning disable CA2201 // Do not raise reserved exception types

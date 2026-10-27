@@ -36,6 +36,7 @@ Everything that flows through the incremental pipeline (the `Model/` types) **MU
 - **`Model/`** — the incremental-safe (record-based) model types.
 - **`SourceFormatter/`** — emits the C# source, split by shape kind (`SourceFormatter.Object.cs`, `SourceFormatter.Enumerable.cs`, `SourceFormatter.Dictionary.cs`, etc.).
 - **`Analyzers/`** — companion analyzers shipped alongside the generator.
+- **`PolyType.Roslyn/Helpers/TypeIdentifierHelpers.cs`** — shared, source-linked type identifiers, including generic arguments, flattened tuples, array ranks, namespace qualification, and keyword escaping. Both generators consume this helper from `PolyType.Roslyn`; PolyType.FastPathJson does not link built-in generator code.
 
 Flow: `PolyTypeGenerator.cs` → `Parser` (Roslyn symbols → PolyType.Roslyn `TypeDataModel`s) → `Parser.ModelMapper` (PolyType.Roslyn models → incremental-safe `Model/` types) → `SourceFormatter` (incremental model → C# source).
 

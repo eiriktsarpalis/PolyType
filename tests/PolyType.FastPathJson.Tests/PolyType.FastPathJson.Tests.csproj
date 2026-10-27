@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>TargetFramework</_Parameter1>
+      <_Parameter2>$(TargetFramework)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>Configuration</_Parameter1>
+      <_Parameter2>$(Configuration)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\fast-path-json\PolyType.FastPathJson\PolyType.FastPathJson.csproj" />
+    <ProjectReference Include="..\..\src\fast-path-json\PolyType.FastPathJson.SourceGenerator\PolyType.FastPathJson.SourceGenerator.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
+    <ProjectReference Include="..\..\src\PolyType.Examples\PolyType.Examples.csproj" />
+    <ProjectReference Include="..\..\src\PolyType.TestCases\PolyType.TestCases.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <PackageReference Include="xunit.v3.mtp-v2" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CrashDump" />
+    <PackageReference Include="Microsoft.Testing.Extensions.HangDump" />
+  </ItemGroup>
+
+  <Target Name="UpdateSnapshots">
+    <Exec Command="dotnet test --project &quot;$(MSBuildProjectFullPath)&quot; -c Debug --filter-class PolyType.FastPathJson.Tests.SnapshotTests"
+          EnvironmentVariables="POLYTYPE_UPDATE_SNAPSHOTS=true" />
+    <Exec Command="dotnet test --project &quot;$(MSBuildProjectFullPath)&quot; -c Release --filter-class PolyType.FastPathJson.Tests.SnapshotTests"
+          EnvironmentVariables="POLYTYPE_UPDATE_SNAPSHOTS=true" />
+  </Target>
+</Project>
