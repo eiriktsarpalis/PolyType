@@ -2,25 +2,49 @@
 
 ## Case study: a JSON serializer
 
-The repository includes a [JSON serializer built on PolyType](https://github.com/eiriktsarpalis/PolyType/tree/main/src/PolyType.Examples/JsonSerializer), using the same `Utf8JsonWriter` and `Utf8JsonReader` primitives as System.Text.Json (STJ). This is a small toy example, not a production serializer: just **2,381 lines of C# source** (including comments and blank lines), demonstrating how little effort is needed to achieve superior performance with PolyType on many of the workloads below, including compared with STJ's metadata serializers. A production-oriented library could achieve even larger performance gains through further specialization and optimization.
+The [example JSON serializer](https://github.com/eiriktsarpalis/PolyType/tree/main/src/PolyType.Examples/JsonSerializer) uses the runtime type-shape abstractions in `PolyType.dll`. This case study measures its throughput and allocations against System.Text.Json (STJ), using the same `Utf8JsonWriter` and `Utf8JsonReader` primitives.
 
-The [benchmark suite](https://github.com/eiriktsarpalis/PolyType/blob/main/tests/PolyType.Benchmarks/JsonBenchmark.cs) compares nine payloads, from a single integer to megabytes of JSON. Both serializers use their default JSON settings, cached metadata/converters, and equivalent inputs. Setup checks that every serialization path produces equivalent JSON and that all deserialization paths round-trip correctly.
+**PolyType reflection** and **PolyType source-gen** run the same serializer with reflection-provided and source-generated shapes, respectively. Both use `PolyType.dll` at runtime; source generation supplies type shapes, not a fully generated serializer. The example is a reference implementation, not a production library.
+
+**[PolyType fast path](https://github.com/eiriktsarpalis/PolyType/tree/main/src/fast-path-json)** is a fully optimized serializer generated using the `PolyType.Roslyn` abstractions. It is included throughout as a baseline, not as a measurement of the runtime abstractions in `PolyType.dll`.
+
+The [benchmark suite](https://github.com/eiriktsarpalis/PolyType/blob/main/tests/PolyType.Benchmarks/JsonBenchmark.cs) compares nine payloads, from a single integer to megabytes of JSON, across six serialization and five deserialization configurations. All use default JSON settings, cached metadata/converters, and equivalent valid inputs. Setup checks that every serialization path produces equivalent JSON and that all deserialization paths round-trip correctly.
+
+All **99 measurements** and all eight charts were refreshed on **October 26-27, 2026**. The exported dataset uses **2026-10-27**, the date the final repeated groups completed.
+
+Measurements used an Intel Xeon Platinum 8370C (8 physical cores, 16 logical processors, x64), Windows 11 under Hyper-V, BenchmarkDotNet 0.16.0-preview.2, and .NET 11.0.0-rc.3.26522.148 with SDK `11.0.100-rc.3.26522.148`, Release configuration, and concurrent server GC. Host and runtime details are included in the exported dataset.
 
 ### Reading the charts
 
 **Shorter bars are better.** Each payload is normalized independently: STJ reflection is **1.00x**, and a 1.20x bar means 20% more elapsed time for that payload. Absolute mean time and managed allocations per operation appear beside every bar. Do not compare the absolute cost of different payloads using bar lengths alone.
 
-Whiskers show **+/- one standard error**, not confidence intervals. Most cases use BenchmarkDotNet **ShortRun** (one launch, three warmup iterations, three measurement iterations). Small-POCO, array, list, and dictionary serialization and both CITM catalog operations use the longer, adaptive **default job**. Small differences are not evidence of a reliable performance gap. The [machine-readable results](../images/performance/results.json) include measurement samples, confidence intervals, allocations, job settings, and environment details.
+Whiskers show **+/- one standard error**, not confidence intervals. Every case uses the same BenchmarkDotNet job: **one launch, six warmup iterations, and twelve measurement iterations** before outlier removal. Small differences do not establish a reliable performance ranking. The [machine-readable results](../images/performance/results.json) include measurement samples, confidence intervals, allocations, job settings, and environment details.
 
-The comparison includes STJ reflection, STJ source-generated metadata, PolyType reflection, and PolyType source-generated shapes. Serialization also includes STJ's source-generated fast-path context. That context can use built-in converters for types without a generated serialization handler. STJ does not provide an equivalent generated deserialization fast path.
+The comparison includes STJ reflection, STJ source-generated metadata, PolyType reflection, PolyType source-generated shapes, and PolyType fast path. Serialization also includes STJ's source-generated fast-path context. That context can use built-in converters for types without a generated serialization handler. STJ does not provide an equivalent generated deserialization fast path. The text abbreviates STJ's source-generated metadata configuration as **STJ metadata**.
+
+### Serialization
+
+With source-generated shapes, PolyType's collection and object writers took **1.06-1.31x** the time of the PolyType fast path baseline. Its small- and large-POCO writers took **1.29x and 1.20x** the time of STJ's fast path, respectively, while using **44% and 20% less elapsed time** than STJ metadata. These comparisons describe measured means on this host, not cross-platform guarantees or significance tests.
+
+Both shape-driven PolyType configurations and the fast-path baseline allocated no managed memory in these warmed, reused-buffer serialization cases. This does not include producing a new output string or byte array for each call.
+
+### Deserialization
+
+With source-generated shapes, the PolyType reader used **4-51% less elapsed time than STJ metadata** across these payloads. For the large POCO, CITM batch, and large-object batch, its times were **0.90x, 0.90x, and 0.89x** the PolyType fast path baseline, respectively.
+
+For the CITM batch, the PolyType reader with source-generated shapes allocated **2.80 MiB per read**, compared with **5.73 MiB** for STJ metadata and **10.80 MiB** for the PolyType fast path baseline.
+
+The benchmark measures complete serializers, not the isolated cost of a visitor or member accessor. Differences include serializer algorithms and collection construction as well as dispatch and member access through type shapes. Shape and converter construction are excluded from the timed operations.
+
+Serialization reuses a `Utf8JsonWriter` and `ArrayBufferWriter<byte>`, including flushing and reset in each operation. Deserialization consumes precomputed UTF-8 input and includes result construction. Startup, Native AOT execution, streaming I/O, dataset loading, and initial buffer allocation are not measured. The valid-input comparison does not imply equivalent handling of malformed JSON or unsupported contracts.
 
 ## Primitives
 
 An `int` with value `42` produces 2 bytes of JSON; `"Hello, PolyType!"` produces 18 bytes. These cases emphasize fixed per-call overhead rather than object traversal or collection handling.
 
-![Primitive serialization: normalized mean time and allocations for int and string across five serializer configurations.](../images/performance/serialize-primitives.svg)
+![Primitive serialization: normalized mean time and allocations for int and string across six serializer configurations.](../images/performance/serialize-primitives.svg)
 
-![Primitive deserialization: normalized mean time and allocations for int and string across four serializer configurations.](../images/performance/deserialize-primitives.svg)
+![Primitive deserialization: normalized mean time and allocations for int and string across five serializer configurations.](../images/performance/deserialize-primitives.svg)
 
 ## Collections
 
@@ -54,48 +78,17 @@ A second workload contains **4,096 distinct large POCOs**, totaling **2,763,729 
 
 ![Megabyte-scale deserialization: normalized mean time and allocations for typed CITM event catalogs and an array of large objects.](../images/performance/deserialize-megabyte.svg)
 
-For the CITM batch, PolyType serialization takes **1.74-1.75 ms**, compared with **3.20-3.27 ms** for STJ metadata and **1.53 ms** for STJ's fast path. Deserialization takes **5.61-5.83 ms** with PolyType versus **7.73-7.75 ms** with STJ, with approximately **51% fewer allocated bytes** (2,932,144 versus 6,006,912 bytes per operation).
+## Reproducing the benchmarks
 
-## Environment and reproduction
+Install a .NET SDK compatible with `global.json`. Run the following commands from the repository root without other build/test workloads running concurrently. Set `$artifacts` to an unused directory for each run.
 
-Results collected on 2026-10-05 with an Apple M4 Pro (Arm64), macOS 27.0.1 (26A434), BenchmarkDotNet 0.16.0-preview.2, and .NET 11.0.0-rc.1.26425.128, using SDK `11.0.100-rc.1.26425.128` in Release configuration with server GC enabled in the benchmark project.
-
-Serialization writes to a reused `Utf8JsonWriter` backed by an `ArrayBufferWriter<byte>`; buffer and writer reset are included in each operation. It does not allocate a fresh output byte array for each call. Deserialization consumes the same precomputed UTF-8 input for every implementation and includes the allocations needed to construct the result. All metadata/converter creation and equivalence checks happen outside the measured operation.
-
-These measurements exclude startup, Native AOT execution, streaming I/O, dataset loading, and initial output-buffer allocation.
-
-Run the correctness checks and reproduce the charts from the repository root, without other build/test workloads running concurrently:
-
-```bash
-dotnet run --project tests/PolyType.Benchmarks -c Release -- --validate-json
-dotnet run --project tests/PolyType.Benchmarks -c Release -- \
-  --filter '*Json*' --job short --exporters json --artifacts artifacts/json-benchmarks
-dotnet run --project tests/PolyType.Benchmarks -c Release -- \
-  --filter '*JsonSerializeBenchmark<MyPoco>*' '*JsonSerializeBenchmark<Int32[]>*' '*JsonSerializeBenchmark<List*' \
-           '*JsonSerializeBenchmark<Dictionary*' '*Json*Benchmark<CitmCatalog*' \
-  --exporters json --artifacts artifacts/json-benchmarks
-dotnet run --file eng/plot-json-benchmarks.cs -- artifacts/json-benchmarks/results --date 2026-10-05
+```powershell
+$artifacts = 'artifacts\json-benchmarks'
+dotnet run --project tests\PolyType.Benchmarks -c Release -- --validate-json
+dotnet run --project tests\PolyType.Benchmarks -c Release --no-build -- `
+  --filter '*Json*' --job short --warmupCount 6 --iterationCount 12 `
+  --exporters json --artifacts $artifacts
+dotnet run --file eng\plot-json-benchmarks.cs -- "$artifacts\results"
 ```
 
-The second benchmark command uses the default job for the six selected suites and overwrites their reports in the same results directory. The plotter is a single-file C# app with no external dependencies and rejects incomplete or duplicate result sets. It writes eight SVG bar charts and a compact JSON export under `docs/images/performance`, and prints every case where a PolyType mean trails its matched STJ configuration or the fastest STJ mean. The printed comparisons include small, potentially noisy differences; they are investigation leads, not significance tests.
-
-To regenerate the charts without running benchmarks:
-
-```bash
-dotnet run --file eng/plot-json-benchmarks.cs -- docs/images/performance/results.json
-```
-
-Run the plotter's single-file regression test app:
-
-```bash
-dotnet run --file eng/test-plot-json-benchmarks.cs
-```
-
-For investigating a gap, omit `--job short` to use BenchmarkDotNet's longer default job and restrict `--filter` to the relevant generic benchmark type. For example:
-
-```bash
-dotnet run --project tests/PolyType.Benchmarks -c Release -- \
-  --filter '*Json*Dictionary*' --exporters json --artifacts artifacts/json-dictionary
-```
-
-Keep targeted investigation results separate from the complete chart dataset. The plotter requires all nine payloads and all serializer configurations rather than silently publishing missing cases.
+The plotting command requires the complete 99-case result set. It writes eight SVG charts and `results.json` under `docs\images\performance`, replacing the displayed charts and data.

@@ -16,6 +16,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <Compile Include="..\Shared\Polyfills\ArrayExtensions.cs" Link="Shared\Polyfills\%(Filename).cs" />
+    <Compile Include="..\Shared\Polyfills\ArgumentOutOfRangeExceptionExtensions.cs" Link="Shared\Polyfills\%(Filename).cs" />
     <Compile Include="..\Shared\Polyfills\LinkerAttributes\*.cs " Link="Shared\Polyfills\LinkerAttributes\%(Filename).cs" />
   </ItemGroup>
 

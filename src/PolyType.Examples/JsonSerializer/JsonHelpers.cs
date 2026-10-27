@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 
 namespace PolyType.Examples.JsonSerializer;
 
-internal static class JsonHelpers
+internal static partial class JsonHelpers
 {
     public static ReadOnlySpan<byte> DiscriminatorPropertyName => "$type"u8;
 
@@ -113,46 +113,6 @@ internal static class JsonHelpers
             }
         }
 #endif
-    }
-
-    [ThreadStatic]
-    private static ThreadStaticWriteState? t_writeState;
-
-    public static Utf8JsonWriter GetPooledJsonWriter(JsonWriterOptions options, out ByteBufferWriter bufferWriter)
-    {
-        ThreadStaticWriteState writeState = t_writeState ??= new(initialCapacity: 512);
-        if (writeState.Depth++ == 0)
-        {
-            bufferWriter = writeState.BufferWriter;
-            writeState.JsonWriter.Reset(bufferWriter, options);
-            return writeState.JsonWriter;
-        }
-
-        bufferWriter = new(initialCapacity: 512);
-        return new(bufferWriter, options);
-    }
-
-    public static void ReturnPooledJsonWriter(Utf8JsonWriter writer, ByteBufferWriter bufferWriter)
-    {
-        ThreadStaticWriteState? writeState = t_writeState;
-        DebugExt.Assert(writeState != null);
-        DebugExt.Assert(writeState.JsonWriter == writer && writeState.BufferWriter == bufferWriter);
-        bufferWriter.ResetWrittenCount();
-        writer.Reset();
-        writeState.Depth--;
-    }
-
-    private sealed class ThreadStaticWriteState
-    {
-        public ThreadStaticWriteState(int initialCapacity)
-        {
-            BufferWriter = new(initialCapacity);
-            JsonWriter = new(BufferWriter);
-        }
-
-        public int Depth;
-        public Utf8JsonWriter JsonWriter { get; }
-        public ByteBufferWriter BufferWriter { get; }
     }
 
 #if NET

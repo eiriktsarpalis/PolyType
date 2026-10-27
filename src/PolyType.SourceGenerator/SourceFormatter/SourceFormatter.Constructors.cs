@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using PolyType.Roslyn;
+using PolyType.Roslyn.Helpers;
 using PolyType.SourceGenerator.Helpers;
 using PolyType.SourceGenerator.Model;
 using PolyType.SourceGenModel;
@@ -242,7 +243,7 @@ internal sealed partial class SourceFormatter
                         }
                     }
 
-                    return $"obj.{RoslynHelpers.EscapeKeywordIdentifier(parameter.UnderlyingMemberName)} = {FormatCtorParameterExpr(parameter, isSingleParameter)};";
+                    return $"obj.{TypeIdentifierHelpers.EscapeKeywordIdentifier(parameter.UnderlyingMemberName)} = {FormatCtorParameterExpr(parameter, isSingleParameter)};";
                 }
 
                 string FormatCtorParameterExpr(ParameterShapeModel parameter, bool isSingleParameter)

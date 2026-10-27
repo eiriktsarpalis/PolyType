@@ -64,6 +64,7 @@ static Method[] AllMethods() =>
     new("StjSourceGen_FastPath", "STJ source-gen fast path", "#7c3aed"),
     new("PolyTypeReflection", "PolyType reflection", "#b45309"),
     new("PolyTypeSourceGen", "PolyType source-gen", "#047857"),
+    new("PolyTypeFastPath", "PolyType fast path", "#db2777"),
 ];
 
 static JsonObject ReadObject(string path) =>
@@ -101,6 +102,7 @@ static JsonObject ReadReports(string directory, string measuredOn)
                 throw new InvalidDataException($"Invalid benchmark name in {path}.");
             }
 
+            string methodId = method[(separator + 1)..];
             JsonObject? statistics = null;
             if (benchmark["Statistics"] is JsonObject stats)
             {
@@ -111,11 +113,18 @@ static JsonObject ReadReports(string directory, string measuredOn)
                 }
             }
 
+            string scenario = type[(opening + 1)..^1];
+            const string witnessSuffix = ", JsonBenchmarkWitness";
+            if (scenario.EndsWith(witnessSuffix, StringComparison.Ordinal))
+            {
+                scenario = scenario[..^witnessSuffix.Length];
+            }
+
             JsonObject record = new()
             {
                 ["operation"] = method[..separator],
-                ["scenario"] = type[(opening + 1)..^1],
-                ["method"] = method[(separator + 1)..],
+                ["scenario"] = scenario,
+                ["method"] = methodId,
                 ["job"] = Text(benchmark, "DisplayInfo"),
                 ["statistics"] = statistics,
                 ["allocated_bytes"] = benchmark["Memory"]?["BytesAllocatedPerOperation"]?.DeepClone(),
@@ -248,14 +257,14 @@ static void PrintGaps(Dictionary<Key, JsonObject> records)
         Method fastest = Methods(operation).Where(m => m.Id.StartsWith("Stj", StringComparison.Ordinal))
             .MinBy(m => Mean(records[new(operation, scenario.Id, m.Id)]))!;
         double fastestMean = Mean(records[new(operation, scenario.Id, fastest.Id)]);
-        foreach (string method in new[] { "PolyTypeReflection", "PolyTypeSourceGen" })
+        foreach (Method method in Methods(operation).Where(m => !m.Id.StartsWith("Stj", StringComparison.Ordinal)))
         {
-            string matched = method == "PolyTypeReflection" ? "StjReflection" : "StjSourceGen";
-            double mean = Mean(records[new(operation, scenario.Id, method)]);
+            string matched = method.Id == "PolyTypeReflection" ? "StjReflection" : "StjSourceGen";
+            double mean = Mean(records[new(operation, scenario.Id, method.Id)]);
             double matchedMean = Mean(records[new(operation, scenario.Id, matched)]);
             if (mean > Math.Min(matchedMean, fastestMean))
             {
-                Console.WriteLine($"{operation} {scenario.Id} {method}: {(mean / matchedMean - 1) * 100:+0.0;-0.0;+0.0}% time vs {matched}, {(mean / fastestMean - 1) * 100:+0.0;-0.0;+0.0}% vs fastest STJ ({fastest.Id})");
+                Console.WriteLine($"{operation} {scenario.Id} {method.Label}: {(mean / matchedMean - 1) * 100:+0.0;-0.0;+0.0}% time vs {matched}, {(mean / fastestMean - 1) * 100:+0.0;-0.0;+0.0}% vs fastest STJ ({fastest.Id})");
             }
         }
     }
