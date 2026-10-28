@@ -52,6 +52,7 @@ public partial class Witness : global::PolyType.FastPathJson.IJsonSerializable<(
         string? arg1 = default;
         ulong seen = 0;
 
+        global::System.Span<byte> propertyNameBuffer = stackalloc byte[256];
         while (true)
         {
             global::PolyType.FastPathJson.SerializationHelpers.EnsureRead(ref reader);
@@ -59,23 +60,28 @@ public partial class Witness : global::PolyType.FastPathJson.IJsonSerializable<(
             {
                 break;
             }
-        
+
             if (reader.TokenType is global::System.Text.Json.JsonTokenType.Comment)
             {
                 global::PolyType.FastPathJson.SerializationHelpers.EnsureToken(ref reader, global::System.Text.Json.JsonTokenType.PropertyName);
             }
-        
-            string name = reader.GetString()!;
+
+            if (!global::PolyType.FastPathJson.SerializationHelpers.TryGetUtf8PropertyName(in reader, propertyNameBuffer, out global::System.ReadOnlySpan<byte> name))
+            {
+                global::PolyType.FastPathJson.SerializationHelpers.EnsureRead(ref reader);
+                reader.Skip();
+                continue;
+            }
             global::PolyType.FastPathJson.SerializationHelpers.EnsureRead(ref reader);
-        
+
             switch (name)
             {
-                case "Item1":
+                case [_, _, _, _, (byte)'1'] when global::System.MemoryExtensions.SequenceEqual(name, "Item1"u8):
                     arg0 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 0;
                     break;
 
-                case "Item2":
+                case [_, _, _, _, (byte)'2'] when global::System.MemoryExtensions.SequenceEqual(name, "Item2"u8):
                     arg1 = global::PolyType.FastPathJson.SerializationHelpers.Read<string, global::PolyType.FastPathJson.Converters.StringConverter>(ref reader);
                     seen |= 1UL << 1;
                     break;

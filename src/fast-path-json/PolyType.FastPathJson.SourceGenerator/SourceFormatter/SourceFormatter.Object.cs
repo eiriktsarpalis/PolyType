@@ -1,5 +1,6 @@
 using PolyType.FastPathJson.SourceGenerator.Model;
 using PolyType.Roslyn;
+using System.Text;
 
 namespace PolyType.FastPathJson.SourceGenerator;
 
@@ -197,6 +198,19 @@ internal static partial class SourceFormatter
                 writer.WriteLine();
             }
 
+            // Every UTF-16 code unit can be represented by a six-byte \uXXXX escape.
+            bool needsRentedPropertyNameBuffer = model.Slots.Any(slot => slot.Name.Length > 256 / 6);
+            writer.WriteLine("global::System.Span<byte> propertyNameBuffer = stackalloc byte[256];");
+            if (needsRentedPropertyNameBuffer)
+            {
+                writer.WriteLine("""
+                    byte[]? rentedPropertyNameBuffer = null;
+                    try
+                    {
+                    """);
+                writer.Indentation++;
+            }
+
             writer.WriteLine($$"""
                 while (true)
                 {
@@ -205,28 +219,55 @@ internal static partial class SourceFormatter
                     {
                         break;
                     }
-
+                """);
+            writer.WriteLine();
+            writer.WriteLine($$"""
                     if (reader.TokenType is {{Token}}Comment)
                     {
                         {{Shared}}.EnsureToken(ref reader, {{Token}}PropertyName);
                     }
+                """);
+            writer.WriteLine();
+            if (needsRentedPropertyNameBuffer)
+            {
+                writer.WriteLine($$"""
+                        global::System.ReadOnlySpan<byte> name = {{Shared}}.GetUtf8PropertyName(in reader, propertyNameBuffer, ref rentedPropertyNameBuffer);
+                    """);
+            }
+            else
+            {
+                writer.WriteLine($$"""
+                        if (!{{Shared}}.TryGetUtf8PropertyName(in reader, propertyNameBuffer, out global::System.ReadOnlySpan<byte> name))
+                        {
+                            {{Shared}}.EnsureRead(ref reader);
+                            reader.Skip();
+                            continue;
+                        }
+                    """);
+            }
 
-                    string name = reader.GetString()!;
-                    {{Shared}}.EnsureRead(ref reader);
-
+            writer.WriteLine($"    {Shared}.EnsureRead(ref reader);");
+            writer.WriteLine();
+            writer.WriteLine("""
                     switch (name)
                     {
                 """);
             writer.Indentation += 2;
+            string?[] namePatterns = GetPropertyNamePatterns(model);
             for (int i = 0; i < model.Slots.Length; i++)
             {
+                if (namePatterns[i] is not { } pattern)
+                {
+                    continue;
+                }
+
                 if (i > 0)
                 {
                     writer.WriteLine();
                 }
 
                 ReadSlot slot = model.Slots[i];
-                writer.WriteLine($"case {Literal(slot.Name)}:");
+                writer.WriteLine($"case {pattern} when global::System.MemoryExtensions.SequenceEqual(name, {Literal(slot.Name)}u8):");
                 writer.Indentation++;
                 writer.WriteLine($"arg{i} = {FormatRead(slot.Type)};");
                 if (slot.DisallowNull)
@@ -264,6 +305,20 @@ internal static partial class SourceFormatter
                     }
                 }
                 """);
+            if (needsRentedPropertyNameBuffer)
+            {
+                writer.Indentation--;
+                writer.WriteLine("""
+                    }
+                    finally
+                    {
+                        if (rentedPropertyNameBuffer is not null)
+                        {
+                            global::System.Buffers.ArrayPool<byte>.Shared.Return(rentedPropertyNameBuffer);
+                        }
+                    }
+                    """);
+            }
             if (requiredSlots.Length > 0)
             {
                 writer.WriteLine();
@@ -325,6 +380,40 @@ internal static partial class SourceFormatter
 
         writer.Indentation--;
         writer.WriteLine('}');
+    }
+
+    private static string?[] GetPropertyNamePatterns(ObjectConverterModel model)
+    {
+        string?[] patterns = new string?[model.Slots.Length];
+        // Names with unpaired surrogates cannot match valid JSON text or appear in UTF-8 literals.
+        var names = model.Slots.Select((slot, index) => (Bytes: Encoding.UTF8.GetBytes(slot.Name), Index: index))
+            .Where(name => Encoding.UTF8.GetString(name.Bytes) == model.Slots[name.Index].Name);
+        foreach (var group in names.GroupBy(name => name.Bytes.Length))
+        {
+            int length = group.Key;
+            if (length == 0 || group.Count() == 1)
+            {
+                foreach (var name in group)
+                {
+                    patterns[name.Index] = $"{{ Length: {length} }}";
+                }
+
+                continue;
+            }
+
+            // Let Roslyn branch on length and a discriminating byte; compare the rest with vectorized UTF-8 equality.
+            int position = Enumerable.Range(0, length)
+                .OrderByDescending(i => group.Select(name => name.Bytes[i]).Distinct().Count())
+                .First();
+            foreach (var name in group)
+            {
+                string[] elements = Enumerable.Repeat("_", length).ToArray();
+                elements[position] = $"(byte){Literal((char)name.Bytes[position])}";
+                patterns[name.Index] = "[" + string.Join(", ", elements) + "]";
+            }
+        }
+
+        return patterns;
     }
 
     private static void WriteMissingRequiredParameterHelper(SourceWriter writer, ObjectConverterModel model, int[] requiredSlots, bool useBitArray)

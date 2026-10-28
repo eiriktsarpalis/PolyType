@@ -15,7 +15,7 @@ internal static class ScalarHelpers
     public static int GetValueLength(scoped in Utf8JsonReader reader) =>
         checked((int)(reader.HasValueSequence ? reader.ValueSequence.Length : reader.ValueSpan.Length));
 
-    public static ReadOnlySpan<byte> GetUtf8Value(scoped in Utf8JsonReader reader, Span<byte> buffer, ref byte[]? rented)
+    public static ReadOnlySpan<byte> GetUtf8Value(scoped in Utf8JsonReader reader, Span<byte> buffer, scoped ref byte[]? rented)
     {
         if (!reader.HasValueSequence && !reader.ValueIsEscaped)
         {
@@ -23,7 +23,18 @@ internal static class ScalarHelpers
         }
 
         int length = GetValueLength(in reader);
-        Span<byte> destination = length <= buffer.Length ? buffer : (rented = ArrayPool<byte>.Shared.Rent(length));
+        if (length > buffer.Length && (rented is null || rented.Length < length))
+        {
+            byte[] replacement = ArrayPool<byte>.Shared.Rent(length);
+            if (rented is not null)
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
+
+            rented = replacement;
+        }
+
+        Span<byte> destination = length <= buffer.Length ? buffer : rented;
         if (reader.TokenType is JsonTokenType.Number)
         {
             reader.ValueSequence.CopyTo(destination);

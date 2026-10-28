@@ -194,6 +194,8 @@ internal static partial class SourceFormatter
 
     private static string Literal(string text) => SymbolDisplay.FormatLiteral(text, quote: true);
 
+    private static string Literal(char value) => SymbolDisplay.FormatLiteral(value, quote: true);
+
     private static string GetConverterIdentifier(TypeRef type) => type.Converter.Substring(ScalarTypes.GeneratedPrefix.Length);
 
     private static string FormatWrite(TypeRef type, string value) =>

@@ -82,6 +82,7 @@ public partial class Person : global::PolyType.FastPathJson.IJsonSerializable<gl
         int arg2 = default;
         ulong seen = 0;
 
+        global::System.Span<byte> propertyNameBuffer = stackalloc byte[256];
         while (true)
         {
             global::PolyType.FastPathJson.SerializationHelpers.EnsureRead(ref reader);
@@ -89,23 +90,28 @@ public partial class Person : global::PolyType.FastPathJson.IJsonSerializable<gl
             {
                 break;
             }
-        
+
             if (reader.TokenType is global::System.Text.Json.JsonTokenType.Comment)
             {
                 global::PolyType.FastPathJson.SerializationHelpers.EnsureToken(ref reader, global::System.Text.Json.JsonTokenType.PropertyName);
             }
-        
-            string name = reader.GetString()!;
+
+            if (!global::PolyType.FastPathJson.SerializationHelpers.TryGetUtf8PropertyName(in reader, propertyNameBuffer, out global::System.ReadOnlySpan<byte> name))
+            {
+                global::PolyType.FastPathJson.SerializationHelpers.EnsureRead(ref reader);
+                reader.Skip();
+                continue;
+            }
             global::PolyType.FastPathJson.SerializationHelpers.EnsureRead(ref reader);
-        
+
             switch (name)
             {
-                case "id":
+                case { Length: 2 } when global::System.MemoryExtensions.SequenceEqual(name, "id"u8):
                     arg0 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 0;
                     break;
 
-                case "Name":
+                case { Length: 4 } when global::System.MemoryExtensions.SequenceEqual(name, "Name"u8):
                     arg1 = global::PolyType.FastPathJson.SerializationHelpers.Read<string, global::PolyType.FastPathJson.Converters.StringConverter>(ref reader);
                     if (arg1 is null)
                     {
@@ -115,7 +121,7 @@ public partial class Person : global::PolyType.FastPathJson.IJsonSerializable<gl
                     seen |= 1UL << 1;
                     break;
 
-                case "included":
+                case { Length: 8 } when global::System.MemoryExtensions.SequenceEqual(name, "included"u8):
                     arg2 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 2;
                     break;

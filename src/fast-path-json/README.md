@@ -13,6 +13,15 @@ The two projects have separate roles:
 
 The projects have no dependency on `PolyType.dll` or the built-in `PolyType.SourceGenerator`, and are not packaged.
 
+Object readers match unescaped UTF-8 property names without allocating strings. Contiguous,
+unescaped names borrow the reader's input; escaped or segmented names use `Utf8JsonReader.CopyString`
+with reusable stack or pooled scratch space. Generated switches select by byte length and a
+discriminating byte, then use `SequenceEqual` against UTF-8 literals so the JIT can compare
+multiple bytes at once instead of checking every element of a full byte-list pattern.
+When every known name fits the 256-byte stack buffer even with `\uXXXX` escaping, readers
+omit pooled-buffer state and its `try`/`finally`. Oversized unknown names still undergo
+validation in a separate slow path before their values are skipped.
+
 ## Usage
 
 Reference `PolyType.FastPathJson` normally and reference `PolyType.FastPathJson.SourceGenerator` with `OutputItemType="Analyzer"` and `ReferenceOutputAssembly="false"`.
