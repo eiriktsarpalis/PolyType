@@ -621,6 +621,12 @@ public static class TestTypes
         yield return TestCase.Create(new PersonRecordStruct("John", 40));
         yield return TestCase.Create((PersonRecordStruct?)new PersonRecordStruct("John", 40), p);
         yield return TestCase.Create(new ClassWithMultipleConstructors(z: 3) { X = 1, Y = 2 });
+        yield return TestCase.Create(new StructWithAcronymConstructorParameter(42));
+        yield return TestCase.Create(new ClassWithAcronymConstructorParameters(1, 2, 3, 4, 5, 6, 7));
+        yield return TestCase.Create(new ClassWithAcronymConstructorOverloads(42, 43));
+        yield return TestCase.Create(new ClassWithRenamedAcronymProperty(42));
+        yield return TestCase.Create(new ClassWithNonMatchingAcronymConstructorParameters(1, 2, 3));
+        yield return TestCase.Create(new ClassWithAmbiguousAcronymProperties(42));
         yield return TestCase.Create(new ClassWithConflictingAnnotations
         {
             NonNullNullableString = new() { Value = "str" },
@@ -2383,6 +2389,87 @@ partial class ClassWithMultipleConstructors
     public int Y { get; set; }
     public int Z { get; }
 }
+
+[GenerateShape]
+public readonly partial struct StructWithAcronymConstructorParameter
+{
+    public StructWithAcronymConstructorParameter(int ilDelta) => ILDelta = ilDelta;
+
+    public int ILDelta { get; init; }
+}
+
+[GenerateShape]
+public partial class ClassWithAcronymConstructorParameters(int urlValue, int url, int iD, int iLValue, int value, int http2Status, int XMLValue)
+{
+    public int URLValue { get; init; } = urlValue;
+    public int ID { get; init; } = iD;
+    public int ILValue { get; init; } = iLValue;
+    public int Value { get; init; } = value;
+    public int HTTP2Status { get; init; } = http2Status;
+    public int xmlValue { get; init; } = XMLValue;
+    public int URL = url;
+}
+
+[GenerateShape]
+public partial class ClassWithAcronymConstructorOverloads
+{
+    public ClassWithAcronymConstructorOverloads() { }
+
+    [JsonConstructor]
+    public ClassWithAcronymConstructorOverloads(int ilDelta, int url)
+    {
+        ILDelta = ilDelta;
+        URL = url;
+    }
+
+    public int ILDelta { get; }
+    public int URL { get; }
+}
+
+[GenerateShape]
+public partial class ClassWithRenamedAcronymProperty(int ilDelta)
+{
+    [PropertyShape(Name = "delta")]
+    [JsonPropertyName("delta")]
+    public int ILDelta { get; init; } = ilDelta;
+}
+
+#pragma warning disable CA1707 // Exercise underscores in constructor and member names.
+[GenerateShape]
+public partial class ClassWithNonMatchingAcronymConstructorParameters(int ildelta = 0, int myUrl = 0, int _url = 0)
+{
+    public int ILDelta { get; init; } = ildelta;
+    public int MyURL { get; init; } = myUrl;
+    public int _URL { get; init; } = _url;
+}
+#pragma warning restore CA1707
+
+#pragma warning disable CA1708 // Exercise members differing only by acronym casing.
+[GenerateShape]
+public partial class ClassWithAmbiguousAcronymProperties
+{
+    [JsonConstructor]
+    public ClassWithAmbiguousAcronymProperties() { }
+
+    [ConstructorShape]
+    public ClassWithAmbiguousAcronymProperties(int url)
+    {
+        URL = Url = this.url = url;
+    }
+
+    [PropertyShape(Name = "firstUrl")]
+    [JsonPropertyName("firstUrl")]
+    public int URL { get; }
+
+    [PropertyShape(Name = "secondUrl")]
+    [JsonPropertyName("secondUrl")]
+    public int Url { get; }
+
+    [PropertyShape(Name = "thirdUrl")]
+    [JsonPropertyName("thirdUrl")]
+    public int url { get; }
+}
+#pragma warning restore CA1708
 
 [GenerateShape]
 public partial class ClassWithConflictingAnnotations

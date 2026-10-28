@@ -181,6 +181,14 @@ Constructor shapes are resolved using the following algorithm:
     3. Minimizes the total number of constructor parameters.
 
   Parameters correspond to a property shape if and only if they are of the same type and have matching names up to Pascal case/camel case equivalence.
+  This includes leading acronyms: `ILDelta` matches both `ilDelta` and `iLDelta`, and `URL` matches `url`.
+  The first character and any following leading acronym letters are compared using invariant lowercase;
+  the last capital before a lowercase word starts that word and is preserved.
+  The rest of the name remains case-sensitive, so `ILDelta` does not match `ildelta`, and `MyURL` does not match `myUrl`.
+  Non-letter prefixes such as `_` do not enable acronym matching.
+
+When multiple members match a constructor parameter, the first matching member in the provider's member-resolution order is used for property-derived parameter naming and requiredness.
+An exact spelling match does not take precedence over other equivalent names.
 
 If the selected constructor is parameterless and additionally there are no required or init-only properties defined on the type,
 it is mapped to an <xref:PolyType.Abstractions.IConstructorShape> that is parameterless and which relies on property shape setters
