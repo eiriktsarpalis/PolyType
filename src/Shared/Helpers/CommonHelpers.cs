@@ -121,6 +121,7 @@ internal static class CommonHelpers
 
     /// <summary>
     /// A string comparer that equates "SomeIdentifier" with "someIdentifier"
+    /// and "ILDelta" with both "ilDelta" and "iLDelta".
     /// </summary>
     public sealed class CamelCaseInvariantComparer : EqualityComparer<string>
     {
@@ -143,34 +144,58 @@ internal static class CommonHelpers
                 return true;
             }
 
-            // NB this ignores surrogate pairs that are letters
-            return char.ToLowerInvariant(left[0]) == char.ToLowerInvariant(right[0]) &&
-                   left.AsSpan(start: 1).SequenceEqual(right.AsSpan(start: 1));
+            int leftPrefixLength = GetCaseInsensitivePrefixLength(left);
+            int rightPrefixLength = GetCaseInsensitivePrefixLength(right);
+            int prefixLength = Math.Max(leftPrefixLength, rightPrefixLength);
+
+            for (int i = 0; i < prefixLength; i++)
+            {
+                char leftChar = i < leftPrefixLength ? char.ToLowerInvariant(left[i]) : left[i];
+                char rightChar = i < rightPrefixLength ? char.ToLowerInvariant(right[i]) : right[i];
+                if (leftChar != rightChar)
+                {
+                    return false;
+                }
+            }
+
+            return left.AsSpan(prefixLength).SequenceEqual(right.AsSpan(prefixLength));
         }
 
         public override int GetHashCode(string text)
         {
-            return text is [] ? 0 :
-                CombineHashCodes(
-                    char.ToLowerInvariant(text[0]).GetHashCode(),
-                    GetOrdinalHashCode(text.AsSpan(start: 1)));
-
-            static int GetOrdinalHashCode(ReadOnlySpan<char> span)
+            if (text.Length == 0)
             {
-#if NET
-                return string.GetHashCode(span, StringComparison.Ordinal);
-#else
-                const int prime = 31;
-                int hash = 17;
-
-                for (int i = 0; i < span.Length; i++)
-                {
-                    hash = unchecked((hash * prime) + span[i]);
-                }
-
-                return hash;
-#endif
+                return 0;
             }
+
+            int prefixLength = GetCaseInsensitivePrefixLength(text);
+            int hash = 17;
+            for (int i = 0; i < text.Length; i++)
+            {
+                char c = i < prefixLength ? char.ToLowerInvariant(text[i]) : text[i];
+                hash = unchecked((hash * 31) + c);
+            }
+
+            return hash;
+        }
+
+        private static int GetCaseInsensitivePrefixLength(string text)
+        {
+            Debug.Assert(text.Length > 0);
+            int length = 1;
+            if (char.IsLetter(text[0]))
+            {
+                // Preserve first-letter equivalence even for legacy names such as "iLDelta".
+                // The last capital before a lowercase word belongs to that word, not the acronym.
+                while (length < text.Length &&
+                       char.IsUpper(text[length]) &&
+                       (length + 1 == text.Length || !char.IsLower(text[length + 1])))
+                {
+                    length++;
+                }
+            }
+
+            return length;
         }
     }
 

@@ -190,6 +190,87 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
         }
     }
 
+    [Theory]
+    [MemberData(nameof(GetAcronymConstructorTestCases))]
+    public void ConstructorParameters_MatchLeadingAcronyms(ITestCase testCase, string[] expectedNames)
+    {
+        var shape = Assert.IsAssignableFrom<IObjectTypeShape>(providerUnderTest.ResolveShape(testCase));
+        Assert.NotNull(shape.Constructor);
+        Assert.Equal(expectedNames, shape.Constructor.Parameters.Select(parameter => parameter.Name));
+        Assert.All(shape.Constructor.Parameters, parameter => Assert.Equal(ParameterKind.MethodParameter, parameter.Kind));
+
+        var visitor = new AcronymConstructorTestVisitor();
+        object? value = shape.Constructor.Accept(visitor);
+        Assert.NotNull(value);
+        Assert.All(shape.Properties, property => Assert.Equal(42, property.Accept(visitor, value)));
+    }
+
+    public static IEnumerable<object[]> GetAcronymConstructorTestCases()
+    {
+        yield return [TestCase.Create(new StructWithAcronymConstructorParameter(42)),
+            new[] { nameof(StructWithAcronymConstructorParameter.ILDelta) }];
+        yield return [TestCase.Create(new ClassWithAcronymConstructorParameters(42, 42, 42, 42, 42, 42, 42)),
+            new[]
+            {
+                nameof(ClassWithAcronymConstructorParameters.URLValue),
+                nameof(ClassWithAcronymConstructorParameters.URL),
+                nameof(ClassWithAcronymConstructorParameters.ID),
+                nameof(ClassWithAcronymConstructorParameters.ILValue),
+                nameof(ClassWithAcronymConstructorParameters.Value),
+                nameof(ClassWithAcronymConstructorParameters.HTTP2Status),
+                nameof(ClassWithAcronymConstructorParameters.xmlValue),
+            }];
+        yield return [TestCase.Create(new ClassWithAcronymConstructorOverloads(42, 42)),
+            new[] { nameof(ClassWithAcronymConstructorOverloads.ILDelta), nameof(ClassWithAcronymConstructorOverloads.URL) }];
+        yield return [TestCase.Create(new ClassWithRenamedAcronymProperty(42)), new[] { "delta" }];
+        yield return [TestCase.Create(new ClassWithAmbiguousAcronymProperties(42)),
+            new[] { "firstUrl" }];
+    }
+
+    [Theory]
+    [InlineData("ildelta", nameof(ClassWithNonMatchingAcronymConstructorParameters.ILDelta))]
+    [InlineData("myUrl", nameof(ClassWithNonMatchingAcronymConstructorParameters.MyURL))]
+    [InlineData("_url", nameof(ClassWithNonMatchingAcronymConstructorParameters._URL))]
+    public void ConstructorParameters_DoNotMatchBeyondLeadingAcronyms(string parameterName, string memberName)
+    {
+        var testCase = TestCase.Create(new ClassWithNonMatchingAcronymConstructorParameters(1, 2, 3));
+        var shape = Assert.IsAssignableFrom<IObjectTypeShape>(providerUnderTest.ResolveShape(testCase));
+        Assert.NotNull(shape.Constructor);
+        Assert.Equal(6, shape.Constructor.Parameters.Count);
+        Assert.Contains(shape.Constructor.Parameters, parameter => parameter.Name == parameterName && parameter.Kind is ParameterKind.MethodParameter);
+        Assert.Contains(shape.Constructor.Parameters, parameter => parameter.Name == memberName && parameter.Kind is ParameterKind.MemberInitializer);
+    }
+
+    private sealed class AcronymConstructorTestVisitor : TypeShapeVisitor
+    {
+        public override object? VisitConstructor<TDeclaringType, TArgumentState>(IConstructorShape<TDeclaringType, TArgumentState> constructor, object? state)
+        {
+            TArgumentState arguments = constructor.GetArgumentStateConstructor()();
+            foreach (IParameterShape parameter in constructor.Parameters)
+            {
+                arguments = (TArgumentState)parameter.Accept(this, arguments)!;
+            }
+
+            TDeclaringType value = constructor.GetParameterizedConstructor()(ref arguments);
+            arguments.Return();
+            return value;
+        }
+
+        public override object? VisitParameter<TArgumentState, TParameter>(IParameterShape<TArgumentState, TParameter> parameter, object? state)
+        {
+            var intParameter = Assert.IsAssignableFrom<IParameterShape<TArgumentState, int>>(parameter);
+            var arguments = (TArgumentState)state!;
+            intParameter.GetSetter()(ref arguments, 42);
+            return arguments;
+        }
+
+        public override object? VisitProperty<TDeclaringType, TProperty>(IPropertyShape<TDeclaringType, TProperty> property, object? state)
+        {
+            var value = (TDeclaringType)state!;
+            return property.GetGetter()(ref value);
+        }
+    }
+
     [Fact]
     public void ReflectionNoEmitArgumentStatesUseFreshReferenceStatesAcrossArities()
     {
