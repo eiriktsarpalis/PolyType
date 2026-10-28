@@ -77,6 +77,7 @@ public partial class Node : global::PolyType.FastPathJson.IJsonSerializable<glob
         global::System.Collections.Generic.List<global::TestNamespace.Node>? arg2 = default;
         ulong seen = 0;
 
+        global::System.Span<byte> propertyNameBuffer = stackalloc byte[256];
         while (true)
         {
             global::PolyType.FastPathJson.SerializationHelpers.EnsureRead(ref reader);
@@ -84,28 +85,33 @@ public partial class Node : global::PolyType.FastPathJson.IJsonSerializable<glob
             {
                 break;
             }
-        
+
             if (reader.TokenType is global::System.Text.Json.JsonTokenType.Comment)
             {
                 global::PolyType.FastPathJson.SerializationHelpers.EnsureToken(ref reader, global::System.Text.Json.JsonTokenType.PropertyName);
             }
-        
-            string name = reader.GetString()!;
+
+            if (!global::PolyType.FastPathJson.SerializationHelpers.TryGetUtf8PropertyName(in reader, propertyNameBuffer, out global::System.ReadOnlySpan<byte> name))
+            {
+                global::PolyType.FastPathJson.SerializationHelpers.EnsureRead(ref reader);
+                reader.Skip();
+                continue;
+            }
             global::PolyType.FastPathJson.SerializationHelpers.EnsureRead(ref reader);
-        
+
             switch (name)
             {
-                case "Value":
+                case { Length: 5 } when global::System.MemoryExtensions.SequenceEqual(name, "Value"u8):
                     arg0 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 0;
                     break;
 
-                case "Next":
+                case { Length: 4 } when global::System.MemoryExtensions.SequenceEqual(name, "Next"u8):
                     arg1 = global::PolyType.FastPathJson.SerializationHelpers.Read<global::TestNamespace.Node, global::TestNamespace.Node>(ref reader);
                     seen |= 1UL << 1;
                     break;
 
-                case "Children":
+                case { Length: 8 } when global::System.MemoryExtensions.SequenceEqual(name, "Children"u8):
                     arg2 = global::PolyType.FastPathJson.SerializationHelpers.Read<global::System.Collections.Generic.List<global::TestNamespace.Node>, global::PolyType.FastPathJson.Converters.ListConverter<global::TestNamespace.Node, global::TestNamespace.Node>>(ref reader);
                     seen |= 1UL << 2;
                     break;

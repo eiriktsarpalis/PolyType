@@ -80,6 +80,7 @@ internal static partial class GeneratedJsonConverters
             global::TestNamespace.Tree? arg1 = default;
             ulong seen = 0;
 
+            global::System.Span<byte> propertyNameBuffer = stackalloc byte[256];
             while (true)
             {
                 global::PolyType.FastPathJson.SerializationHelpers.EnsureRead(ref reader);
@@ -87,18 +88,23 @@ internal static partial class GeneratedJsonConverters
                 {
                     break;
                 }
-            
+
                 if (reader.TokenType is global::System.Text.Json.JsonTokenType.Comment)
                 {
                     global::PolyType.FastPathJson.SerializationHelpers.EnsureToken(ref reader, global::System.Text.Json.JsonTokenType.PropertyName);
                 }
-            
-                string name = reader.GetString()!;
+
+                if (!global::PolyType.FastPathJson.SerializationHelpers.TryGetUtf8PropertyName(in reader, propertyNameBuffer, out global::System.ReadOnlySpan<byte> name))
+                {
+                    global::PolyType.FastPathJson.SerializationHelpers.EnsureRead(ref reader);
+                    reader.Skip();
+                    continue;
+                }
                 global::PolyType.FastPathJson.SerializationHelpers.EnsureRead(ref reader);
-            
+
                 switch (name)
                 {
-                    case "Left":
+                    case { Length: 4 } when global::System.MemoryExtensions.SequenceEqual(name, "Left"u8):
                         arg0 = global::PolyType.FastPathJson.SerializationHelpers.Read<global::TestNamespace.Tree, global::TestNamespace.Tree>(ref reader);
                         if (arg0 is null)
                         {
@@ -108,7 +114,7 @@ internal static partial class GeneratedJsonConverters
                         seen |= 1UL << 0;
                         break;
 
-                    case "Right":
+                    case { Length: 5 } when global::System.MemoryExtensions.SequenceEqual(name, "Right"u8):
                         arg1 = global::PolyType.FastPathJson.SerializationHelpers.Read<global::TestNamespace.Tree, global::TestNamespace.Tree>(ref reader);
                         if (arg1 is null)
                         {

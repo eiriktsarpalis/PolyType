@@ -10,7 +10,7 @@ The [example JSON serializer](https://github.com/eiriktsarpalis/PolyType/tree/ma
 
 The [benchmark suite](https://github.com/eiriktsarpalis/PolyType/blob/main/tests/PolyType.Benchmarks/JsonBenchmark.cs) compares nine payloads, from a single integer to megabytes of JSON, across six serialization and five deserialization configurations. All use default JSON settings, cached metadata/converters, and equivalent valid inputs. Setup checks that every serialization path produces equivalent JSON and that all deserialization paths round-trip correctly.
 
-All **99 measurements** and all eight charts were refreshed on **October 27, 2026**, using the same benchmark job settings as the previous Windows run.
+All **99 measurements** and all eight charts were refreshed on **October 28, 2026**, using the same benchmark job settings as the previous run.
 
 Measurements used an Apple M4 Pro (14 cores, Arm64), macOS 27.0.1 (26A434), BenchmarkDotNet 0.16.0-preview.2, and .NET 11.0.0-rc.3.26522.148 with SDK `11.0.100-rc.3.26522.148`, Release configuration, and concurrent server GC. BenchmarkDotNet could not elevate process priority on this host. Host and runtime details are included in the exported dataset.
 
@@ -24,15 +24,15 @@ The comparison includes STJ reflection, STJ source-generated metadata, PolyType 
 
 ### Serialization
 
-With source-generated shapes, PolyType's collection and object writers took **1.08-1.46x** the time of the PolyType fast path baseline. Its small- and large-POCO writers took **1.34x and 1.10x** the time of STJ's fast path, respectively, while using **35% and 12% less elapsed time** than STJ metadata. The `List<int>` writer took **1.29x** the time of STJ metadata; the other payloads used less elapsed time. These comparisons describe measured means on this host, not cross-platform guarantees or significance tests.
+With source-generated shapes, PolyType's collection and object writers took **1.06-1.34x** the time of the PolyType fast path baseline. Its small- and large-POCO writers took **1.35x and 1.11x** the time of STJ's fast path, respectively, while using **35% and 11% less elapsed time** than STJ metadata. The `List<int>` writer took **1.09x** the time of STJ metadata; the `int[]` writer was effectively tied. These comparisons describe measured means on this host, not cross-platform guarantees or significance tests.
 
 Both shape-driven PolyType configurations and the fast-path baseline allocated no managed memory in these warmed, reused-buffer serialization cases. This does not include producing a new output string or byte array for each call.
 
 ### Deserialization
 
-With source-generated shapes, the PolyType reader used **7-52% less elapsed time than STJ metadata** across eight of the nine payloads. The exception was `List<int>`, which took **1.02x** the time of STJ metadata. For the large POCO, CITM batch, and large-object batch, its times were **0.98x, 0.98x, and 0.97x** the PolyType fast path baseline, respectively.
+With source-generated shapes, the PolyType reader used **6-52% less elapsed time than STJ metadata** across seven of the nine payloads. The `int[]` reader was effectively tied (**0.99x**), while `List<int>` took **1.03x** the time of STJ metadata. For the large POCO, CITM batch, and large-object batch, its times were **1.07x, 1.09x, and 1.08x** the PolyType fast path baseline, respectively.
 
-For the CITM batch, the PolyType reader with source-generated shapes allocated **2.80 MiB per read**, compared with **5.73 MiB** for STJ metadata and **10.80 MiB** for the PolyType fast path baseline.
+For the CITM batch, the PolyType reader with source-generated shapes allocated **2.80 MiB per read**, compared with **5.73 MiB** for both STJ metadata and the PolyType fast path baseline. For the small POCO, both shape-driven PolyType readers and the fast-path baseline allocated **440 B per read**.
 
 The benchmark measures complete serializers, not the isolated cost of a visitor or member accessor. Differences include serializer algorithms and collection construction as well as dispatch and member access through type shapes. Shape and converter construction are excluded from the timed operations.
 

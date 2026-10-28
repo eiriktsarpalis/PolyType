@@ -22,44 +22,44 @@
 <text x="20" y="110" font-weight="bold" font-size="16">int: 42</text>
 <text x="246" y="140" text-anchor="end">STJ reflection</text>
 <rect x="258" y="124" width="336.00" height="22" fill="#64748b"/>
-<path d="M 593.49 135 H 594.51 M 593.49 130 V 140 M 594.51 130 V 140" stroke="#0f172a" fill="none"/>
-<text x="740" y="140" >1.00x | 22.81 ns | 0 B</text>
+<path d="M 593.87 135 H 594.13 M 593.87 130 V 140 M 594.13 130 V 140" stroke="#0f172a" fill="none"/>
+<text x="740" y="140" >1.00x | 20.69 ns | 0 B</text>
 <text x="246" y="172" text-anchor="end">STJ source-gen metadata</text>
-<rect x="258" y="156" width="335.92" height="22" fill="#2563eb"/>
-<path d="M 593.44 167 H 594.40 M 593.44 162 V 172 M 594.40 162 V 172" stroke="#0f172a" fill="none"/>
-<text x="740" y="172" >1.00x | 22.80 ns | 0 B</text>
+<rect x="258" y="156" width="369.26" height="22" fill="#2563eb"/>
+<path d="M 626.92 167 H 627.60 M 626.92 162 V 172 M 627.60 162 V 172" stroke="#0f172a" fill="none"/>
+<text x="740" y="172" >1.10x | 22.74 ns | 0 B</text>
 <text x="246" y="204" text-anchor="end">PolyType reflection</text>
-<rect x="258" y="188" width="221.17" height="22" fill="#b45309"/>
-<path d="M 479.04 199 H 479.30 M 479.04 194 V 204 M 479.30 194 V 204" stroke="#0f172a" fill="none"/>
-<text x="740" y="204" >0.66x | 15.01 ns | 0 B</text>
+<rect x="258" y="188" width="242.70" height="22" fill="#b45309"/>
+<path d="M 500.24 199 H 501.16 M 500.24 194 V 204 M 501.16 194 V 204" stroke="#0f172a" fill="none"/>
+<text x="740" y="204" >0.72x | 14.95 ns | 0 B</text>
 <text x="246" y="236" text-anchor="end">PolyType source-gen</text>
-<rect x="258" y="220" width="222.59" height="22" fill="#047857"/>
-<path d="M 480.29 231 H 480.89 M 480.29 226 V 236 M 480.89 226 V 236" stroke="#0f172a" fill="none"/>
-<text x="740" y="236" >0.66x | 15.11 ns | 0 B</text>
+<rect x="258" y="220" width="245.13" height="22" fill="#047857"/>
+<path d="M 502.96 231 H 503.30 M 502.96 226 V 236 M 503.30 226 V 236" stroke="#0f172a" fill="none"/>
+<text x="740" y="236" >0.73x | 15.10 ns | 0 B</text>
 <text x="246" y="268" text-anchor="end">PolyType fast path</text>
-<rect x="258" y="252" width="221.54" height="22" fill="#db2777"/>
-<path d="M 479.22 263 H 479.85 M 479.22 258 V 268 M 479.85 258 V 268" stroke="#0f172a" fill="none"/>
-<text x="740" y="268" >0.66x | 15.04 ns | 0 B</text>
+<rect x="258" y="252" width="245.48" height="22" fill="#db2777"/>
+<path d="M 503.31 263 H 503.66 M 503.31 258 V 268 M 503.66 258 V 268" stroke="#0f172a" fill="none"/>
+<text x="740" y="268" >0.73x | 15.12 ns | 0 B</text>
 <text x="20" y="330" font-weight="bold" font-size="16">string: Hello, PolyType!</text>
 <text x="246" y="360" text-anchor="end">STJ reflection</text>
 <rect x="258" y="344" width="336.00" height="22" fill="#64748b"/>
-<path d="M 593.15 355 H 594.85 M 593.15 350 V 360 M 594.85 350 V 360" stroke="#0f172a" fill="none"/>
-<text x="740" y="360" >1.00x | 33.36 ns | 56 B</text>
+<path d="M 593.27 355 H 594.73 M 593.27 350 V 360 M 594.73 350 V 360" stroke="#0f172a" fill="none"/>
+<text x="740" y="360" >1.00x | 34.30 ns | 56 B</text>
 <text x="246" y="392" text-anchor="end">STJ source-gen metadata</text>
-<rect x="258" y="376" width="329.32" height="22" fill="#2563eb"/>
-<path d="M 586.43 387 H 588.20 M 586.43 382 V 392 M 588.20 382 V 392" stroke="#0f172a" fill="none"/>
-<text x="740" y="392" >0.98x | 32.69 ns | 56 B</text>
+<rect x="258" y="376" width="330.09" height="22" fill="#2563eb"/>
+<path d="M 586.99 387 H 589.20 M 586.99 382 V 392 M 589.20 382 V 392" stroke="#0f172a" fill="none"/>
+<text x="740" y="392" >0.98x | 33.70 ns | 56 B</text>
 <text x="246" y="424" text-anchor="end">PolyType reflection</text>
-<rect x="258" y="408" width="279.04" height="22" fill="#b45309"/>
-<path d="M 536.22 419 H 537.87 M 536.22 414 V 424 M 537.87 414 V 424" stroke="#0f172a" fill="none"/>
-<text x="740" y="424" >0.83x | 27.70 ns | 56 B</text>
+<rect x="258" y="408" width="267.30" height="22" fill="#b45309"/>
+<path d="M 524.76 419 H 525.85 M 524.76 414 V 424 M 525.85 414 V 424" stroke="#0f172a" fill="none"/>
+<text x="740" y="424" >0.80x | 27.29 ns | 56 B</text>
 <text x="246" y="456" text-anchor="end">PolyType source-gen</text>
-<rect x="258" y="440" width="259.54" height="22" fill="#047857"/>
-<path d="M 517.08 451 H 517.99 M 517.08 446 V 456 M 517.99 446 V 456" stroke="#0f172a" fill="none"/>
-<text x="740" y="456" >0.77x | 25.77 ns | 56 B</text>
+<rect x="258" y="440" width="264.78" height="22" fill="#047857"/>
+<path d="M 522.02 451 H 523.55 M 522.02 446 V 456 M 523.55 446 V 456" stroke="#0f172a" fill="none"/>
+<text x="740" y="456" >0.79x | 27.03 ns | 56 B</text>
 <text x="246" y="488" text-anchor="end">PolyType fast path</text>
-<rect x="258" y="472" width="269.56" height="22" fill="#db2777"/>
-<path d="M 527.28 483 H 527.85 M 527.28 478 V 488 M 527.85 478 V 488" stroke="#0f172a" fill="none"/>
-<text x="740" y="488" >0.80x | 26.76 ns | 56 B</text>
+<rect x="258" y="472" width="292.95" height="22" fill="#db2777"/>
+<path d="M 549.70 483 H 552.21 M 549.70 478 V 488 M 552.21 478 V 488" stroke="#0f172a" fill="none"/>
+<text x="740" y="488" >0.87x | 29.91 ns | 56 B</text>
 </g>
 </svg>

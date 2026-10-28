@@ -931,6 +931,7 @@ public partial class Payload : global::PolyType.FastPathJson.IJsonSerializable<g
         int arg63 = default;
         ulong seen = 0;
 
+        global::System.Span<byte> propertyNameBuffer = stackalloc byte[256];
         while (true)
         {
             global::PolyType.FastPathJson.SerializationHelpers.EnsureRead(ref reader);
@@ -938,333 +939,338 @@ public partial class Payload : global::PolyType.FastPathJson.IJsonSerializable<g
             {
                 break;
             }
-        
+
             if (reader.TokenType is global::System.Text.Json.JsonTokenType.Comment)
             {
                 global::PolyType.FastPathJson.SerializationHelpers.EnsureToken(ref reader, global::System.Text.Json.JsonTokenType.PropertyName);
             }
-        
-            string name = reader.GetString()!;
+
+            if (!global::PolyType.FastPathJson.SerializationHelpers.TryGetUtf8PropertyName(in reader, propertyNameBuffer, out global::System.ReadOnlySpan<byte> name))
+            {
+                global::PolyType.FastPathJson.SerializationHelpers.EnsureRead(ref reader);
+                reader.Skip();
+                continue;
+            }
             global::PolyType.FastPathJson.SerializationHelpers.EnsureRead(ref reader);
-        
+
             switch (name)
             {
-                case "P0":
+                case [_, (byte)'0'] when global::System.MemoryExtensions.SequenceEqual(name, "P0"u8):
                     arg0 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 0;
                     break;
 
-                case "P1":
+                case [_, (byte)'1'] when global::System.MemoryExtensions.SequenceEqual(name, "P1"u8):
                     arg1 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 1;
                     break;
 
-                case "P2":
+                case [_, (byte)'2'] when global::System.MemoryExtensions.SequenceEqual(name, "P2"u8):
                     arg2 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 2;
                     break;
 
-                case "P3":
+                case [_, (byte)'3'] when global::System.MemoryExtensions.SequenceEqual(name, "P3"u8):
                     arg3 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 3;
                     break;
 
-                case "P4":
+                case [_, (byte)'4'] when global::System.MemoryExtensions.SequenceEqual(name, "P4"u8):
                     arg4 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 4;
                     break;
 
-                case "P5":
+                case [_, (byte)'5'] when global::System.MemoryExtensions.SequenceEqual(name, "P5"u8):
                     arg5 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 5;
                     break;
 
-                case "P6":
+                case [_, (byte)'6'] when global::System.MemoryExtensions.SequenceEqual(name, "P6"u8):
                     arg6 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 6;
                     break;
 
-                case "P7":
+                case [_, (byte)'7'] when global::System.MemoryExtensions.SequenceEqual(name, "P7"u8):
                     arg7 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 7;
                     break;
 
-                case "P8":
+                case [_, (byte)'8'] when global::System.MemoryExtensions.SequenceEqual(name, "P8"u8):
                     arg8 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 8;
                     break;
 
-                case "P9":
+                case [_, (byte)'9'] when global::System.MemoryExtensions.SequenceEqual(name, "P9"u8):
                     arg9 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 9;
                     break;
 
-                case "P10":
+                case [_, _, (byte)'0'] when global::System.MemoryExtensions.SequenceEqual(name, "P10"u8):
                     arg10 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 10;
                     break;
 
-                case "P11":
+                case [_, _, (byte)'1'] when global::System.MemoryExtensions.SequenceEqual(name, "P11"u8):
                     arg11 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 11;
                     break;
 
-                case "P12":
+                case [_, _, (byte)'2'] when global::System.MemoryExtensions.SequenceEqual(name, "P12"u8):
                     arg12 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 12;
                     break;
 
-                case "P13":
+                case [_, _, (byte)'3'] when global::System.MemoryExtensions.SequenceEqual(name, "P13"u8):
                     arg13 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 13;
                     break;
 
-                case "P14":
+                case [_, _, (byte)'4'] when global::System.MemoryExtensions.SequenceEqual(name, "P14"u8):
                     arg14 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 14;
                     break;
 
-                case "P15":
+                case [_, _, (byte)'5'] when global::System.MemoryExtensions.SequenceEqual(name, "P15"u8):
                     arg15 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 15;
                     break;
 
-                case "P16":
+                case [_, _, (byte)'6'] when global::System.MemoryExtensions.SequenceEqual(name, "P16"u8):
                     arg16 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 16;
                     break;
 
-                case "P17":
+                case [_, _, (byte)'7'] when global::System.MemoryExtensions.SequenceEqual(name, "P17"u8):
                     arg17 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 17;
                     break;
 
-                case "P18":
+                case [_, _, (byte)'8'] when global::System.MemoryExtensions.SequenceEqual(name, "P18"u8):
                     arg18 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 18;
                     break;
 
-                case "P19":
+                case [_, _, (byte)'9'] when global::System.MemoryExtensions.SequenceEqual(name, "P19"u8):
                     arg19 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 19;
                     break;
 
-                case "P20":
+                case [_, _, (byte)'0'] when global::System.MemoryExtensions.SequenceEqual(name, "P20"u8):
                     arg20 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 20;
                     break;
 
-                case "P21":
+                case [_, _, (byte)'1'] when global::System.MemoryExtensions.SequenceEqual(name, "P21"u8):
                     arg21 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 21;
                     break;
 
-                case "P22":
+                case [_, _, (byte)'2'] when global::System.MemoryExtensions.SequenceEqual(name, "P22"u8):
                     arg22 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 22;
                     break;
 
-                case "P23":
+                case [_, _, (byte)'3'] when global::System.MemoryExtensions.SequenceEqual(name, "P23"u8):
                     arg23 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 23;
                     break;
 
-                case "P24":
+                case [_, _, (byte)'4'] when global::System.MemoryExtensions.SequenceEqual(name, "P24"u8):
                     arg24 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 24;
                     break;
 
-                case "P25":
+                case [_, _, (byte)'5'] when global::System.MemoryExtensions.SequenceEqual(name, "P25"u8):
                     arg25 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 25;
                     break;
 
-                case "P26":
+                case [_, _, (byte)'6'] when global::System.MemoryExtensions.SequenceEqual(name, "P26"u8):
                     arg26 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 26;
                     break;
 
-                case "P27":
+                case [_, _, (byte)'7'] when global::System.MemoryExtensions.SequenceEqual(name, "P27"u8):
                     arg27 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 27;
                     break;
 
-                case "P28":
+                case [_, _, (byte)'8'] when global::System.MemoryExtensions.SequenceEqual(name, "P28"u8):
                     arg28 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 28;
                     break;
 
-                case "P29":
+                case [_, _, (byte)'9'] when global::System.MemoryExtensions.SequenceEqual(name, "P29"u8):
                     arg29 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 29;
                     break;
 
-                case "P30":
+                case [_, _, (byte)'0'] when global::System.MemoryExtensions.SequenceEqual(name, "P30"u8):
                     arg30 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 30;
                     break;
 
-                case "P31":
+                case [_, _, (byte)'1'] when global::System.MemoryExtensions.SequenceEqual(name, "P31"u8):
                     arg31 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 31;
                     break;
 
-                case "P32":
+                case [_, _, (byte)'2'] when global::System.MemoryExtensions.SequenceEqual(name, "P32"u8):
                     arg32 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 32;
                     break;
 
-                case "P33":
+                case [_, _, (byte)'3'] when global::System.MemoryExtensions.SequenceEqual(name, "P33"u8):
                     arg33 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 33;
                     break;
 
-                case "P34":
+                case [_, _, (byte)'4'] when global::System.MemoryExtensions.SequenceEqual(name, "P34"u8):
                     arg34 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 34;
                     break;
 
-                case "P35":
+                case [_, _, (byte)'5'] when global::System.MemoryExtensions.SequenceEqual(name, "P35"u8):
                     arg35 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 35;
                     break;
 
-                case "P36":
+                case [_, _, (byte)'6'] when global::System.MemoryExtensions.SequenceEqual(name, "P36"u8):
                     arg36 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 36;
                     break;
 
-                case "P37":
+                case [_, _, (byte)'7'] when global::System.MemoryExtensions.SequenceEqual(name, "P37"u8):
                     arg37 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 37;
                     break;
 
-                case "P38":
+                case [_, _, (byte)'8'] when global::System.MemoryExtensions.SequenceEqual(name, "P38"u8):
                     arg38 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 38;
                     break;
 
-                case "P39":
+                case [_, _, (byte)'9'] when global::System.MemoryExtensions.SequenceEqual(name, "P39"u8):
                     arg39 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 39;
                     break;
 
-                case "P40":
+                case [_, _, (byte)'0'] when global::System.MemoryExtensions.SequenceEqual(name, "P40"u8):
                     arg40 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 40;
                     break;
 
-                case "P41":
+                case [_, _, (byte)'1'] when global::System.MemoryExtensions.SequenceEqual(name, "P41"u8):
                     arg41 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 41;
                     break;
 
-                case "P42":
+                case [_, _, (byte)'2'] when global::System.MemoryExtensions.SequenceEqual(name, "P42"u8):
                     arg42 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 42;
                     break;
 
-                case "P43":
+                case [_, _, (byte)'3'] when global::System.MemoryExtensions.SequenceEqual(name, "P43"u8):
                     arg43 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 43;
                     break;
 
-                case "P44":
+                case [_, _, (byte)'4'] when global::System.MemoryExtensions.SequenceEqual(name, "P44"u8):
                     arg44 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 44;
                     break;
 
-                case "P45":
+                case [_, _, (byte)'5'] when global::System.MemoryExtensions.SequenceEqual(name, "P45"u8):
                     arg45 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 45;
                     break;
 
-                case "P46":
+                case [_, _, (byte)'6'] when global::System.MemoryExtensions.SequenceEqual(name, "P46"u8):
                     arg46 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 46;
                     break;
 
-                case "P47":
+                case [_, _, (byte)'7'] when global::System.MemoryExtensions.SequenceEqual(name, "P47"u8):
                     arg47 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 47;
                     break;
 
-                case "P48":
+                case [_, _, (byte)'8'] when global::System.MemoryExtensions.SequenceEqual(name, "P48"u8):
                     arg48 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 48;
                     break;
 
-                case "P49":
+                case [_, _, (byte)'9'] when global::System.MemoryExtensions.SequenceEqual(name, "P49"u8):
                     arg49 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 49;
                     break;
 
-                case "P50":
+                case [_, _, (byte)'0'] when global::System.MemoryExtensions.SequenceEqual(name, "P50"u8):
                     arg50 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 50;
                     break;
 
-                case "P51":
+                case [_, _, (byte)'1'] when global::System.MemoryExtensions.SequenceEqual(name, "P51"u8):
                     arg51 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 51;
                     break;
 
-                case "P52":
+                case [_, _, (byte)'2'] when global::System.MemoryExtensions.SequenceEqual(name, "P52"u8):
                     arg52 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 52;
                     break;
 
-                case "P53":
+                case [_, _, (byte)'3'] when global::System.MemoryExtensions.SequenceEqual(name, "P53"u8):
                     arg53 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 53;
                     break;
 
-                case "P54":
+                case [_, _, (byte)'4'] when global::System.MemoryExtensions.SequenceEqual(name, "P54"u8):
                     arg54 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 54;
                     break;
 
-                case "P55":
+                case [_, _, (byte)'5'] when global::System.MemoryExtensions.SequenceEqual(name, "P55"u8):
                     arg55 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 55;
                     break;
 
-                case "P56":
+                case [_, _, (byte)'6'] when global::System.MemoryExtensions.SequenceEqual(name, "P56"u8):
                     arg56 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 56;
                     break;
 
-                case "P57":
+                case [_, _, (byte)'7'] when global::System.MemoryExtensions.SequenceEqual(name, "P57"u8):
                     arg57 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 57;
                     break;
 
-                case "P58":
+                case [_, _, (byte)'8'] when global::System.MemoryExtensions.SequenceEqual(name, "P58"u8):
                     arg58 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 58;
                     break;
 
-                case "P59":
+                case [_, _, (byte)'9'] when global::System.MemoryExtensions.SequenceEqual(name, "P59"u8):
                     arg59 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 59;
                     break;
 
-                case "P60":
+                case [_, _, (byte)'0'] when global::System.MemoryExtensions.SequenceEqual(name, "P60"u8):
                     arg60 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 60;
                     break;
 
-                case "P61":
+                case [_, _, (byte)'1'] when global::System.MemoryExtensions.SequenceEqual(name, "P61"u8):
                     arg61 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 61;
                     break;
 
-                case "P62":
+                case [_, _, (byte)'2'] when global::System.MemoryExtensions.SequenceEqual(name, "P62"u8):
                     arg62 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 62;
                     break;
 
-                case "P63":
+                case [_, _, (byte)'3'] when global::System.MemoryExtensions.SequenceEqual(name, "P63"u8):
                     arg63 = global::PolyType.FastPathJson.SerializationHelpers.Read<int, global::PolyType.FastPathJson.Converters.Int32Converter>(ref reader);
                     seen |= 1UL << 63;
                     break;

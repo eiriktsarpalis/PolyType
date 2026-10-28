@@ -63,6 +63,7 @@ public partial class DictionaryHolder : global::PolyType.FastPathJson.IJsonSeria
         global::System.Collections.Generic.SortedList<int, string>? arg1 = default;
         ulong seen = 0;
 
+        global::System.Span<byte> propertyNameBuffer = stackalloc byte[256];
         while (true)
         {
             global::PolyType.FastPathJson.SerializationHelpers.EnsureRead(ref reader);
@@ -70,23 +71,28 @@ public partial class DictionaryHolder : global::PolyType.FastPathJson.IJsonSeria
             {
                 break;
             }
-        
+
             if (reader.TokenType is global::System.Text.Json.JsonTokenType.Comment)
             {
                 global::PolyType.FastPathJson.SerializationHelpers.EnsureToken(ref reader, global::System.Text.Json.JsonTokenType.PropertyName);
             }
-        
-            string name = reader.GetString()!;
+
+            if (!global::PolyType.FastPathJson.SerializationHelpers.TryGetUtf8PropertyName(in reader, propertyNameBuffer, out global::System.ReadOnlySpan<byte> name))
+            {
+                global::PolyType.FastPathJson.SerializationHelpers.EnsureRead(ref reader);
+                reader.Skip();
+                continue;
+            }
             global::PolyType.FastPathJson.SerializationHelpers.EnsureRead(ref reader);
-        
+
             switch (name)
             {
-                case "Lookup":
+                case { Length: 6 } when global::System.MemoryExtensions.SequenceEqual(name, "Lookup"u8):
                     arg0 = global::PolyType.FastPathJson.SerializationHelpers.Read<global::System.Collections.Generic.Dictionary<string, int>, global::PolyType.FastPathJson.Converters.DictionaryConverter<string, int, global::PolyType.FastPathJson.Converters.StringConverter, global::PolyType.FastPathJson.Converters.Int32Converter>>(ref reader);
                     seen |= 1UL << 0;
                     break;
 
-                case "Ordered":
+                case { Length: 7 } when global::System.MemoryExtensions.SequenceEqual(name, "Ordered"u8):
                     arg1 = global::PolyType.FastPathJson.SerializationHelpers.Read<global::System.Collections.Generic.SortedList<int, string>, global::PolyType.FastPathJson.Generated.GeneratedJsonConverters.SortedList_Int32_StringConverter>(ref reader);
                     seen |= 1UL << 1;
                     break;

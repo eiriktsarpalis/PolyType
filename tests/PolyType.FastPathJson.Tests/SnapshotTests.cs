@@ -40,6 +40,32 @@ public static class SnapshotTests
             [GenerateJson]
             public partial record Person(int Id, string Name, bool IsActive);
             """];
+        yield return ["EscapedPropertyNameDiscriminators", """
+            using System.Text.Json.Serialization;
+            namespace TestNamespace;
+
+            [GenerateJson]
+            public partial record Payload(
+                [property: JsonPropertyName("'a")] int Quote,
+                [property: JsonPropertyName("\\a")] int Backslash,
+                [property: JsonPropertyName("\na")] int Newline,
+                [property: JsonPropertyName("\0a")] int Null,
+                [property: JsonPropertyName("\u00E9")] int Unicode);
+            """];
+        foreach (int nameLength in new[] { 42, 43 })
+        {
+            yield return [$"PropertyNameBuffer{nameLength}", $$"""
+                namespace TestNamespace;
+
+                [GenerateJson]
+                public partial class Payload
+                {
+                    [System.Text.Json.Serialization.JsonPropertyName("{{new string('\u00E9', nameLength)}}")]
+                    public int Value { get; set; }
+                }
+                """];
+        }
+
         yield return ["JsonMetadata", """
             using System;
             using System.Text.Json.Serialization;

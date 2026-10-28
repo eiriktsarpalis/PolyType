@@ -1,3 +1,4 @@
+using PolyType.FastPathJson.Converters;
 using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
@@ -62,6 +63,73 @@ public static class SerializationHelpers
         JavaScriptEncoder? encoder = writer.Options.Encoder;
 
         return encoder is null || ReferenceEquals(encoder, JavaScriptEncoder.Default);
+    }
+
+    /// <summary>Gets the unescaped UTF-8 property name, borrowing contiguous unescaped input when possible.</summary>
+    /// <param name="reader">The reader positioned on a property name.</param>
+    /// <param name="buffer">Scratch space for escaped or segmented names.</param>
+    /// <param name="rented">A reusable pooled buffer, returned by the caller to <see cref="System.Buffers.ArrayPool{T}.Shared"/>.</param>
+    /// <returns>The property name, valid until the scratch space or input is reused.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ReadOnlySpan<byte> GetUtf8PropertyName(scoped in Utf8JsonReader reader, Span<byte> buffer, scoped ref byte[]? rented)
+    {
+        if (!reader.HasValueSequence && !reader.ValueIsEscaped)
+        {
+            ReadOnlySpan<byte> name = reader.ValueSpan;
+            if (!System.Text.Unicode.Utf8.IsValid(name))
+            {
+                ThrowInvalidUtf8PropertyName();
+            }
+
+            return name;
+        }
+
+        return ScalarHelpers.GetUtf8Value(in reader, buffer, ref rented);
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void ThrowInvalidUtf8PropertyName() =>
+            throw new InvalidOperationException("Cannot transcode invalid UTF-8 JSON text to UTF-16 string.");
+    }
+
+    /// <summary>Gets a UTF-8 property name without retaining a pooled buffer.</summary>
+    /// <param name="reader">The reader positioned on a property name.</param>
+    /// <param name="buffer">Scratch space large enough for every matching name, including its longest escaped representation.</param>
+    /// <param name="name">The unescaped property name when successful.</param>
+    /// <returns>False for escaped or segmented names whose raw length exceeds the scratch space; otherwise true.</returns>
+    /// <remarks>Oversized names are still validated, but cannot match the caller's known names.</remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryGetUtf8PropertyName(scoped in Utf8JsonReader reader, Span<byte> buffer, out ReadOnlySpan<byte> name)
+    {
+        if ((!reader.HasValueSequence && !reader.ValueIsEscaped) || ScalarHelpers.GetValueLength(in reader) <= buffer.Length)
+        {
+            byte[]? rented = null;
+            name = GetUtf8PropertyName(in reader, buffer, ref rented);
+
+            return true;
+        }
+
+        ValidateOversizedPropertyName(in reader);
+        name = default;
+
+        return false;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void ValidateOversizedPropertyName(scoped in Utf8JsonReader reader)
+        {
+            byte[]? rented = null;
+            try
+            {
+                _ = ScalarHelpers.GetUtf8Value(in reader, Span<byte>.Empty, ref rented);
+            }
+            finally
+            {
+                if (rented is not null)
+                {
+                    System.Buffers.ArrayPool<byte>.Shared.Return(rented);
+                }
+            }
+        }
     }
 
     /// <summary>Advances the reader, throwing if the JSON value is incomplete.</summary>
