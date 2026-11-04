@@ -1,17 +1,18 @@
 ﻿using BenchmarkDotNet.Running;
+using PolyType.FastPathJson;
 using System.Reflection;
 
 if (args is ["--validate-json"])
 {
-    Validate<int>();
-    Validate<string>();
-    Validate<int[]>();
-    Validate<List<int>>();
-    Validate<Dictionary<string, int>>();
-    Validate<MyPoco>();
-    Validate<LargePoco>();
-    Validate<CitmCatalog[]>();
-    Validate<LargePoco[]>();
+    Validate<int, JsonBenchmarkWitness>();
+    Validate<string, JsonBenchmarkWitness>();
+    Validate<int[], JsonBenchmarkWitness>();
+    Validate<List<int>, JsonBenchmarkWitness>();
+    Validate<Dictionary<string, int>, JsonBenchmarkWitness>();
+    Validate<MyPoco, JsonBenchmarkWitness>();
+    Validate<LargePoco, JsonBenchmarkWitness>();
+    Validate<CitmCatalog[], JsonBenchmarkWitness>();
+    Validate<LargePoco[], JsonBenchmarkWitness>();
     return;
 }
 
@@ -23,9 +24,9 @@ if (summaries.Any(summary => summary.HasCriticalValidationErrors || summary.Repo
     Environment.ExitCode = 1;
 }
 
-static void Validate<T>()
+static void Validate<T, TConverter>() where TConverter : IJsonSerializable<T>
 {
-    var benchmark = new JsonSerializeBenchmark<T>();
+    var benchmark = new JsonSerializeBenchmark<T, TConverter>();
     try
     {
         benchmark.Setup();

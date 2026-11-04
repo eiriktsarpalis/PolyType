@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using PolyType.Roslyn;
+using PolyType.Roslyn.Helpers;
 using PolyType.SourceGenerator.Helpers;
 using PolyType.SourceGenerator.Model;
 
@@ -107,7 +108,7 @@ internal sealed partial class SourceFormatter
     }
 
     private static string FormatAccessorParameterName(ParameterShapeModel parameter)
-        => RoslynHelpers.EscapeKeywordIdentifier(parameter.UnderlyingMemberName);
+        => TypeIdentifierHelpers.EscapeKeywordIdentifier(parameter.UnderlyingMemberName);
 
     private static string GetAccessorLocalName(ImmutableEquatableArray<ParameterShapeModel> parameters, string name, GenericTypeModel? genericType = null)
     {

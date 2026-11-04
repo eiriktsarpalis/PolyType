@@ -1,6 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using PolyType;
 using PolyType.Examples.JsonSerializer;
+using PolyType.FastPathJson;
 using PolyType.ReflectionProvider;
 using System.Buffers;
 using System.Text.Json;
@@ -8,7 +9,8 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
-public abstract class JsonBenchmark<T>
+public abstract class JsonBenchmark<T, TConverter>
+    where TConverter : IJsonSerializable<T>
 {
     protected T Value = default!;
     protected byte[] Utf8JsonValue = null!;
@@ -60,6 +62,11 @@ public abstract class JsonBenchmark<T>
             converter.Serialize(Writer, converter.Deserialize(Utf8JsonValue));
             ValidateOutput();
         }
+
+        FastPathJsonSerializer.Serialize<T, TConverter>(Writer, Value);
+        ValidateOutput();
+        FastPathJsonSerializer.Serialize<T, TConverter>(Writer, FastPathJsonSerializer.Deserialize<T, TConverter>(Utf8JsonValue));
+        ValidateOutput();
     }
 
     private void ValidateOutput()
@@ -87,16 +94,17 @@ public abstract class JsonBenchmark<T>
 
 [MemoryDiagnoser(false)]
 [HideColumns("Job", "Error", "StdDev", "Median", "RatioSD")]
-[GenericTypeArguments(typeof(int))]
-[GenericTypeArguments(typeof(string))]
-[GenericTypeArguments(typeof(int[]))]
-[GenericTypeArguments(typeof(List<int>))]
-[GenericTypeArguments(typeof(Dictionary<string, int>))]
-[GenericTypeArguments(typeof(MyPoco))]
-[GenericTypeArguments(typeof(LargePoco))]
-[GenericTypeArguments(typeof(CitmCatalog[]))]
-[GenericTypeArguments(typeof(LargePoco[]))]
-public class JsonSerializeBenchmark<T> : JsonBenchmark<T>
+[GenericTypeArguments(typeof(int), typeof(JsonBenchmarkWitness))]
+[GenericTypeArguments(typeof(string), typeof(JsonBenchmarkWitness))]
+[GenericTypeArguments(typeof(int[]), typeof(JsonBenchmarkWitness))]
+[GenericTypeArguments(typeof(List<int>), typeof(JsonBenchmarkWitness))]
+[GenericTypeArguments(typeof(Dictionary<string, int>), typeof(JsonBenchmarkWitness))]
+[GenericTypeArguments(typeof(MyPoco), typeof(JsonBenchmarkWitness))]
+[GenericTypeArguments(typeof(LargePoco), typeof(JsonBenchmarkWitness))]
+[GenericTypeArguments(typeof(CitmCatalog[]), typeof(JsonBenchmarkWitness))]
+[GenericTypeArguments(typeof(LargePoco[]), typeof(JsonBenchmarkWitness))]
+public class JsonSerializeBenchmark<T, TConverter> : JsonBenchmark<T, TConverter>
+    where TConverter : IJsonSerializable<T>
 {
     [Benchmark(Baseline = true)]
     public void Serialize_StjReflection()
@@ -132,20 +140,28 @@ public class JsonSerializeBenchmark<T> : JsonBenchmark<T>
         PolyTypeSourceGen.Serialize(Writer, Value);
         Reset();
     }
+
+    [Benchmark(Description = "PolyType fast path")]
+    public void Serialize_PolyTypeFastPath()
+    {
+        FastPathJsonSerializer.Serialize<T, TConverter>(Writer, Value);
+        Reset();
+    }
 }
 
 [MemoryDiagnoser(false)]
 [HideColumns("Job", "Error", "StdDev", "Median", "RatioSD")]
-[GenericTypeArguments(typeof(int))]
-[GenericTypeArguments(typeof(string))]
-[GenericTypeArguments(typeof(int[]))]
-[GenericTypeArguments(typeof(List<int>))]
-[GenericTypeArguments(typeof(Dictionary<string, int>))]
-[GenericTypeArguments(typeof(MyPoco))]
-[GenericTypeArguments(typeof(LargePoco))]
-[GenericTypeArguments(typeof(CitmCatalog[]))]
-[GenericTypeArguments(typeof(LargePoco[]))]
-public class JsonDeserializeBenchmark<T> : JsonBenchmark<T>
+[GenericTypeArguments(typeof(int), typeof(JsonBenchmarkWitness))]
+[GenericTypeArguments(typeof(string), typeof(JsonBenchmarkWitness))]
+[GenericTypeArguments(typeof(int[]), typeof(JsonBenchmarkWitness))]
+[GenericTypeArguments(typeof(List<int>), typeof(JsonBenchmarkWitness))]
+[GenericTypeArguments(typeof(Dictionary<string, int>), typeof(JsonBenchmarkWitness))]
+[GenericTypeArguments(typeof(MyPoco), typeof(JsonBenchmarkWitness))]
+[GenericTypeArguments(typeof(LargePoco), typeof(JsonBenchmarkWitness))]
+[GenericTypeArguments(typeof(CitmCatalog[]), typeof(JsonBenchmarkWitness))]
+[GenericTypeArguments(typeof(LargePoco[]), typeof(JsonBenchmarkWitness))]
+public class JsonDeserializeBenchmark<T, TConverter> : JsonBenchmark<T, TConverter>
+    where TConverter : IJsonSerializable<T>
 {
     [Benchmark(Baseline = true)]
     public T? Deserialize_StjReflection()
@@ -162,6 +178,10 @@ public class JsonDeserializeBenchmark<T> : JsonBenchmark<T>
     [Benchmark]
     public T? Deserialize_PolyTypeSourceGen()
         => PolyTypeSourceGen.Deserialize(Utf8JsonValue);
+
+    [Benchmark(Description = "PolyType fast path")]
+    public T? Deserialize_PolyTypeFastPath()
+        => FastPathJsonSerializer.Deserialize<T, TConverter>(Utf8JsonValue);
 }
 
 public static class JsonBenchmarkData
@@ -266,7 +286,16 @@ public class LargePoco
 [GenerateShapeFor<LargePoco>]
 [GenerateShapeFor<CitmCatalog[]>]
 [GenerateShapeFor<LargePoco[]>]
-public partial class JsonBenchmarkWitness;
+[GenerateJsonFor<int>]
+[GenerateJsonFor<string>]
+[GenerateJsonFor<int[]>]
+[GenerateJsonFor<List<int>>]
+[GenerateJsonFor<Dictionary<string, int>>]
+[GenerateJsonFor<MyPoco>]
+[GenerateJsonFor<LargePoco>]
+[GenerateJsonFor<CitmCatalog[]>]
+[GenerateJsonFor<LargePoco[]>]
+public readonly partial struct JsonBenchmarkWitness;
 
 [JsonSerializable(typeof(int))]
 [JsonSerializable(typeof(string))]

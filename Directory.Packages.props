@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <!-- Keep the test compiler aligned with global.json for preview union-pattern semantics. -->
-    <RoslynVersion>5.12.0-1.26519.7</RoslynVersion>
+    <RoslynVersion>5.12.0-1.26552.115</RoslynVersion>
     <RoslynVersionForAnalyzers>4.3.0</RoslynVersionForAnalyzers>
   </PropertyGroup>
   <ItemGroup>
@@ -31,16 +31,16 @@
     <PackageVersion Include="FSharp.Core" Version="10.1.402" />
     <!-- Test infrastructure -->
     <PackageVersion Include="xunit.v3.mtp-v2" Version="4.0.2" />
-    <PackageVersion Include="TUnit" Version="1.75.0" />
-    <PackageVersion Include="TUnit.Assertions" Version="1.75.0" />
-    <PackageVersion Include="TUnit.Engine" Version="1.75.0" />
-    <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.5.1" />
+    <PackageVersion Include="TUnit" Version="1.78.0" />
+    <PackageVersion Include="TUnit.Assertions" Version="1.78.0" />
+    <PackageVersion Include="TUnit.Engine" Version="1.78.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.5.2" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />
-    <PackageVersion Include="Microsoft.Testing.Extensions.CrashDump" Version="2.5.1" />
-    <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="2.5.1" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CrashDump" Version="2.5.2" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="2.5.2" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="1.1.4" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.16.0-preview.2" />
-    <PackageVersion Include="JsonSchema.Net" Version="9.4.1" />
+    <PackageVersion Include="JsonSchema.Net" Version="9.6.0" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsAnalyzerProject)'=='true'">
     <!-- Keep these versions in sync with what Unity documents as supported at 

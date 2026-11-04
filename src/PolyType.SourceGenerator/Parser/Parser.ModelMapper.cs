@@ -856,7 +856,7 @@ public sealed partial class Parser
             model = new GenericTypeModel
             {
                 FullyQualifiedName = CreateTypeId(definition).FullyQualifiedName,
-                TypeParameters = definition.TypeParameters.Select(p => Helpers.RoslynHelpers.EscapeKeywordIdentifier(p.Name)).ToImmutableEquatableArray(),
+                TypeParameters = definition.TypeParameters.Select(p => TypeIdentifierHelpers.EscapeKeywordIdentifier(p.Name)).ToImmutableEquatableArray(),
                 TypeArguments = declaringType.TypeArguments.Select(t => CreateTypeId(t).FullyQualifiedName).ToImmutableEquatableArray(),
                 ConstraintClauses = constraintsStart < 0 ? "" : declaration.Substring(constraintsStart + 1),
             };

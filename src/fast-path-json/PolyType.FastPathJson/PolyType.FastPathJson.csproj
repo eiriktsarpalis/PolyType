@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsAotCompatible>true</IsAotCompatible>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\PolyType.Examples\JsonSerializer\JsonHelpers.Pooling.cs" Link="Shared\JsonHelpers.Pooling.cs" />
+    <Compile Include="..\..\PolyType.Examples\Utilities\ByteBufferWriter.cs" Link="Shared\ByteBufferWriter.cs" />
+    <Compile Include="..\..\Shared\Helpers\DebugExt.cs" Link="Shared\DebugExt.cs" />
+  </ItemGroup>
+</Project>

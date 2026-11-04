@@ -66,8 +66,10 @@ For deeper, scoped detail see the nested files: [`src/PolyType/AGENTS.md`](src/P
 ## Project Layout
 
 - **`src/`** — `PolyType` (core library: both providers, abstractions, attributes), `PolyType.Roslyn` (general-purpose `ITypeSymbol` → model extraction, reusable by third-party generators), `PolyType.SourceGenerator` (built-in incremental generator), `PolyType.Examples` (reference serializers/binders/mappers built on PolyType), `PolyType.TestCases` (+ `.FSharp`, shared test types), and `Shared` (polyfills/helpers).
+- **`src/fast-path-json/`** — `PolyType.FastPathJson` (net10.0 static JSON serialization contract, facade, and reusable converter witnesses) and `PolyType.FastPathJson.SourceGenerator` (netstandard2.0 incremental generator demonstrating direct code generation from `PolyType.Roslyn` models, organized into `Parser`, `Model`, `SourceFormatter`, and `Helpers` folders). These prototype projects are not packaged and do not depend on PolyType runtime shapes.
 - **`tests/`** — `PolyType.Tests` (main xUnit suite), `PolyType.Tests.NativeAOT` (AOT smoke tests, TUnit), `PolyType.SourceGenerator.UnitTests` (generator + snapshot tests), `PolyType.Roslyn.Tests`, `PolyType.Benchmarks` (BenchmarkDotNet; not a test project), and `SizeTrackingApp.AOT` (canonical .NET 11 JSON/configuration-binding app whose published size is tracked per-RID in `aot-size-baselines.json` via `make test-aot-size`).
 - **`applications/`** — five Native AOT sample apps plus one reflection-based app.
+- **`tests/PolyType.FastPathJson.Tests`** — representative JSON compatibility, generator diagnostics/incrementality, and generated-source snapshot tests for the prototype. PolyType.FastPathJson snapshot baselines live under `Snapshots/{TFM}-{Configuration}` and are refreshed with the test project's `UpdateSnapshots` MSBuild target.
 - **`eng/AotSizeCheck/`** — internal CLI that backs `make test-aot-size`.
 
 ## Things to Avoid / Common Gotchas
