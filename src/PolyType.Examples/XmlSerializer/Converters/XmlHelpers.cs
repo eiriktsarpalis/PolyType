@@ -39,7 +39,7 @@ internal static class XmlHelpers
 
     public static bool TryReadNullElement(this XmlReader reader)
     {
-        if (reader.AttributeCount == 1 && reader.IsNullElement())
+        if (reader.IsNullElement())
         {
             reader.Read();
             return true;

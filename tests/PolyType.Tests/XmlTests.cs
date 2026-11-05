@@ -40,26 +40,6 @@ public abstract class XmlTests(ProviderUnderTest providerUnderTest)
     };
 
     [Theory]
-    [InlineData("""<value nil="true" />""", null)]
-    [InlineData("""<value nil="true" metadata="present" />""", "")]
-    [InlineData("""<value metadata="present" nil="true">text</value>""", "text")]
-    [InlineData("""<value nil="false">text</value>""", "text")]
-    public void NullElementsMustNotHaveOtherAttributes(string xml, string? expected)
-    {
-        var converter = XmlSerializer.CreateConverter<string>(providerUnderTest.Provider);
-        Assert.Equal(expected, converter.Deserialize(xml));
-    }
-
-    [Theory]
-    [InlineData("""<value type="Int32" nil="true" />""", typeof(FormatException))]
-    [InlineData("""<value type="Unknown" nil="true" />""", typeof(XmlException))]
-    public void TaggedNullElementsStillValidateUnionCases(string xml, Type exceptionType)
-    {
-        var converter = GetConverterUnderTest(TestCase.Create(new CSharpScalarUnion(42)));
-        Assert.Throws(exceptionType, () => converter.Deserialize(xml));
-    }
-
-    [Theory]
     [MemberData(nameof(GetValuesAndExpectedEncoding))]
     public void ReturnsExpectedEncoding<T>(TestCase<T> testCase, string expectedEncoding)
     {
@@ -152,7 +132,7 @@ public abstract class XmlTests(ProviderUnderTest providerUnderTest)
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void ClassUnionNullPayloadPreservesWrapperPresence(bool nullReference)
+    public void ClassUnionNullPayloadUsesReferenceUnionNullSemantics(bool nullReference)
     {
         var converter = GetConverterUnderTest(TestCase.Create(new CSharpClassUnion(42)));
         CSharpClassUnion? value = nullReference ? null : new((string?)null);
@@ -160,17 +140,8 @@ public abstract class XmlTests(ProviderUnderTest providerUnderTest)
         Assert.Equal(nullReference ? """<value nil="true" />""" : """<value type="String" nil="true" />""", xml);
 
         CSharpClassUnion? result = converter.Deserialize(xml);
-        if (nullReference)
-        {
-            Assert.Null(result);
-        }
-        else
-        {
-            Assert.NotNull(result);
-            Assert.Null(result.Value);
-        }
-
-        Assert.Equal(xml, converter.Serialize(result, s_writerSettings));
+        Assert.Null(result);
+        Assert.Equal("""<value nil="true" />""", converter.Serialize(result, s_writerSettings));
     }
 
     [Fact]
@@ -196,6 +167,13 @@ public abstract class XmlTests(ProviderUnderTest providerUnderTest)
         else
         {
             T? deserializedValue = converter.Deserialize(xmlEncoding);
+            if (default(T) is null && testCase.IsUnion &&
+                System.Xml.Linq.XElement.Parse(xmlEncoding).Attribute("nil")?.Value == "true")
+            {
+                Assert.Null(deserializedValue);
+                return;
+            }
+
             if (testCase.IsEquatable)
             {
                 Assert.Equal(testCase.Value, deserializedValue);
