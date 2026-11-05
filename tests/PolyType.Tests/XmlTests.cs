@@ -132,6 +132,22 @@ public abstract class XmlTests(ProviderUnderTest providerUnderTest)
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void OptionalUnionNullPayloadPreservesPresenceWithAdditionalAttributes(bool nilFirst)
+    {
+        var testCase = TestCase.Create<CSharpScalarUnion?, Witness>(null, new Witness());
+        var converter = GetConverterUnderTest(testCase);
+        string xml = nilFirst
+            ? """<value nil="true" metadata="present" type="String" />"""
+            : """<value type="String" metadata="present" nil="true" />""";
+
+        CSharpScalarUnion? result = converter.Deserialize(xml);
+        Assert.True(result.HasValue);
+        Assert.Null(result.Value.Value);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ClassUnionNullPayloadUsesReferenceUnionNullSemantics(bool nullReference)
     {
         var converter = GetConverterUnderTest(TestCase.Create(new CSharpClassUnion(42)));

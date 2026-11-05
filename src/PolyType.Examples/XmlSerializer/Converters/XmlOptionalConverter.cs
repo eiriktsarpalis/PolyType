@@ -12,8 +12,9 @@ internal sealed class XmlOptionalConverter<TOptional, TElement>(
 {
     public override TOptional? Read(XmlReader reader)
     {
-        // Only an element union's discriminator distinguishes Some from None.
-        if ((!elementIsUnion || reader.GetAttribute("type") is null) && reader.TryReadNullElement())
+        // For union elements, attributes besides nil identify a present case with a null payload.
+        // Keep this check here so the selected payload converter can still read nil as null.
+        if ((!elementIsUnion || reader.AttributeCount <= 1) && reader.TryReadNullElement())
         {
             return createNone();
         }
