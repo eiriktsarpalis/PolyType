@@ -18,4 +18,4 @@ jobs:
           # Wikipedia rejects the link checker's requests with HTTP 403.
           args: >-
             ./
-            --ignore-links https://en.wikipedia.org/wiki/Generalized_algebraic_data_type
+            --ignore-links "https://en.wikipedia.org/*"
