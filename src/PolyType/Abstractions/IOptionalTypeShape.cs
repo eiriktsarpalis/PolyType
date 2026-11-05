@@ -46,6 +46,10 @@ public interface IOptionalTypeShape<TOptional, TElement> : ITypeShape<TOptional>
     /// <summary>
     /// Gets a deconstructor delegate for <typeparamref name="TOptional"/> instances.
     /// </summary>
+    /// <remarks>
+    /// For <see cref="Nullable{T}"/>, presence is determined by <see cref="Nullable{T}.HasValue"/>,
+    /// independently of the encapsulated value, including union values with null payloads.
+    /// </remarks>
     /// <returns>A delegate for deconstructing <typeparamref name="TOptional"/> instances.</returns>
     OptionDeconstructor<TOptional, TElement> GetDeconstructor();
 }

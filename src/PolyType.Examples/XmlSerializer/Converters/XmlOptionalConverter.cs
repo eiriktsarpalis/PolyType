@@ -5,11 +5,23 @@ namespace PolyType.Examples.XmlSerializer.Converters;
 
 internal sealed class XmlOptionalConverter<TOptional, TElement>(
     XmlConverter<TElement> elementConverter,
+    bool elementUsesDiscriminatorAttribute,
     OptionDeconstructor<TOptional, TElement> deconstructor,
     Func<TOptional> createNone,
     Func<TElement, TOptional> createSome) : XmlConverter<TOptional>
 {
-    public override TOptional? Read(XmlReader reader) => reader.TryReadNullElement() ? createNone() : createSome(elementConverter.Read(reader)!);
+    public override TOptional? Read(XmlReader reader)
+    {
+        // A discriminator distinguishes a present element with a null payload from an absent optional.
+        // Keep this check here so the selected payload converter can still read nil as null.
+        if ((!elementUsesDiscriminatorAttribute || reader.AttributeCount <= 1) && reader.TryReadNullElement())
+        {
+            return createNone();
+        }
+
+        return createSome(elementConverter.Read(reader)!);
+    }
+
     public override void Write(XmlWriter writer, TOptional value)
     {
         if (deconstructor(value, out TElement? element))

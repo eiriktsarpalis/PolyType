@@ -80,7 +80,7 @@ internal sealed partial class SourceFormatter
             string parameters = $$"""static ({{optionalShapeModel.Type.FullyQualifiedName}}{{optionalTypeSuffix}} optional, out {{optionalShapeModel.ElementType.FullyQualifiedName}} element) => """;
             string expr = optionalShapeModel.Kind switch
             {
-                OptionalKind.NullableOfT => $$"""{ if (optional is null) { element = default!; return false; } else { element = optional.Value; return true; } }""",
+                OptionalKind.NullableOfT => $$"""{ if (optional.HasValue) { element = optional.Value; return true; } else { element = default!; return false; } }""",
                 OptionalKind.FSharpOption => $$"""{ if (optional is null) { element = default!; return false; } else { element = optional.Value; return true; } }""",
                 OptionalKind.FSharpValueOption => $$"""{ if (optional.IsNone) { element = default!; return false; } else { element = optional.Value; return true; } }""",
                 _ => throw new InvalidOperationException(),

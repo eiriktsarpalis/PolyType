@@ -438,7 +438,7 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
             IOptionalTypeShape optionalTypeType = Assert.IsAssignableFrom<IOptionalTypeShape>(shape);
             Assert.Equal(typeof(T).GetGenericArguments()[0], optionalTypeType.ElementType.Type);
             var visitor = new OptionalTestVisitor();
-            optionalTypeType.Accept(visitor, state: typeof(T));
+            optionalTypeType.Accept(visitor, state: testCase);
         }
         else
         {
@@ -450,9 +450,25 @@ public abstract partial class TypeShapeProviderTests(ProviderUnderTest providerU
     {
         public override object? VisitOptional<TOptional, TElement>(IOptionalTypeShape<TOptional, TElement> optionalShape, object? state)
         {
-            var type = (Type)state!;
-            Assert.Equal(typeof(TOptional), type);
+            var testCase = (ITestCase)state!;
+            Assert.Equal(typeof(TOptional), testCase.Type);
             Assert.Equal(typeof(TElement), optionalShape.ElementType.Type);
+
+            var deconstructor = optionalShape.GetDeconstructor();
+            Assert.False(deconstructor(optionalShape.GetNoneConstructor()(), out _));
+            Assert.True(deconstructor(optionalShape.GetSomeConstructor()(default!), out TElement? defaultElement));
+            Assert.Equal(default, defaultElement);
+
+            if (Nullable.GetUnderlyingType(typeof(TOptional)) is not null)
+            {
+                bool hasValue = deconstructor((TOptional)testCase.Value!, out TElement? element);
+                Assert.Equal(testCase.Value is not null, hasValue);
+                if (hasValue)
+                {
+                    Assert.Equal(testCase.Value, element);
+                }
+            }
+
             return null;
         }
     }
