@@ -36,13 +36,6 @@ Test conventions:
 - Example-component suites provide sanity checks, not exhaustive specifications. Prefer shared `TestCases` theories and keep kind-specific corner-case tests to at most five per suite.
 - Shared C# union and closed-class fixtures run on every managed test target; Native AOT smoke tests use a small independent fixture set. `PolyType.TestCases` supplies `UnionAttribute`, `IUnion`, and `IsClosedTypeAttribute` polyfills below .NET 11; newer targets use the framework contracts. Static interface factory tests retain runtime guards; System.Text.Json union comparisons use the .NET 11 shared framework.
 
-Source-generator benchmarks:
-
-- Run `dotnet run --project tests/PolyType.Benchmarks -c Release -- --filter '*SourceGeneratorBenchmark*'` for full generator timing and managed allocations.
-- `FullRun` creates a fresh generator driver on every invocation against a prebuilt compilation; input parsing, generated-code compilation, and incremental cache-hit runs are not timed.
-- `ParserOnly` calls the generator's parser with precomputed annotated declarations and semantic models, creating fresh symbol caches and parser state each time. It excludes attribute discovery, driver overhead, and source emission; setup checks that its model matches the full generator's model.
-- The 1- and 100-root workloads include recursive objects, collections, tuples, nullable values, records, enums, and polymorphism. Run `dotnet run --project tests/PolyType.Benchmarks -c Release -- --validate-source-generator` to check generated-code diagnostics and print output fingerprints without timing.
-
 ## Coding Conventions
 
 In addition to the rules enforced by `.editorconfig`, you SHOULD:

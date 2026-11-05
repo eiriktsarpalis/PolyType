@@ -1,17 +1,6 @@
 ﻿using BenchmarkDotNet.Running;
-using PolyType.Benchmarks;
 using PolyType.FastPathJson;
 using System.Reflection;
-
-if (args is ["--validate-source-generator"])
-{
-    foreach (int typeCount in new[] { 1, 100 })
-    {
-        new SourceGeneratorBenchmark { TypeCount = typeCount }.Setup();
-    }
-
-    return;
-}
 
 if (args is ["--validate-json"])
 {
