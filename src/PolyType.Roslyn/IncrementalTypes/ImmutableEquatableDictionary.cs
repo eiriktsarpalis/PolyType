@@ -8,11 +8,15 @@ namespace PolyType.Roslyn;
 /// <summary>
 /// Defines an immutable dictionary that defines structural equality semantics.
 /// </summary>
+/// <remarks>
+/// The default value represents an empty dictionary.
+/// The non-generic <see cref="ICollection.SyncRoot"/> is shared by all instances of the same closed type.
+/// </remarks>
 /// <typeparam name="TKey">The key type of the dictionary.</typeparam>
 /// <typeparam name="TValue">The value type of the dictionary.</typeparam>
 [DebuggerDisplay("Count = {Count}")]
 [DebuggerTypeProxy(typeof(ImmutableEquatableDictionary<,>.DebugView))]
-public sealed class ImmutableEquatableDictionary<TKey, TValue> : 
+public readonly struct ImmutableEquatableDictionary<TKey, TValue> :
     IEquatable<ImmutableEquatableDictionary<TKey, TValue>>,
     IDictionary<TKey, TValue>, 
     IReadOnlyDictionary<TKey, TValue>, 
@@ -24,53 +28,51 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> :
     /// <summary>
     /// An empty <see cref="ImmutableEquatableDictionary{TKey, TValue}"/> instance.
     /// </summary>
-    public static ImmutableEquatableDictionary<TKey, TValue> Empty { get; } = new([]);
+    public static ImmutableEquatableDictionary<TKey, TValue> Empty => default;
 
-    private readonly Dictionary<TKey, TValue> _values;
+    private static readonly Dictionary<TKey, TValue> s_emptyValues = [];
+    private static readonly object s_syncRoot = new();
+    private readonly Dictionary<TKey, TValue>? _values;
+    private Dictionary<TKey, TValue> Entries => _values ?? s_emptyValues;
 
     private ImmutableEquatableDictionary(Dictionary<TKey, TValue> values)
     {
         Debug.Assert(values.Comparer == EqualityComparer<TKey>.Default);
-        _values = values;
+        _values = values.Count == 0 ? null : values;
     }
 
     /// <summary>
     /// Gets the number of key/value pairs in the dictionary.
     /// </summary>
-    public int Count => _values.Count;
+    public int Count => _values?.Count ?? 0;
 
     /// <summary>
     /// Determines whether the dictionary contains the specified key.
     /// </summary>
-    public bool ContainsKey(TKey key) => _values.ContainsKey(key);
+    public bool ContainsKey(TKey key) => Entries.ContainsKey(key);
 
     /// <summary>
     /// Try to get the value associated with the specified key.
     /// </summary>
 #pragma warning disable CS8767 // netstandard2.0 interfaces do not carry nullable flow annotations.
-    public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => _values.TryGetValue(key, out value);
+    public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => Entries.TryGetValue(key, out value);
 #pragma warning restore CS8767
 
     /// <summary>
     /// Gets the value associated with the specified key.
     /// </summary>
-    public TValue this[TKey key] => _values[key];
+    public TValue this[TKey key] => Entries[key];
 
     /// <inheritdoc/>
-    public bool Equals(ImmutableEquatableDictionary<TKey, TValue>? other)
+    public bool Equals(ImmutableEquatableDictionary<TKey, TValue> other)
     {
-        if (ReferenceEquals(this, other))
+        if (ReferenceEquals(_values, other._values))
         {
             return true;
         }
 
-        if (other is null)
-        {
-            return false;
-        }
-
-        Dictionary<TKey, TValue> thisDict = _values;
-        Dictionary<TKey, TValue> otherDict = other._values;
+        Dictionary<TKey, TValue> thisDict = Entries;
+        Dictionary<TKey, TValue> otherDict = other.Entries;
         if (thisDict.Count != otherDict.Count)
         {
             return false;
@@ -92,11 +94,23 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> :
     public override bool Equals(object? obj)
         => obj is ImmutableEquatableDictionary<TKey, TValue> other && Equals(other);
 
+    /// <summary>Determines whether two dictionaries are structurally equal.</summary>
+    /// <param name="left">The first dictionary.</param>
+    /// <param name="right">The second dictionary.</param>
+    /// <returns>Whether the dictionaries are equal.</returns>
+    public static bool operator ==(ImmutableEquatableDictionary<TKey, TValue> left, ImmutableEquatableDictionary<TKey, TValue> right) => left.Equals(right);
+
+    /// <summary>Determines whether two dictionaries are structurally unequal.</summary>
+    /// <param name="left">The first dictionary.</param>
+    /// <param name="right">The second dictionary.</param>
+    /// <returns>Whether the dictionaries are unequal.</returns>
+    public static bool operator !=(ImmutableEquatableDictionary<TKey, TValue> left, ImmutableEquatableDictionary<TKey, TValue> right) => !left.Equals(right);
+
     /// <inheritdoc/>
     public override int GetHashCode()
     {
         int hash = 0;
-        foreach (KeyValuePair<TKey, TValue> entry in _values)
+        foreach (KeyValuePair<TKey, TValue> entry in Entries)
         {
             int keyHash = entry.Key.GetHashCode();
             int valueHash = entry.Value?.GetHashCode() ?? 0;
@@ -107,46 +121,46 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> :
     }
 
     /// <summary>Gets an enumerator that iterates through the dictionary.</summary>
-    public Dictionary<TKey, TValue>.Enumerator GetEnumerator() => _values.GetEnumerator();
+    public Dictionary<TKey, TValue>.Enumerator GetEnumerator() => Entries.GetEnumerator();
 
     /// <summary>
     /// Gets a collection containing the keys in the dictionary.
     /// </summary>
-    public Dictionary<TKey, TValue>.KeyCollection Keys => _values.Keys;
+    public Dictionary<TKey, TValue>.KeyCollection Keys => Entries.Keys;
 
     /// <summary>
     /// Gets a collection containing the values in the dictionary.
     /// </summary>
-    public Dictionary<TKey, TValue>.ValueCollection Values => _values.Values;
+    public Dictionary<TKey, TValue>.ValueCollection Values => Entries.Values;
 
     [EditorBrowsable(EditorBrowsableState.Never)]
     internal static ImmutableEquatableDictionary<TKey, TValue> UnsafeCreateFromDictionary(Dictionary<TKey, TValue> values)
         => new(values);
 
     #region Explicit interface implementations
-    IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() => _values.GetEnumerator();
-    IEnumerator IEnumerable.GetEnumerator() => _values.GetEnumerator();
-    IDictionaryEnumerator IDictionary.GetEnumerator() => ((IDictionary)_values).GetEnumerator();
-    IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => _values.Keys;
-    IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => _values.Values;
-    ICollection<TKey> IDictionary<TKey, TValue>.Keys => _values.Keys;
-    ICollection<TValue> IDictionary<TKey, TValue>.Values => _values.Values;
-    ICollection IDictionary.Keys => _values.Keys;
-    ICollection IDictionary.Values => _values.Values;
+    IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() => Entries.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => Entries.GetEnumerator();
+    IDictionaryEnumerator IDictionary.GetEnumerator() => ((IDictionary)Entries).GetEnumerator();
+    IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Entries.Keys;
+    IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Entries.Values;
+    ICollection<TKey> IDictionary<TKey, TValue>.Keys => Entries.Keys;
+    ICollection<TValue> IDictionary<TKey, TValue>.Values => Entries.Values;
+    ICollection IDictionary.Keys => Entries.Keys;
+    ICollection IDictionary.Values => Entries.Values;
 
     bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly => true;
     bool IDictionary.IsReadOnly => true;
     bool IDictionary.IsFixedSize => true;
     bool ICollection.IsSynchronized => false;
-    object ICollection.SyncRoot => this;
+    object ICollection.SyncRoot => s_syncRoot;
 
-    TValue IDictionary<TKey, TValue>.this[TKey key] { get => _values[key]; set => throw new InvalidOperationException(); }
-    object IDictionary.this[object key] { get => ((IDictionary)_values)[key]; set => throw new InvalidOperationException(); }
-    bool IDictionary.Contains(object key) => ((IDictionary)_values).Contains(key);
-    void ICollection.CopyTo(Array array, int index) => ((IDictionary)_values).CopyTo(array, index);
-    bool ICollection<KeyValuePair<TKey, TValue>>.Contains(KeyValuePair<TKey, TValue> item) => _values.Contains(item);
+    TValue IDictionary<TKey, TValue>.this[TKey key] { get => Entries[key]; set => throw new InvalidOperationException(); }
+    object IDictionary.this[object key] { get => ((IDictionary)Entries)[key]; set => throw new InvalidOperationException(); }
+    bool IDictionary.Contains(object key) => ((IDictionary)Entries).Contains(key);
+    void ICollection.CopyTo(Array array, int index) => ((IDictionary)Entries).CopyTo(array, index);
+    bool ICollection<KeyValuePair<TKey, TValue>>.Contains(KeyValuePair<TKey, TValue> item) => Entries.Contains(item);
     void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) 
-        => ((ICollection<KeyValuePair<TKey,TValue>>)_values).CopyTo(array, arrayIndex);
+        => ((ICollection<KeyValuePair<TKey,TValue>>)Entries).CopyTo(array, arrayIndex);
 
     void IDictionary<TKey, TValue>.Add(TKey key, TValue value) => throw new InvalidOperationException();
     bool IDictionary<TKey, TValue>.Remove(TKey key) => throw new InvalidOperationException();
@@ -161,7 +175,7 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> :
     private sealed class DebugView(ImmutableEquatableDictionary<TKey, TValue> collection)
     {
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public DebugViewDictionaryItem[] Entries => collection._values.Select(kvp => new DebugViewDictionaryItem(kvp)).ToArray();
+        public DebugViewDictionaryItem[] Entries => collection.Entries.Select(kvp => new DebugViewDictionaryItem(kvp)).ToArray();
     }
 
     [DebuggerDisplay("{Value}", Name = "[{Key}]")]

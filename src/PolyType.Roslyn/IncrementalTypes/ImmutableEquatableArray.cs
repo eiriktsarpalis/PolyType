@@ -9,11 +9,15 @@ namespace PolyType.Roslyn;
 /// <summary>
 /// Defines an immutable array that defines structural equality semantics.
 /// </summary>
+/// <remarks>
+/// The default value represents an empty array.
+/// The non-generic <see cref="ICollection.SyncRoot"/> is shared by all instances of the same closed type.
+/// </remarks>
 /// <typeparam name="T">The type of the array elements.</typeparam>
 [DebuggerDisplay("Length = {Length}")]
 [DebuggerTypeProxy(typeof(ImmutableEquatableArray<>.DebugView))]
 [CollectionBuilder(typeof(ImmutableEquatableArray), nameof(ImmutableEquatableArray.Create))]
-public sealed class ImmutableEquatableArray<T> : 
+public readonly struct ImmutableEquatableArray<T> :
     IEquatable<ImmutableEquatableArray<T>>, 
     IReadOnlyList<T>, 
     IList<T>, 
@@ -22,34 +26,36 @@ public sealed class ImmutableEquatableArray<T> :
     /// <summary>
     /// An empty <see cref="ImmutableEquatableArray{T}"/> instance.
     /// </summary>
-    public static ImmutableEquatableArray<T> Empty { get; } = new([]);
+    public static ImmutableEquatableArray<T> Empty => default;
 
-    private readonly T[] _values;
+    private readonly T[]? _values;
+    private static readonly object s_syncRoot = new();
+    private T[] Values => _values ?? Array.Empty<T>();
 
     /// <summary>
     /// Gets the element at the specified index.
     /// </summary>
-    public ref readonly T this[int index] => ref _values[index];
+    public ref readonly T this[int index] => ref Values[index];
 
     /// <summary>
     /// Gets the number of elements in the array.
     /// </summary>
-    public int Length => _values.Length;
+    public int Length => _values?.Length ?? 0;
 
     private ImmutableEquatableArray(T[] values)
     {
-        _values = values;
+        _values = values.Length == 0 ? null : values;
     }
 
     /// <inheritdoc/>
-    public bool Equals(ImmutableEquatableArray<T>? other)
+    public bool Equals(ImmutableEquatableArray<T> other)
     {
-        if (ReferenceEquals(this, other))
+        if (ReferenceEquals(_values, other._values))
         {
             return true;
         }
 
-        if (other is null || Length != other.Length)
+        if (Length != other.Length)
         {
             return false;
         }
@@ -57,7 +63,7 @@ public sealed class ImmutableEquatableArray<T> :
         EqualityComparer<T> comparer = EqualityComparer<T>.Default;
         for (int i = 0; i < Length; i++)
         {
-            if (!comparer.Equals(_values[i], other._values[i]))
+            if (!comparer.Equals(Values[i], other.Values[i]))
             {
                 return false;
             }
@@ -70,11 +76,23 @@ public sealed class ImmutableEquatableArray<T> :
     public override bool Equals(object? obj) 
         => obj is ImmutableEquatableArray<T> other && Equals(other);
 
+    /// <summary>Determines whether two arrays are structurally equal.</summary>
+    /// <param name="left">The first array.</param>
+    /// <param name="right">The second array.</param>
+    /// <returns>Whether the arrays are equal.</returns>
+    public static bool operator ==(ImmutableEquatableArray<T> left, ImmutableEquatableArray<T> right) => left.Equals(right);
+
+    /// <summary>Determines whether two arrays are structurally unequal.</summary>
+    /// <param name="left">The first array.</param>
+    /// <param name="right">The second array.</param>
+    /// <returns>Whether the arrays are unequal.</returns>
+    public static bool operator !=(ImmutableEquatableArray<T> left, ImmutableEquatableArray<T> right) => !left.Equals(right);
+
     /// <inheritdoc/>
     public override int GetHashCode()
     {
         int hash = 0;
-        foreach (T value in _values)
+        foreach (T value in Values)
         {
             hash = CommonHelpers.CombineHashCodes(hash, value is null ? 0 : value.GetHashCode());
         }
@@ -83,7 +101,7 @@ public sealed class ImmutableEquatableArray<T> :
     }
 
     /// <inheritdoc/>
-    public Enumerator GetEnumerator() => new(_values);
+    public Enumerator GetEnumerator() => new(Values);
 
     /// <summary>
     /// Defines an enumerator for the <see cref="ImmutableEquatableArray{T}"/> type.
@@ -120,22 +138,22 @@ public sealed class ImmutableEquatableArray<T> :
         => new(values);
 
     #region Explicit interface implementations
-    IEnumerator<T> IEnumerable<T>.GetEnumerator() => ((IEnumerable<T>)_values).GetEnumerator();
-    IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)_values).GetEnumerator();
+    IEnumerator<T> IEnumerable<T>.GetEnumerator() => ((IEnumerable<T>)Values).GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)Values).GetEnumerator();
     bool ICollection<T>.IsReadOnly => true;
     bool IList.IsFixedSize => true;
     bool IList.IsReadOnly => true;
-    T IReadOnlyList<T>.this[int index] => _values[index];
-    T IList<T>.this[int index] { get => _values[index]; set => throw new InvalidOperationException(); }
-    object? IList.this[int index] { get => _values[index]; set => throw new InvalidOperationException(); }
-    void ICollection<T>.CopyTo(T[] array, int arrayIndex) => _values.CopyTo(array, arrayIndex);
-    void ICollection.CopyTo(Array array, int index) => _values.CopyTo(array, index);
-    int IList<T>.IndexOf(T item) => Array.IndexOf(_values, item);
-    int IList.IndexOf(object value) => ((IList)_values).IndexOf(value);
-    bool ICollection<T>.Contains(T item) => Array.IndexOf(_values, item) >= 0;
-    bool IList.Contains(object value) => ((IList)_values).Contains(value);
+    T IReadOnlyList<T>.this[int index] => Values[index];
+    T IList<T>.this[int index] { get => Values[index]; set => throw new InvalidOperationException(); }
+    object? IList.this[int index] { get => Values[index]; set => throw new InvalidOperationException(); }
+    void ICollection<T>.CopyTo(T[] array, int arrayIndex) => Values.CopyTo(array, arrayIndex);
+    void ICollection.CopyTo(Array array, int index) => Values.CopyTo(array, index);
+    int IList<T>.IndexOf(T item) => Array.IndexOf(Values, item);
+    int IList.IndexOf(object value) => ((IList)Values).IndexOf(value);
+    bool ICollection<T>.Contains(T item) => Array.IndexOf(Values, item) >= 0;
+    bool IList.Contains(object value) => ((IList)Values).Contains(value);
     bool ICollection.IsSynchronized => false;
-    object ICollection.SyncRoot => this;
+    object ICollection.SyncRoot => s_syncRoot;
 
     int IReadOnlyCollection<T>.Count => Length;
     int ICollection<T>.Count => Length;
