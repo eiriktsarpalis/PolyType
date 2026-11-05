@@ -2,9 +2,125 @@ namespace PolyType.Roslyn.Tests;
 
 using Xunit;
 using System.Collections;
+using System.Reflection;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 public static class ImmutableEquatableCollectionTests
 {
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public static void ImmutableCollections_TypedEqualityRejectsNull(int count)
+    {
+        var array = Enumerable.Range(0, count).ToImmutableEquatableArray();
+        var set = Enumerable.Range(0, count).ToImmutableEquatableSet();
+        var dictionary = Enumerable.Range(0, count).ToImmutableEquatableDictionary(i => i);
+
+        Assert.False(array.Equals(null));
+        Assert.False(set.Equals(null));
+        Assert.False(dictionary.Equals(null));
+        Assert.False(((IEquatable<ImmutableEquatableArray<int>>)array).Equals(null!));
+        Assert.False(((IEquatable<ImmutableEquatableSet<int>>)set).Equals(null!));
+        Assert.False(((IEquatable<ImmutableEquatableDictionary<int, int>>)dictionary).Equals(null!));
+    }
+
+    [Theory]
+    [InlineData(null, null, true)]
+    [InlineData(null, "value", false)]
+    [InlineData("value", null, false)]
+    [InlineData("value", "value", true)]
+    public static void ImmutableDictionaryEquality_SupportsNullValues(string? leftValue, string? rightValue, bool expected)
+    {
+        var left = new[] { new KeyValuePair<int, string>(0, leftValue!) }.ToImmutableEquatableDictionary();
+        var right = new[] { new KeyValuePair<int, string>(0, rightValue!) }.ToImmutableEquatableDictionary();
+
+        Assert.Equal(expected, left.Equals(right));
+        Assert.Equal(expected, right.Equals(left));
+        if (expected)
+        {
+            Assert.Equal(left.GetHashCode(), right.GetHashCode());
+        }
+    }
+
+    [Theory]
+    [InlineData("", true)]
+    [InlineData("readonly ", false)]
+    public static void ImmutableArrayEnumerator_OnlyAllowsReadOnlyReferences(string modifier, bool expectsError)
+    {
+        CSharpCompilation compilation = CreateConsumerCompilation($$"""
+            public static class Consumer
+            {
+                public static int Read(PolyType.Roslyn.ImmutableEquatableArray<int>.Enumerator enumerator)
+                {
+                    ref {{modifier}}int item = ref enumerator.Current;
+                    return item;
+                }
+            }
+            """);
+
+        Diagnostic[] errors = compilation.GetDiagnostics(TestContext.Current.CancellationToken).Where(d => d.Severity is DiagnosticSeverity.Error).ToArray();
+        if (expectsError)
+        {
+            Assert.Equal("CS8329", Assert.Single(errors).Id);
+        }
+        else
+        {
+            Assert.Empty(errors);
+        }
+    }
+
+    [Theory]
+    [InlineData("", false)]
+    [InlineData("!", true)]
+    public static void ImmutableDictionaryTryGetValue_OnlyGuaranteesNonNullOnSuccess(string negation, bool expectsWarning)
+    {
+        CSharpCompilation compilation = CreateConsumerCompilation($$"""
+            public static class Consumer
+            {
+                public static int Read(PolyType.Roslyn.ImmutableEquatableDictionary<int, string> dictionary)
+                {
+                    if ({{negation}}dictionary.TryGetValue(0, out var value))
+                    {
+                        return value.Length;
+                    }
+
+                    return 0;
+                }
+            }
+            """);
+
+        Diagnostic[] diagnostics = compilation.GetDiagnostics(TestContext.Current.CancellationToken)
+            .Where(d => d.Severity is DiagnosticSeverity.Error or DiagnosticSeverity.Warning)
+            .ToArray();
+        if (expectsWarning)
+        {
+            Assert.Equal("CS8602", Assert.Single(diagnostics).Id);
+        }
+        else
+        {
+            Assert.Empty(diagnostics);
+        }
+    }
+
+    private static CSharpCompilation CreateConsumerCompilation(string source)
+    {
+        var references = new List<MetadataReference>
+        {
+            MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(ImmutableEquatableArray<>).Assembly.Location),
+            MetadataReference.CreateFromFile(Assembly.Load(new AssemblyName("netstandard")).Location),
+        };
+#if NET
+        references.Add(MetadataReference.CreateFromFile(Assembly.Load(new AssemblyName("System.Runtime")).Location));
+#endif
+        return CSharpCompilation.Create(
+            "Consumer",
+            [CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview))],
+            references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(1)]

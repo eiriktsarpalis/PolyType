@@ -22,7 +22,7 @@ public sealed class CSharpUnionDataModel : TypeDataModel
     public required ImmutableArray<UnionCaseDataModel> UnionCases { get; init; }
 
     /// <summary>
-    /// Gets the public instance property used to access the union payload.
+    /// Gets the instance property used to access the union payload, either on the union type or its member provider interface.
     /// </summary>
     public required IPropertySymbol ValueProperty { get; init; }
 

@@ -116,7 +116,7 @@ public enum EnumerableKind
 }
 
 /// <summary>
-/// Identifies the insertion models available to the dictionary.
+/// Identifies the insertion modes available to the enumerable.
 /// </summary>
 public enum EnumerableInsertionMode
 {
@@ -136,7 +136,7 @@ public enum EnumerableInsertionMode
     ExplicitICollectionOfT,
 
     /// <summary>
-    /// Enumerable explicitly implements <see cref="ICollection"/>.
+    /// Enumerable explicitly implements <see cref="IList"/>.
     /// </summary>
     ExplicitIList,
 }

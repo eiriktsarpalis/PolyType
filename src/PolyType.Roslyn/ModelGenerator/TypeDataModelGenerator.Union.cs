@@ -120,7 +120,7 @@ public partial class TypeDataModelGenerator
         model = new CSharpUnionDataModel
         {
             Type = type,
-            Requirements = TypeShapeRequirements.Full,
+            Requirements = requirements,
             Methods = methodModels,
             Events = eventModels,
             UnionCases = cases.ToImmutable(),

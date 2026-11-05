@@ -27,7 +27,7 @@ public class DelegateDataModel : TypeDataModel
     public required MethodReturnTypeKind ReturnTypeKind { get; init; }
 
     /// <summary>
-    /// The parameters of the delegate.
+    /// The parameters of the delegate, excluding <see langword="out"/> parameters.
     /// </summary>
     public required ImmutableArray<ParameterDataModel> Parameters { get; init; }
 }

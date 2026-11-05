@@ -8,6 +8,10 @@ namespace PolyType.Roslyn;
 /// <summary>
 /// Defines an immutable set that defines structural equality semantics.
 /// </summary>
+/// <remarks>
+/// Copying through the non-generic <see cref="ICollection.CopyTo"/> method is not supported.
+/// Use the generic <see cref="ICollection{T}.CopyTo"/> method instead.
+/// </remarks>
 /// <typeparam name="T">The element type of the set.</typeparam>
 [DebuggerDisplay("Count = {Count}")]
 [DebuggerTypeProxy(typeof(ImmutableEquatableSet<>.DebugView))]
@@ -45,11 +49,16 @@ public sealed class ImmutableEquatableSet<T> :
         => _values.Contains(item);
 
     /// <inheritdoc/>
-    public bool Equals(ImmutableEquatableSet<T> other)
+    public bool Equals(ImmutableEquatableSet<T>? other)
     {
         if (ReferenceEquals(this, other))
         {
             return true;
+        }
+
+        if (other is null)
+        {
+            return false;
         }
 
         HashSet<T> thisSet = _values;

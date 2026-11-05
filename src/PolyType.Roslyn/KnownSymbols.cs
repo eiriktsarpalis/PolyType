@@ -41,6 +41,9 @@ public class KnownSymbols(Compilation compilation)
     public INamedTypeSymbol? TaskType => GetOrResolveType("System.Threading.Tasks.Task", ref _TaskType);
     private Option<INamedTypeSymbol?> _TaskType;
 
+    internal INamedTypeSymbol? TaskOfTType => GetOrResolveType("System.Threading.Tasks.Task`1", ref _TaskOfTType);
+    private Option<INamedTypeSymbol?> _TaskOfTType;
+
     /// <summary>
     /// The type symbol for <see cref="System.Runtime.CompilerServices.CompilerGeneratedAttribute"/>.
     /// </summary>

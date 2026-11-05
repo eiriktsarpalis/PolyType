@@ -130,7 +130,7 @@ public readonly struct PropertyDataModel
 }
 
 /// <summary>
-/// A property data model wrapping an <see cref="IEventSymbol"/>.
+/// A resolved property or field symbol with additional metadata.
 /// </summary>
 public readonly struct ResolvedPropertySymbol
 {

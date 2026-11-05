@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PolyType.Roslyn;
 
@@ -46,7 +47,9 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> :
     /// <summary>
     /// Try to get the value associated with the specified key.
     /// </summary>
-    public bool TryGetValue(TKey key, out TValue value) => _values.TryGetValue(key, out value);
+#pragma warning disable CS8767 // netstandard2.0 interfaces do not carry nullable flow annotations.
+    public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => _values.TryGetValue(key, out value);
+#pragma warning restore CS8767
 
     /// <summary>
     /// Gets the value associated with the specified key.
@@ -54,11 +57,16 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> :
     public TValue this[TKey key] => _values[key];
 
     /// <inheritdoc/>
-    public bool Equals(ImmutableEquatableDictionary<TKey, TValue> other)
+    public bool Equals(ImmutableEquatableDictionary<TKey, TValue>? other)
     {
         if (ReferenceEquals(this, other))
         {
             return true;
+        }
+
+        if (other is null)
+        {
+            return false;
         }
 
         Dictionary<TKey, TValue> thisDict = _values;
@@ -71,7 +79,7 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> :
         foreach (KeyValuePair<TKey, TValue> entry in thisDict)
         {
             if (!otherDict.TryGetValue(entry.Key, out TValue? otherValue) ||
-                !entry.Value.Equals(otherValue))
+                !EqualityComparer<TValue>.Default.Equals(entry.Value, otherValue))
             {
                 return false;
             }
