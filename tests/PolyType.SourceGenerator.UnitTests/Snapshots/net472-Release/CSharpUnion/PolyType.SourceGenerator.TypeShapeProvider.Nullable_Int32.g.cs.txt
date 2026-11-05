@@ -22,7 +22,7 @@ namespace PolyType.SourceGenerator
                 ElementTypeFactory = () => Int32,
                 NoneConstructor = static () => null,
                 SomeConstructor = static t => t,
-                Deconstructor = static (int? optional, out int element) => { if (!optional.HasValue) { element = default!; return false; } else { element = optional.Value; return true; } },
+                Deconstructor = static (int? optional, out int element) => { if (optional.HasValue) { element = optional.Value; return true; } else { element = default!; return false; } },
                 Provider = this,
             };
         }
