@@ -3,7 +3,7 @@
 namespace PolyType.Roslyn;
 
 /// <summary>
-/// A method data model wrapping an <see cref="IEventSymbol"/>.
+/// An event data model wrapping an <see cref="IEventSymbol"/>.
 /// </summary>
 public readonly struct EventDataModel
 {
@@ -34,7 +34,7 @@ public readonly struct ResolvedEventSymbol
     public required IEventSymbol Event { get; init; }
 
     /// <summary>
-    /// Gets a custom name to be applied to the method, if specified.
+    /// Gets a custom name to be applied to the event, if specified.
     /// </summary>
     public string? CustomName { get; init; }
 

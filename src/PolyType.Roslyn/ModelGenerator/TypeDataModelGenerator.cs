@@ -136,8 +136,8 @@ public partial class TypeDataModelGenerator
     /// <summary>
     ///  Resolves the event symbols that should be included for the given type.
     /// </summary>
-    /// <param name="type">The declaring type from which to resolve the methods.</param>
-    /// <param name="bindingFlags">The binding flags of the methods to include.</param>
+    /// <param name="type">The declaring type from which to resolve the events.</param>
+    /// <param name="bindingFlags">The binding flags of the events to include.</param>
     /// <returns>A struct containing resolved event information.</returns>
     protected virtual IEnumerable<ResolvedEventSymbol> ResolveEvents(ITypeSymbol type, BindingFlags bindingFlags) => [];
 
@@ -193,6 +193,8 @@ public partial class TypeDataModelGenerator
             return TypeDataModelGenerationStatus.UnsupportedType;
         }
 
+        bool wasRootType = model?.IsRootType is true;
+
         // Create a new snapshot with the current type pushed onto the stack.
         // Only commit the generated model if the type is successfully mapped.
         TypeDataModelGenerationContext scopedCtx = ctx.Push(type);
@@ -206,7 +208,7 @@ public partial class TypeDataModelGenerator
         if (model != null)
         {
             ctx = scopedCtx.Commit(model);
-            model.IsRootType = ctx.Stack.IsEmpty;
+            model.IsRootType = wasRootType || ctx.Stack.IsEmpty;
         }
 
         return status;
@@ -561,9 +563,9 @@ public partial class TypeDataModelGenerator
         }
         else if (KnownSymbols.TaskType.IsAssignableFrom(returnType))
         {
-            if (returnType is INamedTypeSymbol { IsGenericType: true } namedType)
+            if (returnType.GetCompatibleGenericBaseType(KnownSymbols.TaskOfTType) is { } taskOf)
             {
-                returnType = namedType.TypeArguments[0]; // Task<T>
+                returnType = taskOf.TypeArguments[0]; // Task<T>
                 kind = MethodReturnTypeKind.TaskOfT;
             }
             else
@@ -589,12 +591,12 @@ public partial class TypeDataModelGenerator
     }
 
     /// <summary>
-    /// Maps the events resolved from the current type and their parameters to an array of <see cref="EventDataModel"/>.
+    /// Maps the events resolved from the current type and includes their event types in the type graph.
     /// </summary>
-    /// <param name="type">The type from which to resolve methods.</param>
+    /// <param name="type">The type from which to resolve events.</param>
     /// <param name="ctx">The current model generation context.</param>
-    /// <param name="bindingFlags">The binding flags to use when resolving methods.</param>
-    /// <returns>An array of mapped method data models.</returns>
+    /// <param name="bindingFlags">The binding flags to use when resolving events.</param>
+    /// <returns>An array of mapped event data models.</returns>
     protected ImmutableArray<EventDataModel> MapEvents(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, BindingFlags? bindingFlags)
     {
         ImmutableArray<EventDataModel>.Builder results = ImmutableArray.CreateBuilder<EventDataModel>();
@@ -612,7 +614,7 @@ public partial class TypeDataModelGenerator
     }
 
     /// <summary>
-    /// Maps the given <paramref name="resolvedEvent"/> and its parameters to a <see cref="EventDataModel"/>.
+    /// Maps the given <paramref name="resolvedEvent"/> and includes its event type in the type graph.
     /// </summary>
     /// <param name="resolvedEvent">The event to try to map.</param>
     /// <param name="ctx">The current model generation context.</param>

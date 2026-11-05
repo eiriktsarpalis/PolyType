@@ -5,6 +5,9 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsAnalyzerProject>true</IsAnalyzerProject>
+    <EnablePackageValidation>true</EnablePackageValidation>
+    <!-- Uncomment after 2.0.0 is published to check against the first stable API contract. -->
+    <!-- <PackageValidationBaselineVersion>2.0.0</PackageValidationBaselineVersion> -->
   </PropertyGroup>
 
   <ItemGroup>

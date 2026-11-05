@@ -45,11 +45,16 @@ public sealed class ImmutableEquatableSet<T> :
         => _values.Contains(item);
 
     /// <inheritdoc/>
-    public bool Equals(ImmutableEquatableSet<T> other)
+    public bool Equals(ImmutableEquatableSet<T>? other)
     {
         if (ReferenceEquals(this, other))
         {
             return true;
+        }
+
+        if (other is null)
+        {
+            return false;
         }
 
         HashSet<T> thisSet = _values;

@@ -4,7 +4,7 @@ using PolyType.Roslyn.Helpers;
 namespace PolyType.Roslyn;
 
 /// <summary>
-/// A constructor parameter data model wrapping an <see cref="IParameterSymbol"/>.
+/// A parameter data model wrapping an <see cref="IParameterSymbol"/>.
 /// </summary>
 public readonly struct ParameterDataModel
 {
@@ -14,7 +14,7 @@ public readonly struct ParameterDataModel
     public required IParameterSymbol Parameter { get; init; }
 
     /// <summary>
-    /// True if parameter is a reference type declared as non-nullable.
+    /// True if the parameter does not accept null, accounting for its type and nullability attributes.
     /// </summary>
     public bool IsNonNullable => Parameter.IsNonNullableAnnotation();
 

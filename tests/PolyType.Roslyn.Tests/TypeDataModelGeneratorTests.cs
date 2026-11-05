@@ -172,6 +172,113 @@ public static class TypeDataModelGeneratorTests
         protected override bool IncludeDelegateParameters => includeParameters;
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void PartialWrapperRequirements_AreUpgradedWithTheirPayload(bool isUnion)
+    {
+        CSharpCompilation compilation = CreateCompilation($$"""
+            public struct Payload { public int Value { get; set; } }
+            [System.Runtime.CompilerServices.Union]
+            public class Union
+            {
+                public Union(Payload value) { }
+                public object? Value => null;
+            }
+            public class Container { public {{(isUnion ? "Union" : "Payload?")}} Value { get; set; } }
+            public class PartialRoot { }
+            """);
+        ITypeSymbol wrapper = ((IPropertySymbol)compilation.GetTypeByMetadataName("Container")!.GetMembers("Value").Single()).Type;
+        ITypeSymbol payload = compilation.GetTypeByMetadataName("Payload")!;
+        var generator = new PartialRequirementsGenerator(compilation, wrapper);
+
+        Assert.Equal(TypeDataModelGenerationStatus.Success, generator.IncludeType(compilation.GetTypeByMetadataName("PartialRoot")!));
+        Assert.Equal(TypeShapeRequirements.Constructor, generator.GeneratedModels[wrapper].Requirements);
+        Assert.Empty(Assert.IsType<ObjectDataModel>(generator.GeneratedModels[payload]).Properties);
+        Assert.False(generator.GeneratedModels[wrapper].IsRootType);
+
+        Assert.Equal(TypeDataModelGenerationStatus.Success, generator.IncludeType(wrapper));
+        Assert.Equal(TypeShapeRequirements.Full, generator.GeneratedModels[wrapper].Requirements);
+        Assert.Equal(TypeShapeRequirements.Full, generator.GeneratedModels[payload].Requirements);
+        Assert.Single(Assert.IsType<ObjectDataModel>(generator.GeneratedModels[payload]).Properties);
+        Assert.True(generator.GeneratedModels[wrapper].IsRootType);
+        Assert.False(generator.GeneratedModels[payload].IsRootType);
+    }
+
+    private sealed class PartialRequirementsGenerator(CSharpCompilation compilation, ITypeSymbol wrapper)
+        : TypeDataModelGenerator(compilation.Assembly, new KnownSymbols(compilation), TestContext.Current.CancellationToken)
+    {
+        protected override TypeDataModelGenerationStatus MapType(
+            ITypeSymbol type, TypeDataKind? requestedKind, BindingFlags? methodBindingFlags,
+            ImmutableArray<AssociatedTypeModel> associatedTypes, ref TypeDataModelGenerationContext ctx,
+            TypeShapeRequirements requirements, out TypeDataModel? model)
+        {
+            if (type.Name == "PartialRoot")
+            {
+                TypeDataModelGenerationStatus status = IncludeNestedType(wrapper, ref ctx, TypeShapeRequirements.Constructor);
+                if (status is not TypeDataModelGenerationStatus.Success)
+                {
+                    model = null;
+                    return status;
+                }
+            }
+
+            return base.MapType(type, requestedKind, methodBindingFlags, associatedTypes, ref ctx, requirements, out model);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void RegeneratedDelegates_PreserveExplicitRootStatus(bool includeDelegateFirst)
+    {
+        CSharpCompilation compilation = CreateCompilation("""
+            public delegate void Callback();
+            public class Container { public Callback Value => throw new System.NotSupportedException(); }
+            """);
+        ITypeSymbol callback = compilation.GetTypeByMetadataName("Callback")!;
+        TypeDataModelGenerator generator = CreateGenerator(compilation);
+        if (includeDelegateFirst)
+        {
+            Assert.Equal(TypeDataModelGenerationStatus.Success, generator.IncludeType(callback));
+        }
+
+        Assert.Equal(TypeDataModelGenerationStatus.Success, generator.IncludeType(compilation.GetTypeByMetadataName("Container")!));
+        Assert.Equal(includeDelegateFirst, generator.GeneratedModels[callback].IsRootType);
+
+        Assert.Equal(TypeDataModelGenerationStatus.Success, generator.IncludeType(callback));
+        Assert.True(generator.GeneratedModels[callback].IsRootType);
+    }
+
+    [Theory]
+    [InlineData("System.Threading.Tasks.Task", MethodReturnTypeKind.Task, SpecialType.None)]
+    [InlineData("System.Threading.Tasks.Task<string>", MethodReturnTypeKind.TaskOfT, SpecialType.System_String)]
+    [InlineData("IntTask", MethodReturnTypeKind.TaskOfT, SpecialType.System_Int32)]
+    [InlineData("GenericTask<bool>", MethodReturnTypeKind.TaskOfT, SpecialType.System_Int32)]
+    [InlineData("PlainTask<bool>", MethodReturnTypeKind.Task, SpecialType.None)]
+    public static void TaskReturnTypes_UseTheConstructedTaskBase(string returnType, MethodReturnTypeKind expectedKind, SpecialType expectedResult)
+    {
+        CSharpCompilation compilation = CreateCompilation($$"""
+            public class IntTask : System.Threading.Tasks.Task<int>
+            {
+                public IntTask() : base(() => 0) { }
+            }
+            public class GenericTask<T> : IntTask { }
+            public class PlainTask<T> : System.Threading.Tasks.Task
+            {
+                public PlainTask() : base(() => { }) { }
+            }
+            public delegate {{returnType}} Callback();
+            """);
+        var generator = new DelegateModelGenerator(compilation, includeParameters: true);
+        ITypeSymbol callback = compilation.GetTypeByMetadataName("Callback")!;
+
+        Assert.Equal(TypeDataModelGenerationStatus.Success, generator.IncludeType(callback));
+        DelegateDataModel model = Assert.IsType<DelegateDataModel>(generator.GeneratedModels[callback]);
+        Assert.Equal(expectedKind, model.ReturnTypeKind);
+        Assert.Equal(expectedResult, model.ReturnedValueType?.SpecialType ?? SpecialType.None);
+    }
+
     private sealed class TraversalPolicyGenerator(CSharpCompilation compilation, string rejectedType)
         : TypeDataModelGenerator(compilation.Assembly, new KnownSymbols(compilation), TestContext.Current.CancellationToken)
     {

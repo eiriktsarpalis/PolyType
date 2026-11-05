@@ -46,8 +46,8 @@ public class TypeDataModel
     public virtual TypeDataKind Kind => TypeDataKind.None;
 
     /// <summary>
-    /// True if the type was explicitly passed to the <see cref="TypeDataModelGenerator"/>
-    /// and is not a transitive dependency in the type graph.
+    /// True if the type was explicitly included using <see cref="TypeDataModelGenerator.IncludeType"/>,
+    /// even if it is also a transitive dependency in the type graph.
     /// </summary>
     public bool IsRootType { get; internal set; }
 }

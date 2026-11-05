@@ -19,7 +19,7 @@ public readonly struct ConstructorDataModel
     public INamedTypeSymbol DeclaringType => Constructor.ContainingType;
 
     /// <summary>
-    /// The parameters of the constructor.
+    /// The parameters of the constructor, excluding <see langword="out"/> parameters.
     /// </summary>
     public required ImmutableArray<ParameterDataModel> Parameters { get; init; }
 

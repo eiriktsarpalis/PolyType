@@ -42,14 +42,14 @@ public sealed class ImmutableEquatableArray<T> :
     }
 
     /// <inheritdoc/>
-    public bool Equals(ImmutableEquatableArray<T> other)
+    public bool Equals(ImmutableEquatableArray<T>? other)
     {
         if (ReferenceEquals(this, other))
         {
             return true;
         }
 
-        if (Length != other.Length)
+        if (other is null || Length != other.Length)
         {
             return false;
         }
@@ -107,7 +107,7 @@ public sealed class ImmutableEquatableArray<T> :
         /// <summary>
         /// Gets the element at the current position of the enumerator.
         /// </summary>
-        public readonly ref T Current => ref _values[_index];
+        public readonly ref readonly T Current => ref _values[_index];
 
         readonly T IEnumerator<T>.Current => _values[_index];
         readonly object? IEnumerator.Current => _values[_index];

@@ -32,7 +32,7 @@ public partial class TypeDataModelGenerator
         model = new OptionalDataModel
         {
             Type = type,
-            Requirements = TypeShapeRequirements.Full,
+            Requirements = requirements,
             Methods = methodModels,
             Events = eventModels,
             ElementType = elementType,

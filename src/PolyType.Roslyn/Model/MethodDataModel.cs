@@ -29,7 +29,7 @@ public readonly struct MethodDataModel
     public required MethodReturnTypeKind ReturnTypeKind { get; init; }
 
     /// <summary>
-    /// The parameters of the method.
+    /// The parameters of the method, excluding <see langword="out"/> parameters.
     /// </summary>
     public required ImmutableArray<ParameterDataModel> Parameters { get; init; }
 
