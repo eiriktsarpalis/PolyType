@@ -10,10 +10,6 @@ namespace PolyType.Roslyn;
 /// </summary>
 /// <remarks>
 /// The default value represents an empty set.
-/// The collection is immutable and reports <see cref="ICollection.IsSynchronized"/> as true.
-/// Accessing <see cref="ICollection.SyncRoot"/> throws <see cref="NotSupportedException"/>.
-/// Copying through the non-generic <see cref="ICollection.CopyTo"/> method is not supported.
-/// Use the generic <see cref="ICollection{T}.CopyTo"/> method instead.
 /// </remarks>
 /// <typeparam name="T">The element type of the set.</typeparam>
 [DebuggerDisplay("Count = {Count}")]

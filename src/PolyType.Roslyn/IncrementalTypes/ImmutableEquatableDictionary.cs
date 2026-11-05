@@ -10,8 +10,6 @@ namespace PolyType.Roslyn;
 /// </summary>
 /// <remarks>
 /// The default value represents an empty dictionary.
-/// The collection is immutable and reports <see cref="ICollection.IsSynchronized"/> as true.
-/// Accessing <see cref="ICollection.SyncRoot"/> throws <see cref="NotSupportedException"/>.
 /// </remarks>
 /// <typeparam name="TKey">The key type of the dictionary.</typeparam>
 /// <typeparam name="TValue">The value type of the dictionary.</typeparam>

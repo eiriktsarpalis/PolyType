@@ -11,8 +11,6 @@ namespace PolyType.Roslyn;
 /// </summary>
 /// <remarks>
 /// The default value represents an empty array.
-/// The collection is immutable and reports <see cref="ICollection.IsSynchronized"/> as true.
-/// Accessing <see cref="ICollection.SyncRoot"/> throws <see cref="NotSupportedException"/>.
 /// </remarks>
 /// <typeparam name="T">The type of the array elements.</typeparam>
 [DebuggerDisplay("Length = {Length}")]
