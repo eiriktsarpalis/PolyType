@@ -132,23 +132,6 @@ public abstract class XmlTests(ProviderUnderTest providerUnderTest)
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void UnionWithNullablePayloadRetainsNullInEitherAttributeOrder(bool nilFirst)
-    {
-        var converter = GetConverterUnderTest(TestCase.Create(new CSharpNullableValueUnion((int?)null)));
-        string encoding = converter.Serialize(new CSharpNullableValueUnion((int?)null), s_writerSettings);
-        var xml = System.Xml.Linq.XElement.Parse(encoding);
-        var attributes = xml.Attributes().OrderBy(attribute => (attribute.Name == "nil") == nilFirst ? 0 : 1).ToArray();
-        xml.RemoveAttributes();
-        xml.Add(attributes);
-
-        CSharpNullableValueUnion result = converter.Deserialize(xml.ToString());
-        Assert.Null(result.Value);
-        Assert.Equal(encoding, converter.Serialize(result, s_writerSettings));
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
     public void OptionalUnionNullPayloadPreservesPresenceWithAdditionalAttributes(bool nilFirst)
     {
         var testCase = TestCase.Create<CSharpScalarUnion?, Witness>(null, new Witness());

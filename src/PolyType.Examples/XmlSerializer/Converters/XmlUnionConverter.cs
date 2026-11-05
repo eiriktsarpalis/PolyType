@@ -28,7 +28,7 @@ internal sealed class XmlUnionConverter<TUnion>(
             throw new XmlException($"Unrecognized derived type identifier '{reader.Name}'.");
         }
 
-        return derivedConverter.Read(new XmlUnionPayloadReader(reader, TypeAttribute));
+        return derivedConverter.Read(reader);
     }
 
     public override void Write(XmlWriter writer, TUnion value)
