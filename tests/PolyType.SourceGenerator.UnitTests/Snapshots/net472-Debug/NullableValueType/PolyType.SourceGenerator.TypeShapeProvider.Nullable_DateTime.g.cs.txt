@@ -22,7 +22,7 @@ namespace PolyType.SourceGenerator
                 ElementTypeFactory = () => DateTime,
                 NoneConstructor = static () => null,
                 SomeConstructor = static t => t,
-                Deconstructor = static (global::System.DateTime? optional, out global::System.DateTime element) => { if (optional is null) { element = default!; return false; } else { element = optional.Value; return true; } },
+                Deconstructor = static (global::System.DateTime? optional, out global::System.DateTime element) => { if (!optional.HasValue) { element = default!; return false; } else { element = optional.Value; return true; } },
                 Provider = this,
             };
         }

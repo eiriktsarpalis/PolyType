@@ -3,8 +3,23 @@ using PolyType.SourceGenModel;
 
 namespace PolyType.Tests.NativeAOT;
 
-public class SourceGenModelTests
+[GenerateShapeFor<ScalarUnion?>]
+public partial class SourceGenModelTests
 {
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task NullableUnionDeconstructorPreservesPresence(bool hasValue)
+    {
+        ScalarUnion? optional = hasValue ? new ScalarUnion((string?)null) : default(ScalarUnion?);
+        var shape = (IOptionalTypeShape<ScalarUnion?, ScalarUnion>)GeneratedTypeShapeProvider.GetTypeShapeOrThrow<ScalarUnion?>();
+        bool result = shape.GetDeconstructor()(optional, out ScalarUnion element);
+
+        await Assert.That(optional.HasValue).IsEqualTo(hasValue);
+        await Assert.That(result).IsEqualTo(hasValue);
+        await Assert.That(element.Value).IsNull();
+    }
+
     [Test]
     public async Task GeneratorVersionSurvivesTrimming()
     {

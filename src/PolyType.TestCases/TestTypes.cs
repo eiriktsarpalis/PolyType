@@ -124,6 +124,8 @@ public static class TestTypes
         yield return TestCase.Create<ClosedEmptyUnionHierarchy>(null, isUnion: true);
 
         yield return TestCase.Create(new CSharpScalarUnion(42), additionalValues: [new(true), new("text"), default], isUnion: true);
+        yield return TestCase.Create<CSharpScalarUnion?, Witness>(new CSharpScalarUnion((string?)null), p,
+            additionalValues: [new CSharpScalarUnion(42), new CSharpScalarUnion("text"), default(CSharpScalarUnion), null]);
         yield return TestCase.Create(new CSharpValueUnion(42), additionalValues: [new(new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero))], isUnion: true);
         yield return TestCase.Create(new CSharpNumericUnion("text"), additionalValues: [default], isUnion: true);
         yield return TestCase.Create(new CSharpAmbiguousNumericUnion(42), additionalValues: [new(false), new(43L), new(3.14)], isUnion: true);
@@ -142,6 +144,8 @@ public static class TestTypes
         yield return TestCase.Create(new CSharpMutableUnion(42), additionalValues: [new(true)], isUnion: true);
         yield return TestCase.Create(new CSharpInterfaceOnlyUnion(42));
         yield return TestCase.Create(default(CSharpStructUnion), additionalValues: [new(42), new("text"), new(""), new((string?)null)], isUnion: true);
+        yield return TestCase.Create<CSharpStructUnion?, Witness>(new CSharpStructUnion((string?)null), p,
+            additionalValues: [new CSharpStructUnion(42), new CSharpStructUnion("text"), default(CSharpStructUnion), null]);
         yield return TestCase.Create(default(CSharpValueStorageUnion), additionalValues: [new(42), new(false), new(true)], isUnion: true);
         yield return TestCase.Create(new CSharpTryGetValueUnion<int>(42), p, additionalValues: [new(true)], isUnion: true);
         yield return TestCase.Create(new CSharpTryGetValueUnion<string>("text"), p, additionalValues: [new(true), new((string?)null)], isUnion: true);
@@ -3756,6 +3760,8 @@ public delegate Task<int> LargeAsyncDelegate(
 [GenerateShapeFor<CSharpTryGetValueUnion<int>>]
 [GenerateShapeFor<CSharpTryGetValueUnion<string>>]
 [GenerateShapeFor<CSharpRecursiveUnion?>]
+[GenerateShapeFor<CSharpScalarUnion?>]
+[GenerateShapeFor<CSharpStructUnion?>]
 [GenerateShapeFor<CSharpRecursivePayload?>]
 [GenerateShapeFor<PocoWithGenericProperty<string>>]
 [GenerateShapeFor<NotNullGenericRecord<CSharpMutableUnion>>]

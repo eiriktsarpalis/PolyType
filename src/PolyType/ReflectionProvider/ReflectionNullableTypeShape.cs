@@ -19,7 +19,7 @@ internal sealed class ReflectionNullableTypeShape<T>(ReflectionTypeShapeProvider
     public OptionDeconstructor<T?, T> GetDeconstructor() =>
         static (optional, out value) =>
         {
-            if (optional is null)
+            if (!optional.HasValue)
             {
                 value = default;
                 return false;

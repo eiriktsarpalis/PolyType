@@ -120,6 +120,12 @@ public abstract class XmlTests(ProviderUnderTest providerUnderTest)
         yield return [TestCase.Create<ObjectSurrogateHierarchy>(new ObjectSurrogateHierarchy.Text("42")), """<value type="text">42</value>"""];
         yield return [TestCase.Create(new CSharpScalarUnion(42)), """<value type="Int32">42</value>"""];
         yield return [TestCase.Create(default(CSharpScalarUnion)), """<value type="String" nil="true" />"""];
+        yield return [TestCase.Create<CSharpScalarUnion?, Witness>(null, p), """<value nil="true" />"""];
+        yield return [TestCase.Create<CSharpScalarUnion?, Witness>(new CSharpScalarUnion((string?)null), p), """<value type="String" nil="true" />"""];
+        yield return [TestCase.Create<CSharpScalarUnion?, Witness>(new CSharpScalarUnion(42), p), """<value type="Int32">42</value>"""];
+        yield return [TestCase.Create<CSharpStructUnion?, Witness>(null, p), """<value nil="true" />"""];
+        yield return [TestCase.Create<CSharpStructUnion?, Witness>(new CSharpStructUnion((string?)null), p), """<value type="String" nil="true" />"""];
+        yield return [TestCase.Create<CSharpStructUnion?, Witness>(new CSharpStructUnion(42), p), """<value type="Int32">42</value>"""];
         yield return [TestCase.Create(new CSharpArrayUnion(new int[] { 1, 2 })), """<value type="Array_Int32"><element>1</element><element>2</element></value>"""];
     }
 
