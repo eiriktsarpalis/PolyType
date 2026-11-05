@@ -10,7 +10,8 @@ namespace PolyType.Roslyn;
 /// </summary>
 /// <remarks>
 /// The default value represents an empty set.
-/// The non-generic <see cref="ICollection.SyncRoot"/> is shared by all instances of the same closed type.
+/// The collection is immutable and reports <see cref="ICollection.IsSynchronized"/> as true.
+/// Accessing <see cref="ICollection.SyncRoot"/> throws <see cref="NotSupportedException"/>.
 /// Copying through the non-generic <see cref="ICollection.CopyTo"/> method is not supported.
 /// Use the generic <see cref="ICollection{T}.CopyTo"/> method instead.
 /// </remarks>
@@ -32,7 +33,6 @@ public readonly struct ImmutableEquatableSet<T> :
     public static ImmutableEquatableSet<T> Empty => default;
 
     private static readonly HashSet<T> s_emptyValues = [];
-    private static readonly object s_syncRoot = new();
     private readonly HashSet<T>? _values;
     private HashSet<T> Values => _values ?? s_emptyValues;
 
@@ -124,8 +124,8 @@ public readonly struct ImmutableEquatableSet<T> :
     bool ICollection<T>.IsReadOnly => true;
     void ICollection<T>.CopyTo(T[] array, int arrayIndex) => Values.CopyTo(array, arrayIndex);
     void ICollection.CopyTo(Array array, int index) => throw new InvalidOperationException();
-    bool ICollection.IsSynchronized => false;
-    object ICollection.SyncRoot => s_syncRoot;
+    bool ICollection.IsSynchronized => true;
+    object ICollection.SyncRoot => throw new NotSupportedException();
 
     bool ISet<T>.IsSubsetOf(IEnumerable<T> other) => Values.IsSubsetOf(other);
     bool ISet<T>.IsSupersetOf(IEnumerable<T> other) => Values.IsSupersetOf(other);

@@ -10,7 +10,8 @@ namespace PolyType.Roslyn;
 /// </summary>
 /// <remarks>
 /// The default value represents an empty dictionary.
-/// The non-generic <see cref="ICollection.SyncRoot"/> is shared by all instances of the same closed type.
+/// The collection is immutable and reports <see cref="ICollection.IsSynchronized"/> as true.
+/// Accessing <see cref="ICollection.SyncRoot"/> throws <see cref="NotSupportedException"/>.
 /// </remarks>
 /// <typeparam name="TKey">The key type of the dictionary.</typeparam>
 /// <typeparam name="TValue">The value type of the dictionary.</typeparam>
@@ -31,7 +32,6 @@ public readonly struct ImmutableEquatableDictionary<TKey, TValue> :
     public static ImmutableEquatableDictionary<TKey, TValue> Empty => default;
 
     private static readonly Dictionary<TKey, TValue> s_emptyValues = [];
-    private static readonly object s_syncRoot = new();
     private readonly Dictionary<TKey, TValue>? _values;
     private Dictionary<TKey, TValue> Entries => _values ?? s_emptyValues;
 
@@ -151,8 +151,8 @@ public readonly struct ImmutableEquatableDictionary<TKey, TValue> :
     bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly => true;
     bool IDictionary.IsReadOnly => true;
     bool IDictionary.IsFixedSize => true;
-    bool ICollection.IsSynchronized => false;
-    object ICollection.SyncRoot => s_syncRoot;
+    bool ICollection.IsSynchronized => true;
+    object ICollection.SyncRoot => throw new NotSupportedException();
 
     TValue IDictionary<TKey, TValue>.this[TKey key] { get => Entries[key]; set => throw new InvalidOperationException(); }
     object IDictionary.this[object key] { get => ((IDictionary)Entries)[key]; set => throw new InvalidOperationException(); }

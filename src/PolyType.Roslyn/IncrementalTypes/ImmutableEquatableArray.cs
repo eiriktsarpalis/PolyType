@@ -11,7 +11,8 @@ namespace PolyType.Roslyn;
 /// </summary>
 /// <remarks>
 /// The default value represents an empty array.
-/// The non-generic <see cref="ICollection.SyncRoot"/> is shared by all instances of the same closed type.
+/// The collection is immutable and reports <see cref="ICollection.IsSynchronized"/> as true.
+/// Accessing <see cref="ICollection.SyncRoot"/> throws <see cref="NotSupportedException"/>.
 /// </remarks>
 /// <typeparam name="T">The type of the array elements.</typeparam>
 [DebuggerDisplay("Length = {Length}")]
@@ -29,7 +30,6 @@ public readonly struct ImmutableEquatableArray<T> :
     public static ImmutableEquatableArray<T> Empty => default;
 
     private readonly T[]? _values;
-    private static readonly object s_syncRoot = new();
     private T[] Values => _values ?? Array.Empty<T>();
 
     /// <summary>
@@ -152,8 +152,8 @@ public readonly struct ImmutableEquatableArray<T> :
     int IList.IndexOf(object value) => ((IList)Values).IndexOf(value);
     bool ICollection<T>.Contains(T item) => Array.IndexOf(Values, item) >= 0;
     bool IList.Contains(object value) => ((IList)Values).Contains(value);
-    bool ICollection.IsSynchronized => false;
-    object ICollection.SyncRoot => s_syncRoot;
+    bool ICollection.IsSynchronized => true;
+    object ICollection.SyncRoot => throw new NotSupportedException();
 
     int IReadOnlyCollection<T>.Count => Length;
     int ICollection<T>.Count => Length;

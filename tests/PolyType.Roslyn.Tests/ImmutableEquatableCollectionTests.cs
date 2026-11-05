@@ -42,8 +42,8 @@ public static class ImmutableEquatableCollectionTests
         Assert.True(generic.IsReadOnly);
         Assert.True(list.IsReadOnly);
         Assert.True(list.IsFixedSize);
-        Assert.False(list.IsSynchronized);
-        Assert.Same(list.SyncRoot, ((ICollection)array).SyncRoot);
+        Assert.True(list.IsSynchronized);
+        Assert.Throws<NotSupportedException>(() => list.SyncRoot);
         Assert.False(generic.Contains(0));
         Assert.False(list.Contains(0));
         Assert.Equal(-1, generic.IndexOf(0));
@@ -90,8 +90,8 @@ public static class ImmutableEquatableCollectionTests
         ICollection collection = set;
         Assert.True(generic.IsReadOnly);
         Assert.True(collection.Count is 0);
-        Assert.False(collection.IsSynchronized);
-        Assert.Same(collection.SyncRoot, ((ICollection)set).SyncRoot);
+        Assert.True(collection.IsSynchronized);
+        Assert.Throws<NotSupportedException>(() => collection.SyncRoot);
         generic.CopyTo([], 0);
         Assert.True(generic.IsSubsetOf([]));
         Assert.True(generic.IsSupersetOf([]));
@@ -169,8 +169,8 @@ public static class ImmutableEquatableCollectionTests
         Assert.True(generic.IsReadOnly);
         Assert.True(nongeneric.IsReadOnly);
         Assert.True(nongeneric.IsFixedSize);
-        Assert.False(nongeneric.IsSynchronized);
-        Assert.Same(nongeneric.SyncRoot, ((ICollection)dictionary).SyncRoot);
+        Assert.True(nongeneric.IsSynchronized);
+        Assert.Throws<NotSupportedException>(() => nongeneric.SyncRoot);
         Assert.False(generic.Contains(new KeyValuePair<int, int>(0, 0)));
         generic.CopyTo([], 0);
         nongeneric.CopyTo(Array.Empty<KeyValuePair<int, int>>(), 0);
@@ -437,9 +437,8 @@ public static class ImmutableEquatableCollectionTests
         Assert.Equal(5, list.Count);
         Assert.Equal(3, list.IndexOf(4));
         Assert.True(list.Contains(1));
-        Assert.False(list.IsSynchronized);
-        Assert.Same(list.SyncRoot, ((ICollection)array1).SyncRoot);
-        Assert.IsNotType<int[]>(list.SyncRoot);
+        Assert.True(list.IsSynchronized);
+        Assert.Throws<NotSupportedException>(() => list.SyncRoot);
         
         int[] buffer = new int[5];
         list.CopyTo(buffer, 0);
@@ -523,9 +522,8 @@ public static class ImmutableEquatableCollectionTests
         ICollection set2 = set1;
         
         Assert.Equal(5, set2.Count);
-        Assert.False(set2.IsSynchronized);
-        Assert.Same(set2.SyncRoot, ((ICollection)set1).SyncRoot);
-        Assert.IsNotType<HashSet<int>>(set2.SyncRoot);
+        Assert.True(set2.IsSynchronized);
+        Assert.Throws<NotSupportedException>(() => set2.SyncRoot);
         
         int[] buffer = new int[5];
         Assert.Throws<InvalidOperationException>(() => set2.CopyTo(buffer, 0));
@@ -609,9 +607,8 @@ public static class ImmutableEquatableCollectionTests
         Assert.Equal(4, dictionary2[4]);
         Assert.True(dictionary2.IsReadOnly);
         Assert.True(dictionary2.IsFixedSize);
-        Assert.False(dictionary2.IsSynchronized);
-        Assert.Same(dictionary2.SyncRoot, ((ICollection)dictionary1).SyncRoot);
-        Assert.IsNotType<Dictionary<int, int>>(dictionary2.SyncRoot);
+        Assert.True(dictionary2.IsSynchronized);
+        Assert.Throws<NotSupportedException>(() => dictionary2.SyncRoot);
         
         KeyValuePair<int, int>[] buffer = new KeyValuePair<int, int>[10];
         dictionary2.CopyTo(buffer, 0);
