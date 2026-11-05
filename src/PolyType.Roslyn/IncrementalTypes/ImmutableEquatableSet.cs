@@ -9,13 +9,14 @@ namespace PolyType.Roslyn;
 /// Defines an immutable set that defines structural equality semantics.
 /// </summary>
 /// <remarks>
-/// The default value represents an empty set.
+/// Copying through the non-generic <see cref="ICollection.CopyTo"/> method is not supported.
+/// Use the generic <see cref="ICollection{T}.CopyTo"/> method instead.
 /// </remarks>
 /// <typeparam name="T">The element type of the set.</typeparam>
 [DebuggerDisplay("Count = {Count}")]
 [DebuggerTypeProxy(typeof(ImmutableEquatableSet<>.DebugView))]
 [CollectionBuilder(typeof(ImmutableEquatableSet), nameof(ImmutableEquatableSet.Create))]
-public readonly struct ImmutableEquatableSet<T> :
+public sealed class ImmutableEquatableSet<T> : 
     IEquatable<ImmutableEquatableSet<T>>, 
     ISet<T>,
     IReadOnlyCollection<T>, 
@@ -26,39 +27,42 @@ public readonly struct ImmutableEquatableSet<T> :
     /// <summary>
     /// An empty <see cref="ImmutableEquatableSet{T}"/> instance.
     /// </summary>
-    public static ImmutableEquatableSet<T> Empty => default;
+    public static ImmutableEquatableSet<T> Empty { get; } = new([]);
 
-    private static readonly HashSet<T> s_emptyValues = [];
-    private readonly HashSet<T>? _values;
-    private HashSet<T> Values => _values ?? s_emptyValues;
+    private readonly HashSet<T> _values;
 
     private ImmutableEquatableSet(HashSet<T> values)
     {
         Debug.Assert(values.Comparer == EqualityComparer<T>.Default);
-        _values = values.Count == 0 ? null : values;
+        _values = values;
     }
 
     /// <summary>
-    /// Gets the number of elements in the set.
+    /// Gets an enumerator that iterates through the set.
     /// </summary>
-    public int Count => _values?.Count ?? 0;
+    public int Count => _values.Count;
 
     /// <summary>
     /// Checks if the set contains the specified item.
     /// </summary>
     public bool Contains(T item)
-        => Values.Contains(item);
+        => _values.Contains(item);
 
     /// <inheritdoc/>
-    public bool Equals(ImmutableEquatableSet<T> other)
+    public bool Equals(ImmutableEquatableSet<T>? other)
     {
-        if (ReferenceEquals(_values, other._values))
+        if (ReferenceEquals(this, other))
         {
             return true;
         }
 
-        HashSet<T> thisSet = Values;
-        HashSet<T> otherSet = other.Values;
+        if (other is null)
+        {
+            return false;
+        }
+
+        HashSet<T> thisSet = _values;
+        HashSet<T> otherSet = other._values;
         if (thisSet.Count != otherSet.Count)
         {
             return false;
@@ -79,23 +83,11 @@ public readonly struct ImmutableEquatableSet<T> :
     public override bool Equals(object? obj)
         => obj is ImmutableEquatableSet<T> other && Equals(other);
 
-    /// <summary>Determines whether two sets are structurally equal.</summary>
-    /// <param name="left">The first set.</param>
-    /// <param name="right">The second set.</param>
-    /// <returns>Whether the sets are equal.</returns>
-    public static bool operator ==(ImmutableEquatableSet<T> left, ImmutableEquatableSet<T> right) => left.Equals(right);
-
-    /// <summary>Determines whether two sets are structurally unequal.</summary>
-    /// <param name="left">The first set.</param>
-    /// <param name="right">The second set.</param>
-    /// <returns>Whether the sets are unequal.</returns>
-    public static bool operator !=(ImmutableEquatableSet<T> left, ImmutableEquatableSet<T> right) => !left.Equals(right);
-
     /// <inheritdoc/>
     public override int GetHashCode()
     {
         int hash = 0;
-        foreach (T value in Values)
+        foreach (T value in _values)
         {
             hash ^= value is null ? 0 : value.GetHashCode();
         }
@@ -106,7 +98,7 @@ public readonly struct ImmutableEquatableSet<T> :
     /// <summary>
     /// Gets an enumerator that iterates through the set.
     /// </summary>
-    public HashSet<T>.Enumerator GetEnumerator() => Values.GetEnumerator();
+    public HashSet<T>.Enumerator GetEnumerator() => _values.GetEnumerator();
 
 
     [EditorBrowsable(EditorBrowsableState.Never)]
@@ -114,21 +106,21 @@ public readonly struct ImmutableEquatableSet<T> :
         => new(values);
 
     #region Explicit interface implementations
-    IEnumerator<T> IEnumerable<T>.GetEnumerator() => Values.GetEnumerator();
-    IEnumerator IEnumerable.GetEnumerator() => Values.GetEnumerator();
+    IEnumerator<T> IEnumerable<T>.GetEnumerator() => _values.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => _values.GetEnumerator();
 
     bool ICollection<T>.IsReadOnly => true;
-    void ICollection<T>.CopyTo(T[] array, int arrayIndex) => Values.CopyTo(array, arrayIndex);
+    void ICollection<T>.CopyTo(T[] array, int arrayIndex) => _values.CopyTo(array, arrayIndex);
     void ICollection.CopyTo(Array array, int index) => throw new InvalidOperationException();
-    bool ICollection.IsSynchronized => true;
-    object ICollection.SyncRoot => throw new NotSupportedException();
+    bool ICollection.IsSynchronized => false;
+    object ICollection.SyncRoot => this;
 
-    bool ISet<T>.IsSubsetOf(IEnumerable<T> other) => Values.IsSubsetOf(other);
-    bool ISet<T>.IsSupersetOf(IEnumerable<T> other) => Values.IsSupersetOf(other);
-    bool ISet<T>.IsProperSubsetOf(IEnumerable<T> other) => Values.IsProperSubsetOf(other);
-    bool ISet<T>.IsProperSupersetOf(IEnumerable<T> other) => Values.IsProperSupersetOf(other);
-    bool ISet<T>.Overlaps(IEnumerable<T> other) => Values.Overlaps(other);
-    bool ISet<T>.SetEquals(IEnumerable<T> other) => Values.SetEquals(other);
+    bool ISet<T>.IsSubsetOf(IEnumerable<T> other) => _values.IsSubsetOf(other);
+    bool ISet<T>.IsSupersetOf(IEnumerable<T> other) => _values.IsSupersetOf(other);
+    bool ISet<T>.IsProperSubsetOf(IEnumerable<T> other) => _values.IsProperSubsetOf(other);
+    bool ISet<T>.IsProperSupersetOf(IEnumerable<T> other) => _values.IsProperSupersetOf(other);
+    bool ISet<T>.Overlaps(IEnumerable<T> other) => _values.Overlaps(other);
+    bool ISet<T>.SetEquals(IEnumerable<T> other) => _values.SetEquals(other);
 
     void ICollection<T>.Add(T item) => throw new InvalidOperationException();
     bool ISet<T>.Add(T item) => throw new InvalidOperationException();

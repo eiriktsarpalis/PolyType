@@ -11,230 +11,7 @@ public static class ImmutableEquatableCollectionTests
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
-    [InlineData(2)]
-    [InlineData(3)]
-    [InlineData(4)]
-    public static void ImmutableArray_EmptyRepresentationsAreDefaultSafe(int representation)
-    {
-        ImmutableEquatableArray<int> array = representation switch
-        {
-            0 => default,
-            1 => ImmutableEquatableArray<int>.Empty,
-            2 => [],
-            3 => Array.Empty<int>().ToImmutableEquatableArray(),
-            _ => Enumerable.Range(0, 0).Where(_ => true).ToImmutableEquatableArray(),
-        };
-
-        AssertNormalizedEmpty(array);
-        Assert.True(array.Equals(default));
-        Assert.True(((IEquatable<ImmutableEquatableArray<int>>)array).Equals(default));
-        Assert.Equal(0, array.Length);
-        Assert.False(array.GetEnumerator().MoveNext());
-        Assert.Empty(array);
-        Assert.Empty((IEnumerable)array);
-
-        IReadOnlyList<int> readOnly = array;
-        IList<int> generic = array;
-        IList list = array;
-        Assert.True(readOnly.Count is 0);
-        Assert.True(generic.Count is 0);
-        Assert.True(list.Count is 0);
-        Assert.True(generic.IsReadOnly);
-        Assert.True(list.IsReadOnly);
-        Assert.True(list.IsFixedSize);
-        Assert.True(list.IsSynchronized);
-        Assert.Throws<NotSupportedException>(() => list.SyncRoot);
-        Assert.False(generic.Contains(0));
-        Assert.False(list.Contains(0));
-        Assert.Equal(-1, generic.IndexOf(0));
-        Assert.Equal(-1, list.IndexOf(0));
-        generic.CopyTo([], 0);
-        list.CopyTo(Array.Empty<int>(), 0);
-        Assert.Throws<IndexOutOfRangeException>(() => array[0]);
-        Assert.Throws<IndexOutOfRangeException>(() => readOnly[0]);
-        Assert.Throws<IndexOutOfRangeException>(() => generic[0]);
-        Assert.Throws<IndexOutOfRangeException>(() => list[0]);
-        Assert.Throws<ArgumentNullException>(() => generic.CopyTo(null!, 0));
-        Assert.Throws<ArgumentNullException>(() => list.CopyTo(null!, 0));
-        Assert.Throws<InvalidOperationException>(() => generic.Add(0));
-        Assert.Throws<InvalidOperationException>(() => list.Add(0));
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(1)]
-    [InlineData(2)]
-    [InlineData(3)]
-    [InlineData(4)]
-    public static void ImmutableSet_EmptyRepresentationsAreDefaultSafe(int representation)
-    {
-        ImmutableEquatableSet<int> set = representation switch
-        {
-            0 => default,
-            1 => ImmutableEquatableSet<int>.Empty,
-            2 => [],
-            3 => Array.Empty<int>().ToImmutableEquatableSet(),
-            _ => Enumerable.Range(0, 0).Where(_ => true).ToImmutableEquatableSet(),
-        };
-
-        AssertNormalizedEmpty(set);
-        Assert.True(set.Equals(default));
-        Assert.True(((IEquatable<ImmutableEquatableSet<int>>)set).Equals(default));
-        Assert.True(set.Count is 0);
-        Assert.DoesNotContain(0, set);
-        Assert.False(set.GetEnumerator().MoveNext());
-        Assert.Empty(set);
-        Assert.Empty((IEnumerable)set);
-
-        ISet<int> generic = set;
-        ICollection collection = set;
-        Assert.True(generic.IsReadOnly);
-        Assert.True(collection.Count is 0);
-        Assert.True(collection.IsSynchronized);
-        Assert.Throws<NotSupportedException>(() => collection.SyncRoot);
-        generic.CopyTo([], 0);
-        Assert.True(generic.IsSubsetOf([]));
-        Assert.True(generic.IsSupersetOf([]));
-        Assert.False(generic.IsProperSubsetOf([]));
-        Assert.False(generic.IsProperSupersetOf([]));
-        Assert.True(generic.SetEquals([]));
-        Assert.False(generic.Overlaps([]));
-        Assert.True(generic.IsSubsetOf([1]));
-        Assert.True(generic.IsProperSubsetOf([1]));
-        Assert.False(generic.IsSupersetOf([1]));
-        Assert.False(generic.IsProperSupersetOf([1]));
-        Assert.False(generic.SetEquals([1]));
-        Assert.False(generic.Overlaps([1]));
-        Assert.Throws<ArgumentNullException>(() => generic.CopyTo(null!, 0));
-        Assert.Throws<ArgumentNullException>(() => generic.IsSubsetOf(null!));
-        Assert.Throws<ArgumentNullException>(() => generic.IsSupersetOf(null!));
-        Assert.Throws<ArgumentNullException>(() => generic.IsProperSubsetOf(null!));
-        Assert.Throws<ArgumentNullException>(() => generic.IsProperSupersetOf(null!));
-        Assert.Throws<ArgumentNullException>(() => generic.SetEquals(null!));
-        Assert.Throws<ArgumentNullException>(() => generic.Overlaps(null!));
-        Assert.Throws<InvalidOperationException>(() => generic.Add(0));
-        Assert.Throws<InvalidOperationException>(() => collection.CopyTo(Array.Empty<int>(), 0));
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(1)]
-    [InlineData(2)]
-    [InlineData(3)]
-    [InlineData(4)]
-    [InlineData(5)]
-    [InlineData(6)]
-    public static void ImmutableDictionary_EmptyRepresentationsAreDefaultSafe(int representation)
-    {
-        ImmutableEquatableDictionary<int, int> dictionary = representation switch
-        {
-            0 => default,
-            1 => ImmutableEquatableDictionary<int, int>.Empty,
-            2 => ImmutableEquatableDictionary.Empty<int, int>(),
-            3 => Array.Empty<int>().ToImmutableEquatableDictionary(i => i),
-            4 => Enumerable.Range(0, 0).Where(_ => true).ToImmutableEquatableDictionary(i => i, i => i),
-            5 => new Dictionary<int, int>().ToImmutableEquatableDictionary(),
-            _ => Enumerable.Range(0, 0).Select(i => new KeyValuePair<int, int>(i, i)).ToImmutableEquatableDictionary(),
-        };
-
-        AssertNormalizedEmpty(dictionary);
-        Assert.True(dictionary.Equals(default));
-        Assert.True(((IEquatable<ImmutableEquatableDictionary<int, int>>)dictionary).Equals(default));
-        Assert.True(dictionary.Count is 0);
-        Assert.False(dictionary.ContainsKey(0));
-        Assert.False(dictionary.TryGetValue(0, out int value));
-        Assert.Equal(0, value);
-        Assert.False(dictionary.GetEnumerator().MoveNext());
-        Assert.Empty(dictionary);
-        Assert.Empty((IEnumerable)dictionary);
-        Assert.Empty(dictionary.Keys);
-        Assert.Empty(dictionary.Values);
-        Assert.Throws<KeyNotFoundException>(() => dictionary[0]);
-
-        IReadOnlyDictionary<int, int> readOnly = dictionary;
-        IDictionary<int, int> generic = dictionary;
-        IDictionary nongeneric = dictionary;
-        Assert.Empty(readOnly.Keys);
-        Assert.Empty(readOnly.Values);
-        Assert.Empty(generic.Keys);
-        Assert.Empty(generic.Values);
-        Assert.Empty(nongeneric.Keys);
-        Assert.Empty(nongeneric.Values);
-        Assert.True(readOnly.Count is 0);
-        Assert.True(generic.Count is 0);
-        Assert.True(nongeneric.Count is 0);
-        Assert.False(nongeneric.GetEnumerator().MoveNext());
-        Assert.False(nongeneric.Contains(0));
-        Assert.Null(nongeneric[0]);
-        Assert.True(generic.IsReadOnly);
-        Assert.True(nongeneric.IsReadOnly);
-        Assert.True(nongeneric.IsFixedSize);
-        Assert.True(nongeneric.IsSynchronized);
-        Assert.Throws<NotSupportedException>(() => nongeneric.SyncRoot);
-        Assert.False(generic.Contains(new KeyValuePair<int, int>(0, 0)));
-        generic.CopyTo([], 0);
-        nongeneric.CopyTo(Array.Empty<KeyValuePair<int, int>>(), 0);
-        Assert.Throws<KeyNotFoundException>(() => generic[0]);
-        Assert.Throws<KeyNotFoundException>(() => readOnly[0]);
-        Assert.Throws<ArgumentNullException>(() => generic.CopyTo(null!, 0));
-        Assert.Throws<ArgumentNullException>(() => nongeneric.CopyTo(null!, 0));
-        Assert.Throws<ArgumentNullException>(() => nongeneric.Contains(null!));
-        Assert.Throws<InvalidOperationException>(() => generic.Add(0, 0));
-        Assert.Throws<InvalidOperationException>(() => nongeneric.Add(0, 0));
-    }
-
-    private static void AssertNormalizedEmpty<T>(T collection) where T : struct
-    {
-        Assert.Equal(0, collection.GetHashCode());
-        Assert.Equal(default, collection);
-        FieldInfo storage = typeof(T).GetField("_values", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        Assert.Null(storage.GetValue(collection));
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(2)]
-    public static void ImmutableCollections_StructCopiesPreserveOwnedStorage(int count)
-    {
-        int[] source = Enumerable.Range(0, count).ToArray();
-        var array = source.ToImmutableEquatableArray();
-        var set = source.ToImmutableEquatableSet();
-        var dictionary = source.ToImmutableEquatableDictionary(i => i);
-        var arrayCopy = array;
-        var setCopy = set;
-        var dictionaryCopy = dictionary;
-        Array.Clear(source, 0, source.Length);
-        Assert.Equal(Enumerable.Range(0, count), arrayCopy);
-        Assert.Equal(Enumerable.Range(0, count), setCopy.OrderBy(i => i));
-        Assert.Equal(Enumerable.Range(0, count), dictionaryCopy.Keys.OrderBy(i => i));
-        Assert.Equal(array, arrayCopy);
-        Assert.Equal(set, setCopy);
-        Assert.Equal(dictionary, dictionaryCopy);
-        Assert.True(array == Enumerable.Range(0, count).ToImmutableEquatableArray());
-        Assert.True(set == Enumerable.Range(0, count).ToImmutableEquatableSet());
-        Assert.True(dictionary == Enumerable.Range(0, count).ToImmutableEquatableDictionary(i => i));
-        Assert.False(array != arrayCopy);
-        Assert.False(set != setCopy);
-        Assert.False(dictionary != dictionaryCopy);
-        Assert.True(array != Enumerable.Range(0, count + 1).ToImmutableEquatableArray());
-        Assert.True(set != Enumerable.Range(0, count + 1).ToImmutableEquatableSet());
-        Assert.True(dictionary != Enumerable.Range(0, count + 1).ToImmutableEquatableDictionary(i => i));
-
-        ImmutableEquatableArray<int>? optionalArray = array;
-        ImmutableEquatableSet<int>? optionalSet = set;
-        ImmutableEquatableDictionary<int, int>? optionalDictionary = dictionary;
-        Assert.True(optionalArray.HasValue);
-        Assert.True(optionalSet.HasValue);
-        Assert.True(optionalDictionary.HasValue);
-        Assert.NotEqual(default(ImmutableEquatableArray<int>?), optionalArray);
-        Assert.NotEqual(default(ImmutableEquatableSet<int>?), optionalSet);
-        Assert.NotEqual(default(ImmutableEquatableDictionary<int, int>?), optionalDictionary);
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(1)]
-    public static void ImmutableCollections_ObjectEqualityRejectsNull(int count)
+    public static void ImmutableCollections_TypedEqualityRejectsNull(int count)
     {
         var array = Enumerable.Range(0, count).ToImmutableEquatableArray();
         var set = Enumerable.Range(0, count).ToImmutableEquatableSet();
@@ -243,6 +20,9 @@ public static class ImmutableEquatableCollectionTests
         Assert.False(array.Equals(null));
         Assert.False(set.Equals(null));
         Assert.False(dictionary.Equals(null));
+        Assert.False(((IEquatable<ImmutableEquatableArray<int>>)array).Equals(null!));
+        Assert.False(((IEquatable<ImmutableEquatableSet<int>>)set).Equals(null!));
+        Assert.False(((IEquatable<ImmutableEquatableDictionary<int, int>>)dictionary).Equals(null!));
     }
 
     [Theory]
@@ -375,6 +155,7 @@ public static class ImmutableEquatableCollectionTests
     {
         ImmutableEquatableArray<int> array1 = [1, 2, 3, 4, 5];
         ImmutableEquatableArray<int> array2 = [1, 2, 3, 4, 5];
+        Assert.NotSame(array1, array2);
         Assert.Equal(array1.GetHashCode(), array2.GetHashCode());
         Assert.Equal(array1, array2);
         Assert.True(array1.Equals((object)array2));
@@ -437,8 +218,8 @@ public static class ImmutableEquatableCollectionTests
         Assert.Equal(5, list.Count);
         Assert.Equal(3, list.IndexOf(4));
         Assert.True(list.Contains(1));
-        Assert.True(list.IsSynchronized);
-        Assert.Throws<NotSupportedException>(() => list.SyncRoot);
+        Assert.False(list.IsSynchronized);
+        Assert.Same(list, list.SyncRoot);
         
         int[] buffer = new int[5];
         list.CopyTo(buffer, 0);
@@ -458,6 +239,7 @@ public static class ImmutableEquatableCollectionTests
         ImmutableEquatableSet<int> set1 = [1, 2, 3, 4, 5];
         ImmutableEquatableSet<int> set2 = [1, 2, 3, 5, 4];
         
+        Assert.NotSame(set1, set2);
         Assert.Equal(set1.GetHashCode(), set2.GetHashCode());
         Assert.Equal(set1, set2);
         Assert.True(set1.Equals((object)set2));
@@ -522,8 +304,8 @@ public static class ImmutableEquatableCollectionTests
         ICollection set2 = set1;
         
         Assert.Equal(5, set2.Count);
-        Assert.True(set2.IsSynchronized);
-        Assert.Throws<NotSupportedException>(() => set2.SyncRoot);
+        Assert.False(set2.IsSynchronized);
+        Assert.Same(set2, set2.SyncRoot);
         
         int[] buffer = new int[5];
         Assert.Throws<InvalidOperationException>(() => set2.CopyTo(buffer, 0));
@@ -535,6 +317,7 @@ public static class ImmutableEquatableCollectionTests
         ImmutableEquatableDictionary<int, int> array1 = Enumerable.Range(1, 10).ToImmutableEquatableDictionary(i => i, i => i);
         ImmutableEquatableDictionary<int, int> array2 = Enumerable.Range(1, 10).ToImmutableEquatableDictionary(i => i, i => i);
         
+        Assert.NotSame(array1, array2);
         Assert.Equal(array1.GetHashCode(), array2.GetHashCode());
         Assert.Equal(array1, array2);
         Assert.True(array1.Equals((object)array2));
@@ -607,8 +390,8 @@ public static class ImmutableEquatableCollectionTests
         Assert.Equal(4, dictionary2[4]);
         Assert.True(dictionary2.IsReadOnly);
         Assert.True(dictionary2.IsFixedSize);
-        Assert.True(dictionary2.IsSynchronized);
-        Assert.Throws<NotSupportedException>(() => dictionary2.SyncRoot);
+        Assert.False(dictionary2.IsSynchronized);
+        Assert.Same(dictionary2, dictionary2.SyncRoot);
         
         KeyValuePair<int, int>[] buffer = new KeyValuePair<int, int>[10];
         dictionary2.CopyTo(buffer, 0);
@@ -626,7 +409,7 @@ public static class ImmutableEquatableCollectionTests
     [Fact]
     public static void ImmutableEquatableDictionary_Empty()
     {
-        Assert.Equal(default, ImmutableEquatableDictionary.Empty<int, int>());
+        Assert.Same(ImmutableEquatableDictionary.Empty<int, int>(), ImmutableEquatableDictionary.Empty<int, int>());
         var empty = ImmutableEquatableDictionary.Empty<int, int>();
         Assert.Empty(empty);
     }
