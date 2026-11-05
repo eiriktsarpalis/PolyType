@@ -5,16 +5,16 @@ namespace PolyType.Examples.XmlSerializer.Converters;
 
 internal sealed class XmlOptionalConverter<TOptional, TElement>(
     XmlConverter<TElement> elementConverter,
-    bool elementIsUnion,
+    bool elementUsesDiscriminatorAttribute,
     OptionDeconstructor<TOptional, TElement> deconstructor,
     Func<TOptional> createNone,
     Func<TElement, TOptional> createSome) : XmlConverter<TOptional>
 {
     public override TOptional? Read(XmlReader reader)
     {
-        // For union elements, attributes besides nil identify a present case with a null payload.
+        // A discriminator distinguishes a present element with a null payload from an absent optional.
         // Keep this check here so the selected payload converter can still read nil as null.
-        if ((!elementIsUnion || reader.AttributeCount <= 1) && reader.TryReadNullElement())
+        if ((!elementUsesDiscriminatorAttribute || reader.AttributeCount <= 1) && reader.TryReadNullElement())
         {
             return createNone();
         }

@@ -126,7 +126,7 @@ public static partial class XmlSerializer
         {
             return new XmlOptionalConverter<TOptional, TElement>(
                 elementConverter: GetOrAddConverter(optionalShape.ElementType),
-                elementIsUnion: optionalShape.ElementType.Kind is TypeShapeKind.Union,
+                elementUsesDiscriminatorAttribute: optionalShape.ElementType.Kind is TypeShapeKind.Union,
                 deconstructor: optionalShape.GetDeconstructor(),
                 createNone: optionalShape.GetNoneConstructor(),
                 createSome: optionalShape.GetSomeConstructor());
