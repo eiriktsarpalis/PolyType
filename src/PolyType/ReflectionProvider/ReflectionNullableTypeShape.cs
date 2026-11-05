@@ -19,14 +19,14 @@ internal sealed class ReflectionNullableTypeShape<T>(ReflectionTypeShapeProvider
     public OptionDeconstructor<T?, T> GetDeconstructor() =>
         static (optional, out value) =>
         {
-            if (!optional.HasValue)
+            if (optional.HasValue)
             {
-                value = default;
-                return false;
+                value = optional.Value;
+                return true;
             }
 
-            value = optional.Value;
-            return true;
+            value = default;
+            return false;
         };
 
     public ITypeShape<T> ElementType => Provider.GetTypeShape<T>();
