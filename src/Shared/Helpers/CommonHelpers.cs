@@ -126,7 +126,8 @@ internal static class CommonHelpers
     }
 
     /// <summary>
-    /// A string comparer that equates "SomeIdentifier" with "someIdentifier"
+    /// Compares identifiers after normalizing words and acronyms to camel case.
+    /// Spaces are preserved and remain significant.
     /// </summary>
     public sealed class CamelCaseInvariantComparer : EqualityComparer<string>
     {
@@ -144,39 +145,91 @@ internal static class CommonHelpers
                 return false;
             }
 
-            if (left.Length == 0)
+            var leftEnumerator = new CamelCaseEnumerator(left.AsSpan());
+            var rightEnumerator = new CamelCaseEnumerator(right.AsSpan());
+
+            while (leftEnumerator.MoveNext(out char leftChar))
             {
-                return true;
+                if (!rightEnumerator.MoveNext(out char rightChar) || leftChar != rightChar)
+                {
+                    return false;
+                }
             }
 
-            // NB this ignores surrogate pairs that are letters
-            return char.ToLowerInvariant(left[0]) == char.ToLowerInvariant(right[0]) &&
-                   left.AsSpan(start: 1).SequenceEqual(right.AsSpan(start: 1));
+            return !rightEnumerator.MoveNext(out _);
         }
 
         public override int GetHashCode(string text)
         {
-            return text is [] ? 0 :
-                CombineHashCodes(
-                    char.ToLowerInvariant(text[0]).GetHashCode(),
-                    GetOrdinalHashCode(text.AsSpan(start: 1)));
-
-            static int GetOrdinalHashCode(ReadOnlySpan<char> span)
+            var enumerator = new CamelCaseEnumerator(text.AsSpan());
+            int hash = 17;
+            while (enumerator.MoveNext(out char value))
             {
-#if NET
-                return string.GetHashCode(span, StringComparison.Ordinal);
-#else
-                const int prime = 31;
-                int hash = 17;
+                hash = unchecked((hash * 31) + value);
+            }
 
-                for (int i = 0; i < span.Length; i++)
+            return hash;
+        }
+
+        private ref struct CamelCaseEnumerator(ReadOnlySpan<char> text)
+        {
+            private readonly ReadOnlySpan<char> _text = text;
+            private int _position;
+            private WordState _state;
+
+            public bool MoveNext(out char value)
+            {
+                if (_position < _text.Length)
                 {
-                    hash = unchecked((hash * prime) + span[i]);
+                    char current = _text[_position++];
+                    switch (char.GetUnicodeCategory(current))
+                    {
+                        case System.Globalization.UnicodeCategory.UppercaseLetter:
+                            // The last capital in an acronym starts the next word when followed by lowercase.
+                            bool startsWord = _state is WordState.LowercaseLetterOrDigit or WordState.Space ||
+                                (_state is WordState.UppercaseLetter && _position < _text.Length && char.IsLower(_text[_position]));
+                            value = startsWord ? current : char.ToLowerInvariant(current);
+                            _state = WordState.UppercaseLetter;
+                            return true;
+
+                        case System.Globalization.UnicodeCategory.LowercaseLetter:
+                            value = _state is WordState.Space ? char.ToUpperInvariant(current) : current;
+                            _state = WordState.LowercaseLetterOrDigit;
+                            return true;
+
+                        case System.Globalization.UnicodeCategory.DecimalDigitNumber:
+                            value = current;
+                            _state = WordState.LowercaseLetterOrDigit;
+                            return true;
+
+                        case System.Globalization.UnicodeCategory.SpaceSeparator:
+                            value = current;
+                            if (_state is not WordState.NotStarted)
+                            {
+                                _state = WordState.Space;
+                            }
+
+                            return true;
+
+                        default:
+                            // Preserve punctuation and UTF-16 surrogates without treating them as letters.
+                            value = current;
+                            _state = WordState.NotStarted;
+                            return true;
+                    }
                 }
 
-                return hash;
-#endif
+                value = default;
+                return false;
             }
+        }
+
+        private enum WordState
+        {
+            NotStarted,
+            UppercaseLetter,
+            LowercaseLetterOrDigit,
+            Space,
         }
     }
 
