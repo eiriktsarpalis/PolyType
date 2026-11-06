@@ -1,11 +1,18 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
 /// <summary>
 /// An event data model wrapping an <see cref="IEventSymbol"/>.
 /// </summary>
-public readonly struct EventDataModel
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+readonly struct EventDataModel
 {
     /// <summary>
     /// The name used to identify the event in the generated code.
@@ -26,7 +33,12 @@ public readonly struct EventDataModel
 /// <summary>
 /// An event data model wrapping an <see cref="IEventSymbol"/>.
 /// </summary>
-public readonly struct ResolvedEventSymbol
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+readonly struct ResolvedEventSymbol
 {
     /// <summary>
     /// Gets the resolved event symbol.

@@ -1,12 +1,19 @@
 using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 
+#nullable enable
+
 namespace PolyType.Roslyn;
 
 /// <summary>
 /// Describes a type following the C# union member pattern.
 /// </summary>
-public sealed class CSharpUnionDataModel : TypeDataModel
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+sealed class CSharpUnionDataModel : TypeDataModel
 {
     /// <inheritdoc/>
     public override TypeDataKind Kind => TypeDataKind.CSharpUnion;
@@ -35,7 +42,12 @@ public sealed class CSharpUnionDataModel : TypeDataModel
 /// <summary>
 /// Describes a creation member of a C# union.
 /// </summary>
-public readonly struct UnionCaseDataModel
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+readonly struct UnionCaseDataModel
 {
     /// <summary>
     /// Gets the case type after substituting the union's type arguments.

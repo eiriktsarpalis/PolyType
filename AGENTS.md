@@ -23,7 +23,8 @@ dotnet test                        # add --framework net10.0 for fast single-TFM
 | `make build` | Restore tools + NuGet packages, then build the solution |
 | `make test-clr` | Run CLR tests with coverage, crash dumps, and hang dumps |
 | `make test-aot` | Publish and run Native AOT smoke tests |
-| `make test` | Run both CLR and AOT tests (default target) |
+| `make test-source-package` | Pack PolyType.Roslyn and compile a standalone consumer using TypeDataModelGenerator |
+| `make test` | Run CLR, AOT, and the source-package compilation smoke test (default target) |
 | `make test-aot-size` | Publish the canonical AOT app and check its binary size against the committed per-RID baselines |
 | `make pack` | Create NuGet packages |
 | `make generate-docs` / `make serve-docs` | Build / serve the DocFX site (port 8080) |
@@ -65,12 +66,13 @@ For deeper, scoped detail see the nested files: [`src/PolyType/AGENTS.md`](src/P
 
 ## Project Layout
 
-- **`src/`** — `PolyType` (core library: both providers, abstractions, attributes), `PolyType.Roslyn` (general-purpose `ITypeSymbol` → model extraction, reusable by third-party generators), `PolyType.SourceGenerator` (built-in incremental generator), `PolyType.Examples` (reference serializers/binders/mappers built on PolyType), `PolyType.TestCases` (+ `.FSharp`, shared test types), and `Shared` (polyfills/helpers).
+- **`src/`** — `PolyType` (core library: both providers, abstractions, attributes), `PolyType.Roslyn` (source-only package for general-purpose `ITypeSymbol` → model extraction, reusable by third-party generators), `PolyType.SourceGenerator` (built-in incremental generator), `PolyType.Examples` (reference serializers/binders/mappers built on PolyType), `PolyType.TestCases` (+ `.FSharp`, shared test types), and `Shared` (polyfills/helpers).
 - **`src/fast-path-json/`** — `PolyType.FastPathJson` (net10.0 static JSON serialization contract, facade, and reusable converter witnesses) and `PolyType.FastPathJson.SourceGenerator` (netstandard2.0 incremental generator demonstrating direct code generation from `PolyType.Roslyn` models, organized into `Parser`, `Model`, `SourceFormatter`, and `Helpers` folders). These prototype projects are not packaged and do not depend on PolyType runtime shapes.
 - **`tests/`** — `PolyType.Tests` (main xUnit suite), `PolyType.Tests.NativeAOT` (AOT smoke tests, TUnit), `PolyType.SourceGenerator.UnitTests` (generator + snapshot tests), `PolyType.Roslyn.Tests`, `PolyType.Benchmarks` (BenchmarkDotNet; not a test project), and `SizeTrackingApp.AOT` (canonical .NET 11 JSON/configuration-binding app whose published size is tracked per-RID in `aot-size-baselines.json` via `make test-aot-size`).
 - **`applications/`** — five Native AOT sample apps plus one reflection-based app.
 - **`tests/PolyType.FastPathJson.Tests`** — representative JSON compatibility, generator diagnostics/incrementality, and generated-source snapshot tests for the prototype. PolyType.FastPathJson snapshot baselines live under `Snapshots/{TFM}-{Configuration}` and are refreshed with the test project's `UpdateSnapshots` MSBuild target.
 - **`eng/AotSizeCheck/`** — internal CLI that backs `make test-aot-size`.
+- **`eng/SourcePackageTests/`** — internal CLI that backs `make test-source-package`. It packs PolyType.Roslyn and compiles one isolated `netstandard2.0` consumer that constructs `TypeDataModelGenerator`. Successful runs remove their own temporary fixture directory; failed runs retain it under `artifacts/source-package-tests/`.
 
 ## Things to Avoid / Common Gotchas
 
@@ -78,6 +80,7 @@ For deeper, scoped detail see the nested files: [`src/PolyType/AGENTS.md`](src/P
 - **Strong naming** — assemblies under `src/` are signed with `OpenKey.snk`; test and build-tooling projects are not.
 - **Versioning** — Nerdbank.GitVersioning (nbgv) manages versions from `version.json`; don't manually edit assembly versions.
 - **Package validation** — runs against the **v1.0.0** baseline, so breaking public API changes will fail the build.
+- **Roslyn source package** — package consumers need C# 14. Older target frameworks require compiler-support polyfills; PolySharp is recommended but is not a package dependency, and equivalent definitions are supported. The package supplies a Microsoft.CodeAnalysis.CSharp 3.11.0 baseline dependency; consumers can select a newer Roslyn version with a direct reference. `build/PolyType.Roslyn.targets` is intentionally non-transitive. Both generators reuse it locally with `PolyTypeRoslynPublic=true`; the Roslyn project's public development assembly is retained for tests and DocFX but is not packaged.
 
 ## Keeping This Document Current
 

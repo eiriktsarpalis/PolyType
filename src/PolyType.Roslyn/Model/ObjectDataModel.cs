@@ -1,11 +1,18 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
 /// <summary>
 /// Represents a type whose data model is defined as a list of properties.
 /// </summary>
-public sealed class ObjectDataModel : TypeDataModel
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+sealed class ObjectDataModel : TypeDataModel
 {
     /// <inheritdoc/>
     public override TypeDataKind Kind => TypeDataKind.Object;

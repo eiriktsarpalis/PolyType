@@ -1,12 +1,19 @@
 using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 
+#nullable enable
+
 namespace PolyType.Roslyn;
 
 /// <summary>
 /// A method data model wrapping an <see cref="IMethodSymbol"/>.
 /// </summary>
-public readonly struct MethodDataModel
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+readonly struct MethodDataModel
 {
     /// <summary>
     /// The name used to identify the method in the generated code.
@@ -42,7 +49,12 @@ public readonly struct MethodDataModel
 /// <summary>
 /// Represents the different kinds of return types that a method can have.
 /// </summary>
-public enum MethodReturnTypeKind
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+enum MethodReturnTypeKind
 {
     /// <summary>
     /// The return type is not recognized or does not fall into any other category.
@@ -78,7 +90,12 @@ public enum MethodReturnTypeKind
 /// <summary>
 /// A resolved method symbol that includes additional metadata.
 /// </summary>
-public readonly struct ResolvedMethodSymbol
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+readonly struct ResolvedMethodSymbol
 {
     /// <summary>
     /// Gets the resolved method symbol.

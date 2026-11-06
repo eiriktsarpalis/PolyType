@@ -1,12 +1,19 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using PolyType.Roslyn.Helpers;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
 /// <summary>
 /// Represents the data model for either an instance property or an instance field.
 /// </summary>
-public readonly struct PropertyDataModel
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+readonly struct PropertyDataModel
 {
     /// <summary>
     /// Creates a new instance of <see cref="PropertyDataModel"/> from a property symbol.
@@ -132,7 +139,12 @@ public readonly struct PropertyDataModel
 /// <summary>
 /// A resolved property or field symbol with additional metadata.
 /// </summary>
-public readonly struct ResolvedPropertySymbol
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+readonly struct ResolvedPropertySymbol
 {
     /// <summary>
     /// Gets the resolved property or field symbol.

@@ -1,5 +1,7 @@
 using System.Reflection.Metadata;
 
+#nullable enable
+
 namespace PolyType.Roslyn.Helpers;
 
 internal static class MetadataHelpers

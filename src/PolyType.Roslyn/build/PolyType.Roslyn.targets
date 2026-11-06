@@ -1,0 +1,30 @@
+<Project>
+  <PropertyGroup>
+    <_PolyTypeRoslynSourceRoot Condition="'$(_PolyTypeRoslynSourceRoot)' == ''">$(MSBuildThisFileDirectory)..\src\</_PolyTypeRoslynSourceRoot>
+    <DefineConstants Condition="'$(PolyTypeRoslynPublic)' == 'true'">$(DefineConstants);POLYTYPE_ROSLYN_PUBLIC</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <_PolyTypeRoslynSource Include="$(_PolyTypeRoslynSourceRoot)PolyType.Roslyn\**\*.cs"
+                           Exclude="$(_PolyTypeRoslynSourceRoot)PolyType.Roslyn\bin\**;$(_PolyTypeRoslynSourceRoot)PolyType.Roslyn\obj\**">
+      <Link>PolyType.Roslyn\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <PackagePath>src\PolyType.Roslyn\%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
+    </_PolyTypeRoslynSource>
+    <_PolyTypeRoslynSource Include="$(_PolyTypeRoslynSourceRoot)Shared\Helpers\CommonHelpers.cs;$(_PolyTypeRoslynSourceRoot)Shared\Helpers\TypeVisibilityHelpers.cs;$(_PolyTypeRoslynSourceRoot)Shared\Helpers\DebugExt.cs">
+      <Link>PolyType.Roslyn\Shared\Helpers\%(Filename)%(Extension)</Link>
+      <PackagePath>src\Shared\Helpers\%(Filename)%(Extension)</PackagePath>
+    </_PolyTypeRoslynSource>
+    <Compile Include="@(_PolyTypeRoslynSource)" Exclude="@(Compile)" Visible="false" />
+    <EditorConfigFiles Include="$(_PolyTypeRoslynSourceRoot).editorconfig"
+                       Condition="Exists('$(_PolyTypeRoslynSourceRoot).editorconfig')" />
+  </ItemGroup>
+
+  <Target Name="ValidatePolyTypeRoslynSources" BeforeTargets="CoreCompile">
+    <Error Condition="'$(MSBuildProjectExtension)' != '.csproj' or '$(UsingMicrosoftNETSdk)' != 'true'"
+           Text="PolyType.Roslyn supports SDK-style C# projects using PackageReference." />
+    <Error Condition="!Exists('$(_PolyTypeRoslynSourceRoot)PolyType.Roslyn\KnownSymbols.cs')"
+           Text="The PolyType.Roslyn source payload is missing. Restore the package before building." />
+    <Error Condition="'$(PolyTypeRoslynPublic)' != '' and '$(PolyTypeRoslynPublic)' != 'true' and '$(PolyTypeRoslynPublic)' != 'false'"
+           Text="PolyTypeRoslynPublic must be true or false." />
+  </Target>
+</Project>

@@ -1,9 +1,19 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
-public partial class TypeDataModelGenerator
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+partial class TypeDataModelGenerator
 {
     private bool TryMapEnum(ITypeSymbol type, ref TypeDataModelGenerationContext ctx, out TypeDataModel? model, out TypeDataModelGenerationStatus status)
     {

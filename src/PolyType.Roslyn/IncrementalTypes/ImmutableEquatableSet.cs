@@ -1,7 +1,12 @@
-﻿using System.Collections;
+using System.Collections.Generic;
+using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
@@ -12,7 +17,12 @@ namespace PolyType.Roslyn;
 [DebuggerDisplay("Count = {Count}")]
 [DebuggerTypeProxy(typeof(ImmutableEquatableSet<>.DebugView))]
 [CollectionBuilder(typeof(ImmutableEquatableSet), nameof(ImmutableEquatableSet.Create))]
-public sealed class ImmutableEquatableSet<T> : 
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+sealed class ImmutableEquatableSet<T> :
     IEquatable<ImmutableEquatableSet<T>>, 
     ISet<T>,
     IReadOnlyCollection<T>, 
@@ -138,7 +148,12 @@ public sealed class ImmutableEquatableSet<T> :
 /// <summary>
 /// Defines extension methods for creating <see cref="ImmutableEquatableSet{T}"/> instances.
 /// </summary>
-public static class ImmutableEquatableSet
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+static class ImmutableEquatableSet
 {
     /// <summary>
     /// Creates a new <see cref="ImmutableEquatableSet{T}"/> instance from the specified values.

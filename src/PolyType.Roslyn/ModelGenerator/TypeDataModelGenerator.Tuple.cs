@@ -1,10 +1,18 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using PolyType.Roslyn.Helpers;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
-public partial class TypeDataModelGenerator
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+partial class TypeDataModelGenerator
 {
     /// <summary>
     /// Determines whether <see cref="System.Tuple" /> tuples should be mapped to 

@@ -1,10 +1,17 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 using System.Diagnostics;
 
+#nullable enable
+
 namespace PolyType.Roslyn;
 
-public partial class TypeDataModelGenerator
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+partial class TypeDataModelGenerator
 {
     /// <summary>
     /// Determines whether delegate parameters should be included in the generated model.

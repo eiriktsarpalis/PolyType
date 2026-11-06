@@ -1,12 +1,19 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
 /// <summary>
 /// A constructor data model wrapping an <see cref="IMethodSymbol"/>.
 /// </summary>
-public readonly struct ConstructorDataModel
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+readonly struct ConstructorDataModel
 {
     /// <summary>
     /// The constructor symbol that this model represents.

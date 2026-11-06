@@ -1,3 +1,7 @@
+using System;
+
+#nullable enable
+
 namespace PolyType;
 
 internal enum TypeAccessibility

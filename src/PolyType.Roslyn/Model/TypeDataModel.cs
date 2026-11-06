@@ -1,12 +1,19 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
 /// <summary>
 /// Exposes a data model extracted from an <see cref="ITypeSymbol"/> input.
 /// </summary>
-public class TypeDataModel
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+class TypeDataModel
 {
     /// <summary>
     /// The <see cref="ITypeSymbol"/> that this model represents.

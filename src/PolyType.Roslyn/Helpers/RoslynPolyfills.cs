@@ -1,5 +1,8 @@
 using Microsoft.CodeAnalysis;
 using System.Reflection;
+using System;
+
+#nullable enable
 
 namespace PolyType.Roslyn.Helpers;
 

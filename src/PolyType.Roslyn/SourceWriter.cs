@@ -1,19 +1,27 @@
-﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.CodeAnalysis;
 using System.Buffers;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Text.RegularExpressions;
+using System.Text;
+using System;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
 /// <summary>
 /// A utility class for generating indented source code.
 /// </summary>
-public sealed class SourceWriter : IDisposable
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+sealed class SourceWriter : IDisposable
 {
 #pragma warning disable RS1035 // Do not use APIs banned for analyzers
     private static readonly string s_newLine = Environment.NewLine;

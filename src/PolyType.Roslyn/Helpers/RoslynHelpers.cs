@@ -1,10 +1,16 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Diagnostics;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using System.Text;
+using System.Threading;
+using System;
+
+#nullable enable
 
 namespace PolyType.Roslyn.Helpers;
 
@@ -370,7 +376,7 @@ internal static class RoslynHelpers
                     : member.Name;
 
                 bool isAmbiguous;
-                if (membersInScope.TryGetValue(identifier, out List<int> conflictingMemberIndices))
+                if (membersInScope.TryGetValue(identifier, out List<int>? conflictingMemberIndices))
                 {
                     if (conflictingMemberIndices.Exists(i => current.IsAssignableFrom(results[i].Symbol.ContainingType)))
                     {
@@ -544,7 +550,7 @@ internal static class RoslynHelpers
             decimal d => $"{d.ToString(CultureInfo.InvariantCulture)}m",
 
             // Must be one of the other numeric types or an enum
-            object num => Convert.ToString(num, CultureInfo.InvariantCulture),
+            object num => Convert.ToString(num, CultureInfo.InvariantCulture)!,
         };
 
         static string FormatEnumLiteral(INamedTypeSymbol enumType, object value)

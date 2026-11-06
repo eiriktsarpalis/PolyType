@@ -1,6 +1,10 @@
-﻿using Microsoft.CodeAnalysis;
-using System.Collections;
+using Microsoft.CodeAnalysis;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections;
+using System;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
@@ -8,7 +12,12 @@ namespace PolyType.Roslyn;
 /// Dictionary data model for types implementing <see cref="IDictionary{TKey, TValue}"/>,
 /// <see cref="IReadOnlyDictionary{TKey, TValue}"/> or <see cref="System.Collections.IDictionary"/>.
 /// </summary>
-public sealed class DictionaryDataModel : TypeDataModel
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+sealed class DictionaryDataModel : TypeDataModel
 {
     /// <inheritdoc/>
     public override TypeDataKind Kind => TypeDataKind.Dictionary;
@@ -49,7 +58,12 @@ public sealed class DictionaryDataModel : TypeDataModel
 /// <summary>
 /// Identifies the kind of dictionary model.
 /// </summary>
-public enum DictionaryKind
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+enum DictionaryKind
 {
     /// <summary>
     /// The type implements <see cref="IDictionary{TKey, TValue}"/>.
@@ -71,7 +85,12 @@ public enum DictionaryKind
 /// Identifies the insertion models available to the dictionary.
 /// </summary>
 [Flags]
-public enum DictionaryInsertionMode
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+enum DictionaryInsertionMode
 {
     /// <summary>
     /// No available insertion mode.
