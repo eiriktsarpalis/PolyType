@@ -23,7 +23,8 @@ public sealed class PolyTypeGenerator : IIncrementalGenerator
         IncrementalValueProvider<(TypeShapeProviderModel Model, ImmutableArray<Diagnostic> Diagnostics)?> parsed = context.SyntaxProvider
             .ForTypesWithAttributeDeclarations(
                 attributeFullyQualifiedNames: ["PolyType.GenerateShapeForAttribute<T>", "PolyType.GenerateShapeForAttribute", "PolyType.GenerateShapeAttribute"],
-                (node, _) => node is TypeDeclarationSyntax)
+                (node, _) => node is TypeDeclarationSyntax,
+                metaAttributeFullyQualifiedName: "PolyType.Abstractions.GenerateShapeAttributeAttribute")
             .Collect()
             .Combine(knownSymbols)
             .Select((tuple, token) => DebugGuard.Invoke(Parser.ParseFromGenerateShapeAttributes, tuple.Left, tuple.Right, token));

@@ -334,9 +334,10 @@ public sealed partial class Parser : TypeDataModelGenerator
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    foreach (AttributeData attributeData in typeWithAttr.TypeSymbol.GetAttributes())
+                    foreach (AttributeData attributeData in typeWithAttr.Attributes)
                     {
-                        if (SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, knownSymbols.GenerateShapeAttribute))
+                        if (SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, knownSymbols.GenerateShapeAttribute) ||
+                            SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, knownSymbols.GenerateShapeAttributeAttribute))
                         {
                             ProcessExtensionAttribute(typeWithAttr.TypeSymbol, attributeData, assembly);
                         }
@@ -1865,9 +1866,10 @@ public sealed partial class Parser : TypeDataModelGenerator
         bool isWitnessTypeDeclaration = false;
         List<(string Pattern, AttributeData AttributeData)>? patternList = null;
 
-        foreach (AttributeData attributeData in context.TypeSymbol.GetAttributes())
+        foreach (AttributeData attributeData in context.Attributes)
         {
-            if (SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.GenerateShapeAttribute))
+            if (SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.GenerateShapeAttribute) ||
+                SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.GenerateShapeAttributeAttribute))
             {
                 // [GenerateShape] on the type itself
                 ITypeSymbol typeToInclude = context.TypeSymbol;
