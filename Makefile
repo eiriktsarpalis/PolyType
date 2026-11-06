@@ -72,7 +72,11 @@ update-aot-size-baseline:
 		--publish-dir $(ARTIFACT_PATH)/size-tracking-app \
 		--app-name SizeTrackingApp.AOT
 
-test: test-clr test-aot
+test-source-package: build
+	dotnet run --project $(SOURCE_DIRECTORY)/eng/SourcePackageTests/SourcePackageTests.csproj \
+		--configuration $(CONFIGURATION) -- "$(SOURCE_DIRECTORY)" "$(CONFIGURATION)" $(NUGET_SOURCE)
+
+test: test-clr test-aot test-source-package
 
 pack: build
 	dotnet pack --no-restore --configuration Release $(ADDITIONAL_ARGS)

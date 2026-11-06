@@ -1,12 +1,19 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using PolyType.Roslyn.Helpers;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
 /// <summary>
 /// A parameter data model wrapping an <see cref="IParameterSymbol"/>.
 /// </summary>
-public readonly struct ParameterDataModel
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+readonly struct ParameterDataModel
 {
     /// <summary>
     /// The parameter symbol that this model represents.

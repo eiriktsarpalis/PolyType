@@ -1,8 +1,12 @@
-﻿using System;
+using System.Collections.Generic;
 using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
@@ -13,7 +17,12 @@ namespace PolyType.Roslyn;
 [DebuggerDisplay("Length = {Length}")]
 [DebuggerTypeProxy(typeof(ImmutableEquatableArray<>.DebugView))]
 [CollectionBuilder(typeof(ImmutableEquatableArray), nameof(ImmutableEquatableArray.Create))]
-public sealed class ImmutableEquatableArray<T> : 
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+sealed class ImmutableEquatableArray<T> :
     IEquatable<ImmutableEquatableArray<T>>, 
     IReadOnlyList<T>, 
     IList<T>, 
@@ -131,9 +140,9 @@ public sealed class ImmutableEquatableArray<T> :
     void ICollection<T>.CopyTo(T[] array, int arrayIndex) => _values.CopyTo(array, arrayIndex);
     void ICollection.CopyTo(Array array, int index) => _values.CopyTo(array, index);
     int IList<T>.IndexOf(T item) => Array.IndexOf(_values, item);
-    int IList.IndexOf(object value) => ((IList)_values).IndexOf(value);
+    int IList.IndexOf(object? value) => ((IList)_values).IndexOf(value);
     bool ICollection<T>.Contains(T item) => Array.IndexOf(_values, item) >= 0;
-    bool IList.Contains(object value) => ((IList)_values).Contains(value);
+    bool IList.Contains(object? value) => ((IList)_values).Contains(value);
     bool ICollection.IsSynchronized => false;
     object ICollection.SyncRoot => this;
 
@@ -146,10 +155,10 @@ public sealed class ImmutableEquatableArray<T> :
     void ICollection<T>.Clear() => throw new InvalidOperationException();
     void IList<T>.Insert(int index, T item) => throw new InvalidOperationException();
     void IList<T>.RemoveAt(int index) => throw new InvalidOperationException();
-    int IList.Add(object value) => throw new InvalidOperationException();
+    int IList.Add(object? value) => throw new InvalidOperationException();
     void IList.Clear() => throw new InvalidOperationException();
-    void IList.Insert(int index, object value) => throw new InvalidOperationException();
-    void IList.Remove(object value) => throw new InvalidOperationException();
+    void IList.Insert(int index, object? value) => throw new InvalidOperationException();
+    void IList.Remove(object? value) => throw new InvalidOperationException();
     void IList.RemoveAt(int index) => throw new InvalidOperationException();
     #endregion
 
@@ -163,7 +172,12 @@ public sealed class ImmutableEquatableArray<T> :
 /// <summary>
 /// Provides extension methods for the <see cref="ImmutableEquatableArray{T}"/> type.
 /// </summary>
-public static class ImmutableEquatableArray
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+static class ImmutableEquatableArray
 {
     /// <summary>
     /// Creates an <see cref="ImmutableEquatableArray{T}"/> instance from the specified values.

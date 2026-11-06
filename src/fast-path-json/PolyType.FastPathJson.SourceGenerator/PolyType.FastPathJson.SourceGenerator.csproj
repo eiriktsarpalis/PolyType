@@ -2,14 +2,11 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <IsAnalyzerProject>true</IsAnalyzerProject>
+    <PolyTypeRoslynPublic>true</PolyTypeRoslynPublic>
+    <_PolyTypeRoslynSourceRoot>$(MSBuildThisFileDirectory)..\..\</_PolyTypeRoslynSourceRoot>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Include="..\..\PolyType.Roslyn\**\*.cs" Exclude="**\bin\**;**\obj\**" Link="PolyType.Roslyn\%(RecursiveDir)%(Filename)%(Extension)" />
-    <Compile Include="..\..\Shared\Helpers\CommonHelpers.cs" Link="Shared\Helpers\CommonHelpers.cs" />
-    <Compile Include="..\..\Shared\Helpers\DebugExt.cs" Link="Shared\Helpers\DebugExt.cs" />
-    <Compile Include="..\..\Shared\Helpers\TypeVisibilityHelpers.cs" Link="Shared\Helpers\TypeVisibilityHelpers.cs" />
-  </ItemGroup>
+  <Import Project="..\..\PolyType.Roslyn\build\PolyType.Roslyn.targets" />
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />

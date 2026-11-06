@@ -1,6 +1,10 @@
-﻿using Microsoft.CodeAnalysis;
-using System.Collections;
+using Microsoft.CodeAnalysis;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections;
+using System;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
@@ -9,7 +13,12 @@ namespace PolyType.Roslyn;
 /// that are not dictionaries or are <see cref="Span{T}"/>,
 /// <see cref="ReadOnlySpan{T}"/>, <see cref="Memory{T}"/> or <see cref="ReadOnlyMemory{T}"/>.
 /// </summary>
-public sealed class EnumerableDataModel : TypeDataModel
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+sealed class EnumerableDataModel : TypeDataModel
 {
     /// <inheritdoc/>
     public override TypeDataKind Kind => TypeDataKind.Enumerable;
@@ -66,7 +75,12 @@ public sealed class EnumerableDataModel : TypeDataModel
 /// <summary>
 /// Identifies the kind of enumerable model.
 /// </summary>
-public enum EnumerableKind
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+enum EnumerableKind
 {
     /// <summary>
     /// Not an enumerable type.
@@ -118,7 +132,12 @@ public enum EnumerableKind
 /// <summary>
 /// Identifies the insertion modes available to the enumerable.
 /// </summary>
-public enum EnumerableInsertionMode
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+enum EnumerableInsertionMode
 {
     /// <summary>
     /// No insertion model available.

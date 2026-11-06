@@ -12,7 +12,7 @@ This project depends on **`PolyType.Roslyn`**, a general-purpose (but opinionate
 
 Because it is general-purpose, the `TypeDataModel`s it produces are **not** incremental-safe — they may hold non-equatable or non-serializable data, including live Roslyn symbols. This project's job is to consume that model and project it into its own incremental-safe `Model/` types (described under Project Layout & Pipeline below).
 
-The Roslyn sources are linked into this project, including internal extension-property polyfills for older Roslyn references. These polyfills are implementation details and are not emitted into consumer source.
+The Roslyn sources are linked into this project through `PolyType.Roslyn/build/PolyType.Roslyn.targets`, the same import shipped by the source-only NuGet package. Local builds set its source root explicitly rather than restoring a package produced by this solution. `PolyTypeRoslynPublic=true` preserves the existing public model/test contracts; external package consumers get internal declarations by default. The sources require C# 14 and include internal extension-property polyfills for older Roslyn references. These polyfills are implementation details and are not emitted into consumer source.
 
 > **PolyType.Roslyn models ≠ PolyType.SourceGenerator models.** They are distinct hierarchies with different design goals. Never feed a raw PolyType.Roslyn model (or a Roslyn symbol) into the incremental pipeline.
 

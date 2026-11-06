@@ -1,4 +1,8 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
+using System.Collections.Generic;
+using System;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
@@ -6,7 +10,12 @@ namespace PolyType.Roslyn;
 /// Provides a caching layer for common known symbols wrapping a <see cref="Compilation"/> instance.
 /// </summary>
 /// <param name="compilation">The compilation from which information is being queried.</param>
-public class KnownSymbols(Compilation compilation)
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+class KnownSymbols(Compilation compilation)
 {
     /// <summary>
     /// The compilation from which information is being queried.

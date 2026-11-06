@@ -1,11 +1,20 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
+using System.Collections.Generic;
+using System;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
 /// <summary>
 /// Represents an <see cref="Enum"/> type data model.
 /// </summary>
-public sealed class EnumDataModel : TypeDataModel
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+sealed class EnumDataModel : TypeDataModel
 {
     /// <inheritdoc/>
     public override TypeDataKind Kind => TypeDataKind.Enum;

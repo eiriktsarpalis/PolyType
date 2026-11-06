@@ -1,15 +1,25 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis;
 using PolyType.Roslyn.Helpers;
+using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
+using System;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
-public partial class TypeDataModelGenerator
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+partial class TypeDataModelGenerator
 {
     private bool TryMapEnumerable(
         ITypeSymbol type,

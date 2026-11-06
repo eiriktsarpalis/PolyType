@@ -1,6 +1,8 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 using System.Diagnostics;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
@@ -8,7 +10,12 @@ namespace PolyType.Roslyn;
 /// Defines an immutable struct encapsulating a snapshot of the current generation state.
 /// Used for rolling back the state whenever an unsupported type is encountered in the graph.
 /// </summary>
-public readonly ref struct TypeDataModelGenerationContext
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+readonly ref struct TypeDataModelGenerationContext
 {
     internal TypeDataModelGenerationContext(ImmutableStack<ITypeSymbol> stack, ImmutableDictionary<ITypeSymbol, TypeDataModel> generatedModels)
     {

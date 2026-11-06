@@ -1,0 +1,6 @@
+root = true
+
+[*.cs]
+generated_code = true
+# Older Roslyn analyzers report false positives on these sources.
+dotnet_diagnostic.RS1024.severity = none

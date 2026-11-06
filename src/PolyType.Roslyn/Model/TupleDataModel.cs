@@ -1,11 +1,19 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
+using System;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
 /// <summary>
 /// Represents the data model for a tuple type.
 /// </summary>
-public sealed class TupleDataModel : TypeDataModel
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+sealed class TupleDataModel : TypeDataModel
 {
     /// <inheritdoc/>
     public override TypeDataKind Kind => TypeDataKind.Tuple;

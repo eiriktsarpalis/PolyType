@@ -1,11 +1,20 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
 /// <summary>
 /// Models acceptable constructor parameters for collection types.
 /// </summary>
-public enum CollectionConstructorParameter
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+enum CollectionConstructorParameter
 {
     /// <summary>
     /// Unrecognized constructor parameter type.

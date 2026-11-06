@@ -5,19 +5,28 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsAnalyzerProject>true</IsAnalyzerProject>
-    <EnablePackageValidation>true</EnablePackageValidation>
-    <!-- Uncomment after 2.0.0 is published to check against the first stable API contract. -->
-    <!-- <PackageValidationBaselineVersion>2.0.0</PackageValidationBaselineVersion> -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <!-- Source-only packages have dependencies but no matching lib/ref assemblies. -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>14.0</LangVersion>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <PolyTypeRoslynPublic>true</PolyTypeRoslynPublic>
+    <_PolyTypeRoslynSourceRoot>$(MSBuildThisFileDirectory)..\</_PolyTypeRoslynSourceRoot>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="README.md" pack="true" PackagePath="." />
+    <None Include="$(RepoRoot)LICENSE" Pack="true" PackagePath="." />
+    <None Update="build\PolyType.Roslyn.targets" Pack="true" PackagePath="build\PolyType.Roslyn.targets" />
+    <None Update="build\source.editorconfig" Pack="true" PackagePath="src\.editorconfig" />
   </ItemGroup>
     
+  <Import Project="build\PolyType.Roslyn.targets" />
+
   <ItemGroup>
-    <Compile Include="..\Shared\Helpers\DebugExt.cs" Link="Shared\Helpers\DebugExt.cs" />
-    <Compile Include="..\Shared\Helpers\CommonHelpers.cs" Link="Shared\Helpers\CommonHelpers.cs" />
-    <Compile Include="..\Shared\Helpers\TypeVisibilityHelpers.cs" Link="Shared\Helpers\TypeVisibilityHelpers.cs" />
+    <None Include="@(_PolyTypeRoslynSource)" Pack="true" />
   </ItemGroup>
 
   <ItemGroup>

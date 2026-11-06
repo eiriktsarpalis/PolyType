@@ -1,4 +1,7 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
+using System;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
@@ -9,7 +12,12 @@ namespace PolyType.Roslyn;
 /// <param name="AssociatingAssembly">The assembly that declared the association.</param>
 /// <param name="Location">The location where the association is declared.</param>
 /// <param name="Requirements">The associated type's requirements.</param>
-public record struct AssociatedTypeModel(INamedTypeSymbol AssociatedType, IAssemblySymbol AssociatingAssembly, Location? Location, TypeShapeRequirements Requirements);
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+record struct AssociatedTypeModel(INamedTypeSymbol AssociatedType, IAssemblySymbol AssociatingAssembly, Location? Location, TypeShapeRequirements Requirements);
 
 /// <summary>
 /// Describes the requirements for preparing an associated type.
@@ -18,7 +26,12 @@ public record struct AssociatedTypeModel(INamedTypeSymbol AssociatedType, IAssem
 /// Keep this in sync with the TypeShapeRequirements enum defined in the PolyType assembly.
 /// </devremarks>
 [Flags]
-public enum TypeShapeRequirements
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+enum TypeShapeRequirements
 {
     /// <summary>No shape is required.</summary>
     None = 0x0,

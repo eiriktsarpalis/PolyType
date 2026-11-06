@@ -1,9 +1,16 @@
-﻿namespace PolyType.Roslyn;
+#nullable enable
+
+namespace PolyType.Roslyn;
 
 /// <summary>
 /// The kind of type represented by a <see cref="TypeDataModel"/>.
 /// </summary>
-public enum TypeDataKind
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+enum TypeDataKind
 {
     /// <summary>
     /// Type is an <see cref="TypeDataModel"/>. Type is a primitive type or is a standalone value type (such as TimeSpan or DateTime).

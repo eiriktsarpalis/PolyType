@@ -1,7 +1,12 @@
-﻿using System.Collections;
+using System.Collections.Generic;
+using System.Collections;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
+using System.Linq;
+using System;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
@@ -12,7 +17,12 @@ namespace PolyType.Roslyn;
 /// <typeparam name="TValue">The value type of the dictionary.</typeparam>
 [DebuggerDisplay("Count = {Count}")]
 [DebuggerTypeProxy(typeof(ImmutableEquatableDictionary<,>.DebugView))]
-public sealed class ImmutableEquatableDictionary<TKey, TValue> : 
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+sealed class ImmutableEquatableDictionary<TKey, TValue> :
     IEquatable<ImmutableEquatableDictionary<TKey, TValue>>,
     IDictionary<TKey, TValue>, 
     IReadOnlyDictionary<TKey, TValue>, 
@@ -141,7 +151,7 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> :
     object ICollection.SyncRoot => this;
 
     TValue IDictionary<TKey, TValue>.this[TKey key] { get => _values[key]; set => throw new InvalidOperationException(); }
-    object IDictionary.this[object key] { get => ((IDictionary)_values)[key]; set => throw new InvalidOperationException(); }
+    object? IDictionary.this[object key] { get => ((IDictionary)_values)[key]; set => throw new InvalidOperationException(); }
     bool IDictionary.Contains(object key) => ((IDictionary)_values).Contains(key);
     void ICollection.CopyTo(Array array, int index) => ((IDictionary)_values).CopyTo(array, index);
     bool ICollection<KeyValuePair<TKey, TValue>>.Contains(KeyValuePair<TKey, TValue> item) => _values.Contains(item);
@@ -153,7 +163,7 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> :
     void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> item) => throw new InvalidOperationException();
     bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> item) => throw new InvalidOperationException();
     void ICollection<KeyValuePair<TKey, TValue>>.Clear() => throw new InvalidOperationException();
-    void IDictionary.Add(object key, object value) => throw new InvalidOperationException();
+    void IDictionary.Add(object key, object? value) => throw new InvalidOperationException();
     void IDictionary.Remove(object key) => throw new InvalidOperationException();
     void IDictionary.Clear() => throw new InvalidOperationException();
     #endregion
@@ -178,7 +188,12 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> :
 /// <summary>
 /// Provides a set of static methods for creating instances of <see cref="ImmutableEquatableDictionary{TKey, TValue}"/>.
 /// </summary>
-public static class ImmutableEquatableDictionary
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+static class ImmutableEquatableDictionary
 {
     /// <summary>
     /// Gets an empty <see cref="ImmutableEquatableDictionary{TKey, TValue}"/> instance.

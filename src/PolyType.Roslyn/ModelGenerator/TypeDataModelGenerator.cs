@@ -1,7 +1,13 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using PolyType.Roslyn.Helpers;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Reflection;
+using System.Threading;
+using System;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
@@ -9,7 +15,12 @@ namespace PolyType.Roslyn;
 /// Provides functionality and extensibility points for generating <see cref="TypeDataModel"/>
 /// instances for a given set of <see cref="ITypeSymbol"/> inputs.
 /// </summary>
-public partial class TypeDataModelGenerator
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+partial class TypeDataModelGenerator
 {
     private ImmutableDictionary<ITypeSymbol, TypeDataModel> _generatedModels;
     private ImmutableDictionary<ITypeSymbol, ImmutableArray<AssociatedTypeModel>> _associatedTypes;

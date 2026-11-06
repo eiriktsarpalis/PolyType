@@ -1,11 +1,18 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
 /// <summary>
 /// Model generation result returned for a requested <see cref="ITypeSymbol"/>.
 /// </summary>
-public enum TypeDataModelGenerationStatus
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+enum TypeDataModelGenerationStatus
 {
     /// <summary>
     /// A data model was successfully generated for a given type.

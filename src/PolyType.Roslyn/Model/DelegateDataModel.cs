@@ -1,12 +1,19 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
 /// <summary>
 /// Represents the data model for a delegate type.
 /// </summary>
-public class DelegateDataModel : TypeDataModel
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+class DelegateDataModel : TypeDataModel
 {
     /// <inheritdoc/>
     public override TypeDataKind Kind => TypeDataKind.Delegate;

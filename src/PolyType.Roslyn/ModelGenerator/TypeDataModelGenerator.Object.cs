@@ -1,12 +1,21 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using PolyType.Roslyn.Helpers;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
-public partial class TypeDataModelGenerator
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+partial class TypeDataModelGenerator
 {
     /// <summary>
     /// Whether property or field resolution should be skipped for the given type.

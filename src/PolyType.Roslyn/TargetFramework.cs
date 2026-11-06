@@ -1,9 +1,16 @@
-﻿namespace PolyType.Roslyn;
+#nullable enable
+
+namespace PolyType.Roslyn;
 
 /// <summary>
 /// Target framework inferred by the generator. Underlying enum values must be monotonic.
 /// </summary>
-public enum TargetFramework
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+enum TargetFramework
 {
     /// <summary>
     /// netstandard, netfx, or older .NET Core targets.

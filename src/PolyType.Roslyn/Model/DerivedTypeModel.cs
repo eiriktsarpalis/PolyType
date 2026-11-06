@@ -1,11 +1,18 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
+
+#nullable enable
 
 namespace PolyType.Roslyn;
 
 /// <summary>
 /// Represents a derived type defined in the context of a polymorphic type.
 /// </summary>
-public sealed class DerivedTypeModel
+#if POLYTYPE_ROSLYN_PUBLIC
+public
+#else
+internal
+#endif
+sealed class DerivedTypeModel
 {
     /// <summary>
     /// The type symbol for the derived type.

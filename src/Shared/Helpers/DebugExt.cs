@@ -1,6 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
+#nullable enable
+
 namespace System.Diagnostics;
 
 internal static class DebugExt
