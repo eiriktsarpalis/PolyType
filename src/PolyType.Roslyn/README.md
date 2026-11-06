@@ -86,7 +86,7 @@ Each assembly that includes the sources owns a distinct copy of the types. Publi
 
 Keep `PrivateAssets="all"` on the reference when packaging your generator. The source import is deliberately non-transitive, so applications using the generator do not compile the Roslyn components or inherit their dependencies.
 
-Only SDK-style C# projects using `PackageReference` are supported. The package does not install editable source files into projects, support `packages.config`, or bundle third-party assemblies. Sources are hidden from Solution Explorer by default but remain available for debugging in the NuGet package cache. A package-local analyzer configuration marks the embedded sources as generated code and disables older Roslyn analyzers' `RS1024` false positives in those files; it does not change analysis of your own code.
+Only SDK-style C# projects using `PackageReference` are supported. The package does not install editable source files into projects, support `packages.config`, or bundle third-party assemblies. Sources appear under a `PolyType.Roslyn` folder in Solution Explorer and remain available for debugging in the NuGet package cache. A package-local analyzer configuration marks the embedded sources as generated code and disables older Roslyn analyzers' `RS1024` false positives in those files; it does not change analysis of your own code.
 
 ## Shared utilities
 

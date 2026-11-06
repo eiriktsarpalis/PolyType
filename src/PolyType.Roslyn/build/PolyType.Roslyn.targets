@@ -14,7 +14,7 @@
       <Link>PolyType.Roslyn\Shared\Helpers\%(Filename)%(Extension)</Link>
       <PackagePath>src\Shared\Helpers\%(Filename)%(Extension)</PackagePath>
     </_PolyTypeRoslynSource>
-    <Compile Include="@(_PolyTypeRoslynSource)" Exclude="@(Compile)" Visible="false" />
+    <Compile Include="@(_PolyTypeRoslynSource)" Exclude="@(Compile)" Visible="true" />
     <EditorConfigFiles Include="$(_PolyTypeRoslynSourceRoot).editorconfig"
                        Condition="Exists('$(_PolyTypeRoslynSourceRoot).editorconfig')" />
   </ItemGroup>
