@@ -1279,6 +1279,11 @@ public sealed partial class Parser : TypeDataModelGenerator
             .ToImmutableArray();
 
         methodBindingFlags ??= MapMethodShapeFlagsToBindingFlags(attrMethodBindingFlags);
+        if (methodBindingFlags is null && requirements.HasFlag(TypeShapeRequirements.Methods))
+        {
+            methodBindingFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static;
+        }
+
         if (marshaler is not null || attrDeclaredKind is TypeShapeKind.Surrogate)
         {
             return MapSurrogateType(type, marshaler, associatedTypes, ref ctx, requirements, methodBindingFlags, out model);

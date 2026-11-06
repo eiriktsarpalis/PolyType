@@ -23,7 +23,13 @@ public enum TypeShapeRequirements
     Properties = 0x2,
 
     /// <summary>
+    /// Methods should be included in the shape, if any are declared.
+    /// </summary>
+    Methods = 0x4,
+
+    /// <summary>
     /// The shape should be fully generated.
     /// </summary>
+    /// <remarks>For associated object shapes, this includes public methods.</remarks>
     Full = Constructor | Properties,
 }
