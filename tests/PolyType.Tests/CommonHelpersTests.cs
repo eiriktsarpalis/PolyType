@@ -81,6 +81,15 @@ public static class CommonHelpersTests
 
     public static IEnumerable<object[]> GetEquivalentCamelCaseLabels()
     {
+        // Regular member names exercised by System.Text.Json's NamingPolicyUnitTests.GetValidMemberNames.
+        // https://github.com/dotnet/runtime/blob/a4106c734319b45fd6576e0a6dcd8bbdd08f8e7c/src/libraries/System.Text.Json/tests/Common/PropertyNameTests.cs
+        yield return ["name", "Name"];
+        yield return ["myObject", "MyObject"];
+        yield return ["myValue", "MyValue"];
+        yield return ["myFirstProperty", "MyFirstProperty"];
+        yield return ["mySecondProperty", "MySecondProperty"];
+        yield return ["propertyNameWithWhitespace", "PropertyNameWithWhitespace"];
+
         // Space-preserving examples from https://github.com/AArnott/Nerdbank.MessagePack/blob/aa43461cb4cc7d3c73eb61b1605fee073a6df299/test/Nerdbank.MessagePack.TUnit/MessagePackNamingPolicyTests.cs#L13-L43
         yield return ["urlValue", "URLValue"];
         yield return ["url", "URL"];
