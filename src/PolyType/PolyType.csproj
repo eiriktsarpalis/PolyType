@@ -38,6 +38,7 @@
 
   <ItemGroup>
     <None Include="README.md" pack="true" PackagePath="." />
+    <None Include="$(RepoRoot).github\skills\author-polytype-library\SKILL.md" Pack="true" PackagePath="skills/author-polytype-library/SKILL.md" />
   </ItemGroup>
 
   <ItemGroup>
