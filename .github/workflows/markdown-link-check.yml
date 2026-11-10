@@ -14,3 +14,8 @@ jobs:
         uses: actions/checkout@main
       - name: Markup Link Checker (mlc)
         uses: becheran/mlc@v1.3.0
+        with:
+          # Wikipedia intermittently rejects CI requests with HTTP 403.
+          args: >-
+            ./
+            --ignore-links "https://en.wikipedia.org/wiki/Generalized_algebraic_data_type,https://en.wikipedia.org/wiki/Polymorphism_(computer_science)#Polytypism"
