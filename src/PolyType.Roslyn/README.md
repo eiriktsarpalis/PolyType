@@ -91,3 +91,7 @@ Only SDK-style C# projects using `PackageReference` are supported. The package d
 ## Shared utilities
 
 Shared source-generation utilities include type identifiers with generic arguments, tuple flattening, array ranks, namespace qualification, and keyword escaping. The built-in PolyType generator and the independent PolyType.FastPathJson prototype consume the same implementation without sharing generator-specific code.
+
+## Agent skill
+
+The package includes the `author-polytype-generator` skill at `skills/author-polytype-generator/SKILL.md`, covering parser/model/emitter architecture for creating, extending, reviewing, and debugging source generators. Restoring the package makes the file available in the NuGet cache; it does not install the skill into your repository.

@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <None Include="README.md" pack="true" PackagePath="." />
+    <None Include="$(RepoRoot).github\skills\author-polytype-generator\SKILL.md" Pack="true" PackagePath="skills/author-polytype-generator/SKILL.md" />
     <None Include="$(RepoRoot)LICENSE" Pack="true" PackagePath="." />
     <None Update="build\PolyType.Roslyn.targets" Pack="true" PackagePath="build\PolyType.Roslyn.targets" />
     <None Update="build\source.editorconfig" Pack="true" PackagePath="src\.editorconfig" />
