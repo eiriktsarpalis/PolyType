@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:11.0.100-rc.1
+FROM mcr.microsoft.com/dotnet/sdk:11.0.100
 
 # Install system dependencies and mono runtime
 RUN apt-get update && apt-get install -y make mono-runtime
