@@ -509,7 +509,7 @@ public static partial class CompilationTests
             using PolyType;
             using PolyType.Abstractions;
 
-            [AssociatedTypeAttribute(nameof(serviceType), (TypeShapeRequirements){{(int)requirements}})]
+            [AssociatedTypeAttribute("serviceType", (TypeShapeRequirements){{(int)requirements}})]
             [AttributeUsage(AttributeTargets.Class)]
             public sealed class ServiceAttribute : Attribute
             {
