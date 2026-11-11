@@ -493,16 +493,23 @@ public static partial class CompilationTests
         Assert.Empty(result.Diagnostics);
     }
 
-    [Fact]
-    public static void AssociatedTypeAttribute_FullShapeIncludesMethods()
+    [Theory]
+    [InlineData(TypeShapeRequirements.None, "")]
+    [InlineData(TypeShapeRequirements.Constructor, "")]
+    [InlineData(TypeShapeRequirements.Properties, "")]
+    [InlineData(TypeShapeRequirements.Full, "")]
+    [InlineData(TypeShapeRequirements.Methods, "Send")]
+    [InlineData(TypeShapeRequirements.Full | TypeShapeRequirements.Methods, "Send")]
+    [Trait("AssociatedTypes", "true")]
+    public static void AssociatedTypeAttribute_MethodsRequireOptIn(TypeShapeRequirements requirements, string expectedMethods)
     {
-        Compilation compilation = CompilationHelpers.CreateCompilation("""
+        Compilation compilation = CompilationHelpers.CreateCompilation($$"""
             using System;
             using System.Linq;
             using PolyType;
             using PolyType.Abstractions;
 
-            [AssociatedTypeAttribute(nameof(serviceType), TypeShapeRequirements.Full)]
+            [AssociatedTypeAttribute(nameof(serviceType), (TypeShapeRequirements){{(int)requirements}})]
             [AttributeUsage(AttributeTargets.Class)]
             public sealed class ServiceAttribute : Attribute
             {
@@ -525,11 +532,11 @@ public static partial class CompilationTests
             {
                 public static string Run()
                 {
-                    ITypeShape<ServiceClient> shape = TypeShapeResolver.Resolve<ServiceClient, Witness>();
+                    ITypeShape shape = Witness.GeneratedTypeShapeProvider.GetTypeShape(typeof(ServiceClient))!;
                     return string.Join(",", shape.GetAssociatedTypeShape(typeof(IService))!.Methods.Select(method => method.Name));
                 }
             }
-            """);
+            """, assemblyName: "AssociatedTypeMethods_" + Guid.NewGuid().ToString("N"));
 
         PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
         Assert.Empty(result.Diagnostics);
@@ -539,7 +546,7 @@ public static partial class CompilationTests
         Assert.True(emit.Success, string.Join(Environment.NewLine, emit.Diagnostics));
         global::System.Reflection.Assembly assembly = global::System.Reflection.Assembly.Load(stream.ToArray());
         string methods = (string)assembly.GetType("Test")!.GetMethod("Run")!.Invoke(null, null)!;
-        Assert.Equal("Send", methods);
+        Assert.Equal(expectedMethods, methods);
     }
 
     [Fact]

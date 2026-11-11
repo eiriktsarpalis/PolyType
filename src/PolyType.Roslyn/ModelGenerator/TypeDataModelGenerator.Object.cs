@@ -212,13 +212,7 @@ partial class TypeDataModelGenerator
                 continue;
             }
 
-            TypeShapeRequirements requirements = associatedType.Requirements;
-            if (requirements.HasFlag(TypeShapeRequirements.Full))
-            {
-                requirements |= TypeShapeRequirements.Methods;
-            }
-
-            IncludeNestedType(closedAssociatedType, ref ctx, requirements);
+            IncludeNestedType(closedAssociatedType, ref ctx, associatedType.Requirements);
         }
     }
 
