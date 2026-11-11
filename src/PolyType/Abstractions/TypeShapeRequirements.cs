@@ -23,7 +23,13 @@ public enum TypeShapeRequirements
     Properties = 0x2,
 
     /// <summary>
-    /// The shape should be fully generated.
+    /// Public methods should be included in the shape, if any are declared.
     /// </summary>
+    Methods = 0x4,
+
+    /// <summary>
+    /// The shape should include its constructor and properties.
+    /// </summary>
+    /// <remarks>Does not include <see cref="Methods"/>.</remarks>
     Full = Constructor | Properties,
 }
