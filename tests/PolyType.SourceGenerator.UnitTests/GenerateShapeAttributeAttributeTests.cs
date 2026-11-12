@@ -162,6 +162,37 @@ public static class GenerateShapeAttributeAttributeTests
         Assert.Single(result.AllGeneratedTypes);
     }
 
+    [Fact]
+    public static void DirectGenerationWorksWhenMetaAttributeTypeIsUnavailable()
+    {
+        Compilation compilation = CreateCompilation("""
+            using System;
+
+            [PolyType.GenerateShape]
+            public partial class ContractType { }
+
+            [Obsolete]
+            public partial class UnrelatedType { }
+
+            namespace PolyType
+            {
+                [AttributeUsage(AttributeTargets.Class)]
+                public sealed class GenerateShapeAttribute : Attribute { }
+            }
+            """);
+        MetadataReference polyTypeReference = Assert.Single(
+            compilation.References,
+            reference => reference.Display == typeof(PolyType.ITypeShape).Assembly.Location);
+        compilation = compilation.RemoveReferences(polyTypeReference);
+        compilation.GetDiagnostics(TestContext.Current.CancellationToken).AssertMaxSeverity(DiagnosticSeverity.Info);
+
+        GeneratorDriver driver = CompilationHelpers.CreatePolyTypeSourceGeneratorDriver(compilation);
+        GeneratorDriverRunResult result = driver.RunGenerators(compilation, TestContext.Current.CancellationToken).GetRunResult();
+        result.Diagnostics.AssertMaxSeverity(DiagnosticSeverity.Info);
+        Assert.Contains(result.GeneratedTrees, tree => tree.FilePath.EndsWith("ContractType.g.cs", StringComparison.Ordinal));
+        Assert.DoesNotContain(result.GeneratedTrees, tree => tree.FilePath.EndsWith("UnrelatedType.g.cs", StringComparison.Ordinal));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

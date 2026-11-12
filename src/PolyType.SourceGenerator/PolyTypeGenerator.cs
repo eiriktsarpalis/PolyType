@@ -25,8 +25,8 @@ public sealed class PolyTypeGenerator : IIncrementalGenerator
                 compilationProvider: context.CompilationProvider,
                 attributeFullyQualifiedNames: ["PolyType.GenerateShapeForAttribute<T>", "PolyType.GenerateShapeForAttribute", "PolyType.GenerateShapeAttribute"],
                 (node, _) => node is TypeDeclarationSyntax,
-                metaAttributeOverridePredicate: static attributeData =>
-                    attributeData.AttributeClass?.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat) == "PolyType.GenerateShapeAttribute",
+                metaAttributeOverridePredicate: static attributeType =>
+                    attributeType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat) == "PolyType.GenerateShapeAttribute",
                 metaAttributeFullyQualifiedName: "PolyType.Abstractions.GenerateShapeAttributeAttribute")
             .Collect()
             .Combine(knownSymbols)

@@ -28,7 +28,7 @@ internal static partial class RoslynHelpers
         IncrementalValueProvider<Compilation> compilationProvider,
         string[] attributeFullyQualifiedNames,
         Func<BaseTypeDeclarationSyntax, CancellationToken, bool> predicate,
-        Func<AttributeData, bool>? metaAttributeOverridePredicate = null,
+        Func<INamedTypeSymbol, bool> metaAttributeOverridePredicate,
         string? metaAttributeFullyQualifiedName = null)
     {
         Debug.Assert(attributeFullyQualifiedNames.Length is > 0 and <= 3, "Does not optimize for large lists of attributes.");
@@ -93,11 +93,8 @@ internal static partial class RoslynHelpers
             MetaAttributeCache cache,
             CancellationToken token)
         {
-            if (declaration.Type is not ITypeSymbol typeSymbol)
-            {
-                return default;
-            }
-
+            // The preceding Where excludes declarations without symbols.
+            ITypeSymbol typeSymbol = declaration.Type!;
             ImmutableArray<AttributeData>.Builder? matches = null;
             ImmutableArray<AttributeData>.Builder? metaMatches = null;
             bool hasMetaAttributeOverride = false;
@@ -114,7 +111,7 @@ internal static partial class RoslynHelpers
                             attributeType.ContainingNamespace.MatchesNamespace(attributeNamespace.AsSpan()))
                         {
                             (matches ??= ImmutableArray.CreateBuilder<AttributeData>()).Add(attrData);
-                            hasMetaAttributeOverride |= metaAttributeOverridePredicate?.Invoke(attrData) ?? false;
+                            hasMetaAttributeOverride |= metaAttributeOverridePredicate(attributeType);
                             continue AttributeLoop;
                         }
                     }
