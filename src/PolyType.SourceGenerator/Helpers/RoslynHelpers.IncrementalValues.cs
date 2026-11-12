@@ -2,9 +2,9 @@
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using PolyType.Roslyn.Helpers;
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace PolyType.SourceGenerator.Helpers;
 
@@ -12,6 +12,9 @@ public readonly struct TypeWithAttributeDeclarationContext
 {
     public required ITypeSymbol TypeSymbol { get; init; }
     public required ImmutableArray<(BaseTypeDeclarationSyntax Syntax, SemanticModel Model)> Declarations { get; init; }
+    /// <summary>
+    /// The attributes that triggered inclusion. For meta-attributes, these are applied to the attribute class, not the type.
+    /// </summary>
     public ImmutableArray<AttributeData> Attributes { get; init; }
 }
 
@@ -22,19 +25,25 @@ internal static partial class RoslynHelpers
     /// </summary>
     public static IncrementalValuesProvider<TypeWithAttributeDeclarationContext> ForTypesWithAttributeDeclarations(
         this SyntaxValueProvider provider,
+        IncrementalValueProvider<Compilation> compilationProvider,
         string[] attributeFullyQualifiedNames,
         Func<BaseTypeDeclarationSyntax, CancellationToken, bool> predicate,
+        Func<AttributeData, bool>? metaAttributeOverridePredicate = null,
         string? metaAttributeFullyQualifiedName = null)
     {
         Debug.Assert(attributeFullyQualifiedNames.Length is > 0 and <= 3, "Does not optimize for large lists of attributes.");
         ParseAttributeFullyQualifiedNames(attributeFullyQualifiedNames, out var attributeData, out var attributeSyntaxNodeCandidates);
-        // Weak compilation keys prevent stale symbols after edits and do not pin old compilations.
-        ConditionalWeakTable<Compilation, MetaAttributeCache> attributeCaches = new();
+        IncrementalValueProvider<MetaAttributeCache> metaAttributeCache = compilationProvider
+            .Select((compilation, _) => new MetaAttributeCache(
+                metaAttributeFullyQualifiedName is null ? null : compilation.GetTypeByMetadataName(metaAttributeFullyQualifiedName)));
 
         return provider.CreateSyntaxProvider(
             predicate: (SyntaxNode node, CancellationToken token) => node is BaseTypeDeclarationSyntax typeDecl && IsAnnotatedTypeDeclaration(typeDecl, token),
-            transform: Transform)
-            .Where(ctx => ctx.Type != null)
+            transform: TransformSyntax)
+            .Where(ctx => ctx.Type is not null)
+            .Combine(metaAttributeCache)
+            .Select((tuple, token) => Transform(tuple.Left, tuple.Right, token))
+            .Where(ctx => ctx.Type is not null)
             .GroupBy(
                 keySelector: value => value.Type,
                 resultSelector: static (key, values) =>
@@ -51,6 +60,7 @@ internal static partial class RoslynHelpers
         {
             if (metaAttributeFullyQualifiedName is not null)
             {
+                // Meta-attribute matching requires symbols, so all attributed declarations reach Transform, where direct names are still matched.
                 return typeDecl.AttributeLists.Count > 0 && predicate(typeDecl, token);
             }
 
@@ -72,20 +82,31 @@ internal static partial class RoslynHelpers
             return false;
         }
 
-        (ITypeSymbol Type, BaseTypeDeclarationSyntax Syntax, SemanticModel Model, ImmutableArray<AttributeData> Attributes) Transform(GeneratorSyntaxContext ctx, CancellationToken token)
+        (ITypeSymbol? Type, BaseTypeDeclarationSyntax Syntax, SemanticModel Model) TransformSyntax(GeneratorSyntaxContext ctx, CancellationToken token)
         {
             BaseTypeDeclarationSyntax typeDecl = (BaseTypeDeclarationSyntax)ctx.Node;
-            ITypeSymbol typeSymbol = ctx.SemanticModel.GetDeclaredSymbol(typeDecl, token)!;
+            return (ctx.SemanticModel.GetDeclaredSymbol(typeDecl, token), typeDecl, ctx.SemanticModel);
+        }
+
+        (ITypeSymbol? Type, BaseTypeDeclarationSyntax Syntax, SemanticModel Model, ImmutableArray<AttributeData> Attributes) Transform(
+            (ITypeSymbol? Type, BaseTypeDeclarationSyntax Syntax, SemanticModel Model) declaration,
+            MetaAttributeCache cache,
+            CancellationToken token)
+        {
+            if (declaration.Type is not ITypeSymbol typeSymbol)
+            {
+                return default;
+            }
+
             ImmutableArray<AttributeData>.Builder? matches = null;
             ImmutableArray<AttributeData>.Builder? metaMatches = null;
-            bool hasGenerateShape = false;
+            bool hasMetaAttributeOverride = false;
 
-            foreach (AttributeData attrData in typeSymbol.GetAttributes())
+            AttributeLoop: foreach (AttributeData attrData in typeSymbol.GetAttributes())
             {
                 token.ThrowIfCancellationRequested();
                 if (attrData.AttributeClass is INamedTypeSymbol attributeType)
                 {
-                    bool isDirect = false;
                     foreach (var (attributeNamespace, attributeName, attributeArity) in attributeData)
                     {
                         if (attributeType.Name == attributeName &&
@@ -93,16 +114,13 @@ internal static partial class RoslynHelpers
                             attributeType.ContainingNamespace.MatchesNamespace(attributeNamespace.AsSpan()))
                         {
                             (matches ??= ImmutableArray.CreateBuilder<AttributeData>()).Add(attrData);
-                            hasGenerateShape |= attributeName == "GenerateShapeAttribute";
-                            isDirect = true;
-                            break;
+                            hasMetaAttributeOverride |= metaAttributeOverridePredicate?.Invoke(attrData) ?? false;
+                            continue AttributeLoop;
                         }
                     }
 
-                    if (!isDirect && metaAttributeFullyQualifiedName is not null)
+                    if (metaAttributeFullyQualifiedName is not null)
                     {
-                        MetaAttributeCache cache = attributeCaches.GetValue(
-                            ctx.SemanticModel.Compilation, compilation => new(compilation.GetTypeByMetadataName(metaAttributeFullyQualifiedName)));
                         AttributeData? metaAttribute = cache.GetAttribute(attributeType);
 
                         if (metaAttribute is not null)
@@ -113,12 +131,14 @@ internal static partial class RoslynHelpers
                 }
             }
 
-            if (!hasGenerateShape && metaMatches is not null)
+            if (!hasMetaAttributeOverride && metaMatches is not null)
             {
                 (matches ??= ImmutableArray.CreateBuilder<AttributeData>()).AddRange(metaMatches);
             }
 
-            return matches is null ? default : (typeSymbol, typeDecl, ctx.SemanticModel, matches.ToImmutable());
+            return matches is null
+                ? default
+                : (typeSymbol, declaration.Syntax, declaration.Model, matches.ToImmutable());
         }
 
         static string GetTypeName(NameSyntax nameSyntax, out int genericTypeArity)
@@ -202,31 +222,31 @@ internal static partial class RoslynHelpers
         }
     }
 
-    private sealed class MetaAttributeCache(INamedTypeSymbol? metaAttributeType)
+    private sealed class MetaAttributeCache
     {
-        private readonly Dictionary<INamedTypeSymbol, AttributeData?> _attributes = new(SymbolEqualityComparer.Default);
+        private readonly ConcurrentDictionary<INamedTypeSymbol, CachedMetaAttribute> _attributes = new(SymbolEqualityComparer.Default);
+        private readonly INamedTypeSymbol? _metaAttributeType;
+        private readonly Func<INamedTypeSymbol, CachedMetaAttribute> _factory;
 
-        public AttributeData? GetAttribute(INamedTypeSymbol attributeType)
+        public MetaAttributeCache(INamedTypeSymbol? metaAttributeType)
         {
-            if (metaAttributeType is null)
-            {
-                return null;
-            }
-
-            attributeType = attributeType.OriginalDefinition;
-            lock (_attributes)
-            {
-                // Cache negative results as well: most annotations do not trigger generation.
-                if (!_attributes.TryGetValue(attributeType, out AttributeData? attribute))
-                {
-                    attribute = attributeType.GetAttributes()
-                        .FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, metaAttributeType));
-                    _attributes.Add(attributeType, attribute);
-                }
-
-                return attribute;
-            }
+            _metaAttributeType = metaAttributeType;
+            _factory = FindAttribute;
         }
+
+        public AttributeData? GetAttribute(INamedTypeSymbol attributeType) =>
+            _metaAttributeType is null
+                ? null
+                : _attributes.GetOrAdd(attributeType.OriginalDefinition, _factory).Attribute;
+
+        private CachedMetaAttribute FindAttribute(INamedTypeSymbol attributeType)
+        {
+            // Cache negative results as well: most annotations do not trigger generation.
+            return new(attributeType.GetAttributes()
+                .FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _metaAttributeType)));
+        }
+
+        private sealed record CachedMetaAttribute(AttributeData? Attribute);
     }
 
     // Cf. https://github.com/dotnet/roslyn/issues/72667
