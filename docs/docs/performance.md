@@ -10,7 +10,7 @@ The [example JSON serializer](https://github.com/eiriktsarpalis/PolyType/tree/ma
 
 The [benchmark suite](https://github.com/eiriktsarpalis/PolyType/blob/main/tests/PolyType.Benchmarks/JsonBenchmark.cs) compares nine payloads, from a single integer to megabytes of JSON, across six serialization and five deserialization configurations. All use default JSON settings, cached metadata/converters, and equivalent valid inputs. Setup checks that every serialization path produces equivalent JSON and that all deserialization paths round-trip correctly.
 
-All **99 measurements** and all eight charts were refreshed on **November 16, 2026**, using the same benchmark job settings as the previous run and project code at [`68efb72`](https://github.com/eiriktsarpalis/PolyType/commit/68efb7275bf6baefcbb36bc5ff96d2c8914fe2d7) plus a pooled-buffer array reader for the PolyType fast path, matching the technique used by the example serializer.
+All **99 measurements** and all eight charts were refreshed on **November 16, 2026**, using the same benchmark job settings as the previous run and project code at [`4460713`](https://github.com/eiriktsarpalis/PolyType/commit/44607133055c824ba0d3741d107a37aad5c77bab).
 
 Measurements used an Apple M4 Pro (14 cores, Arm64), macOS 27.2.1 (26B131), BenchmarkDotNet 0.16.0-preview.2, and .NET 11.0.0 (runtime build `11.0.26.53018`) with SDK `11.0.100`, Release configuration, and concurrent server GC. BenchmarkDotNet could not elevate process priority on this host. Ordinary desktop activity was not isolated from the run and may add noise. Host and runtime details are included in the exported dataset. Project code and macOS have also changed since the previous run, so differences cannot be attributed solely to the SDK/runtime update.
 
