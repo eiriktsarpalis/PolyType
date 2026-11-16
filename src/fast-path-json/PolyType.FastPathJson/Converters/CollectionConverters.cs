@@ -1,5 +1,3 @@
-using System.Buffers;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 namespace PolyType.FastPathJson.Converters;
@@ -70,12 +68,12 @@ public sealed class ListConverter<T, TConverter> : IJsonSerializable<List<T>>
             SerializationHelpers.ThrowJsonException("Expected a JSON array.");
         }
 
-        List<T> result = [];
+        using PooledValueList<T> result = new();
         while (reader.Read())
         {
             if (reader.TokenType is JsonTokenType.EndArray)
             {
-                return result;
+                return result.ToList();
             }
 
             result.Add(TConverter.Read(ref reader)!);
@@ -124,45 +122,18 @@ public sealed class ArrayConverter<T, TConverter> : IJsonSerializable<T[]>
             SerializationHelpers.ThrowJsonException("Expected a JSON array.");
         }
 
-        // Buffer elements in pooled storage so that only the exact-size result array is allocated.
-        T[] buffer = ArrayPool<T>.Shared.Rent(4);
-        int count = 0;
-        try
+        using PooledValueList<T> result = new();
+        while (reader.Read())
         {
-            while (reader.Read())
+            if (reader.TokenType is JsonTokenType.EndArray)
             {
-                if (reader.TokenType is JsonTokenType.EndArray)
-                {
-                    return buffer.AsSpan(0, count).ToArray();
-                }
-
-                if (count == buffer.Length)
-                {
-                    T[] newBuffer = ArrayPool<T>.Shared.Rent(buffer.Length * 2);
-                    buffer.AsSpan(0, count).CopyTo(newBuffer);
-                    ReturnBuffer(buffer, count);
-                    buffer = newBuffer;
-                }
-
-                buffer[count++] = TConverter.Read(ref reader)!;
+                return result.ToArray();
             }
 
-            return SerializationHelpers.ThrowJsonException<T[]>("Incomplete JSON array.");
-        }
-        finally
-        {
-            ReturnBuffer(buffer, count);
+            result.Add(TConverter.Read(ref reader)!);
         }
 
-        static void ReturnBuffer(T[] buffer, int count)
-        {
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                buffer.AsSpan(0, count).Clear();
-            }
-
-            ArrayPool<T>.Shared.Return(buffer);
-        }
+        return SerializationHelpers.ThrowJsonException<T[]>("Incomplete JSON array.");
     }
 }
 

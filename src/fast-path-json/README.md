@@ -22,9 +22,6 @@ When every known name fits the 256-byte stack buffer even with `\uXXXX` escaping
 omit pooled-buffer state and its `try`/`finally`. Oversized unknown names still undergo
 validation in a separate slow path before their values are skipped.
 
-One-dimensional array readers buffer elements in `ArrayPool<T>` storage and allocate only the
-exact-size result, rather than growing a `List<T>` and copying it with `ToArray`.
-
 ## Usage
 
 Reference `PolyType.FastPathJson` normally and reference `PolyType.FastPathJson.SourceGenerator` with `OutputItemType="Analyzer"` and `ReferenceOutputAssembly="false"`.
