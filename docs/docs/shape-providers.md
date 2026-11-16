@@ -75,15 +75,23 @@ The runtime recovers omitted `IsContextual` metadata from older generated provid
 
 ### Custom generation attributes
 
-Library authors can annotate their own attribute classes with <xref:PolyType.Abstractions.GenerateShapeAttributeAttribute> to trigger shape generation for types carrying those attributes.
+Library authors can register their attribute classes with an assembly-level <xref:PolyType.Abstractions.GenerateShapeAttributeAttribute> to trigger shape generation for types carrying those attributes.
 Its <xref:PolyType.Abstractions.GenerateShapeAttributeAttribute.IncludeMethods>, <xref:PolyType.Abstractions.GenerateShapeAttributeAttribute.Kind>, <xref:PolyType.Abstractions.GenerateShapeAttributeAttribute.Marshaler>, and <xref:PolyType.Abstractions.GenerateShapeAttributeAttribute.InferClosedTypePolymorphism> properties configure the generated shapes in the same way as <xref:PolyType.GenerateShapeAttribute>.
 For example, an RPC contract attribute can request public instance methods by default, without requiring its users to add a second annotation.
 
+[!code-csharp[](../CSharpSamples/CustomGenerationAttributes.cs#CustomGenerationAttributes)]
+
+The generator reads registrations from the current assembly and its referenced assemblies before looking for matching annotations.
+It does not inspect the declarations of unrelated attribute classes.
+For generic attribute classes, register the open type, such as `typeof(ContractAttribute<>)`.
+
 The target type and its containing types must still be partial, and the usual restrictions on static and open generic types apply.
 An explicit <xref:PolyType.GenerateShapeAttribute> on the target replaces the custom attribute's defaults.
-Only annotations directly on the custom attribute class are inspected; this mechanism does not follow inherited or recursively composed meta-attributes.
+When multiple registered attributes annotate a type, the first annotation supplies its defaults.
+If an attribute type is registered more than once, the first registration in the current assembly takes precedence over references; otherwise the first referenced registration is used.
+Attribute inheritance does not trigger generation.
 
-Unlike <xref:PolyType.GenerateShapeAttribute>, the meta-attribute is retained in compiled metadata, so a library-defined attribute works in consuming projects.
+Unlike <xref:PolyType.GenerateShapeAttribute>, the registration is retained in compiled metadata, so a library-defined attribute works in consuming projects.
 It triggers only source generation and does not change the reflection provider's configuration.
 
 ## Reflection Provider

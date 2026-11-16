@@ -39,9 +39,10 @@ Everything that flows through the incremental pipeline (the `Model/` types) **MU
 
 Flow: `PolyTypeGenerator.cs` → `Parser` (Roslyn symbols → PolyType.Roslyn `TypeDataModel`s) → `Parser.ModelMapper` (PolyType.Roslyn models → incremental-safe `Model/` types) → `SourceFormatter` (incremental model → C# source).
 
-Discovery also inspects attributes on type declarations for `PolyType.Abstractions.GenerateShapeAttributeAttribute`.
-The meta-attribute lookup cache is an incremental value derived from each compilation, with symbol-keyed positive and negative results shared across constructed generic attributes.
-Keep that cache compilation-scoped so edits to attribute declarations invalidate previous results.
+Custom generation triggers are registered with assembly-level `PolyType.Abstractions.GenerateShapeAttributeAttribute`.
+Discovery reads registrations from the current assembly and its references before scanning custom annotations.
+Only registered names (including aliases) reach semantic matching; with no registrations, custom syntax traversal is skipped.
+Do not reintroduce a cache or semantic lookup for every unrelated attribute class.
 
 ## Separation of Concerns: Parser vs Formatter
 

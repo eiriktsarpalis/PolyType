@@ -25,7 +25,7 @@ public static class GenerateShapeAttributeAttributeTests
                 using PolyType.Abstractions;
                 using ContractAlias = ContractAttribute;
 
-                [GenerateShapeAttributeAttribute(IncludeMethods = MethodShapeFlags.PublicInstance)]
+                [assembly: GenerateShapeAttributeAttribute(typeof(ContractAttribute), IncludeMethods = MethodShapeFlags.PublicInstance)]
                 public sealed class ContractAttribute : Attribute;
 
                 [ContractAlias]
@@ -57,7 +57,7 @@ public static class GenerateShapeAttributeAttributeTests
                 using PolyType;
                 using PolyType.Abstractions;
 
-                [GenerateShapeAttributeAttribute({{settings}})]
+                [assembly: GenerateShapeAttributeAttribute(typeof(ContractAttribute), {{settings}})]
                 public sealed class ContractAttribute : Attribute;
 
                 [Contract]
@@ -88,7 +88,7 @@ public static class GenerateShapeAttributeAttributeTests
             CompilationTests.CreateClosedClassCompilation("""
                 using System;
                 using PolyType.Abstractions;
-                [GenerateShapeAttributeAttribute(InferClosedTypePolymorphism = true)]
+                [assembly: GenerateShapeAttributeAttribute(typeof(ContractAttribute), InferClosedTypePolymorphism = true)]
                 public sealed class ContractAttribute : Attribute;
                 [Contract]
                 public closed partial class Root;
@@ -107,7 +107,7 @@ public static class GenerateShapeAttributeAttributeTests
             CreateCompilation($$"""
                 using System;
                 using PolyType.Abstractions;
-                [GenerateShapeAttributeAttribute]
+                [assembly: GenerateShapeAttributeAttribute(typeof(ContractAttribute))]
                 public sealed class ContractAttribute : Attribute;
                 [Contract]
                 public {{declaration}} ContractType;
@@ -122,7 +122,7 @@ public static class GenerateShapeAttributeAttributeTests
             using System;
             using PolyType;
             using PolyType.Abstractions;
-            [GenerateShapeAttributeAttribute(IncludeMethods = MethodShapeFlags.PublicInstance)]
+            [assembly: GenerateShapeAttributeAttribute(typeof(ContractAttribute), IncludeMethods = MethodShapeFlags.PublicInstance)]
             public sealed class ContractAttribute : Attribute;
             """, assemblyName: "Contracts");
         using MemoryStream image = new();
@@ -148,7 +148,7 @@ public static class GenerateShapeAttributeAttributeTests
             CreateCompilation("""
                 using System;
                 using PolyType.Abstractions;
-                [GenerateShapeAttributeAttribute]
+                [assembly: GenerateShapeAttributeAttribute(typeof(ContractAttribute<>))]
                 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
                 public sealed class ContractAttribute<T> : Attribute;
                 public partial class Outer
@@ -196,9 +196,9 @@ public static class GenerateShapeAttributeAttributeTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public static void CustomAttributeCacheIsInvalidatedWhenDeclarationChanges(bool initiallyMarked)
+    public static void CustomAttributeRegistrationChangesInvalidateGeneration(bool initiallyMarked)
     {
-        const string marker = "[PolyType.Abstractions.GenerateShapeAttribute]";
+        const string marker = "[assembly: PolyType.Abstractions.GenerateShapeAttribute(typeof(ContractAttribute))]";
         string Source(bool marked) => $$"""
             using System;
             {{(marked ? marker : "")}}
@@ -221,6 +221,149 @@ public static class GenerateShapeAttributeAttributeTests
         compilation = compilation.ReplaceSyntaxTree(tree, CSharpSyntaxTree.ParseText(Source(!initiallyMarked), (CSharpParseOptions)tree.Options, cancellationToken: TestContext.Current.CancellationToken));
         driver = cached.RunGenerators(compilation, TestContext.Current.CancellationToken);
         Assert.Equal(!initiallyMarked, driver.GetRunResult().GeneratedTrees.Any());
+    }
+
+    [Theory]
+    [InlineData("[Contract]", "")]
+    [InlineData("[ContractAttribute]", "")]
+    [InlineData("[global::Contracts.Contract]", "")]
+    [InlineData("[Alias]", "using Alias = Contracts.ContractAttribute;")]
+    [InlineData("[Alias]", "global using Alias = Contracts.ContractAttribute;")]
+    public static void RegisteredAttributeNamesAndAliasesAreResolved(string annotation, string usingDirective)
+    {
+        Compilation compilation = CreateCompilation("""
+            using System;
+            [assembly: PolyType.Abstractions.GenerateShapeAttribute(typeof(Contracts.ContractAttribute))]
+            namespace Contracts { public sealed class ContractAttribute : Attribute; }
+            namespace Other { public sealed class ContractAttribute : Attribute; }
+            """);
+        CSharpParseOptions options = (CSharpParseOptions)compilation.SyntaxTrees.First().Options;
+        compilation = compilation.AddSyntaxTrees(
+            CSharpSyntaxTree.ParseText($$"""
+                {{usingDirective}}
+                using Contracts;
+                {{annotation}}
+                public partial class ContractType;
+                [Other.Contract]
+                public partial class UnrelatedType;
+                """, options, cancellationToken: TestContext.Current.CancellationToken));
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Equal("global::ContractType", Assert.Single(result.AllGeneratedTypes).Type.FullyQualifiedName);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("[GenerateShapeFor<int>]")]
+    [InlineData("[GenerateShapeFor<int>, GenerateShapeFor<string>]")]
+    public static void FirstCustomAttributeSuppliesDefaultsWithoutDroppingWitnesses(string witnessAnnotations)
+    {
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(CreateCompilation($$"""
+            using System;
+            using PolyType;
+            using PolyType.Abstractions;
+            [assembly: GenerateShapeAttributeAttribute(typeof(FirstAttribute), IncludeMethods = MethodShapeFlags.PublicInstance)]
+            [assembly: GenerateShapeAttributeAttribute(typeof(SecondAttribute))]
+            public sealed class FirstAttribute : Attribute;
+            public sealed class SecondAttribute : Attribute;
+            [First, Second]
+            {{witnessAnnotations}}
+            public partial class ContractType
+            {
+                public int Method() => 42;
+            }
+            """));
+        TypeShapeModel model = Assert.Single(result.AllGeneratedTypes, m => m.Type.FullyQualifiedName == "global::ContractType");
+        Assert.Equal("Method", Assert.Single(model.Methods).Name);
+        if (witnessAnnotations.Length > 0)
+        {
+            Assert.Contains(result.AllGeneratedTypes, m => m.Type.FullyQualifiedName == "int");
+        }
+
+        if (witnessAnnotations.Contains("string"))
+        {
+            Assert.Contains(result.AllGeneratedTypes, m => m.Type.FullyQualifiedName == "string");
+        }
+    }
+
+    [Fact]
+    public static void CurrentAssemblyRegistrationOverridesReferencedDefaults()
+    {
+        Compilation library = CreateCompilation("""
+            using System;
+            [assembly: PolyType.Abstractions.GenerateShapeAttribute(typeof(ContractAttribute), IncludeMethods = PolyType.MethodShapeFlags.PublicInstance)]
+            public sealed class ContractAttribute : Attribute;
+            """, assemblyName: "Contracts");
+        using MemoryStream image = new();
+        Assert.True(library.Emit(image, cancellationToken: TestContext.Current.CancellationToken).Success);
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(CreateCompilation("""
+            [assembly: PolyType.Abstractions.GenerateShapeAttribute(typeof(ContractAttribute))]
+            [Contract]
+            public partial class ContractType
+            {
+                public int Method() => 42;
+            }
+            """, additionalReferences: [MetadataReference.CreateFromImage(image.ToArray())]));
+        Assert.Empty(Assert.Single(result.AllGeneratedTypes).Methods);
+    }
+
+    [Fact]
+    public static void UnregisteredAttributesDoNotTriggerGeneration()
+    {
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(CreateCompilation("""
+            using System;
+            [assembly: PolyType.Abstractions.GenerateShapeAttribute(typeof(RegisteredAttribute))]
+            public sealed class RegisteredAttribute : Attribute;
+            public sealed class UnregisteredAttribute : Attribute;
+            [Unregistered]
+            public partial class ContractType;
+            """));
+        Assert.Empty(result.AllGeneratedTypes);
+    }
+
+    [Fact]
+    public static void GlobalAliasInAnotherFileTriggersGeneration()
+    {
+        Compilation compilation = CreateCompilation("""
+            global using Alias = Contracts.ContractAttribute;
+            using System;
+            [assembly: PolyType.Abstractions.GenerateShapeAttribute(typeof(Contracts.ContractAttribute))]
+            namespace Contracts { public sealed class ContractAttribute : Attribute; }
+            """);
+        compilation = compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText("""
+            [Alias]
+            public partial interface IContract;
+            """, (CSharpParseOptions)compilation.SyntaxTrees.First().Options,
+            cancellationToken: TestContext.Current.CancellationToken));
+
+        PolyTypeSourceGeneratorResult result = CompilationHelpers.RunPolyTypeSourceGenerator(compilation);
+        Assert.Equal("global::IContract", Assert.Single(result.AllGeneratedTypes).Type.FullyQualifiedName);
+    }
+
+    [Fact]
+    public static void UnrelatedEditDoesNotRegenerateRegisteredShapes()
+    {
+        Compilation compilation = CreateCompilation("""
+            using System;
+            [assembly: PolyType.Abstractions.GenerateShapeAttribute(typeof(ContractAttribute))]
+            public sealed class ContractAttribute : Attribute;
+            [Contract]
+            public partial interface IContract { int Method(); }
+            """);
+        CSharpParseOptions options = (CSharpParseOptions)compilation.SyntaxTrees.First().Options;
+        SyntaxTree unrelated = CSharpSyntaxTree.ParseText("public class Unrelated { }", options,
+            cancellationToken: TestContext.Current.CancellationToken);
+        compilation = compilation.AddSyntaxTrees(unrelated);
+        int generated = 0;
+        GeneratorDriver driver = CompilationHelpers.CreatePolyTypeSourceGeneratorDriver(compilation,
+            new PolyTypeGenerator { OnGeneratingSource = _ => generated++ });
+        driver = driver.RunGenerators(compilation, TestContext.Current.CancellationToken);
+        Assert.Equal(1, generated);
+
+        compilation = compilation.ReplaceSyntaxTree(unrelated, CSharpSyntaxTree.ParseText("public class Unrelated { public int Value; }", options,
+            cancellationToken: TestContext.Current.CancellationToken));
+        driver.RunGenerators(compilation, TestContext.Current.CancellationToken);
+        Assert.Equal(1, generated);
     }
 
     private static Compilation CreateCompilation(

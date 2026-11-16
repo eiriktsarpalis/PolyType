@@ -22,15 +22,15 @@ public sealed class PolyTypeGenerator : IIncrementalGenerator
 
         IncrementalValueProvider<(TypeShapeProviderModel Model, ImmutableArray<Diagnostic> Diagnostics)?> parsed = context.SyntaxProvider
             .ForTypesWithAttributeDeclarations(
-                compilationProvider: context.CompilationProvider,
                 attributeFullyQualifiedNames: ["PolyType.GenerateShapeForAttribute<T>", "PolyType.GenerateShapeForAttribute", "PolyType.GenerateShapeAttribute"],
-                (node, _) => node is TypeDeclarationSyntax,
-                metaAttributeOverridePredicate: static attributeType =>
-                    attributeType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat) == "PolyType.GenerateShapeAttribute",
-                metaAttributeFullyQualifiedName: "PolyType.Abstractions.GenerateShapeAttributeAttribute")
+                (node, _) => node is TypeDeclarationSyntax)
             .Collect()
             .Combine(knownSymbols)
-            .Select((tuple, token) => DebugGuard.Invoke(Parser.ParseFromGenerateShapeAttributes, tuple.Left, tuple.Right, token));
+            .Select((tuple, token) => DebugGuard.Invoke(
+                Parser.ParseFromGenerateShapeAttributes,
+                RoslynHelpers.IncludeRegisteredAttributeDeclarations(tuple.Left, tuple.Right, token),
+                tuple.Right,
+                token));
 
         // Pipeline 1: Source generation only.
         // Uses Select to extract just the model; the Select operator deduplicates by

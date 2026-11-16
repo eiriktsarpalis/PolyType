@@ -334,7 +334,7 @@ public sealed partial class Parser : TypeDataModelGenerator
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    foreach (AttributeData attributeData in typeWithAttr.Attributes)
+                    foreach (AttributeData attributeData in typeWithAttr.GetGenerationAttributes())
                     {
                         if (SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, knownSymbols.GenerateShapeAttribute) ||
                             SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, knownSymbols.GenerateShapeAttributeAttribute))
@@ -1866,7 +1866,7 @@ public sealed partial class Parser : TypeDataModelGenerator
         bool isWitnessTypeDeclaration = false;
         List<(string Pattern, AttributeData AttributeData)>? patternList = null;
 
-        foreach (AttributeData attributeData in context.Attributes)
+        foreach (AttributeData attributeData in context.GetGenerationAttributes())
         {
             if (SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.GenerateShapeAttribute) ||
                 SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.GenerateShapeAttributeAttribute))
