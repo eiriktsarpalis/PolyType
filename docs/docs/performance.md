@@ -12,7 +12,7 @@ The [benchmark suite](https://github.com/eiriktsarpalis/PolyType/blob/main/tests
 
 All **99 measurements** and all eight charts were refreshed on **November 16, 2026**, using the same benchmark job settings as the previous run and project code at [`68efb72`](https://github.com/eiriktsarpalis/PolyType/commit/68efb7275bf6baefcbb36bc5ff96d2c8914fe2d7) plus a pooled-buffer array reader for the PolyType fast path, matching the technique used by the example serializer.
 
-Measurements used an Apple M4 Pro (14 cores, Arm64), macOS 27.2.1 (26B131), BenchmarkDotNet 0.16.0-preview.2, and .NET 11.0.0 (runtime build `11.0.26.53018`) with SDK `11.0.100`, Release configuration, and concurrent server GC. BenchmarkDotNet could not elevate process priority on this host. Ordinary desktop activity was not isolated from the run and may add noise. Host and runtime details are included in the exported dataset. Apart from the fast-path array and list readers, run-to-run differences reflect measurement noise rather than code changes.
+Measurements used an Apple M4 Pro (14 cores, Arm64), macOS 27.2.1 (26B131), BenchmarkDotNet 0.16.0-preview.2, and .NET 11.0.0 (runtime build `11.0.26.53018`) with SDK `11.0.100`, Release configuration, and concurrent server GC. BenchmarkDotNet could not elevate process priority on this host. Ordinary desktop activity was not isolated from the run and may add noise. Host and runtime details are included in the exported dataset. Apart from the fast-path array reader, run-to-run differences reflect measurement noise rather than code changes.
 
 ### Reading the charts
 
