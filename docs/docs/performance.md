@@ -22,18 +22,6 @@ Whiskers show **+/- one standard error**, not confidence intervals. Every case u
 
 The comparison includes STJ reflection, STJ source-generated metadata, PolyType reflection, PolyType source-generated shapes, and PolyType fast path. Serialization also includes STJ's source-generated fast-path context. That context can use built-in converters for types without a generated serialization handler. STJ does not provide an equivalent generated deserialization fast path. The text abbreviates STJ's source-generated metadata configuration as **STJ metadata**.
 
-### Serialization
-
-With source-generated shapes, PolyType's collection and object writers took **0.83-1.39x** the time of the PolyType fast path baseline. Its small- and large-POCO writers took **1.34x and 1.11x** the time of STJ's fast path, respectively, while using **36% and 11% less elapsed time** than STJ metadata. The `List<int>` writer took **1.06x** the time of STJ metadata; the `int[]` writer was effectively tied (**1.00x**). These comparisons describe measured means on this host, not cross-platform guarantees or significance tests.
-
-Both shape-driven PolyType configurations and the fast-path baseline allocated no managed memory in these warmed, reused-buffer serialization cases. This does not include producing a new output string or byte array for each call.
-
-### Deserialization
-
-With source-generated shapes, the PolyType reader used **1-51% less elapsed time than STJ metadata** across all nine payloads, including **5% less** for `int[]` and **1% less** for `List<int>`. For the large POCO, CITM batch, and large-object batch, its times were **1.07x, 1.09x, and 1.07x** the PolyType fast path baseline, respectively.
-
-For the CITM batch, the PolyType reader with source-generated shapes and the PolyType fast path baseline both allocated **2.80 MiB per read**, compared with **5.73 MiB** for STJ metadata. Both buffer array elements in pooled storage and allocate only the exact-size result, whereas STJ grows a `List<T>` before copying it to an array. For `List<int>`, the fast path allocated **1,080 B per read**, compared with **2,232 B** for both STJ metadata and the shape-driven PolyType readers. For the small POCO, both shape-driven PolyType readers and the fast-path baseline allocated **440 B per read**.
-
 The benchmark measures complete serializers, not the isolated cost of a visitor or member accessor. Differences include serializer algorithms and collection construction as well as dispatch and member access through type shapes. Shape and converter construction are excluded from the timed operations.
 
 Serialization reuses a `Utf8JsonWriter` and `ArrayBufferWriter<byte>`, including flushing and reset in each operation. Deserialization consumes precomputed UTF-8 input and includes result construction. Startup, Native AOT execution, streaming I/O, dataset loading, and initial buffer allocation are not measured. The valid-input comparison does not imply equivalent handling of malformed JSON or unsupported contracts.
