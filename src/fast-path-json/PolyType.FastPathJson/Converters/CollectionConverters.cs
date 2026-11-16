@@ -1,3 +1,5 @@
+using System.Buffers;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 namespace PolyType.FastPathJson.Converters;
@@ -110,8 +112,58 @@ public sealed class ArrayConverter<T, TConverter> : IJsonSerializable<T[]>
     }
 
     /// <inheritdoc/>
-    public static T[]? Read(ref Utf8JsonReader reader) =>
-        ListConverter<T, TConverter>.Read(ref reader)?.ToArray();
+    public static T[]? Read(ref Utf8JsonReader reader)
+    {
+        if (reader.TokenType is JsonTokenType.Null)
+        {
+            return null;
+        }
+
+        if (reader.TokenType is not JsonTokenType.StartArray)
+        {
+            SerializationHelpers.ThrowJsonException("Expected a JSON array.");
+        }
+
+        // Buffer elements in pooled storage so that only the exact-size result array is allocated.
+        T[] buffer = ArrayPool<T>.Shared.Rent(4);
+        int count = 0;
+        try
+        {
+            while (reader.Read())
+            {
+                if (reader.TokenType is JsonTokenType.EndArray)
+                {
+                    return buffer.AsSpan(0, count).ToArray();
+                }
+
+                if (count == buffer.Length)
+                {
+                    T[] newBuffer = ArrayPool<T>.Shared.Rent(buffer.Length * 2);
+                    buffer.AsSpan(0, count).CopyTo(newBuffer);
+                    ReturnBuffer(buffer, count);
+                    buffer = newBuffer;
+                }
+
+                buffer[count++] = TConverter.Read(ref reader)!;
+            }
+
+            return SerializationHelpers.ThrowJsonException<T[]>("Incomplete JSON array.");
+        }
+        finally
+        {
+            ReturnBuffer(buffer, count);
+        }
+
+        static void ReturnBuffer(T[] buffer, int count)
+        {
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                buffer.AsSpan(0, count).Clear();
+            }
+
+            ArrayPool<T>.Shared.Return(buffer);
+        }
+    }
 }
 
 /// <summary>Composes key and value witnesses into a dictionary converter.</summary>

@@ -10,9 +10,9 @@ The [example JSON serializer](https://github.com/eiriktsarpalis/PolyType/tree/ma
 
 The [benchmark suite](https://github.com/eiriktsarpalis/PolyType/blob/main/tests/PolyType.Benchmarks/JsonBenchmark.cs) compares nine payloads, from a single integer to megabytes of JSON, across six serialization and five deserialization configurations. All use default JSON settings, cached metadata/converters, and equivalent valid inputs. Setup checks that every serialization path produces equivalent JSON and that all deserialization paths round-trip correctly.
 
-All **99 measurements** and all eight charts were refreshed on **November 11, 2026**, using the same benchmark job settings as the previous run and project code at [`4460713`](https://github.com/eiriktsarpalis/PolyType/commit/44607133055c824ba0d3741d107a37aad5c77bab).
+All **99 measurements** and all eight charts were refreshed on **November 16, 2026**, using the same benchmark job settings as the previous run and project code at [`68efb72`](https://github.com/eiriktsarpalis/PolyType/commit/68efb7275bf6baefcbb36bc5ff96d2c8914fe2d7) plus a pooled-buffer array reader for the PolyType fast path, matching the technique used by the example serializer.
 
-Measurements used an Apple M4 Pro (14 cores, Arm64), macOS 27.2.1 (26B131), BenchmarkDotNet 0.16.0-preview.2, and .NET 11.0.0 (runtime build `11.0.26.53018`) with SDK `11.0.100`, Release configuration, and concurrent server GC. BenchmarkDotNet could not elevate process priority on this host. Ordinary desktop activity was not isolated from the run and may add noise. Host and runtime details are included in the exported dataset. Project code and macOS have also changed since the previous run, so differences cannot be attributed solely to the SDK/runtime update.
+Measurements used an Apple M4 Pro (14 cores, Arm64), macOS 27.2.1 (26B131), BenchmarkDotNet 0.16.0-preview.2, and .NET 11.0.0 (runtime build `11.0.26.53018`) with SDK `11.0.100`, Release configuration, and concurrent server GC. BenchmarkDotNet could not elevate process priority on this host. Ordinary desktop activity was not isolated from the run and may add noise. Host and runtime details are included in the exported dataset. Apart from the fast-path array reader, run-to-run differences reflect measurement noise rather than code changes.
 
 ### Reading the charts
 
@@ -24,15 +24,15 @@ The comparison includes STJ reflection, STJ source-generated metadata, PolyType 
 
 ### Serialization
 
-With source-generated shapes, PolyType's collection and object writers took **0.83-1.44x** the time of the PolyType fast path baseline. Its small- and large-POCO writers took **1.41x and 1.13x** the time of STJ's fast path, respectively, while using **34% and 10% less elapsed time** than STJ metadata. The `List<int>` writer took **1.05x** the time of STJ metadata; the `int[]` writer used **6% less elapsed time**. These comparisons describe measured means on this host, not cross-platform guarantees or significance tests.
+With source-generated shapes, PolyType's collection and object writers took **1.09-1.32x** the time of the PolyType fast path baseline. Its small- and large-POCO writers took **1.32x and 1.12x** the time of STJ's fast path, respectively, while using **40% and 11% less elapsed time** than STJ metadata. The `List<int>` writer took **1.07x** the time of STJ metadata; the `int[]` writer was effectively tied (**0.99x**). These comparisons describe measured means on this host, not cross-platform guarantees or significance tests.
 
 Both shape-driven PolyType configurations and the fast-path baseline allocated no managed memory in these warmed, reused-buffer serialization cases. This does not include producing a new output string or byte array for each call.
 
 ### Deserialization
 
-With source-generated shapes, the PolyType reader used **4-51% less elapsed time than STJ metadata** across eight of the nine payloads, including **10% less** for `int[]`. The `List<int>` reader was effectively tied (**0.98x**). For the large POCO, CITM batch, and large-object batch, its times were **1.08x, 1.09x, and 1.04x** the PolyType fast path baseline, respectively.
+With source-generated shapes, the PolyType reader used **3-50% less elapsed time than STJ metadata** across all nine payloads, including **6% less** for `int[]` and **3% less** for `List<int>`. For the large POCO, CITM batch, and large-object batch, its times were **1.09x, 1.15x, and 1.08x** the PolyType fast path baseline, respectively.
 
-For the CITM batch, the PolyType reader with source-generated shapes allocated **2.80 MiB per read**, compared with **5.73 MiB** for both STJ metadata and the PolyType fast path baseline. For the small POCO, both shape-driven PolyType readers and the fast-path baseline allocated **440 B per read**.
+For the CITM batch, the PolyType reader with source-generated shapes and the PolyType fast path baseline both allocated **2.80 MiB per read**, compared with **5.73 MiB** for STJ metadata. Both buffer array elements in pooled storage and allocate only the exact-size result, whereas STJ grows a `List<T>` before copying it to an array. For the small POCO, both shape-driven PolyType readers and the fast-path baseline allocated **440 B per read**.
 
 The benchmark measures complete serializers, not the isolated cost of a visitor or member accessor. Differences include serializer algorithms and collection construction as well as dispatch and member access through type shapes. Shape and converter construction are excluded from the timed operations.
 
