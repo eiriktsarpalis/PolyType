@@ -11,6 +11,7 @@ public readonly struct TypeWithAttributeDeclarationContext
 {
     public required ITypeSymbol TypeSymbol { get; init; }
     public required ImmutableArray<(BaseTypeDeclarationSyntax Syntax, SemanticModel Model)> Declarations { get; init; }
+
     /// <summary>
     /// The assembly registration supplying defaults, if a custom attribute triggered inclusion.
     /// </summary>
@@ -35,10 +36,11 @@ internal static partial class RoslynHelpers
     {
         Debug.Assert(attributeFullyQualifiedNames.Length is > 0 and <= 3, "Does not optimize for large lists of attributes.");
         ParseAttributeFullyQualifiedNames(attributeFullyQualifiedNames, out var attributeData, out var attributeSyntaxNodeCandidates);
+
         return provider.CreateSyntaxProvider(
             predicate: (SyntaxNode node, CancellationToken token) => node is BaseTypeDeclarationSyntax typeDecl && IsAnnotatedTypeDeclaration(typeDecl, token),
             transform: Transform)
-            .Where(ctx => ctx.Type is not null)
+            .Where(ctx => ctx.Type != null)
             .GroupBy(
                 keySelector: value => value.Type,
                 resultSelector: static (key, values) =>
