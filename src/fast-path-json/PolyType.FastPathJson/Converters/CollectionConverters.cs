@@ -68,12 +68,12 @@ public sealed class ListConverter<T, TConverter> : IJsonSerializable<List<T>>
             SerializationHelpers.ThrowJsonException("Expected a JSON array.");
         }
 
-        List<T> result = [];
+        using PooledValueList<T> result = new();
         while (reader.Read())
         {
             if (reader.TokenType is JsonTokenType.EndArray)
             {
-                return result;
+                return result.ToList();
             }
 
             result.Add(TConverter.Read(ref reader)!);
@@ -110,8 +110,31 @@ public sealed class ArrayConverter<T, TConverter> : IJsonSerializable<T[]>
     }
 
     /// <inheritdoc/>
-    public static T[]? Read(ref Utf8JsonReader reader) =>
-        ListConverter<T, TConverter>.Read(ref reader)?.ToArray();
+    public static T[]? Read(ref Utf8JsonReader reader)
+    {
+        if (reader.TokenType is JsonTokenType.Null)
+        {
+            return null;
+        }
+
+        if (reader.TokenType is not JsonTokenType.StartArray)
+        {
+            SerializationHelpers.ThrowJsonException("Expected a JSON array.");
+        }
+
+        using PooledValueList<T> result = new();
+        while (reader.Read())
+        {
+            if (reader.TokenType is JsonTokenType.EndArray)
+            {
+                return result.ToArray();
+            }
+
+            result.Add(TConverter.Read(ref reader)!);
+        }
+
+        return SerializationHelpers.ThrowJsonException<T[]>("Incomplete JSON array.");
+    }
 }
 
 /// <summary>Composes key and value witnesses into a dictionary converter.</summary>
