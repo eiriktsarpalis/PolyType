@@ -26,7 +26,11 @@ public sealed class PolyTypeGenerator : IIncrementalGenerator
                 (node, _) => node is TypeDeclarationSyntax)
             .Collect()
             .Combine(knownSymbols)
-            .Select((tuple, token) => DebugGuard.Invoke(Parser.ParseFromGenerateShapeAttributes, tuple.Left, tuple.Right, token));
+            .Select((tuple, token) => DebugGuard.Invoke(
+                Parser.ParseFromGenerateShapeAttributes,
+                RoslynHelpers.IncludeRegisteredAttributeDeclarations(tuple.Left, tuple.Right, token),
+                tuple.Right,
+                token));
 
         // Pipeline 1: Source generation only.
         // Uses Select to extract just the model; the Select operator deduplicates by
