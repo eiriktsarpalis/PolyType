@@ -12,16 +12,16 @@ The resulting converter graph can still involve virtual calls and member-access 
 
 The following means come from the [performance benchmarks](performance.md), measured on an Apple M4 Pro with .NET 11. They compare complete serializers rather than isolating visitor overhead:
 
-| Benchmark | STJ metadata | STJ fast path | PolyType source gen | Fully inlined |
-|---|---:|---:|---:|---:|
-| Serialize small POCO | 144.6 ns | 68.8 ns | 92.3 ns | 66.3 ns |
-| Deserialize small POCO | 545.9 ns | – | 267.1 ns | 237.4 ns |
-| Serialize large POCO | 638.0 ns | 510.1 ns | 567.0 ns | 494.5 ns |
-| Deserialize large POCO | 1,770.1 ns | – | 1,391.7 ns | 1,302.1 ns |
-| Serialize CITM catalogs | 3.11 ms | 1.59 ms | 1.73 ms | 1.51 ms |
-| Deserialize CITM catalogs | 7.77 ms | – | 5.64 ms | 5.16 ms |
+| Benchmark | STJ metadata | PolyType source gen | Hand written JSON |
+|---|---:|---:|---:|
+| Serialize small POCO | 144.6 ns | 92.3 ns | 66.3 ns |
+| Deserialize small POCO | 545.9 ns | 267.1 ns | 237.4 ns |
+| Serialize large POCO | 638.0 ns | 567.0 ns | 494.5 ns |
+| Deserialize large POCO | 1,770.1 ns | 1,391.7 ns | 1,302.1 ns |
+| Serialize CITM catalogs | 3.11 ms | 1.73 ms | 1.51 ms |
+| Deserialize CITM catalogs | 7.77 ms | 5.64 ms | 5.16 ms |
 
-The PolyType column uses the example JSON serializer, a reference implementation rather than a production library. Differences also reflect serializer algorithms, not only dispatch. For example, the fully generated serializer is about 1.4 times as fast as the composed one for small POCO serialization in this benchmark.
+The PolyType column uses the example JSON serializer, a reference implementation rather than a production library. Differences also reflect serializer algorithms, not only dispatch. For example, the handwritten serializer is about 1.4 times as fast as the composed one for small POCO serialization in this benchmark.
 
 ### What does the visitor model cost at startup?
 
@@ -51,9 +51,9 @@ The [visitor](core-abstractions.md) methods and `ITypeShapeFunc.Invoke<T>` callb
 
 For a fixed set of libraries, $N_{\text{visitors}}$ is constant as the type graph grows, so GVM expansion is linear in the number of relevant instantiations. Value-type arguments generally need specialized code, while reference types can share canonical code. This analysis follows from the compiler's dependency rules; the measurements below use one library at a time.
 
-The following chart measures Native AOT executable sizes for a JSON roundtrip of binary-tree type graphs, in which 10% of the types are structs. It compares PolyType's example serializer with STJ source generation and the fully inlined `PolyType.FastPathJson` serializer:
+The following chart measures Native AOT executable sizes for a JSON roundtrip of binary-tree type graphs, in which 10% of the types are structs. It compares PolyType's example serializer with STJ source generation and the handwritten `PolyType.FastPathJson` serializer:
 
-![Native AOT executable size versus number of types for PolyType, STJ source generation and the fully inlined serializer.](../images/design-questions/aot-size-scaling.svg)
+![Native AOT executable size versus number of types for PolyType, STJ source generation and the handwritten serializer.](../images/design-questions/aot-size-scaling.svg)
 
 | Types | PolyType | STJ source gen | FastPathJson |
 |---:|---:|---:|---:|
@@ -91,7 +91,7 @@ Each process performs one deserialize/serialize roundtrip, then forces two full 
 
 Yes. [`PolyType.Roslyn`](https://www.nuget.org/packages/PolyType.Roslyn) is a source-only package that exposes a compile-time type model to Roslyn source generators, mapping `ITypeSymbol` instances to data models of objects, collections, enums, unions and so on. `PolyType.FastPathJson` is a prototype JSON generator built this way; it uses no runtime shapes, and its numbers appear in the tables above.
 
-Generating fully inlined code has tradeoffs that a runtime type model avoids:
+Generating handwritten code has tradeoffs that a runtime type model avoids:
 
 - **Runtime configuration.** A library can use a runtime model to support naming policies, reference preservation, number handling, rules for skipping default or null values, and contract customization. A fixed, fully generated method cannot accommodate policies unknown at generation time without adding runtime checks, callbacks or other customization mechanisms.
 - **Testability.** A runtime library can be tested against the [reflection provider](shape-providers.md) and the shared test types of [`PolyType.TestCases`](https://github.com/eiriktsarpalis/PolyType/tree/main/src/PolyType.TestCases), with no generator in the loop. Testing a generator also involves compilation, snapshot and incrementality tests.
