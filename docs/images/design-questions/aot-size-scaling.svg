@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="620" viewBox="0 0 1000 620">
+<rect width="1000" height="620" fill="white"/>
+<g font-family="sans-serif" font-size="15" fill="#24292f">
+<text x="95" y="35" font-size="23">Native AOT executable size by type count</text>
+<text x="95" y="64">.NET SDK 11.0.100 | win-x64 | 10% structs | size optimization | JSON roundtrip</text><path d="M 95 500 h 820" stroke="#d0d7de"/>
+<text x="80" y="505" text-anchor="end">0.0</text>
+<path d="M 95 420 h 820" stroke="#d0d7de"/>
+<text x="80" y="425" text-anchor="end">17.2</text>
+<path d="M 95 340 h 820" stroke="#d0d7de"/>
+<text x="80" y="345" text-anchor="end">34.4</text>
+<path d="M 95 260 h 820" stroke="#d0d7de"/>
+<text x="80" y="265" text-anchor="end">51.6</text>
+<path d="M 95 180 h 820" stroke="#d0d7de"/>
+<text x="80" y="185" text-anchor="end">68.8</text>
+<path d="M 95 100 h 820" stroke="#d0d7de"/>
+<text x="80" y="105" text-anchor="end">86.0</text>
+<text x="95" y="525" text-anchor="middle">0</text>
+<text x="259" y="525" text-anchor="middle">2,000</text>
+<text x="423" y="525" text-anchor="middle">4,000</text>
+<text x="587" y="525" text-anchor="middle">6,000</text>
+<text x="751" y="525" text-anchor="middle">8,000</text>
+<text x="915" y="525" text-anchor="middle">10,000</text>
+<polyline points="95.82,489.94 103.2,487.35 136,476.1 177,462.06 259,433.95 423,377.73 587,321.73 751,264.73 915,208.02" fill="none" stroke="#047857" stroke-width="3"/>
+<circle cx="95.82" cy="489.94" r="4" fill="#047857">
+<title>PolyType: 10 types, 2,268,672 bytes</title></circle>
+<circle cx="103.2" cy="487.35" r="4" fill="#047857">
+<title>PolyType: 100 types, 2,850,816 bytes</title></circle>
+<circle cx="136" cy="476.1" r="4" fill="#047857">
+<title>PolyType: 500 types, 5,387,776 bytes</title></circle>
+<circle cx="177" cy="462.06" r="4" fill="#047857">
+<title>PolyType: 1000 types, 8,553,472 bytes</title></circle>
+<circle cx="259" cy="433.95" r="4" fill="#047857">
+<title>PolyType: 2000 types, 14,891,008 bytes</title></circle>
+<circle cx="423" cy="377.73" r="4" fill="#047857">
+<title>PolyType: 4000 types, 27,565,568 bytes</title></circle>
+<circle cx="587" cy="321.73" r="4" fill="#047857">
+<title>PolyType: 6000 types, 40,189,952 bytes</title></circle>
+<circle cx="751" cy="264.73" r="4" fill="#047857">
+<title>PolyType: 8000 types, 53,040,640 bytes</title></circle>
+<circle cx="915" cy="208.02" r="4" fill="#047857">
+<title>PolyType: 10000 types, 65,824,768 bytes</title></circle>
+<text x="95" y="585" fill="#047857">PolyType shapes</text>
+<polyline points="95.82,491.19 103.2,487.66 136,472.22 177,452.9 259,414.26 423,337 587,259.82 751,181.49 915,103.6" fill="none" stroke="#2563eb" stroke-width="3"/>
+<circle cx="95.82" cy="491.19" r="4" fill="#2563eb">
+<title>STJ: 10 types, 1,985,536 bytes</title></circle>
+<circle cx="103.2" cy="487.66" r="4" fill="#2563eb">
+<title>STJ: 100 types, 2,782,208 bytes</title></circle>
+<circle cx="136" cy="472.22" r="4" fill="#2563eb">
+<title>STJ: 500 types, 6,262,272 bytes</title></circle>
+<circle cx="177" cy="452.9" r="4" fill="#2563eb">
+<title>STJ: 1000 types, 10,617,344 bytes</title></circle>
+<circle cx="259" cy="414.26" r="4" fill="#2563eb">
+<title>STJ: 2000 types, 19,329,024 bytes</title></circle>
+<circle cx="423" cy="337" r="4" fill="#2563eb">
+<title>STJ: 4000 types, 36,747,776 bytes</title></circle>
+<circle cx="587" cy="259.82" r="4" fill="#2563eb">
+<title>STJ: 6000 types, 54,147,584 bytes</title></circle>
+<circle cx="751" cy="181.49" r="4" fill="#2563eb">
+<title>STJ: 8000 types, 71,805,952 bytes</title></circle>
+<circle cx="915" cy="103.6" r="4" fill="#2563eb">
+<title>STJ: 10000 types, 89,367,040 bytes</title></circle>
+<text x="385" y="585" fill="#2563eb">STJ source generation</text>
+<polyline points="95.82,494.94 103.2,494.1 136,490.35 177,485.68 259,476.32 423,457.63 587,438.95 751,420.26 915,401.57" fill="none" stroke="#c2410c" stroke-width="3"/>
+<circle cx="95.82" cy="494.94" r="4" fill="#c2410c">
+<title>FastPath: 10 types, 1,139,712 bytes</title></circle>
+<circle cx="103.2" cy="494.1" r="4" fill="#c2410c">
+<title>FastPath: 100 types, 1,330,688 bytes</title></circle>
+<circle cx="136" cy="490.35" r="4" fill="#c2410c">
+<title>FastPath: 500 types, 2,176,512 bytes</title></circle>
+<circle cx="177" cy="485.68" r="4" fill="#c2410c">
+<title>FastPath: 1000 types, 3,228,672 bytes</title></circle>
+<circle cx="259" cy="476.32" r="4" fill="#c2410c">
+<title>FastPath: 2000 types, 5,337,600 bytes</title></circle>
+<circle cx="423" cy="457.63" r="4" fill="#c2410c">
+<title>FastPath: 4000 types, 9,551,360 bytes</title></circle>
+<circle cx="587" cy="438.95" r="4" fill="#c2410c">
+<title>FastPath: 6000 types, 13,763,584 bytes</title></circle>
+<circle cx="751" cy="420.26" r="4" fill="#c2410c">
+<title>FastPath: 8000 types, 17,977,344 bytes</title></circle>
+<circle cx="915" cy="401.57" r="4" fill="#c2410c">
+<title>FastPath: 10000 types, 22,190,080 bytes</title></circle>
+<text x="675" y="585" fill="#c2410c">Fully inlined (FastPathJson)</text>
+<text x="505" y="555" text-anchor="middle">Distinct generated types (linear scale; plus int and string)</text>
+<text transform="translate(25 300) rotate(-90)" text-anchor="middle">Executable size (MiB, excluding symbols)</text>
+</g></svg>
