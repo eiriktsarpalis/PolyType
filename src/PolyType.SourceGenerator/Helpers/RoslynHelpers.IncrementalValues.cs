@@ -11,6 +11,17 @@ public readonly struct TypeWithAttributeDeclarationContext
 {
     public required ITypeSymbol TypeSymbol { get; init; }
     public required ImmutableArray<(BaseTypeDeclarationSyntax Syntax, SemanticModel Model)> Declarations { get; init; }
+
+    /// <summary>
+    /// The assembly registration supplying defaults, if a custom attribute triggered inclusion.
+    /// </summary>
+    public AttributeData? GenerationAttribute { get; init; }
+
+    /// <summary>
+    /// Gets the type's attributes together with the selected registration, if any.
+    /// </summary>
+    public ImmutableArray<AttributeData> GetGenerationAttributes() =>
+        GenerationAttribute is { } attribute ? TypeSymbol.GetAttributes().Add(attribute) : TypeSymbol.GetAttributes();
 }
 
 internal static partial class RoslynHelpers
@@ -61,13 +72,14 @@ internal static partial class RoslynHelpers
             return false;
         }
 
-        (ITypeSymbol Type, BaseTypeDeclarationSyntax Syntax, SemanticModel Model) Transform(GeneratorSyntaxContext ctx, CancellationToken token)
+        (ITypeSymbol? Type, BaseTypeDeclarationSyntax Syntax, SemanticModel Model) Transform(GeneratorSyntaxContext ctx, CancellationToken token)
         {
             BaseTypeDeclarationSyntax typeDecl = (BaseTypeDeclarationSyntax)ctx.Node;
             ITypeSymbol typeSymbol = ctx.SemanticModel.GetDeclaredSymbol(typeDecl, token)!;
 
             foreach (AttributeData attrData in typeSymbol.GetAttributes())
             {
+                token.ThrowIfCancellationRequested();
                 if (attrData.AttributeClass is INamedTypeSymbol attributeType)
                 {
                     foreach (var (attributeNamespace, attributeName, attributeArity) in attributeData)
