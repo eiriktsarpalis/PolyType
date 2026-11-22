@@ -8,7 +8,7 @@ This page answers questions that frequently come up when evaluating PolyType's d
 
 The visitor need not run in the hot path. A [`TypeShapeVisitor`](xref:PolyType.Abstractions.TypeShapeVisitor) traverses the *type graph* to build converters, delegates and lookup tables. A library can cache these components and use them to process values without revisiting their shapes. The [example JSON serializer](https://github.com/eiriktsarpalis/PolyType/tree/main/src/PolyType.Examples/JsonSerializer) uses this pattern; a visitor that traverses the shape for every value would add overhead.
 
-The resulting converter graph can still involve virtual calls and member-access delegates during value traversal, as can System.Text.Json's metadata mode. A generator can instead emit direct serialization code, much like a handwritten serializer. The [`PolyType.FastPathJson`](https://github.com/eiriktsarpalis/PolyType/tree/main/src/fast-path-json) prototype is not intended for production use; it uses `PolyType.Roslyn` to illustrate this option.
+The resulting converter graph can still involve virtual calls and member-access delegates during value traversal, as can System.Text.Json's metadata mode. A generator can instead emit direct serialization code, much like a handwritten serializer. The [`PolyType.FastPathJson`](https://github.com/eiriktsarpalis/PolyType/tree/main/src/fast-path-json) prototype uses `PolyType.Roslyn` to illustrate this option.
 
 The following means come from the [performance benchmarks](performance.md), measured on an Apple M4 Pro with .NET 11. They compare complete serializers rather than isolating visitor overhead:
 
