@@ -9,8 +9,8 @@ items:
   href: source-generator.md
 - name: Performance
   href: performance.md
-- name: Design questions and tradeoffs
-  href: design-questions.md
+- name: Design Tradeoffs
+  href: design-tradeoffs.md
 - name: RPC Support
   href: rpc-support.md
 - name: Specification

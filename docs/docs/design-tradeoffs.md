@@ -1,4 +1,4 @@
-# Design questions and tradeoffs
+# Design Tradeoffs
 
 This page answers questions that frequently come up when evaluating PolyType's design: runtime cost, Native AOT footprint, the choice of a runtime type model over generated code, and what the library offers when serializers can be written by hand or by an agent. Where possible, the answers cite measurements; the [reproducibility notes](#reproducing-the-measurements) describe how they were collected.
 
